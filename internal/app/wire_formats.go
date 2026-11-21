@@ -368,7 +368,7 @@ var _ formathost.SourceRouter = (*repository.Routing)(nil)
 
 // wireFormatHost builds the Host and the dispatcher on the item store and the
 // decision point.
-func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo repositoryArea, ex exposureArea, fa filesArea, eng proxyEngineArea, ve virtualEngineArea, vz vulnArea, mw malwareArea) (formatHostArea, error) {
+func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo repositoryArea, ex exposureArea, fa filesArea, eng proxyEngineArea, ve virtualEngineArea, vz vulnArea, mw malwareArea, sg signaturesArea) (formatHostArea, error) {
 	if err := requireInputs(AreaFormatHost, given("item store", fa.items), given("decision point", fa.decider),
 		given("repository reader", repo.reader), given("exposure ceiling", ex.ceiling), given("virtual engine", ve.engine)); err != nil {
 		return formatHostArea{}, err
@@ -408,10 +408,16 @@ func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo r
 	if v := a.signatureVerdicts(); v != nil {
 		hostOpts.Verdicts = v
 	}
+	// The gate per repository of the signatures (R-SIG-064), set only where the signatures are on.
+	if sg.gate != nil {
+		hostOpts.SignatureGate = sg.gate
+	}
 	host, err := formathost.New(hostOpts)
 	if err != nil {
 		return formatHostArea{}, err
 	}
+	// The gate asks the item's format what it judges of an item (R-SIG-063), through this host.
+	sg.gate.SetClassifier(host.GateClassify)
 	disp, err := dispatch.New(dispatch.Options{
 		Host: host, Decider: fa.decider, Repos: repo.reader, Ceiling: ex.ceiling,
 		Label:  func(ctx context.Context, name string) { observability.RequestInfoFrom(ctx).SetHandler(name) },

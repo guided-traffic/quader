@@ -4,7 +4,7 @@
 
 -- name: OCIGetManifest :one
 -- The row of a manifest of an image name (R-OCI-007).
-SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at
+SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at, attachment
 FROM oci_manifests
 WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND digest = sqlc.arg(digest)::bytea;
 
@@ -26,7 +26,7 @@ ORDER BY manifest;
 -- name: OCIListReferrers :many
 -- The manifests whose subject is the digest, in digest order after the cursor, optionally of one artifact type (R-OCI-016).
 -- A NULL cursor starts at the first digest. A manifest the journal replay withheld is not listed (R-OCI-033).
-SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at
+SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at, attachment
 FROM oci_manifests
 WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND subject = sqlc.arg(subject)::bytea
   AND (sqlc.arg(artifact_type)::text = '' OR artifact_type = sqlc.arg(artifact_type)::text)

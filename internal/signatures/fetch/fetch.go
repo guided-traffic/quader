@@ -160,6 +160,9 @@ type HandlerOptions struct {
 	// RunContext, when set, decorates the context a run hands the format's fetch: the composition root carries the bounds of R-SIG-040
 	// (signatures.remote.max_manifests_per_subject, signatures.max_object_size) through it, which the format reads.
 	RunContext func(context.Context) context.Context
+	// Signal, when set, is told the subject of a target whose run ended (fetched, or failed for the last time), after its row was
+	// written: the signal area signature_verdict that wakes a download waiting at a repository's gate (stage 3, R-SIG-067).
+	Signal func(subject [32]byte)
 	// Now is the clock of the budget; nil is time.Now.
 	Now func() time.Time
 }
@@ -187,7 +190,9 @@ func Handler(o HandlerOptions) jobs.Handler {
 		}
 		qs := q.New(run.DB())
 		done := func(fetched bool) error {
-			return qs.SignatureFetchDone(ctx, q.SignatureFetchDoneParams{RepoID: a.RepoID, Target: a.Target, Fetched: fetched})
+			subjects, err := qs.SignatureFetchDone(ctx, q.SignatureFetchDoneParams{RepoID: a.RepoID, Target: a.Target, Fetched: fetched})
+			signal(o.Signal, subjects)
+			return err
 		}
 		repos, err := qs.SignatureFetchRemote(ctx, a.RepoID)
 		if err != nil {
@@ -216,7 +221,7 @@ func Handler(o HandlerOptions) jobs.Handler {
 			// The budget of the hour is spent: the target waits for it, queued again, and its row stays queued.
 			return o.Queue.requeue(ctx, a, spent.after)
 		case err != nil:
-			return failed(ctx, qs, run, a, err)
+			return failed(ctx, qs, run, a, err, o.Signal)
 		}
 		if err := done(true); err != nil {
 			return err
@@ -227,12 +232,28 @@ func Handler(o HandlerOptions) jobs.Handler {
 
 // failed counts a run that failed: the last attempt frees the target and marks it failed (Q-SIG-106), and the job ends as the queue
 // decides.
-func failed(ctx context.Context, qs *q.Queries, run *jobs.Run, a Args, err error) error {
+func failed(ctx context.Context, qs *q.Queries, run *jobs.Run, a Args, err error, sig func([32]byte)) error {
 	final := run.Attempt >= run.MaxAttempts || jobs.IsPermanent(err)
-	if ferr := qs.SignatureFetchFailed(ctx, q.SignatureFetchFailedParams{RepoID: a.RepoID, Target: a.Target, Final: final}); ferr != nil {
+	subjects, ferr := qs.SignatureFetchFailed(ctx, q.SignatureFetchFailedParams{RepoID: a.RepoID, Target: a.Target, Final: final})
+	if ferr != nil {
 		return errors.Join(err, ferr)
 	}
+	if final {
+		signal(sig, subjects)
+	}
 	return err
+}
+
+// signal tells the subjects of an ended run to fn: those of the state rows the run wrote that name an item.
+func signal(fn func([32]byte), subjects [][]byte) {
+	if fn == nil {
+		return
+	}
+	for _, s := range subjects {
+		if len(s) == 32 {
+			fn([32]byte(s))
+		}
+	}
 }
 
 func fetcherOf(o HandlerOptions, format string) (Fetcher, bool) {

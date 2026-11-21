@@ -694,6 +694,24 @@ them; no column is a revision (R-ARCH-009). The statements are in [signing.sql](
 three tables are `data` ([tables_signing.go](../../internal/meta/postgres/tables_signing.go)). The sealed column is registered by
 `internal/signing/key` and walked by `secrets-reencrypt`. The number 00101 follows 00100_signature_trust_names.
 
+## The gate per repository of the signatures (00102)
+
+[00102_signature_gate](../../internal/meta/postgres/migrations/00102_signature_gate.sql) is an expand step of stage 3's first package
+([signatures.md](signatures.md#stage-3-package-1-the-gate-per-repository-built), [spec](../spec/signatures.md) R-SIG-063, R-SIG-066,
+R-SIG-073):
+
+- `oci_manifests.attachment`: the OCI format recognised the manifest at its commit by its content as a carrier of signatures, attestations or
+  SBOMs (`oci.IsAttachment`); the gate passes it. A row of before reads false and is judged as an artifact.
+- `signature_anchors.narrowed_epoch` and `signature_blocks.anchor_epoch`: the anchor epoch of the write that narrowed an anchor, and the one
+  a block's creation raised; the gate subtracts them from an older trust row (R-SIG-066). Neither is a revision column (R-ARCH-009), so
+  neither carries a name the rule claims.
+- `signature_refusals`: one row per repository and refused artifact (the last reason, the first and the last refusal, the count), cascading
+  with the repository, purged with a retired well-known repository (`upstream_repository_purge` is replaced again: the body of 00096 and
+  the delete of `signature_refusals`), `transient` for backups.
+
+The statements are in [signature_gate.sql](../../internal/meta/postgres/queries/signature_gate.sql) and the OCI data port's `OCIGateFacts`
+([oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql)). The number 00102 follows 00101_signing_identity.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

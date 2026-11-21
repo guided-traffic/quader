@@ -158,6 +158,7 @@ func init() {
 	// 00098_signature_trust.
 	// >>> signatures
 	RegisterArea(Area{Name: AreaSignatureAnchors, Owner: "R-SIG-012", Class: ChangeArea, PayloadVersion: 1})
+	RegisterArea(Area{Name: AreaSignatureVerdict, Owner: "R-SIG-067", Class: SignalArea})
 	// <<< signatures
 	//
 	// The area of Quader's signing identity (signatures.md R-SIG-059). Its cluster_epoch row is seeded by 00101_signing_identity.
@@ -301,6 +302,12 @@ const AreaMalwareVerdict = "malware_verdict"
 // (R-SIG-012, R-SIG-041): every replica refreshes what it holds of them, and the trust job recomputes the trust rows under the raised
 // anchor epoch. The payload is {"epoch": <the anchor epoch after the write>}.
 const AreaSignatureAnchors = "signature_anchors"
+
+// AreaSignatureVerdict is the signal raised after the commit of a signature's check, of a batch of trust rows or of a background fetch
+// (stage 3 of the signatures, R-SIG-067): the payload is the lower-case hex SHA-256 of the subject, "*" for every subject (a batch of the
+// trust step). A download that waits at a repository's gate decides again; a waiter on a replica that missed the signal reads again once
+// a second, so nothing depends on its delivery.
+const AreaSignatureVerdict = "signature_verdict"
 
 // <<< signatures
 

@@ -101,6 +101,56 @@ func (q *Queries) OCIExistingItems(ctx context.Context, arg OCIExistingItemsPara
 	return items, nil
 }
 
+const oCIGateFacts = `-- name: OCIGateFacts :many
+SELECT m.name::text AS name, m.digest, m.attachment,
+       COALESCE((SELECT array_agg(r.manifest ORDER BY r.manifest)
+                   FROM oci_references r
+                  WHERE r.repo_id = m.repo_id AND r.name = m.name AND r.target = m.digest AND r.kind = 'manifest'), '{}')::bytea[] AS indexes
+  FROM oci_manifests m
+ WHERE m.repo_id = $1::bigint AND m.digest = ANY($2::bytea[]) AND m.name = ANY($3::text[])
+`
+
+type OCIGateFactsParams struct {
+	RepoID  int64
+	Digests [][]byte
+	Names   []string
+}
+
+type OCIGateFactsRow struct {
+	Name       string
+	Digest     []byte
+	Attachment bool
+	Indexes    [][]byte
+}
+
+// What the signature gate asks of manifests of image names of a repository (signatures.md R-SIG-063): whether each is an attachment the
+// format recognised at its commit, and the indexes of the name that list it. The rows of every asked name and every asked digest come
+// back, and the caller keeps the pairs it asked for; a manifest that is not recorded has no row.
+func (q *Queries) OCIGateFacts(ctx context.Context, arg OCIGateFactsParams) ([]OCIGateFactsRow, error) {
+	rows, err := q.db.Query(ctx, oCIGateFacts, arg.RepoID, arg.Digests, arg.Names)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OCIGateFactsRow{}
+	for rows.Next() {
+		var i OCIGateFactsRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Digest,
+			&i.Attachment,
+			&i.Indexes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const oCILockExistingItems = `-- name: OCILockExistingItems :many
 SELECT path::text AS path
 FROM items
@@ -137,11 +187,12 @@ func (q *Queries) OCILockExistingItems(ctx context.Context, arg OCILockExistingI
 
 const oCIPutManifest = `-- name: OCIPutManifest :exec
 
-INSERT INTO oci_manifests (repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut)
+INSERT INTO oci_manifests (repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut,
+                           attachment)
 VALUES (
   $1::bigint, $2::text, $3::bytea, $4::text,
   NULLIF($5::text, ''), $6::bytea, $7::bigint, $8::bigint,
-  $9::jsonb, $10::boolean
+  $9::jsonb, $10::boolean, $11::boolean
 )
 ON CONFLICT (repo_id, name, digest) DO NOTHING
 `
@@ -157,6 +208,7 @@ type OCIPutManifestParams struct {
 	ContentSize    int64
 	Annotations    json.RawMessage
 	AnnotationsCut bool
+	Attachment     bool
 }
 
 // The statements of the OCI data port for manifests: the rows a push writes, the checks it makes under the package's lock, and
@@ -175,6 +227,7 @@ func (q *Queries) OCIPutManifest(ctx context.Context, arg OCIPutManifestParams) 
 		arg.ContentSize,
 		arg.Annotations,
 		arg.AnnotationsCut,
+		arg.Attachment,
 	)
 	return err
 }

@@ -33,9 +33,11 @@ import (
 // (repositories-and-proxy.md R-REPO-065, ADR-207): a format with the class remote declares its probes in [Descriptor.Probes] (or why its
 // protocol has none), its RemoteAdapter names a probed version's content (ProbeContent), and a handler tells the host of a probe it
 // answered (RemoteFetcher.Probed). Version 8 is the signatures' (signatures.md R-SIG-022, ADR-228): every format declares its
-// signatures and detects them ([Format.Signatures]); Base returns nil and Register refuses nil. A format declares the literal it was
-// written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 8
+// signatures and detects them ([Format.Signatures]); Base returns nil and Register refuses nil. Version 9 is the gate per repository's
+// (signatures.md R-SIG-063, Q-SIG-81, ADR-231): a format's [SignatureAdapter] names what the signature gate judges of each stored item
+// it serves (Gate), and [SignatureVerdicts] judges a stored document a format serves without the item store (Refuse). A format declares
+// the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 9
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and

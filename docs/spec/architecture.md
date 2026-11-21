@@ -2111,7 +2111,38 @@ type SignatureAdapter interface {
 	// Detect names the signatures a committed item or a stored document carries or points at. It reads only the bytes it is handed
 	// (ev.Content, bounded) and runs no SQL. An error never fails the commit.
 	Detect(ctx context.Context, ev SignatureEvent) ([]SignatureCandidate, error)
+	// Gate names, for each stored item about to be served or previewed, what the signature gate of a repository judges (R-SIG-063): an
+	// artifact with the artifacts whose passing signature passes it too, a carrier of signatures, a signature file, or nothing of its
+	// own. It may read the format's data port; it never reads the signature tables. One subject per item, in order.
+	Gate(ctx context.Context, h Host, repo RepoRef, items []GateItem) ([]GateSubject, error)
 }
+
+// GateKind is what the gate judges an item as (R-SIG-063): GateNone (passed: a layer, a config, every item of a format without
+// publisher signatures), GateArtifact (judged by its blob and each Covering digest), GateAttachment (a carrier of signatures the format
+// recognised by its content: passed), GateSignatureFile (passed while it is the object of a signature whose scheme was read).
+type GateKind uint8
+
+const (
+	GateNone GateKind = iota
+	GateArtifact
+	GateAttachment
+	GateSignatureFile
+)
+
+func (k GateKind) String() string
+
+type GateItem struct {
+	Path string
+	Blob [32]byte // the item's SHA-256
+}
+
+type GateSubject struct {
+	Kind     GateKind
+	Covering [][32]byte // GateArtifact: artifacts whose passing signature or release passes this item too
+}
+
+// GateNoneFor answers GateNone for every item: Debian's and the ClamAV definitions' classification.
+func GateNoneFor(items []GateItem) []GateSubject
 
 type SignatureDeclaration struct {
 	None  string // non-empty: the format has no signatures, and why
@@ -2240,9 +2271,12 @@ func SignatureFetchLimitsFrom(ctx context.Context) SignatureFetchLimits
 
 // SignatureVerdicts is what a format asks of the verdicts of signatures before it serves one (Q-SIG-35): npm serves a local provenance
 // bundle only when it verified against the public Sigstore. The trust step implements it; Host.Signatures answers NoSignatureVerdicts
-// until it is wired, which vouches for nothing.
+// until it is wired, which vouches for nothing. Refuse applies the signature gate of stage 3 to a stored document a format serves
+// without the item store (a remote OCI repository's tag, R-SIG-064): nil serves it, else 403 signature_not_verified or, after the
+// bounded wait, 503 signature_check_pending.
 type SignatureVerdicts interface {
 	PublicProvenance(ctx context.Context, repo RepoRef, paths []string) (map[string]string, error) // path -> predicate type
+	Refuse(ctx context.Context, rq *Request, repo RepoRef, path string, digest [32]byte) error
 }
 
 var NoSignatureVerdicts SignatureVerdicts

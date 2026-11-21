@@ -26,6 +26,7 @@ func conformance(t testing.TB) formattest.Fixture {
 		},
 		OptionNames: []string{"QUADER_TOKEN"},
 		Signatures:  signatureCases(t),
+		GateCases:   gateCases(),
 		Skip: map[formattest.Check]string{
 			formattest.CheckAmbiguity:  "no routes: /files/ is the protocol, served by the generic layer and tested by rawfiles (Q-GENERIC-7, R-GENERIC-002)",
 			formattest.CheckRewrite:    "local class only: no remote adapter, no upstream document to rewrite",

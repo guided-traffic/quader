@@ -348,6 +348,13 @@ const (
 	CodeBlockExists = "block_exists"
 	// CodeSignaturesNotEnabled: an operation that needs the signatures while signatures.enabled is false (409, R-SIG-040).
 	CodeSignaturesNotEnabled = "signatures_not_enabled"
+	// CodeSignatureNotVerified: a repository that serves only artifacts with a verified signature refuses the download; the member reason
+	// says why (403, R-SIG-062, R-SIG-068).
+	CodeSignatureNotVerified = "signature_not_verified"
+	// CodeSignatureCheckPending: the signatures of the download were not judged within signatures.gate.download_wait (503, R-SIG-067).
+	CodeSignatureCheckPending = "signature_check_pending"
+	// CodeSignatureWeakeningRefused: a project Owner's write weakens a repository's gate of signatures (403, R-SIG-061).
+	CodeSignatureWeakeningRefused = "signature_weakening_refused"
 )
 
 // Codes of Quader's signing identity (signatures.md R-SIG-047, R-SIG-048, R-SIG-055, Q-SIG-146): answers of its management operations.
@@ -957,6 +964,9 @@ var registry = []CodeInfo{
 	{CodeSigningIdentityNotPrevious, Conflict, "Signing identity not previous", "Only a previous signing identity can be retired."},
 	{CodeSigningKeyInUse, Conflict, "Signing key in use", "The current or the announced signing identity has the same key: retiring this certificate would withdraw nothing. Replace the current identity with one of a new key first."},
 	{CodeSigningIdentityExists, Conflict, "Signing identity exists", "The certificate is the certificate of a stored signing identity."},
+	{CodeSignatureNotVerified, Forbidden, "Signature not verified", "The repository serves only artifacts with a verified signature, and no signature of the artifact's publisher or build that a trust anchor of the repository accepts covers it. The member reason says why: missing, untrusted, not_chosen, invalid, blocked or not_checked. The response is never cached."},
+	{CodeSignatureCheckPending, Unavailable, "Signature check pending", "The repository serves only artifacts with a verified signature, and the artifact's signatures are being checked or fetched; retry after the Retry-After period. The response is never cached."},
+	{CodeSignatureWeakeningRefused, Forbidden, "Signature setting cannot be weakened", "The write would switch the repository's setting signatures.onlyVerified off or accept more trust anchors. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
 	// <<< signatures
 	//
 	// >>> M6b mirror

@@ -65,6 +65,8 @@ func (a *App) startSignatureFetch(in infra) {
 				m.RemoteRequest(format, result)
 			}
 		},
+		// A run's end wakes a download waiting at a gate for the fetch (stage 3, R-SIG-067).
+		Signal: signatureVerdictSignal(in.signals),
 	}
 	a.signatureFetch.set(sigfetch.Handler(o))
 }

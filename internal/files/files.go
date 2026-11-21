@@ -38,6 +38,7 @@ import (
 	"github.com/guided-traffic/quader/internal/malware/gate"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/repository"
+	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
@@ -97,7 +98,11 @@ type Options struct {
 	// Malware is the download gate of the malware scanning (R-MAL-013, Q-MAL-24): every file of /files/ passes it after the
 	// format's serve-time check and before the vulnerability block. nil refuses nothing.
 	Malware *gate.Gate
-	Log     *slog.Logger
+	// Signatures is the gate per repository of the signatures (signatures.md R-SIG-064): every file of a repository whose member
+	// signatures.onlyVerified is on passes it, decided with the malware gate and the vulnerability block before one wait (R-SIG-069).
+	// nil refuses nothing.
+	Signatures *sgate.Gate
+	Log        *slog.Logger
 }
 
 // WriteGate is the question the read-only maintenance mode puts to every write: nil while writes are allowed, the 503 otherwise.
@@ -114,6 +119,7 @@ type Service struct {
 	enforce *enforce.Enforcer
 	writes  WriteGate
 	malware *gate.Gate
+	sigs    *sgate.Gate
 	log     *slog.Logger
 }
 
@@ -136,7 +142,9 @@ func New(o Options) (*Service, error) {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	return &Service{items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, malware: o.Malware, log: o.Log}, nil
+	return &Service{
+		items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, malware: o.Malware, sigs: o.Signatures, log: o.Log,
+	}, nil
 }
 
 // Caller is who acts: the request's decision holder, the subject behind it (whose

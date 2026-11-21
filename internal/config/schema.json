@@ -3845,6 +3845,44 @@
           "type": "boolean",
           "x-quader-env": "QUADER_SIGNATURES_ENABLED"
         },
+        "gate": {
+          "additionalProperties": false,
+          "properties": {
+            "download_wait": {
+              "default": "25s",
+              "description": "How long a download from a repository that serves only artifacts with a verified signature waits for the checks of its signatures (and the background fetch of a remote), counted from the request's arrival (R-SIG-067); then 503 signature_check_pending with Retry-After. One wait shared with a pending malware scan of the same request; the default keeps the answer inside apt's 30-second timeout.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNATURES_GATE_DOWNLOAD_WAIT",
+              "x-quader-type": "duration"
+            },
+            "max_waiting": {
+              "default": 512,
+              "description": "Downloads one replica holds waiting for the checks of their signatures; a further one is answered 503 signature_check_pending at once (R-SIG-067).",
+              "maximum": 65536,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_SIGNATURES_GATE_MAX_WAITING"
+            },
+            "preview_limit": {
+              "default": 100000,
+              "description": "Rows or items one preview of a repository's gate or one impact count of a change of anchors reads; beyond it the answer says complete: false and its counts are lower bounds (R-SIG-071, R-SIG-072).",
+              "maximum": 10000000,
+              "minimum": 1000,
+              "type": "integer",
+              "x-quader-env": "QUADER_SIGNATURES_GATE_PREVIEW_LIMIT"
+            },
+            "refusals_retention": {
+              "default": "720h",
+              "description": "How long a download a gate refused stays in the list of refused downloads after its last refusal; the discovery step of the job signature-verify removes older rows (R-SIG-073).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNATURES_GATE_REFUSALS_RETENTION",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
         "max_attempts": {
           "default": 5,
           "description": "Attempts at a check that could not run (the object store, a timeout), with a doubling back-off from one minute; after the last the signature is failed, and the discovery of the task signature-verify makes it due once a day (R-SIG-011).",

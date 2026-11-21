@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/malware/gate"
 	"github.com/guided-traffic/quader/internal/repository"
+	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
@@ -79,25 +80,34 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 			return Resolved{}, err
 		}
 	}
-	// The malware gate, after the format's own check and before the vulnerability block (R-MAL-013): every file of /files/ is a
-	// download. An infected blob is refused, and where only checked artifacts are served one without a verdict waits (R-MAL-014).
+	// The three checks of a stored item, after authorization and the format's own check, so that a version the caller may not read
+	// stays a 404 and a tombstoned one the format's: the malware gate (R-MAL-013; every file of /files/ is a download), the block of the
+	// vulnerability scanning (R-VULN-015) and the gate of signatures (R-SIG-064), decided together before one wait (R-SIG-069).
+	srv := sgate.Serve{
+		Enforce: s.enforce,
+		VulnOf: enforce.Download{
+			Addressed: repoKey.String(), Store: repo.Name.String(), RepoID: repo.ID, Format: repo.Format, Path: it.Path, VersionID: it.VersionID,
+			Stored: true, Block: s.enforce.Decide(it.Policy, it.Block, it.VersionID), Actor: c.Actor, Source: c.Source,
+			Endpoint: c.Subject.Endpoint, Ecosystem: it.Policy.Ecosystem,
+		},
+	}
 	if s.malware.Enabled() {
-		err := s.malware.Check(ctx, gate.Download{
+		srv.Malware = s.malware
+		srv.MalwareOf = gate.Download{
 			Addressed: repoKey, HolderID: repo.NumericID(), Path: it.Path, Digest: it.Digest, Size: it.Size, Generated: it.Generated, System: repo.Upstream.System(),
 			Verdict: it.Malware, Strict: s.malware.Strict(repo.MalwareOnlyChecked()), Arrived: c.Received,
 			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
-		})
-		if err != nil {
-			return Resolved{}, err
 		}
 	}
-	// The block of the vulnerability scanning comes last: after authorization and the format's own check, so that a
-	// version the caller may not read stays a 404 and a tombstoned one the format's (R-VULN-015).
-	if err := s.enforce.Refuse(ctx, enforce.Download{
-		Addressed: repoKey.String(), Store: repo.Name.String(), RepoID: repo.ID, Format: repo.Format, Path: it.Path, VersionID: it.VersionID, Stored: true,
-		Block: s.enforce.Decide(it.Policy, it.Block, it.VersionID), Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
-		Ecosystem: it.Policy.Ecosystem,
-	}); err != nil {
+	if s.sigs.Enabled() {
+		gr := GateRepo(repo)
+		srv.Signatures = s.sigs
+		srv.SignaturesOf = sgate.Download{
+			Addressed: gr, Holder: gr, Members: []sgate.Repo{gr}, Path: it.Path, Blob: it.Digest, Generated: it.Generated, Arrived: c.Received,
+			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
+		}
+	}
+	if err := srv.Run(ctx); err != nil {
 		return Resolved{}, err
 	}
 	return Resolved{Repo: repo, Item: it}, nil

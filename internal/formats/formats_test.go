@@ -160,6 +160,10 @@ func (declared) Detect(context.Context, SignatureEvent) ([]SignatureCandidate, e
 	return nil, nil
 }
 
+func (declared) Gate(_ context.Context, _ Host, _ RepoRef, items []GateItem) ([]GateSubject, error) {
+	return GateNoneFor(items), nil
+}
+
 // TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures: a format whose Signatures() is nil does not start (Q-SIG-43), nor
 // one whose declaration says neither its kinds nor why it has none, says both, or leaves a field of a kind empty or outside R-SIG-001.
 // A format without signatures declares the reason (NoSignatures). Unit, milliseconds.

@@ -114,6 +114,7 @@ func conformance(t testing.TB) formattest.Fixture {
 	versions := []string{"1.0-1", "1.0-2", "1.1-1"}
 	return formattest.Fixture{
 		Signatures: signatureCases(t),
+		GateCases:  gateCases(),
 		Rejects:    []string{"pool/%2e%2e/x", "../pool/h/hello/hello_2.10-3_amd64.deb", "dists/stable/InRelease%00"},
 		Paths: []formattest.PathCase{
 			{Path: "dists/stable/main/binary-amd64/Packages.gz", Want: formats.PathInfo{Kind: formats.PathMetadata}},

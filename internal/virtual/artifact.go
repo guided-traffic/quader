@@ -191,11 +191,12 @@ func contentLost(err error) bool {
 	return ok && e.Code == errs.CodeContentUnavailable
 }
 
-// isTransient reports whether an error says the member could not be asked or did not answer. The malware gate's pending answer
-// is none: the member holds the item and decides, and its 503 ends the walk as its refusals do (R-MAL-018, R-REPO-019 step 7).
+// isTransient reports whether an error says the member could not be asked or did not answer. The pending answers of the malware
+// gate and of the signature gate are none: the member holds the item and decides, and their 503 ends the walk as their refusals do
+// (R-MAL-018, signatures.md R-SIG-065, R-REPO-019 step 7).
 func isTransient(err error) bool {
 	e, ok := errs.As(err)
-	if !ok || e.Code == errs.CodeMalwareCheckPending {
+	if !ok || e.Code == errs.CodeMalwareCheckPending || e.Code == errs.CodeSignatureCheckPending {
 		return false
 	}
 	switch e.Kind {

@@ -19,7 +19,60 @@ type SignatureAdapter interface {
 	// (ev.Content, bounded) and runs no SQL; the core resolves what a candidate names by path, stores it and checks it later. An error
 	// never fails the commit: the core records it and stores the content without candidates (Q-SIG-47).
 	Detect(ctx context.Context, ev SignatureEvent) ([]SignatureCandidate, error)
+	// Gate names, for each stored item about to be served or previewed, what the signature gate of a repository judges (signatures.md
+	// R-SIG-063): an artifact with the artifacts whose passing signature passes it too, a carrier of signatures, a signature file, or
+	// nothing of its own. It may read the format's own data port through h.FormatData; it never reads the signature tables. The answer
+	// holds one subject per item, in the order of items. [NoSignatures] answers GateNone for every item.
+	Gate(ctx context.Context, h Host, repo RepoRef, items []GateItem) ([]GateSubject, error)
 }
+
+// GateKind is what the signature gate judges a stored item as (signatures.md R-SIG-063).
+type GateKind uint8
+
+const (
+	// GateNone is no artifact of its own (a layer or a config blob of an image, every item of a format without publisher signatures):
+	// the gate passes it.
+	GateNone GateKind = iota
+	// GateArtifact is an artifact a client fetches: the gate judges its blob and each digest of Covering, and it passes when one passes.
+	GateArtifact
+	// GateAttachment is a carrier of signatures, attestations or SBOMs the format recognised by its content: the gate passes it, so that
+	// a client reaches the signatures of an artifact to check them.
+	GateAttachment
+	// GateSignatureFile is a file named like a signature of the file beside it: the gate passes it while it is the object of a signature
+	// whose scheme was read, and judges it as an artifact otherwise.
+	GateSignatureFile
+)
+
+// String names the kind as the specification does.
+func (k GateKind) String() string {
+	switch k {
+	case GateArtifact:
+		return "GateArtifact"
+	case GateAttachment:
+		return "GateAttachment"
+	case GateSignatureFile:
+		return "GateSignatureFile"
+	}
+	return "GateNone"
+}
+
+// GateItem is a stored item the gate is about to judge: its canonical path and its blob's SHA-256.
+type GateItem struct {
+	Path string
+	Blob [32]byte
+}
+
+// GateSubject is what a format says of one [GateItem].
+type GateSubject struct {
+	Kind GateKind
+	// Covering are, for GateArtifact, the digests of artifacts whose passing signature (or release) passes this item too: the image
+	// indexes of the name that list a platform manifest, the .nupkg of a .snupkg.
+	Covering [][32]byte
+}
+
+// GateNoneFor answers GateNone for every item: the classification of a format whose items carry no publisher signature (Debian, the
+// ClamAV definitions, R-SIG-063).
+func GateNoneFor(items []GateItem) []GateSubject { return make([]GateSubject, len(items)) }
 
 // SignatureDeclaration is the row of a format in the table of R-SIG-002.
 type SignatureDeclaration struct {
@@ -236,6 +289,11 @@ type SignatureVerdicts interface {
 	// each whose signature is valid and trusted by a shipped public anchor in the installation's scope; a path absent from the answer
 	// is not served.
 	PublicProvenance(ctx context.Context, repo RepoRef, paths []string) (map[string]string, error)
+	// Refuse applies the signature gate of the repositories a request involves to a stored document a format serves without the item
+	// store (a remote OCI repository's tag, R-SIG-064): path is the document's canonical path, digest its blob. nil serves it; the error
+	// is the refusal (403 signature_not_verified) or the pending answer (503 signature_check_pending, after the bounded wait of
+	// R-SIG-067).
+	Refuse(ctx context.Context, rq *Request, repo RepoRef, path string, digest [32]byte) error
 }
 
 // NoSignatureVerdicts is the [SignatureVerdicts] of a host without the trust step: nothing is vouched for.
@@ -246,6 +304,8 @@ type noVerdicts struct{}
 func (noVerdicts) PublicProvenance(context.Context, RepoRef, []string) (map[string]string, error) {
 	return map[string]string{}, nil
 }
+
+func (noVerdicts) Refuse(context.Context, *Request, RepoRef, string, [32]byte) error { return nil }
 
 // SignatureCoverage is the optional interface of a format whose ecosystem signs an index that names a package and not the package
 // itself (Debian, signatures.md R-SIG-030): it answers which signed documents of a repository name a stored file by its SHA-256, so that
@@ -280,4 +340,9 @@ func (n noSignatures) Declaration() SignatureDeclaration {
 
 func (noSignatures) Detect(context.Context, SignatureEvent) ([]SignatureCandidate, error) {
 	return nil, nil
+}
+
+// Gate implements [SignatureAdapter]: a format without signatures holds nothing the gate judges (R-SIG-063).
+func (noSignatures) Gate(_ context.Context, _ Host, _ RepoRef, items []GateItem) ([]GateSubject, error) {
+	return GateNoneFor(items), nil
 }

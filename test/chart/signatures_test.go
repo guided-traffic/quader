@@ -138,14 +138,17 @@ func TestR_SIG_018_DeclaredAnchorsReachTheMigrationJob(t *testing.T) {
 	})
 }
 
-// TestR_SIG_039_TheAlertsOfTheSignatures: the three alerts of R-SIG-039's table render with their expression, duration and severity,
-// scoped to the release's namespace, while config.signatures.enabled (the default), and not at all when it is false. Their promtool
-// tests are in deploy/helm/quader/tests/rules_test.yaml (TestR_VULN_024_PromtoolRules).
+// TestR_SIG_039_TheAlertsOfTheSignatures: the three alerts of R-SIG-039's table and the one of R-SIG-075's (TestR_SIG_075 below the
+// name, stage 3's gate) render with their expression, duration and severity, scoped to the release's namespace, while
+// config.signatures.enabled (the default), and not at all when it is false. Their promtool tests are in
+// deploy/helm/quader/tests/rules_test.yaml (TestR_VULN_024_PromtoolRules).
 func TestR_SIG_039_TheAlertsOfTheSignatures(t *testing.T) {
 	want := map[string]struct{ expr, dur string }{
 		"QuaderSignatureInvalid":        {`sum(increase(quader_signatures_checks_total{ namespace="default",result="invalid" }[1h])) > 0`, ""},
 		"QuaderSignatureBacklog":        {`max(quader_signatures_oldest_pending_seconds{ namespace="default" }) > 3600`, "15m"},
 		"QuaderSignatureTrustRootStale": {`max(quader_signatures_trust_root_age_seconds{ namespace="default" }) > 1209600`, "1h"},
+		// R-SIG-075: clients wait and get 503 because the checks do not keep up.
+		"QuaderSignatureGatePending": {`sum(increase(quader_signatures_download_wait_seconds_count{ namespace="default",outcome="pending" }[15m])) > 0`, "15m"},
 	}
 	got := map[string]any{}
 	for _, r := range renderedRules(t) {

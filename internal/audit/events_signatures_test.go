@@ -35,3 +35,12 @@ func TestR_SIG_039_TheEventsAreRegisteredWithTheirSchemasAndJournalFlags(t *test
 		}
 	}
 }
+
+// TestR_SIG_075_TheGatesEventIsRegistered: signature.download_refused of the gate per repository is asynchronous and not journaled, with
+// its schema (R-SIG-075).
+func TestR_SIG_075_TheGatesEventIsRegistered(t *testing.T) {
+	et, ok := Lookup(EventSignatureDownloadRefused)
+	if !ok || et.Mode != Async || et.Journal != NoJournal || et.Schema == "" || et.Category != CategoryContent {
+		t.Fatalf("%+v %v", et, ok)
+	}
+}

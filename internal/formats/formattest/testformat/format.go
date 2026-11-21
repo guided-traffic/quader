@@ -148,6 +148,11 @@ const (
 	// NoSignatureDeclaration leaves Signatures() at Base's nil: the format declares neither its signatures nor why it has none, check 18
 	// (and Register refuses it, so check 1 fails with it).
 	NoSignatureDeclaration Defect = "no-signature-declaration"
+	// GatesAttachment names a tarball's signature file an artifact, so that a gated repository would refuse the signature a client needs
+	// to verify the tarball: check 18 (signatures.md R-SIG-063).
+	GatesAttachment Defect = "gates-attachment"
+	// PassesArtifact names a tarball GateNone, so that a gated repository would serve it unsigned: check 18 (signatures.md R-SIG-063).
+	PassesArtifact Defect = "passes-artifact"
 )
 
 // Option adjusts the format; it is not a defect.

@@ -520,7 +520,7 @@ config:
   #       allowed_audiences: ["https://packages.example.com"]   # without it the base URL and npm:<host name>
   #       ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt  # example: an instance behind a private CA
   # The signatures on artifacts (docs/spec/signatures.md R-SIG-040). Every key has a default and is rendered only when set here; the
-  # chart reads enabled, which renders the three QuaderSignature* alerts. The anchors are declared in signatures.anchors (below
+  # chart reads enabled, which renders the four QuaderSignature* alerts. The anchors are declared in signatures.anchors (below
   # trustedCA), never here.
   # signatures:
   #   enabled: true                     # false: no signature is detected, checked or shown; the stored rows stay

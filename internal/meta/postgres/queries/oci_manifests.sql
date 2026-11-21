@@ -4,13 +4,25 @@
 
 -- name: OCIPutManifest :exec
 -- Records a manifest of an image name; one that is recorded already changes nothing (its row is a function of its bytes).
-INSERT INTO oci_manifests (repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut)
+INSERT INTO oci_manifests (repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut,
+                           attachment)
 VALUES (
   sqlc.arg(repo_id)::bigint, sqlc.arg(name)::text, sqlc.arg(digest)::bytea, sqlc.arg(media_type)::text,
   NULLIF(sqlc.arg(artifact_type)::text, ''), sqlc.narg(subject)::bytea, sqlc.arg(size)::bigint, sqlc.arg(content_size)::bigint,
-  sqlc.narg(annotations)::jsonb, sqlc.arg(annotations_cut)::boolean
+  sqlc.narg(annotations)::jsonb, sqlc.arg(annotations_cut)::boolean, sqlc.arg(attachment)::boolean
 )
 ON CONFLICT (repo_id, name, digest) DO NOTHING;
+
+-- name: OCIGateFacts :many
+-- What the signature gate asks of manifests of image names of a repository (signatures.md R-SIG-063): whether each is an attachment the
+-- format recognised at its commit, and the indexes of the name that list it. The rows of every asked name and every asked digest come
+-- back, and the caller keeps the pairs it asked for; a manifest that is not recorded has no row.
+SELECT m.name::text AS name, m.digest, m.attachment,
+       COALESCE((SELECT array_agg(r.manifest ORDER BY r.manifest)
+                   FROM oci_references r
+                  WHERE r.repo_id = m.repo_id AND r.name = m.name AND r.target = m.digest AND r.kind = 'manifest'), '{}')::bytea[] AS indexes
+  FROM oci_manifests m
+ WHERE m.repo_id = sqlc.arg(repo_id)::bigint AND m.digest = ANY(sqlc.arg(digests)::bytea[]) AND m.name = ANY(sqlc.arg(names)::text[]);
 
 -- name: OCISetIndexContentSize :exec
 -- Sets the content size of an index to the sum of its children's, saturated at the largest bigint (R-OCI-031, Q-OCI-130). The

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/signatures/gateset"
 )
 
 // The upstream rules of an Owner's write (R-AUTHZ-026, Q-REPO-127,
@@ -131,7 +132,19 @@ func restrictedVulnerabilities(c Caller, cur, nd *Document) error {
 		return errs.E(errs.Forbidden, errs.CodeMalwareWeakeningRefused,
 			"The write switches malware.onlyChecked off: that needs repositories:write-config or vulnerabilities:triage, which the role owner does not carry.")
 	}
+	if weakenedSignatures(cur, nd) {
+		return errs.E(errs.Forbidden, errs.CodeSignatureWeakeningRefused,
+			"The write weakens the repository's gate of signatures (signatures.onlyVerified switched off or more trust anchors accepted): "+
+				"that needs repositories:write-config or vulnerabilities:triage, which the role owner does not carry.")
+	}
 	return nil
+}
+
+// weakenedSignatures reports whether a write weakens the gate of signatures (R-SIG-061, the table of its order): the gate switched off, a
+// list of anchors replaced by any anchor, a reference added. An Owner may narrow it and may not weaken it, as the malware setting
+// (Q-MAL-31); a create is compared with the defaults and never weakens.
+func weakenedSignatures(cur, nd *Document) bool {
+	return gateset.Order(signatureGateOf(cur.Signatures), signatureGateOf(nd.Signatures)) == gateset.Weakens
 }
 
 // weakenedMalware reports whether a write switches the member malware.onlyChecked off (R-MAL-020, Q-MAL-31): a weakening as

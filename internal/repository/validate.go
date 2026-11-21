@@ -2,10 +2,14 @@ package repository
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"unicode/utf8"
+
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/signatures/gateset"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
@@ -133,7 +137,7 @@ func validateSections(v *validation, info catalog.Entry, d *Document) {
 	validateDeb(v, info, d)
 	validateAnsible(v, info, d)
 	validateVulnerabilities(v, info, d, na)
-	validateSignatures(d, na)
+	validateSignatures(v, info, d, na)
 	if len(d.Storage) > 0 {
 		trimmed := bytes.TrimSpace(d.Storage)
 		var probe map[string]json.RawMessage
@@ -258,13 +262,82 @@ func (v *validation) err() error {
 	return errs.E(errs.Invalid, code, detail, errs.WithFields(v.fields...))
 }
 
-// validateSignatures checks the member `signatures` (R-SIG-040): its one member, fetch, switches the background fetch of a remote's
-// signatures (R-SIG-026), so on a local or a virtual repository, which fetch nothing, it answers not_applicable at its pointer.
-func validateSignatures(d *Document, na func(pointer, why string)) {
-	if d.Signatures == nil || d.Signatures.Fetch == nil || d.Class == Remote {
+// validateSignatures checks the member `signatures` (R-SIG-040, R-SIG-061): fetch switches the background fetch of a remote's signatures
+// (R-SIG-026), so on a local or a virtual repository, which fetch nothing, it answers not_applicable at its pointer; the gate
+// (onlyVerified, anchors) applies to every class of every format but Debian, whose packages carry no signature of their publisher
+// (Q-SIG-80), and a reference names a scope and an anchor's key, at most 32 of them, none twice. Whether a reference names an anchor of
+// the repository's scope is checked against the anchors in the write's transaction (checkSignatureAnchors).
+func validateSignatures(v *validation, info catalog.Entry, d *Document, na func(pointer, why string)) {
+	m := d.Signatures
+	if m == nil {
 		return
 	}
-	na("/signatures/fetch", "the background fetch of signatures applies to remote repositories")
+	if m.Fetch != nil && d.Class != Remote {
+		na("/signatures/fetch", "the background fetch of signatures applies to remote repositories")
+	}
+	if string(info.ID) == debFormat {
+		if m.OnlyVerified != nil && *m.OnlyVerified {
+			na("/signatures/onlyVerified", "apt checks the signature of a Debian repository's index, not of a package: the gate is not offered")
+		}
+		if len(m.Anchors) > 0 {
+			na("/signatures/anchors", "apt checks the signature of a Debian repository's index, not of a package: the gate is not offered")
+		}
+		return
+	}
+	if len(m.Anchors) > gateset.MaxAnchors {
+		v.add("/signatures/anchors", codeInvalidValue, fmt.Sprintf("at most %d trust anchors can be accepted", gateset.MaxAnchors))
+		return
+	}
+	seen := map[string]bool{}
+	for i, ref := range m.Anchors {
+		at := fmt.Sprintf("/signatures/anchors/%d", i)
+		if _, _, ok := gateset.ParseRef(ref); !ok {
+			v.add(at, codeInvalidValue, "a trust anchor is named as <scope>/<key>, the scope one of shipped, configuration, installation and project")
+			continue
+		}
+		if seen[ref] {
+			v.add(at, codeInvalidValue, "the trust anchor "+ref+" is named twice")
+		}
+		seen[ref] = true
+	}
+}
+
+// checkSignatureAnchors refuses a reference of the member signatures.anchors that names no anchor of the repository's scope (R-SIG-061):
+// 422 invalid_value at its index. Only the references a write adds are checked: a reference to an anchor removed since it was stored
+// stays and matches nothing (fail closed).
+func checkSignatureAnchors(ctx context.Context, qs *q.Queries, v *validation, project string, cur, nd *Document) error {
+	if nd.Signatures == nil || len(nd.Signatures.Anchors) == 0 {
+		return nil
+	}
+	kept := map[string]bool{}
+	if cur != nil && cur.Signatures != nil {
+		for _, r := range cur.Signatures.Anchors {
+			kept[r] = true
+		}
+	}
+	var known map[string]bool
+	for i, ref := range nd.Signatures.Anchors {
+		if kept[ref] {
+			continue
+		}
+		if _, _, ok := gateset.ParseRef(ref); !ok {
+			continue // refused by validateSignatures
+		}
+		if known == nil {
+			refs, err := qs.SignatureGateAnchorRefs(ctx, project)
+			if err != nil {
+				return err
+			}
+			known = make(map[string]bool, len(refs))
+			for _, r := range refs {
+				known[r] = true
+			}
+		}
+		if !known[ref] {
+			v.add(fmt.Sprintf("/signatures/anchors/%d", i), codeInvalidValue, "no trust anchor "+ref+" exists in the repository's scope")
+		}
+	}
+	return nil
 }
 
 // validateVulnerabilities checks the member `vulnerabilities` (R-VULN-002, Q-VULN-26): it applies to local and remote

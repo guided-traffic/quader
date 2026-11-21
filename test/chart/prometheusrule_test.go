@@ -40,6 +40,7 @@ func alertSeverities() []alertSeverity {
 		{"QuaderSignatureInvalid", "warning"},
 		{"QuaderSignatureBacklog", "warning"},
 		{"QuaderSignatureTrustRootStale", "warning"},
+		{"QuaderSignatureGatePending", "warning"},
 		{"QuaderSigningIdentityExpiring", "warning"},
 		{"QuaderSigningIdentityExpired", "critical"},
 		{"QuaderSigningIdentityNotLoaded", "warning"},
@@ -143,8 +144,8 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			"QuaderValkeySentinelsDegraded": "5m", "QuaderValkeyFailoverFlapping": "", "QuaderValkeyPrimaryDisagreement": "5m",
 			"QuaderBackupCheckFailed": "1h", "QuaderRevocationJournalBacklog": "15m", "QuaderRevocationJournalQuarantined": "", "QuaderBackupStale": "", "QuaderBackupFailed": "", "QuaderBackupRunningLong": "",
 			"QuaderBackupGlobalHoldLong": "30m", "QuaderBackupSourceDamage": "", "QuaderBackupVerifyFindings": "",
-			// R-SIG-039's table.
-			"QuaderSignatureInvalid": "", "QuaderSignatureBacklog": "15m", "QuaderSignatureTrustRootStale": "1h",
+			// R-SIG-039's table and R-SIG-075's.
+			"QuaderSignatureInvalid": "", "QuaderSignatureBacklog": "15m", "QuaderSignatureTrustRootStale": "1h", "QuaderSignatureGatePending": "15m",
 			// R-SIG-057's table.
 			"QuaderSigningIdentityExpiring": "1h", "QuaderSigningIdentityExpired": "", "QuaderSigningIdentityNotLoaded": "15m", "QuaderSigningBacklog": "15m",
 		}
@@ -218,7 +219,8 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 				if strings.HasPrefix(m, "kube_") {
 					continue
 				}
-				base := strings.TrimSuffix(m, "_bucket")
+				// A histogram's series carry the suffixes _bucket, _count and _sum of the family the code registers.
+				base := strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(m, "_bucket"), "_count"), "_sum")
 				if !strings.Contains(src.String(), `"`+base+`"`) {
 					t.Errorf("%s reads %s, which no code of internal/ registers", str(r, "alert"), base)
 				}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -38,6 +39,21 @@ type SignatureCase struct {
 	// removes the subject of a committed sample the way a client does; the kit then holds that nothing is stored at Path any more.
 	// nil for a signature that stays when its subject goes (a generic file's sibling, a document's entry).
 	RemoveSubject func(h *Host) error
+}
+
+// GateCase is a stored item and what the format's Gate names of it (check 18, signatures.md R-SIG-063).
+type GateCase struct {
+	// Name says which row of the format's classification the case is.
+	Name string
+	// Seed stores the item and whatever the format's Gate reads of its data port; Path is the item the kit asks about.
+	Seed func(h *Host) error
+	Path string
+	// Class is the class of the repository; "" is local.
+	Class formats.Class
+	// Want is the kind Gate must name, and Covering the stored items whose digests a GateArtifact's Covering must hold (it may hold
+	// more); empty for none.
+	Want     formats.GateKind
+	Covering []string
 }
 
 // ContentOf serves bytes as the content of a [formats.SignatureEvent], for the kit and a format's own tests of its detector.
@@ -145,6 +161,61 @@ func (r *run) signatures() {
 		}
 		r.signatureCase(sa, c)
 	}
+	if len(r.fx.GateCases) == 0 {
+		r.failf("the format declares signature kinds and its fixture has no GateCases: every format names what the gate of a repository judges (R-SIG-063)")
+	}
+	for _, c := range r.fx.GateCases {
+		r.gateCase(sa, c)
+	}
+}
+
+// gateCase stores one item and asks Gate about it (R-SIG-063): the kind, and the covering items' digests for an artifact.
+func (r *run) gateCase(sa formats.SignatureAdapter, c GateCase) {
+	h := r.host(c.Class)
+	if c.Seed != nil {
+		if err := c.Seed(h); err != nil {
+			r.failf("gate case %q: the seed fails: %v", c.Name, err)
+			return
+		}
+	}
+	blob, ok := h.storedDigest(c.Path)
+	if !ok {
+		r.failf("gate case %q: nothing is stored at %q after the seed", c.Name, c.Path)
+		return
+	}
+	got, err := sa.Gate(context.Background(), h, h.Ref(), []formats.GateItem{{Path: c.Path, Blob: blob}})
+	if err != nil {
+		r.failf("gate case %q: Gate fails: %v", c.Name, err)
+		return
+	}
+	if len(got) != 1 {
+		r.failf("gate case %q: Gate answers %d subjects for one item", c.Name, len(got))
+		return
+	}
+	if got[0].Kind != c.Want {
+		r.failf("gate case %q: Gate names %s at %q, want %s (R-SIG-063)", c.Name, got[0].Kind, c.Path, c.Want)
+	}
+	for _, p := range c.Covering {
+		d, ok := h.storedDigest(p)
+		if !ok {
+			r.failf("gate case %q: nothing is stored at the covering %q", c.Name, p)
+			continue
+		}
+		if !slices.Contains(got[0].Covering, d) {
+			r.failf("gate case %q: Gate does not name %q as covering %q", c.Name, p, c.Path)
+		}
+	}
+}
+
+// storedDigest is the SHA-256 of the live item at p.
+func (h *Host) storedDigest(p string) ([32]byte, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	rec, ok := h.items[p]
+	if !ok || rec.removed || len(rec.digests.SHA256) != 32 {
+		return [32]byte{}, false
+	}
+	return [32]byte(rec.digests.SHA256), true
 }
 
 // signatureCase stores one sample, asks Detect and compares what it names with the case; then holds that no version names it.
@@ -261,6 +332,11 @@ func (r *run) signaturesNone(sa formats.SignatureAdapter) {
 			}
 			if got, _ := sa.Detect(context.Background(), ev); len(got) > 0 {
 				r.failf("the format declares no signatures and Detect names %d at %q", len(got), p)
+			}
+			blob, _ := h.storedDigest(p)
+			got, err := sa.Gate(context.Background(), h, h.Ref(), []formats.GateItem{{Path: p, Blob: blob}})
+			if err != nil || len(got) != 1 || got[0].Kind != formats.GateNone {
+				r.failf("the format declares no signatures and Gate does not answer GateNone at %q (R-SIG-063): %v %v", p, got, err)
 			}
 		}
 	}

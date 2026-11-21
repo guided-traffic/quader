@@ -56,6 +56,26 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 	}}
 }
 
+// Gate implements formats.SignatureAdapter (R-SIG-063): a version's tarball is the artifact, its provenance bundle a signature file the
+// core passes while its scheme was read, and nothing else a repository stores is an artifact of its own (the documents of a remote, its
+// keys and attestations).
+func (signatureAdapter) Gate(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.GateItem) ([]formats.GateSubject, error) {
+	out := make([]formats.GateSubject, len(items))
+	for i, it := range items {
+		dir, file, ok := strings.Cut(it.Path, "/-/")
+		if !ok || dir == "" || strings.Contains(file, "/") {
+			continue
+		}
+		switch {
+		case strings.HasSuffix(file, tarballSuffix):
+			out[i].Kind = formats.GateArtifact
+		case strings.HasSuffix(file, sigstoreSuffix):
+			out[i].Kind = formats.GateSignatureFile
+		}
+	}
+	return out, nil
+}
+
 // Detect implements formats.SignatureAdapter.
 func (a signatureAdapter) Detect(_ context.Context, ev formats.SignatureEvent) ([]formats.SignatureCandidate, error) {
 	p := ev.Path.Path

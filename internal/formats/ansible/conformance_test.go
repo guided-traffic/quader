@@ -32,6 +32,7 @@ func conformance(t testing.TB) formattest.Fixture {
 	const notLocal = "the role routes are served by remote and virtual repositories (R-ANS-014) and the kit's host is a local repository; the remote handlers are proven over HTTP in test/integration/ansibleremote"
 	return formattest.Fixture{
 		Signatures: signatureCases(t),
+		GateCases:  gateCases(),
 		Rejects:    []string{"v3/collections/%2e%2e/x/", "../v3/collections/acme/tools/", "v3/collections/acme/tools%00/"},
 		Paths: []formattest.PathCase{
 			{Path: "collections/acme/tools/acme-tools-1.0.0.tar.gz", Want: formats.PathInfo{Kind: formats.Content, Package: "acme.tools", Version: "1.0.0"}},

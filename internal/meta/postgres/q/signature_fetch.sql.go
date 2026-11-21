@@ -9,13 +9,14 @@ import (
 	"context"
 )
 
-const signatureFetchDone = `-- name: SignatureFetchDone :exec
+const signatureFetchDone = `-- name: SignatureFetchDone :many
 UPDATE signature_fetches
    SET queued_at = NULL,
        fetched_at = CASE WHEN $1::boolean THEN now() ELSE fetched_at END,
        attempts = CASE WHEN $1::boolean THEN 0 ELSE attempts END,
        failed_at = CASE WHEN $1::boolean THEN NULL ELSE failed_at END
  WHERE repo_id = $2::bigint AND target = $3::text
+RETURNING COALESCE(subject_sha256, ''::bytea)::bytea AS subject
 `
 
 type SignatureFetchDoneParams struct {
@@ -24,18 +25,35 @@ type SignatureFetchDoneParams struct {
 	Target  string
 }
 
-// The end of a run: the target is free again; a run that asked the upstream to the end is a fetch, which clears the failures.
-func (q *Queries) SignatureFetchDone(ctx context.Context, arg SignatureFetchDoneParams) error {
-	_, err := q.db.Exec(ctx, signatureFetchDone, arg.Fetched, arg.RepoID, arg.Target)
-	return err
+// The end of a run: the target is free again; a run that asked the upstream to the end is a fetch, which clears the failures. The
+// subject comes back for the signal a waiting download of stage 3's gate listens to (R-SIG-067).
+func (q *Queries) SignatureFetchDone(ctx context.Context, arg SignatureFetchDoneParams) ([][]byte, error) {
+	rows, err := q.db.Query(ctx, signatureFetchDone, arg.Fetched, arg.RepoID, arg.Target)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := [][]byte{}
+	for rows.Next() {
+		var subject []byte
+		if err := rows.Scan(&subject); err != nil {
+			return nil, err
+		}
+		items = append(items, subject)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-const signatureFetchFailed = `-- name: SignatureFetchFailed :exec
+const signatureFetchFailed = `-- name: SignatureFetchFailed :many
 UPDATE signature_fetches
    SET attempts = attempts + 1,
        queued_at = CASE WHEN $1::boolean THEN NULL ELSE queued_at END,
        failed_at = CASE WHEN $1::boolean THEN now() ELSE failed_at END
  WHERE repo_id = $2::bigint AND target = $3::text
+RETURNING COALESCE(subject_sha256, ''::bytea)::bytea AS subject
 `
 
 type SignatureFetchFailedParams struct {
@@ -46,9 +64,24 @@ type SignatureFetchFailedParams struct {
 
 // A run that failed: one failure more; the job's last attempt frees the target and marks it failed until the next fill or refresh
 // queues it again.
-func (q *Queries) SignatureFetchFailed(ctx context.Context, arg SignatureFetchFailedParams) error {
-	_, err := q.db.Exec(ctx, signatureFetchFailed, arg.Final, arg.RepoID, arg.Target)
-	return err
+func (q *Queries) SignatureFetchFailed(ctx context.Context, arg SignatureFetchFailedParams) ([][]byte, error) {
+	rows, err := q.db.Query(ctx, signatureFetchFailed, arg.Final, arg.RepoID, arg.Target)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := [][]byte{}
+	for rows.Next() {
+		var subject []byte
+		if err := rows.Scan(&subject); err != nil {
+			return nil, err
+		}
+		items = append(items, subject)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const signatureFetchForget = `-- name: SignatureFetchForget :exec

@@ -221,6 +221,9 @@ func (j *Job) RunTrust(ctx context.Context, run Run) error {
 		}); err != nil {
 			return fmt.Errorf("the trust step: %w", err)
 		}
+		if n > 0 && j.o.SignalAll != nil {
+			j.o.SignalAll() // a batch of trust rows committed: every waiting download of a gate reads again (R-SIG-067)
+		}
 		judged += int64(n)
 		if n < batch {
 			break

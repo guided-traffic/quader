@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/signatures/gateset"
 	"github.com/guided-traffic/quader/internal/vuln"
 )
 
@@ -206,7 +207,32 @@ func readNarrowed(o journal.Object) (e narrowedEntry, id int64, why string) {
 	if v := e.Vulnerabilities; v != nil && (len(v.Before.Validate()) > 0 || len(v.After.Validate()) > 0) {
 		return e, 0, "the vulnerabilities member holds an invalid value"
 	}
+	if why := checkSignaturesPart(e.Signatures); why != "" {
+		return e, 0, why
+	}
 	return e, id, ""
+}
+
+// checkSignaturesPart reads the part signatures as an update writes it (R-SIG-061): the gate on after the write, at most 32 references
+// of the form <scope>/<key> on each side.
+func checkSignaturesPart(c *signaturesChange) string {
+	if c == nil {
+		return ""
+	}
+	if !c.After.OnlyVerified {
+		return "the signatures part does not switch the gate on"
+	}
+	for _, list := range [][]string{c.Before.Anchors, c.After.Anchors} {
+		if len(list) > gateset.MaxAnchors {
+			return "a list of trust anchors is longer than a repository can hold"
+		}
+		for _, ref := range list {
+			if _, _, ok := gateset.ParseRef(ref); !ok {
+				return "a trust anchor is not named as <scope>/<key>"
+			}
+		}
+	}
+	return ""
 }
 
 func parseID(text string) (int64, bool) {
@@ -270,6 +296,7 @@ func (r *replayer) narrowed() (journal.Result, error) {
 		return journal.Result{}, err
 	}
 	r.malware(e.Malware)
+	r.signatures(e.Signatures)
 	if err := r.debUpstreamKeysRemoved(e.DebUpstreamKeysRemoved); err != nil {
 		return journal.Result{}, err
 	}
@@ -579,6 +606,33 @@ func (r *replayer) malware(m *MalwareSettings) {
 	r.set.Malware = &next
 	r.setMember("malware", next)
 	r.applied(partMalware)
+}
+
+// signatures replays the part signatures (R-SIG-061): the gate on, and of the restored anchors and the journaled ones the narrower (a
+// list before any anchor, of two lists the references in both); two lists without a common reference would mean any anchor, which
+// widens, so the repository is disabled instead (R-REPO-061). A member that says the same already leaves the part in effect.
+func (r *replayer) signatures(c *signaturesChange) {
+	if c == nil {
+		return
+	}
+	restored := signatureGateOf(r.set.Signatures)
+	next, disable := gateset.Narrower(restored, gateset.Setting{OnlyVerified: c.After.OnlyVerified, Anchors: c.After.Anchors})
+	if disable {
+		r.suspend(partSignatures)
+		return
+	}
+	if gateset.Equal(restored, next) {
+		return
+	}
+	m := SignatureSettings{}
+	if r.set.Signatures != nil {
+		m = *r.set.Signatures
+	}
+	on := true
+	m.OnlyVerified, m.Anchors = &on, next.Anchors
+	r.set.Signatures = &m
+	r.setMember("signatures", m)
+	r.applied(partSignatures)
 }
 
 // clientsOff replays the part clientsOff (R-REPO-075, Q-REPO-414): the switch "ClamAV definition updates" of a system repository is

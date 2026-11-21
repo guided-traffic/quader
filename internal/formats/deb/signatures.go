@@ -34,6 +34,12 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 	}}
 }
 
+// Gate implements formats.SignatureAdapter (R-SIG-063): no package of Debian carries a signature of its publisher, so a Debian repository
+// is not offered the gate (Q-SIG-80) and nothing it stores is judged.
+func (signatureAdapter) Gate(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.GateItem) ([]formats.GateSubject, error) {
+	return formats.GateNoneFor(items), nil
+}
+
 // Detect implements formats.SignatureAdapter.
 func (signatureAdapter) Detect(_ context.Context, ev formats.SignatureEvent) ([]formats.SignatureCandidate, error) {
 	if ev.Repo.Class != formats.Remote || !strings.HasPrefix(ev.Path.Path, dirDists+"/") {

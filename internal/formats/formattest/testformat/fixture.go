@@ -182,6 +182,18 @@ func Fixture() formattest.Fixture {
 				Role: formats.SignatureRolePublisher, Source: formats.SignatureSourceSibling, Location: "left-pad/-/left-pad-1.0.0.tgz.sig",
 			}},
 		}},
+		GateCases: []formattest.GateCase{
+			{Name: "a tarball is an artifact", Seed: publish("left-pad", "1.0.0"), Path: "left-pad/-/left-pad-1.0.0.tgz", Want: formats.GateArtifact},
+			{
+				Name: "a tarball's signature file is a signature file", Path: "left-pad/-/left-pad-1.0.0.tgz.sig", Want: formats.GateSignatureFile,
+				Seed: func(h *formattest.Host) error {
+					_, err := h.Ingest().Commit(context.Background(), nil, formattest.Spool(SignatureSample()), formats.Commit{
+						Path: formats.Path{Path: "left-pad/-/left-pad-1.0.0.tgz.sig"}, MediaType: "application/pgp-signature",
+					})
+					return err
+				},
+			},
+		},
 		Skip: map[formattest.Check]string{
 			formattest.CheckView: "the test format has no package screens; the kit's own tests give it a view adapter (kit_view_test.go)",
 		},

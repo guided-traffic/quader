@@ -27,6 +27,7 @@ type Signatures struct {
 
 	Remote    SignaturesRemote    `yaml:"remote"`
 	TrustRoot SignaturesTrustRoot `yaml:"trust_root"`
+	Gate      SignaturesGate      `yaml:"gate"`
 
 	// Anchors is keyed by the anchor's key, which is unique in the scope configuration (R-SIG-015), the way auth.oidc.providers is keyed
 	// by the provider ID (Q-AUTH-30): a map of structs may nest, a list element may not (R-ARCH-020).
@@ -38,6 +39,16 @@ type SignaturesRemote struct {
 	MaxManifestsPerSubject int           `yaml:"max_manifests_per_subject" default:"4" validate:"min=0,max=64" doc:"OCI signature and attestation manifests fetched per image in the background, signature types first (R-SIG-026); each GET of one counts against the upstream's pull limit where the upstream has one. 0 fetches none."`
 	RefreshAfter           time.Duration `yaml:"refresh_after" default:"24h" validate:"min=1m,max=8760h" doc:"An image's signatures are asked for again when a client's revalidation finds its tag unchanged and the last fetch is older than this, so a signature added upstream after the image was cached arrives within this span of use (R-SIG-026)."`
 	RequestsPerHour        int           `yaml:"requests_per_hour" default:"600" validate:"min=1,max=1000000" doc:"Background requests for signatures one replica sends to one remote per hour; what is above it waits for the next hour (R-SIG-026, H-1173). A client's own requests do not count."`
+}
+
+// SignaturesGate is the gate per repository of stage 3 (R-SIG-067, R-SIG-071 to R-SIG-073, R-SIG-076): how long a gated download waits
+// for the checks of its signatures, how many waits a replica holds, the bound of a preview and an impact count, and how long a refused
+// download stays listed. No chart value is needed: the keys take their defaults here.
+type SignaturesGate struct {
+	DownloadWait      time.Duration `yaml:"download_wait" default:"25s" validate:"min=0s,max=60s" doc:"How long a download from a repository that serves only artifacts with a verified signature waits for the checks of its signatures (and the background fetch of a remote), counted from the request's arrival (R-SIG-067); then 503 signature_check_pending with Retry-After. One wait shared with a pending malware scan of the same request; the default keeps the answer inside apt's 30-second timeout."`
+	MaxWaiting        int           `yaml:"max_waiting" default:"512" validate:"min=1,max=65536" doc:"Downloads one replica holds waiting for the checks of their signatures; a further one is answered 503 signature_check_pending at once (R-SIG-067)."`
+	PreviewLimit      int           `yaml:"preview_limit" default:"100000" validate:"min=1000,max=10000000" doc:"Rows or items one preview of a repository's gate or one impact count of a change of anchors reads; beyond it the answer says complete: false and its counts are lower bounds (R-SIG-071, R-SIG-072)."`
+	RefusalsRetention time.Duration `yaml:"refusals_retention" default:"720h" validate:"min=1h,max=8760h" doc:"How long a download a gate refused stays in the list of refused downloads after its last refusal; the discovery step of the job signature-verify removes older rows (R-SIG-073)."`
 }
 
 // SignaturesTrustRoot is the refresh of the public Sigstore root and npm's registry keys (R-SIG-017).

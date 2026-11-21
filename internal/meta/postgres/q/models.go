@@ -1029,6 +1029,7 @@ type OciManifest struct {
 	Annotations    json.RawMessage
 	AnnotationsCut bool
 	CreatedAt      pgtype.Timestamptz
+	Attachment     bool
 }
 
 type OciReference struct {
@@ -1357,19 +1358,20 @@ type Signature struct {
 }
 
 type SignatureAnchor struct {
-	ID        int64
-	Scope     string
-	ProjectID pgtype.UUID
-	Key       string
-	Title     string
-	Kind      string
-	Material  json.RawMessage
-	Enabled   bool
-	Note      pgtype.Text
-	Version   int64
-	CreatedAt pgtype.Timestamptz
-	CreatedBy pgtype.UUID
-	UpdatedAt pgtype.Timestamptz
+	ID            int64
+	Scope         string
+	ProjectID     pgtype.UUID
+	Key           string
+	Title         string
+	Kind          string
+	Material      json.RawMessage
+	Enabled       bool
+	Note          pgtype.Text
+	Version       int64
+	CreatedAt     pgtype.Timestamptz
+	CreatedBy     pgtype.UUID
+	UpdatedAt     pgtype.Timestamptz
+	NarrowedEpoch int64
 }
 
 type SignatureAttachment struct {
@@ -1383,13 +1385,14 @@ type SignatureAttachment struct {
 }
 
 type SignatureBlock struct {
-	ID        int64
-	Kind      string
-	Value     string
-	Issuer    pgtype.Text
-	Reason    string
-	CreatedAt pgtype.Timestamptz
-	CreatedBy pgtype.UUID
+	ID          int64
+	Kind        string
+	Value       string
+	Issuer      pgtype.Text
+	Reason      string
+	CreatedAt   pgtype.Timestamptz
+	CreatedBy   pgtype.UUID
+	AnchorEpoch int64
 }
 
 type SignatureFetch struct {
@@ -1412,6 +1415,16 @@ type SignatureObject struct {
 	Locator     pgtype.Text
 	Size        int64
 	FirstSeenAt pgtype.Timestamptz
+}
+
+type SignatureRefusal struct {
+	RepoID        int64
+	SubjectSha256 []byte
+	Path          string
+	Reason        string
+	FirstAt       pgtype.Timestamptz
+	LastAt        pgtype.Timestamptz
+	Count         int64
 }
 
 type SignatureSetting struct {

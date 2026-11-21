@@ -424,6 +424,23 @@ tests:
               summary: A local npm version has waited more than five minutes for Quader's registry signature.
               description: The job signing does not keep up or does not run (R-SIG-049, R-SIG-057); until a version is signed, npm audit signatures reports it missing. Check that a worker claims the queue signing (jobs.workers.signing), quader_signing_identity_loaded and quader_signing_operations_total by result; raise config.signing.concurrency if operations finish but too slowly.
 
+  # --- QuaderSignatureGatePending (R-SIG-075) ----------------------------------------------------------------
+  - name: QuaderSignatureGatePending fires when gated downloads keep getting 503 and is quiet without pending waits
+    interval: 1m
+    input_series:
+      - {series: 'quader_signatures_download_wait_seconds_count{namespace="default",outcome="served",pod="p1"}', values: '0+2x120'}
+      - {series: 'quader_signatures_download_wait_seconds_count{namespace="default",outcome="pending",pod="p1"}', values: '0x10 1+1x110'}
+    alert_rule_test:
+      - {eval_time: 10m, alertname: QuaderSignatureGatePending, exp_alerts: []}
+      - {eval_time: 20m, alertname: QuaderSignatureGatePending, exp_alerts: []}
+      - eval_time: 30m
+        alertname: QuaderSignatureGatePending
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: Clients of a repository that serves only verified artifacts get 503 because the signature checks do not keep up.
+              description: Downloads from repositories that serve only artifacts with a verified signature waited for the checks of their signatures and got 503 signature_check_pending, because the checks or the background fetch of a remote's signatures did not decide within config.signatures.gate.download_wait (R-SIG-067, R-SIG-075). Check that a worker claims the queues signatures and index (jobs.workers), the alert QuaderSignatureBacklog, quader_signatures_backlog and the upstream of the remote; Docker and ansible-galaxy do not retry the 503 themselves (H-1200).
+
   # --- QuaderVulnerabilityClaimedNameMalicious -------------------------------------------------------------
   - name: QuaderVulnerabilityClaimedNameMalicious fires on a malicious match and not on a vulnerability match
     interval: 1m

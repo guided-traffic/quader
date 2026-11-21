@@ -11,11 +11,6 @@ func (h *Host) Markup() formats.Markup {
 	return h.o.Markup
 }
 
-// Signatures implements [formats.Host]: the verdicts the composition root wired (Options.Verdicts), or [formats.NoSignatureVerdicts] for
-// a replica without the trust step (signatures.md R-SIG-028).
-func (h *Host) Signatures() formats.SignatureVerdicts {
-	if h.o.Verdicts == nil {
-		return formats.NoSignatureVerdicts
-	}
-	return h.o.Verdicts
-}
+// Signatures implements [formats.Host]: the verdicts the composition root wired (Options.Verdicts; nothing is vouched for without
+// them, signatures.md R-SIG-028), and the signature gate of a stored document a format serves without the item store (R-SIG-064).
+func (h *Host) Signatures() formats.SignatureVerdicts { return hostSignatures{h: h} }

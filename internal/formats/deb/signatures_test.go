@@ -48,6 +48,21 @@ func signatureCases(t testing.TB) []formattest.SignatureCase {
 	return []formattest.SignatureCase{{Kind: "release signature", Path: p, Body: in, MediaType: "text/plain", Want: []formats.SignatureCandidate{want(0), want(1)}}}
 }
 
+// gateCases is check 18's classification of Debian (R-SIG-063, Q-SIG-80): no package carries its publisher's signature, so nothing a
+// Debian repository stores is judged, a package as little as an index. Milliseconds.
+func gateCases() []formattest.GateCase {
+	put := func(p string) func(h *formattest.Host) error {
+		return func(h *formattest.Host) error {
+			h.PutItem(p, "application/octet-stream", []byte("bytes of "+p))
+			return nil
+		}
+	}
+	return []formattest.GateCase{
+		{Name: "a package is no artifact the gate judges", Seed: put(poolPath("1.0-1")), Path: poolPath("1.0-1"), Want: formats.GateNone},
+		{Name: "a release is none", Seed: put("dists/stable/InRelease"), Path: "dists/stable/InRelease", Want: formats.GateNone},
+	}
+}
+
 func detectDeb(t *testing.T, class formats.Class, p string, body []byte) []formats.SignatureCandidate {
 	t.Helper()
 	sum := sha256.Sum256(body)

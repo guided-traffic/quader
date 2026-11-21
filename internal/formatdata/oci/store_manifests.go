@@ -60,6 +60,7 @@ func (s *Store) PutManifest(ctx context.Context, tx meta.Tx, in rows.ManifestInp
 	if err := qs.OCIPutManifest(ctx, q.OCIPutManifestParams{
 		RepoID: in.RepoID, Name: in.Name, Digest: in.Digest[:], MediaType: in.MediaType, ArtifactType: in.ArtifactType,
 		Subject: subject, Size: in.Size, ContentSize: in.ContentSize, Annotations: annotations, AnnotationsCut: in.AnnotationsCut,
+		Attachment: in.Attachment,
 	}); err != nil {
 		return err
 	}
@@ -125,6 +126,7 @@ func manifestRow(m q.OciManifest) rows.Manifest {
 	out := rows.Manifest{
 		RepoID: m.RepoID, Name: m.Name, MediaType: m.MediaType, ArtifactType: m.ArtifactType.String, Size: m.Size,
 		ContentSize: m.ContentSize, Annotations: m.Annotations, AnnotationsCut: m.AnnotationsCut, CreatedAt: m.CreatedAt.Time,
+		Attachment: m.Attachment,
 	}
 	copy(out.Digest[:], m.Digest)
 	if len(m.Subject) == 32 {

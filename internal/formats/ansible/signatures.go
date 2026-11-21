@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
 	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
@@ -49,6 +50,18 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 type signatureEntry struct {
 	Signature      string          `json:"signature"`
 	SigningService json.RawMessage `json:"signing_service"`
+}
+
+// Gate implements formats.SignatureAdapter (R-SIG-063): a collection archive and a role archive are the artifacts; the documents a
+// remote stores are none of their own.
+func (a signatureAdapter) Gate(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.GateItem) ([]formats.GateSubject, error) {
+	out := make([]formats.GateSubject, len(items))
+	for i, it := range items {
+		if strings.HasSuffix(it.Path, collection.ArchiveSuffix) && a.f.Classify(formats.Path{Path: it.Path}).Kind == formats.Content {
+			out[i].Kind = formats.GateArtifact
+		}
+	}
+	return out, nil
 }
 
 // Detect implements formats.SignatureAdapter: a remote's version document names each of its signatures with the archive its

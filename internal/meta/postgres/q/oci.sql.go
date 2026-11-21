@@ -13,7 +13,7 @@ import (
 
 const oCIGetManifest = `-- name: OCIGetManifest :one
 
-SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at
+SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at, attachment
 FROM oci_manifests
 WHERE repo_id = $1::bigint AND name = $2::text AND digest = $3::bytea
 `
@@ -43,6 +43,7 @@ func (q *Queries) OCIGetManifest(ctx context.Context, arg OCIGetManifestParams) 
 		&i.Annotations,
 		&i.AnnotationsCut,
 		&i.CreatedAt,
+		&i.Attachment,
 	)
 	return i, err
 }
@@ -108,7 +109,7 @@ func (q *Queries) OCIListReferences(ctx context.Context, arg OCIListReferencesPa
 }
 
 const oCIListReferrers = `-- name: OCIListReferrers :many
-SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at
+SELECT repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut, created_at, attachment
 FROM oci_manifests
 WHERE repo_id = $1::bigint AND name = $2::text AND subject = $3::bytea
   AND ($4::text = '' OR artifact_type = $4::text)
@@ -158,6 +159,7 @@ func (q *Queries) OCIListReferrers(ctx context.Context, arg OCIListReferrersPara
 			&i.Annotations,
 			&i.AnnotationsCut,
 			&i.CreatedAt,
+			&i.Attachment,
 		); err != nil {
 			return nil, err
 		}

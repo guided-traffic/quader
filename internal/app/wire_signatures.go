@@ -5,11 +5,13 @@ import (
 	"time"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/qname"
+	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 	"github.com/guided-traffic/quader/internal/signatures/job"
 	"github.com/guided-traffic/quader/internal/signatures/scheme"
 	sigstore "github.com/guided-traffic/quader/internal/signatures/store"
@@ -35,6 +37,8 @@ type signaturesArea struct {
 	// job is the jobs on a role that runs jobs, metrics their metrics (also the counter the background fetch reports to).
 	job     *job.Job
 	metrics *job.Metrics
+	// gate is the gate per repository of stage 3 (R-SIG-064), which the format host and /files/ ask; nil while the signatures are off.
+	gate *sgate.Gate
 }
 
 // signaturePorts is what the format data ports take of the signatures' configuration (R-SIG-040): the bounds of the store an
@@ -66,7 +70,7 @@ func (p signaturePorts) storeOptions(db meta.Runner) sigstore.Options {
 // wireSignatures builds the store with the bounds and the wake-ups of the configuration, and the jobs on a role that runs jobs. The
 // discovery of items stored before stage 1 runs through the format host's discoverer, bound at run time, because the format area is
 // built after this one.
-func (a *App) wireSignatures(_ context.Context, in infra) (signaturesArea, error) {
+func (a *App) wireSignatures(ctx context.Context, in infra) (signaturesArea, error) {
 	cfg := a.cfg.Signatures
 	if !cfg.Enabled || in.db == nil {
 		return signaturesArea{}, nil
@@ -83,6 +87,11 @@ func (a *App) wireSignatures(_ context.Context, in infra) (signaturesArea, error
 		so.Changes = in.changes
 	}
 	out := signaturesArea{store: sigstore.New(so)}
+	g, err := a.newSignatureGate(ctx, in, out.store)
+	if err != nil {
+		return signaturesArea{}, err
+	}
+	out.gate = g
 	if !a.sub.JobLoops {
 		return out, nil
 	}
@@ -98,7 +107,10 @@ func (a *App) wireSignatures(_ context.Context, in infra) (signaturesArea, error
 			MaxObjectSize: int64(cfg.MaxObjectSize), MaxChain: cfg.MaxChain, MaxContentSize: int64(cfg.MaxContentSize),
 		},
 		TrustRoot: job.TrustRootOptions{Refresh: cfg.TrustRoot.Refresh, URL: cfg.TrustRoot.URL},
-		Metrics:   m, Log: a.log.With("component", "signatures-job"),
+		// Stage 3: the refused downloads' retention, and the signal a download waiting at a gate hears (R-SIG-067, R-SIG-073).
+		RefusalsRetention: cfg.Gate.RefusalsRetention,
+		Signal:            signatureVerdictSignal(in.signals), SignalAll: signatureVerdictSignalAll(in.signals),
+		Metrics: m, Log: a.log.With("component", "signatures-job"),
 	}
 	if in.out != nil {
 		o.Client = in.out.Client(outbound.PurposeSignatureTrustRoot)
@@ -197,7 +209,7 @@ func (a *App) signatureCoverage(ctx context.Context, repoID int64, repo qname.Re
 // signatureVerdicts is the trust step as a format asks it before it serves a signature (formats.SignatureVerdicts, R-SIG-028): an npm
 // local repository serves a provenance bundle only when the stored verdicts say npm would verify it. It answers nothing while the
 // signatures are off; the host then vouches for nothing (formats.NoSignatureVerdicts).
-func (a *App) signatureVerdicts() formats.SignatureVerdicts {
+func (a *App) signatureVerdicts() formathost.ProvenanceVerdicts {
 	sg := part[signaturesArea](a.parts)
 	if sg.store == nil {
 		return nil
@@ -205,12 +217,12 @@ func (a *App) signatureVerdicts() formats.SignatureVerdicts {
 	return storeVerdicts{st: sg.store}
 }
 
-// storeVerdicts answers formats.SignatureVerdicts from the signature store.
+// storeVerdicts answers the provenance verdicts of formats.SignatureVerdicts from the signature store.
 type storeVerdicts struct{ st *sigstore.Store }
 
-var _ formats.SignatureVerdicts = storeVerdicts{}
+var _ formathost.ProvenanceVerdicts = storeVerdicts{}
 
-// PublicProvenance implements [formats.SignatureVerdicts].
+// PublicProvenance implements [formathost.ProvenanceVerdicts].
 func (v storeVerdicts) PublicProvenance(ctx context.Context, repo formats.RepoRef, paths []string) (map[string]string, error) {
 	return v.st.PublicProvenance(ctx, repo.ID, paths)
 }

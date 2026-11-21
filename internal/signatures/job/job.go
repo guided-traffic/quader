@@ -84,6 +84,8 @@ type Store interface {
 
 	StoreTrustRoot(ctx context.Context, r shipped.Refreshed) (bool, error)
 	TrustRootFailed(ctx context.Context, code, detail string) error
+
+	ExpireRefusals(ctx context.Context, tx meta.Tx, retention time.Duration) (int64, error)
 }
 
 var _ Store = (*store.Store)(nil)
@@ -114,10 +116,17 @@ type Options struct {
 	Limits       scheme.Limits
 	TrustRoot    TrustRootOptions
 	// Client fetches the TUF repository through the outbound client and its egress rules.
-	Client  *http.Client
-	Metrics *Metrics
-	Log     *slog.Logger
-	Now     func() time.Time
+	Client *http.Client
+	// RefusalsRetention is signatures.gate.refusals_retention: discovery removes the refused downloads of stage 3 older than it
+	// (R-SIG-073); zero keeps them.
+	RefusalsRetention time.Duration
+	// Signal, when set, is told the subject of a signature whose verdict a run committed, and SignalAll that a batch of the trust step
+	// committed: the signal area signature_verdict that wakes a download waiting at a repository's gate (stage 3, R-SIG-067).
+	Signal    func(subject [32]byte)
+	SignalAll func()
+	Metrics   *Metrics
+	Log       *slog.Logger
+	Now       func() time.Time
 }
 
 // Job is the jobs of signatures on artifacts.
@@ -198,6 +207,9 @@ func (j *Job) RunVerify(ctx context.Context, run Run) error {
 	if err != nil {
 		return fmt.Errorf("the daily retry of failed signatures: %w", err)
 	}
+	if err := j.expireRefusals(ctx); err != nil {
+		return err
+	}
 	sc, err := j.scopes(ctx)
 	if err != nil {
 		return err
@@ -266,6 +278,26 @@ func (j *Job) discover(ctx context.Context, deadline time.Time) (bool, error) {
 			return false, fmt.Errorf("discovery's cursor: %w", err)
 		}
 		after = last
+	}
+}
+
+// expireRefusals removes the refused downloads of stage 3 whose last refusal is older than signatures.gate.refusals_retention (R-SIG-073).
+func (j *Job) expireRefusals(ctx context.Context) error {
+	if j.o.RefusalsRetention <= 0 {
+		return nil
+	}
+	return j.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		if _, err := j.o.Store.ExpireRefusals(ctx, tx, j.o.RefusalsRetention); err != nil {
+			return fmt.Errorf("the removal of old refused downloads: %w", err)
+		}
+		return nil
+	})
+}
+
+// signal tells a waiting download of a gate that a verdict of its subject committed.
+func (j *Job) signal(subject [32]byte) {
+	if j.o.Signal != nil {
+		j.o.Signal(subject)
 	}
 }
 
@@ -395,7 +427,11 @@ func (w *work) one(ctx context.Context, c store.Check) error {
 		return w.transient(ctx, c, err)
 	}
 	j.o.Metrics.check(c.Object.Scheme, string(out.Result.State), j.o.Now().Sub(started))
-	return j.o.DB.InTx(ctx, func(tx meta.Tx) error { return w.write(ctx, tx, c, in.ReceivedAt, out) })
+	if err := j.o.DB.InTx(ctx, func(tx meta.Tx) error { return w.write(ctx, tx, c, in.ReceivedAt, out) }); err != nil {
+		return err
+	}
+	j.signal(c.Signature.Subject)
+	return nil
 }
 
 // input is the check's input: the row, its object and subject, and the keys and roots of every scope (R-SIG-006), with the keys the
@@ -432,12 +468,18 @@ func (w *work) transient(ctx context.Context, c store.Check, cause error) error 
 	attempts := c.Signature.Attempts + 1
 	j.o.Log.WarnContext(ctx, "a signature check could not run", "signature", c.Signature.ID, "scheme", c.Object.Scheme,
 		"attempt", attempts, "error", cause)
-	return j.o.DB.InTx(ctx, func(tx meta.Tx) error {
+	if err := j.o.DB.InTx(ctx, func(tx meta.Tx) error {
 		if attempts >= j.o.MaxAttempts {
 			return j.o.Store.Defer(ctx, tx, c.Signature.ID, 1, time.Time{}, false, signatures.StateFailed, "")
 		}
 		return j.o.Store.Defer(ctx, tx, c.Signature.ID, 1, j.o.Now().Add(Backoff(attempts)), true, signatures.StatePending, "")
-	})
+	}); err != nil {
+		return err
+	}
+	if attempts >= j.o.MaxAttempts {
+		j.signal(c.Signature.Subject) // failed: a gate refuses it as not_checked now
+	}
+	return nil
 }
 
 // write stores a check's verdict with its evidence, adds the rows of the object's other parts, computes the signature's trust rows at

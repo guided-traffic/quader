@@ -189,3 +189,36 @@ func TestR_SIG_018_TheShapeOfADeclaredAnchorIsChecked(t *testing.T) {
 		})
 	}
 }
+
+// TestR_SIG_076_TheGateKeysHaveTheirDefaultsAndBounds: the four keys of signatures.gate with their defaults, and each refusal of the
+// validation with the key named; the edges of each bound are accepted.
+func TestR_SIG_076_TheGateKeysHaveTheirDefaultsAndBounds(t *testing.T) {
+	l, err := loadSignatures(t, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g := l.Config.Signatures.Gate; g.DownloadWait != 25*time.Second || g.MaxWaiting != 512 || g.PreviewLimit != 100000 ||
+		g.RefusalsRetention != 720*time.Hour {
+		t.Errorf("gate %+v", g)
+	}
+	for file, key := range map[string]string{
+		"signatures:\n  gate:\n    download_wait: 61s\n":        "signatures.gate.download_wait",
+		"signatures:\n  gate:\n    max_waiting: 0\n":            "signatures.gate.max_waiting",
+		"signatures:\n  gate:\n    max_waiting: 65537\n":        "signatures.gate.max_waiting",
+		"signatures:\n  gate:\n    preview_limit: 999\n":        "signatures.gate.preview_limit",
+		"signatures:\n  gate:\n    preview_limit: 10000001\n":   "signatures.gate.preview_limit",
+		"signatures:\n  gate:\n    refusals_retention: 59m\n":   "signatures.gate.refusals_retention",
+		"signatures:\n  gate:\n    refusals_retention: 8761h\n": "signatures.gate.refusals_retention",
+	} {
+		if _, err := loadSignatures(t, file); err == nil || !strings.Contains(err.Error(), key) {
+			t.Errorf("%q: %v, want %s named", file, err, key)
+		}
+	}
+	l, err = loadSignatures(t, "signatures:\n  gate:\n    download_wait: 0s\n    max_waiting: 65536\n    preview_limit: 1000\n    refusals_retention: 1h\n")
+	if err != nil {
+		t.Fatalf("the edges: %v", err)
+	}
+	if g := l.Config.Signatures.Gate; g.DownloadWait != 0 || g.MaxWaiting != 65536 || g.PreviewLimit != 1000 || g.RefusalsRetention != time.Hour {
+		t.Errorf("edges %+v", g)
+	}
+}

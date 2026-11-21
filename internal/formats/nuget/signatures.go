@@ -57,6 +57,34 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 	}}
 }
 
+// Gate implements formats.SignatureAdapter (R-SIG-063): a version's .nupkg is the artifact; its .snupkg is one too and passes on the
+// .nupkg of the same ID and version in the repository, which carries the author's signature (Q-SIG-81); what Quader derives from a
+// package (the .nuspec, the embedded files, the symbol files) is no artifact of its own.
+func (signatureAdapter) Gate(ctx context.Context, h formats.Host, repo formats.RepoRef, items []formats.GateItem) ([]formats.GateSubject, error) {
+	out := make([]formats.GateSubject, len(items))
+	for i, it := range items {
+		segs := strings.Split(it.Path, "/")
+		if len(segs) != 3 {
+			continue
+		}
+		pkg, ver, file := segs[0], segs[1], segs[2]
+		switch file {
+		case NupkgFile(pkg, ver):
+			out[i].Kind = formats.GateArtifact
+		case SnupkgFile(pkg, ver):
+			out[i].Kind = formats.GateArtifact
+			lead, found, err := h.Items().Stat(ctx, repo, formats.Path{Path: NupkgPath(pkg, ver)})
+			if err != nil {
+				return nil, err
+			}
+			if found && len(lead.Digests.SHA256) == 32 {
+				out[i].Covering = [][32]byte{[32]byte(lead.Digests.SHA256)}
+			}
+		}
+	}
+	return out, nil
+}
+
 // Detect implements formats.SignatureAdapter: a committed .nupkg (a push, a fill) is read once for its central directory; a package
 // with a signature entry names the primary signature as part 0 and each countersignature as part 1, 2, … (R-SIG-029). The read
 // confirms the roles and the parts it finds (R-SIG-005).

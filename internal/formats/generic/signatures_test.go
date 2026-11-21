@@ -51,6 +51,23 @@ func signatureCases(t testing.TB) []formattest.SignatureCase {
 	}}
 }
 
+// gateCases is check 18's classification of generic (R-SIG-063): every file is an artifact, a file named like a signature of the file
+// beside it a signature file. Milliseconds, bytes of the test.
+func gateCases() []formattest.GateCase {
+	put := func(p string) func(h *formattest.Host) error {
+		return func(h *formattest.Host) error {
+			h.PutItem(p, "application/octet-stream", []byte("bytes of "+p))
+			return nil
+		}
+	}
+	return []formattest.GateCase{
+		{Name: "a file is an artifact", Seed: put("tools/tool.tar.gz"), Path: "tools/tool.tar.gz", Want: formats.GateArtifact},
+		{Name: "an .asc beside a file is a signature file", Seed: put("tools/tool.tar.gz.asc"), Path: "tools/tool.tar.gz.asc", Want: formats.GateSignatureFile},
+		{Name: "a .sigstore.json is a signature file", Seed: put("tools/tool.tar.gz.sigstore.json"), Path: "tools/tool.tar.gz.sigstore.json", Want: formats.GateSignatureFile},
+		{Name: "a Notation .jws.sig is a signature file", Seed: put("tools/tool.jws.sig"), Path: "tools/tool.jws.sig", Want: formats.GateSignatureFile},
+	}
+}
+
 func detect(t *testing.T, p string, body []byte) []formats.SignatureCandidate {
 	t.Helper()
 	sum := sha256.Sum256(body)

@@ -173,6 +173,77 @@ than every snapshot to come ([00100_signature_trust_names](../../internal/meta/p
 No end-to-end leg and no client image. The integration shards gain about 13 s (`signatures`), 2 s (`backup`) and 4 s (`npm`); the unit leg
 about 15 s; the chart leg about 1 s. With 25 formats the cost is the same: the core is format-neutral.
 
+## Stage 3, package 1: the gate per repository (built)
+
+A repository whose member `signatures.onlyVerified` is on serves an artifact only when a signature of its publisher or its build, attached
+where the repository sees it, is verified by an anchor it accepts (R-SIG-061 to R-SIG-069, R-SIG-075, R-SIG-076; the decisions Q-SIG-75 to
+Q-SIG-95 and Q-SIG-131 to Q-SIG-144 of the specification). Releases, the preview, the impact count, their API and the Bastion's feed are
+package 2's; the screens package 3's.
+
+| What | Where |
+|---|---|
+| The member: `repository.SignatureSettings.OnlyVerified` and `.Anchors`, the snapshot's `Repository.SignatureGate()`, `validateSignatures` (Debian `422 not_applicable`, the references' form, at most 32), `checkSignatureAnchors` (a reference a write adds must name an anchor of the scope, `SignatureGateAnchorRefs`), `weakenedSignatures` (`403 signature_weakening_refused` for an Owner, `block: lifted`), the part `signatures` of `repository.narrowed` and its replay | [document.go](../../internal/repository/document.go), [validate.go](../../internal/repository/validate.go), [delegated.go](../../internal/repository/delegated.go), [narrowed.go](../../internal/repository/narrowed.go), [journal_replay.go](../../internal/repository/journal_replay.go) |
+| The order of a change and the replay's narrower, with no import of the module | [gateset/setting.go](../../internal/signatures/gateset/setting.go) |
+| The decision of one gate (`Judge`), the replica's snapshot and the subtraction of a narrowing (`Snapshot.Subtract`, `Chosen`) | [gate/decide.go](../../internal/signatures/gate/decide.go), [gate/snapshot.go](../../internal/signatures/gate/snapshot.go) |
+| The gate of the serve points: `Applies`, `Decide`, `Refuse`, `Check`, the answers, the event and the list of refused downloads, `Signal`, `Stop`; the wait (`Begin`, `Wait`); the metrics | [gate/gate.go](../../internal/signatures/gate/gate.go), [gate/wait.go](../../internal/signatures/gate/wait.go), [gate/metrics.go](../../internal/signatures/gate/metrics.go) |
+| One decision, one wait of the three checks (`Serve`) | [gate/serve.go](../../internal/signatures/gate/serve.go) |
+| The store's reads and writes (`GateRows`, `GateFetches`, `GateObjectsRead`, `GateSnapshot`, `GatePrioritize`, `RecordRefusal`, `ExpireRefusals`) | [store/gate.go](../../internal/signatures/store/gate.go), [queries/signature_gate.sql](../../internal/meta/postgres/queries/signature_gate.sql), migration 00102 ([database.md](database.md#the-gate-per-repository-of-the-signatures-00102)) |
+| The epochs of a narrowing: `UpdateAnchor` and `quader migrate` set `narrowed_epoch`, `CreateBlock` the block's `anchor_epoch` | [store/anchors.go](../../internal/signatures/store/anchors.go), [store/declared.go](../../internal/signatures/store/declared.go), [store/blocks.go](../../internal/signatures/store/blocks.go) |
+| The contract: `SignatureAdapter.Gate`, `GateKind`, `GateItem`, `GateSubject`, `GateNoneFor`, `SignatureVerdicts.Refuse`; `ContractVersion` 9; kit check 18's `GateCases`, check 17's two answers | [formats/signatures.go](../../internal/formats/signatures.go), [checks_signatures.go](../../internal/formats/formattest/checks_signatures.go), [checks_malware.go](../../internal/formats/formattest/checks_malware.go) |
+| Each format's classification | `internal/formats/<id>/signatures.go` `Gate`; OCI [signatures_gate.go](../../internal/formats/oci/signatures_gate.go) with `IsAttachment` and the data port's `GateFacts` |
+| The serve points: the format host's `serveChecks`, `gateDownload`, `readableMembers`, `GateClassify`, `holdFill`, `unstored`; `/files/`; the remote OCI tag | [formathost/signature_gate.go](../../internal/formathost/signature_gate.go), [formathost/malware.go](../../internal/formathost/malware.go), [files/download.go](../../internal/files/download.go), [oci/remote_handlers.go](../../internal/formats/oci/remote_handlers.go) |
+| The wiring: the gate on every role (while the signatures are on), its component (the snapshot by `signature_anchors`, the subscription to `signature_verdict`, the drain), the classifier bound to the format host, the signals of the jobs and the fetch | [app/wire_signature_gate.go](../../internal/app/wire_signature_gate.go), [wire_signatures.go](../../internal/app/wire_signatures.go), [wire_formats.go](../../internal/app/wire_formats.go), [wire_files.go](../../internal/app/wire_files.go), [wire_signature_fetch.go](../../internal/app/wire_signature_fetch.go) |
+| The configuration `signatures.gate.*`, the event `signature.download_refused`, the alert `QuaderSignatureGatePending` | [config/signatures.go](../../internal/config/signatures.go), [audit/events_signatures.go](../../internal/audit/events_signatures.go), [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) |
+
+### Where the gate sits
+
+1. **Is it asked at all?** `Gate.Applies` reads the replica's snapshot of the repositories: the signatures are on, neither repository is a
+   system repository of `upstream`, and the addressed repository's member or the holder's is on. Nothing else reads a row, so an ungated
+   download is unchanged. A generated item and the image scanning's pull are never asked.
+2. **What is the item?** The gate asks the item's format through the format host (`GateClassify` → `SignatureAdapter.Gate`): a carrier of
+   signatures and an item that is no artifact pass; a signature file passes while its object's scheme was read (`GateObjectsRead`); an
+   artifact is judged by its blob and the digests that cover it (an OCI index for its platform manifests, a `.nupkg` for its `.snupkg`).
+3. **Which gates?** The addressed repository's in its view (itself, or for a virtual repository its members the caller may read) and its
+   project's scope, and the holder's in its own; the first refusal names the reason, else any pending one waits.
+4. **The rows.** `SignatureGateRows` reads the counting signatures (publisher, provenance) of the digests attached in the view with their
+   trust row of the scope (the project's, else the installation's) and whether Quader issued the signature itself (`signatures.identity_id`
+   set, `Row.Issued`); `SignatureGateFetches` the state of a remote's background fetch.
+   `Snapshot.Subtract` takes from a row the anchors no longer in force or narrowed after it and applies a block created after it; a widening
+   waits for the trust job.
+5. **The decision.** `Judge`: a signature Quader issued itself counts for nothing (R-SIG-062); one passing signature of one digest passes;
+   a pending check or a due fetch waits; else the first reason of `blocked`, `invalid`, `not_chosen`, `untrusted`, `not_checked`, else
+   `missing`.
+
+### The combined decision (R-SIG-069)
+
+Both serve points build a `gate.Serve` from what the item lookup read: the malware gate's `Decide` (pure), the vulnerability block the
+enforcer decided, and the signature gate's `Decide` (read only when neither check above it refuses). The first refusal in the order
+`malware_found`, `vulnerability_blocked`, `signature_not_verified`, `malware_not_checked`, `vulnerability_data_missing` is answered at once;
+a block in the mode report is recorded and serves. When something is pending, each pending check's `Begin` asks its priority work and takes
+a slot of its own, and one loop waits on both wake channels, a poll and the earliest deadline; a refusal decided during the wait ends it,
+and at the bound the malware gate's 503 comes first. Each check keeps its answers, events and metrics.
+
+### The wait and its signals (R-SIG-067)
+
+`Begin` makes the subjects' pending signatures due at priority 0 and wakes the job `signature-verify` (`SignatureGatePrioritize`), raises
+the waiting job `signature-fetch` of a due target to priority 0 (`SignatureGateRaiseFetch`; an enqueue of a waiting key returns it
+unchanged), and kicks the queues `signatures` and `index` through the signal area `jobs`. The job `signature-verify` publishes the subject
+on `signature_verdict` after the commit of a verdict (and of a check that failed for the last time), the job `signature-fetch` after its
+run's row, and the trust step `*` after each batch. Without Valkey the waiter reads again once a second. `signatures.gate.max_waiting`
+bounds the slots, a drain answers every wait at once (the component's `Drain`).
+
+### Tests and what they cost
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Unit | the order and the replay (`gateset`); the decision table (with Quader's own signatures, which never pass), the fetch states, the subtraction, the chosen anchors, the answers, the view and scope, the wait (signal, poll, bound from the arrival, slots, drain), one decision one wait (`gate`); the member's validation, narrowing, weakening and replay (`repository`); the configuration; the event's registration | about 0.8 s (`gate`), 0.3 s each for `gateset` and the repository's cases | rows and snapshots built by the tests |
+| Kit | check 18's gate cases for every format and the two defects; check 17's two answers for every format; OCI's recognition of an attachment | milliseconds per format | bytes and manifests of the tests |
+| Chart | `QuaderSignatureGatePending` rendered and its `promtool` test | well under a second | rendered YAML |
+| Integration | area `signatures`, [gate_test.go](../../test/integration/signatures/gate_test.go): the member and who may change it; `/files/` with the gate on (GET, HEAD, conditional), the list of refusals and the event, a block on another replica before a trust row changed, the wait and the 503 while the worker is stopped | about 11 s for the two tests | files of a kilobyte |
+
+No end-to-end case (Q-SIG-95). The virtual view and a remote's fetch state are tested at the unit tier (Q-SIG-141). With 25 formats the
+cost is 25 times the kit's milliseconds; no leg loads a client image.
+
 ## The interface for packages 2 and 3
 
 ### The candidate (`formats.SignatureCandidate`, [signatures.go](../../internal/formats/signatures.go))
@@ -228,6 +299,9 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
   `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
   repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
 - **Stage 2:** package 1 built, below; packages 2 to 4 are not.
+- **Stage 3, package 2**: releases (`signature_releases`, passed to `gate.Judge` as `released`), the preview (`formats.SignatureAdapter.Gate` in
+  batches and `gate.Judge` without the wait), the impact count (the trust rows the change subtracts from, `Snapshot.Subtract`), their API
+  and the members `refused` and `gate`, the read of `signature_refusals`, the Bastion's feed. Stage 3, package 3: the screens.
 
 ## Stage 2: Quader signs
 

@@ -91,6 +91,7 @@ func toRepository(r q.Repository, project string, cat *catalog.Registry) (Reposi
 		}
 	}
 	out.malwareOnlyChecked = malwareOnlyChecked(s.Malware)
+	out.signatureGate = signatureGateOf(s.Signatures)
 	if out.Class == Virtual {
 		out.virt = &virtualState{settings: VirtualSettings{Members: []string{}, MergedMetadataTTLSeconds: ptr(mergedTTLOf(s)), Pinning: Pinning{Rules: []PinRule{}}}}
 	}

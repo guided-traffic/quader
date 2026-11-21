@@ -1,4 +1,4 @@
-contract version 8
+contract version 9
 formats.Action: alias authz.Action
 formats.Authenticator: method ReadToken(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Authenticator: method TokenRequest(context.Context, RemoteContext, *http.Request, Path, int, http.Header) (*http.Request, string, bool, error)
@@ -154,6 +154,12 @@ formats.Format: method Signatures() SignatureAdapter
 formats.Format: method View() ViewAdapter
 formats.Format: method Virtual() VirtualAdapter
 formats.Format: method WriteError(http.ResponseWriter, *http.Request, error)
+formats.GateItem: field Blob [32]byte
+formats.GateItem: field Path string
+formats.GateKind: method String() string
+formats.GateKind: type uint8
+formats.GateSubject: field Covering [][32]byte
+formats.GateSubject: field Kind GateKind
 formats.GuideData: embedded SetupData
 formats.GuideData: field Anonymous bool
 formats.GuideData: field CertificateURLs []string
@@ -489,6 +495,7 @@ formats.ShadowPair: field Remote string
 formats.ShadowPair: field Virtual string
 formats.SignatureAdapter: method Declaration() SignatureDeclaration
 formats.SignatureAdapter: method Detect(context.Context, SignatureEvent) ([]SignatureCandidate, error)
+formats.SignatureAdapter: method Gate(context.Context, Host, RepoRef, []GateItem) ([]GateSubject, error)
 formats.SignatureCandidate: field Location string
 formats.SignatureCandidate: field Object SignatureLocator
 formats.SignatureCandidate: field Part int
@@ -531,6 +538,7 @@ formats.SignatureLocator: field Raw []byte
 formats.SignatureLocator: field SHA256 [32]byte
 formats.SignatureLocator: field Size int64
 formats.SignatureVerdicts: method PublicProvenance(context.Context, RepoRef, []string) (map[string]string, error)
+formats.SignatureVerdicts: method Refuse(context.Context, *Request, RepoRef, string, [32]byte) error
 formats.SourceRef: field Path string
 formats.SourceRef: field Repo qname.Repo
 formats.SourceSpeller: method SourceSpellings(string, Path) []Path
@@ -633,6 +641,7 @@ formats.CatalogEntry: func(Format) catalog.Entry
 formats.DefaultSignatureFetchLimits: func() SignatureFetchLimits
 formats.Descriptors: func() []Descriptor
 formats.ExecuteGuide: func(GuideSection, GuideData) (string, error)
+formats.GateNoneFor: func([]GateItem) []GateSubject
 formats.GuideTopics: func() []string
 formats.HiddenFingerprint: func([]string) string
 formats.List: func() []Format
@@ -667,7 +676,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 8
+formats.ContractVersion: value = 9
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
@@ -680,6 +689,10 @@ formats.FillByFetchTime: value FillDecision = iota (place 0 of its group)
 formats.FillKeepStored: value = (repeated, place 1 of its group)
 formats.FillReplaceStored: value = (repeated, place 2 of its group)
 formats.FirstMatch: value Strategy = iota + 1 (place 0 of its group)
+formats.GateArtifact: value = (repeated, place 1 of its group)
+formats.GateAttachment: value = (repeated, place 2 of its group)
+formats.GateNone: value GateKind = iota (place 0 of its group)
+formats.GateSignatureFile: value = (repeated, place 3 of its group)
 formats.GuideAudit: value = "audit"
 formats.GuideAuthenticate: value = "authenticate"
 formats.GuideConfigure: value = "configure"

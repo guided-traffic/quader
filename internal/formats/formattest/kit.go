@@ -175,6 +175,10 @@ type Fixture struct {
 	OptionNames []string
 	// Signatures are the signed samples of check 18: one case at least per kind the format declares (R-SIG-022).
 	Signatures []SignatureCase
+	// GateCases are the stored items check 18 asks the format's Gate about (signatures.md R-SIG-063): one per row of the format's
+	// classification, each with the kind and the covering items it expects. A format that declares signature kinds names at least
+	// one; a format without signatures needs none, and the kit holds it to GateNone over every content case.
+	GateCases []GateCase
 	// Skip lists the checks that do not apply to the format, each with the reason.
 	// A skip without a reason fails the check, and so does a skip the format
 	// contradicts (a skipped check 1 on a format that has routes).

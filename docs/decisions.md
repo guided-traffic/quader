@@ -1976,7 +1976,8 @@ change of anchors by minutes, while a narrowing is only a subtraction.
 without seeing it; under "any anchor" any identity of the public Sigstore passes (H-1194), and a project Owner's own anchor while project
 anchors are allowed (H-1195); an image's blobs and files that read as signatures pass (H-1196, H-1197); metadata documents still list refused
 versions (H-1199); Docker and `ansible-galaxy` may fail a first pull through a gated remote once (H-1200); every format implements one more
-method.
+method. The contract rises to version 9 with that method and `SignatureVerdicts.Refuse`, which judges the stored tag of a remote OCI
+repository (Q-SIG-132; built with stage 3's first package).
 
 **Alternatives considered.** An installation switch; a gate at upload; a registry's signature as passing; anchor IDs or a per-repository
 identity pattern; gating by route kind; every OCI blob gated; trusting stale trust rows or treating them as pending; a code per reason;
@@ -10348,6 +10349,20 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-SIG-121](spec/signatures.md#q-sig-121--the-bounds-and-checks-of-anchor-material-the-table-leaves-open) | Which checks of anchor material does the table leave open? | (a) key usage and extended key use, pattern and value bounds, keyid format, OpenPGP algorithms by purpose | — |
 | [Q-SIG-122](spec/signatures.md#q-sig-122--anchors-of-the-configuration-are-a-map-and-their-material-a-mounted-file) | How are anchors of the configuration written? | (a) a map keyed by the anchor's key, material inline or as a mounted file | — |
 | [Q-SIG-123](spec/signatures.md#q-sig-123--the-api-the-project-list-the-virtual-members-and-the-original) | What shapes does the API take? | (a) the project list with the installation's anchors, every virtual member that holds the version, attestations apart, IDs as digit text | — |
+| [Q-SIG-131](spec/signatures.md#q-sig-131--the-gate-reads-its-rows-in-a-statement-of-its-own-where-a-gate-applies) | How does the gate read its rows? | (a) a statement of its own, only where a gate applies | — |
+| [Q-SIG-132](spec/signatures.md#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse) | Which contract version, and how is a remote OCI tag judged? | (a) version 9; `SignatureVerdicts.Refuse` | — |
+| [Q-SIG-133](spec/signatures.md#q-sig-133--debian-refuses-only-a-gate-setting-that-would-do-something) | What does Debian refuse of the member? | (a) only `onlyVerified: true` and a non-empty list | — |
+| [Q-SIG-134](spec/signatures.md#q-sig-134--anchors-stored-while-the-gate-is-off-are-no-constraint) | Anchors stored while the gate is off? | (a) no constraint for the order and the replay | — |
+| [Q-SIG-135](spec/signatures.md#q-sig-135--any-change-of-an-anchors-material-narrows-it-for-the-gate) | Which writes narrow an anchor for the gate? | (a) a switch off and any change of material | — |
+| [Q-SIG-136](spec/signatures.md#q-sig-136--one-decision-one-wait-lives-in-the-gates-package) | Where does one decision, one wait live? | (a) `gate.Serve`, built by both serve points | — |
+| [Q-SIG-137](spec/signatures.md#q-sig-137--a-pending-answer-is-recorded-and-counted-as-the-malware-gates) | Is a pending answer recorded? | (a) as the malware gate records its own | — |
+| [Q-SIG-138](spec/signatures.md#q-sig-138--a-well-known-repository-takes-the-member-from-an-administrator-a-system-one-keeps-it) | Who writes the member in the project upstream? | (a) an administrator on a well-known repository, the whole member (one rule with Q-SIG-128); the product on a system one | — |
+| [Q-SIG-139](spec/signatures.md#q-sig-139--the-trust-step-signals-every-waiting-download) | How does the trust step wake a waiting download? | (a) one signal `*` per batch | — |
+| [Q-SIG-140](spec/signatures.md#q-sig-140--an-unstored-body-through-a-gated-remote-answers-pending) | An unstored body through a gated remote? | (a) answered pending | — |
+| [Q-SIG-141](spec/signatures.md#q-sig-141--the-integration-area-tests-the-gate-through-files-the-rest-at-the-unit-tier) | How is the gate tested against the stack? | (a) through `/files/`; the virtual view and the fetch state at the unit tier | — |
+| [Q-SIG-142](spec/signatures.md#q-sig-142--every-refusal-is-written-to-the-list-of-refused-downloads) | How often is a refusal listed? | (a) at every refusal, the event deduplicated | — |
+| [Q-SIG-143](spec/signatures.md#q-sig-143--what-a-format-derives-or-stores-as-a-document-is-gatenone) | What of the unnamed items of a format? | (a) `GateNone` | — |
+| [Q-SIG-144](spec/signatures.md#q-sig-144--the-blocks-epoch-is-named-anchor_epoch) | The name of the block's epoch? | (a) `anchor_epoch`, no revision column | — |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

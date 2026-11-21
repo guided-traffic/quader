@@ -307,6 +307,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.signature.anchor.removed:Trust anchor removed`;
     case 'signature.anchor.updated':
       return $localize`:@@audit.action.signature.anchor.updated:Trust anchor changed`;
+    case 'signature.download_refused':
+      return $localize`:@@audit.action.signature.download_refused:Download refused: no verified signature`;
     case 'signature.invalid':
       return $localize`:@@audit.action.signature.invalid:Invalid signature found`;
     case 'signature.settings.changed':

@@ -2457,7 +2457,7 @@ it lands, and the result written into this requirement.
 
 ## The gate per repository (stage 3)
 
-Status: specified, not built. The owner decided it on 2026-11-21 in his working paper, against the development agent's recommendation of no
+Status: package 1 (the gate) built; packages 2 and 3 not built. The owner decided it on 2026-11-21 in his working paper, against the development agent's recommendation of no
 gate for now ([Q-SIG-9](#q-sig-9--display-or-gate), option (b), in the paper's words translated: besides display and alarm, per repository
 a detail setting "only artifacts with a verified signature", optionally of chosen anchors); with his choice of three stages
 ([Q-SIG-14](#q-sig-14--the-order-of-the-work)) it is the third. Before he left on 2026-11-21 he was told that the second and the third
@@ -2479,7 +2479,7 @@ while the repository accepts any anchor, a signature that any identity of the pu
 
 | Package | Builds | Waits for | Its tests |
 |---|---|---|---|
-| 1 · The gate | the member and its order (R-SIG-061); the decision (R-SIG-062); the contract's `Gate`, every format's classification, `oci_manifests.attachment`, kit check 18's and check 17's cases (R-SIG-063, R-SIG-068); the serve points and OCI's handlers (R-SIG-064); the view and the scope (R-SIG-065); the subtraction and its two columns (R-SIG-066); the reading of stage 1's fetch state, the priority work, the wait and the held fill (R-SIG-067); one decision, one wait (R-SIG-069); the event of a refusal, the table of refusals, the metrics, the alert, the configuration (R-SIG-073, R-SIG-075, R-SIG-076) | stage 1's packages 1 (on `main`), 2 (verification and trust: the trust rows, the anchors and their snapshot, the job and its priorities) and 3 (the background fetch, which writes and works `signature_fetches`); not stage 2: the gate leaves out a signature with `identity_id` set once that column exists | unit under 2 s, the kit milliseconds per format, integration about 14 s (R-SIG-061, R-SIG-064 to R-SIG-067) |
+| 1 · The gate | the member and its order (R-SIG-061); the decision (R-SIG-062); the contract's `Gate`, every format's classification, `oci_manifests.attachment`, kit check 18's and check 17's cases (R-SIG-063, R-SIG-068); the serve points and OCI's handlers (R-SIG-064); the view and the scope (R-SIG-065); the subtraction and its two columns (R-SIG-066); the reading of stage 1's fetch state, the priority work, the wait and the held fill (R-SIG-067); one decision, one wait (R-SIG-069); the event of a refusal, the table of refusals, the metrics, the alert, the configuration (R-SIG-073, R-SIG-075, R-SIG-076) | stage 1's packages 1 (on `main`), 2 (verification and trust: the trust rows, the anchors and their snapshot, the job and its priorities) and 3 (the background fetch, which writes and works `signature_fetches`); stage 2's column `signatures.identity_id` (package 1, on `main`), by which the gate leaves out Quader's own signatures | unit under 2 s, the kit milliseconds per format, integration about 14 s (R-SIG-061, R-SIG-064 to R-SIG-067) |
 | 2 · Releases, previews and the API | `signature_releases` and its operations (R-SIG-070); the impact and its index (R-SIG-071); the preview (R-SIG-072); the refusals' operation and the members `refused` and `gate` (R-SIG-073); the events of a release and the Bastion's feed (R-SIG-075); backups and replicas (R-SIG-076) | package 1 | integration about 8 s (R-SIG-070 to R-SIG-073) |
 | 3 · The screens | R-SIG-074 | package 2, and stage 1's package 4 (the screens of the signatures) | web unit under a second; the renders of R-SIG-074 |
 
@@ -2544,6 +2544,17 @@ The owner's decision ([Q-SIG-9](#q-sig-9--display-or-gate)): a detail setting pe
   mode** ([Q-SIG-91](#q-sig-91--no-report-mode-the-preview-shows-what-the-gate-would-refuse)): the preview of R-SIG-072 shows what the gate
   would refuse before it is switched on.
 
+Built (package 1): the members `onlyVerified` and `anchors` of `repository.SignatureSettings`, read into the replica's snapshot
+(`Repository.SignatureGate`); the order and the replay in [internal/signatures/gateset](../../internal/signatures/gateset/setting.go); the
+validation (`validateSignatures`, `checkSignatureAnchors` against the anchors of the scope in the write's transaction, only for the
+references a write adds), the weakening refusal (`weakenedSignatures`, `403 signature_weakening_refused`), `block: lifted` with
+`signatures` in `weakened`, the part `signatures` of `repository.narrowed` and its replay. On Debian the members answer `422
+not_applicable` only for a value that does something (`onlyVerified: true`, a non-empty list): `false` and `[]` are the defaults a screen
+may send ([Q-SIG-133](#q-sig-133--debian-refuses-only-a-gate-setting-that-would-do-something)). Anchors stored while the gate is off count
+as any anchor for the order and the replay ([Q-SIG-134](#q-sig-134--anchors-stored-while-the-gate-is-off-are-no-constraint)). A well-known
+repository of `upstream` takes the whole member from an administrator, a system one keeps it at the product's value
+([Q-SIG-138](#q-sig-138--a-well-known-repository-takes-the-member-from-an-administrator-a-system-one-keeps-it)).
+
 Acceptance criteria:
 
 - Unit (`internal/signatures/gate`, milliseconds): the table as a function of the stored and the new member; the replay's narrowing of two
@@ -2585,6 +2596,13 @@ Priority: **P1** · Covers: BEYOND-019
 - The gate does not tell public from internal by itself; chosen anchors do: a repository that accepts only the company's own signers chooses
   the company's anchors.
 
+Built (package 1): `gate.Judge` and `judgeRow` ([decide.go](../../internal/signatures/gate/decide.go)) over the rows the store reads
+(`SignatureGateRows`, the roles `publisher` and `provenance` only, so a registry's signature and an attestation are never read); the
+release parameter is there for package 2, which passes it from `signature_releases`. The statement reads whether `signatures.identity_id`
+is set (`issued`, stage 2's column), and `Judge` leaves such a row out (`Row.Issued`), so Quader's own signature counts for nothing whatever
+its role or its trust row; the unit table holds one of Quader's own whose chain ends in an anchor (missing), beside a pending one (pending)
+and beside a publisher's (passes).
+
 Acceptance criteria:
 
 - Unit (`internal/signatures/gate`, milliseconds): the table as signature sets to a decision and a reason, with any and with chosen anchors:
@@ -2596,7 +2614,8 @@ Priority: **P1** · Covers: quader-only
 
 The gate judges artifacts, never what carries their signatures; which stored item is which is the format's knowledge
 ([Q-SIG-81](#q-sig-81--the-format-names-what-the-gate-judges-and-the-contract-rises-by-one)). The adapter of R-SIG-022 gains a method, and
-`ContractVersion` rises by one in the change that adds it (to 10 after stage 2's 9); the block is written into
+`ContractVersion` rises by one in the change that adds it (to 9 while stage 2 is not built,
+[Q-SIG-132](#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse)); the block is written into
 [architecture.md](architecture.md) R-ARCH-008 by that change:
 
 ```go
@@ -2653,6 +2672,14 @@ An item Quader generated (`items.generated`) is never asked about and passes, as
   and the covering digests it expects; a format without signatures answers `GateNone` for every content case. The test format's defects
   `GatesAttachment` (an attachment named an artifact) and `PassesArtifact` (an artifact named `GateNone`) fail it.
 
+Built (package 1): `formats.SignatureAdapter.Gate`, `GateKind`, `GateItem`, `GateSubject`, `GateNoneFor`; the contract rises from 8 to
+9, not to 10, because stage 2 is not built ([Q-SIG-132](#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse)).
+Every format on `main` implements it as the table says; NuGet, npm and Ansible Galaxy name what they derive or store as documents
+`GateNone` ([Q-SIG-143](#q-sig-143--what-a-format-derives-or-stores-as-a-document-is-gatenone)); OCI records `oci_manifests.attachment` at
+the commit (`oci.IsAttachment`, migration 00102) and reads it with the indexes that list a manifest (`Store.GateFacts`). Kit check 18 has
+`Fixture.GateCases` and the defects `GatesAttachment` and `PassesArtifact`; a format without signatures is held to `GateNone` over every
+content case.
+
 Acceptance criteria:
 
 - Unit (the format contract's kit, milliseconds per format): check 18's gate cases for every registered format and the test format; the two
@@ -2690,6 +2717,11 @@ Priority: **P1** · Covers: BEYOND-019
   data for OCI and a covering artifact (an index for a platform manifest, a `.nupkg` for its `.snupkg`) cost one statement more, only where
   the item's own signatures do not pass.
 
+Built (package 1): the format host's `itemStore.Serve` (`serveChecks`, [signature_gate.go](../../internal/formathost/signature_gate.go)),
+`files.Service.Stat`, and the remote OCI tag through `Host.Signatures().Refuse` after `refuseBlockedImage`. Where no gate applies the
+download reads no row: `Gate.Applies` reads the snapshot alone. Where one applies the gate reads its rows in a statement of its own after
+the item lookup, not joined into it ([Q-SIG-131](#q-sig-131--the-gate-reads-its-rows-in-a-statement-of-its-own-where-a-gate-applies)).
+
 Acceptance criteria:
 
 - Integration (area `signatures`, `TestR_SIG_064_…`, about 3 s, files of a kilobyte, the release key of R-SIG-042 as an anchor of the
@@ -2715,6 +2747,12 @@ Priority: **P1** · Covers: BEYOND-019
 - **The remote miss:** an artifact a gated remote does not hold yet is fetched and stored as any (the fill held, R-SIG-067), then judged.
   Nothing is refused before the fetch: only the stored content shows whether a signature matches it.
 
+Built (package 1): `gate.Download.Members` is, for a virtual addressed repository whose gate is on, its members the caller may read
+(`Host.readableMembers`, `MemberUsableOn` on the request's index); the addressed gate reads in its project's scope, the holder's in its own;
+both walks end on the two answers (`isBlock` of OCI, `isTransient` of the virtual engine). The test is the unit tier's
+(`TestR_SIG_065_EachGateJudgesInItsViewAndScope`): the integration test of npm with the company's Sigstore is not written
+([Q-SIG-141](#q-sig-141--the-integration-area-tests-the-gate-through-files-the-rest-at-the-unit-tier)).
+
 Acceptance criteria:
 
 - Integration (area `signatures`, `TestR_SIG_065_…`, about 3 s, the company's Sigstore of R-SIG-042 as an identity anchor): with the gate on
@@ -2734,8 +2772,9 @@ away or adds a block, which needs no cryptography, so the gate applies it itself
 
 - **Two columns join stage 1's tables:** `signature_anchors.narrowed_epoch bigint NOT NULL DEFAULT 0`, set to the raised `anchor_epoch` by a
   write that narrows the anchor (it is switched off; material is removed or replaced; a CA anchor's subject restriction or use is added or
-  changed; a Sigstore identity's issuer, pattern or trust root changes); and `signature_blocks.anchor_epoch bigint NOT NULL`, the anchor epoch the block's
-  creation raised.
+  changed; a Sigstore identity's issuer, pattern or trust root changes); and `signature_blocks.anchor_epoch bigint NOT NULL DEFAULT 0`, the
+  anchor epoch the block's creation raised. Neither is a revision a client holds, so neither carries a name the rule of revision columns
+  claims ([architecture.md](architecture.md) R-ARCH-009; [Q-SIG-144](#q-sig-144--the-blocks-epoch-is-named-anchor_epoch)).
 - **An anchor of a row's `anchor_ids` counts** only while it is in force in the snapshot (it exists, it is switched on, and a project anchor
   only while the switch is on) and its `narrowed_epoch` is not above the row's `anchor_epoch`. A block whose `anchor_epoch` is above the row's and that
   matches one of the signature's `key_ids`, or its issuer and identity, makes the row `blocked`. What remains decides the state: no anchor,
@@ -2746,6 +2785,11 @@ away or adds a block, which needs no cryptography, so the gate applies it itself
   trust job has written the rows (R-SIG-012).
 - The gate's statement reads of each trust row `state`, `anchor_ids` and `anchor_epoch`, and of its signature `key_ids`, the issuer and the identity
   (R-SIG-005); nothing else.
+
+Built (package 1): the two columns (migration 00102); `UpdateAnchor` sets `narrowed_epoch` for a switch off or any change of material,
+and `quader migrate` for a shipped or declared anchor whose material changed
+([Q-SIG-135](#q-sig-135--any-change-of-an-anchors-material-narrows-it-for-the-gate)); `CreateBlock` sets the block's `anchor_epoch`; the
+replica's snapshot (`signatureGateComponent`, change area `signature_anchors`, a minute as safety period) and `Snapshot.Subtract`.
 
 Acceptance criteria:
 
@@ -2818,6 +2862,14 @@ line and waits a bounded time.
   pending, answered `503` after the wait and never served. PostgreSQL down fails the download as it does today. The object store takes no
   part in the decision: the verdicts are rows.
 
+Built (package 1): the gate reads `signature_fetches` (`SignatureGateFetches`); the priority work is `SignatureGatePrioritize` (the
+subjects' pending signatures due at priority 0 now, the job `signature-verify` woken), `SignatureGateRaiseFetch` (the waiting job
+`signature-fetch` of a due target at priority 0 now, a running one left alone) and a kick of the queues `signatures` and `index`; the
+signal area `signature_verdict` is raised after the commit of a verdict and after a fetch's run with the subject's digest, and with `*` after
+a batch of the trust step ([Q-SIG-139](#q-sig-139--the-trust-step-signals-every-waiting-download)). The held fill is `holdFill`; a body the
+remote engine would pass unstored during an outage of the object store answers pending where a gate applies
+([Q-SIG-140](#q-sig-140--an-unstored-body-through-a-gated-remote-answers-pending)).
+
 Acceptance criteria:
 
 - Unit (`internal/signatures/gate`, under a second, a fake store and the signal called by the test): a waiting download is served when its
@@ -2866,6 +2918,9 @@ none of them: its repositories have no gate (R-SIG-061).
 - **Kit check 17** ([malware-scanning.md](malware-scanning.md) R-MAL-029) holds the two answers for every format as it holds the malware
   gate's: the status, `Cache-Control: no-store`, `Retry-After` for the pending one, no byte of the item.
 
+Built (package 1): `errs.CodeSignatureNotVerified` and `errs.CodeSignatureCheckPending`; the answers of `gate.Gate.refusal` and
+`pendingError`; kit check 17 renders both for every format. The details link is `<server.base_url>/ui/projects/<project>/repositories/<key>/files/<path>`.
+
 Acceptance criteria:
 
 - Unit (the format contract's kit, milliseconds per format): check 17 renders `403` for `signature_not_verified` and `503` with
@@ -2889,6 +2944,10 @@ Priority: **P1** · Covers: quader-only
 - At OCI's handlers the image block of the vulnerability scanning is asked before the serve point, as built (R-VULN-037); the signature
   gate follows it there.
 - The malware gate's `Check` is split for this into its decision and its wait; its answers, events and metrics stay as they are.
+
+Built (package 1): `gate.Serve` ([serve.go](../../internal/signatures/gate/serve.go)), which both serve points build; the malware gate's
+`Check` is `Decide`, `Refuse` and `Begin` with a `Wait` of its own, and its answers, events and metrics stay. The unit test is in
+`internal/signatures/gate`, where the combination lives ([Q-SIG-136](#q-sig-136--one-decision-one-wait-lives-in-the-gates-package)).
 
 Acceptance criteria:
 
@@ -3111,6 +3170,11 @@ must alarm is that clients get `503` because the checks do not keep up:
 `signature.settings.changed` with the journal flag, and `signature.signer.blocked`, yield `content` for every repository whose gate is on when
 the feed is read, and their virtual repositories; a gate switched on is a `repository.narrowed`, which yields `content` already.
 
+Built (package 1): `signature.download_refused` (asynchronous, deduplicated a minute per repository, path and client address; a pending
+answer is recorded with the reason `pending` as the malware gate records its own,
+[Q-SIG-137](#q-sig-137--a-pending-answer-is-recorded-and-counted-as-the-malware-gates)), the two metrics on every role that builds the
+gate, the alert `QuaderSignatureGatePending` with its `promtool` test. The release events and the Bastion's feed are package 2's.
+
 Acceptance criteria:
 
 - Unit (`internal/audit`, under a second): the three events are in the registry with their schemas and journal flags; the Bastion's
@@ -3143,6 +3207,11 @@ signatures:
 - **What it costs:** no Deployment, image, module or chart value more; per gated download a join of the item's signatures and their trust
   rows into its statement and, for OCI and a covered item, one statement more; a row of `signature_refusals` per refused artifact and
   repository for 30 days; stage 1's row of `signature_fetches` per queued remote target (some 150 bytes) is not this stage's.
+
+Built (package 1): `config.Signatures.Gate` with its validation; `signature_refusals` registered `transient` and written by the gate
+([Q-SIG-142](#q-sig-142--every-refusal-is-written-to-the-list-of-refused-downloads)), removed by the job's discovery step after the
+retention; the member travels with the document and its part with the journal. `signature_releases` and `preview_limit`'s readers are
+package 2's.
 
 Acceptance criteria:
 
@@ -3193,6 +3262,12 @@ What every leg gains: the unit run under 2 s; the kit milliseconds per format; t
 chart leg about 0.1 s; the web unit run under a second. No other leg gains anything, and no leg is new. With 25 formats: 25 times two kit
 cases of milliseconds more, nothing else; no leg loads another format's client.
 
+Measured for package 1 (2026-11-21): the gate's unit tests about 0.8 s (`internal/signatures/gate`), the setting's 0.3 s, the repository's
+member 0.3 s, the kit's gate cases milliseconds per format; the integration area `signatures` gains two tests,
+`TestR_SIG_061_TheGateIsARepositorySettingAnOwnerMayNarrow` and `TestR_SIG_064_TheGateAtTheServePointOfFiles` (R-SIG-064, R-SIG-066 to
+R-SIG-068 as subtests; the second web replica and a worker stopped and started again), about 11 s together with files of a kilobyte. The
+manual measurement with real clients below is not made yet.
+
 What only a real client shows and is not tested: `docker pull` of a multi-platform image signed at its index through a gated repository, a
 refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable. Each is
 measured once by hand when the package that builds the gate lands, and the result written into this requirement.
@@ -3204,7 +3279,7 @@ Acceptance criteria: the coverage generator lists every requirement of stage 3 w
 The owner decided Q-SIG-1 to Q-SIG-16 on 2026-11-21 in his working paper, from the options the development agent put to him; the blocks
 keep those options as they were put, translated from the paper's German. Q-SIG-20 onward are the development agent's: each question below
 was decided by the development agent from the listed options, and the owner reviews the choices at the walkthrough. Q-SIG-75 to Q-SIG-95
-are stage 3's.
+are stage 3's; Q-SIG-131 to Q-SIG-144 were decided when its first package (the gate) was built.
 
 ### Q-SIG-1 · What the icon stands for
 
@@ -4861,6 +4936,191 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A row that opens to every file that holds it | | Every holder at once | The answer carries the first holders only (`itemsTruncated`) |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-038.
+
+### Q-SIG-131 · The gate reads its rows in a statement of its own where a gate applies
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Taken when package 1
+of stage 3 was built.
+
+Context: R-SIG-064 asked for the counting signatures and their trust rows to be joined into the item lookup's statement, as the malware
+verdict is. The lookup is one sqlc statement every download of every repository runs; the signatures of an item depend on the view (a
+virtual repository reads its members' attachments) and the scope (the project's trust row before the installation's), which the lookup does
+not know.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A statement of its own after the lookup, only where a gate applies (chosen) | `Gate.Applies` reads the snapshot; `SignatureGateRows` (and the fetch state for a remote of the view) only then | An ungated download is unchanged, as R-SIG-064 asks; the lookup stays one statement for every repository; the view and the scope are the gate's | One statement more per gated download, two for a remote in the view |
+| (b) Joined into the item lookup | | One round trip | A lateral join of a view and a scope in the statement every download runs, for the few repositories with a gate |
+
+**Choice:** (a). The development agent would revisit (b) when a measurement shows the extra statement in a gated repository's latency.
+**Applied in the spec:** R-SIG-064, R-SIG-076.
+
+### Q-SIG-132 · The contract rises to version 9, and SignatureVerdicts gains Refuse
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-063 said the contract rises to 10 after stage 2's 9; stage 2 is not built, and its package that adds the attestation's
+method may land after this one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The method raises the version by one, to 9 now; whichever stage lands second takes the next (chosen) | | The version counts changes of the contract, not plans | The number named in stage 2's text moves |
+| (b) Jump to 10 and leave 9 to stage 2 | | The numbers of the text hold | A version that was never released |
+
+**Choice:** (a). The remote OCI tag, a stored document no item store serves, is judged through `formats.SignatureVerdicts.Refuse`, the
+service of the Host that already answered what a format asks of signatures; a host without the gate answers nil. **Applied in the spec:**
+R-SIG-063, R-SIG-064; [architecture.md](architecture.md) R-ARCH-008.
+
+### Q-SIG-133 · Debian refuses only a gate setting that would do something
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `onlyVerified: true` and a non-empty `anchors` answer `422 not_applicable`; `false` and `[]` pass (chosen) | | A screen or a configuration as code may send the defaults for every format | A member that is present and does nothing is stored |
+| (b) Any presence of the members answers 422, as `fetch` on a local repository does | | Strict | A generic writer must know which formats to leave the member out for |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-061.
+
+### Q-SIG-134 · Anchors stored while the gate is off are no constraint
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-061 says `anchors` while `onlyVerified` is false is stored and does nothing; its table of changes does not say what a change of
+the list alone is while the gate is off, nor what a replay takes from such a list.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While the gate is off a change of the list is neither a narrowing nor a weakening, and a restored list of a gate that was off counts as any anchor in the replay (chosen) | The order follows what the gate does | An Owner may prepare a list; a replay never makes a gate narrower than either side meant | A list prepared while off passes unchecked as a weakening |
+| (b) The list is ordered whatever the switch says | | One rule | An Owner could not add a reference to a gate that is off, which serves everything anyway |
+
+**Choice:** (a). Switching on is always a narrowing, whatever the list. **Applied in the spec:** R-SIG-061.
+
+### Q-SIG-135 · Any change of an anchor's material narrows it for the gate
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A switch off and any change of the material set `narrowed_epoch`, also for a shipped or declared anchor whose material `quader migrate` replaced (chosen) | | No cryptography on the download path; a replaced key or a changed restriction never serves on an old row (fail closed); matches the impact's upper bound of R-SIG-071 | An edit that only adds a key refuses until the trust job ran |
+| (b) Only the narrowings the journal knows (a fingerprint removed, switched off) | | Fewer refusals | A changed subject restriction or Sigstore pattern would serve on an old row |
+
+**Choice:** (a). A refresh of the public Sigstore root by the task is no change of an anchor's material and narrows nothing. **Applied in the
+spec:** R-SIG-066.
+
+### Q-SIG-136 · One decision, one wait lives in the gate's package
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `gate.Serve` in `internal/signatures/gate`, which both serve points build; its unit test there (chosen) | | `/files/` (a domain package) and the format host (edge) share one combination; the test is where the code is | R-SIG-069 named `internal/formathost` for the test |
+| (b) The combination in the format host and a copy in `/files/` | | The test where R-SIG-069 named it | Two places that must agree on the order of refusals |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-069.
+
+### Q-SIG-137 · A pending answer is recorded and counted as the malware gate's
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The 503 after the wait is recorded in `signature.download_refused` with the reason `pending` and counted in `quader_signatures_downloads_refused_total{reason="pending"}`; no row of refused downloads (chosen) | The malware gate's `malware.download_blocked` and its counter do the same | An auditor sees the clients that were turned away; one pattern for both gates | The event's name says refused for an answer that asks to retry |
+| (b) Only the histogram's outcome `pending` | | Fewer events | A 503 leaves no trace in the audit |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-075.
+
+### Q-SIG-138 · A well-known repository takes the member from an administrator, a system one keeps it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. One rule with
+[Q-SIG-128](#q-sig-128--the-fetch-of-a-well-known-registrys-signatures-is-an-administrators-setting), which made `signatures` an
+administrator's member on a well-known repository for its fetch switch; this block extends the same rule to the gate's two fields.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signatures` is one member an administrator writes on a well-known repository of `upstream` (`fetch`, `onlyVerified`, `anchors`) and the product holds on a system one (chosen) | As `malware` and `vulnerabilities` | R-SIG-061's rule and Q-SIG-128's together; the product's own content is never gated | A member that mixes a fetch switch and a narrowing |
+| (b) Only `onlyVerified` and `anchors` an administrator's, `fetch` the product's | | Fewer writers of the fetch | Against Q-SIG-128; a member split between two writers |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-040, R-SIG-061; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-069.
+
+### Q-SIG-139 · The trust step signals every waiting download
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The verify job and the fetch signal the subject's digest after their commit; a batch of the trust step signals `*`, which wakes every waiter (chosen) | | A batch of 10,000 rows sends one signal; a waiter reads again once anyway | Every waiter of a replica reads once more per batch |
+| (b) The trust step signals each subject | | Exact | Up to 10,000 signals per batch |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-067.
+
+### Q-SIG-140 · An unstored body through a gated remote answers pending
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: during an outage of the object store the remote engine passes a body on unstored (R-STOR-036); the malware gate decides it on its
+digest's row.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Where a signature gate applies the body answers `503 signature_check_pending` (chosen) | | Nothing stored, nothing judged, nothing served (R-SIG-067's fail-safe) | A signed artifact is not served during the outage |
+| (b) Judge the digest's attachments as for a stored item | | Serves what was signed before | The fetch of the remote never ran for a body that was never stored |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-067.
+
+### Q-SIG-141 · The integration area tests the gate through /files/, the rest at the unit tier
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-065 and R-SIG-067 named npm with the company's Sigstore and an OCI stub with a Notation key for their integration tests;
+both need a signing service or a CA chain of the test in the stack.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The stack tests the setting, the serve point, the block on another replica and the wait through `/files/` with a release key; the virtual view, the remote's fetch state and the combination at the unit tier (chosen) | | The gate is format-neutral, so one format shows it; about 11 s, files of a kilobyte | No integration test reads a virtual repository's members or a remote's fetch state against PostgreSQL |
+| (b) As R-SIG-065 and R-SIG-067 named them | | The statements of the view and of the fetch run against PostgreSQL | A Sigstore and a CA of the test in the integration area, several seconds more |
+
+**Choice:** (a). The development agent would add (b)'s two cases when package 2's preview reads the same statements. **Applied in the spec:**
+R-SIG-065, R-SIG-067, R-SIG-078.
+
+### Q-SIG-142 · Every refusal is written to the list of refused downloads
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each refusal upserts its row (`last_at`, `count`, the last reason), the audit event stays deduplicated (chosen) | | The count is exact, as R-SIG-073's test asks | One write per refused download |
+| (b) A row at most once a minute per replica | | Fewer writes | The count is no count |
+
+**Choice:** (a). A write that fails is logged and the refusal answered. **Applied in the spec:** R-SIG-073, R-SIG-076.
+
+### Q-SIG-143 · What a format derives or stores as a document is GateNone
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-063's table names the artifacts of NuGet, npm and Ansible Galaxy and leaves the other items they store unnamed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) NuGet's `.nuspec`, embedded files and symbol files, npm's stored documents (keys, attestations), Ansible's documents are `GateNone` (chosen) | | They are Quader's extraction from an artifact, or documents a client reads to verify one; the artifact they come from is gated | A file extracted from a refused package is served |
+| (b) Every item not named an artifact is judged | | Nothing passes unnamed | npm's attestations a client needs to verify would be refused |
+
+**Choice:** (a). Most of them are generated items, which the gate never asks about. **Applied in the spec:** R-SIG-063.
+
+### Q-SIG-144 · The block's epoch is named anchor_epoch
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-066 first named the column `signature_blocks.epoch`; R-ARCH-009 reserves the names `epoch`, `revision`, `rev_seq` and `*_version`
+for revision columns a client holds, which a restore raises.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `anchor_epoch`, the name of the counter it copies (`signature_settings.anchor_epoch`), as the trust row's since 00100 (chosen) | | No revision: a restore leaves it, and the trust rows are computed again anyway; one name for every copy of the counter | The name differs from the text that first planned it |
+| (b) `epoch`, registered as a revision column | | The planned name | A restore would raise it and the gate would apply every block to rows that hold it already |
+
+**Choice:** (a). `narrowed_epoch` is not claimed by the rule and keeps its name; it is the epoch of a write, not a copy of the counter's
+current value. **Applied in the spec:** R-SIG-066.
 
 ### Q-SIG-145 · The identity's states move by a table, a retired identity never comes back, a previous one does
 

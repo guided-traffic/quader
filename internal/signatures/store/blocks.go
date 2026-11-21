@@ -111,8 +111,12 @@ func (s *Store) CreateBlock(ctx context.Context, actor audit.Actor, in signature
 		}); err != nil {
 			return err
 		}
-		_, err = s.changed(ctx, qs, tx)
-		return err
+		epoch, err := s.changed(ctx, qs, tx)
+		if err != nil {
+			return err
+		}
+		// The gate of stage 3 applies the block to every trust row computed before this epoch (R-SIG-066).
+		return qs.SignatureBlockEpoch(ctx, q.SignatureBlockEpochParams{ID: out.ID, Epoch: epoch})
 	})
 	if err != nil {
 		return signatures.BlockRecord{}, err

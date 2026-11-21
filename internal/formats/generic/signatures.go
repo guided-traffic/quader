@@ -52,6 +52,19 @@ func SignedFile(p string) (file, suffix string, ok bool) {
 	return "", "", false
 }
 
+// Gate implements formats.SignatureAdapter (R-SIG-063): every file is an artifact, and a file named like a signature of the file beside
+// it is a signature file, which the core passes while its scheme was read.
+func (signatureAdapter) Gate(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.GateItem) ([]formats.GateSubject, error) {
+	out := make([]formats.GateSubject, len(items))
+	for i, it := range items {
+		out[i].Kind = formats.GateArtifact
+		if _, _, ok := SignedFile(it.Path); ok {
+			out[i].Kind = formats.GateSignatureFile
+		}
+	}
+	return out, nil
+}
+
 // Detect implements formats.SignatureAdapter.
 func (signatureAdapter) Detect(_ context.Context, ev formats.SignatureEvent) ([]formats.SignatureCandidate, error) {
 	if ev.Item.ID == 0 {

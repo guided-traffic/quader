@@ -9,8 +9,9 @@ the signatures a client posts for a local Ansible Galaxy version), and so are th
 Quader signs (R-SIG-044 to R-SIG-060,
 [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)),
 and stage 3, the gate per repository (R-SIG-061 to R-SIG-078,
-[ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed)),
-both specified and not built.
+[ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed)).
+Stage 2 is specified and not built; of stage 3 the gate itself is built (package 1), releases, the preview and the impact count (package 2)
+and the screens (package 3) are not.
 The perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
 can do to the process that reads it; for stage 2, what Quader's own signature makes others believe, who holds the key that makes it, and
 what a holder of that key can do; and for stage 3, what a repository's gate keeps out, who can open it, and what it does when it cannot
@@ -146,7 +147,7 @@ acts at every download of every format but Debian, at the two serve points the m
 
 ```
  client GET/HEAD ─▶ authorization ─▶ format's serve check ─▶ malware · vulnerability · signature: all three decide (R-SIG-069)
-                                                                     │ the item's signatures, attachments, trust rows: one statement
+                                                                     │ the item's signatures, attachments, trust rows: read only where a gate applies
                                                                      │ anchors and blocks: the replica's snapshot, narrowings subtracted
                       403, no-store ◀── one refuses ─────────────────┤
                       served ◀───────── every gate passes ───────────┤
@@ -172,9 +173,9 @@ its digest ([H-1196](#h-1196--an-images-gate-guards-its-manifests-a-blob-fetched
 |---|---|---|
 | A writer of the repository's settings, an Owner of the project included | switch it on, accept fewer anchors | a weakening (off, any anchor, an anchor added) needs `repositories:write-config` or `vulnerabilities:triage`; an Owner gets 403 (R-SIG-061) |
 | A holder of `repositories:write-config` or `vulnerabilities:triage` | switch it off, accept more anchors | `repository.updated` with `block: lifted`; a narrowing is journaled, so a restore keeps the gate closed |
-| A holder of `vulnerabilities:triage` with `read` on the repository or `content:metadata-read` | release one artifact in one repository (R-SIG-070) | the release names its reason; its withdrawal is journaled and reaches the Bastions |
+| A holder of `vulnerabilities:triage` with `read` on the repository or `content:metadata-read` | release one artifact in one repository (R-SIG-070, not built yet) | the release names its reason; its withdrawal is journaled and reaches the Bastions |
 | A project's Owner, while project anchors are allowed | add an anchor that passes the project's gates that accept any anchor | a gate with chosen anchors does not take it, and adding it to the list is a weakening (H-1195) |
-| An administrator (`security-settings:write`) | remove, switch off or narrow an anchor, block a signer: the gate refuses at once; add an anchor: it passes after the recomputation | the impact is shown before the change is saved (R-SIG-071) |
+| An administrator (`security-settings:write`) | remove, switch off or change the material of an anchor, block a signer: the gate refuses at once; add an anchor: it passes after the recomputation | the impact is to be shown before the change is saved (R-SIG-071, not built yet) |
 | The operator | `signatures.enabled: false` switches every gate off ([H-1198](#h-1198--switching-the-signature-checks-off-lifts-every-repositorys-gate)) | the repository's section says so |
 
 **What it does when it cannot decide: it refuses.** A signature not checked yet, a trust row not written yet, a remote whose signatures were
@@ -182,7 +183,8 @@ not fetched yet make the request wait up to 25 s from its arrival while that wor
 served without a decision (R-SIG-067). A trust row older than a narrowing is narrowed at the gate by subtraction from the replica's snapshot,
 so the minutes of the recomputation never serve what a removed anchor or a block refuses (R-SIG-066,
 [H-1175](#h-1175--the-shown-trust-lags-a-change-of-anchors-by-the-recomputation)); a widening waits for the recomputation and refuses until
-then. A remote's fill is held until its stored item is judged. PostgreSQL down fails the download; the object store takes no part.
+then. A remote's fill is held until its stored item is judged, and a body the remote engine would pass on unstored during an outage of the
+object store is answered pending (Q-SIG-140). PostgreSQL down fails the download; the object store takes no part.
 
 ## What this does not cover
 
@@ -350,7 +352,7 @@ Quader's identity in `cosign verify` instead of `cosign verify-attestation` with
 ### H-1194 · A gate that accepts any anchor passes what any identity of the public Sigstore signed
 
 Component: the gate with `anchors: []` (R-SIG-061, R-SIG-062, Q-SIG-76) and the shipped anchor `sigstore-public`, whose identity pattern takes
-every issuer and identity (R-SIG-017). Subject: repositories whose gate accepts any anchor. Specified for stage 3, not built; dormant where
+every issuer and identity (R-SIG-017). Subject: repositories whose gate accepts any anchor. Live where a gate is on; dormant where
 the administrator switched `sigstore-public` off or the repository chose anchors. Anyone can sign keyless with the public Sigstore with an
 e-mail account or a CI job of a public forge, and an npm package published from such a job carries a provenance that verifies against it, so
 a writer of a gated local repository, or an upstream of a gated remote, passes the gate with a signature of an identity of its own. The
@@ -368,7 +370,7 @@ choice while project anchors are allowed.
 
 ### H-1196 · An image's gate guards its manifests: a blob fetched by its digest passes
 
-Component: OCI's classification (R-SIG-063, Q-SIG-82). Subject: gated OCI repositories. Specified for stage 3, not built. The gate judges
+Component: OCI's classification (R-SIG-063, Q-SIG-82). Subject: gated OCI repositories. Live where a gate is on. The gate judges
 manifests by tag and by digest; layers, configs and the content of an attachment are blobs and pass, as at the vulnerability block
 ([image-scanning.md](image-scanning.md#h-811--the-block-of-an-image-is-the-block-of-its-manifest)). A client that knows the digest of a layer
 of an unsigned image, or pulls the layer of an SBOM or signature artifact with a tool such as `oras`, gets the bytes; no image runtime runs an
@@ -376,7 +378,7 @@ image without its manifest. What makes it real: a consumer that fetches blobs by
 
 ### H-1197 · A file read as a signature passes the gate as an attachment
 
-Component: `GateSignatureFile` (R-SIG-063). Subject: gated generic and npm repositories. Specified for stage 3, not built. A file named like a
+Component: `GateSignatureFile` (R-SIG-063). Subject: gated generic and npm repositories. Live where a gate is on. A file named like a
 signature of the file beside it (`.asc`, `.sig`, `.sigstore.json`, `.jws.sig`, `.cose.sig`) and npm's provenance bundle pass while they were
 read as a signature of a known scheme, so that a client can verify what it downloads; within the bound of 256 KiB such a file can carry
 other bytes, in an OpenPGP notation or a bundle's fields. What makes it real: a writer who hides a payload in a signature file and a consumer
@@ -384,7 +386,7 @@ that fetches and runs it.
 
 ### H-1198 · Switching the signature checks off lifts every repository's gate
 
-Component: `signatures.enabled` (R-SIG-040, R-SIG-064). Subject: every gated repository. Specified for stage 3, not built. The operator's
+Component: `signatures.enabled` (R-SIG-040, R-SIG-064). Subject: every gated repository. Live. The operator's
 configuration switches detection and checks off, and with them every gate, as `malware.enabled: false` lifts the malware gate; the
 repositories' settings stay stored and apply again when the checks are switched on. No repository writer is asked; the repository's section
 says that the setting does not apply. What makes it real: an operator who switches the checks off to spare the worker while teams rely on
@@ -395,10 +397,10 @@ their gates.
 Component: the row of `signature_fetches` of an npm version (R-SIG-026, R-SIG-067,
 [Q-SIG-106](../spec/signatures.md#q-sig-106--one-table-of-fetch-state-for-both-stages-keyed-by-target-with-the-subject-beside-it)). Subject: a
 remote npm repository whose cache lost a tarball (an eviction, a delete of the cached item) and fills it again. Live from stage 1 for the
-badge; for the gate once stage 3 is built. The OCI row goes with its manifest's row; the npm row stays, because the npm hook of the removal
+badge, and for the gate, which reads the row. The OCI row goes with its manifest's row; the npm row stays, because the npm hook of the removal
 writes through the package writer and has no transaction of the data port. A tarball stored again is not fetched again (its row reads
 fetched, and npm queues no refresh of a version), so attestations the cache lost with it come back only when a client asks the attestations
-endpoint, and the gate would read "fetched" from the earlier run. What makes it real: an eviction of a version's attestations document
+endpoint, and the gate reads "fetched" from the earlier run. What makes it real: an eviction of a version's attestations document
 together with its tarball, and a later fill of the tarball alone.
 
 ### H-1202 · A project that starts to reach a signature is served the installation's trust until the next recomputation

@@ -312,6 +312,9 @@ func (s *Service) createTx(ctx context.Context, tx meta.Tx, c Caller, project st
 		return Stored{}, err
 	}
 	// <<< M2 virtual
+	if err := checkSignatureAnchors(ctx, qs, v, project, nil, &d); err != nil {
+		return Stored{}, err
+	}
 	if err := v.err(); err != nil {
 		return Stored{}, err
 	}
@@ -601,6 +604,9 @@ func (s *Service) updatedDocument(ctx context.Context, qs *q.Queries, c Caller, 
 	if err := s.checkDebKeysKept(ctx, qs, v, id, cur, &nd); err != nil {
 		return Document{}, nil, nil, err
 	}
+	if err := checkSignatureAnchors(ctx, qs, v, project, cur, &nd); err != nil {
+		return Document{}, nil, nil, err
+	}
 	if err := v.err(); err != nil {
 		return Document{}, nil, nil, err
 	}
@@ -818,6 +824,11 @@ func updateDetails(r Repository, changes []string, cur, nd *Document) eventDetai
 	if weakenedMalware(cur, nd) {
 		d.Block = "lifted"
 		d.Weakened = append(d.Weakened, "malware.onlyChecked")
+	}
+	// A weakening of the gate of signatures serves what it refused (R-SIG-061): the same filter finds it.
+	if weakenedSignatures(cur, nd) {
+		d.Block = "lifted"
+		d.Weakened = append(d.Weakened, "signatures")
 	}
 	return d
 }

@@ -19,10 +19,10 @@ func (f Format) Signatures() formats.SignatureAdapter {
 	if f.has(string(NoSignatureDeclaration)) {
 		return nil
 	}
-	return signatureAdapter{}
+	return signatureAdapter{f}
 }
 
-type signatureAdapter struct{}
+type signatureAdapter struct{ f Format }
 
 // Declaration implements formats.SignatureAdapter.
 func (signatureAdapter) Declaration() formats.SignatureDeclaration {
@@ -30,6 +30,24 @@ func (signatureAdapter) Declaration() formats.SignatureDeclaration {
 		Name: "detached signature", Schemes: []string{formats.SignatureSchemeOpenPGP}, Role: formats.SignatureRolePublisher,
 		Location: "<tarball>.sig beside the tarball", Covers: "the tarball", Client: "the file beside the tarball",
 	}}}
+}
+
+// Gate implements formats.SignatureAdapter (R-SIG-063): a tarball is an artifact and its signature file a signature file; the defects
+// GatesAttachment and PassesArtifact break one each.
+func (a signatureAdapter) Gate(_ context.Context, _ formats.Host, _ formats.RepoRef, items []formats.GateItem) ([]formats.GateSubject, error) {
+	out := make([]formats.GateSubject, len(items))
+	for i, it := range items {
+		switch {
+		case strings.HasSuffix(it.Path, SignatureSuffix):
+			out[i].Kind = formats.GateSignatureFile
+			if a.f.has(string(GatesAttachment)) {
+				out[i].Kind = formats.GateArtifact
+			}
+		case strings.HasSuffix(it.Path, ".tgz") && !a.f.has(string(PassesArtifact)):
+			out[i].Kind = formats.GateArtifact
+		}
+	}
+	return out, nil
 }
 
 // Detect implements formats.SignatureAdapter: a signature file names the tarball beside it.

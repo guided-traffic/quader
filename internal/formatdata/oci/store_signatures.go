@@ -3,6 +3,7 @@ package oci
 import (
 	"context"
 
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -30,6 +31,46 @@ func (s *Store) TagTargets(ctx context.Context, tx meta.Tx, repoID int64, paths 
 		}
 	}
 	return out, nil
+}
+
+// GateFacts reads whether each manifest is an attachment and the indexes of its name that list it (signatures.md R-SIG-063), in one
+// statement; a manifest that is not recorded is absent.
+func (s *Store) GateFacts(ctx context.Context, repoID int64, keys []rows.ManifestKey) (map[rows.ManifestKey]rows.GateFacts, error) {
+	out := make(map[rows.ManifestKey]rows.GateFacts, len(keys))
+	if len(keys) == 0 {
+		return out, nil
+	}
+	asked := make(map[rows.ManifestKey]bool, len(keys))
+	names, digests := make([]string, 0, len(keys)), make([][]byte, 0, len(keys))
+	for _, k := range keys {
+		if !asked[k] {
+			asked[k] = true
+			names, digests = append(names, k.Name), append(digests, k.Digest[:])
+		}
+	}
+	err := s.read(ctx, nil, func(qs *q.Queries) error {
+		clear(out)
+		rs, err := qs.OCIGateFacts(ctx, q.OCIGateFactsParams{RepoID: repoID, Names: names, Digests: digests})
+		if err != nil {
+			return err
+		}
+		for _, r := range rs {
+			d, ok := digestOf(r.Digest)
+			k := rows.ManifestKey{Name: r.Name, Digest: d}
+			if !ok || !asked[k] {
+				continue
+			}
+			f := rows.GateFacts{Attachment: r.Attachment}
+			for _, raw := range r.Indexes {
+				if idx, ok := digestOf(raw); ok {
+					f.Indexes = append(f.Indexes, idx)
+				}
+			}
+			out[k] = f
+		}
+		return nil
+	})
+	return out, err
 }
 
 // EnqueueSignatureFetch queues the background fetch of a remote's signatures for a top-level manifest (R-SIG-026), through the queue

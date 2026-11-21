@@ -150,3 +150,28 @@ func TestR_SIG_028_DetectOverADocumentAndAPublish(t *testing.T) {
 		}
 	})
 }
+
+// gateCases is check 18's classification of npm (R-SIG-063): a version's tarball is the artifact, its provenance bundle a signature
+// file; a remote's attestations document is no artifact of its own. Milliseconds.
+func gateCases() []formattest.GateCase {
+	return []formattest.GateCase{
+		{Name: "a tarball is an artifact", Seed: putItem("lodash/-/lodash-4.17.21.tgz"), Path: "lodash/-/lodash-4.17.21.tgz", Want: formats.GateArtifact},
+		{Name: "a scoped tarball is an artifact", Seed: putItem("@acme/ui/-/ui-1.2.0.tgz"), Path: "@acme/ui/-/ui-1.2.0.tgz", Want: formats.GateArtifact},
+		{
+			Name: "a provenance bundle is a signature file", Seed: putItem("lodash/-/lodash-4.17.21.sigstore"), Path: "lodash/-/lodash-4.17.21.sigstore",
+			Want: formats.GateSignatureFile,
+		},
+		{
+			Name: "a remote's attestations document is none", Seed: putItem(AttestationsPrefix + "lodash@4.17.21"),
+			Path: AttestationsPrefix + "lodash@4.17.21", Want: formats.GateNone,
+		},
+	}
+}
+
+// putItem stores bytes at a path of the kit's host, the item a gate case asks about.
+func putItem(p string) func(h *formattest.Host) error {
+	return func(h *formattest.Host) error {
+		h.PutItem(p, "application/octet-stream", []byte("bytes of "+p))
+		return nil
+	}
+}

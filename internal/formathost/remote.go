@@ -113,7 +113,9 @@ func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Pa
 	if preq.HoldFill, err = r.h.holdFill(ctx, rq); err != nil {
 		return err
 	}
-	preq.Unstored = r.h.unstored(rq, p.Path, preq.HoldFill)
+	if preq.Unstored, err = r.h.unstored(ctx, rq, p.Path); err != nil {
+		return err
+	}
 	preq.Serve = func(ctx context.Context, w http.ResponseWriter, it items.Item) error {
 		fi := itemOf(rq.RepoRef(), it)
 		return r.h.Items().Serve(ctx, rq, w, fi, formats.ServeStored)

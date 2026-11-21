@@ -640,8 +640,9 @@ leaves their text to them.
   is on: `QuaderMalwareFound`, `QuaderMalwareDatabaseStale` (its threshold `config.malware.database.stale_after`, default 48 h),
   `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog`, with their `promtool` tests in
   [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml).
-- **The signatures' alerts and anchors.** The rules carry the three alerts of [signatures.md](signatures.md) R-SIG-039 while
-  `config.signatures.enabled` (the default): `QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`. The values'
+- **The signatures' alerts and anchors.** The rules carry the three alerts of [signatures.md](signatures.md) R-SIG-039 and the one of its
+  gate per repository (R-SIG-075) while `config.signatures.enabled` (the default): `QuaderSignatureInvalid`, `QuaderSignatureBacklog`,
+  `QuaderSignatureTrustRootStale`, `QuaderSignatureGatePending`. The values'
   `signatures.anchors` (R-SIG-018) render into `config.signatures.anchors`; material from a `<member>From.configMapKeyRef` is mounted
   read-only into the migration Job alone ([Q-SIG-122](signatures.md#q-sig-122--anchors-of-the-configuration-are-a-map-and-their-material-a-mounted-file)).
 - **Chart checks** (R-HA-029): `clamd-tmp`'s size at least `slots × (max_file_size + max_scan_size)`, the failure naming the three values;
@@ -4739,7 +4740,7 @@ config:
   authz: {}                             # empty; authorization.md
   ci: {}                                # empty; gitlab-ci-oidc.md
   # The signatures on artifacts (docs/spec/signatures.md R-SIG-040). Every key has a default and is rendered only when set here; the
-  # chart reads enabled, which renders the three QuaderSignature* alerts. The anchors are declared in signatures.anchors (below
+  # chart reads enabled, which renders the four QuaderSignature* alerts. The anchors are declared in signatures.anchors (below
   # trustedCA), never here.
   # signatures:
   #   enabled: true                     # false: no signature is detected, checked or shown; the stored rows stay

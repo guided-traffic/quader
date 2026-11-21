@@ -434,39 +434,9 @@ func matchBlock(blocks []Block, ids map[string]bool, signer *signatures.Signer) 
 }
 
 func blockMatches(b Block, ids map[string]bool, signer *signatures.Signer) bool {
-	switch b.Kind {
-	case BlockFingerprint, BlockKeyID:
-		if ids[b.Value] {
-			return true
-		}
-		if !isHex(b.Value) {
-			return false
-		}
-		for id := range ids {
-			if strings.EqualFold(id, b.Value) {
-				return true
-			}
-		}
-	case BlockSerial:
-		return ids[b.Value]
-	case BlockIdentity:
-		if signer == nil || signer.Identity == "" || (b.Issuer != "" && b.Issuer != signer.OIDCIssuer) {
-			return false
-		}
-		p, err := regexp.Compile(`^(?:` + b.Value + `)$`)
-		return err == nil && p.MatchString(signer.Identity)
+	var issuer, identity string
+	if signer != nil {
+		issuer, identity = signer.OIDCIssuer, signer.Identity
 	}
-	return false
-}
-
-func isHex(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, c := range s {
-		if !strings.ContainsRune("0123456789abcdefABCDEF", c) {
-			return false
-		}
-	}
-	return true
+	return signatures.BlockMatches(b.Kind, b.Value, b.Issuer, ids, issuer, identity)
 }

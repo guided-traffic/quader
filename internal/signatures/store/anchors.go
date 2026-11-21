@@ -223,13 +223,26 @@ func (s *Store) UpdateAnchor(ctx context.Context, actor audit.Actor, id int64, p
 		if err := s.o.Audit.RecordTx(ctx, tx, updatedEvent(actor, cur, next, out.ProjectKey)); err != nil {
 			return err
 		}
-		_, err = s.changed(ctx, qs, tx)
-		return err
+		epoch, err := s.changed(ctx, qs, tx)
+		if err != nil {
+			return err
+		}
+		return markNarrowed(ctx, qs, cur.ID, epoch, cur.Enabled, next.Enabled, cur.Material, next.Material)
 	})
 	if err != nil {
 		return signatures.AnchorRecord{}, err
 	}
 	return out, nil
+}
+
+// markNarrowed records on an anchor the epoch of a write that narrowed it for the gate of stage 3 (R-SIG-066): it was switched off, or
+// its material changed in any way. A change of the material counts whole, as a removal, because the gate cannot tell without
+// cryptography which signers the new material still knows (fail closed until the trust job computed the rows again).
+func markNarrowed(ctx context.Context, qs *q.Queries, id, epoch int64, wasOn, isOn bool, before, after json.RawMessage) error {
+	if !wasOn || (isOn && string(before) == string(after)) {
+		return nil
+	}
+	return qs.SignatureAnchorNarrowed(ctx, q.SignatureAnchorNarrowedParams{ID: id, Epoch: epoch})
 }
 
 // anchorRow is an anchor as a change reads it.

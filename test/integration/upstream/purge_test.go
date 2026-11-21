@@ -18,6 +18,7 @@ var (
 		"items", "mirror_pending", "mirror_state", "npm_packages", "npm_remote_packages", "npm_tombstones", "nuget_symbol_file",
 		"nuget_tombstone", "nuget_version", "oci_manifests", "oci_tombstones", "packages", "remote_cache_entries",
 		"remote_cache_invalidations", "remote_upstream_state", "remote_url_map", "repository_usage", "signature_attachments", "signature_fetches",
+		"signature_refusals",
 		"upload_sessions", "usage_bucket", "usage_daily_summary", "usage_limit_event", "vuln_finding",
 	}
 	kept = []string{

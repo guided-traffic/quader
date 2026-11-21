@@ -13,23 +13,26 @@ ON CONFLICT (repo_id, target) DO UPDATE SET queued_at = now(), subject_sha256 = 
         OR (sqlc.arg(refresh)::boolean AND f.fetched_at < now() - make_interval(secs => sqlc.arg(refresh_after_seconds)::float8)))
 RETURNING f.repo_id;
 
--- name: SignatureFetchDone :exec
--- The end of a run: the target is free again; a run that asked the upstream to the end is a fetch, which clears the failures.
+-- name: SignatureFetchDone :many
+-- The end of a run: the target is free again; a run that asked the upstream to the end is a fetch, which clears the failures. The
+-- subject comes back for the signal a waiting download of stage 3's gate listens to (R-SIG-067).
 UPDATE signature_fetches
    SET queued_at = NULL,
        fetched_at = CASE WHEN sqlc.arg(fetched)::boolean THEN now() ELSE fetched_at END,
        attempts = CASE WHEN sqlc.arg(fetched)::boolean THEN 0 ELSE attempts END,
        failed_at = CASE WHEN sqlc.arg(fetched)::boolean THEN NULL ELSE failed_at END
- WHERE repo_id = sqlc.arg(repo_id)::bigint AND target = sqlc.arg(target)::text;
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND target = sqlc.arg(target)::text
+RETURNING COALESCE(subject_sha256, ''::bytea)::bytea AS subject;
 
--- name: SignatureFetchFailed :exec
+-- name: SignatureFetchFailed :many
 -- A run that failed: one failure more; the job's last attempt frees the target and marks it failed until the next fill or refresh
 -- queues it again.
 UPDATE signature_fetches
    SET attempts = attempts + 1,
        queued_at = CASE WHEN sqlc.arg(final)::boolean THEN NULL ELSE queued_at END,
        failed_at = CASE WHEN sqlc.arg(final)::boolean THEN now() ELSE failed_at END
- WHERE repo_id = sqlc.arg(repo_id)::bigint AND target = sqlc.arg(target)::text;
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND target = sqlc.arg(target)::text
+RETURNING COALESCE(subject_sha256, ''::bytea)::bytea AS subject;
 
 -- name: SignatureFetchForget :exec
 -- The state of a target whose item went (a removed or evicted manifest).

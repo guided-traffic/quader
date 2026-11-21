@@ -182,3 +182,30 @@ func TestR_SIG_029_TheServiceIndexListsNoRepositorySignaturesResource(t *testing
 		}
 	}
 }
+
+// gateCases is check 18's classification of NuGet (R-SIG-063): a version's .nupkg is the artifact; its .snupkg is one too and is covered
+// by the .nupkg of the same ID and version in the repository, which carries the author's signature; the .nuspec Quader derives is none.
+// Milliseconds.
+func gateCases() []formattest.GateCase {
+	const (
+		nupkg  = "acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg"
+		snupkg = "acme.widgets/1.2.3/acme.widgets.1.2.3.snupkg"
+	)
+	both := func(h *formattest.Host) error {
+		_ = putItem(nupkg)(h)
+		return putItem(snupkg)(h)
+	}
+	return []formattest.GateCase{
+		{Name: "a .nupkg is an artifact", Seed: putItem(nupkg), Path: nupkg, Want: formats.GateArtifact},
+		{Name: "a .snupkg is covered by its .nupkg", Seed: both, Path: snupkg, Want: formats.GateArtifact, Covering: []string{nupkg}},
+		{Name: "a .nuspec is none", Seed: putItem("acme.widgets/1.2.3/acme.widgets.nuspec"), Path: "acme.widgets/1.2.3/acme.widgets.nuspec", Want: formats.GateNone},
+	}
+}
+
+// putItem stores bytes at a path of the kit's host, the item a gate case asks about.
+func putItem(p string) func(h *formattest.Host) error {
+	return func(h *formattest.Host) error {
+		h.PutItem(p, "application/octet-stream", []byte("bytes of "+p))
+		return nil
+	}
+}

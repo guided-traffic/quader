@@ -114,7 +114,7 @@ func isMemberMiss(err error) bool {
 func isBlock(e *errs.Error) bool {
 	switch e.Code {
 	case errs.CodeVulnerabilityBlocked, errs.CodeVulnerabilityDataMissing, errs.CodeMalwareFound, errs.CodeMalwareNotChecked,
-		errs.CodeMalwareCheckPending:
+		errs.CodeMalwareCheckPending, errs.CodeSignatureNotVerified, errs.CodeSignatureCheckPending:
 		return true
 	}
 	return false

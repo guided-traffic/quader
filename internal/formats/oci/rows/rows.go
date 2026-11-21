@@ -52,7 +52,23 @@ type Manifest struct {
 	Annotations json.RawMessage
 	// AnnotationsCut says the annotations were cut at MaxAnnotationBytes, which a referrers answer reports.
 	AnnotationsCut bool
-	CreatedAt      time.Time
+	// Attachment says the format recognised the manifest by its content as a carrier of signatures, attestations or SBOMs and not as a
+	// runnable image (signatures.md R-SIG-063, Q-SIG-82): the signature gate passes it.
+	Attachment bool
+	CreatedAt  time.Time
+}
+
+// ManifestKey names a manifest of an image name.
+type ManifestKey struct {
+	Name   string
+	Digest [32]byte
+}
+
+// GateFacts is what the signature gate asks of a recorded manifest (signatures.md R-SIG-063): whether it is an attachment, and the
+// indexes of the name that list it, whose passing signature passes it too.
+type GateFacts struct {
+	Attachment bool
+	Indexes    [][32]byte
 }
 
 // ManifestInput is a manifest to record in the transaction that writes its item, with the references it names.

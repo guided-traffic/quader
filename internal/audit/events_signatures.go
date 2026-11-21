@@ -26,6 +26,9 @@ const (
 	EventSignatureTrustRootUpdated = "signature.trust_root.updated"
 	// EventSignatureTrustRootFailed: a run of the task failed, at most once a day.
 	EventSignatureTrustRootFailed = "signature.trust_root.failed"
+	// EventSignatureDownloadRefused: a repository's gate refused a download (stage 3, R-SIG-075), or answered it pending after the wait,
+	// at most once a minute per repository, path and client address on each replica.
+	EventSignatureDownloadRefused = "signature.download_refused"
 )
 
 func init() {
@@ -82,6 +85,13 @@ func init() {
 		Schema: `{"type":"object","properties":{"tufVersion":{"type":"integer"},` +
 			`"targets":{"type":"array","maxItems":8,"items":{"type":"string"}}},` +
 			`"required":["tufVersion","targets"],"additionalProperties":false}`,
+	})
+	Register(EventType{
+		Name: EventSignatureDownloadRefused, Category: CategoryContent, Mode: Async,
+		Schema: `{"type":"object","properties":{"repository":{"type":"string"},"path":{"type":"string"},` +
+			`"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
+			`"reason":{"type":"string","enum":["missing","untrusted","not_chosen","invalid","blocked","not_checked","pending"]}},` +
+			`"required":["repository","path","sha256","reason"],"additionalProperties":false}`,
 	})
 	Register(EventType{
 		Name: EventSignatureTrustRootFailed, Category: CategorySystem, Mode: Async,

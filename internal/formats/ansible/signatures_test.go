@@ -102,3 +102,22 @@ func TestR_SIG_031_TheSignaturesOfARemotesVersionDocument(t *testing.T) {
 		}
 	}
 }
+
+// gateCases is check 18's classification of Ansible Galaxy (R-SIG-063): a collection archive and a role archive are the artifacts; the
+// documents a remote stores are none. Milliseconds.
+func gateCases() []formattest.GateCase {
+	const archive = "collections/acme/tools/acme-tools-1.0.0.tar.gz"
+	return []formattest.GateCase{
+		{Name: "a collection archive is an artifact", Seed: putItem(archive), Path: archive, Want: formats.GateArtifact},
+		{Name: "a role archive is an artifact", Seed: putItem("roles/123/v1.0.tar.gz"), Path: "roles/123/v1.0.tar.gz", Want: formats.GateArtifact},
+		{Name: "a version document is none", Seed: putItem("collections/acme/tools/1.0.0.json"), Path: "collections/acme/tools/1.0.0.json", Want: formats.GateNone},
+	}
+}
+
+// putItem stores bytes at a path of the kit's host, the item a gate case asks about.
+func putItem(p string) func(h *formattest.Host) error {
+	return func(h *formattest.Host) error {
+		h.PutItem(p, "application/octet-stream", []byte("bytes of "+p))
+		return nil
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/signatures/gateset"
 	"github.com/guided-traffic/quader/internal/vuln"
 )
 
@@ -35,6 +36,8 @@ const (
 	partDebUpstreamKeysRemoved = "debUpstreamKeysRemoved"
 	// partClientsOff is the switch "ClamAV definition updates" of upstream/clamav switched off (R-REPO-075, Q-REPO-414).
 	partClientsOff = "clientsOff"
+	// partSignatures is the gate of signatures narrowed: switched on, or fewer trust anchors accepted (R-SIG-061).
+	partSignatures = "signatures"
 )
 
 // repoRef names a repository of an entry: its ID as decimal text, which the replay acts on, and its qualified name, for
@@ -58,6 +61,27 @@ type vulnChange struct {
 	After  vuln.Settings `json:"after"`
 }
 
+// signatureGateMember is the member signatures.onlyVerified and signatures.anchors as an entry of repository.narrowed carries it.
+type signatureGateMember struct {
+	OnlyVerified bool     `json:"onlyVerified"`
+	Anchors      []string `json:"anchors"`
+}
+
+// signaturesChange is the gate of signatures before and after a write that narrowed it (R-SIG-061); the replay sets the narrower of
+// the restored member and After.
+type signaturesChange struct {
+	Before signatureGateMember `json:"before"`
+	After  signatureGateMember `json:"after"`
+}
+
+func gateMember(s gateset.Setting) signatureGateMember {
+	out := signatureGateMember{OnlyVerified: s.OnlyVerified, Anchors: slices.Clone(s.Anchors)}
+	if out.Anchors == nil {
+		out.Anchors = []string{}
+	}
+	return out
+}
+
 // narrowedEntry is the journal entry of repository.narrowed: the repository, and each part that narrowed, only when it did.
 type narrowedEntry struct {
 	RepositoryID      string      `json:"repositoryId"`
@@ -75,6 +99,8 @@ type narrowedEntry struct {
 	DebUpstreamKeysRemoved []string `json:"debUpstreamKeysRemoved,omitempty"`
 	// ClientsOff is true for the write that switched the clients of a system repository off; the replay switches them off again.
 	ClientsOff bool `json:"clientsOff,omitempty"`
+	// Signatures is the gate of signatures before and after a write that narrowed it.
+	Signatures *signaturesChange `json:"signatures,omitempty"`
 }
 
 // parts lists the parts the entry carries, in the order of the table of R-REPO-061.
@@ -95,6 +121,7 @@ func (e narrowedEntry) parts() []string {
 	add(e.Malware != nil, partMalware)
 	add(len(e.DebUpstreamKeysRemoved) > 0, partDebUpstreamKeysRemoved)
 	add(e.ClientsOff, partClientsOff)
+	add(e.Signatures != nil, partSignatures)
 	return out
 }
 
@@ -136,6 +163,10 @@ func (s *Service) narrowing(r Repository, cur, nd *Document, curRel, rel *virtua
 	// Switching malware.onlyChecked on narrows what the repository serves (R-MAL-020, R-REPO-061).
 	if !malwareOnlyChecked(cur.Malware) && malwareOnlyChecked(nd.Malware) {
 		e.Malware = &MalwareSettings{OnlyChecked: true}
+	}
+	// Switching the gate of signatures on, or accepting fewer anchors, narrows what the repository serves (R-SIG-061).
+	if b, a := signatureGateOf(cur.Signatures), signatureGateOf(nd.Signatures); gateset.Order(b, a) == gateset.Narrows {
+		e.Signatures = &signaturesChange{Before: gateMember(b), After: gateMember(a)}
 	}
 	return e
 }

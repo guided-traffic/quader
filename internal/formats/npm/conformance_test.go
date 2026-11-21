@@ -102,6 +102,7 @@ func conformance(t *testing.T) formattest.Fixture {
 	return formattest.Fixture{
 		WikiSamples: []string{"readme of lodash 4.17.20", "readme of lodash 4.17.21"},
 		Signatures:  signatureCases(t, bind),
+		GateCases:   gateCases(),
 		Host: func() formattest.HostOptions {
 			twin = npmtest.New()
 			return formattest.HostOptions{
@@ -415,6 +416,10 @@ func FuzzR_ARCH_028_Inspect(f *testing.F) {
 
 // vouchAll is the trust step of the kit's host: every provenance bundle verified against the public Sigstore (R-SIG-028).
 type vouchAll struct{}
+
+func (vouchAll) Refuse(context.Context, *formats.Request, formats.RepoRef, string, [32]byte) error {
+	return nil
+}
 
 func (vouchAll) PublicProvenance(_ context.Context, _ formats.RepoRef, paths []string) (map[string]string, error) {
 	out := map[string]string{}

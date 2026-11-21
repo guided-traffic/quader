@@ -411,15 +411,12 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 			func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) },
 			edge.ServeOptions{Buffer: s.h.o.DownloadBuffer})
 	}
-	// The malware gate, after the format's own check and before the vulnerability block (R-MAL-013): an infected blob is
-	// refused, and where only checked artifacts are served one without a verdict waits for its scan (R-MAL-014). The system
-	// read above asks no gate.
-	if err := s.h.refuseMalware(ctx, rq, it.Ref.Repo, row); err != nil {
+	// The malware gate (R-MAL-013), the vulnerability block (R-VULN-015) and the gate of signatures (R-SIG-064), after the format's own
+	// check, decided together before one wait (R-SIG-069): an infected blob, a blocked version and an artifact without a verified
+	// signature where one is required are refused, and what is not checked yet where a check is required waits. The system read above
+	// asks no gate.
+	if err := s.h.serveChecks(ctx, rq, it.Ref.Repo, row); err != nil {
 		bastionmain.NoteUnknown(ctx) // a refusal is never a negative entry (R-BAS-013)
-		return err
-	}
-	if err := s.h.refuseBlocked(ctx, rq, it.Ref.Repo, row); err != nil {
-		bastionmain.NoteUnknown(ctx) // a block is never a negative entry (R-BAS-013)
 		return err
 	}
 	// The download limits learn the repository that served (a virtual repository's member, R-LIM-006) and admit a download

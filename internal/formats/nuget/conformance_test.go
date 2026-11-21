@@ -176,6 +176,7 @@ func conformance(f *Format) formattest.Fixture {
 		// the text such a README would carry. What the format owes check 15 is the route of the README declared Wiki (routes.go).
 		WikiSamples: []string{"# Acme.Widgets readme"},
 		Signatures:  signatureCases(),
+		GateCases:   gateCases(),
 		Host: func() formattest.HostOptions {
 			return formattest.HostOptions{
 				Data: newDocStore(),

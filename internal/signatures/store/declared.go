@@ -58,6 +58,7 @@ func (s *Store) ApplyShipped(ctx context.Context, tx meta.Tx, list []shipped.Anc
 		return err
 	}
 	changed := false
+	var narrowed []int64
 	for _, a := range list {
 		material, err := encodeMaterial(a.Material)
 		if err != nil {
@@ -81,6 +82,9 @@ func (s *Store) ApplyShipped(ctx context.Context, tx meta.Tx, list []shipped.Anc
 				return fmt.Errorf("update the shipped anchor %s: %w", a.Key, err)
 			}
 			changed = true
+			if !sameMaterial(cur.Material, material) {
+				narrowed = append(narrowed, cur.ID)
+			}
 		}
 	}
 	for _, gone := range have {
@@ -89,10 +93,25 @@ func (s *Store) ApplyShipped(ctx context.Context, tx meta.Tx, list []shipped.Anc
 		}
 		changed = true
 	}
-	if changed {
-		_, err = s.changed(ctx, qs, tx)
+	if !changed {
+		return nil
 	}
-	return err
+	return s.changedNarrowing(ctx, qs, tx, narrowed)
+}
+
+// changedNarrowing raises the anchor epoch as changed does and records it on the anchors whose material a declaration replaced, which
+// the gate of stage 3 counts for no older trust row (R-SIG-066).
+func (s *Store) changedNarrowing(ctx context.Context, qs *q.Queries, tx meta.Tx, narrowed []int64) error {
+	epoch, err := s.changed(ctx, qs, tx)
+	if err != nil {
+		return err
+	}
+	for _, id := range narrowed {
+		if err := qs.SignatureAnchorNarrowed(ctx, q.SignatureAnchorNarrowedParams{ID: id, Epoch: epoch}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // sameMaterial compares two stored forms of material, whatever spelling PostgreSQL's jsonb gave the stored one.
@@ -119,9 +138,13 @@ func (s *Store) ApplyConfiguration(ctx context.Context, tx meta.Tx, actor audit.
 		return err
 	}
 	changed := false
+	var narrowed []int64
 	for i, d := range list {
 		cur, ok := have[d.Key]
 		delete(have, d.Key)
+		if ok && !sameMaterial(cur.Material, materials[i]) {
+			narrowed = append(narrowed, cur.ID)
+		}
 		did, err := s.applyDeclaration(ctx, qs, tx, actor, d, materials[i], cur, ok)
 		if err != nil {
 			return fmt.Errorf("signatures.anchors: anchor %q: %w", d.Key, err)
@@ -138,10 +161,10 @@ func (s *Store) ApplyConfiguration(ctx context.Context, tx meta.Tx, actor audit.
 		}
 		changed = true
 	}
-	if changed {
-		_, err = s.changed(ctx, qs, tx)
+	if !changed {
+		return nil
 	}
-	return err
+	return s.changedNarrowing(ctx, qs, tx, narrowed)
 }
 
 // checkDeclarations applies the checks on save to every declaration and answers their stored material: an error names the anchor's key

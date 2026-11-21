@@ -186,6 +186,11 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 	if err := refuseBlockedImage(ctx, rq, name, doc.Digest); err != nil {
 		return err
 	}
+	// The tag is a stored document the item store does not serve: the signature gate of the repositories the request involves judges it
+	// here, after the image block (signatures.md R-SIG-064, R-SIG-069).
+	if err := rq.Host.Signatures().Refuse(ctx, rq, rq.RepoRef(), path, doc.Digest); err != nil {
+		return err
+	}
 	body, err := doc.Bytes(ctx)
 	if err != nil {
 		return err

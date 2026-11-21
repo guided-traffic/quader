@@ -72,6 +72,7 @@ func conformance() formattest.Fixture {
 			return formattest.HostOptions{Data: newTwin(), Resolver: proceedResolver{}}
 		},
 		Signatures: signatureCases(),
+		GateCases:  gateCases(),
 		Canonical:  canonical,
 		Protocol:   protocol,
 		Inspect:    formattest.InspectJSON("team/app/_manifests/" + digestZero),

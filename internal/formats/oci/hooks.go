@@ -183,7 +183,7 @@ func manifestInput(repoID int64, name string, m *manifest.Manifest) rows.Manifes
 	annotations, cut := m.RowAnnotations(manifest.MaxAnnotationBytes)
 	in := rows.ManifestInput{Manifest: rows.Manifest{
 		RepoID: repoID, Name: name, Digest: m.Sum, MediaType: m.MediaType, ArtifactType: m.EffectiveArtifactType(),
-		Size: m.Size, ContentSize: m.ContentSize(), Annotations: annotations, AnnotationsCut: cut,
+		Size: m.Size, ContentSize: m.ContentSize(), Annotations: annotations, AnnotationsCut: cut, Attachment: IsAttachment(m),
 	}}
 	if m.Subject != nil {
 		if s, ok := manifest.ParseDigest(m.Subject.Digest); ok {

@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/signatures/gateset"
 	"github.com/guided-traffic/quader/internal/vuln"
 )
 
@@ -96,10 +97,22 @@ type MalwareSettings struct {
 	OnlyChecked bool `json:"onlyChecked"`
 }
 
-// SignatureSettings is the member `signatures` of a document (R-SIG-040): fetch, on a remote repository, lets the background fetch
-// ask the upstream for the signatures of what the remote stored (R-SIG-026); false is for an upstream whose rate limits are tight.
+// SignatureSettings is the member `signatures` of a document (R-SIG-040, R-SIG-061): fetch, on a remote repository, lets the background
+// fetch ask the upstream for the signatures of what the remote stored (R-SIG-026); false is for an upstream whose rate limits are tight.
+// onlyVerified switches the repository's gate on (stage 3): only artifacts with a verified signature are served from it, and anchors,
+// empty for any anchor of the repository's scope, names the anchors it accepts as "<scope>/<key>". Debian takes neither (Q-SIG-80).
 type SignatureSettings struct {
-	Fetch *bool `json:"fetch,omitempty"`
+	Fetch        *bool    `json:"fetch,omitempty"`
+	OnlyVerified *bool    `json:"onlyVerified,omitempty"`
+	Anchors      []string `json:"anchors,omitempty"`
+}
+
+// signatureGateOf is the effective gate of the member: an absent member, or one without onlyVerified, is off.
+func signatureGateOf(m *SignatureSettings) gateset.Setting {
+	if m == nil {
+		return gateset.Setting{}
+	}
+	return gateset.Setting{OnlyVerified: m.OnlyVerified != nil && *m.OnlyVerified, Anchors: slices.Clone(m.Anchors)}
 }
 
 // malwareOnlyChecked is the effective value of the member: an absent member is false.

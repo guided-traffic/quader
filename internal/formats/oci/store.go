@@ -90,6 +90,9 @@ type Store interface {
 	// RecordManifestDeleted writes the audit event oci.manifest.deleted with the journal entry a restore's replay withholds the
 	// manifest by (R-OCI-033).
 	RecordManifestDeleted(ctx context.Context, tx formats.Tx, in rows.ManifestDeleted) error
+	// GateFacts reads, for manifests of image names of the repository, whether each is an attachment the format recognised at its
+	// commit and the indexes of the name that list it (signatures.md R-SIG-063). A manifest that is not recorded is absent.
+	GateFacts(ctx context.Context, repoID int64, keys []rows.ManifestKey) (map[rows.ManifestKey]rows.GateFacts, error)
 	// TagTargets reads the manifests the tags at the canonical paths point at: a local tag item's content, a remote's stored tag
 	// document. A path that holds no tag is absent. The removal of a manifest takes its attachment tags and what they point at
 	// (signatures.md R-SIG-025).

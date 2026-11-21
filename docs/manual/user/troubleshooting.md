@@ -173,6 +173,23 @@ The page of the file and the **Files** tab of a version show the state of the sc
 virtual repository the member that holds the file decides: Quader does not serve the same file from another member. An answer of the
 scan is never cached.
 
+## A download is refused for its signature
+
+A repository can be set to serve only artifacts with a verified signature (the section **Signatures** of its settings). Such a repository
+refuses a package, an image or a file that has no signature of its publisher or its build that a trust anchor of the repository knows.
+Every client gets an answer of its own kind with the same text: npm prints it after `E403`, Docker after `denied:`, `dotnet restore` shows
+the status and the text, and `curl` on the address prints a problem document whose `reason` says why.
+
+| Code | Status | What happened | What to do |
+|---|---|---|---|
+| `signature_not_verified` | 403 | The repository serves only artifacts with a verified signature, and this one has none it accepts. The text says why: it has no signature (`missing`), no trust anchor the repository accepts knows its signer (`untrusted`), its signature is verified by an anchor the repository does not accept (`not_chosen`), the signature does not match the content (`invalid`), an administrator blocked its signer (`blocked`), or the signature could not be checked (`not_checked`); it ends with the address of the file's page | Sign the artifact with a key or identity the repository's anchors know and upload the signature (for an image, push it with `cosign` or `notation`; for a file, upload `<file>.asc` or `<file>.sigstore.json` beside it), or download it from a repository without the setting. An Owner cannot switch the setting off; an administrator can |
+| `signature_check_pending` | 503 | The repository serves only artifacts with a verified signature, and the artifact's signatures are being checked, or, for a remote repository, fetched from its upstream; the answer carries `Retry-After` | Run the command again in a minute. npm and NuGet retry by themselves; Docker and `ansible-galaxy` do not, so their first pull through such a remote repository can fail once and work when you repeat it |
+
+An image's signatures, attestations and SBOMs are always served, so that `cosign verify` and `notation verify` work against a repository
+with the setting; a platform image of a multi-platform image passes on the signature of its index. Through a virtual repository both the
+virtual repository's setting and the setting of the member that holds the artifact apply. An answer of the setting is never cached, so an
+artifact signed later is served at the next request.
+
 ## Session ended and re-authentication
 
 A browser session ends after a period without activity and after a maximum length (one and twelve hours unless an administrator set other values), or when it is ended under **Profile › Sessions**.
@@ -210,6 +227,8 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `malware_found` | 403 | The malware scan found a signature in the file and no auditor released it |
 | `malware_not_checked` | 403 | Only checked artifacts can be downloaded here, and the malware scan could not check the file |
 | `malware_weakening_refused` | 403 | Switching a repository's malware setting off needs an administrator or someone who triages vulnerabilities |
+| `signature_not_verified` | 403 | The repository serves only artifacts with a verified signature, and this one has none it accepts; `reason` says why |
+| `signature_weakening_refused` | 403 | Switching a repository's signature setting off, or accepting more trust anchors, needs an administrator or someone who triages vulnerabilities |
 | `pat_not_allowed` | 403 | Personal tokens are restricted to members of certain groups |
 | `derivation_exceeds_parent` | 403 | A token created with a token would outlive or outrank it |
 | `not_found` | 404 | Does not exist, or is hidden from you |
@@ -249,6 +268,7 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `server_busy`, `shutting_down` | 503 | The replica is at its limit or stopping; retry |
 | `database_unavailable`, `authz_stale`, `unavailable` | 503 | A dependency is temporarily unavailable; retry |
 | `malware_check_pending` | 503 | Only checked artifacts can be downloaded here, and the file is being scanned; retry after `Retry-After` |
+| `signature_check_pending` | 503 | Only artifacts with a verified signature can be downloaded here, and the artifact's signatures are being checked; retry after `Retry-After` |
 | `upstream_assumed_offline`, `shadow_check_unavailable`, `fetch_queue_timeout` | 503 | The upstream is assumed down, or busy; retry after `Retry-After` |
 | `content_unavailable` | 503 | The stored object of the file is missing from the object store. A remote repository fetches it again from its upstream and answers this only while it cannot (offline, the upstream down, the cache view); a local repository answers it until the object is back (an administrator restores it; Quader looks again at most every 30 seconds) or the same file is uploaded again. Retry after `Retry-After`; tell an administrator when it persists. The status is 500 when the object failed Quader's verification instead |
 | `upstream_timeout` | 504 | The upstream did not answer in time |

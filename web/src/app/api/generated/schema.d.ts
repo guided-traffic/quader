@@ -11877,15 +11877,28 @@ export interface components {
             onlyChecked: boolean;
         };
         /**
-         * @description The member `signatures` of a repository document (R-SIG-040, R-REPO-004). `fetch`, on a remote repository, lets the background
-         *     fetch ask the upstream for the signatures of what the remote stored (R-SIG-026): `false` for an upstream whose rate limits are
-         *     tight (Docker Hub without an account). On a local or a virtual repository it answers `422 not_applicable` at `/signatures/fetch`.
-         *     An absent member, or one without `fetch`, is the default (on). It belongs in the closed section **Signatures** of a repository's
-         *     settings, never in the form that creates one.
+         * @description The member `signatures` of a repository document (R-SIG-040, R-SIG-061, R-REPO-004). `fetch`, on a remote repository, lets the
+         *     background fetch ask the upstream for the signatures of what the remote stored (R-SIG-026): `false` for an upstream whose rate
+         *     limits are tight (Docker Hub without an account). On a local or a virtual repository it answers `422 not_applicable` at
+         *     `/signatures/fetch`. An absent member, or one without `fetch`, is the default (on).
+         *
+         *     `onlyVerified` switches the repository's gate on (stage 3 of the signatures): only artifacts with a signature of their publisher or
+         *     build that a trust anchor of the repository accepts are served from it, every other download answers `403 signature_not_verified`
+         *     (or `503 signature_check_pending` while the signatures are checked). `anchors`, empty for any anchor of the repository's scope (the
+         *     shipped public ones included), names the anchors it accepts as `<scope>/<key>`, the scope one of `shipped`, `configuration`,
+         *     `installation` and `project` (the repository's own project); at most 32, none twice, each an anchor of the scope at the write
+         *     (`422 invalid_value` at its index); a reference to an anchor removed later stays and matches nothing. `anchors` while `onlyVerified`
+         *     is false is stored and does nothing. On a Debian repository both answer `422 not_applicable`: no package carries its publisher's
+         *     signature. Every writer of the settings may narrow the gate; switching it off, accepting any anchor instead of a list, or adding a
+         *     reference needs `repositories:write-config` or `vulnerabilities:triage` (`403 signature_weakening_refused` for a project Owner).
+         *     It belongs in the closed section **Signatures** of a repository's settings, never in the form that creates one.
          */
         RepositorySignatureSettings: {
             /** @default true */
             fetch: boolean;
+            /** @default false */
+            onlyVerified: boolean;
+            anchors?: string[];
         };
         /**
          * @description The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
