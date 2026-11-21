@@ -3522,7 +3522,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
   and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
   (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
-  log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on;
+  log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on, then
+  Signatures, specified in [signatures.md](signatures.md) R-SIG-036 and not built;
   Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group), read once per page load,
   [Q-UI-874](#q-ui-874--the-screens-outside-the-settings-page-read-the-switch-once-per-page-load)). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
@@ -7382,7 +7383,8 @@ Instanz-Administratoren."
   answers **Page not found** ([Q-UI-622](#q-ui-622--a-caller-without-the-capability-gets-page-not-found-at-security)). The role
   `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
   the projects whose repositories it may read.
-- **Two views** ([Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)): **Vulnerabilities**
+- **Two views** ([Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware); a third, **Signatures**
+  (`/security/signatures`), is specified in [signatures.md](signatures.md) R-SIG-038 and not built): **Vulnerabilities**
   (`/security`) and **Malware** (`/security/malware`, [malware-scanning.md](malware-scanning.md) R-MAL-025), as two links under the page's
   title, which each view places under its own header ([Q-UI-873](#q-ui-873--the-dashboards-two-views-are-a-strip-of-links-that-each-view-places-under-its-own-header));
   the side bar keeps its one entry.

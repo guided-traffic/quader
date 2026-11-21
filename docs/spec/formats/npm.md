@@ -91,8 +91,8 @@ before any lookup ([repositories-and-proxy.md](../repositories-and-proxy.md) R-R
   where Yarn 4 and current pnpm releases post it. Quader owns the host root of `server.base_url`,
   which is an origin without a path ([operations-and-observability.md](../operations-and-observability.md)
   R-OPS-005). Any other host-root path, npm's attestation path `/-/npm/v1/attestations/…` included,
-  answers the generic 404 of [architecture.md](../architecture.md) R-ARCH-005; attestations will be
-  served below the registry URL (R-NPM-027).
+  answers the generic 404 of [architecture.md](../architecture.md) R-ARCH-005; attestations are
+  served below the registry URL ([signatures.md](../signatures.md) R-SIG-028, specified, not built).
 - An operation the repository class cannot perform answers 405 with a reason (for example a
   publish to a remote repository).
 - Endpoints npm defines but Quader does not implement answer **404** for `GET`, `PUT` and
@@ -129,7 +129,8 @@ before any lookup ([repositories-and-proxy.md](../repositories-and-proxy.md) R-R
 | GET | `-/external/{remoteKey}/{path}` | R-NPM-034 (P1) | 404 | 404 | yes |
 | POST | `/-/npm/v1/oidc/token/exchange/package/{name}` (**host root**) | R-NPM-022 (P1) | — | — | — |
 | POST | `-/npm/v1/oidc/token/exchange/package/{name}` | R-NPM-022 (P1) | yes | yes | yes |
-| GET | `-/npm/v1/keys`, `-/npm/v1/attestations/…`, `-/npm/v1/tokens…`, `-/npm/v1/user`, `-/org/…`, `-/team/…`, `-/package/{name}/access`, `-/package/{name}/visibility`, `-/package/{name}/collaborators`, `-/all` | Deferred | 404 | 404 | 404 |
+| GET | `-/npm/v1/keys`, `-/npm/v1/attestations/{name}@{version}` | [signatures.md](../signatures.md) R-SIG-028 (specified, not built; 404 until then) | `{"keys": []}`; the stored provenance bundle when it verifies against the public Sigstore | the upstream's | the union of the members' keys; the winning member's attestations |
+| GET | `-/npm/v1/tokens…`, `-/npm/v1/user`, `-/org/…`, `-/team/…`, `-/package/{name}/access`, `-/package/{name}/visibility`, `-/package/{name}/collaborators`, `-/all` | Deferred | 404 | 404 | 404 |
 | POST | `-/stage/package/{name}` | Deferred | 501 | 501 | 501 |
 
 The web-login poll URL lives outside the registry URL (R-NPM-020).
@@ -1272,9 +1273,9 @@ the published packages:
 - Response 201 `{"token": "qdr_cit_…"}`; errors 400 malformed, 401 invalid ID token, 403 no
   matching grant. Lifetime: `npm.trusted_publishing.token_ttl`, bounded by every term of R-CI-016
   (mapping, CI issuer, global ceiling, remaining ID-token lifetime).
-- Quader MUST NOT set `_npmUser.trustedPublisher` on such publishes while it serves no provenance
-  attestations (PKG-NPM-024, deferred): pnpm's trust policy treats that field together with
-  provenance as the strongest trust level.
+- Quader MUST NOT set `_npmUser.trustedPublisher` on such publishes: pnpm's trust policy treats that field together with
+  provenance as the strongest trust level, and the field would be Quader's claim about the publisher, which stage 1 of
+  [signatures.md](../signatures.md) does not make (Q-SIG-12); the provenance itself is served from stage 1 on (R-SIG-028).
 - Clients without a native exchange (npm 10, pnpm 10 on top of npm 10, Yarn 1) publish from GitLab
   CI through the generic exchange as a pipeline step (R-NPM-041).
 
@@ -1558,13 +1559,14 @@ Priority: **MVP** · Covers: PKG-NPM-038
 - Local repositories never take these fields from clients (R-NPM-007).
 - Virtual repositories take all of them from the member whose version entry wins (R-NPM-030),
   never combining two members within one version.
-- Serving signing keys and attestations is deferred (PKG-NPM-024, PKG-NPM-037); see H-32. Until
-  then `dist.attestations.url` passes through unchanged, so `npm audit signatures`, which keeps
+- Serving the keys and the attestations is specified in [signatures.md](../signatures.md) R-SIG-028 (stage 1, not built); see
+  H-32. Until it is built `dist.attestations.url` passes through unchanged, so `npm audit signatures`, which keeps
   only the URL's path and resolves it against the registry URL (pacote 21.5.1 `lib/registry.js`,
-  verified), asks Quader's host root and gets 404. When PKG-NPM-024 ships, Quader rewrites the URL
+  verified), asks Quader's host root and gets 404. R-SIG-028 rewrites the URL
   to `<serving registry URL>-/npm/v1/attestations/<name>@<version>`; its path then lies below the
   registry URL, so the request reaches the serving repository with its permissions, and no
-  host-root route is needed (Q-NPM-1).
+  host-root route is needed (Q-NPM-1). `dist.signatures` stays byte for byte; registry signing of local packages is stage 2
+  (PKG-NPM-037).
 
 Acceptance criteria:
 
@@ -2726,10 +2728,10 @@ Acceptance criteria (fixture of [endpoints.md](../endpoints.md) R-EP-012, with `
 | PKG-NPM-014 | P2 | `npm token` and `npm profile` endpoints; 404 until then (R-NPM-043); tokens are managed through Quader's API and UI. |
 | PKG-NPM-022 | P2 | `npm owner` maintainer changes; the partial `PUT` is rejected (R-NPM-017); ownership is R-AUTHZ-018/019. |
 | PKG-NPM-023 | Later | Staged publishing (`npm publish --stage`); the `POST` answers 501. |
-| PKG-NPM-024 | P2 | Provenance bundles: stored on publish (R-NPM-006), served later below the registry URL at `-/npm/v1/attestations/<name>@<version>`, with `dist.attestations.url` rewritten to it (R-NPM-027, Q-NPM-1, H-32); 404 until then. |
+| PKG-NPM-024 | P2 | Provenance bundles: stored on publish (R-NPM-006); serving them below the registry URL at `-/npm/v1/attestations/<name>@<version>`, with `dist.attestations.url` rewritten to it, is specified in [signatures.md](../signatures.md) R-SIG-028 (Q-NPM-1, H-32); 404 until it is built. |
 | PKG-NPM-035 | P2 | Strict layout setting; Quader stores only canonical paths, so it is permanently on (R-NPM-006). |
 | PKG-NPM-036 | P2 | Strict-layout conversion; nothing to convert. Relevant only to an import from another system. |
-| PKG-NPM-037 | P2 | Registry signatures and the keys endpoint for `npm audit signatures`, with signing keys on local (REPO-029) and virtual (REPO-042) repositories. |
+| PKG-NPM-037 | P2 | Registry signatures of local packages with Quader's key: stage 2 of [signatures.md](../signatures.md) (Q-SIG-10); the keys endpoint itself is stage 1 (R-SIG-028). |
 | PKG-NPM-041 | P2 | FHIR package registry as upstream, with its rule against mixing it with ordinary npm members. |
 | PKG-NPM-061 | Out of scope | Public-registry account endpoints (organizations, teams, access, visibility, collaborators, hooks, stars); 404. |
 
@@ -5218,13 +5220,15 @@ not add a second check (such as protected-ref-only publishing) on top of the map
 R-NPM-022 is P1 and not built, so its paths issue no token
 ([security/npm.md](../../security/npm.md#trusted-publishing)); it becomes live with the exchange.
 
-### H-32 · Registry signatures and provenance cannot be verified through Quader
+### H-32 · Locally published npm packages carry no registry signature
 
-Until PKG-NPM-024 and PKG-NPM-037 are implemented, Quader serves no signing keys and no
-attestations. `npm audit signatures` against Quader cannot verify the upstream signatures and
-provenance it passes through (R-NPM-027), and locally published packages carry neither. pnpm's
-trust policy still works on the passed-through fields, but Quader does not check them
-cryptographically on the way through.
+Component: the npm format's signatures ([signatures.md](../signatures.md) R-SIG-028). Subject: consumers of locally published
+packages who run `npm audit signatures`. Live today in a wider form: until R-SIG-028 is built, Quader serves no keys and no
+attestations, so the upstream signatures and provenance it passes through (R-NPM-027) cannot be verified through it either. Once
+it is built, upstream signatures and provenance verify through every class, and what stays is that a local package carries no
+registry signature before stage 2 signs it (Q-SIG-10): a client reads it as unsigned, and through a virtual repository with a
+remote member as missing a signature ([signatures.md](../signatures.md#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature)
+H-1176). pnpm's trust policy works on the passed-through fields.
 
 ### H-33 · Takedown delay and earlier downloads
 

@@ -687,7 +687,10 @@ Priority: **P1** · Covers: PKG-OCI-009, PKG-OCI-010, PKG-OCI-011
 - The list is read from the rows of R-OCI-007, so concurrent pushes of referrers to one subject never lose one: each push
   inserts its own row.
 - The referrers tag schema (`sha256-<hex>` tags) is not maintained by Quader: the API exists from the start, so clients never
-  fall back to it; a client that pushes such a tag stores an ordinary tag.
+  fall back to it. A client that pushes such a tag stores it, and it is listed and served like every tag. **Superseded in part by
+  [signatures.md](../signatures.md) R-SIG-024 (specified, not built):** that tag and cosign's tags `sha256-<hex>.sig`, `.att` and
+  `.sbom` are attachment tags of the digest they name: on the wire unchanged, without a version row, shown at their image and removed
+  with it (R-SIG-025, [Q-SIG-32](../signatures.md#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)).
 
 Acceptance criteria:
 
@@ -1402,7 +1405,9 @@ named (Q-OCI-16).
   single-platform image is kept whatever `platforms` says, because its platform is only in its config.
 - **Moving tags.** Every pass is full and re-plans every name, so a tag moved upstream is found by the `HEAD` of step 1 and its
   new manifest and blobs are stored; the old manifest stays (the mirror deletes nothing, R-REPO-051).
-- **Referrers** are not mirrored; they stay pull-through (R-OCI-024).
+- **Referrers** are not mirrored; they stay pull-through (R-OCI-024). **Superseded by [signatures.md](../signatures.md) R-SIG-025 and
+  R-SIG-026 (specified, not built):** a pass asks for the signatures of each kept top-level manifest as the background fetch does and
+  stores what it finds.
 - **Hosts.** The catalog and the tags lists are on the upstream origin; the format adds no host of its own (`MirrorHosts` is
   empty). The token handshake of R-OCI-021 applies to every request of a pass.
 - **Rate limits.** Docker Hub's answers are rate-limit answers of R-REPO-054 (R-OCI-025). The plan's manifest `GET` requests are
@@ -1583,7 +1588,7 @@ R-ARCH-009 by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`):
 | PKG-OCI-014 (build caches), PKG-OCI-015 | P1 | BuildKit registry caches as a tested client. |
 | PKG-OCI-016, PKG-OCI-017 | P1 | wasm-to-oci and ORAS as tested clients; the registry side is content-agnostic already. |
 | PKG-OCI-018 | P1 | Helm charts in OCI repositories (F5). |
-| Cosign beyond referrers | P1 | Signature verification and policies; signatures are stored as referrers or tags today. |
+| Cosign beyond referrers | P1 | Verification and display of Notation, Sigstore and the older cosign layout are specified as stage 1 of [signatures.md](../signatures.md) (R-SIG-023 to R-SIG-027); a policy that refuses is stage 3. |
 | OCI on endpoints with exposure rules | P1 | The format has no exposure adapter yet, so an endpoint with `exposure: rules` does not serve it (R-EP-018, Q-OCI-23). |
 | OCI through the Bastion | P2 | The Bastion's mirrored URL space has no `/v2/` and no token service (Q-OCI-23). |
 
@@ -1900,7 +1905,7 @@ kept from Owners like the patterns (Q-OCI-22).
 **Rationale:** the owner asked that a registry mirror keep named repositories, tag patterns, platforms and the newest n tags within
 the bounds of R-REPO-051 and R-REPO-052; each is a setting here, with defaults that keep a mirror small until the operator widens
 it. The development agent would revisit (c) if the tag order of Q-OCI-17 picks the wrong tags for the images in use, and (d) when
-signature verification arrives (F4).
+signature verification arrives (F4; specified since 2026-11-21 in [signatures.md](../signatures.md) R-SIG-025, which takes referrers along).
 
 **Applied in the spec:** R-OCI-026; [Mirror discovery](#mirror-discovery); [Changes to other pages](#changes-to-other-pages)
 (R-REPO-050, R-REPO-051).

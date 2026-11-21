@@ -274,7 +274,7 @@ is on [backup-and-restore.md](backup-and-restore.md#the-revocation-journal).
 ## What this does not cover
 
 - [H-31](../spec/formats/npm.md#h-31--trusted-publishing-widens-the-set-of-credentials-that-can-publish): trusted publishing widens the set of credentials that can publish; dormant while the exchange of R-NPM-022 is not built.
-- [H-32](../spec/formats/npm.md#h-32--registry-signatures-and-provenance-cannot-be-verified-through-quader): registry signatures and provenance cannot be verified through Quader.
+- [H-32](../spec/formats/npm.md#h-32--locally-published-npm-packages-carry-no-registry-signature): locally published packages carry no registry signature; until [signatures.md](../spec/signatures.md) R-SIG-028 is built, upstream signatures and provenance cannot be verified through Quader either.
 - [H-33](../spec/formats/npm.md#h-33--takedown-delay-and-earlier-downloads): a takedown takes effect after the metadata period, and earlier downloads stay.
 - [H-34](../spec/formats/npm.md#h-34--audit-forwarding-discloses-the-dependency-set): audit forwarding discloses the dependency set.
 - [H-51](../spec/formats/npm.md#h-51--a-restore-reverts-npm-metadata-changes-made-after-the-backups-snapshot): a restore reverts npm metadata changes made after the backup's snapshot.

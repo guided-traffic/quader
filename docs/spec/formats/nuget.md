@@ -155,7 +155,9 @@ values it knows, each resource MUST be listed under every alias in the table.
   `nuget.vulnerabilityInfo` is `local` and Quader's NuGet advisory data is complete
   ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-018).
 - Resources the protocol defines but Quader does not implement (catalog, repository signatures,
-  package details, owner details, report abuse) MUST NOT be listed.
+  package details, owner details, report abuse) MUST NOT be listed. The repository signatures resource stays unlisted also once
+  signatures are verified: it names the certificates a source signs with itself, and Quader signs no NuGet package
+  ([signatures.md](../signatures.md) Q-SIG-36).
 - The service index is rendered by `nuget.ServiceIndex` from the repository's base URL, key and class
   alone. The MVP resources of the table are listed from the skeleton on, although the operations behind
   them are written by later work packages and answer 501 `nuget_not_implemented` until then
@@ -505,7 +507,8 @@ cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The Nu
 - The `.nupkg` is stored byte for byte as received; Quader never rewrites a package, because
   package signatures and lock-file hashes would fail on the client
   ([implementation guide](https://learn.microsoft.com/en-us/nuget/api/implementation-guide)). A
-  `.signature.p7s` entry is kept and not verified (H-36).
+  `.signature.p7s` entry is kept; reading and verifying it, and showing the author's signature and nuget.org's countersignature, is
+  specified in [signatures.md](../signatures.md) R-SIG-029 (not built; until then it is not verified, H-36).
 - Metadata is complete when the ingestion request returns: a client that pushes and immediately
   restores or searches sees the new version, on any replica and whether or not Valkey is
   available (R-ARCH-012 in [architecture.md](../architecture.md), R-NUGET-030). Every metadata
@@ -2671,7 +2674,7 @@ pre-releases):
 | PKG-NUGET-038 | P2 | Chocolatey (recommended against v2). |
 | PKG-NUGET-039 | P2 | Companion command-line client wrapping nuget and dotnet; not planned. |
 | PKG-NUGET-040 | Later | Steering clients to the newest version that passes curation policies. |
-| PKG-NUGET-052 | P2 | Repository signatures resource and repository signing (H-36). |
+| PKG-NUGET-052 | P2 | Repository signatures resource and repository signing (H-36); not planned: Quader does not countersign NuGet packages ([signatures.md](../signatures.md) Q-SIG-10, Q-SIG-36). |
 | PKG-NUGET-053 | P2 | Catalog resource for mirrors and indexers: Quader reads an upstream's catalog for its own mirrors (section "Mirror discovery") and its leaves for digests (R-NUGET-029), but offers none. |
 | PKG-NUGET-054 | P2 | URI template resources; the README template is pulled into R-NUGET-024 (P1). |
 | PKG-NUGET-056 | Later | Federated NuGet repositories (INV-5). |
@@ -5577,13 +5580,13 @@ immutable cannot detect a changed package either. Clients that enforce signature
 (`signatureValidationMode="require"` with trusted repository certificates) or lock files with
 content hashes still detect the change on their side.
 
-### H-36 · Package signatures are neither verified nor produced
+### H-36 · A package's signature does not decide whether it is stored or served
 
-Quader keeps author and repository signatures inside packages untouched but does not verify them
-on push or on caching, and it offers no repository signing and no repository signatures resource
-(PKG-NUGET-052, P2). A local repository accepts an unsigned or wrongly signed package from anyone
-who passes `deploy` and ownership for the ID; trust decisions about signers rest entirely on client
-configuration.
+Quader keeps author and repository signatures inside packages untouched. Today it does not verify them; once
+[signatures.md](../signatures.md) R-SIG-029 is built it verifies and shows them, and still refuses nothing: a local repository
+accepts an unsigned or wrongly signed package from anyone who passes `deploy` and ownership for the ID, and a remote serves what its
+upstream sends, until the gate per repository of stage 3. Quader offers no repository signing and no repository signatures resource
+(PKG-NUGET-052, Q-SIG-36); a client's own trust decisions about signers stay its configuration.
 
 ### H-50 · A restore revives NuGet versions deleted after the backup's snapshot and can free lost version numbers
 

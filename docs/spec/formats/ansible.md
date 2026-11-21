@@ -539,11 +539,12 @@ Priority: **P1** · Covers: PKG-ANSIBLE-005
   integrity path the protocol has, and the existing one (R-REPO-041, `ChecksumAlwaysVerified`).
 - **Signatures.** The protocol carries them as `signatures[]` in the version document, each a detached OpenPGP signature of the
   archive's `MANIFEST.json`, verified by the client against its own keyring. A **local** version has `signatures: []`: Quader holds no
-  signing key for the format and uploads no signature (the catalog specifies none). A **remote** version document is served with
-  the upstream's `signatures` unchanged; Quader does not verify them, so a client that sets `--keyring` verifies the upstream's
-  signature itself against keys it trusts, and a client without a keyring skips the check, exactly as against the upstream
-  ([H-839](#h-839--a-remotes-signatures-are-passed-through-and-not-verified-by-quader)). A **virtual** version document carries the
-  signatures of the member whose document it serves.
+  signing key for the format. A **remote** version document is served with the upstream's `signatures` unchanged, so a client that
+  sets `--keyring` verifies the upstream's signature itself against keys it trusts, and a client without a keyring skips the check,
+  exactly as against the upstream ([H-839](#h-839--a-remotes-signatures-are-verified-and-shown-and-refuse-nothing)). A **virtual** version
+  document carries the signatures of the member whose document it serves. **Superseded in part by [signatures.md](../signatures.md)
+  R-SIG-031 (specified, not built):** Quader verifies and shows a remote's signatures once the archive is stored, and a local version
+  takes detached signatures through the management API, served in `signatures[]`.
 - **Vulnerabilities.** The vulnerability pipeline (vulnerability-scanning.md) matches stored versions to OSV advisories by ecosystem
   and name. OSV has no Ansible ecosystem (verified 2026-11-10), so the format has no `VulnerabilityAdapter` and no `ImageScanned`
   interface, the evaluation state of its repositories is `not_covered`, and no download is blocked by it
@@ -1985,6 +1986,10 @@ Revisit if the engine gains a per-path announced-digest store.
 ### Q-ANS-14 · Signatures pass through; Quader signs nothing and verifies nothing
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded in part** on 2026-11-21 by the owner's decisions on signatures: Quader verifies and shows the signatures, and a local
+version accepts them through the management API ([signatures.md](../signatures.md) R-SIG-031,
+[Q-SIG-37](../signatures.md#q-sig-37--ansible-signatures-of-a-local-version-arrive-through-the-management-api)); it still signs
+nothing.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3009,11 +3014,12 @@ archive, and a `HEAD` of a role's archive the probe of the member its id names (
 
 ## What this does not cover
 
-### H-839 · A remote's signatures are passed through and not verified by Quader
+### H-839 · A remote's signatures are verified and shown, and refuse nothing
 
-A remote version document's `signatures[]` reach the client unchanged (R-ANS-013, Q-ANS-14). Quader neither verifies them nor holds keys,
-so a bad or missing signature at the upstream is not caught by Quader; only a client with `--keyring` catches it. Live today for every
-remote that serves signed versions; real for a fleet whose clients do not set a keyring (the default of `ansible-galaxy`).
+A remote version document's `signatures[]` reach the client unchanged (R-ANS-013). Today Quader does not verify them; once
+[signatures.md](../signatures.md) R-SIG-031 is built it verifies and shows them, and a bad or missing signature at the upstream is
+still served until the gate per repository of stage 3: only a client with `--keyring` refuses it. Live today for every remote that serves
+signed versions; real for a fleet whose clients do not set a keyring (the default of `ansible-galaxy`).
 
 ### H-840 · A role archive has no announced digest and the source is not byte-stable
 

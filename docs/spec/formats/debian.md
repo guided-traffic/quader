@@ -1083,7 +1083,8 @@ CREATE TABLE deb_remote_releases (           -- the stored release document of a
   sha256        bytea CHECK (octet_length(sha256) = 32),
   release_date  timestamptz,
   by_hash       boolean,
-  verified_by   text,                        -- fingerprint of the key that verified it; NULL without upstreamKeys or once cleared
+  verified_by   text,                        -- fingerprint of the key that verified it; NULL without upstreamKeys or once cleared;
+                                             -- shown as the release's signer from stage 1 of signatures.md (R-SIG-030)
   floor_date    timestamptz,                 -- the newest Date of any release verified for this directory (Q-DEB-42)
   stored_at     timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (repo_id, dir, document),

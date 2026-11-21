@@ -57,7 +57,7 @@ The announced SHA-256 decides the archive ([Q-ANS-13](../spec/formats/ansible.md
   the event `proxy.upstream_digest_changed` is written when the upstream announces another ([Q-ANS-38](../spec/formats/ansible.md#q-ans-38--the-first-digest-of-a-version-stays-only-while-its-archive-is-cached), the SQL rule is
   [ansible_remote.sql](../../internal/meta/postgres/queries/ansible_remote.sql) `AnsibleUpstreamRecord`).
 
-Signatures pass through unverified ([H-839](../spec/formats/ansible.md#h-839--a-remotes-signatures-are-passed-through-and-not-verified-by-quader)).
+Signatures pass through unverified today, and refuse nothing once verified ([H-839](../spec/formats/ansible.md#h-839--a-remotes-signatures-are-verified-and-shown-and-refuse-nothing)).
 
 ## Roles from GitHub
 

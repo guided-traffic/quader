@@ -1727,6 +1727,108 @@ a third tool unit that is no scanner.
 R-UI-194, Q-API-382, Q-UI-903, Q-UI-904; [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-048, Q-OPS-224;
 [architecture.md](spec/architecture.md) R-ARCH-036, Q-ARCH-562.
 
+### ADR-226 · Quader detects, reads and verifies the signatures of every format, and shows them at the artifact
+
+**Status:** Accepted (owner decisions of 2026-11-21, Q-SIG-1, Q-SIG-5 to Q-SIG-9, Q-SIG-12, Q-SIG-14 to Q-SIG-16: "Quader muss in Zukunft auch
+das feststellen, auslesen und verifizieren von Signaturen auf (wenn möglich) allen Artefaktarten unterstützen."); the mechanisms decided by the
+development agent — owner review at the walkthrough. Stage 1 of three; stage 2 (Quader signs) and stage 3 (a gate per repository) get their
+own specification.
+
+**Context.** Debian was the only format whose signatures Quader verified (a remote's releases against `deb.upstreamKeys`). OCI stored
+referrers and showed signature tags as versions; npm's local publish dropped the attestations and the keys and attestations endpoints answered
+404; NuGet kept the signature inside the package unread; Ansible passed `signatures[]` through; a generic `.asc` was an ordinary file. No table
+held a fact "signed by" at an artifact, and the format contract had no place for one.
+
+**Decision.**
+- Three steps, stored at the signed content: detect at every place the format defines, read what the signature carries, verify that it
+  matches the content and that an anchor knows the signer; the original object is kept ([signatures.md](spec/signatures.md) R-SIG-001,
+  R-SIG-003, R-SIG-005, R-SIG-006).
+- The integrity verdict once per signature object and subject for the installation; attachments per repository; trust per scope, the
+  installation's or a project's; an anchor change recomputes trust and reads no artifact (R-SIG-003, R-SIG-004, R-SIG-008, R-SIG-012).
+- A background job of the worker at ingest with libraries in process (sigstore-go, notation-core-go with tspclient-go, digitorus/pkcs7 with digitorus/timestamp,
+  go-crypto), measured at 4.76 MiB more binary; no tool and no Deployment (R-SIG-011, R-SIG-014).
+- A signature is valid if it was valid when made; a log entry or a trusted timestamp proves the time, else Quader's receipt; no revocation
+  lists; an administrator blocks a signer (R-SIG-007, R-SIG-020).
+- Four visible states; the badge stands for the publisher's signature and provenance; a registry's signature is "Origin confirmed by
+  registry" in the details; stage 1 shows and alarms and refuses nothing (R-SIG-009, R-SIG-038).
+- A remote fetches its content's signatures in the background, bounded; mirror passes take them (R-SIG-025, R-SIG-026).
+- The origin of an upload, for a CI job its verified claims, is recorded at the item (R-SIG-010).
+
+**Consequences.** Six formats gain a detector each, npm two endpoints, OCI a cascade and attachment tags that are no versions; the worker reads
+hostile signature containers (H-1166); Docker Hub sees up to four pulls more per signed image fetched (R-SIG-026).
+
+**Alternatives considered.** Verification at display; a unit without secrets per tool; pass-through only for remotes; strict expiry as the
+clients; revocation lists; a gate in stage 1.
+
+**Revisit condition:** a library flaw that a bound cannot contain (then the scanners' pattern); a measured cost of the trust recomputation that
+keeps readers on stale rows for long.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-001 to R-SIG-043, Q-SIG-1 to Q-SIG-46; [formats/oci.md](spec/formats/oci.md) R-OCI-016,
+R-OCI-026; [formats/npm.md](spec/formats/npm.md) R-NPM-001, R-NPM-027; [formats/nuget.md](spec/formats/nuget.md) R-NUGET-005;
+[formats/ansible.md](spec/formats/ansible.md) R-ANS-013, Q-ANS-14; [formats/generic.md](spec/formats/generic.md) R-GENERIC-002;
+[formats/debian.md](spec/formats/debian.md) R-DEB-023; [repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-004;
+[api-and-ui.md](spec/api-and-ui.md) R-UI-002, R-UI-158; [README.md](spec/README.md) INV-4.
+
+### ADR-227 · Trust anchors of four kinds in three scopes, and the administrator decides whether project Owners add their own
+
+**Status:** Accepted (owner decisions of 2026-11-21, Q-SIG-2 to Q-SIG-4 and the reading r4 of Q-SIG-16: "Ein Admin muss also gültige
+unternehmens CAs einstellen können … Er muss einstellen können, ob Projekt-Owner weitere CAs für ihr Projekt konfigurieren können (default
+nein)."); the mechanisms decided by the development agent — owner review at the walkthrough.
+
+**Context.** "Company CAs" cover two of the four families of trust (certificate chains and, through an own Sigstore, Sigstore identities);
+Debian, Ansible and generic `.asc` files need OpenPGP keys, npm's registry and cosign's key pairs raw public keys.
+
+**Decision.**
+- Four kinds under one setting **Trust anchors**: CA certificate (code signing or timestamping, an optional subject restriction), OpenPGP key,
+  public key, Sigstore identity against the public or an own trust root ([signatures.md](spec/signatures.md) R-SIG-015).
+- Scopes: shipped (the public Sigstore root, npm's keys, Debian's and Ubuntu's keyrings, nuget.org's certificates and its timestamping roots;
+  each can be switched off; the public root and npm's keys refreshed through TUF), from the Helm values (read-only, applied by `quader
+  migrate`), the administrator's, and a project's (R-SIG-016 to R-SIG-018).
+- One switch of the installation, off by default: when on, a project's Owner adds anchors that hold only in the project's scope; the
+  administrator sees and removes them; off again they stay stored and stop applying (R-SIG-019).
+- `security-settings:write` writes anchors, blocks and the switch; `settings:read` reads them (R-SIG-021).
+
+**Consequences.** "Verified · public" means a signer Quader ships and keeps current; "Verified · internal" an anchor of the company or the
+project. A project Owner's anchor is shown to every reader of the project's repositories (H-1167). Without internet the public root ages with
+the release (H-1170).
+
+**Alternatives considered.** CA certificates only; anchors only in Helm or only in the UI; a list of public code-signing CAs; a capability of
+its own.
+
+**Revisit condition:** more than a handful of identities against one own Sigstore root (a root object of its own); a public CA list a source
+keeps current.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-015 to R-SIG-021, Q-SIG-2 to Q-SIG-4, Q-SIG-27, Q-SIG-29 to Q-SIG-31, Q-SIG-39;
+[authorization.md](spec/authorization.md) R-AUTHZ-010, R-AUTHZ-037.
+
+### ADR-228 · The format contract declares every format's signatures, and a signature is never a version
+
+**Status:** Accepted (owner decisions of 2026-11-21, the readings r5 and r6 of Q-SIG-16: "Das muss bei zukünftigen Registries automatisch mit
+berücksichtigt werden." and "von der Darstellung her, soll eine Signatur aber nicht alleine stehen sondern klar einem Image zugeordnet
+werden"); the mechanisms decided by the development agent — owner review at the walkthrough.
+
+**Context.** No standard covers every format, so "automatically for future registries" cannot be a format-neutral detector. OCI's referrers
+tag and cosign's tags were versions of their image.
+
+**Decision.**
+- The contract gains `Format.Signatures() SignatureAdapter`: a declaration (the kinds, where they live, what they cover, how a client gets
+  them, or none with the reason) and a detector over what a commit stores; `Base` returns nil and `Register` refuses nil, so a format without
+  the declaration does not start; `ContractVersion` rises to 8 ([signatures.md](spec/signatures.md) R-SIG-022). The block joins R-ARCH-008
+  with the code.
+- Kit check 18 holds the declaration, one detected case per kind, and that no signature becomes a version.
+- OCI's `sha256-<hex>` tags and their `.sig`, `.att`, `.sbom` forms are attachment tags without a version; they and referrers stay on the
+  wire unchanged and follow their image on delete, the trash, eviction, retention, copy and mirror (R-SIG-024, R-SIG-025).
+
+**Consequences.** Every format changes in one change; a new format adds one kit case. Version lists, counts, search, download counts and the
+image scanning see an image without its attachments.
+
+**Alternatives considered.** An optional interface; versions with a flag every list filters; recognising attachment tags by content only.
+
+**Revisit condition:** a release tag of the form `sha256-<64 hex>` in real use.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-022 to R-SIG-025, Q-SIG-32, Q-SIG-43; [formats/oci.md](spec/formats/oci.md) R-OCI-016,
+R-OCI-018, R-OCI-026; [architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-010.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -9014,7 +9116,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-ANS-11](spec/formats/ansible.md#q-ans-11--the-upstream-url-is-an-api-root-and-the-adapter-reads-it-as-a-discovery-document) | The upstream URL is an API root, and the adapter reads it as a discovery document. Decided by the development agent | (a) chosen; the other options are on the page | — |
 | [Q-ANS-12](spec/formats/ansible.md#q-ans-12--a-remote-stores-the-version-list-in-pages-of-100-and-cuts-the-clients-page-when-it-serves) | A remote stores the version list in pages of 100 and cuts the client's page when it serves. Decided by the development agent | (a) chosen; the other options are on the page | — |
 | [Q-ANS-13](spec/formats/ansible.md#q-ans-13--the-announced-sha-256-is-always-verified-the-first-recorded-digest-stays) | The announced SHA-256 is always verified; the first recorded digest stays. Decided by the development agent | (a) chosen; the other options are on the page | — |
-| [Q-ANS-14](spec/formats/ansible.md#q-ans-14--signatures-pass-through-quader-signs-nothing-and-verifies-nothing) | Signatures pass through; Quader signs nothing and verifies nothing. Decided by the development agent | (a) chosen; the other options are on the page | — |
+| [Q-ANS-14](spec/formats/ansible.md#q-ans-14--signatures-pass-through-quader-signs-nothing-and-verifies-nothing) | Signatures pass through; Quader signs nothing and verifies nothing (superseded in part by [Q-SIG-37](spec/signatures.md#q-sig-37--ansible-signatures-of-a-local-version-arrive-through-the-management-api)). Decided by the development agent | (a) chosen; the other options are on the page | — |
 | [Q-ANS-15](spec/formats/ansible.md#q-ans-15--no-vulnerability-adapter-the-state-is-not_covered) | No vulnerability adapter; the state is `not_covered`. Decided by the development agent | (a) chosen; the other options are on the page | — |
 | [Q-ANS-16](spec/formats/ansible.md#q-ans-16--a-mirror-of-the-collection-index-is-offered-it-keeps-what-the-patterns-select) | A mirror of the collection index is offered; it keeps what the patterns select. Decided by the development agent | (a) chosen; the other options are on the page | — |
 | [Q-ANS-17](spec/formats/ansible.md#q-ans-17--the-hub-token-exchange-is-a-separate-optional-interface-built-after-the-core-class) | The hub token exchange is a separate optional interface, built after the core class. Decided by the development agent | (a) chosen; the other options are on the page | — |
@@ -9939,6 +10041,49 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-MAL-34](spec/malware-scanning.md#q-mal-34--the-queue-malware-and-the-order-of-the-work) | Which queue and order? | (a) a queue `malware`, four priorities, one call kept for asked rows | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-MAL-35](spec/malware-scanning.md#q-mal-35--what-the-revocation-journal-carries-of-the-malware-scanning) | What is journaled? | (a) a find, a withdrawn release, the switch and a repository's setting turned on | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-MAL-36](spec/malware-scanning.md#q-mal-36--no-report-mode-and-no-fallback-when-the-scanner-is-down) | Report mode or fallback? | (a) neither; switching off is the way out | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
+| [Q-SIG-1](spec/signatures.md#q-sig-1--what-the-icon-stands-for) | What does the icon stand for? Decided by the owner | (a) what proves the publisher's origin; a registry's signature in the details | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-2](spec/signatures.md#q-sig-2--the-kinds-of-trust-anchor) | Which kinds of trust anchor? Decided by the owner | (a) CA certificate, OpenPGP key, public key, Sigstore identity under one setting | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-3](spec/signatures.md#q-sig-3--where-anchors-are-maintained) | Where are anchors maintained? Decided by the owner | (b) UI and API, and the Helm values read-only beside them | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-4](spec/signatures.md#q-sig-4--what-quader-ships-as-public) | What does Quader ship as public? Decided by the owner | (a) the public Sigstore root and the keys of the well-known upstreams with their presets; no public CA list | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-5](spec/signatures.md#q-sig-5--where-and-when-verification-runs) | Where and when is verified? Decided by the owner | (a) a background job of the worker at ingest, libraries in process; anchor changes recompute trust only | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-6](spec/signatures.md#q-sig-6--signatures-of-remote-content) | Signatures of remote content? Decided by the owner | (a) Quader fetches them in the background; mirror passes take them | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-7](spec/signatures.md#q-sig-7--time-expiry-and-revocation) | Time, expiry and revocation? Decided by the owner | (a) valid when made; proof of time or receipt; no CRL or OCSP; blocks | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-8](spec/signatures.md#q-sig-8--generic-files) | Generic files? Decided by the owner | (a) a sibling file by its name | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-9](spec/signatures.md#q-sig-9--display-or-gate) | Display or gate? Decided by the owner | (b) a gate per repository as a detail, against the recommendation (a); stage 3 | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-10](spec/signatures.md#q-sig-10--quader-signs-as-a-registry) | Quader signs as a registry? Decided by the owner | (a) Debian and npm's local packages; not NuGet; stage 2 | — |
+| [Q-SIG-11](spec/signatures.md#q-sig-11--quader-issues-attestations) | Quader issues attestations? Decided by the owner | (a) per artifact, for OCI as a referrer; stage 2 | — |
+| [Q-SIG-12](spec/signatures.md#q-sig-12--quader-signs-in-a-publishers-name) | Quader signs in a publisher's name? Decided by the owner | (a) no; it records the upload's origin | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-13](spec/signatures.md#q-sig-13--the-signing-identity) | The signing identity? Decided by the owner | (a) one per installation; OpenPGP per repository where needed; stage 2 | — |
+| [Q-SIG-14](spec/signatures.md#q-sig-14--the-order-of-the-work) | The order of the work? Decided by the owner | (a) three stages | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-15](spec/signatures.md#q-sig-15--which-way-to-a-signature-the-ci-has) | Which way to a signature has the CI? Decided by the owner | (a) an own Sigstore, and all three ways built | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-16](spec/signatures.md#q-sig-16--the-eight-readings-of-the-request) | The eight readings of the request. Decided by the owner | confirmed | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-20](spec/signatures.md#q-sig-20--signatures-have-a-page-of-their-own) | A page of its own? | (a) `signatures.md`, prefix `R-SIG` | — |
+| [Q-SIG-21](spec/signatures.md#q-sig-21--a-signature-is-stored-once-per-object-and-subject-reached-per-repository-and-trusted-per-scope) | The unit of the store? | (a) integrity per object and subject, attachments per repository, trust per scope | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-22](spec/signatures.md#q-sig-22--the-original-of-a-signature-that-is-no-item-is-kept-in-postgresql-bounded) | Where is an original kept? | (a) as its item, or in PostgreSQL up to 256 KiB; INV-4 refined | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-23](spec/signatures.md#q-sig-23--a-keyless-scheme-keeps-the-digest-its-signature-commits-to) | How does a key added later verify? | (a) against the stored committed digest | — |
+| [Q-SIG-24](spec/signatures.md#q-sig-24--a-signature-without-a-key-or-with-a-blocked-signer-reads-signed--signer-not-trusted) | How do `no_key` and a block show? | (a) as "Signed · signer not trusted", the details say which | — |
+| [Q-SIG-25](spec/signatures.md#q-sig-25--an-artifacts-state-is-the-best-of-its-signatures-and-an-invalid-one-alone-shows-invalid) | An artifact's state? | (a) the best signature; internal over public; invalid only alone | — |
+| [Q-SIG-26](spec/signatures.md#q-sig-26--the-scope-is-the-project-of-the-addressed-repository) | Which scope judges? | (a) the addressed repository's project | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-27](spec/signatures.md#q-sig-27--a-sigstore-identity-carries-its-trust-root) | Where does an own Sigstore root live? | (a) in the identity anchor | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-28](spec/signatures.md#q-sig-28--the-verifiers-are-four-libraries-in-process) | Which verifiers? | (a) sigstore-go, notation-core-go with tspclient-go, digitorus/pkcs7 and digitorus/timestamp, go-crypto | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-29](spec/signatures.md#q-sig-29--nugetorgs-preset-ships-the-timestamping-roots-its-countersignatures-need) | nuget.org's older countersignatures? | (a) the preset ships its timestamping roots | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-30](spec/signatures.md#q-sig-30--a-ca-anchor-requires-code-signing-and-may-restrict-the-subject) | What does a CA anchor trust? | (a) a chain with code signing; a subject restriction as a detail | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-31](spec/signatures.md#q-sig-31--debians-upstream-keys-stay-the-remotes-condition-and-are-no-anchor) | Debian's upstream keys? | (a) the remote's condition, no anchor | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-32](spec/signatures.md#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version) | OCI's attachment tags? | (a) recognised by name, no version row | [ADR-228](#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version) |
+| [Q-SIG-33](spec/signatures.md#q-sig-33--what-the-background-fetch-asks-for-when-and-how-much) | What does the background fetch ask? | (a) top-level manifests, referrers then tags by `HEAD`, four manifests, a daily refresh, a switch per remote | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-34](spec/signatures.md#q-sig-34--the-keys-of-a-local-a-remote-and-a-virtual-npm-repository) | npm's keys per class? | (a) remote the upstream's, local none, virtual the union | — |
+| [Q-SIG-35](spec/signatures.md#q-sig-35--npm-attestations-are-served-below-the-registry-url-and-a-local-bundle-only-when-npm-can-verify-it) | npm's attestations? | (a) below the registry URL; a local bundle only when it verifies against the public root | — |
+| [Q-SIG-36](spec/signatures.md#q-sig-36--nuget-lists-no-repository-signatures-resource) | NuGet's repository signatures resource? | (a) not listed | — |
+| [Q-SIG-37](spec/signatures.md#q-sig-37--ansible-signatures-of-a-local-version-arrive-through-the-management-api) | Ansible signatures of a local version? | (a) through the management API, checked first | — |
+| [Q-SIG-38](spec/signatures.md#q-sig-38--a-generic-siblings-scheme-is-read-from-its-content) | A generic sibling's scheme? | (a) read from the content | — |
+| [Q-SIG-39](spec/signatures.md#q-sig-39--anchors-blocks-and-the-switch-are-security-settings) | Which capability? | (a) `security-settings:write`, read `settings:read` | [ADR-227](#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own) |
+| [Q-SIG-40](spec/signatures.md#q-sig-40--the-origin-of-an-upload-is-a-snapshot-at-the-item) | Where is an upload's origin kept? | (a) a snapshot at the item, CI claims included | [ADR-226](#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) |
+| [Q-SIG-41](spec/signatures.md#q-sig-41--a-time-proof-counts-only-from-a-log-or-an-authority-the-scope-trusts) | Which time proofs count? | (a) a trusted log or authority only | — |
+| [Q-SIG-42](spec/signatures.md#q-sig-42--what-the-journal-carries-of-signatures) | What is journaled? | (a) what narrows trust | — |
+| [Q-SIG-43](spec/signatures.md#q-sig-43--the-contract-gains-a-signature-method-every-format-implements-at-version-8) | How does the contract oblige a format? | (a) `Format.Signatures()`, refused when nil; version 8 | [ADR-228](#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version) |
+| [Q-SIG-44](spec/signatures.md#q-sig-44--the-api-and-the-screens) | The API and the screens? | (a) a resource per version and file, a settings page, a dashboard view, a project section | — |
+| [Q-SIG-45](spec/signatures.md#q-sig-45--the-bounds-and-their-defaults) | The bounds? | (a) 256 KiB, 32 per subject, chains of 8, 5 s, 8 GiB | — |
+| [Q-SIG-46](spec/signatures.md#q-sig-46--the-three-ways-are-tested-with-real-signatures-made-in-process) | How are the three ways tested? | (a) real signatures made in process | — |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

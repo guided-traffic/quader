@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,063 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,106 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 788 specified (509 of them implemented), 1,451 open.
-1,063 spec requirements: 720 cover catalog features, 343 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 793 specified (509 of them implemented), 1,446 open.
+1,106 spec requirements: 725 cover catalog features, 381 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -47,7 +47,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Content API operation catalog](#content-api-operation-catalog-api) | `API` | 166 | 15 of 15 | 71 | 95 | 28 |
 | [Operation catalog: administration API](#operation-catalog-administration-api-admapi) | `ADMAPI` | 114 | 34 of 34 | 54 | 60 | 41 |
 | [Package formats: matrix and cross-format behavior](#package-formats-matrix-and-cross-format-behavior-fmt) | `FMT` | 14 | 8 of 8 | 9 | 5 | 8 |
-| [npm package format](#npm-package-format-pkg-npm) | `PKG-NPM` | 62 | 37 of 37 | 52 | 10 | 41 |
+| [npm package format](#npm-package-format-pkg-npm) | `PKG-NPM` | 62 | 37 of 37 | 53 | 9 | 41 |
 | [NuGet](#nuget-pkg-nuget) | `PKG-NUGET` | 56 | 35 of 35 | 42 | 14 | 35 |
 | [Docker image format](#docker-image-format-pkg-docker) | `PKG-DOCKER` | 52 | – | 33 | 19 | 33 |
 | [OCI images and artifacts](#oci-images-and-artifacts-pkg-oci) | `PKG-OCI` | 20 | – | 15 | 5 | 14 |
@@ -85,7 +85,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [VCS archive format](#vcs-archive-format-pkg-vcs) | `PKG-VCS` | 13 | – | 0 | 13 | 0 |
 | [Machine-learning models and model-serving containers](#machine-learning-models-and-model-serving-containers-pkg-ml) | `PKG-ML` | 19 | – | 0 | 19 | 0 |
 | [AI agent assets and IDE extension formats](#ai-agent-assets-and-ide-extension-formats-pkg-ai) | `PKG-AI` | 37 | – | 0 | 37 | 0 |
-| [Beyond the baseline: further formats and capabilities](#beyond-the-baseline-further-formats-and-capabilities-beyond) | `BEYOND` | 34 | 1 of 1 | 2 | 32 | 1 |
+| [Beyond the baseline: further formats and capabilities](#beyond-the-baseline-further-formats-and-capabilities-beyond) | `BEYOND` | 34 | 1 of 1 | 6 | 28 | 1 |
 
 </details>
 
@@ -1761,10 +1761,10 @@ Catalog page: [formats/README.md](../features/formats/README.md) · specified by
 
 ## npm package format (PKG-NPM)
 
-Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by priority: MVP 37 of 37 · P1 15 of 15 · P2 0 of 8 · Later 0 of 1 · Out of scope 0 of 1
+Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by priority: MVP 37 of 37 · P1 15 of 15 · P2 1 of 8 · Later 0 of 1 · Out of scope 0 of 1
 
 <details>
-<summary>62 features: 52 specified, 10 open, 41 implemented</summary>
+<summary>62 features: 53 specified, 9 open, 41 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -1791,7 +1791,7 @@ Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by prior
 | PKG-NPM-021 | Dist-tag management | MVP | implemented | [R-AUTHZ-007](../spec/authorization.md) (implemented), [R-NPM-016](../spec/formats/npm.md) (implemented) |
 | PKG-NPM-022 | Maintainer list changes | P2 | open | – |
 | PKG-NPM-023 | Staged publishing | Later | open | – |
-| PKG-NPM-024 | Provenance bundles and attestation links | P2 | open | – |
+| PKG-NPM-024 | Provenance bundles and attestation links | P2 | specified | [R-SIG-028](../spec/signatures.md) |
 | PKG-NPM-025 | Full package document | MVP | implemented | [R-NPM-010](../spec/formats/npm.md) (implemented) |
 | PKG-NPM-026 | Abbreviated package document | MVP | implemented | [R-NPM-011](../spec/formats/npm.md) (implemented) |
 | PKG-NPM-027 | Publish times for client-side release-age policies | MVP | implemented | [R-NPM-012](../spec/formats/npm.md) (implemented) |
@@ -2919,10 +2919,10 @@ Catalog page: [formats/ai-and-ide.md](../features/formats/ai-and-ide.md) · spec
 
 ## Beyond the baseline: further formats and capabilities (BEYOND)
 
-Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified by priority: MVP 1 of 1 · P1 1 of 5 · P2 0 of 25 · Later 0 of 3
+Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified by priority: MVP 1 of 1 · P1 3 of 5 · P2 2 of 25 · Later 0 of 3
 
 <details>
-<summary>34 features: 2 specified, 32 open, 1 implemented</summary>
+<summary>34 features: 6 specified, 28 open, 1 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -2940,19 +2940,19 @@ Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified 
 | BEYOND-012 | WebAssembly components on OCI | P2 | open | – |
 | BEYOND-013 | Gentoo binary package hosts | P2 | open | – |
 | BEYOND-014 | FreeBSD pkg repositories | P2 | open | – |
-| BEYOND-015 | Referrers through remote and virtual repositories | P1 | open | – |
-| BEYOND-016 | Referrer-aware lifecycle operations | P2 | open | – |
+| BEYOND-015 | Referrers through remote and virtual repositories | P1 | specified | [R-SIG-026](../spec/signatures.md), [R-SIG-027](../spec/signatures.md) |
+| BEYOND-016 | Referrer-aware lifecycle operations | P2 | specified | [R-SIG-025](../spec/signatures.md) |
 | BEYOND-017 | Artifact-type recognition | P2 | open | – |
 | BEYOND-018 | Upstream selection by source namespace | P2 | open | – |
 | BEYOND-019 | Signature verification gate for Sigstore-signed content | P2 | open | – |
 | BEYOND-020 | SLSA provenance verification policy | P2 | open | – |
-| BEYOND-021 | npm provenance for locally published packages | P1 | open | – |
+| BEYOND-021 | npm provenance for locally published packages | P1 | specified | [R-SIG-028](../spec/signatures.md) |
 | BEYOND-022 | PyPI digital attestations (PEP 740) | P2 | open | – |
 | BEYOND-023 | Project status markers in the Python index (PEP 792) | P2 | open | – |
 | BEYOND-024 | SBOM attachment store | P2 | open | – |
 | BEYOND-025 | TUF-signed repository metadata | Later | open | – |
 | BEYOND-026 | Checksum database for hosted Go modules | Later | open | – |
-| BEYOND-034 | Notary Project signature verification for OCI artifacts | P2 | open | – |
+| BEYOND-034 | Notary Project signature verification for OCI artifacts | P2 | specified | [R-SIG-023](../spec/signatures.md) |
 | BEYOND-027 | Minimum release age for remote repositories | P1 | open | – |
 | BEYOND-028 | Namespace claims against dependency confusion | P1 | implemented | [R-REPO-023](../spec/repositories-and-proxy.md) (implemented), [R-REPO-048](../spec/repositories-and-proxy.md) (implemented) |
 | BEYOND-029 | Cache pre-warming from lockfiles and SBOMs | P2 | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>343 requirements</summary>
+<summary>381 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3292,6 +3292,44 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-REPO-059 (implemented) | The mirror's test suites | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-049 (implemented) | Repository and proxy state on n replicas, without Valkey and during a drain | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-047 (implemented) | Proxy and resolution observability | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
+| R-SIG-001 | The three steps and the words of this page | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-002 | What each format knows as a signature | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-003 | The store: signature objects and signatures, once per content | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-004 | Attachments: where a signature reaches a subject in a repository | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-005 | The read: what is taken from a signature | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-006 | The integrity check of each scheme | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-007 | Time: what proves when a signature was made | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-008 | The trust step and its scopes | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-009 | The state of an artifact: the badge and the three states without one | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-010 | The origin of an upload | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-011 | The job `signature-verify`, its queue and its order | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-012 | Trust recomputed on a change of anchors, blocks or the switch | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-013 | Bounds on hostile signature containers | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-014 | Libraries in process, one version each | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-015 | The four kinds of anchor and the checks on save | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-016 | Scopes and their precedence | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-017 | Shipped anchors: what, how they are packaged and how they stay current | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-018 | Anchors declared in the Helm values | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-019 | The switch for project Owners, and project anchors | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-020 | Blocking a signer | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-021 | Permissions | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-022 | The format contract's declaration and the kit's case | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-024 | OCI: attachments in no list and no count, shown at the image | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-029 | NuGet: the signature inside the package | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-030 | Debian: the index is signed, the package is not | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-031 | Ansible Galaxy: `signatures[]` of a remote and of a local version | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-032 | Generic repositories: a file beside the file | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-033 | The Bastion | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-034 | The API | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-035 | The badge and the details at a version, a file and an image | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-036 | Admin area › Settings › Signatures | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-037 | Trust anchors in a project | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-038 | The security dashboard's view of signatures | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-039 | Audit events, metrics and alerts | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-040 | Configuration, defaults and what it costs | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-041 | Backups, restores and replicas | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-042 | The tests and what they cost | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-043 | What stage 1 keeps for stage 2 and stage 3 | P1 | [signatures.md](../spec/signatures.md) |
 | R-STOR-011 (implemented) | Multi-request upload sessions | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-048 | Client-side encryption of stored content | P2 | [storage.md](../spec/storage.md) |

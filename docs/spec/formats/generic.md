@@ -96,7 +96,9 @@ implicitly from the paths of deployed files or explicitly (R-STOR-007).
 - A path names a file or a folder, never both: a deploy to a path below an existing file, or to a
   path that an existing folder occupies, answers 409 with the code `path_conflict` (the rule is
   enforced by the items store, [storage.md](../storage.md) R-STOR-007).
-- Nothing in the path is interpreted: `.md5`, `.sha1` or `maven-metadata.xml` are ordinary names.
+- Nothing in the path is interpreted: `.md5`, `.sha1` or `maven-metadata.xml` are ordinary names. A file named like a signature of
+  the file beside it (`<file>.asc`, `.sig`, `.sigstore.json`, `.jws.sig`, `.cose.sig`) stays an ordinary file too, and is in addition
+  read as that file's signature ([signatures.md](../signatures.md) R-SIG-032, specified, not built).
   Digest sidecar files are the repository's checksum policy ([storage.md](../storage.md)
   R-STOR-010, P1), not a property of the format.
 
