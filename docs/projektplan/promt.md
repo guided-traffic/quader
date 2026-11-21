@@ -1317,10 +1317,10 @@ runs are in `git log`; this section holds the current state.
   npm's keys and attestations endpoints with Q-SIG-34 as option (a), NuGet, Debian, Ansible's upload of
   signatures, generic, the Bastion). Each names the files it touched outside its area, so that the landing
   orders the two commits; package 4 (the screens) follows package 2's operations.
-  **Asked back by package 2 at 14:17 and decided by the development agent:** the store's interface carried a
+  **Asked back by package 2 at 14:21 and decided by the development agent:** the store's interface carried a
   project's ID as a number, and the specification named a column of that type on a table that does not
   exist; a project's ID is a uuid (read in the schema and the code), so the fields and columns carry the uuid
-  and the specification is corrected in the package's commit. **A deviation, seen at 14:17:** package 2's
+  and the specification is corrected in the package's commit. **A deviation, seen at 14:22:** package 2's
   builder had started three helpers of its own, so six agents ran where the owner's rule says four; it was
   told to keep it at those three and to report how the work was split; they were not stopped, because two
   other builders were about to finish. **For every builder's brief from now on:** a builder starts no agents
