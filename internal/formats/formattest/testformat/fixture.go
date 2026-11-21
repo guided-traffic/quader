@@ -3,6 +3,7 @@ package testformat
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -165,6 +166,22 @@ func Fixture() formattest.Fixture {
 			{Spellings: []string{"left-pad", "Left-Pad", "LEFT-PAD"}},
 			{Spellings: []string{"@scope/name", "@Scope/Name"}},
 		},
+		Signatures: []formattest.SignatureCase{{
+			Kind: "detached signature", Path: "left-pad/-/left-pad-1.0.0.tgz.sig",
+			Commit: func(h *formattest.Host) error {
+				if err := Publish(context.Background(), h, "left-pad", "1.0.0"); err != nil {
+					return err
+				}
+				_, err := h.Ingest().Commit(context.Background(), nil, formattest.Spool(SignatureSample()), formats.Commit{
+					Path: formats.Path{Path: "left-pad/-/left-pad-1.0.0.tgz.sig"}, MediaType: "application/pgp-signature",
+				})
+				return err
+			},
+			Want: []formats.SignatureCandidate{{
+				Object: formats.SignatureLocator{Blob: sha256.Sum256(SignatureSample())}, SubjectPath: "left-pad/-/left-pad-1.0.0.tgz",
+				Role: formats.SignatureRolePublisher, Source: formats.SignatureSourceSibling, Location: "left-pad/-/left-pad-1.0.0.tgz.sig",
+			}},
+		}},
 		Skip: map[formattest.Check]string{
 			formattest.CheckView: "the test format has no package screens; the kit's own tests give it a view adapter (kit_view_test.go)",
 		},

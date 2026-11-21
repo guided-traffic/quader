@@ -98,7 +98,37 @@ func (h *Hooks) OnCommit(ctx context.Context, tx meta.Tx, e items.CommitEvent) e
 		return err
 	}
 	ev.Packages = w
-	return f.OnCommit(ctx, tx, ev)
+	if err := f.OnCommit(ctx, tx, ev); err != nil {
+		return err
+	}
+	return h.signaturesOf(ctx, tx, f, e, ev)
+}
+
+// signaturesOf records what the commit carries (signatures.md R-SIG-010, R-SIG-011): the origin of an upload, the signatures the
+// format's detector names, and the signatures that waited for this content as their subject. A file Quader derived is its own writing:
+// it carries no signature of a publisher and records no origin (Q-SIG-31, Q-SIG-47).
+func (h *Hooks) signaturesOf(ctx context.Context, tx meta.Tx, f formats.Format, e items.CommitEvent, ev formats.CommitEvent) error {
+	if h.d.Signatures == nil {
+		return nil
+	}
+	if !e.Generated {
+		if e.Origin == items.OriginUpload {
+			if err := h.d.recordOrigin(ctx, tx, e.Item.ID, e.By.Kind, e.By.Name, e.By.TokenID); err != nil {
+				return err
+			}
+		}
+		if e.Content != nil {
+			sev := formats.SignatureEvent{
+				Origin: ev.Origin, Repo: ev.Repo, Item: ev.Item, Lead: ev.Lead, Path: ev.Path, MediaType: e.MediaType, Digests: ev.Digests,
+				Content: e.Content,
+			}
+			if err := h.d.recordSignatures(ctx, tx, f, sev, !e.Replaced); err != nil {
+				return err
+			}
+		}
+	}
+	_, err := h.d.Signatures.SubjectArrived(ctx, tx, e.Digests.SHA256)
+	return err
 }
 
 // systemRemoval is the actor of a cascade of a removal that had no request: a retention run, the purge of the trash, a job.

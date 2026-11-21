@@ -63,6 +63,10 @@ type CommitEvent struct {
 	// Generated is true for an item Quader derived from the lead (CommitSpec.Generated): its bytes are Quader's own writing, which the
 	// malware scanning does not scan (malware-scanning.md Q-MAL-22).
 	Generated bool
+	// By is the actor of the commit as its audit row records it: the origin of an upload (signatures.md R-SIG-010).
+	By audit.Actor
+	// Content reads the committed bytes, bounded, for a hook that names what they carry (the signatures of R-SIG-011).
+	Content Content
 }
 
 // Removed is an item a removal took away.

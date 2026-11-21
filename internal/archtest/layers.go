@@ -198,6 +198,9 @@ func layerTable() []layerRule {
 		// The malware scanning (malware-scanning.md): the verdicts, releases, the switch and the gate's decision at the root, the
 		// store of the malware_* tables below it. The item store carries a verdict and the format host decides on it.
 		{"internal/malware", layerDomain},
+		// Signatures on artifacts (signatures.md): the vocabulary at the root, the store of the signature tables below it. The format
+		// host turns a format's candidates into the store's batch and records it in the hook's transaction.
+		{"internal/signatures", layerDomain},
 
 		// The vocabulary the dispatcher and the registry root share about a request below /v2/ (Q-OCI-56): the standard
 		// library and internal/qname only, so the dispatcher needs neither the registry root nor the authentication stage.

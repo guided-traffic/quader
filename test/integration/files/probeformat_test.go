@@ -286,3 +286,8 @@ func (probeExposure) InRange(string, string) bool    { return false }
 func (probeExposure) Dimensions() formats.ExposureDimensions {
 	return formats.ExposureDimensions{Packages: true}
 }
+
+// Signatures declares none: a format of this test (signatures.md R-SIG-022).
+func (probeFormat) Signatures() formats.SignatureAdapter {
+	return formats.NoSignatures("a format of this test")
+}

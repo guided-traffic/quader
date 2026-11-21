@@ -417,3 +417,20 @@ type Adapter interface {
 type ExpectedTypes interface {
 	ExpectsType(path, mediaType string) bool
 }
+
+// DocumentHook is the optional interface of an [Adapter] that learns of each metadata document a fill stored, in the fill's
+// transaction after the entry took it (signatures.md R-SIG-011): the signatures a document carries (npm's dist.signatures, Ansible's
+// signatures[], a Debian release, an OCI tag) are recorded with it, and a fill that replaces the document replaces them (R-SIG-004).
+// An error rolls the fill back.
+type DocumentHook interface {
+	DocumentStored(ctx context.Context, tx meta.Tx, d StoredDocument) error
+}
+
+// StoredDocument is a metadata document a fill stored.
+type StoredDocument struct {
+	Path, Variant string
+	Digest        [32]byte
+	MediaType     string
+	// Content reads the stored bytes from the fill's spool.
+	Content items.Content
+}

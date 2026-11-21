@@ -15,7 +15,7 @@ import (
 // R-GENERIC-016). Every skip carries its reason, and the kit refuses a skip the
 // format contradicts, so a generic remote class (R-GENERIC-009) or a generic virtual
 // class (R-GENERIC-010) cannot keep passing without a fixture.
-func conformance() formattest.Fixture {
+func conformance(t testing.TB) formattest.Fixture {
 	return formattest.Fixture{
 		Rejects: []string{"a/../b.bin", "folder/%2e%2e/file", "file.bin%00"},
 		Paths: []formattest.PathCase{
@@ -25,6 +25,7 @@ func conformance() formattest.Fixture {
 			{Path: "", Want: formats.PathInfo{Kind: formats.PathComputed}},
 		},
 		OptionNames: []string{"QUADER_TOKEN"},
+		Signatures:  signatureCases(t),
 		Skip: map[formattest.Check]string{
 			formattest.CheckAmbiguity:  "no routes: /files/ is the protocol, served by the generic layer and tested by rawfiles (Q-GENERIC-7, R-GENERIC-002)",
 			formattest.CheckRewrite:    "local class only: no remote adapter, no upstream document to rewrite",
@@ -42,14 +43,14 @@ func conformance() formattest.Fixture {
 
 // TestR_ARCH_010_Conformance runs the conformance kit over the generic format.
 func TestR_ARCH_010_Conformance(t *testing.T) {
-	formattest.Run(t, Format{}, conformance())
+	formattest.Run(t, Format{}, conformance(t))
 }
 
 // TestR_ARCH_010_ConformanceSkipsAreHonest: the skips above hold for the format
 // as it is, and the checks it does not skip pass. A format that gains routes, a
 // class or package names fails them.
 func TestR_ARCH_010_ConformanceSkipsAreHonest(t *testing.T) {
-	rep := formattest.Evaluate(Format{}, conformance())
+	rep := formattest.Evaluate(Format{}, conformance(t))
 	for c := formattest.CheckAmbiguity; c <= formattest.CheckAuthzPaths; c++ {
 		res := rep.Result(c)
 		switch c {

@@ -142,6 +142,12 @@ const (
 	// malware gate reaches the client without Cache-Control: no-store and the pending answer without Retry-After, check 17
 	// (malware-scanning.md R-MAL-029).
 	RendersBareErrors Defect = "renders-bare-errors"
+	// SignatureVersion lets a commit of a signature file beside a tarball create a version of its own, so that a signature becomes an
+	// entry of the version list: check 18 (signatures.md R-SIG-022).
+	SignatureVersion Defect = "signature-version"
+	// NoSignatureDeclaration leaves Signatures() at Base's nil: the format declares neither its signatures nor why it has none, check 18
+	// (and Register refuses it, so check 1 fails with it).
+	NoSignatureDeclaration Defect = "no-signature-declaration"
 )
 
 // Option adjusts the format; it is not a defect.
@@ -655,6 +661,15 @@ func (f Format) inspect(ctx context.Context, in formats.InspectInput) (*formats.
 
 // OnCommit implements formats.Format: the rows of a published version.
 func (f Format) OnCommit(ctx context.Context, _ formats.Tx, c formats.CommitEvent) error {
+	if strings.HasSuffix(c.Path.Path, SignatureSuffix) && f.has(string(SignatureVersion)) {
+		name, _, _ := splitName(c.Path.Path)
+		pkg, _, err := c.Packages.EnsureLocked(ctx, c.Repo, name, name)
+		if err != nil {
+			return err
+		}
+		_, err = c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{Version: "signature", LeadItem: &c.Item})
+		return err
+	}
 	if c.Inspection == nil {
 		return nil
 	}

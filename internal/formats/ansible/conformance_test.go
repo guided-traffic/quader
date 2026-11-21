@@ -13,7 +13,7 @@ import (
 // conformance is the fixture of the kit over the local class: the routes serve over the in-memory twin of the data port, a publish is
 // driven through the route, and the checks of the remote and the virtual class and of the client surface are skipped with the reason
 // until their classes join (the kit refuses a skip the format contradicts).
-func conformance() formattest.Fixture {
+func conformance(t testing.TB) formattest.Fixture {
 	const noTask = "a task id is random: the import task is read by the ansiblelocal integration test after a publish returned it"
 	versions := []string{"1.0.0", "1.1.0", "2.0.0"}
 	seed := func(vs ...string) func(h *formattest.Host) error {
@@ -31,7 +31,8 @@ func conformance() formattest.Fixture {
 	}
 	const notLocal = "the role routes are served by remote and virtual repositories (R-ANS-014) and the kit's host is a local repository; the remote handlers are proven over HTTP in test/integration/ansibleremote"
 	return formattest.Fixture{
-		Rejects: []string{"v3/collections/%2e%2e/x/", "../v3/collections/acme/tools/", "v3/collections/acme/tools%00/"},
+		Signatures: signatureCases(t),
+		Rejects:    []string{"v3/collections/%2e%2e/x/", "../v3/collections/acme/tools/", "v3/collections/acme/tools%00/"},
 		Paths: []formattest.PathCase{
 			{Path: "collections/acme/tools/acme-tools-1.0.0.tar.gz", Want: formats.PathInfo{Kind: formats.Content, Package: "acme.tools", Version: "1.0.0"}},
 			{Path: "collections/acme/tools/collection.json", Want: formats.PathInfo{Kind: formats.PathMetadata, Package: "acme.tools"}},
@@ -119,7 +120,7 @@ func canonicalOfExample(example string) (string, bool) {
 
 // TestR_ARCH_010_Conformance runs the conformance kit over the local class.
 func TestR_ARCH_010_Conformance(t *testing.T) {
-	formattest.Run(t, New(), conformance())
+	formattest.Run(t, New(), conformance(t))
 }
 
 // FuzzR_ARCH_028_Match: Match never resolves a path that is not clean and never panics.

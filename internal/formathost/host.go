@@ -69,6 +69,11 @@ type Deps struct {
 	// Remover gives the item store that a storage hook removes through ([formats.ItemsEvent.Cascade]). It is a function because
 	// the hooks are built before the item store, which takes them; nil, or a nil answer, makes Cascade fail.
 	Remover func() ItemRemover
+	// Signatures records what a commit or a remote's stored document carries and the origin of an upload (signatures.md R-SIG-010,
+	// R-SIG-011); nil records nothing.
+	Signatures SignatureRecorder
+	// Log receives what the hooks log; nil is slog.Default.
+	Log *slog.Logger
 }
 
 // Options configure [New].

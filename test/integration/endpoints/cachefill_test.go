@@ -225,3 +225,8 @@ func TestR_EP_019_TheCacheFillPolicyOfAnEndpoint(t *testing.T) {
 		}
 	})
 }
+
+// Signatures declares none: a format of this test (signatures.md R-SIG-022).
+func (relayFormat) Signatures() formats.SignatureAdapter {
+	return formats.NoSignatures("a format of this test")
+}

@@ -175,6 +175,7 @@ func conformance(f *Format) formattest.Fixture {
 		// The README is the text of a file inside the stored nupkg that the view's port reads; the kit's cases seed no nupkg, so this is
 		// the text such a README would carry. What the format owes check 15 is the route of the README declared Wiki (routes.go).
 		WikiSamples: []string{"# Acme.Widgets readme"},
+		Signatures:  signatureCases(),
 		Host: func() formattest.HostOptions {
 			return formattest.HostOptions{
 				Data: newDocStore(),

@@ -1828,7 +1828,10 @@ image scanning see an image without its attachments.
 
 **Revisit condition:** a release tag of the form `sha256-<64 hex>` in real use.
 
-**Spec:** [signatures.md](spec/signatures.md) R-SIG-022 to R-SIG-025, Q-SIG-32, Q-SIG-43; [formats/oci.md](spec/formats/oci.md) R-OCI-016,
+**Built** (stage 1, package 1): the contract at version 8 with every format's declaration and detector, kit check 18, the store and the
+hooks that record candidates and origins (Q-SIG-47 to Q-SIG-52), and the OCI attachment tags without a version row.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-022 to R-SIG-025, Q-SIG-32, Q-SIG-43, Q-SIG-47; [formats/oci.md](spec/formats/oci.md) R-OCI-016,
 R-OCI-018, R-OCI-026; [architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-010.
 
 ### ADR-229 · The scanner unit detects as well, and the analyser comes from its own image
@@ -10139,6 +10142,12 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-SIG-44](spec/signatures.md#q-sig-44--the-api-and-the-screens) | The API and the screens? | (a) a resource per version and file, a settings page, a dashboard view, a project section | — |
 | [Q-SIG-45](spec/signatures.md#q-sig-45--the-bounds-and-their-defaults) | The bounds? | (a) 256 KiB, 32 per subject, chains of 8, 5 s, 8 GiB | — |
 | [Q-SIG-46](spec/signatures.md#q-sig-46--the-three-ways-are-tested-with-real-signatures-made-in-process) | How are the three ways tested? | (a) real signatures made in process | — |
+| [Q-SIG-47](spec/signatures.md#q-sig-47--a-detector-names-paths-the-core-resolves-them-in-the-events-repository) | How does a detector name what the core stores? | (a) paths of the event's repository, digests or bytes; the core resolves them there only | [ADR-228](#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version) |
+| [Q-SIG-48](spec/signatures.md#q-sig-48--an-oci-signatures-object-is-its-manifest-and-signed-content-has-a-locator) | Where are an original and its signed content? | (a) an OCI signature's object is its manifest; content_sha256 and content_locator | — |
+| [Q-SIG-49](spec/signatures.md#q-sig-49--an-object-above-the-bound-is-recorded-and-born-malformed) | An object above the bound? | (a) recorded, born malformed | — |
+| [Q-SIG-50](spec/signatures.md#q-sig-50--npms-registry-signature-has-its-message-as-its-subject) | The subject of npm's registry signature? | (a) the SHA-256 of its message | — |
+| [Q-SIG-51](spec/signatures.md#q-sig-51--a-remotes-npm-attestations-are-stored-at-the-path-of-their-endpoint) | Where does a remote keep npm's attestations? | (a) at the endpoint's path | — |
+| [Q-SIG-52](spec/signatures.md#q-sig-52--the-origin-is-recorded-at-every-file-a-client-sent) | Which files record the origin? | (a) every file a client sent | — |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

@@ -306,6 +306,23 @@ func (s *Spooled) Path() string {
 	return s.file.Name()
 }
 
+// Readable reports whether the content can be read from the spool: a body kept in memory or in the spool file, not one staged in
+// the bucket and not the digests alone of a link (a commit of content that is stored already).
+func (s *Spooled) Readable() bool {
+	return s != nil && !s.closed && s.staged == "" && (s.file != nil || int64(len(s.data)) == s.Size)
+}
+
+// ReaderAt reads parts of a readable content; ok is false for one that is not [Spooled.Readable].
+func (s *Spooled) ReaderAt() (io.ReaderAt, bool) {
+	switch {
+	case !s.Readable():
+		return nil, false
+	case s.file != nil:
+		return io.NewSectionReader(s.file, 0, s.Size), true
+	}
+	return bytes.NewReader(s.data), true
+}
+
 // Reader returns a new reader over the whole content. Readers are independent
 // of each other and read the file at their own offset.
 func (s *Spooled) Reader() io.ReadSeeker { return s.Section(0, s.Size) }

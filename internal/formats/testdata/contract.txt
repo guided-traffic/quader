@@ -1,4 +1,4 @@
-contract version 7
+contract version 8
 formats.Action: alias authz.Action
 formats.Authenticator: method ReadToken(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Authenticator: method TokenRequest(context.Context, RemoteContext, *http.Request, Path, int, http.Header) (*http.Request, string, bool, error)
@@ -12,6 +12,7 @@ formats.Base: method OnItemsRemoved(context.Context, Tx, ItemsEvent) error
 formats.Base: method Remote() RemoteAdapter
 formats.Base: method ServeCheck(context.Context, Host, RepoRef, ItemRef, ServeMode) error
 formats.Base: method SetupTemplates() []SetupTemplate
+formats.Base: method Signatures() SignatureAdapter
 formats.Base: method View() ViewAdapter
 formats.Base: method Virtual() VirtualAdapter
 formats.Base: method WriteError(http.ResponseWriter, *http.Request, error)
@@ -143,6 +144,7 @@ formats.Format: method Remote() RemoteAdapter
 formats.Format: method Routes() []Route
 formats.Format: method ServeCheck(context.Context, Host, RepoRef, ItemRef, ServeMode) error
 formats.Format: method SetupTemplates() []SetupTemplate
+formats.Format: method Signatures() SignatureAdapter
 formats.Format: method View() ViewAdapter
 formats.Format: method Virtual() VirtualAdapter
 formats.Format: method WriteError(http.ResponseWriter, *http.Request, error)
@@ -476,6 +478,45 @@ formats.ShadowOutcome: field Shadowed []ShadowPair
 formats.ShadowOutcome: field Undetermined bool
 formats.ShadowPair: field Remote string
 formats.ShadowPair: field Virtual string
+formats.SignatureAdapter: method Declaration() SignatureDeclaration
+formats.SignatureAdapter: method Detect(context.Context, SignatureEvent) ([]SignatureCandidate, error)
+formats.SignatureCandidate: field Location string
+formats.SignatureCandidate: field Object SignatureLocator
+formats.SignatureCandidate: field Part int
+formats.SignatureCandidate: field Role string
+formats.SignatureCandidate: field SchemeHint string
+formats.SignatureCandidate: field SignedContent SignatureLocator
+formats.SignatureCandidate: field Source string
+formats.SignatureCandidate: field Subject [32]byte
+formats.SignatureCandidate: field SubjectName string
+formats.SignatureCandidate: field SubjectPath string
+formats.SignatureContent: method Bytes(int64) ([]byte, error)
+formats.SignatureContent: method ReaderAt() (io.ReaderAt, error)
+formats.SignatureContent: method Size() int64
+formats.SignatureDeclaration: field Kinds []SignatureKind
+formats.SignatureDeclaration: field None string
+formats.SignatureEvent: field Content SignatureContent
+formats.SignatureEvent: field Digests Digests
+formats.SignatureEvent: field Item ItemRef
+formats.SignatureEvent: field Lead ItemRef
+formats.SignatureEvent: field MediaType string
+formats.SignatureEvent: field Origin Origin
+formats.SignatureEvent: field Path Path
+formats.SignatureEvent: field Repo RepoRef
+formats.SignatureEvent: field Variant string
+formats.SignatureKind: field Client string
+formats.SignatureKind: field Covers string
+formats.SignatureKind: field Location string
+formats.SignatureKind: field Name string
+formats.SignatureKind: field Role string
+formats.SignatureKind: field Schemes []string
+formats.SignatureLocator: field Blob [32]byte
+formats.SignatureLocator: field Locator string
+formats.SignatureLocator: field MediaType string
+formats.SignatureLocator: field Path string
+formats.SignatureLocator: field Raw []byte
+formats.SignatureLocator: field SHA256 [32]byte
+formats.SignatureLocator: field Size int64
 formats.SourceRef: field Path string
 formats.SourceRef: field Repo qname.Repo
 formats.SourceSpeller: method SourceSpellings(string, Path) []Path
@@ -584,6 +625,7 @@ formats.LiveVersions: func(context.Context, *Request, PackageRow) ([]string, Rev
 formats.Lookup: func(string) (Format, bool)
 formats.MatchRoutes: func([]Route, string, string) (*Route, Params, error)
 formats.NoMarkup: func() Markup
+formats.NoSignatures: func(string) SignatureAdapter
 formats.NoVulnerabilityData: func() VulnerabilityData
 formats.ProbeFiles: func(Probe) []discover.Item
 formats.RefusalFrom: func(*http.Request) (Refusal, bool)
@@ -593,6 +635,9 @@ formats.RepositoryAllowed: func(context.Context, RepoRef) error
 formats.RequiredGuideTopics: func() []string
 formats.ServeRoute: func(Format, http.ResponseWriter, *Request, bool)
 formats.SetupTokenRefs: func() []string
+formats.SignatureRoleValid: func(string) bool
+formats.SignatureSchemeValid: func(string) bool
+formats.SignatureSourceValid: func(string) bool
 formats.Template: func(string) (func(string) (Params, bool))
 formats.Validate: func(Format) error
 formats.WithRefusal: func(*http.Request, Refusal) *http.Request
@@ -605,7 +650,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 7
+formats.ContractVersion: value = 8
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
@@ -637,6 +682,7 @@ formats.KindSearch: value = catalog.KindSearch
 formats.KindWrite: value = catalog.KindWrite
 formats.Local: value = catalog.Local
 formats.MaxProbeFiles: value = 1000
+formats.MaxSignatureRaw: value = 256 << 10
 formats.Merge: value = (repeated, place 1 of its group)
 formats.Metadata: value = (repeated, place 1 of its group)
 formats.OriginFill: value = (repeated, place 1 of its group)
@@ -662,6 +708,31 @@ formats.SetupTokenRef: value = "${QUADER_TOKEN}"
 formats.SetupTokenRefPS: value = "$env:QUADER_TOKEN"
 formats.SetupTokenRefWin: value = "%QUADER_TOKEN%"
 formats.SetupVersionRef: value = "<version>"
+formats.SignatureLocatorCleartext: value = "cleartext"
+formats.SignatureLocatorEntryPrefix: value = "entry:"
+formats.SignatureLocatorUnsigned: value = "unsigned"
+formats.SignatureRoleAttestation: value = "attestation"
+formats.SignatureRoleProvenance: value = "provenance"
+formats.SignatureRolePublisher: value = "publisher"
+formats.SignatureRoleRegistry: value = "registry"
+formats.SignatureSchemeCosignLegacy: value = "cosign-legacy"
+formats.SignatureSchemeNPMRegistry: value = "npm-registry"
+formats.SignatureSchemeNotationCOSE: value = "notation-cose"
+formats.SignatureSchemeNotationJWS: value = "notation-jws"
+formats.SignatureSchemeNuGetCMS: value = "nuget-cms"
+formats.SignatureSchemeOpenPGP: value = "openpgp"
+formats.SignatureSchemePublicKey: value = "public-key"
+formats.SignatureSchemeSigstoreBundle: value = "sigstore-bundle"
+formats.SignatureSchemeUnknown: value = "unknown"
+formats.SignatureSourceCosignTag: value = "cosign_tag"
+formats.SignatureSourceDocument: value = "document"
+formats.SignatureSourceEmbedded: value = "embedded"
+formats.SignatureSourceIndexEntry: value = "index_entry"
+formats.SignatureSourceReferrer: value = "referrer"
+formats.SignatureSourceReferrersTag: value = "referrers_tag"
+formats.SignatureSourceRelease: value = "release"
+formats.SignatureSourceSibling: value = "sibling"
+formats.SignatureSourceUpload: value = "upload"
 formats.SubjectName: value = catalog.SubjectName
 formats.SubjectPath: value = catalog.SubjectPath
 formats.TierLocal: value Tier = iota + 1 (place 0 of its group)

@@ -743,6 +743,8 @@ quader/
 │   │   ├── match/               # the matcher over a format's version order (leaf layer)
 │   │   ├── osv/                 # the OSV and KEV decoders (leaf layer)
 │   │   └── store/ sync/ evaluate/ triage/ report/   # the tables' wrappers, the sync jobs, evaluation and lifecycle, status changes, the report
+│   ├── signatures/              # signatures on artifacts: states, roles, the batch the commit hook records (signatures.md R-SIG-001 to R-SIG-043)
+│   │   └── store/               # the store of signature_objects, signatures, signature_attachments and artifact_origins
 │   ├── mirror/                  # the mirror mode of remote repositories: dispatch, passes, throttling, status (R-REPO-050 to R-REPO-059)
 │   │   └── discover/            # the discovery contract a format's remote adapter implements (leaf layer, ADR-152)
 │   ├── formatdata/              # store ports of the formats, implemented over the generated queries (Q-ARCH-193)
@@ -1383,8 +1385,10 @@ package formats
 // may refuse a download with 429 before its status line, and a route's Kind decides what the limits count it as. Version 7 is the
 // probes' (ADR-207, repositories-and-proxy.md R-REPO-065): a format with the class remote declares its probes (Descriptor.Probes, or
 // NoProbe with the reason), its RemoteAdapter names a probed version's content (ProbeContent), and its handler tells the host of a
-// probe it answered (RemoteFetcher.Probed). A format declares the literal it was written against.
-const ContractVersion = 7
+// probe it answered (RemoteFetcher.Probed). Version 8 is the signatures' (ADR-228, signatures.md R-SIG-022): every format declares
+// its signatures and detects them (Format.Signatures); Base returns nil and Register refuses nil. A format declares the literal it was
+// written against.
+const ContractVersion = 8
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -1437,6 +1441,9 @@ type Format interface {
 	// generic rows do not hold: description, keywords, licenses, README and format-specific metadata
 	// (Q-API-166). It runs no SQL; Validate refuses a view without package names.
 	View() ViewAdapter
+	// Signatures declares where a format's signatures live and finds them in what a commit stores
+	// (signatures.md R-SIG-022). Every format implements it; Base returns nil, and Register refuses nil.
+	Signatures() SignatureAdapter
 
 	// SetupTemplates returns the client setup templates (text/template) used by api-and-ui.md R-API-030.
 	SetupTemplates() []SetupTemplate
@@ -2070,6 +2077,125 @@ func (f ViewFields) Has(o ViewFields) bool
 // formats.ExecuteGuide parses and runs a section; the API and the kit both call it.
 ```
 
+**Signatures** ([signatures.md](signatures.md) R-SIG-022, [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version),
+Q-SIG-43, Q-SIG-47, Q-SIG-48). Every format declares the signatures of its ecosystem, or none with the reason, and names them in what
+a commit or a remote's fill stores; the core resolves what a candidate names by path in the event's repository only, stores it
+(`internal/signatures/store`) and checks it later. A format without signatures returns `NoSignatures(reason)`.
+
+```go
+// SignatureAdapter is what a format says about the signatures of its ecosystem.
+type SignatureAdapter interface {
+	// Declaration is static: the kinds the format knows, or none with the reason.
+	Declaration() SignatureDeclaration
+	// Detect names the signatures a committed item or a stored document carries or points at. It reads only the bytes it is handed
+	// (ev.Content, bounded) and runs no SQL. An error never fails the commit.
+	Detect(ctx context.Context, ev SignatureEvent) ([]SignatureCandidate, error)
+}
+
+type SignatureDeclaration struct {
+	None  string // non-empty: the format has no signatures, and why
+	Kinds []SignatureKind
+}
+
+type SignatureKind struct {
+	Name     string   // "Notation", "Sigstore bundle", "registry signature", …
+	Schemes  []string // R-SIG-001's scheme names
+	Role     string   // publisher, provenance, registry, attestation
+	Location string   // where it lives, in the format's words
+	Covers   string   // what it covers
+	Client   string   // how a client gets it
+}
+
+type SignatureCandidate struct {
+	Object        SignatureLocator // the original: a stored file's blob with a locator, or bytes of at most MaxSignatureRaw
+	Part          int              // the signature within the object: an OpenPGP packet, a layer, a countersignature
+	Subject       [32]byte         // the SHA-256 of the covered blob; zero when SubjectPath names it
+	SubjectPath   string           // a stored file or document of the event's repository whose blob is the subject
+	SubjectName   string           // npm: <name>@<version>
+	Role          string
+	SchemeHint    string
+	Source        string // referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release, upload
+	Location      string // the attachment's location (R-SIG-004)
+	SignedContent SignatureLocator // what a keyless scheme or NuGet hashes; the zero locator is the subject's bytes
+}
+
+// SignatureLocator names bytes: by a path of the event's repository, by a blob's digest, or as the bytes themselves.
+type SignatureLocator struct {
+	Path      string   // a stored file or document of the event's repository
+	Blob      [32]byte // a blob the detector knows by digest
+	Locator   string   // inside the blob: "", a zip entry, a JSON pointer, or a SignatureLocator constant
+	SHA256    [32]byte // the object's own digest when it is a part of the blob; zero for the whole blob
+	Size      int64
+	MediaType string
+	Raw       []byte // at most MaxSignatureRaw
+}
+
+// SignatureEvent is what a detector is handed: a committed item, or a document a remote's fill stored (Item.ID 0).
+type SignatureEvent struct {
+	Origin    Origin
+	Repo      RepoRef
+	Item      ItemRef
+	Lead      ItemRef
+	Path      Path
+	Variant   string
+	MediaType string
+	Digests   Digests
+	Content   SignatureContent
+}
+
+// SignatureContent is the stored bytes as a detector reads them: from the spool, or from the object store.
+type SignatureContent interface {
+	Size() int64
+	Bytes(max int64) ([]byte, error) // the whole content when it is at most max bytes, an error otherwise
+	ReaderAt() (io.ReaderAt, error)
+}
+
+// The roles, schemes and sources of R-SIG-001 and R-SIG-004, and the locators of signed content (Q-SIG-48).
+const (
+	SignatureRolePublisher   = "publisher"
+	SignatureRoleProvenance  = "provenance"
+	SignatureRoleRegistry    = "registry"
+	SignatureRoleAttestation = "attestation"
+)
+
+const (
+	SignatureSchemeSigstoreBundle = "sigstore-bundle"
+	SignatureSchemeCosignLegacy   = "cosign-legacy"
+	SignatureSchemeNotationJWS    = "notation-jws"
+	SignatureSchemeNotationCOSE   = "notation-cose"
+	SignatureSchemeNuGetCMS       = "nuget-cms"
+	SignatureSchemeOpenPGP        = "openpgp"
+	SignatureSchemeNPMRegistry    = "npm-registry"
+	SignatureSchemePublicKey      = "public-key"
+	SignatureSchemeUnknown        = "unknown"
+)
+
+const (
+	SignatureSourceReferrer     = "referrer"
+	SignatureSourceReferrersTag = "referrers_tag"
+	SignatureSourceCosignTag    = "cosign_tag"
+	SignatureSourceIndexEntry   = "index_entry"
+	SignatureSourceDocument     = "document"
+	SignatureSourceEmbedded     = "embedded"
+	SignatureSourceSibling      = "sibling"
+	SignatureSourceRelease      = "release"
+	SignatureSourceUpload       = "upload"
+)
+
+const (
+	SignatureLocatorUnsigned    = "unsigned"  // a NuGet package without its signature entry
+	SignatureLocatorCleartext   = "cleartext" // the text an inline OpenPGP signature carries
+	SignatureLocatorEntryPrefix = "entry:"    // an entry of an archive: "entry:MANIFEST.json"
+)
+
+const MaxSignatureRaw = 256 << 10
+
+func NoSignatures(reason string) SignatureAdapter
+func SignatureRoleValid(role string) bool
+func SignatureSchemeValid(scheme string) bool
+func SignatureSourceValid(source string) bool
+```
+
 Supporting types of the blocks, named here so that the contract has no type the spec does not know
 (`TestR_ARCH_008_EveryExportedTypeOfTheContractIsNamedInTheSpec`): `PackageID` is the id of a package row;
 `URLMapping` (path and upstream URL) and `RemoteDocument` (a stored or fetched upstream document with its digest, size, media type, times and
@@ -2573,6 +2699,10 @@ own tests:
     again on a host whose `Serve` answers each of the malware gate's three answers ([malware-scanning.md](malware-scanning.md)
     R-MAL-016, R-MAL-029); the format's `WriteError` must answer `403`, `403` and `503`, each with `Cache-Control: no-store`, the
     `503` with `Retry-After`, and no byte of the item.
+18. Signatures ([signatures.md](signatures.md) R-SIG-022): every kind the format declares has a case in `Fixture.Signatures` (a signed
+    sample committed through the in-memory host, or a remote's stored document), for which `Detect` names the expected candidate with its
+    subject and locator; committing a sample raises no version row whose lead item carries the signature; a format that declares none
+    detects nothing over its content cases. It is never skipped.
 
 A check that cannot apply to a format is skipped in the format's test with a stated reason (generic
 has no routes, no clients and no package names); a skip without a reason fails the check, so a
@@ -2580,7 +2710,7 @@ later class cannot pass a check vacuously. The kit also refuses a skip that the 
 checks 1, 3, 7, 12 and 13 on a format that has routes, check 4 on one with a remote adapter, check 5 with a
 virtual adapter, check 6 with an `Upload` route, check 8 with clients, setup templates or a guide, check 9 with
 package names or a route that writes, check 10 with package names, check 11 with a view adapter, check 14 with a
-vulnerability adapter, check 15 with wiki content, checks 16 and 17 with a `Download` route. Check 2 is never skipped. A check with nothing to run over (an empty fixture) fails unless it
+vulnerability adapter, check 15 with wiki content, checks 16 and 17 with a `Download` route. Checks 2 and 18 are never skipped. A check with nothing to run over (an empty fixture) fails unless it
 is skipped. npm and NuGet skip no check (`TestR_ARCH_010_NoCheckIsSkipped`); what a check of theirs does not look at
 is an entry of `NoRevision` or `NoContent`, each with its reason, in the format's `conformance_test.go`.
 
@@ -4869,7 +4999,7 @@ describe the policy from the first stable release on.
 | Token formats | `qdr_*_` prefixes (INV-8) | A prefix never changes meaning. New token types get new prefixes. |
 | Metrics, log and audit fields | Names and labels | Stable within a major. A renamed metric is emitted under both names for at least 2 minors ([operations-and-observability.md](operations-and-observability.md)). |
 | Bastion interface | `bastion.InterfaceVersion`, an integer of its own, carried in `Quader-Bastion-Interface` ([bastion.md](bastion.md) R-BAS-009) | Main installation and Bastion talk only at the same version; every change of the interface raises it, guarded by its surface file; a release that raises it says so in its notes |
-| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 7 since the probes ([ADR-207](../decisions.md#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7), [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
+| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 8 since the signatures ([ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version), [signatures.md](signatures.md) R-SIG-022), at 7 since the probes ([ADR-207](../decisions.md#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7), [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
 
 **Major version 0.** Quader releases stay on major version 0 until the owner decides otherwise
 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)); Semantic Release sets each version from the

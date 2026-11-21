@@ -108,12 +108,13 @@ func conformanceChanges() []formattest.ChangeCase {
 // conformance is the fixture of the kit over the format with the local class built (T-17's plan, WP3): the index and key routes
 // answer 501 until the work packages of the index builder and of the keys build them, so those routes are listed as not built, each with
 // its reason, and the work package that builds the operation removes the entry (the kit refuses a skip the format contradicts).
-func conformance() formattest.Fixture {
+func conformance(t testing.TB) formattest.Fixture {
 	const generated = "the files are generated items that only the publication port writes, which the kit's host does not have; test/integration/deblocal serves them"
 	const remoteOnly = "the route serves the remote class, which the kit's local host does not address: the answers are covered against a remote engine and the counting stub in test/integration/debremote"
 	versions := []string{"1.0-1", "1.0-2", "1.1-1"}
 	return formattest.Fixture{
-		Rejects: []string{"pool/%2e%2e/x", "../pool/h/hello/hello_2.10-3_amd64.deb", "dists/stable/InRelease%00"},
+		Signatures: signatureCases(t),
+		Rejects:    []string{"pool/%2e%2e/x", "../pool/h/hello/hello_2.10-3_amd64.deb", "dists/stable/InRelease%00"},
 		Paths: []formattest.PathCase{
 			{Path: "dists/stable/main/binary-amd64/Packages.gz", Want: formats.PathInfo{Kind: formats.PathMetadata}},
 			{Path: "dists/stable/InRelease", Want: formats.PathInfo{Kind: formats.PathMetadata}},
@@ -198,7 +199,7 @@ func conformance() formattest.Fixture {
 
 // TestR_ARCH_010_Conformance runs the conformance kit over the format.
 func TestR_ARCH_010_Conformance(t *testing.T) {
-	formattest.Run(t, New(), conformance())
+	formattest.Run(t, New(), conformance(t))
 }
 
 // FuzzR_ARCH_028_Match: Match never resolves a path that is not clean and never panics.

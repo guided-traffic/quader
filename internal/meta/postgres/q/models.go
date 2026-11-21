@@ -162,6 +162,15 @@ type AppUser struct {
 	External              bool
 }
 
+type ArtifactOrigin struct {
+	ItemID        int64
+	PrincipalKind string
+	PrincipalName string
+	TokenID       pgtype.UUID
+	Ci            json.RawMessage
+	UploadedAt    pgtype.Timestamptz
+}
+
 type AuditEvent struct {
 	ID           pgtype.UUID
 	OccurredAt   time.Time
@@ -1289,6 +1298,54 @@ type ServiceAccount struct {
 type ServiceAccountRepositoryGrant struct {
 	ServiceAccountID pgtype.UUID
 	Actions          []string
+}
+
+type Signature struct {
+	ID             int64
+	ObjectSha256   []byte
+	Part           int16
+	SubjectSha256  []byte
+	SubjectName    pgtype.Text
+	Role           string
+	PredicateType  pgtype.Text
+	ContentSha256  []byte
+	ContentLocator pgtype.Text
+	State          string
+	Reason         pgtype.Text
+	Signer         json.RawMessage
+	KeyIds         []string
+	SignedDigest   []byte
+	DigestAlg      pgtype.Text
+	ClaimedAt      pgtype.Timestamptz
+	ProvenAt       pgtype.Timestamptz
+	TimeProof      pgtype.Text
+	ReceivedAt     pgtype.Timestamptz
+	CheckedAt      pgtype.Timestamptz
+	Due            bool
+	Priority       int16
+	Attempts       int32
+	NotBefore      pgtype.Timestamptz
+}
+
+type SignatureAttachment struct {
+	RepoID      int64
+	SignatureID int64
+	Location    string
+	ItemID      pgtype.Int8
+	Source      string
+	Name        pgtype.Text
+	CreatedAt   pgtype.Timestamptz
+}
+
+type SignatureObject struct {
+	Sha256      []byte
+	Scheme      string
+	MediaType   pgtype.Text
+	Raw         []byte
+	ItemBlob    []byte
+	Locator     pgtype.Text
+	Size        int64
+	FirstSeenAt pgtype.Timestamptz
 }
 
 type StorageUsageDelta struct {

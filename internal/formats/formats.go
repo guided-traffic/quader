@@ -32,9 +32,10 @@ import (
 // paced, a parallel lease; Metadata, Computed, Volatile: documents; Upload, Delete, Admin: writes). Version 7 is the probes'
 // (repositories-and-proxy.md R-REPO-065, ADR-207): a format with the class remote declares its probes in [Descriptor.Probes] (or why its
 // protocol has none), its RemoteAdapter names a probed version's content (ProbeContent), and a handler tells the host of a probe it
-// answered (RemoteFetcher.Probed). A format declares the literal it was written against in [Descriptor.ContractVersion], and Register
-// panics on a mismatch.
-const ContractVersion = 7
+// answered (RemoteFetcher.Probed). Version 8 is the signatures' (signatures.md R-SIG-022, ADR-228): every format declares its
+// signatures and detects them ([Format.Signatures]); Base returns nil and Register refuses nil. A format declares the literal it was
+// written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 8
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -151,6 +152,9 @@ type Format interface {
 	// View is nil for a format without package screens (R-API-029): the adapter
 	// reads what the generic rows do not hold and orders the versions.
 	View() ViewAdapter
+	// Signatures declares where a format's signatures live and finds them in what a commit stores
+	// (signatures.md R-SIG-022). Every format implements it; Base returns nil, and Register refuses nil.
+	Signatures() SignatureAdapter
 
 	// SetupTemplates are the client setup snippets (R-API-030).
 	SetupTemplates() []SetupTemplate
@@ -469,6 +473,9 @@ func Validate(f Format) error {
 	if err := checkProbes(f, d); err != nil {
 		return err
 	}
+	if err := checkSignatures(f, d); err != nil {
+		return err
+	}
 	switch {
 	case repository.IsReservedMember(string(id)):
 		return fmt.Errorf("%q is named like a member of the repository document, whose member for the format's settings it must be", id)
@@ -530,6 +537,40 @@ func checkProbes(f Format, d Descriptor) error {
 			return fmt.Errorf("%q declares the probe %s %s twice", d.ID, p.Method, p.Route)
 		}
 		seen[p.Route+" "+p.Method] = true
+	}
+	return nil
+}
+
+// checkSignatures holds every format to a declaration of its signatures (signatures.md R-SIG-022, Q-SIG-43): an adapter, and a
+// declaration that says either why the format has none or every field of each kind it knows, with roles and schemes of R-SIG-001.
+func checkSignatures(f Format, d Descriptor) error {
+	sa := f.Signatures()
+	if sa == nil {
+		return fmt.Errorf("%q declares no signatures: Signatures() returns nil (R-SIG-022)", d.ID)
+	}
+	decl := sa.Declaration()
+	switch {
+	case decl.None == "" && len(decl.Kinds) == 0:
+		return fmt.Errorf("%q declares neither the kinds of its signatures nor why it has none", d.ID)
+	case decl.None != "" && len(decl.Kinds) > 0:
+		return fmt.Errorf("%q declares kinds of signatures and a reason it has none", d.ID)
+	}
+	seen := map[string]bool{}
+	for _, k := range decl.Kinds {
+		switch {
+		case k.Name == "" || k.Location == "" || k.Covers == "" || k.Client == "" || len(k.Schemes) == 0:
+			return fmt.Errorf("%q declares the signature kind %q without its name, schemes, location, coverage or client", d.ID, k.Name)
+		case !SignatureRoleValid(k.Role):
+			return fmt.Errorf("%q declares the signature kind %q with the role %q", d.ID, k.Name, k.Role)
+		case seen[k.Name]:
+			return fmt.Errorf("%q declares the signature kind %q twice", d.ID, k.Name)
+		}
+		seen[k.Name] = true
+		for _, s := range k.Schemes {
+			if !SignatureSchemeValid(s) {
+				return fmt.Errorf("%q declares the signature kind %q with the scheme %q", d.ID, k.Name, s)
+			}
+		}
 	}
 	return nil
 }

@@ -77,6 +77,17 @@ func (f *Format) commitTagItem(ctx context.Context, tx formats.Tx, c formats.Com
 			return errs.E(errs.NotFound, errs.CodeNotFound, "The manifest the tag is linked to is not stored any more.")
 		}
 	}
+	if IsAttachmentTag(p.tag) {
+		// An attachment tag (the referrers tag, cosign's .sig, .att, .sbom) is stored and served as every tag and gets no version row:
+		// it is in no version list, no count and no search (signatures.md R-SIG-024, Q-SIG-32). It is a write to the name, never a
+		// publish or a claim, so the shadowing rule of a first version does not apply.
+		if err := c.Packages.Claim(ctx, formats.Target{Package: p.name, Path: TagPath(p.name, p.tag), Actions: []formats.Action{formats.ActionDeploy}},
+			formats.OwnershipWrite{}); err != nil {
+			return err
+		}
+		_, _, err = c.Packages.BumpRevision(ctx, pkg)
+		return err
+	}
 	live, err := c.Packages.Versions(ctx, pkg)
 	if err != nil {
 		return err

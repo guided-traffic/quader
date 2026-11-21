@@ -109,3 +109,8 @@ func TestR_ANS_006_TheDispatcherNamesTheRoutesThatTakeTheTokenScheme(t *testing.
 		}
 	}
 }
+
+// Signatures declares none: a format of this test (signatures.md R-SIG-022).
+func (galaxy) Signatures() formats.SignatureAdapter {
+	return formats.NoSignatures("a format of this test")
+}

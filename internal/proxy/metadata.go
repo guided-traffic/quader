@@ -565,6 +565,14 @@ func (f *fetcher) fillLink(resp *http.Response, sp *items.Spooled, prepared Prep
 			if err := f.enterAliases(ctx, tx, qs, resp, sp, prepared); err != nil {
 				return err
 			}
+			if h, ok := rq.Adapter.(DocumentHook); ok {
+				if err := h.DocumentStored(ctx, tx, StoredDocument{
+					Path: rq.Path, Variant: rq.Variant, Digest: sp.SHA256, MediaType: mediaType(resp.Header.Get("Content-Type")),
+					Content: items.SpooledContent(sp),
+				}); err != nil {
+					return err
+				}
+			}
 		}
 		if rq.Populate != nil {
 			return rq.Populate.Record(ctx, tx)

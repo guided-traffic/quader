@@ -183,3 +183,8 @@ func (e *env) send(r *testenv.Replica, method, path string, hdr ...string) (test
 func basic(user, tok string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+tok))
 }
+
+// Signatures declares none: a format of this test (signatures.md R-SIG-022).
+func (keyedFormat) Signatures() formats.SignatureAdapter {
+	return formats.NoSignatures("a format of this test")
+}

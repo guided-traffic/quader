@@ -1,6 +1,9 @@
 # Signatures on artifacts
 
-Status: specified, not built. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
+Status: stage 1 is in work. Built (package 1 of 4): the format contract's declaration and detector of every format, kit check 18, the
+store of signature objects, signatures, attachments and origins with the commit hook and the fill hook that record them, and OCI's
+attachment tags without a version row ([developer/signatures.md](../developer/signatures.md)). Not built: the read, the integrity check,
+the trust step and its anchors, the job, the API, the screens, the formats' wire behaviour. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
 each original signature with its verdict, decides trust against trust anchors of the installation and, where the administrator allows it,
 of a project, shows the result at the artifact, alarms on an invalid signature, and serves signatures to every client the way its
 protocol expects. It blocks nothing. Stage 2 (Quader signs) and stage 3 (a gate per repository) are not specified here; what stage 1's
@@ -137,26 +140,28 @@ blob against the collection, [storage.md](storage.md) R-STOR-024):
 
 ```sql
 CREATE TABLE signature_objects (                     -- the original of a signature, once per its own SHA-256
-  sha256        bytea  PRIMARY KEY CHECK (octet_length(sha256) = 32),
+  sha256        bytea  PRIMARY KEY CHECK (octet_length(sha256) = 32),  -- an OCI signature's: the manifest that carries it (Q-SIG-48)
   scheme        text   NOT NULL CHECK (scheme IN ('sigstore-bundle', 'cosign-legacy', 'notation-jws', 'notation-cose', 'nuget-cms',
                                                     'openpgp', 'npm-registry', 'public-key', 'unknown')),
   media_type    text   NULL CHECK (length(media_type) <= 255),
   raw           bytea  NULL CHECK (octet_length(raw) <= 262144),  -- the bytes, when no item of their own keeps them (Q-SIG-22)
   item_blob     bytea  NULL CHECK (octet_length(item_blob) = 32), -- the blob of the item that is the original, when one is
   locator       text   NULL CHECK (length(locator) <= 1024),      -- inside that blob: a zip entry, a layer index, a JSON pointer
-  size          integer NOT NULL CHECK (size BETWEEN 1 AND 262144),
+  size          bigint NOT NULL CHECK (size >= 1),                  -- a stored file above max_object_size is recorded, born malformed (Q-SIG-49)
   first_seen_at timestamptz NOT NULL DEFAULT now(),               -- Quader's receipt of the object (R-SIG-007)
   CHECK ((raw IS NULL) <> (item_blob IS NULL))
 );
 
 CREATE TABLE signatures (                            -- one per (object, subject): the read and the integrity check
-  id              bigserial PRIMARY KEY,
+  id              bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   object_sha256   bytea  NOT NULL REFERENCES signature_objects (sha256) ON DELETE CASCADE,
   part            smallint NOT NULL DEFAULT 0,       -- the signature within the object: an OpenPGP packet, a countersignature, a layer
   subject_sha256  bytea  NOT NULL CHECK (octet_length(subject_sha256) = 32),
   subject_name    text   NULL CHECK (length(subject_name) <= 512),  -- npm: <name>@<version>, part of the signed message
   role            text   NOT NULL CHECK (role IN ('publisher', 'provenance', 'registry', 'attestation')),
   predicate_type  text   NULL CHECK (length(predicate_type) <= 512),
+  content_sha256  bytea  NULL,                       -- what a keyless scheme or NuGet hashes when it is not the subject's bytes (Q-SIG-48)
+  content_locator text   NULL,                       -- inside it: "unsigned", "cleartext", "entry:<name>"
   state           text   NOT NULL DEFAULT 'pending'
                   CHECK (state IN ('pending', 'valid', 'invalid', 'no_key', 'unsupported', 'malformed', 'failed')),
   reason          text   NULL,                       -- a closed code (R-SIG-006)
@@ -173,7 +178,7 @@ CREATE TABLE signatures (                            -- one per (object, subject
   priority        smallint NOT NULL DEFAULT 1 CHECK (priority BETWEEN 0 AND 3),
   attempts        integer NOT NULL DEFAULT 0,
   not_before      timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (object_sha256, part, subject_sha256, subject_name)
+  UNIQUE NULLS NOT DISTINCT (object_sha256, part, subject_sha256, subject_name)  -- a signature without a subject name is one row too
 );
 CREATE INDEX signatures_subject ON signatures (subject_sha256);
 CREATE INDEX signatures_due     ON signatures (priority, not_before) WHERE due;
@@ -182,7 +187,8 @@ CREATE INDEX signatures_invalid ON signatures (checked_at) WHERE state = 'invali
 ```
 
 - The store `internal/signatures/store` is the one door to the tables; the commit hook's insert, the job's write and the trust step go
-  through it, with the events of R-SIG-039.
+  through it, with the events of R-SIG-039. Built: the commit hook's and the fill hook's record, and the reads and writes the job and the
+  API will use ([developer/signatures.md](../developer/signatures.md)).
 - **States of the integrity check:**
 
   | State | Meaning | Shown as (R-SIG-009) |
@@ -443,7 +449,7 @@ uploaded, for an upload from CI the verified claims of the pipeline, and shows i
   ```sql
   CREATE TABLE artifact_origins (
     item_id         bigint PRIMARY KEY REFERENCES items (id) ON DELETE CASCADE,
-    principal_kind  text   NOT NULL,      -- user, service_account, technical_token, ci_mapping, system
+    principal_kind  text   NOT NULL,      -- the actor's kind as the audit records it: user, service_account, ci, anonymous, ...
     principal_name  text   NOT NULL CHECK (length(principal_name) <= 255),
     token_id        uuid   NULL,          -- the credential's ID, never a secret
     ci              jsonb  NULL CHECK (octet_length(ci::text) <= 8192),  -- a CI upload: the issuance's claim snapshot
@@ -455,6 +461,8 @@ uploaded, for an upload from CI the verified claims of the pipeline, and shows i
   `project_path`, `project_id`, `namespace_path`, `pipeline_id`, `job_id`, `ref`, `ref_type`, `ref_protected`, `pipeline_source`,
   `environment`, `sha`, `user_login`; never `user_email`. A remote's fill writes no row: its origin is the remote's upstream and the
   fill's time, which the screens read from the item (R-SIG-035).
+- Every file a client sent records it; a file Quader derives from the upload (NuGet's generated `.nuspec`) records none
+  ([Q-SIG-52](#q-sig-52--the-origin-is-recorded-at-every-file-a-client-sent)).
 - It lives as long as the item and travels with backups; it is the input of stage 2's attestation of origin (R-SIG-043).
 
 Acceptance criteria:
@@ -823,7 +831,9 @@ type SignatureKind struct {
 
 type SignatureCandidate struct {
     Object        SignatureLocator // the original: an item's blob with a locator, or bytes of at most 256 KiB
+    Part          int              // the signature within the object (Q-SIG-47)
     Subject       [32]byte         // the SHA-256 of the covered blob
+    SubjectPath   string           // or a stored file of the event's repository whose blob is the subject (Q-SIG-47)
     SubjectName   string           // npm: <name>@<version>
     Role          string
     SchemeHint    string
@@ -833,17 +843,27 @@ type SignatureCandidate struct {
 }
 ```
 
+As built (the full block with `SignatureLocator`, `SignatureEvent` and `SignatureContent` is in [architecture.md](architecture.md) R-ARCH-008):
+a candidate names its object, its subject and its signed content by a path of the event's repository, by a blob's digest, or as bytes;
+the core resolves a path in the event's repository and nowhere else, and drops a candidate whose path holds nothing, which is named
+again from the other side when that path is stored ([Q-SIG-47](#q-sig-47--a-detector-names-paths-the-core-resolves-them-in-the-events-repository)).
+`SignatureEvent` is a committed item or a document a remote's fill stored, with its content readable bounded from the spool or the
+object store; a detector's error never fails the commit. A format without signatures returns `formats.NoSignatures(reason)`.
+
 - `Register` panics for a format whose `Signatures()` is nil, so a format that does not declare does not start, and the test of
   `internal/formats/all` fails ([Q-SIG-43](#q-sig-43--the-contract-gains-a-signature-method-every-format-implements-at-version-8)).
 - `ContractVersion` rises to 8, and every format implements the method in the same change.
 - **A format adds no list entry for a signature** ([Q-SIG-16](#q-sig-16--the-eight-readings-of-the-request) r6): an item that carries a
   signature, a tag that only names a subject's attachments and a document field never become a package or a version of their own; the
   kit holds it.
-- **Check 18 of the kit** (`R-ARCH-010 check 18 signatures`, `checks_signatures.go` of the kit when built): the declaration equals the format's row of R-SIG-002 (`None` with a reason, or kinds with every field); every fixture case
-  of `Fixture.Signatures` (one per kind: a signed sample the fixture builds, committed through the in-memory host) makes `Detect` name the
-  expected candidate with its subject and locator; committing the case raises no version row that names the signature; a format with
-  `None` detects nothing over every content case. The test format's defects `SignatureVersion` (a signature becomes a version) and
-  `NoSignatureDeclaration` fail it.
+- **Check 18 of the kit** (`R-ARCH-010 check 18 signatures`, [checks_signatures.go](../../internal/formats/formattest/checks_signatures.go)):
+  the declaration has `None` with a reason, or kinds with every field (`Register`'s check, run as check 1), and its roles equal the
+  format's row of R-SIG-002 (`TestR_SIG_002_EveryFormatDeclaresItsRowOfTheSpecification` in `internal/formats/all`, which reads the
+  table); every fixture case of `Fixture.Signatures` (one per kind at least: a signed sample the fixture builds, committed through the
+  in-memory host, or a remote's stored document) makes `Detect` name the expected candidate with its subject and locator; committing the
+  case raises no version row whose lead item carries the signature (a signature embedded in its subject's own file, NuGet's, is carried by
+  the version's file); a format with `None` detects nothing over every content case. The check cannot be skipped. The test format's
+  defects `SignatureVersion` (a signature becomes a version) and `NoSignatureDeclaration` fail it.
 
 Acceptance criteria:
 
@@ -872,6 +892,11 @@ Priority: **P1** · Covers: BEYOND-034
   the icon.
 - The subject of a tag-borne attachment is the digest its name carries, whether or not that manifest is stored; the attachment waits
   (`subject_missing`) until it is.
+- **The object of an OCI signature is the manifest that carries it**, and its part is the index of the layer that holds the signature
+  (cosign's older layout holds one per layer; Notation, a bundle and a DSSE envelope one, in layer 0): a referrers tag's index names a
+  referrer by the manifest's digest without reading it, so the referrer and the tag reach the same signature row
+  ([Q-SIG-48](#q-sig-48--an-oci-signatures-object-is-its-manifest-and-signed-content-has-a-locator)). The detector reads the committed
+  manifest only, never a layer, and names at most 32 candidates per event.
 - A signature's identity names an image reference only in the older layout's payload (`critical.identity.docker-reference`), which cosign's
   specification says is ignored; Quader shows it and judges nothing by it.
 
@@ -889,7 +914,8 @@ UI they appear in no tag or version list and in no count, but at the image.
 
 - **On the wire, unchanged:** the referrers API (R-OCI-016), the tags list (R-OCI-015, which lists `_tags/` items and so the attachment tags
   as every tag), the manifests by tag and digest, `HEAD`. A client pushing the referrers tag or a `.sig` tag stores it and pulls it back.
-- **Not a version** ([Q-SIG-32](#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)): a tag whose name is
+- **Not a version** (built: the commit hook of a local push, [hooks.go](../../internal/formats/oci/hooks.go); a remote's tags write no
+  version rows) ([Q-SIG-32](#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)): a tag whose name is
   `sha256-<64 hex>` or `sha256-<64 hex>.sig`, `.att` or `.sbom` gets no row of `package_versions` (its item is a `_tags/` item without a
   version, like a referrer's manifest). Today such a tag is a version (R-OCI-016's last rule is superseded). So it is in no place that reads
   versions, each checked on 2026-11-21:
@@ -1009,9 +1035,13 @@ key in the keys answer (`EMISSINGSIGNATUREKEY` aborts the run otherwise), and a 
 carry the tarball's SHA-512.
 
 - **Detected:** at a remote's fill of a package document, each version's `dist.signatures` entry (`npm-registry`, `registry`, subject the
-  version and its tarball by `dist.integrity`, `document` at `<name>#/versions/<v>/dist/signatures/<i>`); a version's attestations
-  (`sigstore-bundle`, the provenance as `provenance`, npm's publish attestation as `registry`) when the attestations document is stored; at
-  a local publish, the provenance bundle `<name>/-/<basename>-<version>.sigstore` (R-NPM-006, Q-NPM-58) as `provenance` of the tarball.
+  version and its tarball by `dist.integrity`, `document` at `<name>#/versions/<v>/dist/signatures/<i>`); the subject row is the SHA-256 of
+  the signed message `<name>@<version>:<integrity>` with `subject_name` `<name>@<version>`, which is also the digest the key checks
+  ([Q-SIG-50](#q-sig-50--npms-registry-signature-has-its-message-as-its-subject)); a version's attestations
+  (`sigstore-bundle`, the provenance as `provenance`, npm's publish attestation as `registry`) when the attestations document is stored at
+  `-/npm/v1/attestations/<name>@<version>` ([Q-SIG-51](#q-sig-51--a-remotes-npm-attestations-are-stored-at-the-path-of-their-endpoint)),
+  each covering the version's tarball; at a local publish, the provenance bundle `<name>/-/<basename>-<version>.sigstore` (R-NPM-006,
+  Q-NPM-58) as `provenance` of the tarball.
 - **Local publish** keeps refusing trust evidence from clients: `dist.signatures` and `dist.attestations` of the request are removed
   (R-NPM-007, unchanged), because a client must not set what a registry vouches for.
 - **The keys endpoint** `GET <registry URL>-/npm/v1/keys` ([Q-SIG-34](#q-sig-34--the-keys-of-a-local-a-remote-and-a-virtual-npm-repository)),
@@ -1968,6 +1998,84 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) Recorded fixtures | | Fast | Certificates expire; nothing tests the company's ways |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-042.
+
+### Q-SIG-47 · A detector names paths, the core resolves them in the event's repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: R-SIG-022
+names a `SignatureEvent` and a candidate with a 32-byte subject, but a generic file's signature can be committed before the file, a
+Debian `Release.gpg` before its `Release`, and an npm bundle names its tarball by path; a detector runs no SQL.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A candidate names its object, subject and signed content by a path of the event's repository, a blob's digest or bytes; the core resolves paths in that repository only and drops one whose path holds nothing, which the other side's commit names again; the event carries the content, bounded, from the spool or the object store; a detector's error is logged and never fails a commit; a file Quader derived is not asked (chosen) | `SignatureCandidate.SubjectPath` and `Part`, `SignatureEvent.Content` | A detector stays pure; "never follow a reference out of the request's repository" holds in one place; either order works without a placeholder row; an upload never fails because a signature does not parse | A signature whose subject is not stored has no row until it is |
+| (b) A row with a placeholder subject that a later commit fills | | A row from the first commit | A zero digest in a key; every subject's commit must search for placeholders |
+| (c) Give the detector a read-only item lookup | | Simple to write | A format reaches storage, against R-ARCH-008 |
+
+**Choice:** (a). A batch replaces the attachments its carrier item (or stored document) and its named locations had, so a replaced file,
+a moved tag and a refilled document leave no stale attachment (R-SIG-004). **Applied in the spec:** R-SIG-022, R-SIG-032;
+[architecture.md](architecture.md) R-ARCH-008.
+
+### Q-SIG-48 · An OCI signature's object is its manifest, and signed content has a locator
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: the table
+of R-SIG-003 keys an object by its own SHA-256 and allows a locator "a layer index"; a referrers tag's index names a referrer by its
+manifest's digest, not by its layer's; the candidate's `SignedContent` has no column.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The object of an OCI signature is the manifest that carries it, the part is the layer index; a NuGet signature is the entry `entry:.signature.p7s` of the package with the entry's own SHA-256; the signed content is stored as `content_sha256` and `content_locator` (`unsigned`, `cleartext`, `entry:<name>`), and a message (npm) as `signed_digest` (chosen) | | A referrer and the referrers tag that lists it reach one signature row, without reading a layer at commit; the read finds what to hash without guessing from the format | The read follows the manifest to its layer |
+| (b) The object is the layer blob | | The envelope's own digest | The referrers tag cannot name it without reading the manifest; one signature becomes two rows |
+| (c) No column for signed content; the read derives it from the scheme and the format | | Fewer columns | Ansible's MANIFEST.json, Debian's cleartext and NuGet's unsigned view would be rules of the read per format |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-003, R-SIG-023.
+
+### Q-SIG-49 · An object above the bound is recorded and born malformed
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: R-SIG-013
+says an object above `signatures.max_object_size` is `malformed` (`limits_exceeded`), while the table of R-SIG-003 bounded `size` to
+256 KiB, so the row could not exist.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `size` has no upper bound; a stored file above the bound gets its row with a signature born `malformed`, `limits_exceeded`, not due; `raw` keeps its bound, and a document entry above it is not kept (chosen) | | The details can say "Signature could not be read" as R-SIG-013 says; nothing is read | A row for something never read |
+| (b) Drop it | | No row | A signature that is there is shown as none |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-003.
+
+### Q-SIG-50 · npm's registry signature has its message as its subject
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: npm's
+registry signature signs `<name>@<version>:<integrity>`; a remote's document is stored before its tarball, whose SHA-256 is then not
+known (the document names the SHA-512).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The subject row is the SHA-256 of the message, `subject_name` is `<name>@<version>`, and `signed_digest` is that digest (chosen) | | Known at the fill; the key checks the stored digest without the tarball; the message binds the tarball by its integrity | A version's page finds the row by its name, not by its tarball's blob |
+| (b) Wait for the tarball and use its SHA-256 | | One join by blob | No row for the versions nobody downloaded; the document's signatures are not where its versions are |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-028.
+
+### Q-SIG-51 · A remote's npm attestations are stored at the path of their endpoint
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The canonical path of a version's attestations document is `-/npm/v1/attestations/<name>@<version>`, the endpoint's path (chosen) | | npm's canonical paths are its protocol paths; the detector and the endpoint name one path | The document is under `-/`, not under the package's path |
+| (b) Below the package, `<name>/-/<basename>-<version>.attestations` | | Beside the tarball | A path no client requests |
+
+**Choice:** (a). The package that builds the endpoint stores the document there. **Applied in the spec:** R-SIG-028.
+
+### Q-SIG-52 · The origin is recorded at every file a client sent
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every file of an upload that the client sent records the origin; a file Quader derives from it (`Generated`) records none (chosen) | | The origin says who sent the bytes; a derived file's bytes are Quader's | A derived file's origin is read at its lead |
+| (b) Every committed file of an upload, derived ones included | | One row per item | Claims a client wrote bytes it did not |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-010.
 
 ## What this does not cover
 

@@ -35,6 +35,7 @@ import (
 	"github.com/guided-traffic/quader/internal/packages"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/secrets"
+	sigstore "github.com/guided-traffic/quader/internal/signatures/store"
 )
 
 // The areas of the format plug-in contract (R-ARCH-008 to R-ARCH-010): the storage
@@ -303,6 +304,11 @@ func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr vi
 		}
 		return nil
 	}}
+	if in.db != nil {
+		// The signature store: the hooks record what a commit or a remote's stored document carries and the origin of an upload
+		// (signatures.md R-SIG-010, R-SIG-011). The job that reads and checks the rows is wired by the package that builds it.
+		d.Signatures = sigstore.New(sigstore.Options{Runner: in.db})
+	}
 	// A nil pointer in an interface would not be nil: a seam is set only where its
 	// component exists.
 	if ow.service != nil {

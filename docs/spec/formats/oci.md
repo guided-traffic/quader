@@ -689,8 +689,9 @@ Priority: **P1** · Covers: PKG-OCI-009, PKG-OCI-010, PKG-OCI-011
 - The referrers tag schema (`sha256-<hex>` tags) is not maintained by Quader: the API exists from the start, so clients never
   fall back to it. A client that pushes such a tag stores it, and it is listed and served like every tag. **Superseded in part by
   [signatures.md](../signatures.md) R-SIG-024 (specified, not built):** that tag and cosign's tags `sha256-<hex>.sig`, `.att` and
-  `.sbom` are attachment tags of the digest they name: on the wire unchanged, without a version row, shown at their image and removed
-  with it (R-SIG-025, [Q-SIG-32](../signatures.md#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)).
+  `.sbom` are attachment tags of the digest they name: on the wire unchanged, without a version row (built: a push of such a tag
+  writes no version, [hooks.go](../../../internal/formats/oci/hooks.go)), shown at their image and removed with it (R-SIG-025, not built;
+  [Q-SIG-32](../signatures.md#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)).
 
 Acceptance criteria:
 

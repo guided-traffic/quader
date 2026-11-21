@@ -26,6 +26,20 @@ type fake struct {
 	view   ViewAdapter
 	// classify replaces the default Classify (everything is Content).
 	classify func(Path) PathInfo
+	// sigs replaces the default signature adapter (none, with a reason); noSigs leaves it nil.
+	sigs   SignatureAdapter
+	noSigs bool
+}
+
+// Signatures declares none unless the case says otherwise (R-SIG-022).
+func (f fake) Signatures() SignatureAdapter {
+	switch {
+	case f.noSigs:
+		return nil
+	case f.sigs != nil:
+		return f.sigs
+	}
+	return NoSignatures("a format of the contract's tests")
 }
 
 func (f fake) Descriptor() Descriptor { return f.d }
@@ -135,6 +149,44 @@ func TestR_ARCH_010_RegisterChecksTheContractVersion(t *testing.T) {
 	}
 	if _, ok := catalog.Default().Lookup("probe-ver"); ok {
 		t.Fatal("a refused format reached the catalog")
+	}
+}
+
+// declared is a signature adapter with a fixed declaration, for the checks of Register.
+type declared SignatureDeclaration
+
+func (d declared) Declaration() SignatureDeclaration { return SignatureDeclaration(d) }
+func (declared) Detect(context.Context, SignatureEvent) ([]SignatureCandidate, error) {
+	return nil, nil
+}
+
+// TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures: a format whose Signatures() is nil does not start (Q-SIG-43), nor
+// one whose declaration says neither its kinds nor why it has none, says both, or leaves a field of a kind empty or outside R-SIG-001.
+// A format without signatures declares the reason (NoSignatures). Unit, milliseconds.
+func TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures(t *testing.T) {
+	kind := SignatureKind{Name: "k", Schemes: []string{SignatureSchemeOpenPGP}, Role: SignatureRolePublisher, Location: "l", Covers: "c", Client: "x"}
+	bad := func(k SignatureKind) declared { return declared{Kinds: []SignatureKind{k}} }
+	noRole, noClient, badScheme := kind, kind, kind
+	noRole.Role, noClient.Client, badScheme.Schemes = "owner", "", []string{"gpg"}
+	for name, c := range map[string]struct {
+		f    fake
+		want string
+	}{
+		"nil":               {fake{d: valid("sig-nil"), noSigs: true}, "declares no signatures"},
+		"neither":           {fake{d: valid("sig-neither"), sigs: declared{}}, "neither the kinds"},
+		"both":              {fake{d: valid("sig-both"), sigs: declared{None: "x", Kinds: []SignatureKind{kind}}}, "and a reason"},
+		"a role":            {fake{d: valid("sig-role"), sigs: bad(noRole)}, "with the role"},
+		"a missing client":  {fake{d: valid("sig-client"), sigs: bad(noClient)}, "without its name"},
+		"an unknown scheme": {fake{d: valid("sig-scheme"), sigs: bad(badScheme)}, "with the scheme"},
+		"a kind twice":      {fake{d: valid("sig-twice"), sigs: declared{Kinds: []SignatureKind{kind, kind}}}, "twice"},
+	} {
+		t.Run(name, func(t *testing.T) { mustPanic(t, c.f, c.want) })
+	}
+	if err := Validate(fake{d: valid("sig-none")}); err != nil {
+		t.Fatalf("a format that declares none with a reason: %v", err)
+	}
+	if err := Validate(fake{d: valid("sig-kind"), sigs: bad(kind)}); err != nil {
+		t.Fatalf("a format with a complete kind: %v", err)
 	}
 }
 

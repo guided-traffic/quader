@@ -179,6 +179,9 @@ func (Base) Virtual() VirtualAdapter { return nil }
 // Exposure is nil: the format is not exposable on an endpoint with rules.
 func (Base) Exposure() ExposureAdapter { return nil }
 
+// Signatures is nil: a format declares its signatures itself, and Register refuses a format that does not (R-SIG-022).
+func (Base) Signatures() SignatureAdapter { return nil }
+
 // SetupTemplates is empty.
 func (Base) SetupTemplates() []SetupTemplate { return nil }
 

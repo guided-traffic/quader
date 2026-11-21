@@ -619,6 +619,18 @@ time from `malware_database`; `PruneScannerReplicas`, run by `replica-registry-p
 [scanner_tables.go](../../internal/cluster/scanner_tables.go): a restore brings back no row, and every scanner reports itself again
 within one heartbeat.
 
+## Signatures on artifacts (00092)
+
+[00092_signatures](../../internal/meta/postgres/migrations/00092_signatures.sql) is an expand step of stage 1 of the signatures
+([signatures.md](signatures.md), [spec](../spec/signatures.md) R-SIG-003, R-SIG-004, R-SIG-010): `signature_objects` (the original once
+per its own SHA-256, as bytes or as the blob of a stored file with a locator), `signatures` (one row per object, part, subject and
+subject name, `UNIQUE NULLS NOT DISTINCT`, with the state of its check and the place of its signed content), `signature_attachments`
+(where a signature reaches its subject in a repository; `item_id` cascades with the carrier) and `artifact_origins` (who uploaded an
+item, and a CI job's claims). No foreign key to `blobs`. The statements are in
+[signatures.sql](../../internal/meta/postgres/queries/signatures.sql), batches as parallel arrays; every table is `data`
+([tables_signatures.go](../../internal/meta/postgres/tables_signatures.go)). The number is 00092 because 00091 belongs to a change
+that lands beside it; the runner needs numbers without a gap, so the two land together or the later one is renumbered.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

@@ -156,3 +156,8 @@ func TestR_ARCH_013_QueryThroughTheHost(t *testing.T) {
 		}
 	})
 }
+
+// Signatures declares none: a format of this test (signatures.md R-SIG-022).
+func (queryFormat) Signatures() formats.SignatureAdapter {
+	return formats.NoSignatures("a format of this test")
+}

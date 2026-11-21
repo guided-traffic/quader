@@ -48,7 +48,7 @@ const CheckMalware Check = 17
 // kitChecks are the checks the kit runs, in order.
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
-	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware,
+	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware, CheckSignatures,
 }
 
 // name is the short name of the check.
@@ -86,6 +86,8 @@ func (c Check) name() string {
 		return "download admission"
 	case CheckMalware:
 		return "malware answers"
+	case CheckSignatures:
+		return "signatures"
 	}
 	return "unknown"
 }
@@ -171,6 +173,8 @@ type Fixture struct {
 	// although they contain "token", "password" or "_auth" (check 8): the option's
 	// name, never a value.
 	OptionNames []string
+	// Signatures are the signed samples of check 18: one case at least per kind the format declares (R-SIG-022).
+	Signatures []SignatureCase
 	// Skip lists the checks that do not apply to the format, each with the reason.
 	// A skip without a reason fails the check, and so does a skip the format
 	// contradicts (a skipped check 1 on a format that has routes).
@@ -421,6 +425,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.admission()
 	case CheckMalware:
 		r.malware()
+	case CheckSignatures:
+		r.signatures()
 	}
 	return res
 }
@@ -455,10 +461,11 @@ func (r *run) skipProblem(c Check, reason string) string {
 	if reason == "" {
 		return fmt.Sprintf("%s is skipped without a reason", c)
 	}
+	if msg := alwaysApplies(c); msg != "" {
+		return msg
+	}
 	routes := len(r.f.Routes())
 	switch {
-	case c == CheckTraversal:
-		return fmt.Sprintf("%s always applies, to a format without routes as well: Match must refuse every traversal input", c)
 	case (c == CheckAmbiguity || c == CheckHeaders || c == CheckClassify || c == CheckShared || c == CheckAuthzPaths) && routes > 0:
 		return fmt.Sprintf("%s is skipped (%s) and the format has %d routes", c, reason, routes)
 	case c == CheckRewrite && r.f.Remote() != nil:
@@ -481,6 +488,17 @@ func (r *run) skipProblem(c Check, reason string) string {
 		return fmt.Sprintf("%s is skipped (%s) and the format has wiki content", c, reason)
 	case c.servesDownloads() && r.hasRoute(formats.Download):
 		return fmt.Sprintf("%s is skipped (%s) and the format has a Download route", c, reason)
+	}
+	return ""
+}
+
+// alwaysApplies says why a check can never be skipped, whatever the format: "" for a check that a format may skip with a reason.
+func alwaysApplies(c Check) string {
+	switch c {
+	case CheckTraversal:
+		return fmt.Sprintf("%s always applies, to a format without routes as well: Match must refuse every traversal input", c)
+	case CheckSignatures:
+		return fmt.Sprintf("%s always applies: every format declares its signatures or why it has none (R-SIG-022)", c)
 	}
 	return ""
 }

@@ -128,6 +128,12 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 			formattest.CheckMalware, "without Cache-Control: no-store",
 			[]formattest.Check{formattest.CheckAdmission},
 		},
+		{"R-SIG-022 a format whose signature becomes a version fails check 18", testformat.SignatureVersion, formattest.CheckSignatures, "a signature is never a version", nil},
+		{
+			// Check 1 fails with it: Register refuses a format that declares no signatures, and the kit runs Register's checks there.
+			"R-SIG-022 a format that declares no signatures fails check 18", testformat.NoSignatureDeclaration, formattest.CheckSignatures, "Signatures() returns nil",
+			[]formattest.Check{formattest.CheckAmbiguity},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

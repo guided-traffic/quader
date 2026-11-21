@@ -615,3 +615,8 @@ func TestR_AUTHZ_034_ARouteThatServesOnlyWikiContentIsDecidedWithThePartWiki(t *
 		t.Errorf("a refused wiki read: %d, handler reached %v", rec.Code, r.reached)
 	}
 }
+
+// Signatures declares none: a format of this test (signatures.md R-SIG-022).
+func (bare) Signatures() formats.SignatureAdapter {
+	return formats.NoSignatures("a format of this test")
+}

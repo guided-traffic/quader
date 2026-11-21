@@ -1,6 +1,7 @@
 # Signatures on artifacts
 
-Status: specified, not built: stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
+Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins are built, the read, the checks
+and the trust step are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
 [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)). The
 perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
@@ -25,6 +26,13 @@ open whole artifacts with third-party tools in pods without secrets ([image-scan
                                                                                 ▲
                                      anchors (shipped · Helm · administrator · project) and blocks ──▶ trust job (no artifact read)
 ```
+
+What runs before the worker, in the process that commits (the `packages` or `api` role, or the worker for a mirror pass): the format's
+detector, which reads only what it needs of the committed bytes, bounded (a manifest or a document up to the format's document limit, a
+NuGet package's central directory and its signature entry of at most 256 KiB, an OpenPGP signature's packet headers), parses JSON
+through `internal/formats/untrusted` and ASN.1 with the standard library's memory-safe decoder, checks nothing cryptographic, and never
+fails a commit: a detector's error is logged and the content is stored without candidates (Q-SIG-47). The paths a candidate names are
+resolved in the event's repository only, so a signature in one repository can never name content of another.
 
 The worker's exposure is kept small by three things the specification fixes: the bounds of R-SIG-013 sit outside the libraries (an object
 of at most 256 KiB, chains of eight certificates, JSON scanned for depth and count before any decoder, a check bounded to 5 s, a panic

@@ -101,6 +101,7 @@ func conformance(t *testing.T) formattest.Fixture {
 	}
 	return formattest.Fixture{
 		WikiSamples: []string{"readme of lodash 4.17.20", "readme of lodash 4.17.21"},
+		Signatures:  signatureCases(t, bind),
 		Host: func() formattest.HostOptions {
 			twin = npmtest.New()
 			return formattest.HostOptions{

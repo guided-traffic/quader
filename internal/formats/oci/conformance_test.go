@@ -71,10 +71,11 @@ func conformance() formattest.Fixture {
 		Host: func() formattest.HostOptions {
 			return formattest.HostOptions{Data: newTwin(), Resolver: proceedResolver{}}
 		},
-		Canonical: canonical,
-		Protocol:  protocol,
-		Inspect:   formattest.InspectJSON("team/app/_manifests/" + digestZero),
-		Names:     []formattest.NameCase{{Spellings: []string{"library/nginx"}}, {Spellings: []string{"a__b/c-d"}}},
+		Signatures: signatureCases(),
+		Canonical:  canonical,
+		Protocol:   protocol,
+		Inspect:    formattest.InspectJSON("team/app/_manifests/" + digestZero),
+		Names:      []formattest.NameCase{{Spellings: []string{"library/nginx"}}, {Spellings: []string{"a__b/c-d"}}},
 		Content: []formattest.ContentCase{
 			{Name: "manifest by tag", Path: "app/manifests/1", Seed: seed},
 			{Name: "manifest by tag, HEAD", Method: http.MethodHead, Path: "app/manifests/1", Seed: seed},
