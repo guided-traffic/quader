@@ -1276,6 +1276,11 @@ runs are in `git log`; this section holds the current state.
   every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
   holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
   landing (run 44883240572) ended green on every job at 09:55.**
+- **Planners in work** (11:30, beside the builders below): the client certificates of the ClamAV endpoint (an
+  amendment of the specification, since 11:25), and **the image analyser's move into the scanner unit and out of
+  the common image** (decided on 2026-11-21, "With the owner"; its specification with the measurements named
+  there, since 11:30); its packages are built after the ClamAV change is on `main`, because both change the chart
+  and the scanner role.
 - **In work** (10:57): three builders, each from a specification that is on `main` (section "With the owner" holds
   what each builds): the format `clamav` with its repository and API (package 1 of the ClamAV change), the chart
   with the updater's Deployment (package 3 of it, without a cluster, because the binary does not know the updater's
