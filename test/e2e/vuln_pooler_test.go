@@ -16,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/test/e2e/poolerlog"
 )
 
 const (
@@ -85,7 +87,8 @@ func requirePoolerProfile(t *testing.T) {
 const poolerConfigFile = "/controller/configs/pgbouncer.ini"
 
 // poolerEffectiveConfig copies the rendered pgbouncer.ini of every given instance into the artifact directory and says what
-// server_login_retry PgBouncer runs with (Q-HA-302): what the Pooler asks for is not shown to have arrived until it is read here.
+// server_login_retry and server_connect_timeout PgBouncer runs with (Q-HA-302, Q-HA-371): what the Pooler asks for is not shown
+// to have arrived until it is read here.
 func poolerEffectiveConfig(t *testing.T, pods []pod) string {
 	t.Helper()
 	var says []string
@@ -96,11 +99,15 @@ func poolerEffectiveConfig(t *testing.T, pods []pod) string {
 			continue
 		}
 		_ = os.WriteFile(filepath.Join(cfg.out, "pooler-config-"+p.Name+".ini"), []byte(ini), 0o644)
-		v := "unset (PgBouncer's default, 15 s)"
-		if m := regexp.MustCompile(`(?m)^\s*server_login_retry\s*=\s*(\S+)`).FindStringSubmatch(ini); m != nil {
-			v = m[1]
+		var params []string
+		for _, name := range []string{"server_login_retry", "server_connect_timeout"} {
+			v, ok := poolerlog.Param(ini, name)
+			if !ok {
+				v = "unset (PgBouncer's default, 15 s)"
+			}
+			params = append(params, name+" "+v)
 		}
-		says = append(says, fmt.Sprintf("%s: server_login_retry %s", p.Name, v))
+		says = append(says, p.Name+": "+strings.Join(params, ", "))
 	}
 	return strings.Join(says, "; ")
 }

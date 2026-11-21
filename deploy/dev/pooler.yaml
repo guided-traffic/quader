@@ -18,7 +18,12 @@
 # twice: once while the old primary stops, and once more on the new primary, whose instance manager sets the application password
 # again with a new SCRAM salt, so the keys PgBouncer keeps from its long-lived clients no longer match. With the default that was
 # 30 s in which every replica's database check failed and the edge answered 503 for everything; with 1 s the poolers serve again
-# about a second after the new primary does.
+# about a second after the new primary does. PgBouncer tries again only when a client asks: an instance that no client asks after
+# a failed login refuses its next client once, however much later, and serves the one after it (Q-HA-370).
+#
+# And server_connect_timeout of 5 s (Q-HA-371): a connect that gets no answer (the run of 2026-11-20: one during the move of the
+# read-write Service) holds its pool for server_connect_timeout, 15 s by default, and the pool starts no other attempt meanwhile.
+# For the pool of CloudNativePG's authentication query that is 15 s in which the instance logs in no new client.
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
@@ -34,6 +39,7 @@ spec:
       default_pool_size: "20"
       max_client_conn: "500"
       server_login_retry: "1"
+      server_connect_timeout: "5"
   template:
     metadata:
       labels:
@@ -70,6 +76,7 @@ spec:
       default_pool_size: "4"
       max_client_conn: "100"
       server_login_retry: "1"
+      server_connect_timeout: "5"
   template:
     metadata:
       labels:

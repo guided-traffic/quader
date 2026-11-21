@@ -9,47 +9,26 @@ package e2e
 // when it sits on the picked node, so the requirement was tested by pod placement.
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/test/e2e/poolerlog"
 )
 
-// poolerLogFailure matches the lines of a CloudNativePG PgBouncer that mean "no server for the clients": the server connections
-// that the switchover ended, a server login that failed, and a client refused while PgBouncer waits out server_login_retry.
-var poolerLogFailure = regexp.MustCompile(`closing because: server conn crashed\?|closing because: connect failed|server login failed|server login has been failing|closing because: password authentication failed`)
-
-// poolerFailureWindow is what one pooler instance logged in a time range: the first and the last failure line, and how many
-// clients it refused with "server login has been failing".
+// poolerFailureWindow is what one pooler instance logged around the switchover, read by poolerlog (Q-HA-370).
 type poolerFailureWindow struct {
-	pod         string
-	first, last time.Time
-	lines       int
-	refused     int
-}
-
-func (w poolerFailureWindow) length() time.Duration {
-	if w.first.IsZero() {
-		return 0
-	}
-	return w.last.Sub(w.first)
-}
-
-// poolerRecord is one line of the CloudNativePG pooler manager: PgBouncer's own log line under "record".
-type poolerRecord struct {
-	Record struct {
-		Timestamp string `json:"timestamp"`
-		Msg       string `json:"msg"`
-	} `json:"record"`
+	pod   string
+	retry time.Duration // the instance's server_login_retry, from its rendered pgbouncer.ini
+	poolerlog.Window
 }
 
 // poolerFailures reads the log of every instance of both poolers since from and returns, per instance, the window of its failure
-// lines. The log copy is written to the artifact directory as well.
+// lines: from the first to the last failed server attempt plus server_login_retry (poolerlog, Q-HA-370). The log copy is written
+// to the artifact directory as well.
 func poolerFailures(t *testing.T, from time.Time) []poolerFailureWindow {
 	t.Helper()
 	var out []poolerFailureWindow
@@ -61,31 +40,13 @@ func poolerFailures(t *testing.T, from time.Time) []poolerFailureWindow {
 				continue
 			}
 			_ = os.WriteFile(filepath.Join(cfg.out, "pooler-switchover-"+p.Name+".log"), []byte(logs), 0o644)
-			w := poolerFailureWindow{pod: p.Name}
-			for _, l := range strings.Split(logs, "\n") {
-				if !poolerLogFailure.MatchString(l) {
-					continue
-				}
-				var r poolerRecord
-				if i := strings.IndexByte(l, '{'); i < 0 || json.Unmarshal([]byte(l[i:]), &r) != nil {
-					continue
-				}
-				at, err := time.Parse("2006-01-02 15:04:05.000 MST", r.Record.Timestamp)
-				if err != nil {
-					continue
-				}
-				w.lines++
-				if strings.Contains(r.Record.Msg, "server login has been failing") && strings.Contains(r.Record.Msg, "pooler error") {
-					w.refused++
-				}
-				if w.first.IsZero() || at.Before(w.first) {
-					w.first = at
-				}
-				if at.After(w.last) {
-					w.last = at
-				}
+			// an ini that cannot be read counts with PgBouncer's default of 15 s, which only widens the window
+			ini, err := kubectl("-n", cfg.namespace, "exec", p.Name, "-c", "pgbouncer", "--", "cat", poolerConfigFile)
+			if err != nil {
+				t.Logf("%s of %s not readable (%v): its window is read with PgBouncer's default server_login_retry", poolerConfigFile, p.Name, err)
 			}
-			out = append(out, w)
+			retry := poolerlog.LoginRetry(ini)
+			out = append(out, poolerFailureWindow{pod: p.Name, retry: retry, Window: poolerlog.Read(logs, retry)})
 		}
 	}
 	return out
@@ -115,20 +76,32 @@ func TestHAPooler_Switchover(t *testing.T) {
 		}
 		t.Logf("switchover %s -> %s, failover.sh took %s", before, after, r.faultEnd.Sub(r.faultAt).Round(100*time.Millisecond))
 
-		// what the poolers saw: the length of their failure window is the time without a database for Quader's connections
+		// what the poolers saw: the length of their failure window is the time without a database for Quader's connections. It
+		// ends a server_login_retry after the instance's last failed server attempt: a client refused later came to an instance
+		// that was free to try again and started that attempt, typically the first client after the instance had none for a
+		// while (Q-HA-370), so it is logged and not counted
 		windows := poolerFailures(t, r.faultAt.Add(-5*time.Second))
 		var longest time.Duration
 		saw := 0
 		for _, w := range windows {
-			if w.lines == 0 {
+			if w.Lines == 0 {
 				t.Logf("pooler %s: no failure line after the switchover", w.pod)
 				continue
 			}
 			saw++
-			longest = max(longest, w.length())
-			t.Logf("pooler %s: failure lines from %s to %s (%s after the switchover began), %s long, %d lines, %d clients refused (server_login_retry)",
-				w.pod, w.first.Format("15:04:05.000"), w.last.Format("15:04:05.000"), w.first.Sub(r.faultAt).Round(100*time.Millisecond),
-				w.length().Round(100*time.Millisecond), w.lines, w.refused)
+			longest = max(longest, w.Length())
+			late := ""
+			if w.Late > 0 {
+				late = fmt.Sprintf("; then %d clients refused with the last error from %s to %s, each the start of the next attempt",
+					w.Late, w.LateFirst.Format("15:04:05.000"), w.LateLast.Format("15:04:05.000"))
+			}
+			lastServer := "none"
+			if !w.LastServer.IsZero() {
+				lastServer = w.LastServer.Format("15:04:05.000")
+			}
+			t.Logf("pooler %s: failure lines from %s to %s (%s after the switchover began), %s long, %d lines, %d clients refused (server_login_retry %s, the last failed server attempt %s)%s",
+				w.pod, w.First.Format("15:04:05.000"), w.End.Format("15:04:05.000"), w.First.Sub(r.faultAt).Round(100*time.Millisecond),
+				w.Length().Round(100*time.Millisecond), w.Lines, w.Refused, w.retry, lastServer, late)
 		}
 		if saw == 0 {
 			// every pooler instance holds server connections to the primary under the load, and the switchover ends them
@@ -137,7 +110,7 @@ func TestHAPooler_Switchover(t *testing.T) {
 		// a replica turns unready only once its database check has failed for longer than health.database_outage_grace (Q-OPS-31);
 		// a pooler that serves again within the grace keeps every replica ready (R-HA-058, Q-HA-302)
 		if longest >= grace {
-			t.Errorf("R-HA-058 Q-HA-302: a pooler had no server for %s, not less than health.database_outage_grace (%s): server_login_retry is not short enough for a switchover", longest.Round(100*time.Millisecond), grace)
+			t.Errorf("R-HA-058 Q-HA-302 Q-HA-371: a pooler had no server for %s, not less than health.database_outage_grace (%s): server_login_retry or server_connect_timeout is not short enough for a switchover", longest.Round(100*time.Millisecond), grace)
 		}
 
 		r.steady(t)

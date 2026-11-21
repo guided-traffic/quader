@@ -925,7 +925,7 @@ Quader MUST behave as in this table. Each row is exercised by the failure-inject
 | Node loss (no `SIGTERM`) | Node controller marks the node not ready | Endpoints of the lost pods are removed when their Ready condition flips; job leases expire; advisory locks are released by the server's TCP keepalive, which Quader sets on its lock-holding sessions (R-HA-013, R-HA-015); Valkey locks expire | Requests routed to the lost pods fail until the endpoints are removed (tens of seconds) | Pods are recreated after `nodeFailureTolerationSeconds` of their role (R-HA-032) |
 | Processes stopped with their connections open (a paused node or container, `SIGSTOP`) | Their kernel keeps answering TCP keepalives, so the keepalive sees nothing; the node controller marks a paused node not ready | Job leases expire; the server ends a lock-holding session after `idle + interval × count` of `database.server_keepalive` without a statement (`idle_session_timeout` of the lease sessions, R-HA-006, Q-HA-127), which releases its advisory locks; when the processes run again their lease sessions are gone, so they commit nothing under a lease | As for node loss while the node is marked not ready | Automatic; the pods come back with the node, or are replaced after `nodeFailureTolerationSeconds` |
 | One replica cut off from PostgreSQL | `database` check (R-OPS-001) | That replica answers `503` and turns not ready once the cut has lasted the check threshold and `health.database_outage_grace` (Q-OPS-31); its singleton work stops (R-HA-006) | Traffic moves to the other replicas | Automatic when the network heals |
-| PostgreSQL switchover or failover | Connection errors, SQLSTATE `57P01`, `25006`, class `08` | Retry with backoff within `database.retry.max_elapsed`, pool reset, the change-log poll resumes (an area whose epoch went backwards or was reused is flushed, R-HA-004), singleton work aborts and resumes on the next run (R-HA-009) | Requests stall for up to the retry budget, the wait for a pooled connection and the dial of a new one included; those that exceed it get `503` with `Retry-After` ([Q-HA-259](#q-ha-259--the-retry-budget-bounds-the-wait-for-a-pooled-connection)). Behind a transaction-mode pooler only with its `server_login_retry` of 1 s (R-HA-058, Q-HA-302); with PgBouncer's default of 15 s a switchover is the next row | Automatic |
+| PostgreSQL switchover or failover | Connection errors, SQLSTATE `57P01`, `25006`, class `08` | Retry with backoff within `database.retry.max_elapsed`, pool reset, the change-log poll resumes (an area whose epoch went backwards or was reused is flushed, R-HA-004), singleton work aborts and resumes on the next run (R-HA-009) | Requests stall for up to the retry budget, the wait for a pooled connection and the dial of a new one included; those that exceed it get `503` with `Retry-After` ([Q-HA-259](#q-ha-259--the-retry-budget-bounds-the-wait-for-a-pooled-connection)). Behind a transaction-mode pooler only with its `server_login_retry` of 1 s and its `server_connect_timeout` of 5 s (R-HA-058, Q-HA-302, Q-HA-371); with PgBouncer's default of 15 s for either a switchover can be the next row | Automatic |
 | PostgreSQL unavailable beyond the retry budget | `database` check on every replica | Every replica answers `503` and turns not ready; liveness stays `200`, so nothing restarts; authorization decides nothing on a grant index unconfirmed for longer than `authz.cache.max_staleness` (10 s); such requests wait within the retry budget like database calls, then get `503` `authz_stale` ([authorization.md](authorization.md) R-AUTHZ-028, Q-AUTHZ-13) | `503` for everything (the Service has no ready endpoints) | Readiness returns when PostgreSQL does; no manual step |
 | PostgreSQL connection limit reached (`53300`) | Connect error | Backoff and retry inside the budget; metric `quader_db_retries_total{kind="too_many_connections"}` | Latency, then `503` | Size the budget (R-HA-016) |
 | PostgreSQL saturated: every request connection, or every server connection of the request pooler, busy | `quader_db_pool_acquire_duration_seconds`, alert `QuaderDatabasePoolSaturated` | Requests wait for a connection within their deadline; those that exceed it get `503` with `Retry-After`. The control connection keeps the change-log poll, the `database` check and the job heartbeats off the request pool: directly on its own backend, behind a pooler on a pool of its own (R-HA-008, Q-HA-20). Replicas stay ready and keep their jobs | Higher latency, some `503`; no replica leaves the Service because of the load | Scale the database, or lower the load |
@@ -1339,7 +1339,7 @@ what "sized for it" means.
    | Service on the node | What makes its drain safe |
    |---|---|
    | PostgreSQL instance | CloudNativePG requests the switchover when the primary's node is cordoned and releases the primary's budget from that request on, so the old primary may be evicted while it is still demoting (Q-HA-172) ([Kubernetes upgrade and maintenance](https://cloudnative-pg.io/docs/1.30/kubernetes_upgrade)); with `dataDurability: required` at least three instances, so a drained standby leaves a synchronous standby (R-HA-013). Other platforms: their maintenance procedure |
-   | Pooler instance (R-HA-058), request or control pooler | At least two instances of each pooler on different nodes, a PDB, PgBouncer 1.23 or later, `server_login_retry` of 1 s (a PostgreSQL switchover behind it, Q-HA-302), and a stop that waits until Quader's connections have left the instance: a `preStop` sleep of at least `max_conn_lifetime` + jitter + `health_check_period` while the pod is out of its Service, and a grace period longer than the sleep. PgBouncer's own `SIGTERM` waits for clients to disconnect ([signals](https://www.pgbouncer.org/usage.html)), but the CloudNativePG pooler manager does not pass it on: it sends `SIGINT`, which closes every idle client connection at once (R-HA-058) |
+   | Pooler instance (R-HA-058), request or control pooler | At least two instances of each pooler on different nodes, a PDB, PgBouncer 1.23 or later, `server_login_retry` of 1 s and `server_connect_timeout` of 5 s (a PostgreSQL switchover behind it, Q-HA-302, Q-HA-371), and a stop that waits until Quader's connections have left the instance: a `preStop` sleep of at least `max_conn_lifetime` + jitter + `health_check_period` while the pod is out of its Service, and a grace period longer than the sleep. PgBouncer's own `SIGTERM` waits for clients to disconnect ([signals](https://www.pgbouncer.org/usage.html)), but the CloudNativePG pooler manager does not pass it on: it sends `SIGINT`, which closes every idle client connection at once (R-HA-058) |
    | Valkey primary | A replica and a Sentinel majority on other nodes. Sentinel fails over after `down-after-milliseconds`, and Quader runs degraded meanwhile (R-HA-057). Running `SENTINEL FAILOVER` before the primary stops shortens that window. When the Sentinel of the same node is drained with the primary, the two that remain can split the election, and Sentinel then starts no automatic failover before twice `failover-timeout` have passed (2 minutes at the default 60 s): the window is not bounded by `down-after-milliseconds` alone, and Quader runs degraded throughout it (R-HA-057, [Q-HA-181](#q-ha-181--variant-b-keeps-the-evicted-valkey-primary-lost-until-the-sentinels-name-another-one-and-asks-for-the-failover-when-they-do-not)). Draining the Sentinel and the primary of one node at once is therefore better done one after the other |
    | Valkey replica, Sentinel | A PDB with `maxUnavailable: 1` from whoever runs Valkey; three Sentinels on three nodes keep a majority |
    | S3-compatible store, edge proxy | The platform's; both must run highly available |
@@ -2042,6 +2042,13 @@ connections stay supported and remain the default.
   `database.retry.max_elapsed`: every replica turns not ready and the edge answers `503` for everything. Each pooler
   therefore sets `server_login_retry` to 1 s (an installation requirement like the ones above), so the pooler serves again
   about a second after the new primary does, and the switchover is the stall of the failure table, not an outage.
+  PgBouncer tries the server again only when a client asks, and refuses the client that starts the attempt with the last
+  error: an instance that no client asks after a failed login refuses its next client once, however much later, and serves
+  the one after it; Quader retries that answer ([Q-HA-370](#q-ha-370--a-pooler-instances-failure-window-ends-a-server_login_retry-after-its-last-failed-server-attempt)).
+  A connect that gets no answer holds its pool for `server_connect_timeout` ([config](https://www.pgbouncer.org/config.html#server_connect_timeout);
+  15 s by default, connect and login together), and the pool starts no other attempt meanwhile; for the pool of the
+  authentication query that is as long without a new client. Each pooler therefore sets `server_connect_timeout` to 5 s
+  ([Q-HA-371](#q-ha-371--the-poolers-give-up-a-server-connect-after-5-s)).
   What the pooler answers a client during the switchover is retried within `database.retry.max_elapsed` like the
   switchover itself, also the two answers that look final: `invalid server parameter` (`08P01`) and `password authentication
   failed` (`28P01`) on a connection that is already authenticated ([Q-HA-306](#q-ha-306--the-poolers-own-answers-to-a-switchover-are-retried-a-wrong-password-at-connect-is-not)).
@@ -2052,7 +2059,7 @@ connections stay supported and remain the default.
   `default_pool_size` plus `reserve_pool_size`; R-HA-016 counts it.
 - TLS from Quader to the pooler follows R-HA-015 (`verify-full` against the pooler's certificate).
   A PostgreSQL failover behind the pooler is handled by R-HA-009, within its budget only with the `server_login_retry`
-  above.
+  and `server_connect_timeout` above.
 
 CloudNativePG example ([connection pooling](https://cloudnative-pg.io/docs/1.30/connection_pooling);
 the `template` needs `containers: []` when no container is overridden, and the entry named `pgbouncer` for the `preStop` below):
@@ -2075,6 +2082,7 @@ spec:
       max_client_conn: "1000"             # example; ≥ (web_max + worker_max) × max_conns
       max_prepared_statements: "200"      # example
       server_login_retry: "1"             # retry a failed server login after 1 s (Q-HA-302)
+      server_connect_timeout: "5"         # give up a server connect and login after 5 s (Q-HA-371)
   template:
     metadata:
       labels:
@@ -2112,6 +2120,7 @@ spec:
       max_client_conn: "200"              # example; ≥ web_max + worker_max
       max_prepared_statements: "200"      # example
       server_login_retry: "1"             # retry a failed server login after 1 s (Q-HA-302)
+      server_connect_timeout: "5"         # give up a server connect and login after 5 s (Q-HA-371)
   template:
     metadata:
       labels:
@@ -2157,9 +2166,11 @@ Acceptance criteria (pooler profile of R-HA-051, a green full run of Test and Re
   `--grace-period=0 --force`, only requests whose `COMMIT` was in flight answer `503` with
   `Retry-After`, and every client iteration succeeds after its own retries.
 - A PostgreSQL switchover behind both poolers (`failover.sh`) under the npm load: every `npm` command exits `0`, k6 records only
-  `2xx` and `304` (none of them the edge's own `503`), every replica answers `/readyz` `200` throughout, and every pooler instance
-  serves again within `health.database_outage_grace` of its first failure line (`TestHAPooler_Switchover`, set `ha-pooler`,
-  [Q-HA-302](#q-ha-302--the-poolers-retry-a-failed-server-login-after-1-s-so-a-switchover-behind-them-stays-inside-the-retry-budget)).
+  `2xx` and `304` (none of them the edge's own `503`), every replica answers `/readyz` `200` throughout, and for every pooler
+  instance the time from its first failure line to its last failed server attempt plus its `server_login_retry` is shorter than
+  `health.database_outage_grace` (`TestHAPooler_Switchover`, set `ha-pooler`,
+  [Q-HA-302](#q-ha-302--the-poolers-retry-a-failed-server-login-after-1-s-so-a-switchover-behind-them-stays-inside-the-retry-budget),
+  [Q-HA-370](#q-ha-370--a-pooler-instances-failure-window-ends-a-server_login_retry-after-its-last-failed-server-attempt)).
 - A login without the role defaults makes the replica exit with a message naming the login and the
   setting.
 - With `pooler.mode: transaction` and an empty `session_host`, `helm template` fails and names
@@ -10484,7 +10495,11 @@ placement (in 4 of the 8 pooler legs read). `TestHAPooler_Switchover` (set `ha-p
 run, under the npm load, and asserts the stall of the failure table: no `503` of the edge, `/readyz` `200` on every replica, and every pooler's
 failure window shorter than `health.database_outage_grace`, the time after which a replica's failing `database` check takes it out of its
 Service (Q-OPS-31). The bound is the configuration's, not a measured value. Every pooler leg keeps the rendered `pgbouncer.ini` and the log
-of every pooler instance in its artifacts.
+of every pooler instance in its artifacts. Two full nightlies showed what this decision did not see (F-165): PgBouncer tries the server again
+only when a client asks, which the reading of the window now accounts for
+([Q-HA-370](#q-ha-370--a-pooler-instances-failure-window-ends-a-server_login_retry-after-its-last-failed-server-attempt)), and a connect
+that gets no answer adds `server_connect_timeout` to a switchover, which the poolers now bound at 5 s
+([Q-HA-371](#q-ha-371--the-poolers-give-up-a-server-connect-after-5-s)).
 
 **Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover row; R-HA-058's acceptance criteria;
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
@@ -11488,6 +11503,72 @@ owner's ([malware-scanning.md](malware-scanning.md) Q-MAL-8).
 | (c) `freshclam` in the malware scanner | Next to `clamd` | Its own database at once | The scanner would reach the internet, and Quader would not hold the database |
 
 **Choice:** (a). **Applied in the spec:** R-HA-069; [malware-scanning.md](malware-scanning.md) R-MAL-010.
+
+### Q-HA-370 · A pooler instance's failure window ends a `server_login_retry` after its last failed server attempt
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-165 of the project plan. `TestHAPooler_Switchover` failed in two full nightlies, each time on one instance of a pooler whose
+sibling was back after about 8 s: `quader-db-pooler-rw-…-82mgv` with 33.7 s (run 44653040868, 2026-11-20) and
+`quader-db-pooler-control-…-6slbk` with 69.4 s (run 44828435420, 2026-11-21), against a bound of 20 s. The test measured each instance's
+window from its first to its last failure line. Read in the artifacts of both runs: PgBouncer starts a server attempt only when a client
+asks for one, and not within `server_login_retry` of the last; the client that starts it is refused with the pool's last error ("server login
+has been failing, cached error: …"). After its failed login on the new primary (the second failure of Q-HA-302, 00:37:43.783), 6slbk
+refused the one client that came 0.75 s later, inside the retry second, and then had no client for 61 s: every replica keeps a single
+control connection (the control pool's `max_conns` and `min_conns` are 1), each had gone to the sibling, and the next one to reach 6slbk was a
+connection that a replica replaced at its lifetime (60 s + jitter in the profile), 61.7 s after that replica had logged in at the sibling.
+That client was refused with the error of 00:37:43.783, the server login it started succeeded at once, and the next client was served. The
+pod used 0.000 cores for the whole minute (the leg's `pods.csv`). 82mgv ended the same way after 13.7 s without a client; before that its
+pool for the authentication query had a connect that failed only after 15 s (Q-HA-371).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The window ends at the instance's last failed server attempt plus its `server_login_retry`, or at its last failure line when that is earlier; a later refusal is logged, not counted (chosen) | `poolerlog.Read`; the retry is read from the instance's rendered `pgbouncer.ini` | Measures what the bound is about: how long the server could not be reached or logged in to, plus the one interval PgBouncer then waits; independent of how many clients an instance gets; a connect that hangs counts to its end | The refusal of the first client after a quiet spell is not in the window, only in the test's log |
+| (b) The window ends at the instance's first successful server login after the switchover | The `new connection to server` lines | One event to read | An instance that no client asks makes no login: 6slbk's window would again be 69 s |
+| (c) Keep the first-to-last reading, and send a client to each instance every second | A probe per instance | The window would be what a client sees | Load the test adds only to make its reading true |
+| (d) `min_pool_size` on the poolers, so an instance keeps a server connection without clients | PgBouncer's own refill | Would remove the quiet spell | PgBouncer's documentation enforces it only for a pool with a client or a forced user; with CloudNativePG's `auth_query` and no client it does nothing in exactly this case (not tried) |
+
+**Choice:** (a). Read with it, the four instances of 2026-11-21 had 7.6 to 9.1 s (6slbk 8.6 s) and those of 2026-11-20 7.3 to 8.1 s,
+except 82mgv with 21.1 s, which stays a failure for the reason Q-HA-371 removes. **What stays:** an instance whose last server login failed
+and that then gets no client refuses its next client once, however much later; Quader retries that answer (`08P01` "server login has
+been failing", Q-HA-266) and the
+client after it is served. Under load the client that starts the next attempt comes milliseconds after the retry interval, and is logged the
+same way.
+
+**Applied in the spec:** R-HA-058 (the switchover bullet, its acceptance criterion), Q-HA-302's test paragraph. Code:
+[poolerlog](../../test/e2e/poolerlog/poolerlog.go), `poolerFailures` in
+[ha_pooler_switchover_test.go](../../test/e2e/ha_pooler_switchover_test.go). Tests: `TestR_HA_058_…` in
+[poolerlog_test.go](../../test/e2e/poolerlog/poolerlog_test.go), built from the lines of both runs.
+
+### Q-HA-371 · The poolers give up a server connect after 5 s
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-165, the run of 2026-11-20 (44653040868). The pool of `quader-db-pooler-rw-…-82mgv` for CloudNativePG's authentication query
+(`postgres/cnpg_pooler_pgbouncer`) started a connect at 05:15:12.5, while the read-write Service moved to the new primary; it got no answer
+and failed at 05:15:27.510 with `connect failed (age=15s)`, PgBouncer's `server_connect_timeout` of 15 s by default, which bounds the connect
+and the login together ([config](https://www.pgbouncer.org/config.html#server_connect_timeout)). While an attempt is under way a pool starts
+no other, so for those 15 s the instance could authenticate no new client: it refused each with the pool's cached `connect failed` until the
+clients had gone to its sibling (the last at 05:15:22.7). The instance's user pool connected to the new primary from 05:15:15.5 on, and its
+attempts in the seconds before failed at once. Of the eight instance logs of both runs this is the only connect that took more than a second;
+why that one got no answer is not known (the run kept no packet trace; a connection tracked to an address the Service was leaving is a
+candidate). Q-HA-302's arithmetic counted only failed logins, one `server_login_retry` each; a connect that hangs adds
+`server_connect_timeout`, and 15 s on top of a promotion of 2.6 to 8.1 s is past `health.database_outage_grace` (20 s): an instance that meets
+it cannot log in a client for longer than the grace, and both instances of a pooler meeting it would take every replica out.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `server_connect_timeout: "5"` on both poolers, a requirement of R-HA-058 (chosen) | A connect or login without an answer is given up after 5 s and tried again a second later | The worst case per instance stays below the grace: a promotion of 8.1 s, a hung connect of 5 s and two retries of 1 s are 15.1 s; one parameter that CloudNativePG's Pooler allows (its webhook's list, 1.30.0) | A connect plus TLS plus login slower than 5 s is cut; inside a cluster it takes milliseconds |
+| (b) 2 or 3 s | — | A hung connect costs less | Less room for a login on a loaded node or a PostgreSQL that is busy starting up |
+| (c) Keep 15 s and accept the case | — | No change | An instance that cannot log in a client for longer than the grace; the test fails whenever it happens |
+
+**Choice:** (a). The value leaves the grace a margin of about 5 s for the slowest promotion measured, and keeps a factor of a thousand over
+an ordinary connect and login. Not run on a cluster before it landed: the next run of a pooler leg shows the value in the log of
+`requirePoolerProfile`.
+
+**Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover
+row; [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), the pooler requirements of the [README](../../README.md) and of the manual
+([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
 
 ## What this does not cover
 
