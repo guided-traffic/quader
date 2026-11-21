@@ -28,6 +28,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 {{- $roles := printf "%s-(api|packages|worker|scanner|malware-scanner)(-.*)?" (include "quader.fullname" .) -}}
 {{- $stale := include "quader.seconds" (dig "vulnerabilities" "stale_after" "24h" .Values.config) -}}
 {{- $interval := include "quader.seconds" (dig "backup" "expected_interval" "24h" .Values.config) -}}
+{{- $malwareStale := include "quader.seconds" (dig "malware" "database" "stale_after" "48h" .Values.config) -}}
 - alert: QuaderReplicasNotReady
   expr: min by (deployment) (kube_deployment_status_replicas_available{ {{ $ns }},deployment=~{{ $roles | quote }} }) < 2
   for: 5m
@@ -170,6 +171,39 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
   annotations:
     summary: Image scans are put off because the scanner or its pull cannot work, and none finishes.
     description: For half an hour scans were put off for a reason of the installation, not of an image, and no scan finished (R-VULN-041, Q-VULN-162). A put-off scan spends no attempt, so it never shows as scan_failed. scanner_unavailable is no ready scanner pod or a refused handshake (the worker's certificate must allow client authentication); registry_unavailable is a scanner that cannot reach the scan listener of packages on 8082; pull_refused is a scan token the scan listener refused (a key ring that differs between the worker and packages, or a clock more than a minute off).
+{{- if include "quader.malwareOn" . }}
+- alert: QuaderMalwareFound
+  expr: sum(increase(quader_malware_scans_total{ {{ $ns }},result="infected" }[1h])) > 0
+  labels:
+    severity: warning
+  annotations:
+    summary: A stored file was found to hold malware within the last hour.
+    description: The security dashboard lists the file with the signature ClamAV named, and its downloads are refused (R-MAL-002, R-MAL-024). An auditor looks at it there and releases a false find; the audit event malware.found names the blob and its repository.
+- alert: QuaderMalwareDatabaseStale
+  expr: max(quader_malware_database_age_seconds{ {{ $ns }} }) > {{ $malwareStale }}
+  for: 1h
+  labels:
+    severity: warning
+  annotations:
+    summary: The malware scan's signature database is older than malware.database.stale_after.
+    description: Scanning goes on with the database in use, and malware published since it was built is not found (R-MAL-010, R-MAL-026). The settings page of the malware scanning names the last failure of the task malware-sync-db; check the freshclam container of the worker pods that claim the queue malware and its egress to database.clamav.net, or, without internet, deploy the files of cvdupdate to the repository malware.database.repository names (R-MAL-012). Before the first version is stored the age is 0 and the alert stays silent (H-1140).
+- alert: QuaderMalwareScannerUnavailable
+  expr: sum(increase(quader_malware_scans_total{ {{ $ns }},result=~"scanner_unavailable|clamd_unavailable" }[15m])) > 0 and (sum(increase(quader_malware_scans_total{ {{ $ns }},result=~"clean|infected|unscannable" }[15m])) or vector(0)) == 0
+  for: 15m
+  labels:
+    severity: critical
+  annotations:
+    summary: Malware scans are put off because no malware scanner or its clamd answers, and none finishes.
+    description: For a quarter of an hour every call of the job was put off for a reason of the installation and no verdict was made (R-MAL-005, R-MAL-026). New content stays pending, and where only checked artifacts can be downloaded it is refused after the wait. scanner_unavailable is no ready malware scanner pod or a refused handshake; clamd_unavailable is a clamd that does not answer beside a scanner. A malware scanner is not ready until it loaded a signature database (GET /readyz?verbose=1 of the pod says database).
+- alert: QuaderMalwareBacklog
+  expr: max(quader_malware_oldest_pending_seconds{ {{ $ns }} }) > 3600
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: A stored file has waited more than an hour for its malware scan.
+    description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by priority; raise malwareScanner.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
+{{- end }}
 - alert: QuaderMirrorFailing
   expr: max by (repo) (quader_mirror_consecutive_failures{ {{ $ns }} }) >= 3
   labels:
@@ -311,5 +345,5 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader.rules.names" -}}
-{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
+{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
 {{- end -}}

@@ -3070,7 +3070,8 @@ helm upgrade --install quader ./deploy/helm/quader -f deploy/helm/quader/profile
 
 Every profile also sets `api` to 2 replicas (an autoscaler of 2 to 4 in `medium` and `large`) with 500m / 512Mi, a 1Gi limit and a 5Gi spool, and
 `config.storage.upload.max_size` to the spool of a `packages` pod less `spool.headroom` (8, 18 and 48 GiB), because the chart refuses an upload limit
-above the spool. The numbers are the starting points of the table in R-HA-050; no reference load test has measured them
+above the spool. The malware scanner is sized from a measurement (Q-HA-364): two pods in `small` with `clamd` at 250m / 1280Mi, an autoscaler
+of 2 to 4 in `medium` and of 3 to 6 in `large` with 500m / 1280Mi, a `clamd` limit of 2Gi in all, and `config.malware.concurrency` 4, 4 and 6. The numbers are the starting points of the table in R-HA-050; no reference load test has measured them
 ([H-803](docs/spec/ha-and-helm.md#h-803--the-sizing-profiles-are-not-measured)). The profiles configure no database, pooler or Valkey: the chart deploys none of them.
 
 </details>

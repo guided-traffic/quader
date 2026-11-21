@@ -1,6 +1,7 @@
 # Sizing profile large (R-HA-050): up to 1,000 concurrent clients and several TB of blobs. Layer it before your own values file:
 #   helm upgrade --install quader ./quader -f profiles/large.yaml -f my-values.yaml
-# The numbers are starting points taken from the table of R-HA-050, not measurements. The database and Valkey sizes are the operator's:
+# The numbers are starting points taken from the table of R-HA-050, not measurements; the malware scanner's are sized from the measurement
+# of Q-HA-361 (clamd with ClamAV's whole database). The database and Valkey sizes are the operator's:
 # PostgreSQL 8 vCPU, 32 GiB, 3 instances with max_connections 200 behind a transaction-mode request pooler and control pooler of 2 instances each
 # and 100 server connections in total (R-HA-058; config.database.host names the pooler); Valkey maxmemory 1 GiB. The chart does not deploy the poolers.
 # A worker pool for the queue vuln (worker.pools, R-HA-062) is recommended from this profile on; it needs the queue names of your installation.
@@ -40,7 +41,22 @@ spool:
   type: ephemeral                       # one ReadWriteOnce claim per pod from the default StorageClass (R-HA-061); set spool.ephemeral.storageClassName for another
   ephemeral:
     size: 50Gi
+malwareScanner:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 6
+  clamd:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1280Mi
+      limits:
+        memory: 2Gi
 config:
+  malware:
+    concurrency: 6                      # the calls in flight: the minimum of malware scanners × config.malware.scanner.slots (2)
   database:
     pool:
       max_conns: 30

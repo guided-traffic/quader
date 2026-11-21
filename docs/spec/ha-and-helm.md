@@ -536,7 +536,8 @@ Priority: **P1** · Covers: HA-015
 The owner's decision of 2026-11-20 ([malware-scanning.md](malware-scanning.md) Q-MAL-6): the malware scanning's scanner is a Deployment of
 its own of the role `scanner`, with a container `clamd` beside it. Built: the chart's objects ([malware-scanner.yaml](../../deploy/helm/quader/templates/malware-scanner.yaml),
 [_malware.tpl](../../deploy/helm/quader/templates/_malware.tpl)); the scanner's process and its loader of the database are built with the
-malware scanning's packages 2 and 3. What it does is
+malware scanning's packages 2 and 3 ([internal/malware/scanner](../../internal/malware/scanner/service.go),
+[loader.go](../../internal/malware/database/loader.go)). What it does is
 [malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-008; what it builds and holds is [architecture.md](architecture.md) R-ARCH-036
 for the kind `malware`. Its TLS pair, its name as a kind of pod and the checks of its links are R-HA-063 to R-HA-066's; this requirement
 names it the kind `malware-scanner` and leaves their text to them.
@@ -565,8 +566,9 @@ names it the kind `malware-scanner` and leaves their text to them.
   no TLS pair, no CA and no configuration file of Quader. None of the shared `extraVolumes`, `extraEnv`, `sidecars` and the like reach the
   pod; `malwareScanner.extraEnv` is its own.
 - **Resources** ([Q-HA-361](#q-ha-361--the-malware-scanners-default-size)): the quader container requests 250m CPU and 256 MiB with a memory
-  limit of 512 MiB; `clamd` requests 500m CPU and 1.5 GiB with a memory limit of 2 GiB (ClamAV's documented figure for a loaded database is
-  "upwards of 1.2 GiB", doubled during a reload unless `ConcurrentDatabaseReload` is off, which it is). No CPU limit.
+  limit of 512 MiB; `clamd` requests 500m CPU and 1280 MiB with a memory limit of 2 GiB (measured: 1.0 GiB resident with ClamAV's whole
+  database, no second copy during a reload, since `ConcurrentDatabaseReload` is off). No CPU limit. The sizing profiles of R-HA-050 size
+  the pods and their count.
 - **Replicas and placement**: 2 replicas (at least 2 with `highAvailability.enforce`), a PodDisruptionBudget with `maxUnavailable: 1`, the
   spread constraints and tolerations of R-HA-032, an optional autoscaler on CPU. The capacity is replicas × `config.malware.scanner.slots`
   (2); `config.malware.concurrency` (4) should not exceed it.
@@ -583,8 +585,10 @@ names it the kind `malware-scanner` and leaves their text to them.
   `<fullname>-malware-scanner.<namespace>.svc` (the read, [malware-scanning.md](malware-scanning.md) Q-MAL-61), and the malware scanner's
   name as one more entry of `server.scan_clients` (the configuration refuses a `scan_listener.client_name` outside that list). The pool
   list of the worker accepts the queue `malware` (R-HA-062).
-- **Alerts.** The chart's rules carry the four alerts of [malware-scanning.md](malware-scanning.md) R-MAL-026. Not built yet: they read the
-  metrics of the job, which the chart test requires of the code, and come with it.
+- **Alerts.** The chart's rules carry the four alerts of [malware-scanning.md](malware-scanning.md) R-MAL-026 while the malware scanning
+  is on: `QuaderMalwareFound`, `QuaderMalwareDatabaseStale` (its threshold `config.malware.database.stale_after`, default 48 h),
+  `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog`, with their `promtool` tests in
+  [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml).
 - **Chart checks** (R-HA-029): `clamd-tmp`'s size at least `slots × (max_file_size + max_scan_size)`, the failure naming the three values;
   `clamd`'s memory limit at least 1.5 GiB; `malwareScanner.replicaCount` at least 1.
 
@@ -4206,7 +4210,7 @@ malwareScanner:
     resources:
       requests:
         cpu: 500m
-        memory: 1536Mi                  # ClamAV's documented figure for a loaded database is upwards of 1.2 GiB (Q-HA-361)
+        memory: 1280Mi                  # measured: clamd holds 1.0 GiB resident with ClamAV's whole database, 1.1 GiB at its peak (Q-HA-361)
         ephemeral-storage: 1Gi
       limits:
         memory: 2Gi                     # at least 1.5Gi, checked: ConcurrentDatabaseReload is off, so a reload does not hold two databases
@@ -5861,6 +5865,16 @@ release.
 | small | ≤ 50 concurrent clients, ≤ 500 GB of blobs | 3 (no HPA) | 2 (no HPA) | 500m / 512Mi | 1Gi | 10 | 10Gi | 2 vCPU, 4 GiB, 3 instances | none | 150 | 256 MiB |
 | medium | ≤ 300 concurrent clients, CI-heavy | 4 (4–8) | 2 (2–4) | 1 / 1Gi | 2Gi | 20 | 20Gi | 4 vCPU, 16 GiB, 3 instances | none | 400 | 512 MiB |
 | large | ≤ 1,000 concurrent clients, several TB | 6 (6–16) | 3 (3–6) | 2 / 2Gi | 4Gi | 30 | 50Gi (`ephemeral`) | 8 vCPU, 32 GiB, 3 instances | transaction mode: request and control poolers, 2 instances each, 100 server connections in total | 200 | 1 GiB |
+
+The malware scanner (R-HA-068) is sized in each profile from the measurement of
+[Q-HA-361](#q-ha-361--the-malware-scanners-default-size), not from the starting points above
+([Q-HA-364](#q-ha-364--the-sizing-profiles-size-the-malware-scanner-from-the-measurement)):
+
+| Profile | Malware scanner replicas (HPA min–max) | `clamd` requests CPU / memory | `clamd` memory limit | `config.malware.concurrency` |
+|---|---|---|---|---|
+| small, malware scanner | 2 (no HPA) | 250m / 1280Mi | 2Gi | 4 |
+| medium, malware scanner | 2 (2–4) | 500m / 1280Mi | 2Gi | 4 |
+| large, malware scanner | 3 (3–6) | 500m / 1280Mi | 2Gi | 6 |
 
 - **After the cut into roles** (phase 6a, Q-HA-75) the `web` columns are those of the `packages` Deployment, and every
   profile adds `api` with 2 replicas (HPA 2–4 in medium and large), 500m / 512Mi requests, a 1Gi memory limit and a 5Gi
@@ -11582,7 +11596,8 @@ Context, verified: Quader's image is `distroless/static` with a binary built wit
 
 ### Q-HA-361 · The malware scanner's default size
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Its figures were
+measured on 2026-11-21 (below) and the request of `clamd` lowered to them.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -11590,8 +11605,27 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) 1 replica | Half | Cheaper | A drain stops every scan, and under the switch every new download |
 | (c) Concurrent reload on | Scans go on during a reload | No pause | Twice the memory at each reload |
 
-**Choice:** (a); the figures are ClamAV's documented ones and are measured when the scanner is built. **Applied in the spec:** R-HA-068;
+**Choice:** (a); the figures were ClamAV's documented ones until the scanner was built. **Applied in the spec:** R-HA-068;
 [malware-scanning.md](malware-scanning.md) R-MAL-027.
+
+Measured on 2026-11-21 with `clamd` of `CLAMAV_IMAGE` (1.5.5, linux/arm64) in the malware scanner pods of a kind cluster on the development
+machine, and the same image in Docker, once each; ClamAV's whole database of that day (main 63, daily 28189, bytecode 339: 3,628,278
+signatures, 113 MB of files) was deployed to the profile's database repository from the copy `freshclam` had fetched for the source tree's scan
+(R-MAL-031), so no second download from ClamAV's network was made:
+
+| What | With ClamAV's whole database | With the tests' database of a few signatures |
+|---|---|---|
+| `clamd` resident (`VmRSS`), loaded | 994 and 1,000 MiB in the two pods | 21 MiB |
+| the `clamd` container's cgroup peak (`memory.peak`), loaded | 1,001 and 1,052 MiB (page cache included) | — |
+| `clamd`'s resident peak through a `RELOAD` (`ConcurrentDatabaseReload no`) | 990 MiB, no second copy; with the option on 1,929 MiB (Docker) | — |
+| load at a start, `clamd` alone (Docker) | 8.3 s to the first `PONG` | under a second |
+| a new malware scanner pod from its start to ready (the loader's fetch from the scan listener, the load) | 21 s | 9 s |
+| a new version: the loader's next look (at most a minute), its fetch and the `RELOAD`; the pod is not ready while `clamd` loads | under 60 s, the load about 9 s | — |
+| one `INSTREAM` of random bytes, warm (the first of each size in brackets) | 1 KiB 3 ms (12 ms), 1 MiB 5 ms (78 ms), 100 MiB 250 ms (4.3 s) | — |
+
+`clamd` ran as user 65532 with a read-only root file system and every capability dropped (the chart's security context): it writes only its
+socket in `/run/clamd`, its temporary files in `/var/tmp/clamd` and nothing in `/var/lib/clamav`, which the scanner fills. With these figures
+`clamd` requests 1280Mi (from 1536Mi); its limit stays 2Gi, which leaves the slots' scans 0.9 GiB above the loaded database.
 
 ### Q-HA-362 · `freshclam` runs beside the worker without a credential
 
@@ -11620,6 +11654,24 @@ second part) and `clamd` must agree on where the database and the socket are, an
 | (c) The paths as values | Configurable | Flexible | A path changed on one side only breaks the pod, and nothing needs another path |
 
 **Choice:** (a). **Applied in the spec:** R-HA-068, R-HA-069; [malware-scanning.md](malware-scanning.md) R-MAL-010.
+
+### Q-HA-364 · The sizing profiles size the malware scanner from the measurement
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the profiles of R-HA-050 named no malware scanner, so each ran the defaults: two pods, a fixed count, and `malware.concurrency` 4.
+Measured (Q-HA-361): a loaded `clamd` holds 1.0 GiB; a warm scan of 100 MiB takes 0.25 s of `clamd`, so a call is bounded by the read of the blob
+through the scan listener more than by the scan.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) small: 2 pods, `clamd` 250m / 1280Mi; medium: an autoscaler of 2 to 4, 500m; large: 3 to 6, 500m; the limit 2Gi in all; `malware.concurrency` the minimum pods × 2 slots (4, 4, 6) (chosen) | One `clamd` request in every profile, the count growing with the installation | The memory a profile reserves is the measured one; the job never sends more calls than the smallest set of scanners takes; the autoscaler adds pods on CPU, which scans spend | The autoscaler reacts to CPU, not to the backlog of `quader_malware_oldest_pending_seconds` |
+| (b) More slots per pod instead of more pods | Fewer `clamd` | 1 GiB of database less per two slots | A taken-over `clamd` reaches every artifact its pod scans at once ([security/malware-scanning.md](../security/malware-scanning.md) H-1105) |
+| (c) Leave the defaults | No change | Nothing to keep | A large installation scans with two pods |
+
+**Choice:** (a). **Applied in the spec:** R-HA-050. Files: [small.yaml](../../deploy/helm/quader/profiles/small.yaml),
+[medium.yaml](../../deploy/helm/quader/profiles/medium.yaml), [large.yaml](../../deploy/helm/quader/profiles/large.yaml); the test
+`TestR_HA_050_SizingProfiles` reads the table of R-HA-050.
 
 ### Q-HA-370 · A pooler instance's failure window ends a `server_login_retry` after its last failed server attempt
 

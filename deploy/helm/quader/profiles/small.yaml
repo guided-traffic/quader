@@ -1,6 +1,7 @@
 # Sizing profile small (R-HA-050): up to 50 concurrent clients and 500 GB of blobs. Layer it before your own values file:
 #   helm upgrade --install quader ./quader -f profiles/small.yaml -f my-values.yaml
-# The numbers are starting points taken from the table of R-HA-050, not measurements. The database and Valkey sizes are the operator's:
+# The numbers are starting points taken from the table of R-HA-050, not measurements; the malware scanner's are sized from the measurement
+# of Q-HA-361 (clamd with ClamAV's whole database). The database and Valkey sizes are the operator's:
 # PostgreSQL 2 vCPU, 4 GiB, 3 instances with max_connections 150; Valkey maxmemory 256 MiB; no connection pooler.
 api:
   replicaCount: 2
@@ -30,7 +31,20 @@ worker:
   replicaCount: 2
   autoscaling:
     enabled: false
+malwareScanner:
+  replicaCount: 2
+  autoscaling:
+    enabled: false
+  clamd:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1280Mi
+      limits:
+        memory: 2Gi
 config:
+  malware:
+    concurrency: 4                      # the calls in flight: the minimum of malware scanners × config.malware.scanner.slots (2)
   database:
     pool:
       max_conns: 10

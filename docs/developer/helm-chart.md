@@ -437,7 +437,7 @@ scanner it shares the pod pieces and none of the secrets, the shared extras or t
 | the worker | `quader.freshclamContainer`, `quader.freshclamMount`, `quader.freshclamVolumes` | every worker Deployment that claims `malware` (`quader.unitClaimsMalware`: the pool that lists it, else the main worker) gets `freshclam` with `freshclam-db` (`/var/lib/clamav` in `freshclam`, `config.malware.database.freshclam_dir` in the worker) and `<fullname>-freshclam`; it waits for `.quader-seeded` |
 | the scan listener | `quader.scanListenOn` | the scan listener of the main `packages` pods, its Service, its internal CA and its rule open while either scanning is on |
 | checks | `quader.validateMalware` | `clamd-tmp` at least `slots × (max_file_size + max_scan_size)`, `clamd`'s memory limit at least 1.5 GiB, the replicas, the budget's two keys; the malware scanner's Secret with `tls.existingSecrets` |
-| alerts | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderReplicasNotReady` covers `<fullname>-malware-scanner`; the four alerts of R-MAL-026 come with the job's metrics, which the rule test requires of the code |
+| alerts | [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) | `QuaderReplicasNotReady` covers `<fullname>-malware-scanner`; `QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog` (R-MAL-026) while the malware scanning is on, their `promtool` tests in `tests/rules_test.yaml` |
 
 The tests are [malware_test.go](../../test/chart/malware_test.go) (about 1.2 s together, measured on 2026-11-20) and the malware scanner's
 rows of `roles_test.go`, `chart_test.go`, `tls_test.go`, `scanner_test.go`, `trustedca_test.go` and `prometheusrule_test.go`.

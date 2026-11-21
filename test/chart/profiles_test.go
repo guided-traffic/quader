@@ -175,6 +175,37 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 			if apiHPA == nil && at(api, "spec", "replicas") != 2 {
 				t.Errorf("api replicas = %v, want 2", at(api, "spec", "replicas"))
 			}
+
+			// The malware scanner's row (Q-HA-364): its replicas or autoscaler, clamd's requests and limit, the calls in flight.
+			mrow := profileRow(t, name+", malware scanner")
+			if len(mrow) != 5 {
+				t.Fatalf("the malware scanner's row has %d cells, want 5: %v", len(mrow), mrow)
+			}
+			replicas, hasHPA, min, max := replicasCell(t, mrow[1])
+			ms := find(docs, "Deployment", "quader-malware-scanner")
+			if ms == nil {
+				t.Fatal("no Deployment quader-malware-scanner")
+			}
+			switch msHPA := find(docs, "HorizontalPodAutoscaler", "quader-malware-scanner"); {
+			case hasHPA && (msHPA == nil || at(msHPA, "spec", "minReplicas") != min || at(msHPA, "spec", "maxReplicas") != max):
+				t.Errorf("malware scanner autoscaler = %v, want %d to %d", at(msHPA, "spec"), min, max)
+			case !hasHPA && (msHPA != nil || at(ms, "spec", "replicas") != replicas):
+				t.Errorf("malware scanner replicas = %v (autoscaler %v), want %d without one", at(ms, "spec", "replicas"), msHPA != nil, replicas)
+			}
+			var clamdRes any
+			for _, c := range list(at(ms, "spec", "template", "spec"), "containers") {
+				if str(c, "name") == "clamd" {
+					clamdRes = at(c, "resources")
+				}
+			}
+			wantClamd := strings.Split(mrow[2], " / ")
+			if len(wantClamd) != 2 || quantity(at(clamdRes, "requests", "cpu")) != wantClamd[0] ||
+				quantity(at(clamdRes, "requests", "memory")) != wantClamd[1] || quantity(at(clamdRes, "limits", "memory")) != mrow[3] {
+				t.Errorf("clamd resources = %v, want %s and a limit of %s", clamdRes, mrow[2], mrow[3])
+			}
+			if got := quantity(at(cfg, "malware", "concurrency")); got != mrow[4] {
+				t.Errorf("config.malware.concurrency = %q, want %q", got, mrow[4])
+			}
 		})
 	}
 

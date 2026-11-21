@@ -300,7 +300,7 @@ malwareScanner:
     resources:
       requests:
         cpu: 500m
-        memory: 1536Mi                  # ClamAV's documented figure for a loaded database is upwards of 1.2 GiB (Q-HA-361)
+        memory: 1280Mi                  # measured: clamd holds 1.0 GiB resident with ClamAV's whole database, 1.1 GiB at its peak (Q-HA-361)
         ephemeral-storage: 1Gi
       limits:
         memory: 2Gi                     # at least 1.5Gi, checked: ConcurrentDatabaseReload is off, so a reload does not hold two databases
