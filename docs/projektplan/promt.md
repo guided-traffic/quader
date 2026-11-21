@@ -605,6 +605,11 @@ records the recorder that tells such a stall apart).
   showed no incident, and one listener had logged a retried request to the service's broker in the minute of the push.
   Cancelled and started again on the same commit at 00:01, the run got 24 runners within seconds. Not looked into
   further; nothing in the runners' cluster was touched. If it recurs: the listeners' logs of the push's minute.
+- Two fuzz targets of the nightly's NuGet fuzz job carry a requirement's code in their names
+  (`FuzzR_ARCH_028_Inspect`, `FuzzR_NUGET_005_Nuspec`), so two job names and two artifact names do, against the rule that a
+  job's name says what it does (found on 2026-11-22 at the landing of two new targets, which were renamed; left). The fuzz
+  tool's default of a minute for shrinking each new input stalls a target whose seeds are tens of kilobytes (175
+  executions in two minutes against 565,507 with five seconds); the make target of the fuzz legs does not set it.
 - `make lint` states no time limit, so the linter stops at its own ten minutes on a loaded machine after it has printed its
   result (seen twice on 2026-11-21 at host loads of about 70, by a builder and at a landing; both passed with
   `--timeout 40m`). The cure is a stated limit in the target, as the unit run got one.
@@ -1544,8 +1549,32 @@ runs are in `git log`; this section holds the current state.
   the integration tests build a validator per stack and could share the parse the same way (about an hour,
   the gain not measured). **On the pipeline's runner** (run 44937450926): the package took 76.6 s where it had
   taken 599.5 s, and the unit job 8.9 minutes where it had taken 14.4.
-- **In work: the receipt attestations (since 21:40; reported at 23:43, since 23:44 brought onto `main`), the
-  repair of three defects of the first stage (since 22:44), and the screens of the gate (since 23:46).**
+- **Landed on 2026-11-22 at 00:44: the repair of the first stage's three defects that the measurement with real
+  clients had found** (a commit of the type `fix`; decisions Q-SIG-216 to Q-SIG-219, gap H-1233; what it repairs
+  and the fixtures of the real tools are in its report, in the entry below). **Added before the landing, as
+  asked:** two fuzz targets for the readers it wrote, the signature file's reader and the conversion of BER
+  lengths, seeded with the real tools' files; each ran two minutes locally (565,507 and 7,407,794
+  executions; the first run of the signature's target had reached 175, because the tool spends its time
+  shrinking inputs of 24 KB by default, which the nightly's legs of thirty minutes will meet too). **One
+  change of the reader came from it:** a tag number that is not written in its shortest form is refused,
+  as the standard and the language's own parser do. The targets' one finding was in the test's own walk.
+  The bounds the reader enforces are written down (256 KiB per object, 32 levels, one primary signer and at
+  most 16 countersignatures, 4 timestamps per signer, chains of 8). Both targets are in the nightly's fuzz
+  job for NuGet; they were renamed at the development agent's word so that no job's name carries a
+  requirement's code (two older targets of that job still do, section 8). **What an installation that was
+  hit shows:** nothing checks an old NuGet signature's row again, so a row that read as malformed stays so
+  until its package is gone and stored anew; a lost Ansible signature stays lost until it is posted again;
+  a remote image's version shows its signatures at once. **By the development agent on the commit as it
+  landed, each exit 0:** build, the full unit run, generate-check, the evidence regenerated without a
+  difference, links and check, the complexity check, the lint, the check of the workflow files; the diff
+  holds no name the white-label rule forbids and no private key; no change of the UI or the chart. The
+  owner's UI backend started with it before the push. **Its release was cut at 00:56**; the unit job took 9.7 minutes. **Not verified:** the real clients against
+  the repairs (dotnet against a gated repository, `ansible-galaxy`, Docker); nuget.org's countersignature
+  under the shipped anchors. Its worktree and branch are removed.
+- **In work: the receipt attestations (since 21:40; reported at 23:43, since 23:44 brought onto `main`, and
+  since 00:44 onto the repair above, which changes the statement both touch) and the screens of the gate
+  (since 23:46).** The repair of the first stage's defects, whose report follows here, landed at 00:44 (the
+  entry above).
   **The attestations' report** (stage 2, package 3; one commit on the base of 21:47): an in-toto statement
   with a predicate of Quader's own in a bundle with the leaf certificate, made by a kind of the job `signing`
   for every stored file of a format that attests something, after the checks' first verdicts or the bound,
@@ -1678,7 +1707,16 @@ runs are in `git log`; this section holds the current state.
   published at 00:19, and **the owner's installation runs it since 00:22.** Read on the cluster at 00:23:
   every Deployment ready, no restart, the migration job applied both schema steps, no error line of `api`,
   `packages` or the workers. No signing identity is configured there, so npm's signatures are not made, and
-  no repository has the gate switched on. Their worktrees and branches are removed.
+  no repository has the gate switched on. Their worktrees and branches are removed. **Their run (44958303829,
+  its second attempt) ended at 00:44, green on every job but `integration (shard b)`:** the nine end-to-end
+  legs green (`npm` 23.4 minutes with the real `npm audit signatures`, `oci` 18.8, `nuget` 20.1, `vuln` 16.5);
+  the layout job green in 41.7 minutes; **the four shards in their first run took 33.1, 32.7, 30.0 and 32.8 minutes**
+  (a, b, c, d; the model had said 32, 31, 33 and 31), where three had taken 38.2, 43.4 and 42.1. **Shard b
+  is red on one test that this push did not touch,** the one of section 12 B that had failed once in
+  thirteen runs of its builder: `TestR_LIM_001` found one request charged to an address. It printed the row
+  this time (the loopback address, at the instance's level, no repository, not refused), and the replica's
+  log of that test shows its three requests each charged to its user or its technical token, so the row is
+  none of that test's own requests. Not repeated: the next push runs the shard again.
 - **The measurement with real clients ended at 22:42 and landed at 22:43** (one commit of documentation; its
   builder worked from 21:48 to 22:42 with a Quader and a compose project of its own, the clients from the
   end-to-end sets' images, and a kind cluster of one node for the kubelet's lines; nothing of it is left
@@ -3364,6 +3402,9 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   NuGet signature is readable; no client can sign an image in a gated repository; a posted Ansible signature leaves the store at the next
   discovery; a remote image's version lists no signature; `missing` says "no signature" beside a registry signature. Not measured: keyless
   signing (it needs a sign-in or a signing service of its own).
+  **Of the measurement's seven findings six are repaired and landed** (2026-11-21, 23:44 and 2026-11-22, 00:44, run
+  record); the seventh, that NuGet's client and `ansible-galaxy` show a refusal's status and never its text, is the
+  clients' behaviour and stands.
   **A fourth question, from that measurement, built with the development agent's choice meanwhile (Q-SIG-211):** an
   image pushed into a gated repository has no signature yet, and `cosign sign` and `notation sign` read its manifest
   from the repository before they sign, so the gate refused the very read that would make the image pass. What may
@@ -3971,8 +4012,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
   21:47 to 22:34 with the gate: 38.2, 43.4 and 42.1 minutes. Shard b is the bucket of every package the Makefile's rule
   names in neither of the others, so every new area of the day fell into it; with npm's signatures (about 5 s), the
   attestations and the gate's releases it passes the mark. **The fourth shard is cut since 2026-11-21, 23:44** (run
-  record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push; the real
-  minutes are read from its first run.
+  record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push. **Its first
+  run** (00:02 to 00:44 of 2026-11-22): 33.1, 32.7, 30.0 and 32.8 minutes (a, b, c, d), so each shard has about twelve
+  minutes of room again.
 - **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
   revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
@@ -3989,7 +4031,13 @@ the walk items and the run record); what the code holds beyond the plan has not 
 - **End to end, not verified:** the `RateLimit` policies of the parallel, upstream and refused figures; the charging of a host
   bound to a repository (no test); the daily fold's sums with rows older than 30 days (only that the query runs).
 - **`TestR_LIM_001`** failed once in 13 runs of its builder with "1 request charged to an address", not reproduced; it prints
-  the rows if it happens again.
+  the rows if it happens again. **It happened again on 2026-11-22 in the pipeline** (run 44958303829, `integration (shard
+  b)`, the first run with four shards): the row is `127.0.0.1 instance repo=- requests=1 refused=0`. The replica's log of
+  the test shows its own three requests (an upload as a user, the token request with Basic, the registry request with the
+  registry token), each charged to its user or its technical token. So the row comes from elsewhere: a request the log
+  does not show, or the usage of an earlier test of the package written late into the same database. To read at the
+  next recurrence or when a builder has room: which test of the package makes an unauthenticated request at the
+  instance's level, and whether a stack's usage buffer can still write after its test has ended.
 - **A multi-platform push** against the write class was not measured (single-platform, 40 layers: Q-LIM-56).
 - **The new client cases have run on `linux/arm64` only** when this was written; the first pipeline on the runners shows
   them on `linux/amd64`.
