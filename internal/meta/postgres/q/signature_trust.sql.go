@@ -1393,7 +1393,7 @@ SELECT s.id, o.scheme, s.state, s.key_ids, s.signed_digest, COALESCE(s.digest_al
        s.received_at, s.proven_at, COALESCE(s.time_proof, '')::text AS time_proof
   FROM signatures s
   JOIN signature_objects o ON o.sha256 = s.object_sha256
- WHERE s.id > $1::bigint AND s.state IN ('valid', 'no_key')
+ WHERE s.id > $1::bigint AND s.state IN ('valid', 'no_key') AND s.identity_id IS NULL
    AND NOT EXISTS (SELECT 1 FROM signature_trust t
                     WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.anchor_epoch >= $2::bigint)
  ORDER BY s.id
@@ -1421,7 +1421,8 @@ type SignatureTrustBatchRow struct {
 }
 
 // The next signatures in id order after after_id whose state the trust step judges (valid, no_key) and whose installation row is
-// missing or was computed under an older epoch than epoch, with the stored fields the judgement reads.
+// missing or was computed under an older epoch than epoch, with the stored fields the judgement reads. A signature Quader made itself
+// (identity_id set) gets no trust row (R-SIG-054).
 func (q *Queries) SignatureTrustBatch(ctx context.Context, arg SignatureTrustBatchParams) ([]SignatureTrustBatchRow, error) {
 	rows, err := q.db.Query(ctx, signatureTrustBatch, arg.AfterID, arg.Epoch, arg.RowLimit)
 	if err != nil {
@@ -1843,9 +1844,12 @@ SELECT s.id, s.object_sha256, s.part, s.subject_sha256, COALESCE(s.subject_name,
        (t.signature_id IS NOT NULL)::boolean AS has_trust, COALESCE(t.project_id::text, '')::text AS trust_project_id,
        COALESCE(t.state, '')::text AS trust_state, COALESCE(t.anchor_ids, '{}')::bigint[] AS trust_anchor_ids,
        COALESCE(t.block_id, 0)::bigint AS trust_block_id, COALESCE(t.anchor_epoch, 0)::bigint AS trust_epoch, t.computed_at AS trust_computed_at,
-       (SELECT st.anchor_epoch FROM signature_settings st WHERE st.id)::bigint AS current_epoch
+       (SELECT st.anchor_epoch FROM signature_settings st WHERE st.id)::bigint AS current_epoch,
+       COALESCE(s.identity_id, 0)::bigint AS identity_id, COALESCE(si.subject, '')::text AS identity_subject,
+       COALESCE(si.cert_sha256, ''::bytea)::bytea AS identity_cert_sha256, COALESCE(si.state, '')::text AS identity_state
   FROM signatures s
   JOIN signature_objects o ON o.sha256 = s.object_sha256
+  LEFT JOIN signing_identities si ON si.id = s.identity_id
   LEFT JOIN LATERAL (SELECT x.signature_id, x.project_id, x.state, x.anchor_ids, x.block_id, x.anchor_epoch, x.computed_at
                        FROM signature_trust x
                       WHERE x.signature_id = s.id
@@ -1865,45 +1869,50 @@ type SignatureViewsParams struct {
 }
 
 type SignatureViewsRow struct {
-	ID              int64
-	ObjectSha256    []byte
-	Part            int16
-	SubjectSha256   []byte
-	SubjectName     string
-	Role            string
-	PredicateType   string
-	ContentSha256   []byte
-	ContentLocator  string
-	State           string
-	Reason          string
-	Signer          json.RawMessage
-	KeyIds          []string
-	SignedDigest    []byte
-	DigestAlg       string
-	ClaimedAt       pgtype.Timestamptz
-	ProvenAt        pgtype.Timestamptz
-	TimeProof       string
-	ReceivedAt      pgtype.Timestamptz
-	CheckedAt       pgtype.Timestamptz
-	Due             bool
-	Priority        int16
-	Attempts        int32
-	NotBefore       pgtype.Timestamptz
-	Scheme          string
-	MediaType       string
-	ObjectSize      int64
-	HasTrust        bool
-	TrustProjectID  string
-	TrustState      string
-	TrustAnchorIds  []int64
-	TrustBlockID    int64
-	TrustEpoch      int64
-	TrustComputedAt pgtype.Timestamptz
-	CurrentEpoch    int64
+	ID                 int64
+	ObjectSha256       []byte
+	Part               int16
+	SubjectSha256      []byte
+	SubjectName        string
+	Role               string
+	PredicateType      string
+	ContentSha256      []byte
+	ContentLocator     string
+	State              string
+	Reason             string
+	Signer             json.RawMessage
+	KeyIds             []string
+	SignedDigest       []byte
+	DigestAlg          string
+	ClaimedAt          pgtype.Timestamptz
+	ProvenAt           pgtype.Timestamptz
+	TimeProof          string
+	ReceivedAt         pgtype.Timestamptz
+	CheckedAt          pgtype.Timestamptz
+	Due                bool
+	Priority           int16
+	Attempts           int32
+	NotBefore          pgtype.Timestamptz
+	Scheme             string
+	MediaType          string
+	ObjectSize         int64
+	HasTrust           bool
+	TrustProjectID     string
+	TrustState         string
+	TrustAnchorIds     []int64
+	TrustBlockID       int64
+	TrustEpoch         int64
+	TrustComputedAt    pgtype.Timestamptz
+	CurrentEpoch       int64
+	IdentityID         int64
+	IdentitySubject    string
+	IdentityCertSha256 []byte
+	IdentityState      string
 }
 
 // The signatures of the subjects (or npm's subject names) attached in the repositories asked, with their object's scheme, media type
-// and size, and their trust row in the scope: the project's row when one exists, else the installation's; with the current epoch.
+// and size, and their trust row in the scope: the project's row when one exists, else the installation's; with the current epoch; and
+// for a signature Quader made itself the identity that made it (R-SIG-055).
 func (q *Queries) SignatureViews(ctx context.Context, arg SignatureViewsParams) ([]SignatureViewsRow, error) {
 	rows, err := q.db.Query(ctx, signatureViews,
 		arg.ProjectID,
@@ -1954,6 +1963,10 @@ func (q *Queries) SignatureViews(ctx context.Context, arg SignatureViewsParams) 
 			&i.TrustEpoch,
 			&i.TrustComputedAt,
 			&i.CurrentEpoch,
+			&i.IdentityID,
+			&i.IdentitySubject,
+			&i.IdentityCertSha256,
+			&i.IdentityState,
 		); err != nil {
 			return nil, err
 		}

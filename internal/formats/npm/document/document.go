@@ -23,7 +23,7 @@ import (
 // RenderVersion is npmRenderVersion (R-NPM-013): a constant of the format that a
 // release increments whenever it changes the bytes rendered from the same inputs, so
 // replicas of two releases never share a validator during a rolling upgrade.
-const RenderVersion = 2
+const RenderVersion = 3
 
 // Variant is the form of a rendering.
 type Variant string
@@ -205,6 +205,12 @@ func prepare(p *rows.LocalPackage, o Options) ([]rendered, error) {
 		}
 		url, _ := json.Marshal(o.TarballPrefix + o.Basename + "-" + v.Version + ".tgz")
 		dist["tarball"] = url
+		// Quader's registry signatures of the version (signatures.md R-SIG-050); the stored manifest never holds a client's own
+		// (R-NPM-007), so a version without one carries none.
+		delete(dist, "signatures")
+		if len(v.Signatures) > 0 && json.Valid(v.Signatures) {
+			dist["signatures"] = v.Signatures
+		}
 		d, err := json.Marshal(dist)
 		if err != nil {
 			return nil, err

@@ -207,7 +207,7 @@ func (f *Format) commitVersion(ctx context.Context, tx formats.Tx, c formats.Com
 	tags, out := tagAfterPublish(cur, p.tag, p.version, p.latestGuard, readable)
 	kept, held := out == tagGuarded, out == tagHeld
 	err = st.Publish(ctx, tx, rows.PublishInput{
-		RepoID: c.Repo.ID, PackageID: int64(pkg.ID), VersionID: int64(vid), Name: pkgName, NameFold: p.name.Fold(), Version: p.version,
+		RepoID: c.Repo.ID, PackageID: int64(pkg.ID), VersionID: int64(vid), ItemID: c.Item.ID, Name: pkgName, NameFold: p.name.Fold(), Version: p.version,
 		Manifest: stored, Integrity: p.res.Integrity(), Shasum: p.res.SHA1Hex(),
 		FileCount: p.res.FileCount, UnpackedSize: p.res.UnpackedSize,
 		HasInstallScript: p.installScript, HasShrinkwrap: p.res.HasShrinkwrap,

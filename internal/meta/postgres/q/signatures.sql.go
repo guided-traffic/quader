@@ -12,6 +12,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const signatureAttachIssued = `-- name: SignatureAttachIssued :exec
+INSERT INTO signature_attachments (repo_id, signature_id, location, item_id, source, name)
+VALUES ($1::bigint, $2::bigint, $3::text, $4::bigint, 'issued',
+        NULLIF($5::text, ''))
+ON CONFLICT (repo_id, signature_id, location) DO UPDATE SET item_id = EXCLUDED.item_id, source = 'issued', name = EXCLUDED.name
+`
+
+type SignatureAttachIssuedParams struct {
+	RepoID      int64
+	SignatureID int64
+	Location    string
+	ItemID      int64
+	Name        string
+}
+
+// The attachment of a signature Quader made itself to the item it signs, in the item's repository (R-SIG-054): it goes with the item.
+func (q *Queries) SignatureAttachIssued(ctx context.Context, arg SignatureAttachIssuedParams) error {
+	_, err := q.db.Exec(ctx, signatureAttachIssued,
+		arg.RepoID,
+		arg.SignatureID,
+		arg.Location,
+		arg.ItemID,
+		arg.Name,
+	)
+	return err
+}
+
 const signatureAttachments = `-- name: SignatureAttachments :many
 SELECT repo_id, signature_id, location, COALESCE(item_id, 0)::bigint AS item_id, source, COALESCE(name, '')::text AS name, created_at
   FROM signature_attachments WHERE signature_id = $1::bigint
@@ -246,6 +273,28 @@ func (q *Queries) SignatureDetach(ctx context.Context, arg SignatureDetachParams
 	return result.RowsAffected(), nil
 }
 
+const signatureDetachRetiredIssued = `-- name: SignatureDetachRetiredIssued :execrows
+DELETE FROM signature_attachments a
+ USING signatures s, signature_objects o, signing_identities si
+ WHERE a.item_id = $1::bigint AND a.source = 'issued' AND s.id = a.signature_id AND o.sha256 = s.object_sha256
+   AND o.scheme = $2::text AND si.id = s.identity_id AND si.state = 'retired'
+`
+
+type SignatureDetachRetiredIssuedParams struct {
+	ItemID int64
+	Scheme string
+}
+
+// The attachments of the scheme's signatures Quader made of an item with an identity that is retired (R-SIG-048): the signature made
+// again replaces them. The job signature-verify removes a signature that loses its last attachment (R-SIG-011).
+func (q *Queries) SignatureDetachRetiredIssued(ctx context.Context, arg SignatureDetachRetiredIssuedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, signatureDetachRetiredIssued, arg.ItemID, arg.Scheme)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const signatureDiscoverItems = `-- name: SignatureDiscoverItems :many
 SELECT i.id, i.path::text AS path, i.blob_sha256, i.size::bigint AS size, COALESCE(i.media_type, '')::text AS media_type,
        COALESCE(i.upstream_url, '')::text AS upstream_url, r.id AS repo_id, r.key AS repo_key, r.format, r.class,
@@ -359,6 +408,78 @@ func (q *Queries) SignatureIDs(ctx context.Context, arg SignatureIDsParams) ([]S
 		return nil, err
 	}
 	return items, nil
+}
+
+const signatureInsertIssued = `-- name: SignatureInsertIssued :one
+WITH ins AS (
+    INSERT INTO signatures (object_sha256, part, subject_sha256, subject_name, role, signed_digest, digest_alg, state, key_ids, due,
+                            checked_at, identity_id)
+    VALUES ($1::bytea, 0, $2::bytea, NULLIF($3::text, ''),
+            $4::text, NULLIF($5::bytea, ''::bytea), NULLIF($6::text, ''), 'valid',
+            $7::text[], false, now(), $8::bigint)
+    ON CONFLICT (object_sha256, part, subject_sha256, subject_name) DO NOTHING
+    RETURNING id)
+SELECT id FROM ins
+UNION ALL
+SELECT s.id FROM signatures s
+ WHERE s.object_sha256 = $1::bytea AND s.part = 0 AND s.subject_sha256 = $2::bytea
+   AND s.subject_name IS NOT DISTINCT FROM NULLIF($3::text, '')
+LIMIT 1
+`
+
+type SignatureInsertIssuedParams struct {
+	ObjectSha256  []byte
+	SubjectSha256 []byte
+	SubjectName   string
+	Role          string
+	SignedDigest  []byte
+	DigestAlg     string
+	KeyIds        []string
+	IdentityID    int64
+}
+
+// The signature row of a signature Quader made itself (R-SIG-054): valid as written and never due, because Quader checks no signature
+// it made (Q-SIG-31's rule); identity_id names the identity that made it. ECDSA signs with a fresh nonce, so the object is new and the
+// row too; one that is there (the same bytes again) answers its id.
+func (q *Queries) SignatureInsertIssued(ctx context.Context, arg SignatureInsertIssuedParams) (int64, error) {
+	row := q.db.QueryRow(ctx, signatureInsertIssued,
+		arg.ObjectSha256,
+		arg.SubjectSha256,
+		arg.SubjectName,
+		arg.Role,
+		arg.SignedDigest,
+		arg.DigestAlg,
+		arg.KeyIds,
+		arg.IdentityID,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const signatureInsertIssuedObject = `-- name: SignatureInsertIssuedObject :exec
+INSERT INTO signature_objects (sha256, scheme, media_type, raw, size)
+VALUES ($1::bytea, $2::text, NULLIF($3::text, ''), $4::bytea,
+        octet_length($4::bytea))
+ON CONFLICT (sha256) DO NOTHING
+`
+
+type SignatureInsertIssuedObjectParams struct {
+	Sha256    []byte
+	Scheme    string
+	MediaType string
+	Raw       []byte
+}
+
+// The original of a signature Quader made itself (R-SIG-054): npm's registry signature entry, {"keyid", "sig"}, once per its SHA-256.
+func (q *Queries) SignatureInsertIssuedObject(ctx context.Context, arg SignatureInsertIssuedObjectParams) error {
+	_, err := q.db.Exec(ctx, signatureInsertIssuedObject,
+		arg.Sha256,
+		arg.Scheme,
+		arg.MediaType,
+		arg.Raw,
+	)
+	return err
 }
 
 const signatureInsertObjects = `-- name: SignatureInsertObjects :exec
@@ -566,7 +687,7 @@ func (q *Queries) SignatureRemoveOrphans(ctx context.Context, rowLimit int32) (i
 const signatureReplaceAttachments = `-- name: SignatureReplaceAttachments :exec
 DELETE FROM signature_attachments a
  USING signatures s
- WHERE a.repo_id = $1::bigint AND s.id = a.signature_id
+ WHERE a.repo_id = $1::bigint AND s.id = a.signature_id AND a.source <> 'issued'
    AND (($2::bigint <> 0 AND a.item_id = $2::bigint)
         OR ($3::text <> '' AND a.item_id IS NULL
             AND (a.location = $3::text OR starts_with(a.location, $3::text || '#')))
@@ -592,7 +713,8 @@ type SignatureReplaceAttachmentsParams struct {
 // The attachments a commit or a fill no longer makes (R-SIG-004): those of the carrier item, those of a stored document (its path and
 // every path#pointer below it), and, at a location the batch names, those of the same object against another subject (the file a
 // signature file stands beside was replaced), each unless the batch makes it again. An attachment of another part of the same object
-// and subject stays: a batch that names an object by its path names its first part only.
+// and subject stays: a batch that names an object by its path names its first part only. An attachment of a signature Quader made
+// itself (source issued, R-SIG-054) is no batch's: the job signing writes and removes it.
 func (q *Queries) SignatureReplaceAttachments(ctx context.Context, arg SignatureReplaceAttachmentsParams) error {
 	_, err := q.db.Exec(ctx, signatureReplaceAttachments,
 		arg.RepoID,

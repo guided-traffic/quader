@@ -38,6 +38,9 @@ type PublishInput struct {
 	RepoID    int64
 	PackageID int64
 	VersionID int64
+	// ItemID is the item of the version's tarball: the store writes the work of Quader's registry signature of it in the publish's
+	// transaction (signatures.md R-SIG-049, R-SIG-050).
+	ItemID int64
 	// Name is the normalized package name, NameFold its look-alike fold
 	// (name.Fold), Version the canonical version.
 	Name, NameFold, Version string
@@ -167,12 +170,23 @@ type LocalPackage struct {
 }
 
 // LocalVersion is one version of a document: its stored manifest (R-NPM-007), the
-// deprecation message ("" for none) and the publish time.
+// deprecation message ("" for none), the publish time, and Quader's registry signatures
+// of its tarball whose identity is listed, as the JSON array dist.signatures carries
+// (signatures.md R-SIG-050; nil for none).
 type LocalVersion struct {
 	Version     string
 	Manifest    []byte
 	Deprecated  string
 	PublishedAt time.Time
+	Signatures  []byte
+}
+
+// RegistryKey is an entry of the keys document of a local npm repository
+// (signatures.md R-SIG-050): Quader's keys, the same for every local repository of the
+// installation. Expires is "" for a key that signs or is about to, else the moment its
+// identity stopped signing in npm's form (ISO 8601 UTC with milliseconds).
+type RegistryKey struct {
+	KeyID, KeyType, Scheme, Key, Expires string
 }
 
 // LiveVersion is a version a document holds, with the id of its version row.

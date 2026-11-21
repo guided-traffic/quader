@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,6 +62,11 @@ func (s *Store) Views(ctx context.Context, vq signatures.ViewQuery) ([]signature
 			v.Signature.Subject = digest(r.SubjectSha256)
 			if r.HasTrust {
 				v.Trust = trustOfRow(r, refs, blocks)
+			}
+			if r.IdentityID != 0 {
+				v.IssuedBy = &signatures.IssuedBy{
+					Identity: r.IdentityID, Subject: r.IdentitySubject, Fingerprint: hex.EncodeToString(r.IdentityCertSha256), State: r.IdentityState,
+				}
 			}
 			out = append(out, v)
 		}

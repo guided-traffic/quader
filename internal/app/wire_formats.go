@@ -211,6 +211,9 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	if fetches != nil {
 		npmOpts.Signatures = fetches
 	}
+	if sig.NPMSigning != nil {
+		npmOpts.Signing = sig.NPMSigning
+	}
 	st, err := npm.New(npmOpts)
 	if err != nil {
 		return nil, fmt.Errorf("formats: npm data port: %w", err)

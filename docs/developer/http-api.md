@@ -253,7 +253,10 @@ What the handlers decide and what they leave to the store:
   entry carries an origin.
 - **Entries**: the views of the roles `publisher`, `provenance` and `registry` in `signatures`, those of the role `attestation` in
   `attestations`, ordered by role and receipt; `state` and `stale` are `signatures.Badge` over them. The signer is the read's
-  `signatures.Signer`, returned as text. `covering` lists the releases the format's coverage names (`SignatureServices.Coverage`, bound
+  `signatures.Signer`, returned as text. A signature this installation made (stage 2: npm's registry signature of a local version, read
+  by its subject name like an upstream's) carries `source: "issued"` and `issuedBy` (`identity`, `subject`, `fingerprint`, `state`) from
+  the view's `IssuedBy` (`SignatureViews` joins the signing identity), and `keyId` its npm keyid; it has no trust row and never decides the
+  badge (R-SIG-055). `covering` lists the releases the format's coverage names (`SignatureServices.Coverage`, bound
   to Debian's `formats.SignatureCoverage`; [signatures_covering.go](../../internal/api/v1/signatures_covering.go)), each with the
   signatures attached to it in the repository and its state read as a publisher's (R-SIG-030).
 - **Origin** (`signatureOrigin`, R-SIG-010): the store's `artifact_origins` row, else `fetched` from the item's upstream URL, else the

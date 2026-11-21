@@ -26231,7 +26231,8 @@ components:
           description: The repository `<project>/<key>` that holds the attachment.
         source:
           type: string
-          enum: [referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release, upload]
+          enum: [referrer, referrers_tag, cosign_tag, index_entry, document, embedded, sibling, release, upload, issued]
+          description: How the signature reaches its subject; `issued` is a signature this installation made with its signing identity (R-SIG-054).
         location:
           type: string
           description: The item path of the original, or `path#pointer` in a document.
@@ -26399,6 +26400,32 @@ components:
         original:
           type: string
           description: The relative URL of the original (`/api/v1/signatures/objects/{sha256}`).
+        issuedBy:
+          $ref: "#/components/schemas/SignatureIssuedBy"
+    SignatureIssuedBy:
+      type: object
+      additionalProperties: false
+      required: [identity, subject, fingerprint, state]
+      description: |
+        The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
+        made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
+        (Q-SIG-1); its trust is not computed (R-SIG-054).
+      properties:
+        identity:
+          type: integer
+          format: int64
+          description: The id of the identity (`GET /api/v1/signing/identity`).
+        subject:
+          type: string
+          description: The subject of the identity's certificate.
+        fingerprint:
+          type: string
+          pattern: "^([0-9a-f]{64})?$"
+          description: The SHA-256 of the identity's certificate, lower-case hex.
+        state:
+          type: string
+          enum: [announced, current, previous, retired]
+          description: The identity's state now; a `retired` identity's signatures are no longer served (R-SIG-048).
     SignatureCovering:
       type: object
       additionalProperties: false

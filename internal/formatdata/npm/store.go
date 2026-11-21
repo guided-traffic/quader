@@ -49,6 +49,27 @@ type Options struct {
 	Actor func(ctx context.Context) audit.Actor
 	// Signatures queues the background fetch of a remote's signatures (signatures.md R-SIG-026); nil queues nothing.
 	Signatures SignatureFetchQueue
+	// Signing is Quader's registry signing of local versions (signatures.md R-SIG-050): the keys of a local repository and the work
+	// a publish writes. nil: no keys, and a publish writes no work.
+	Signing RegistrySigning
+}
+
+// RegistrySigning is what the data port needs of Quader's signing of npm versions (signatures.md R-SIG-049, R-SIG-050); the
+// composition root implements it over the signing identity's snapshot and the job signing's work.
+type RegistrySigning interface {
+	// Keys answers the keys document of a local repository: none while no identity is current.
+	Keys(ctx context.Context) ([]rows.RegistryKey, error)
+	// Published writes the work of signing the tarball of a published version in the publish's transaction.
+	Published(ctx context.Context, tx meta.Tx, itemID int64) error
+}
+
+// RegistryKeys implements the read of the keys of a local repository (R-SIG-050) through the signing the composition root wired; a
+// replica without it answers none.
+func (s *Store) RegistryKeys(ctx context.Context) ([]rows.RegistryKey, error) {
+	if s.o.Signing == nil {
+		return []rows.RegistryKey{}, nil
+	}
+	return s.o.Signing.Keys(ctx)
 }
 
 // SignatureFetchQueue is the queue of the background fetch of a remote's signatures; *fetch.Queue of internal/signatures/fetch
@@ -187,6 +208,12 @@ func (s *Store) Publish(ctx context.Context, tx meta.Tx, in rows.PublishInput) e
 	}
 	if err := s.record(ctx, tx, audit.EventNPMPublish, in.Audit, in.Name, details, "", nil); err != nil {
 		return err
+	}
+	// Quader's registry signature of the version, by the job signing right after this commit (signatures.md R-SIG-049, R-SIG-050).
+	if s.o.Signing != nil && in.ItemID != 0 {
+		if err := s.o.Signing.Published(ctx, tx, in.ItemID); err != nil {
+			return err
+		}
 	}
 	if len(in.Shadowing.Shadowed) == 0 {
 		return nil

@@ -822,6 +822,18 @@ func TestControlAPI(t *testing.T) {
 		t.Fatalf("control requests were counted: %s", got.Summary())
 	}
 
+	// The keys the registry announces (signatures.md R-SIG-050's end-to-end case): set, refused when no keys document, and gone again.
+	keys := `{"keys":[{"expires":null,"keyid":"SHA256:k","keytype":"ecdsa-sha2-nistp256","scheme":"ecdsa-sha2-nistp256","key":"MFkw"}]}`
+	if r := ctl(http.MethodPost, "/-/stub/keys", keys); r.status != 204 || string(f.get("/-/npm/v1/keys").body) != keys {
+		t.Fatalf("set the keys: %d %s", r.status, r.body)
+	}
+	if r := ctl(http.MethodPost, "/-/stub/keys", `{"nokeys":1}`); r.status != 400 {
+		t.Fatalf("a body without keys: %d", r.status)
+	}
+	if r := ctl(http.MethodPost, "/-/stub/keys", "null"); r.status != 204 || f.status("/-/npm/v1/keys") != 404 {
+		t.Fatalf("take the keys away: %d", r.status)
+	}
+
 	off := newFixture(t, Config{})
 	if s := off.status("/-/stub/counts", "Authorization", "Bearer "+token); s != 404 {
 		t.Fatalf("control API without a configured token: %d", s)

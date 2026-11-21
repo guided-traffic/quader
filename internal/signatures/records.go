@@ -151,6 +151,17 @@ type View struct {
 	Attachments []Attachment
 	// Trust is nil when the signature has no trust row (any state but valid and no_key).
 	Trust *Trust
+	// IssuedBy is the identity of the installation that made the signature, nil for every signature Quader did not make (R-SIG-055).
+	IssuedBy *IssuedBy
+}
+
+// IssuedBy is the signing identity that made a signature of Quader's own (stage 2, R-SIG-054, R-SIG-055): its id, its certificate's
+// subject and SHA-256 fingerprint (lower-case hex), and its state now.
+type IssuedBy struct {
+	Identity    int64
+	Subject     string
+	Fingerprint string
+	State       string
 }
 
 // Trust is a trust row as a reader sees it (R-SIG-008, R-SIG-012).

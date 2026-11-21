@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -39,6 +40,8 @@ type env struct {
 	wkr *testenv.Replica
 
 	admin, secadm, auditor string
+	// pub is the token of a publisher with read and deploy on npm-local.
+	pub string
 }
 
 // baseEnv is what every replica of the area takes: a fast job poll, a fast change log, an announce period of a second.
@@ -60,6 +63,10 @@ func newEnv(t *testing.T, name string, webEnv, workerEnv []string) *env {
 	e.admin = st.Token(rita, scope.Scope{Inherit: true, Admin: true})
 	e.secadm = st.Token(sam, scope.Scope{Inherit: true, System: []string{"settings:read", "security-settings:write"}})
 	e.auditor = st.Token(olga, scope.Scope{Inherit: true, System: []string{"settings:read"}})
+	pia := st.User("pia")
+	st.Repository(npmLocal, "local", "npm", `{"local":{"autoClaim":false,"packageOwnership":"enforce"}}`)
+	st.Policy("npm-publishers", []string{"read", "deploy"}, []string{npmLocal}, pia)
+	e.pub = st.Token(pia, scope.Default())
 	e.web = st.Start(t, testenv.ReplicaOptions{Name: "web1", Env: append(baseEnv(), webEnv...)})
 	if workerEnv != nil {
 		e.wkr = st.Start(t, testenv.ReplicaOptions{Name: "worker1", Role: "worker", Env: append(baseEnv(), workerEnv...)})
@@ -171,7 +178,8 @@ func writePair(t *testing.T, dir string, chain, keyPEM, root []byte) {
 }
 
 // TestR_SIG_046_TheIdentityOfTheFilesIsLoadedRotatedAndRefusedWithoutARestart: a pair in the files becomes current at the worker's start
-// and the admin page names it from the Helm values; a key request answers 409 signing_identity_managed; a pair of a new key written over
+// and the admin page names it from the Helm values; a key request answers 409 signing_identity_managed; a publish to npm-local is signed
+// with the key of the files and verifies with pacote's check against npm-local's keys; a pair of a new key written over
 // the files is announced and then current, the old one previous with its end of signing, without a restart; a pair with an RSA key is
 // refused with signing.identity.refused and the admin page's refusal while the identity in use stays current; the chain anyone may fetch
 // is the current one's. Integration, about 4 s, certificates of a kilobyte.
@@ -193,6 +201,12 @@ func TestR_SIG_046_TheIdentityOfTheFilesIsLoadedRotatedAndRefusedWithoutARestart
 	if code := problemCode(t, e.call("POST", "/api/v1/signing/identity/key", e.admin, map[string]any{}, http.StatusConflict)); code != "signing_identity_managed" {
 		t.Errorf("a key request answers %s", code)
 	}
+	// The key of the files signs: a publish to npm-local carries the identity's keyid and verifies against npm-local's keys (R-SIG-050).
+	e.publish("files-signed", "1.0.0")
+	e.eventually("files-signed@1.0.0 is signed with the key of the files", func() bool {
+		return slices.Equal(e.doc(npmLocal, "files-signed").keyIDsOf("1.0.0"), []string{o.Current.NpmKeyID})
+	})
+	e.verified(npmLocal, "files-signed", "1.0.0")
 
 	leafB, keyB := ca.Issue(t, signingtest.Leaf{})
 	writePair(t, dir, ca.ChainPEM(leafB), signingtest.KeyPEM(t, keyB), ca.RootPEM())

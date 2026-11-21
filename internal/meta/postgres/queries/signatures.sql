@@ -59,10 +59,11 @@ SELECT k.ord::bigint AS ord, s.id::bigint AS id
 -- The attachments a commit or a fill no longer makes (R-SIG-004): those of the carrier item, those of a stored document (its path and
 -- every path#pointer below it), and, at a location the batch names, those of the same object against another subject (the file a
 -- signature file stands beside was replaced), each unless the batch makes it again. An attachment of another part of the same object
--- and subject stays: a batch that names an object by its path names its first part only.
+-- and subject stays: a batch that names an object by its path names its first part only. An attachment of a signature Quader made
+-- itself (source issued, R-SIG-054) is no batch's: the job signing writes and removes it.
 DELETE FROM signature_attachments a
  USING signatures s
- WHERE a.repo_id = sqlc.arg(repo_id)::bigint AND s.id = a.signature_id
+ WHERE a.repo_id = sqlc.arg(repo_id)::bigint AND s.id = a.signature_id AND a.source <> 'issued'
    AND ((sqlc.arg(item_id)::bigint <> 0 AND a.item_id = sqlc.arg(item_id)::bigint)
         OR (sqlc.arg(document)::text <> '' AND a.item_id IS NULL
             AND (a.location = sqlc.arg(document)::text OR starts_with(a.location, sqlc.arg(document)::text || '#')))
@@ -216,3 +217,44 @@ SELECT i.id, i.path::text AS path, i.blob_sha256, i.size::bigint AS size, COALES
    AND NOT EXISTS (SELECT 1 FROM upstream_repository u WHERE u.repository_id = r.id AND u.kind = 'system')
  ORDER BY i.id
  LIMIT sqlc.arg(row_limit)::int;
+
+-- name: SignatureInsertIssuedObject :exec
+-- The original of a signature Quader made itself (R-SIG-054): npm's registry signature entry, {"keyid", "sig"}, once per its SHA-256.
+INSERT INTO signature_objects (sha256, scheme, media_type, raw, size)
+VALUES (sqlc.arg(sha256)::bytea, sqlc.arg(scheme)::text, NULLIF(sqlc.arg(media_type)::text, ''), sqlc.arg(raw)::bytea,
+        octet_length(sqlc.arg(raw)::bytea))
+ON CONFLICT (sha256) DO NOTHING;
+
+-- name: SignatureInsertIssued :one
+-- The signature row of a signature Quader made itself (R-SIG-054): valid as written and never due, because Quader checks no signature
+-- it made (Q-SIG-31's rule); identity_id names the identity that made it. ECDSA signs with a fresh nonce, so the object is new and the
+-- row too; one that is there (the same bytes again) answers its id.
+WITH ins AS (
+    INSERT INTO signatures (object_sha256, part, subject_sha256, subject_name, role, signed_digest, digest_alg, state, key_ids, due,
+                            checked_at, identity_id)
+    VALUES (sqlc.arg(object_sha256)::bytea, 0, sqlc.arg(subject_sha256)::bytea, NULLIF(sqlc.arg(subject_name)::text, ''),
+            sqlc.arg(role)::text, NULLIF(sqlc.arg(signed_digest)::bytea, ''::bytea), NULLIF(sqlc.arg(digest_alg)::text, ''), 'valid',
+            sqlc.arg(key_ids)::text[], false, now(), sqlc.arg(identity_id)::bigint)
+    ON CONFLICT (object_sha256, part, subject_sha256, subject_name) DO NOTHING
+    RETURNING id)
+SELECT id FROM ins
+UNION ALL
+SELECT s.id FROM signatures s
+ WHERE s.object_sha256 = sqlc.arg(object_sha256)::bytea AND s.part = 0 AND s.subject_sha256 = sqlc.arg(subject_sha256)::bytea
+   AND s.subject_name IS NOT DISTINCT FROM NULLIF(sqlc.arg(subject_name)::text, '')
+LIMIT 1;
+
+-- name: SignatureAttachIssued :exec
+-- The attachment of a signature Quader made itself to the item it signs, in the item's repository (R-SIG-054): it goes with the item.
+INSERT INTO signature_attachments (repo_id, signature_id, location, item_id, source, name)
+VALUES (sqlc.arg(repo_id)::bigint, sqlc.arg(signature_id)::bigint, sqlc.arg(location)::text, sqlc.arg(item_id)::bigint, 'issued',
+        NULLIF(sqlc.arg(name)::text, ''))
+ON CONFLICT (repo_id, signature_id, location) DO UPDATE SET item_id = EXCLUDED.item_id, source = 'issued', name = EXCLUDED.name;
+
+-- name: SignatureDetachRetiredIssued :execrows
+-- The attachments of the scheme's signatures Quader made of an item with an identity that is retired (R-SIG-048): the signature made
+-- again replaces them. The job signature-verify removes a signature that loses its last attachment (R-SIG-011).
+DELETE FROM signature_attachments a
+ USING signatures s, signature_objects o, signing_identities si
+ WHERE a.item_id = sqlc.arg(item_id)::bigint AND a.source = 'issued' AND s.id = a.signature_id AND o.sha256 = s.object_sha256
+   AND o.scheme = sqlc.arg(scheme)::text AND si.id = s.identity_id AND si.state = 'retired';

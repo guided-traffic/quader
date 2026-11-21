@@ -61,6 +61,60 @@ func (s *Store) Enqueue(ctx context.Context, tx meta.Tx, kind, reason string, pr
 	return s.wake(ctx, tx)
 }
 
+// EnqueueWhileCurrent writes work for items of one kind in the caller's transaction, as Enqueue does, but only while an identity is
+// current (Q-SIG-158): the work of a publish before the installation's first identity is left to discovery, so an installation that
+// never signs keeps no rows. It wakes the job when it wrote a row.
+func (s *Store) EnqueueWhileCurrent(ctx context.Context, tx meta.Tx, kind, reason string, priority int, items []int64) error {
+	if len(items) == 0 {
+		return nil
+	}
+	if priority < signing.PriorityPublish || priority > signing.PriorityDiscovery {
+		return fmt.Errorf("signing work: priority %d is out of 0 to 3", priority)
+	}
+	qs, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	n, err := qs.SigningEnqueueWorkWhileCurrent(ctx, q.SigningEnqueueWorkWhileCurrentParams{
+		Kind: kind, Reason: reason, Priority: int16(priority), ItemIds: items, //nolint:gosec // 0 to 3
+	})
+	if err != nil {
+		return fmt.Errorf("enqueue %s work: %w", kind, err)
+	}
+	if n == 0 {
+		return nil
+	}
+	return s.wake(ctx, tx)
+}
+
+// Served answers the ids of the identities whose signatures of a kind the documents served when the job last compared (Q-SIG-160);
+// found is false before the first comparison.
+func (s *Store) Served(ctx context.Context, kind string) (ids []int64, found bool, err error) {
+	err = s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
+		r, err := qs.SigningServed(ctx, kind)
+		if err != nil {
+			return err
+		}
+		ids, found = []int64{}, r.Found
+		return json.Unmarshal([]byte(r.Ids), &ids)
+	})
+	return ids, found, err
+}
+
+// SetServed stores what the documents serve of a kind after the job raised the revisions a change of it needed.
+func (s *Store) SetServed(ctx context.Context, kind string, ids []int64) error {
+	if ids == nil {
+		ids = []int64{}
+	}
+	raw, err := json.Marshal(ids)
+	if err != nil {
+		return err
+	}
+	return s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
+		return qs.SigningSetServed(ctx, q.SigningSetServedParams{Kind: kind, Ids: string(raw)})
+	})
+}
+
 // DueWork answers at most limit rows of the kinds that are due, by priority, time and item, without the rows in flight.
 func (s *Store) DueWork(ctx context.Context, kinds []string, limit int, inFlight []string) ([]Work, error) {
 	var out []Work

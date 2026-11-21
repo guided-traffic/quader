@@ -20,7 +20,8 @@ import (
 // attestations at the path of its dist.attestations.url resolved against the registry URL (pacote's lib/registry.js:
 // new URL(new URL(url).pathname, registry)), so the path reaches the serving repository.
 //
-//	-/npm/v1/keys                               a remote: its upstream's keys; a local repository: none; a virtual one: the union
+//	-/npm/v1/keys                               a remote: its upstream's keys; a local repository: Quader's own (R-SIG-050), none
+//	                                            while no signing identity is current; a virtual one: the union
 //	-/npm/v1/attestations/<name>@<version>      a remote: its upstream's; a local repository: a bundle npm can verify; a virtual one:
 //	                                            the first member that has them, in the order its tarball is resolved
 
@@ -153,30 +154,86 @@ func (f *Format) handleKeys(ctx context.Context, rq *formats.Request, w http.Res
 		}
 		doc = d
 	case formats.Virtual:
-		var docs []keysDocument
-		for i := range rq.Repo.Members() {
-			m := &rq.Repo.Members()[i]
-			if m.Class != formats.Remote || m.Disabled {
-				continue // a local member signs nothing before stage 2 (R-SIG-043)
-			}
-			mrq, err := rq.Member(m)
-			if err != nil {
-				return err
-			}
-			d, err := f.remoteKeys(ctx, mrq)
-			if err != nil {
-				continue // a member whose upstream cannot be asked adds no key; the others still verify
-			}
-			docs = append(docs, d)
+		d, err := f.virtualKeys(ctx, rq)
+		if err != nil {
+			return err
 		}
-		doc = unionKeys(docs)
+		doc = d
 	default:
-		doc = keysDocument{Keys: []json.RawMessage{}} // Quader signs no npm package before stage 2 (R-SIG-043, H-1176)
+		d, err := localKeys(ctx, rq.Host)
+		if err != nil {
+			return err
+		}
+		doc = d
 	}
 	if doc.Keys == nil {
 		doc.Keys = []json.RawMessage{}
 	}
 	return writeJSON(w, http.StatusOK, doc)
+}
+
+// virtualKeys is the union of the members' keys by keyid, in member order (R-SIG-028, Q-SIG-34, R-SIG-050): a remote member's upstream
+// keys, and Quader's own keys for the first enabled local member, which every local member shares. A remote whose upstream cannot be
+// asked adds no key; the others still verify.
+func (f *Format) virtualKeys(ctx context.Context, rq *formats.Request) (keysDocument, error) {
+	var docs []keysDocument
+	local := false
+	for i := range rq.Repo.Members() {
+		m := &rq.Repo.Members()[i]
+		switch {
+		case m.Disabled:
+		case m.Class == formats.Local && !local:
+			d, err := localKeys(ctx, rq.Host)
+			if err != nil {
+				return keysDocument{}, err
+			}
+			docs, local = append(docs, d), true
+		case m.Class == formats.Remote:
+			mrq, err := rq.Member(m)
+			if err != nil {
+				return keysDocument{}, err
+			}
+			if d, err := f.remoteKeys(ctx, mrq); err == nil {
+				docs = append(docs, d)
+			}
+		}
+	}
+	return unionKeys(docs), nil
+}
+
+// registryKey is an entry of the keys document Quader writes for its own keys, in the order npmjs writes its members.
+type registryKey struct {
+	Expires *string `json:"expires"`
+	KeyID   string  `json:"keyid"`
+	KeyType string  `json:"keytype"`
+	Scheme  string  `json:"scheme"`
+	Key     string  `json:"key"`
+}
+
+// localKeys is the keys document of a local repository (R-SIG-050): Quader's keys from the data port, none while no signing identity is
+// current (R-SIG-045, H-1176 for an installation without one).
+func localKeys(ctx context.Context, h formats.Host) (keysDocument, error) {
+	st, err := storeOf(h.FormatData(ID))
+	if err != nil {
+		return keysDocument{}, err
+	}
+	keys, err := st.RegistryKeys(ctx)
+	if err != nil {
+		return keysDocument{}, err
+	}
+	out := keysDocument{Keys: make([]json.RawMessage, 0, len(keys))}
+	for _, k := range keys {
+		e := registryKey{KeyID: k.KeyID, KeyType: k.KeyType, Scheme: k.Scheme, Key: k.Key}
+		if k.Expires != "" {
+			e.Expires = &k.Expires
+		}
+		raw, err := json.Marshal(e)
+		if err != nil {
+			return keysDocument{}, err
+		}
+		out.Keys = append(out.Keys, raw)
+	}
+	return out, nil
 }
 
 // remoteKeys reads a remote's keys document through the engine: stored for the metadata period, an upstream 404 as no keys.

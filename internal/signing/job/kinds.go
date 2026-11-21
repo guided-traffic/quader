@@ -61,4 +61,9 @@ type Kind struct {
 	// with the current identity: what was stored before an identity existed, what a restore loaded, what a rotation or a retirement
 	// left. It answers the last item id it looked at, after when there is none after it. Nil: the kind has no discovery.
 	Discover func(ctx context.Context, current signing.Identity, after int64, limit int) (last int64, err error)
+	// Served follows a change of the identities' states in what the kind's documents serve, once per run, whatever the identities'
+	// states and signing.enabled (Q-SIG-160): npm's documents render the signatures of the listed identities, so a removal, a
+	// retirement and the first current identity after none raise the revision of every package whose document changes (R-SIG-048).
+	// ids are every identity. Nil: what the kind serves does not depend on the states.
+	Served func(ctx context.Context, ids []signing.Identity) error
 }

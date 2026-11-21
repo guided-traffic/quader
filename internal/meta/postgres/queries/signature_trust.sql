@@ -186,7 +186,8 @@ SELECT x.signature_id, x.repo_id, x.project_key, x.repo_key, x.format, x.path
 
 -- name: SignatureViews :many
 -- The signatures of the subjects (or npm's subject names) attached in the repositories asked, with their object's scheme, media type
--- and size, and their trust row in the scope: the project's row when one exists, else the installation's; with the current epoch.
+-- and size, and their trust row in the scope: the project's row when one exists, else the installation's; with the current epoch; and
+-- for a signature Quader made itself the identity that made it (R-SIG-055).
 SELECT s.id, s.object_sha256, s.part, s.subject_sha256, COALESCE(s.subject_name, '')::text AS subject_name, s.role,
        COALESCE(s.predicate_type, '')::text AS predicate_type, s.content_sha256, COALESCE(s.content_locator, '')::text AS content_locator,
        s.state, COALESCE(s.reason, '')::text AS reason, s.signer, s.key_ids, s.signed_digest, COALESCE(s.digest_alg, '')::text AS digest_alg,
@@ -196,9 +197,12 @@ SELECT s.id, s.object_sha256, s.part, s.subject_sha256, COALESCE(s.subject_name,
        (t.signature_id IS NOT NULL)::boolean AS has_trust, COALESCE(t.project_id::text, '')::text AS trust_project_id,
        COALESCE(t.state, '')::text AS trust_state, COALESCE(t.anchor_ids, '{}')::bigint[] AS trust_anchor_ids,
        COALESCE(t.block_id, 0)::bigint AS trust_block_id, COALESCE(t.anchor_epoch, 0)::bigint AS trust_epoch, t.computed_at AS trust_computed_at,
-       (SELECT st.anchor_epoch FROM signature_settings st WHERE st.id)::bigint AS current_epoch
+       (SELECT st.anchor_epoch FROM signature_settings st WHERE st.id)::bigint AS current_epoch,
+       COALESCE(s.identity_id, 0)::bigint AS identity_id, COALESCE(si.subject, '')::text AS identity_subject,
+       COALESCE(si.cert_sha256, ''::bytea)::bytea AS identity_cert_sha256, COALESCE(si.state, '')::text AS identity_state
   FROM signatures s
   JOIN signature_objects o ON o.sha256 = s.object_sha256
+  LEFT JOIN signing_identities si ON si.id = s.identity_id
   LEFT JOIN LATERAL (SELECT x.signature_id, x.project_id, x.state, x.anchor_ids, x.block_id, x.anchor_epoch, x.computed_at
                        FROM signature_trust x
                       WHERE x.signature_id = s.id
@@ -341,12 +345,13 @@ SELECT (SELECT count(*) FROM signatures WHERE due AND priority = 0)::bigint AS d
 
 -- name: SignatureTrustBatch :many
 -- The next signatures in id order after after_id whose state the trust step judges (valid, no_key) and whose installation row is
--- missing or was computed under an older epoch than epoch, with the stored fields the judgement reads.
+-- missing or was computed under an older epoch than epoch, with the stored fields the judgement reads. A signature Quader made itself
+-- (identity_id set) gets no trust row (R-SIG-054).
 SELECT s.id, o.scheme, s.state, s.key_ids, s.signed_digest, COALESCE(s.digest_alg, '')::text AS digest_alg, s.evidence, s.signer,
        s.received_at, s.proven_at, COALESCE(s.time_proof, '')::text AS time_proof
   FROM signatures s
   JOIN signature_objects o ON o.sha256 = s.object_sha256
- WHERE s.id > sqlc.arg(after_id)::bigint AND s.state IN ('valid', 'no_key')
+ WHERE s.id > sqlc.arg(after_id)::bigint AND s.state IN ('valid', 'no_key') AND s.identity_id IS NULL
    AND NOT EXISTS (SELECT 1 FROM signature_trust t
                     WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.anchor_epoch >= sqlc.arg(epoch)::bigint)
  ORDER BY s.id

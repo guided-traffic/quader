@@ -257,6 +257,49 @@ func TestR_SIG_049_WithoutAKindOrWithSigningOffTheJobOnlySwitches(t *testing.T) 
 	}
 }
 
+// TestR_SIG_048_AKindFollowsTheIdentitiesStatesInEveryRun: a kind's Served is called once per run with every identity before any work,
+// also with signing off and with no identity current, because a removal leaves no identity to sign with and still changes what the
+// documents serve (Q-SIG-160); its error fails the run. Unit, milliseconds.
+func TestR_SIG_048_AKindFollowsTheIdentitiesStatesInEveryRun(t *testing.T) {
+	for name, tc := range map[string]struct {
+		enabled bool
+		ids     []signing.Identity
+	}{
+		"signing on":          {true, []signing.Identity{{ID: 1, State: signing.StatePrevious}, {ID: 2, State: signing.StateCurrent}}},
+		"signing off":         {false, []signing.Identity{{ID: 2, State: signing.StateCurrent}}},
+		"no identity current": {true, []signing.Identity{{ID: 1, State: signing.StatePrevious}}},
+	} {
+		st := &fakeStore{deferred: map[string]deferral{}, reports: map[string]int{}, ids: tc.ids}
+		var seen [][]signing.Identity
+		kind := Kind{
+			Name: signing.WorkNPM, Sign: func(context.Context, meta.Tx, Session, store.Work) error { return nil },
+			Served: func(_ context.Context, ids []signing.Identity) error { seen = append(seen, ids); return nil },
+		}
+		j, err := New(Options{DB: fakeRunner{}, Store: st, Keys: NewHolder(nil, nil), Kinds: []Kind{kind}, Enabled: tc.enabled})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := j.RunSigning(context.Background(), &runResult{}); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if len(seen) != 1 || len(seen[0]) != len(tc.ids) {
+			t.Errorf("%s: Served saw %v", name, seen)
+		}
+	}
+	st := &fakeStore{deferred: map[string]deferral{}, reports: map[string]int{}}
+	failing := Kind{
+		Name: signing.WorkNPM, Sign: func(context.Context, meta.Tx, Session, store.Work) error { return nil },
+		Served: func(context.Context, []signing.Identity) error { return errs.E(errs.Unavailable, "db", "down") },
+	}
+	j, err := New(Options{DB: fakeRunner{}, Store: st, Keys: NewHolder(nil, nil), Kinds: []Kind{failing}, Enabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := j.RunSigning(context.Background(), &runResult{}); err == nil {
+		t.Error("a run whose Served failed passed")
+	}
+}
+
 // fileStore is the store of a watcher test: what it registered and refused.
 type fileStore struct {
 	ids        []signing.Identity

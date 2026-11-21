@@ -255,6 +255,41 @@ func (q *Queries) SigningEnqueueWork(ctx context.Context, arg SigningEnqueueWork
 	return result.RowsAffected(), nil
 }
 
+const signingEnqueueWorkWhileCurrent = `-- name: SigningEnqueueWorkWhileCurrent :execrows
+INSERT INTO signing_work (kind, item_id, reason, priority, not_before)
+SELECT $1::text, i, $2::text, $3::smallint, now()
+  FROM unnest($4::bigint[]) AS i
+ WHERE EXISTS (SELECT 1 FROM signing_identities WHERE state = 'current')
+ON CONFLICT (kind, item_id) DO UPDATE
+   SET reason = CASE WHEN excluded.priority < signing_work.priority OR signing_work.failed THEN excluded.reason ELSE signing_work.reason END,
+       priority = LEAST(signing_work.priority, excluded.priority),
+       not_before = CASE WHEN signing_work.failed THEN excluded.not_before ELSE LEAST(signing_work.not_before, excluded.not_before) END,
+       attempts = CASE WHEN signing_work.failed THEN 0 ELSE signing_work.attempts END,
+       failed = false, code = CASE WHEN signing_work.failed THEN NULL ELSE signing_work.code END
+`
+
+type SigningEnqueueWorkWhileCurrentParams struct {
+	Kind     string
+	Reason   string
+	Priority int16
+	ItemIds  []int64
+}
+
+// Work for items of one kind in the caller's transaction, written only while an identity is current (R-SIG-049, Q-SIG-158): a publish
+// before the installation's first identity leaves its version to discovery, so an installation that never signs keeps no work.
+func (q *Queries) SigningEnqueueWorkWhileCurrent(ctx context.Context, arg SigningEnqueueWorkWhileCurrentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, signingEnqueueWorkWhileCurrent,
+		arg.Kind,
+		arg.Reason,
+		arg.Priority,
+		arg.ItemIds,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const signingIdentities = `-- name: SigningIdentities :many
 
 SELECT i.id, i.source, i.state, i.public_key, i.key_sha256, i.npm_keyid, COALESCE(i.csr, '')::text AS csr,
@@ -299,8 +334,9 @@ type SigningIdentitiesRow struct {
 
 // The statements of the signing identity and of the job signing (signatures.md R-SIG-045 to R-SIG-049, R-SIG-057, R-SIG-059;
 // internal/signing and internal/signing/job). A time travels as RFC 3339 text in UTC with microseconds (” for none), a principal as
-// the text of its uuid (” for none), as the Debian key statements do. Only internal/signing reads and writes these tables; the sealed
-// key is read by SigningSealedKey alone, which only internal/signing/key calls (R-SIG-049).
+// the text of its uuid (” for none), as the Debian key statements do. Only internal/signing writes these tables; the sealed key is read
+// by SigningSealedKey alone, which only internal/signing/key calls (R-SIG-049). The documents of a local npm repository and the
+// signatures' views read the states of the identities to serve and show Quader's own signatures (R-SIG-050, R-SIG-055).
 // Every identity in every state, oldest first, without its private part.
 func (q *Queries) SigningIdentities(ctx context.Context) ([]SigningIdentitiesRow, error) {
 	rows, err := q.db.Query(ctx, signingIdentities)
@@ -718,6 +754,25 @@ func (q *Queries) SigningSealedKeysAfter(ctx context.Context, arg SigningSealedK
 	return items, nil
 }
 
+const signingServed = `-- name: SigningServed :one
+SELECT COALESCE(served -> $1::text, '[]'::jsonb)::text AS ids, (served ? $1::text)::boolean AS found
+  FROM signing_settings WHERE id
+`
+
+type SigningServedRow struct {
+	Ids   string
+	Found bool
+}
+
+// The ids of the identities whose signatures of a kind the documents served when the job last compared (Q-SIG-160); found is false
+// before the first comparison.
+func (q *Queries) SigningServed(ctx context.Context, kind string) (SigningServedRow, error) {
+	row := q.db.QueryRow(ctx, signingServed, kind)
+	var i SigningServedRow
+	err := row.Scan(&i.Ids, &i.Found)
+	return i, err
+}
+
 const signingSetDiscovery = `-- name: SigningSetDiscovery :exec
 UPDATE signing_settings SET discovery = discovery || jsonb_build_object($1::text, $2::bigint) WHERE id
 `
@@ -754,6 +809,20 @@ func (q *Queries) SigningSetRefused(ctx context.Context, arg SigningSetRefusedPa
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const signingSetServed = `-- name: SigningSetServed :exec
+UPDATE signing_settings SET served = served || jsonb_build_object($1::text, $2::text::jsonb) WHERE id
+`
+
+type SigningSetServedParams struct {
+	Kind string
+	Ids  string
+}
+
+func (q *Queries) SigningSetServed(ctx context.Context, arg SigningSetServedParams) error {
+	_, err := q.db.Exec(ctx, signingSetServed, arg.Kind, arg.Ids)
+	return err
 }
 
 const signingSettings = `-- name: SigningSettings :one

@@ -174,6 +174,13 @@ func sigEntry(v signatures.View, subj sigSubject, names func(int64) string) gen.
 	if e.KeyIds == nil {
 		e.KeyIds = []string{}
 	}
+	if b := v.IssuedBy; b != nil {
+		// A signature this installation made (R-SIG-054, R-SIG-055): the identity that made it, never the badge.
+		e.IssuedBy = &gen.SignatureIssuedBy{Identity: b.Identity, Subject: b.Subject, Fingerprint: b.Fingerprint, State: gen.SignatureIssuedByState(b.State)}
+		if e.KeyId == nil && len(sg.KeyIDs) > 0 {
+			e.KeyId = optionalText(sg.KeyIDs[0])
+		}
+	}
 	switch sg.TimeProof {
 	case "timestamp", "log":
 		tp := gen.SignatureEntryTimeProof(sg.TimeProof)

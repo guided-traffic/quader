@@ -307,7 +307,7 @@ func idempotentControl(method, path string) bool {
 	}
 	p, _, _ := strings.Cut(path, "?")
 	switch p {
-	case "/-/stub/reset", "/-/stub/mode", "/-/stub/records":
+	case "/-/stub/reset", "/-/stub/mode", "/-/stub/records", "/-/stub/keys":
 		return true
 	}
 	return false

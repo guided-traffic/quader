@@ -56,8 +56,8 @@ func (a virtualAdapter) ArtifactPrefix(pkg string) string {
 // row, 0 when it has none, so that a later publish changes it.
 func (a virtualAdapter) LocalDocument(ctx context.Context, rq *formats.Request, member formats.RepoRef, p formats.Path, _ string) ([]byte, formats.RevSeq, bool, error) {
 	if sn, version, keys, ok := signaturePath(p.Path); ok {
-		// A version's attestations from a local member: the bundle the trust step vouches for (R-SIG-028, Q-SIG-35); a local member
-		// has no keys before stage 2.
+		// A version's attestations from a local member: the bundle the trust step vouches for (R-SIG-028, Q-SIG-35). The keys of a
+		// virtual repository are its handler's union (virtualKeys), never a member's document.
 		if keys {
 			return nil, 0, false, nil
 		}

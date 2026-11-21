@@ -28,6 +28,9 @@ type Store interface {
 	// for the remote's keys document, with the zero subject. A target fetched before is fetched again only with refresh. tx nil
 	// runs a transaction of the port's own.
 	EnqueueSignatureFetch(ctx context.Context, tx formats.Tx, repoID int64, target string, subject [32]byte, refresh bool) error
+	// RegistryKeys answers the keys of a local repository (signatures.md R-SIG-050): Quader's own, the same for every local
+	// repository; none while no signing identity is current (R-SIG-045).
+	RegistryKeys(ctx context.Context) ([]rows.RegistryKey, error)
 
 	// VersionFacts reads, outside a transaction, what the immutability and the
 	// acknowledged-retry rules need of a version (R-NPM-007 step 4, R-NPM-008). It

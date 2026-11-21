@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { SignatureBadgeState, SignatureEntry } from '../../api/signatures-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, OCI_FORMAT } from '../../api/testing/fakes-catalog';
-import { repositoryReport, sigstoreEntry } from '../../api/testing/fakes-signatures';
+import { issuedNpmEntry, repositoryReport, sigstoreEntry } from '../../api/testing/fakes-signatures';
 import { expectAccessible, renderScreen, text } from '../../testing/screen';
 import { SignatureBadge } from './signature-badge';
 import { SignatureReport, SignatureReportView } from './signature-report';
@@ -123,6 +123,17 @@ describe('The details of the signatures (R-SIG-035)', () => {
     expect(text(root.querySelector('[data-testid="signature-state"]')!)).toContain('No trust anchor knows this signer.');
   });
 
+  it('R-SIG-055 Quader\'s own npm signature reads as the registry\'s origin, never as a publisher\'s signature, and carries no badge', async () => {
+    const root = await report(repositoryReport({ repository: 'web/npm-local', signatures: [sigstoreEntry(), issuedNpmEntry()] }), 'npm');
+    expect(text(root.querySelector('[data-testid="signature-state"]')!)).toContain('Verified · internal');
+    const entries = [...root.querySelectorAll<HTMLElement>('[data-testid="signature-entry"]')];
+    const own = entries.find((e) => text(e).includes('Origin confirmed by registry'));
+    expect(own).toBeDefined();
+    expect(text(own!)).not.toContain('Publisher signature');
+    expect(own!.querySelector('[data-testid="signature-badge"]')).toBeNull();
+    expect(text(own!)).toContain('SHA256:Zq2bQuaderSigningKey0000000000000000000000');
+  });
+
   it('R-SIG-009 no signature names the kinds the format knows', async () => {
     const root = await report(repositoryReport({ state: 'none', signatures: [], origin: null }));
     expect(text(root.querySelector('[data-testid="signature-state"]')!)).toBe(
@@ -168,6 +179,7 @@ describe('The words of the signatures (R-SIG-009, R-SIG-010, R-SIG-035)', () => 
     expect(entryBadgeState(e({ state: 'no_key', trust: null }))).toBe('untrusted');
     expect(entryBadgeState(e({ state: 'invalid', trust: null }))).toBe('invalid');
     expect(entryBadgeState(e({ state: 'pending', trust: null }))).toBeNull();
+    expect(entryBadgeState(issuedNpmEntry())).toBeNull();
     expect(schemeWords(e({}))).toBe('Sigstore, keyless');
     expect(schemeWords(e({ identity: undefined, oidcIssuer: undefined }))).toBe('Sigstore, with a key');
   });

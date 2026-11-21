@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/internal/qname"
@@ -161,6 +162,37 @@ func TestR_SIG_034_VersionSignatures(t *testing.T) {
 		e := out.Repositories[0]
 		if e.State != "invalid" || len(e.Signatures) != 1 || e.Signatures[0].Platform == nil || *e.Signatures[0].Platform != "linux/amd64" || len(st.viewQueries[0].Subjects) != 2 {
 			t.Fatalf("%+v %+v", e, st.viewQueries)
+		}
+	})
+	t.Run("R-SIG-055 Quader's own registry signature is issued, names its identity and never decides the badge", func(t *testing.T) {
+		st, in, _ := sigFixture()
+		own := sigViewFor(9, [32]byte{0xdd}, signatures.RoleRegistry, signatures.StateValid, nil, 1)
+		own.Signature.SubjectName, own.Signature.KeyIDs, own.Signature.Signer = "ui@1.0.0", []string{"SHA256:quader"}, nil
+		own.Scheme, own.Attachments[0].Source = signatures.SchemeNPMRegistry, "issued"
+		own.IssuedBy = &signatures.IssuedBy{Identity: 3, Subject: "CN=Quader signing", Fingerprint: strings.Repeat("ab", 32), State: "current"}
+		st.views = append(st.views, own)
+		out, err := (&Server{}).versionSignatureReport(context.Background(), sv(st), in, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		local := out.Repositories[0]
+		var e *gen.SignatureEntry
+		for i := range local.Signatures {
+			if local.Signatures[i].Id == 9 {
+				e = &local.Signatures[i]
+			}
+		}
+		if e == nil || e.IssuedBy == nil || e.IssuedBy.Identity != 3 || e.IssuedBy.State != "current" || e.Source != "issued" ||
+			e.KeyId == nil || *e.KeyId != "SHA256:quader" || e.Trust != nil {
+			t.Fatalf("%+v", e)
+		}
+		if local.State != "verified_internal" {
+			t.Fatalf("Quader's signature changed the badge: %s", local.State)
+		}
+		for _, x := range local.Signatures {
+			if x.Id != 9 && x.IssuedBy != nil {
+				t.Errorf("a signature Quader did not make names an identity: %+v", x)
+			}
 		}
 	})
 	t.Run("R-SIG-034 a signature's texts are returned as they were read, without markup or escaping", func(t *testing.T) {

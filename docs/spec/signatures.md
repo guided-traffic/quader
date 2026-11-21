@@ -1683,10 +1683,10 @@ Acceptance criteria: none; the stages bring their own.
 
 ## Quader signs (stage 2)
 
-Status: specified; package 1 of 4 is built: the signing identity with its states, its chart, its API, events, metrics and alerts, and the
-frame of the job `signing` ([developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)); of package 4 the section **Signing
-identity** of the admin area (R-SIG-056, first bullet). npm's registry signatures, the attestations and the rest of the screens are not
-built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
+Status: specified; packages 1 and 2 of 4 are built: the signing identity with its states, its chart, its API, events, metrics and alerts,
+and the frame of the job `signing` (package 1), and npm's registry signatures of local versions with the local keys endpoint (package 2,
+[developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)); of package 4 the section **Signing identity** of the admin area
+(R-SIG-056, first bullet). The attestations and the rest of the screens are not built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
 dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden. Hier müssen wir uns aber noch über den Umfang und
 Ziele unterhalten, ich erwarte, dass du mich hier proaktiv berätst.") and decided its frame the same morning: Quader signs as a registry
 where a client checks it with one command, which is Debian (built) and npm ([Q-SIG-10](#q-sig-10--quader-signs-as-a-registry)); it issues
@@ -1853,7 +1853,7 @@ The owner's reading r8: through Helm, a Secret that cert-manager may issue; Helm
   then on.
 - `api` and `packages` read the public part from the database (the keys endpoint, the chain, the trusted root) and never the files.
 
-- **Built:** the worker's watcher ([job/watcher.go](../../internal/signing/job/watcher.go)) reads the three files at its start and every `reload_interval`, registers a passing pair (its key into the worker's holder) and records a refused one once per content in `signing_settings` (Q-SIG-148), which the API answers as `refused`; a worker that starts with no file named lets the identity of the files go (Q-SIG-145). What "signs an npm publish" shows is the npm package's; the test shows the identity current, rotated and refused.
+- **Built:** the worker's watcher ([job/watcher.go](../../internal/signing/job/watcher.go)) reads the three files at its start and every `reload_interval`, registers a passing pair (its key into the worker's holder) and records a refused one once per content in `signing_settings` (Q-SIG-148), which the API answers as `refused`; a worker that starts with no file named lets the identity of the files go (Q-SIG-145). The test shows the identity current, rotated and refused, and, since package 2, a publish to `npm-local` signed with the key of the files and verified against the keys of `npm-local`.
 
 Acceptance criteria:
 
@@ -1932,7 +1932,8 @@ Priority: **P1** · Covers: quader-only
 - **Which signatures a document serves changes** with a removal, a retirement and the first current identity after none: the job raises
   the revision of every npm package whose document changes (R-NPM-009), in batches of 1,000 packages.
 
-- **Built of this** (the identity's own states): the announce period, the switch by the job under the exclusive lock of every identity (`store.SwitchDue`), the shared hold of a signing transaction (`store.HoldCurrent`, refused once the identity is not current or has expired), the removal and the retirement with their events and journal entries, the keys document per state. The npm signatures' and the attestations' part (made again, served or not, the revision raise) is the later packages', which run it through the job's frame (R-SIG-049).
+- **Built of this** (the identity's own states): the announce period, the switch by the job under the exclusive lock of every identity (`store.SwitchDue`), the shared hold of a signing transaction (`store.HoldCurrent`, refused once the identity is not current or has expired), the removal and the retirement with their events and journal entries, the keys document per state. The attestations' part (made again) is package 3's.
+- **Built** (package 2 of stage 2, the npm half): the documents serve the signatures of the current and the previous identities while one is current (`signing.NPMServed`, the statement of the document, [Q-SIG-159](#q-sig-159--a-document-serves-a-signature-by-its-identitys-state-read-in-the-documents-statement)); the job compares that set with the one it stored at its last look in every run, also with signing off and with no identity current, and raises the revision and `time.modified` of every package whose versions carry a signature of an identity that joined or left it, in transactions of 1,000 packages ([Q-SIG-160](#q-sig-160--the-job-compares-what-the-documents-serve-in-every-run-and-raises-the-revisions-itself)); the versions of a retired identity get work of the reason `retired` at priority 2, and the signature made again replaces the retired one's attachment of the version ([Q-SIG-162](#q-sig-162--a-signature-made-again-after-a-retirement-replaces-the-retired-ones-attachment)). The integration test shows the rotation, the retirement and the removal end to end (`TestR_SIG_050_QuaderSignsTheVersionsOfLocalNpmRepositories`, its subtests named R-SIG-048).
 
 Acceptance criteria:
 
@@ -1982,7 +1983,8 @@ Only the worker holds and opens the key ([Q-SIG-56](#q-sig-56--only-the-worker-h
 - **No other role opens the key.** `api` and `packages` read public parts; the composition root wires the signer for the roles `worker`
   and `all` only.
 
-- **Built:** the frame ([job/job.go](../../internal/signing/job/job.go)): the table `signing_work`, `store.Enqueue` (in the commit's transaction, waking the job), the job `signing` on the queue `signing` with its task, the order by priority and time, the attempts with their back-off and the daily retry, `signing.failed`, the metrics, and `job.Kind` that a package registers ([Q-SIG-150](#q-sig-150--the-jobs-frame-kinds-the-packages-register-one-discovery-step-per-run-a-job-that-only-switches-without-a-kind)). No kind is registered yet: the commit hook's rows and the signatures are the npm and the attestation packages'. Only the roles worker and all build the holder and the job; `internal/archtest` holds the importers of `internal/signing/key` and `internal/signing/job` (`CheckSigningKey`).
+- **Built:** the frame ([job/job.go](../../internal/signing/job/job.go)): the table `signing_work`, `store.Enqueue` (in the commit's transaction, waking the job), the job `signing` on the queue `signing` with its task, the order by priority and time, the attempts with their back-off and the daily retry, `signing.failed`, the metrics, and `job.Kind` that a package registers ([Q-SIG-150](#q-sig-150--the-jobs-frame-kinds-the-packages-register-one-discovery-step-per-run-a-job-that-only-switches-without-a-kind)). Only the roles worker and all build the holder and the job; `internal/archtest` holds the importers of `internal/signing/key` and `internal/signing/job` (`CheckSigningKey`).
+- **Built** (package 2 of stage 2): the kind `npm` ([npmsign](../../internal/signing/npmsign/npmsign.go)): a publish to a local repository writes its row (reason `upload`, priority 0) in the commit's transaction through the npm data port, only while signing is on and an identity is current ([Q-SIG-158](#q-sig-158--a-publish-writes-its-work-only-while-signing-is-on-and-an-identity-is-current)); one operation signs the versions of a package that have due rows together and raises the package's revision once ([Q-SIG-157](#q-sig-157--one-operation-signs-the-due-versions-of-a-package-together)); discovery finds the tarballs of the live versions of local repositories without a served signature. The frame gained `Kind.Served`, called once per run whatever the identity's state (Q-SIG-160). Measured on the development machine: a publish's signature stood in the document 0.33 s after the publish's answer (the integration test asserts 5 s, so that a loaded runner does not fail it).
 
 Acceptance criteria:
 
@@ -2051,6 +2053,23 @@ What Quader does ([Q-SIG-58](#q-sig-58--npm-quader-signs-the-versions-of-local-r
   keys and signatures like any upstream's.
 - **What `npm audit signatures` then reports** for a project that installs `@acme/ui` of `npm-local` and `lodash` of npmjs through
   `npm-all`: "2 packages have verified registry signatures", exit 0.
+
+- **Built** (package 2 of stage 2, [developer/signatures.md](../developer/signatures.md#package-2-of-stage-2-built)): the signature
+  (`signing.SignNPM`, the entry `{"keyid", "sig"}`) stored through the signature store (`RecordIssued`: scheme `npm-registry`, role
+  `registry`, valid and never due, `identity_id` set, attached `issued` to the tarball); the full, the abbreviated and the version document
+  render `dist.signatures` from the stored signatures whose identity is listed, read in the statement that reads the document's rows, and
+  `document.RenderVersion` is 3; the keys endpoint of a local repository answers `signing.NPMKeys` over the replica's snapshot of the
+  identities, and a virtual repository adds Quader's keys once, for its first enabled local member, in member order. The format reads both
+  through its data port, the format contract is unchanged ([Q-SIG-156](#q-sig-156--the-npm-format-reads-quaders-keys-and-signatures-through-its-data-port)).
+  What deviates from the text above: a version whose identity is retired is signed again and the retired signature's attachment is removed
+  (Q-SIG-162); the client setup's tab `verify` of R-SIG-055 comes with the attestations ([Q-SIG-163](#q-sig-163--the-client-setups-tab-verify-comes-with-the-attestations)).
+  The end-to-end case runs against a remote (`npm-signed-remote`) and a virtual repository (`npm-signed`) of its own over `npm-local`, so
+  that no keys document another case stored of `npm-remote` stands in its way, and the npm test upstream announces, through its control
+  API, the key of registry.npmjs.org that signed the recorded left-pad. Run on 2026-11-21 on a kind cluster of the development machine, npm
+  12 printed "npm warn Fetching verification keys using TUF failed. Fetching directly from https://localhost:18943/api/npm/e2e/npm-signed/.",
+  "audited 2 packages in 1s" and "2 packages have verified registry signatures", exit 0. By npm's source, as read above, that fallback
+  follows only a TUF answer without a target for the registry, and any other failure ends the run: the client pod reached the public TUF
+  repository (the traffic itself was not captured). H-1184 stays for a pod without that route.
 
 Acceptance criteria:
 
@@ -2267,6 +2286,12 @@ Priority: **P1** · Covers: quader-only
   provenance (R-SIG-028) is unchanged.
 - **The Bastion** serves an attestation referrer like any manifest (R-SIG-033); the API route is not in its URL space.
 
+- **Built of this** (package 2 of stage 2): the source `issued` of `signature_attachments` (migration 00103), the store's `RecordIssued` and
+  `DetachRetiredIssued` ([store/issued.go](../../internal/signatures/store/issued.go)), npm's registry signature stored as above; the
+  commit hook's and the fill's batches never replace an `issued` attachment, and the trust job writes no row for a signature with
+  `identity_id` ([Q-SIG-161](#q-sig-161--npms-signatures-are-written-through-a-signature-store-of-their-own-whatever-signaturesenabled)
+  for the store npm's signatures are written through). The attestations, OCI's referrer and the API's route are package 3's.
+
 Acceptance criteria:
 
 - Integration (area `signing`, `TestR_SIG_054_…`, about 4 s, bytes): an image pushed to `docker-local` lists Quader's referrer in its
@@ -2300,7 +2325,7 @@ In `api/openapi.yaml` under the tag `signatures`:
   download of the trusted root and the cosign command of R-SIG-052, with the identity's first URI, the predicate type and, for a file, its
   bundle's download).
 
-- **Built:** the rows of the identity (GET, the key, the certificate, the import, the discard, the removal, the retirement, the trusted root and the chain; [signing_api.go](../../internal/api/v1/signing_api.go)). The attestation's route, the answers' `issued` signatures and the client setup's tab `verify` are the attestation and the npm packages'.
+- **Built:** the rows of the identity (GET, the key, the certificate, the import, the discard, the removal, the retirement, the trusted root and the chain; [signing_api.go](../../internal/api/v1/signing_api.go)). Package 2: the signatures answers of R-SIG-034 list npm's registry signature of a local version with `source: "issued"` and `issuedBy` (`identity`, `subject`, `fingerprint`, and `state`, the identity's state now, so that a screen can tell a retired identity's signature that is no longer served), with `keyId` set to npm's keyid ([signatures_views.go](../../internal/api/v1/signatures_views.go)). Until the second half of the screens (R-SIG-056) gives it its own line, a version's tab **Signatures** lists such an entry as "Origin confirmed by registry" with its key, never as a publisher's signature and without a badge of its own (`entryBadgeState` answers none for `issuedBy`, Q-SIG-1; [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts)); its sentence still reads that no trust anchor knows the signer. The attestation's route, `attestation` and `servedAs`, and the client setup's tab `verify` with `npm.verify.signatures` are the attestation package's (Q-SIG-163).
 
 Acceptance criteria:
 
@@ -2388,7 +2413,7 @@ The actor of the job's and the files' events is `system:signing`. No event carri
 | `QuaderSigningIdentityNotLoaded` | `max(quader_signing_identity_loaded) == 0 and on() count(quader_signing_identity_not_after_seconds{state="current"}) > 0` | 15m | warning |
 | `QuaderSigningBacklog` | `max(quader_signing_oldest_due_seconds{kind="npm"}) > 300` | 15m | warning |
 
-- **Built:** the seven events ([events_signing.go](../../internal/audit/events_signing.go)), the five metrics ([job/metrics.go](../../internal/signing/job/metrics.go); `quader_signing_operations_total` counts once a package registers a kind), the four alerts with their promtool tests.
+- **Built:** the seven events ([events_signing.go](../../internal/audit/events_signing.go)), the five metrics ([job/metrics.go](../../internal/signing/job/metrics.go)), the four alerts with their promtool tests. Package 2 registers the kind `npm`: `quader_signing_operations_total{kind="npm"}` counts one operation per row of work (one operation can sign several versions of a package, Q-SIG-157), `quader_signing_backlog` and `quader_signing_oldest_due_seconds` carry `kind="npm"`, and `QuaderSigningBacklog` watches it. No event is added: a signature of npm is not an audit event, and `signing.identity.retired` counts the identity's signatures as before.
 
 Acceptance criteria:
 
@@ -2430,6 +2455,8 @@ jobs:
 - **Built:** `signing.enabled`, `signing.identity.*`, `signing.concurrency`, `signing.max_attempts` and `jobs.workers.signing`
   ([config/signing.go](../../internal/config/signing.go)); the keys `signing.attestations.*` join with the attestations
   ([Q-SIG-152](#q-sig-152--the-identitys-migration-adds-the-column-of-the-issued-signatures-the-attestations-keys-come-with-the-attestations)).
+  npm's signing adds no key: `signing.enabled` decides it alone, whatever `signatures.enabled` of stage 1 says (Q-SIG-161), and with it
+  false a publish writes no work and the job takes none, while the stored signatures stay served.
 
 Acceptance criteria: unit (`internal/config`, under a second): the defaults; each refusal of the validation, with the key named.
 
@@ -2450,7 +2477,7 @@ Priority: **P1** · Covers: quader-only
 - **Replicas:** every replica reads the identities from a snapshot that the change area `signing_identities` refreshes within R-ARCH-018's
   bound, so every replica answers the same keys after that bound; the switch's lock is the one coordination (R-SIG-048, R-SIG-049).
 
-- **Built:** the three tables are `data` ([tables_signing.go](../../internal/meta/postgres/tables_signing.go)); the journal re-applies a removal and a retirement ([store/journal.go](../../internal/signing/store/journal.go)); every replica reads the identities from a snapshot that the change area `signing_identities` refreshes ([store/snapshot.go](../../internal/signing/store/snapshot.go)). Not shown at the integration tier: a full backup restored into a fresh installation; the test shows the sealed key opening under its row's id with the installation's key ring, which a restore keeps.
+- **Built:** the three tables are `data` ([tables_signing.go](../../internal/meta/postgres/tables_signing.go)); the journal re-applies a removal and a retirement ([store/journal.go](../../internal/signing/store/journal.go)); every replica reads the identities from a snapshot that the change area `signing_identities` refreshes ([store/snapshot.go](../../internal/signing/store/snapshot.go)). Not shown at the integration tier: a full backup restored into a fresh installation; the test shows the sealed key opening under its row's id with the installation's key ring, which a restore keeps. Package 2: npm's signatures are rows of stage 1's tables, which a backup holds as `data`, and the set of identities the documents serve is `signing_settings.served`; a removal or a retirement the journal re-applies after a restore changes that set, and the job's next run raises the revisions of the packages it concerns (Q-SIG-160), while discovery signs what the restored rows lack.
 
 Acceptance criteria: integration (area `signing`, `TestR_SIG_059_…`, about 3 s): a backup with an uploaded identity, restored into a fresh
 installation with the same key ring, keeps signing with it; a retirement recorded after the backup is re-applied by the journal.
@@ -2480,6 +2507,18 @@ about 0.15 s of test time in `internal/signing`, 0.6 s in `internal/signing/job`
 `signing` 11.6 s for its package with two tests (5.8 s the files, 4.4 s the upload, the rest the stack's start), shard `b`; the replay in
 the area `backup` 0.7 s, shard `c`. The integration tests of R-SIG-048's npm half, R-SIG-049's signing of a publish, R-SIG-050 to R-SIG-054
 and the end-to-end cases are the later packages'.
+
+Measured for package 2 (npm's signatures; 2026-11-21, the development machine at a load of about 10): unit, in the job's mode
+(`-race -covermode=atomic -coverpkg=./...`), under 0.1 s of test time for the new tests together (`internal/signing` 0.00 s, `internal/signing/job`
+0.00 s, `internal/formats/npm` 0.06 s, the API's subtest 0.00 s, the npm test upstream's control call a few milliseconds of
+`TestControlAPI`), in packages the unit run tests already, so no package's start is added; integration area `signing` 5.3 s for
+`TestR_SIG_050_QuaderSignsTheVersionsOfLocalNpmRepositories` (one stack for R-SIG-048's npm half, R-SIG-049 and R-SIG-050 instead of three),
+the area 16.9 s now, shard `b`; end to end 4.9 s for `TestNPMSignatures_R_SIG_050_…` beside the fixture and the scatter profile that the set
+`e2e (npm)` builds anyway, a package of a few hundred bytes and left-pad's recorded tarball, no new leg and no new client image (the npm test
+upstream gains a control call). The legs gain: the unit leg under 0.1 s, shard `b` of the integration about 5 s, `e2e (npm)` about 5 s. With
+25 formats: nothing more, because no other format signs as a registry in stage 2. Added after the rebase onto the gate per repository: the
+subtest of the same integration test that meets the gate with Quader's real row (0.13 s: two patches of the repository and one refused
+download) and one web unit case of the tab **Signatures** with the fake's issued entry (22 ms, in a spec file the web run starts anyway).
 
 What only a real client shows and is not tested: `cosign verify-blob-attestation` against a file's bundle (the same verifier library as
 the unit test), Kyverno's and other policy engines' verification in a cluster. Each is measured once by hand when the package that builds
@@ -3264,7 +3303,11 @@ Priority: **P1** · Covers: quader-only
   carries no decision of the gate: the decision follows the anchors and changes with them, so a signed copy would contradict the screens
   after the next change, as the trust state would (Q-SIG-61). Quader issues no verification summary
   ([Q-SIG-92](#q-sig-92--no-verification-summary-of-the-gates-decision)). Quader's own signatures never pass (R-SIG-062); its attestation
-  referrer is an attachment, which passes as every attachment does (R-SIG-063).
+  referrer is an attachment, which passes as every attachment does (R-SIG-063). npm's registry signature of a local version (built with
+  stage 2's package 2) is out of the gate's rows three times over: its role is `registry`, its subject is the SHA-256 of the signed message
+  and not the tarball's, and it carries `identity_id` (`Row.Issued`); the integration area `signing` shows the real row meet the gate: the
+  tarball Quader signed is refused as `missing` in a gated local repository while its document keeps the signature
+  (`TestR_SIG_050_QuaderSignsTheVersionsOfLocalNpmRepositories`, its subtest named R-SIG-062).
 - **Metadata documents list what the gate refuses** ([Q-SIG-89](#q-sig-89--metadata-documents-list-what-the-gate-refuses)): npm's package
   document, NuGet's registration and version lists, Ansible's version lists and OCI's tags list name the versions a gate refuses, as they name
   the versions the vulnerability block refuses ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015): a client that resolves a
@@ -5299,6 +5342,109 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** R-SIG-055.
 
+### Q-SIG-156 · The npm format reads Quader's keys and signatures through its data port
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Stage 2's second
+package; R-SIG-050 says what the documents and the keys endpoint serve and leaves open how the format, which runs no SQL (R-ARCH-008),
+learns it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The npm data port: `LocalDocument` and `LocalVersion` read each version's served signatures in the statement that reads the document's rows, and `RegistryKeys` answers Quader's keys, which the composition root takes from the replica's snapshot of the identities (chosen) | The data port is the format's own (`rows`, `internal/formatdata/npm`); it already reaches beyond npm's tables for the background fetch | The signatures belong to the snapshot of the revision the rendition is keyed by; the format contract stays as it is while another package changes it | The data port names a table of the signing tree in one statement |
+| (b) A service of the Host (`formats.SignatureVerdicts` gains the keys and the issued signatures) | | Every format could ask the same | A change of the frozen contract for one format; the signatures would be read in a second statement, outside the snapshot of the document |
+| (c) The format renders without signatures and a host hook adds them | | | The rendition cache and the validator would not cover them |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-050. Code: [formatdata/npm/read.go](../../internal/formatdata/npm/read.go),
+[handlers_signatures.go](../../internal/formats/npm/handlers_signatures.go), [wire_signing.go](../../internal/app/wire_signing.go) `npmSigningPort`.
+
+### Q-SIG-157 · One operation signs the due versions of a package together
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-SIG-050 raises a
+package's revision "once per package and job run"; the frame of Q-SIG-150 runs one row per operation.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The operation of a row locks the version's package, takes the package's other due rows that no other operation holds (`FOR UPDATE SKIP LOCKED`, at most 1,000 versions), signs every one that carries no served signature, and raises the revision once (chosen) | | Discovery after an installation's first identity raises a package of 500 versions once, not 500 times; no deadlock with an operation that waits for the package's lock, because a held row is skipped | `quader_signing_operations_total` counts operations, not versions |
+| (b) One version per operation, a revision per version | | Simplest | A revision, a rendition and a merge per version of a package |
+| (c) Sign every row first, raise the touched packages after the run | | One raise per package exactly | Between the signature's commit and the raise a replica renders new bytes under the old revision |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-049, R-SIG-050, R-SIG-057. Code: [npmsign.go](../../internal/signing/npmsign/npmsign.go) `Sign`.
+
+### Q-SIG-158 · A publish writes its work only while signing is on and an identity is current
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The publish's transaction writes the row (reason `upload`, priority 0) only while `signing.enabled` is true and an identity is current, in one statement (`SigningEnqueueWorkWhileCurrent`); otherwise discovery signs the version with the first identity (chosen) | | An installation that never signs keeps no rows of work; the first identity's backlog is discovery's, as R-SIG-049 says | A publish in the moment an identity becomes current waits for discovery, at most the task's ten minutes |
+| (b) Every publish writes a row | | No window | A row per publish for ever in an installation without an identity |
+| (c) No row; discovery alone | | Nothing in the publish's transaction | Ten minutes without a signature after every publish, against R-SIG-050's two seconds |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-049. Code: [store/work.go](../../internal/signing/store/work.go) `EnqueueWhileCurrent`.
+
+### Q-SIG-159 · A document serves a signature by its identity's state, read in the document's statement
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-SIG-045 says
+which identities' signatures are on the wire; R-SIG-048 raises the revisions when that changes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The statement that reads a document's rows joins each version's `issued` attachments to the signing identities and takes the scheme `npm-registry` of a current or previous identity while one is current (chosen) | | One snapshot: rows, revision and signatures agree; no write per signature on a change of the identities | Until the job raised the revisions (below), a replica that renders afresh serves the new set under the old revision ([H-1205](#h-1205--between-a-change-of-the-identities-and-the-jobs-next-run-two-renditions-share-a-validator)) |
+| (b) A served flag on each signature, written on every change of the identities | | The document reads a column | A million writes per removal; the flag and the states can disagree |
+| (c) The format filters by the keyids of its snapshot and keys the rendition by them | | No revision raise for the replica's own cache | A Bastion and a virtual repository's merge follow revisions, not keyids, and would keep the old document |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-045, R-SIG-048, R-SIG-050. Code: [npm_local.sql](../../internal/meta/postgres/queries/npm_local.sql)
+`NPMLocalDocument`, `NPMLocalVersion`; `signing.NPMServed`.
+
+### Q-SIG-160 · The job compares what the documents serve in every run and raises the revisions itself
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signing_settings.served` keeps per kind the identities whose signatures the documents served at the job's last look; every run compares it with `signing.NPMServed` of the identities, also with signing off and with no identity current, raises the packages whose versions carry a signature of an identity that joined or left the set, 1,000 per transaction, writes work for a retired identity's versions, then stores the set; the frame calls the kind's `Served` (chosen) | | A removal, a retirement, the first current identity after none, a switch and a restore's replay are one rule; a run cut short raises again, which costs a revision | A column more; the raise waits for the job, which every identity change wakes |
+| (b) The identity's writes raise the revisions in their own transaction | | No window | A removal in the administrator's request raises a million packages; the files' watcher and the journal's replay would each need it too |
+| (c) A queue of changes the identity's writes append | | Exact | Duplicates the comparison of (a) with more state |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-048, R-SIG-059. Code: [npmsign.go](../../internal/signing/npmsign/npmsign.go) `Served`,
+[job/job.go](../../internal/signing/job/job.go) `served`, migration 00103.
+
+### Q-SIG-161 · npm's signatures are written through a signature store of their own, whatever signatures.enabled
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Stage 1's store is
+built only while `signatures.enabled` is true (R-SIG-040).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The kind `npm` writes through a signature store of the runner alone (no bounds, no wake-up of stage 1's job); `signing.enabled` decides whether Quader signs (chosen) | | One switch per stage; an installation that does not check signatures still signs its packages | With stage 1 off, the signatures a retirement detached stay until stage 1's job runs again (rows of a few hundred bytes) |
+| (b) No npm signing while `signatures.enabled` is false | | | Two switches for one feature, against the owner's frame of stage 2 |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-054, R-SIG-058. Code: [wire_signing.go](../../internal/app/wire_signing.go) `npmSigningKind`.
+
+### Q-SIG-162 · A signature made again after a retirement replaces the retired one's attachment
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The operation that signs a version removes the version's `issued` attachments of a retired identity in its transaction (chosen) | | A version carries one served signature and the API lists what is served; the retired signature leaves the tables through stage 1's orphan removal | The API no longer shows that a retired identity once signed the version; `signing.identity.retired` keeps the count |
+| (b) Keep the retired identity's attachments | | History at the version | The signatures answer lists signatures that are never served again |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-048, R-SIG-050. Code: [store/issued.go](../../internal/signatures/store/issued.go) `DetachRetiredIssued`.
+
+### Q-SIG-163 · The client setup's tab Verify comes with the attestations
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-SIG-055 names one
+tab for `npm.verify.signatures` and for every client's attestation check.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The tab, the kit's new section and the API's filter by the identity are built once, by the attestation package, which adds `npm.verify.signatures` beside every client's `<client>.verify.attestation` (chosen) | | One mechanism built once; the format contract's kit is not changed by two packages in parallel | Until the attestations land, the client setup does not show `npm audit signatures` |
+| (b) Build the tab here for npm alone | | npm's line sooner | The section, the kit's check 8 and the filter built twice, by two builders at once |
+| (c) No snippet for npm | | | npm's one command is what R-SIG-050 is for |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-050, R-SIG-055.
+
 ### Q-SIG-170 · The section's forms are dialogs; the request stands in the section
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The first half of
@@ -5392,20 +5538,23 @@ records those about a client's result.
 ### H-1176 · Through a virtual npm repository, `npm audit signatures` reports local packages as missing a registry signature
 
 Component: the keys endpoint of a virtual npm repository (R-SIG-028, Q-SIG-34). Subject: a project whose virtual npm repository lists a local
-repository and a remote of a registry with keys (npmjs). Live from stage 1 until stage 2 is built, and after that in an installation without a
-signing identity. The union of the members' keys makes npm treat the virtual repository as a registry with keys, and a package of the local
-member carries no registry signature without stage 2's signing, so `npm audit signatures` lists it as missing and exits 1; upstream packages
-verify. What makes it real: a pipeline that runs `npm audit signatures` against such a repository. Stage 2 closes it for an installation with a
-signing identity: Quader signs every local version and its keys join the union (R-SIG-050); what remains of it there is the window of
+repository and a remote of a registry with keys (npmjs). Live in an installation without a signing identity, and in one whose identity is
+removed or whose `signing.enabled` is false while previous signatures are not served. The union of the members' keys makes npm treat the
+virtual repository as a registry with keys, and a package of the local member carries no registry signature without stage 2's signing, so
+`npm audit signatures` lists it as missing and exits 1; upstream packages verify. What makes it real: a pipeline that runs `npm audit
+signatures` against such a repository. Closed by stage 2's package 2 for an installation with a current signing identity: Quader signs every
+local version and its keys join the union (R-SIG-050, built); what remains of it there is the window of
 [H-1183](#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it).
 
 ### H-1183 · `npm audit signatures` reports a local version as missing until Quader has signed it
 
 Component: the job `signing` (R-SIG-049, R-SIG-050, Q-SIG-56, Q-SIG-59). Subject: pipelines that run `npm audit signatures` against a local or
-virtual npm repository. Live from stage 2, in three windows: about a second after a publish, before the job has signed it; the minutes of the
-backlog after an installation's first identity, while discovery signs what was published before; and after an administrator retires an
-identity, until the job has signed its versions again. In each, the registry offers keys and the version carries no signature, so npm lists
-it as missing and exits 1. What makes it real: a pipeline that publishes and audits within a second, or an audit during the backlog.
+virtual npm repository. Live since stage 2's package 2, in four windows: a fraction of a second after a publish, before the job has signed it
+(0.33 s measured on an idle development machine, R-SIG-049); the minutes of the backlog after an installation's first identity, while
+discovery signs what was published before; up to the task's ten minutes for a version published in the moment the first identity became
+current (Q-SIG-158); and after an administrator retires an identity, until the job has signed its versions again. In each, the registry offers
+keys and the version carries no signature, so npm lists it as missing and exits 1. What makes it real: a pipeline that publishes and audits
+within a second, or an audit during the backlog.
 
 ### H-1184 · `npm audit signatures` needs the public Sigstore TUF repository before it asks Quader
 
@@ -5430,6 +5579,26 @@ policy-controller in its bundle mode, which turns the log off only with a timest
 every verifier that insists on a log or a timestamp. Live from stage 2. Such a verifier refuses every attestation of Quader's. cosign with
 `--insecure-ignore-tlog` and `--insecure-ignore-sct`, and Kyverno's documented options, are the ways that work. What makes it real: a cluster
 that runs that engine.
+
+### H-1204 · After a retirement, a cached document carries a signature whose key the keys endpoint no longer lists
+
+Component: the retirement of R-SIG-048 and the caches of a package document outside the replica (a Bastion, a remote of another registry in
+front of the repository, npm's own cache of a packument). Subject: clients that run `npm audit signatures` through such a cache in the
+minutes after an administrator retires an identity. Live since stage 2's package 2. The keys endpoint drops the retired key at once and the
+job raises the revisions of the documents that carried its signatures (Q-SIG-160), but a cache keeps the old document until it revalidates,
+and npm aborts the whole run when a signature names a keyid the keys answer lacks (R-SIG-050); the keys document itself may be cached too, in
+which case the old signature still verifies. A retirement is for a key believed taken, so withdrawing the key at once is the point; what
+makes it real is a Bastion or a chained registry that serves the npm document from its cache while the retirement is minutes old.
+
+### H-1205 · Between a change of the identities and the job's next run, two renditions share a validator
+
+Component: the documents of a local npm repository (Q-SIG-159, Q-SIG-160). Subject: clients of a local or virtual npm repository in the
+seconds after a removal, a retirement or the first current identity after none. Live since stage 2's package 2. A document renders the
+signatures of the listed identities as its statement reads them, and the revision moves only when the job, which the change wakes, has
+compared the served set; meanwhile a replica that renders the package afresh serves the new set under the old revision while another
+replica's cached rendition keeps the old one, so a conditional request can be answered `304` for bytes that differ in `dist.signatures`. It
+ends with the raise, at most one run of the job after the change. What makes it real: a client that revalidates a document during that run
+and keeps it until its next change.
 
 ### H-1199 · A client that resolves a range picks a version the gate refuses
 

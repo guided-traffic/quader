@@ -163,7 +163,7 @@ flowchart TD
 | What is cached? | The identity form; the gzip form is made from it once. Each entry starts with the 8 bytes of `time.modified`, so `Last-Modified` needs no query |
 | Why is `If-Modified-Since` ignored? | A date can validate bytes that differ (R-NPM-013); the handler never reads it |
 | What does `?write=true` do? | Reads the rows in the request, renders the full document with its `_rev`, never caches it, no ETag, `Cache-Control: no-store` |
-| What is in the versions? | The stored manifest with `dist.tarball` added, `deprecated` from the column, no `readme`; SemVer order (Q-NPM-31) |
+| What is in the versions? | The stored manifest with `dist.tarball` added, `dist.signatures` from Quader's served registry signatures (none for a version without one, signatures.md R-SIG-050), `deprecated` from the column, no `readme`; SemVer order (Q-NPM-31) |
 
 [document](../../internal/formats/npm/document/): `FullDocument`, `AbbreviatedDocument`, `VersionDocument` (one version, exactly the entry of the full document), `Negotiate`, `Inputs.ETag`, `IfNoneMatch`,
 `AcceptsGzip`, `Gzip`. Rendering 1,000 versions takes about 21 ms (`BenchmarkR_NPM_010_RenderThousandVersions`); over the integration stack a miss takes 40 to 60 ms and a hit 3 ms.
@@ -290,16 +290,21 @@ against [test/npmstub](../../test/npmstub/) in the test process (`remote_env_tes
 | What | Where |
 |---|---|
 | The routes `npm.keys.get` (`-/npm/v1/keys`) and `npm.attestations.get` (`-/npm/v1/attestations/<name>@<version>`), `Metadata` of every class; no longer deferred endpoints | [routes.go](../../internal/formats/npm/routes.go), [handlers_signatures.go](../../internal/formats/npm/handlers_signatures.go) |
-| Keys: a remote's upstream document through the engine (404 is no keys), a local repository none, a virtual one the union by `keyid` of its remote members | `handleKeys`, `remoteKeys`, `unionKeys` |
+| Keys: a remote's upstream document through the engine (404 is no keys); a local repository Quader's keys from the data port (`RegistryKeys`, none while no signing identity is current, R-SIG-050); a virtual one the union by `keyid` in member order of its remote members' and, once for its first enabled local member, Quader's | `handleKeys`, `remoteKeys`, `localKeys`, `virtualKeys`, `unionKeys` |
+| Quader's registry signatures of a local version: `dist.signatures` of the full, the abbreviated and the version document, from `rows.LocalVersion.Signatures` (the JSON array the document's statement read, R-SIG-050, Q-SIG-159); `document.RenderVersion` 3 | [document/document.go](../../internal/formats/npm/document/document.go) `prepare` |
+| The work of a publish: `rows.PublishInput.ItemID` names the tarball's item, and the data port's `Publish` hands it to `RegistrySigning.Published` in the commit's transaction (R-SIG-049) | [hooks.go](../../internal/formats/npm/hooks.go) `commitVersion`, [formatdata/npm/store.go](../../internal/formatdata/npm/store.go) |
 | Attestations: a remote's upstream document through the engine (the canonical path is the endpoint's, Q-SIG-51), a local version's bundle when `Host.Signatures().PublicProvenance` vouches for it, a virtual repository's first member in resolution order | `handleAttestations`, `localAttestations`, [virtual.go](../../internal/formats/npm/virtual.go) `LocalDocument` |
 | The remote adapter stores both documents, checked and recorded in no row | [remote.go](../../internal/formats/npm/remote.go) `UpstreamRequest`, `PrepareFill`, `OnFill`, `Rewrite` |
-| `dist.attestations.url` onto the serving registry; `document.RenderVersion` 2 | [remote/rewrite.go](../../internal/formats/npm/remote/rewrite.go) `attestationsAt` |
+| `dist.attestations.url` onto the serving registry | [remote/rewrite.go](../../internal/formats/npm/remote/rewrite.go) `attestationsAt` |
 | The background fetch: a fill of a package document queues `keys` (a refresh, once a day); a remote tarball's fill queues `<name>@<version>`, whose job asks for the attestations only when the stored entry names them | [remote.go](../../internal/formats/npm/remote.go) `OnFill`, [hooks.go](../../internal/formats/npm/hooks.go) `commitFill`, `FetchSignatures` |
 
-A local document names no `dist.attestations` in stage 1 (Q-SIG-103). Tests: unit
-[handlers_signatures_test.go](../../internal/formats/npm/handlers_signatures_test.go), the kit's content cases of both routes; integration
-`npm` [signatures_test.go](../../test/integration/npm/signatures_test.go) with the stub's keys and attestations
-([test/npmstub/signatures.go](../../test/npmstub/signatures.go)).
+A local document names no `dist.attestations` (Q-SIG-103; Quader's receipt attestation is never served there, Q-SIG-60). The signing itself,
+the revision raise when the served identities change and discovery are the job `signing`'s ([signatures.md](signatures.md#package-2-of-stage-2-built)).
+Tests: unit [handlers_signatures_test.go](../../internal/formats/npm/handlers_signatures_test.go) and
+[signing_test.go](../../internal/formats/npm/signing_test.go) (the keys of a local and a virtual repository, `dist.signatures` in every
+document), the kit's content cases of both routes; integration `npm` [signatures_test.go](../../test/integration/npm/signatures_test.go) with
+the stub's keys and attestations ([test/npmstub/signatures.go](../../test/npmstub/signatures.go)) and `signing`
+[npm_test.go](../../test/integration/signing/npm_test.go); end to end [npm_signing_test.go](../../test/e2e/npm_signing_test.go).
 
 ## Security audit
 
@@ -399,10 +404,11 @@ complete tag map.
 |---|---|
 | `VersionFacts` | outside a transaction: live or tombstoned, integrity, tag, publisher, age on PostgreSQL's clock |
 | `Tags` | the tags of a package under its row lock |
-| `Publish` | tombstone check, the npm row (`ON CONFLICT DO NOTHING`, then locked; no row of its own means the unique `(repo_id, name_fold)` refused a look-alike: 400), the version row, the tags, `modified_at = greatest(modified_at + 1 ms, clock)`, `npm.publish` |
+| `Publish` | tombstone check, the npm row (`ON CONFLICT DO NOTHING`, then locked; no row of its own means the unique `(repo_id, name_fold)` refused a look-alike: 400), the version row, the tags, `modified_at = greatest(modified_at + 1 ms, clock)`, `npm.publish`, and the work of Quader's registry signature of the tarball (`Options.Signing.Published`) |
 | `RecordRetry`, `RecordMismatch` | the audit event of an acknowledged retry; the asynchronous mismatch event |
 | `SetTag`, `DeleteTag`, `Tombstone` | stored tags and `npm.dist_tag.*`; the tombstone with the integrity of the version row, the tags, `npm.unpublish` with its journal entry (`repositoryId`, `package`, `version`, `integrity`, `actorId`) |
-| `LocalDocument`, `LocalVersion` | one statement each (`NPMLocalDocument`, `NPMLocalVersion`): `rev_seq`, `created_at`, `modified_at`, the tags, the versions that are neither trashed nor tombstoned with manifest, deprecation and publish time, the README of the version `latest` points to |
+| `LocalDocument`, `LocalVersion` | one statement each (`NPMLocalDocument`, `NPMLocalVersion`): `rev_seq`, `created_at`, `modified_at`, the tags, the versions that are neither trashed nor tombstoned with manifest, deprecation, publish time and Quader's served registry signatures of the tarball (signatures.md R-SIG-050), the README of the version `latest` points to |
+| `RegistryKeys` | Quader's keys of a local repository through `Options.Signing` (the composition root's `npmSigningPort` over the snapshot of the identities); none without it |
 | `DistTags` | the tags with their revision; found only when the document holds a version |
 | `LiveVersions` | under the row lock: the versions the document holds, in publish order |
 | `Tombstoned` | one lookup, for `ServeCheck` when the item lookup did not read the tombstone with the item (R-ARCH-027) |

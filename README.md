@@ -2397,12 +2397,13 @@ values (`identity.*`, which the chart sets from `signing.identity` and mounts in
 the admin area, where an administrator creates a key and uploads the certificate the CA issued for its request (R-SIG-047). The loader refuses,
 naming the key, `cert_file` without `key_file` or the reverse, `ca_file` without them, a path that is not clean and absolute, and a value out of
 its range. Only the roles `worker` and `all` read the three files; the private key stays in the worker's memory and is never stored. Without
-an identity Quader signs nothing. npm's registry signatures and the receipt attestations that use the identity are not built yet; until
-they are, the job `signing` switches identities and signs nothing.
+an identity Quader signs nothing. With one, the job `signing` signs every version of a local npm repository right after its publish (and,
+by its discovery, what was published before), and the local keys endpoint `-/npm/v1/keys` lists the identity's key, so that `npm audit
+signatures` verifies the packages of local and virtual repositories (R-SIG-050). The receipt attestations are not built yet.
 
 ```yaml
 signing:
-  enabled: true                         # default; false: Quader signs nothing, also with an identity; the identities stay manageable
+  enabled: true                         # default; false: Quader signs nothing, also with an identity; the identities stay manageable and what was signed stays served
   identity:
     cert_file: ""                       # default: the identity comes from the admin area; the chart sets /var/run/secrets/quader/signing/tls.crt
     key_file: ""                        # default; the chart sets /var/run/secrets/quader/signing/tls.key (ECDSA P-256, unencrypted PKCS#8 or SEC 1)

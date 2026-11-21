@@ -1493,6 +1493,7 @@ type SigningSetting struct {
 	FailedRetriedAt    pgtype.Timestamptz
 	FailedReported     json.RawMessage
 	Discovery          json.RawMessage
+	Served             json.RawMessage
 }
 
 type SigningWork struct {

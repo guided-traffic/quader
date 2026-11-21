@@ -12013,8 +12013,11 @@ export interface components {
         SignatureAttachment: {
             /** @description The repository `<project>/<key>` that holds the attachment. */
             repository: string;
-            /** @enum {string} */
-            source: "referrer" | "referrers_tag" | "cosign_tag" | "index_entry" | "document" | "embedded" | "sibling" | "release" | "upload";
+            /**
+             * @description How the signature reaches its subject; `issued` is a signature this installation made with its signing identity (R-SIG-054).
+             * @enum {string}
+             */
+            source: "referrer" | "referrers_tag" | "cosign_tag" | "index_entry" | "document" | "embedded" | "sibling" | "release" | "upload" | "issued";
             /** @description The item path of the original, or `path#pointer` in a document. */
             location: string;
             /** @description The package or image name the attachment is under. */
@@ -12122,6 +12125,28 @@ export interface components {
             size: number;
             /** @description The relative URL of the original (`/api/v1/signatures/objects/{sha256}`). */
             original: string;
+            issuedBy?: components["schemas"]["SignatureIssuedBy"];
+        };
+        /**
+         * @description The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
+         *     made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
+         *     (Q-SIG-1); its trust is not computed (R-SIG-054).
+         */
+        SignatureIssuedBy: {
+            /**
+             * Format: int64
+             * @description The id of the identity (`GET /api/v1/signing/identity`).
+             */
+            identity: number;
+            /** @description The subject of the identity's certificate. */
+            subject: string;
+            /** @description The SHA-256 of the identity's certificate, lower-case hex. */
+            fingerprint: string;
+            /**
+             * @description The identity's state now; a `retired` identity's signatures are no longer served (R-SIG-048).
+             * @enum {string}
+             */
+            state: "announced" | "current" | "previous" | "retired";
         };
         /** @description A release whose signed index names a Debian package (R-SIG-030). */
         SignatureCovering: {

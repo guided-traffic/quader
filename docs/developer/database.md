@@ -712,6 +712,18 @@ R-SIG-073):
 The statements are in [signature_gate.sql](../../internal/meta/postgres/queries/signature_gate.sql) and the OCI data port's `OCIGateFacts`
 ([oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql)). The number 00102 follows 00101_signing_identity.
 
+## npm's registry signatures (00103)
+
+[00103_npm_registry_signatures](../../internal/meta/postgres/migrations/00103_npm_registry_signatures.sql) is an expand step of package 2 of
+the signatures' stage 2 ([signatures.md](signatures.md#package-2-of-stage-2-built), [spec](../spec/signatures.md) R-SIG-048 to R-SIG-050,
+R-SIG-054): the CHECK of `signature_attachments.source` gains `issued`, the attachment of a signature Quader made with its signing identity,
+which the job signing alone writes and removes (stage 1's `SignatureReplaceAttachments` leaves it alone); and `signing_settings.served`
+(jsonb, per kind the ids of the identities whose signatures the documents served at the job's last look, Q-SIG-160). No new table, no
+column that references `repositories`, no revision column. The statements of the kind `npm` are in
+[signing_npm.sql](../../internal/meta/postgres/queries/signing_npm.sql); the documents read the served signatures in
+[npm_local.sql](../../internal/meta/postgres/queries/npm_local.sql) `NPMLocalDocument` and `NPMLocalVersion`. The number 00103 follows
+00102_signature_gate.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

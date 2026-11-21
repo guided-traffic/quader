@@ -166,13 +166,19 @@ publish is decided by the identity mappings.
 - **Local repositories** store the `.sigstore` attachment of a publish (at most 256 KiB) as a file of the version and do not interpret it
   (R-NPM-007 step 3). It is served as a stored file through `/files/`, with the response headers of every served file
   ([file-transfer.md](file-transfer.md#content-isolation-r-arch-007)). The stored manifest carries no `dist.signatures` and no
-  `dist.attestations`, and `_npmUser` names the publishing principal (above).
+  `dist.attestations`, and `_npmUser` names the publishing principal (above). A client's own `dist.signatures` is dropped at the publish;
+  the documents render only Quader's own registry signature of the version, made by the job `signing` in the worker with the
+  installation's signing identity ([signatures.md](../spec/signatures.md) R-SIG-050; the key and who can use it:
+  [artifact-signatures.md](artifact-signatures.md)).
 - **Remote repositories** pass `dist.signatures`, `dist.attestations` with its `url`, `_npmUser` with `trustedPublisher` and `approver`,
   `deprecated` and every other member except `dist.tarball` through unchanged ([remote/rewrite.go](../../internal/formats/npm/remote/rewrite.go)
   `Entry`, [R-NPM-027](../spec/formats/npm.md#r-npm-027--signatures-attestations-and-publisher-fields)). Quader does not check any of
   them cryptographically.
-- Quader serves no signing keys and no attestations: `GET -/npm/v1/keys` and `GET -/npm/v1/attestations/…` answer 404 (R-NPM-043), so
-  `npm audit signatures` against Quader verifies nothing (H-32).
+- The keys endpoint (`GET -/npm/v1/keys`) answers a remote's upstream keys, a local repository's Quader's own keys while a signing
+  identity is current (none otherwise), and a virtual repository the union by keyid; the attestations endpoint a remote's upstream document
+  and a local version's provenance only when it verified against the public Sigstore ([signatures.md](../spec/signatures.md) R-SIG-028,
+  R-SIG-050). A key in a virtual repository's union vouches for nothing but the packages it signed: npm checks each signature against the
+  key its keyid names, so a remote's upstream key cannot make a local package verify, nor Quader's key an upstream's (H-32).
 
 ## What an upstream registry can make an npm remote store and serve
 
@@ -274,7 +280,7 @@ is on [backup-and-restore.md](backup-and-restore.md#the-revocation-journal).
 ## What this does not cover
 
 - [H-31](../spec/formats/npm.md#h-31--trusted-publishing-widens-the-set-of-credentials-that-can-publish): trusted publishing widens the set of credentials that can publish; dormant while the exchange of R-NPM-022 is not built.
-- [H-32](../spec/formats/npm.md#h-32--locally-published-npm-packages-carry-no-registry-signature): locally published packages carry no registry signature; until [signatures.md](../spec/signatures.md) R-SIG-028 is built, upstream signatures and provenance cannot be verified through Quader either.
+- [H-32](../spec/formats/npm.md#h-32--locally-published-npm-packages-carry-no-registry-signature): locally published packages carry no registry signature in an installation without a signing identity; with one, only in the moments before the job signs a version ([signatures.md](../spec/signatures.md) H-1183).
 - [H-33](../spec/formats/npm.md#h-33--takedown-delay-and-earlier-downloads): a takedown takes effect after the metadata period, and earlier downloads stay.
 - [H-34](../spec/formats/npm.md#h-34--audit-forwarding-discloses-the-dependency-set): audit forwarding discloses the dependency set.
 - [H-51](../spec/formats/npm.md#h-51--a-restore-reverts-npm-metadata-changes-made-after-the-backups-snapshot): a restore reverts npm metadata changes made after the backup's snapshot.

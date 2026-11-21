@@ -1308,6 +1308,7 @@ test/e2e/clients/
 | `TestNPMUpstream` | E2.4, E2.5 | an install on a warm cache with the upstream down and the metadata expired; the negative cache; a claimed namespace never requested from the upstream; the shadowing check of R-REPO-048 with a `deploy` holder, a `manage` holder and the upstream down |
 | `TestNPMEndpoint` | E2.12 | every row lists and installs only the exposed versions of `@acme<run>/sdk` through the endpoint `customers` with a bound token, the hidden version is a 404, tarball URLs and bodies name only the endpoint, a narrowed rule invalidates the ETag on every replica, an uncached remote version is a 404 with no upstream request and the same install through `default` fills the cache |
 | `TestNPMProjectPartner` | R-AUTHZ-026, R-AUTH-020 | a project service account with npm ([The project tests](#the-project-tests)): publish into the project's local repository, `npm` and `pnpm` installs through the project's virtual repository (the local member's package and one from the remote member), a package outside the project is `E404`, the revoked token is a `401` |
+| `TestNPMSignatures_R_SIG_050_…` | R-SIG-050 | a signing identity imported by the test (and removed at its end), the counting upstream announcing registry.npmjs.org's key of left-pad's recorded signatures (`POST /-/stub/keys`), a remote and a virtual repository of the case's own over `npm-local`: npm 12 publishes through the virtual repository, the document carries Quader's signature, a project installs the package and left-pad, and `npm audit signatures` exits 0 with "2 packages have verified registry signatures"; npm reads the keys from the public Sigstore TUF repository first, so the client pod reaches it ([H-1184](../spec/signatures.md#h-1184--npm-audit-signatures-needs-the-public-sigstore-tuf-repository-before-it-asks-quader)) |
 | `TestNPMClosing` | E2.1, E2.2, R-NPM-045 | closing run only: the matrix and the cold install with Valkey stopped (every replica ready and degraded), and a read-only subset against `https://registry.npmjs.org` for every row |
 
 ### The matrix and what is not applicable
@@ -2079,6 +2080,7 @@ Control requests are not counted.
 | `POST /-/stub/drop`, `POST /-/stub/restore` | `{"name","version"}` |
 | `POST /-/stub/change` | `{"name","deleted"}`: a change of the replication feed for the package; `deleted` removes the package |
 | `GET /-/stub/replication` | `{"update_seq","requests":[{host, method, path, query, auth}]}`: what the replication host received, oldest first; `auth` is the credential scheme, so anything but `none` means an `Authorization` header arrived |
+| `POST /-/stub/keys` | a keys document `{"keys":[…]}` the registry answers at `/-/npm/v1/keys`; `null` or no body answers 404 again, as a registry without keys does. `TestNPMSignatures_R_SIG_050_…` announces the key of registry.npmjs.org that signed the recorded left-pad's versions |
 
 ### The corpus
 

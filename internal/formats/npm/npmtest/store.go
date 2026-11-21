@@ -63,6 +63,10 @@ type Store struct {
 
 	// Fetches are the targets of the background fetch of signatures the format queued (R-SIG-026), "+" before a refresh.
 	Fetches []string
+	// Keys are the keys of a local repository RegistryKeys answers (signatures.md R-SIG-050); nil answers none.
+	Keys []rows.RegistryKey
+	// signatures are the dist.signatures of a version a test set (SetSignatures), by repo/name/version.
+	signatures map[string][]byte
 
 	// Published, Retries, Mismatches and TagChanges log what was written, in order.
 	Published   []rows.PublishInput
@@ -254,7 +258,10 @@ func (s *Store) LocalDocument(_ context.Context, repo int64, name string) (rows.
 		if _, gone := s.tombstones[key(repo, name, v.version)]; gone {
 			continue
 		}
-		out.Versions = append(out.Versions, rows.LocalVersion{Version: v.version, Manifest: v.manifest, Deprecated: v.deprecated, PublishedAt: v.publishedAt})
+		out.Versions = append(out.Versions, rows.LocalVersion{
+			Version: v.version, Manifest: v.manifest, Deprecated: v.deprecated, PublishedAt: v.publishedAt,
+			Signatures: s.signatures[key(repo, name, v.version)],
+		})
 		if v.version == p.tags["latest"] {
 			out.Readme, out.ReadmeFilename = v.readme, v.readmeFile
 		}
@@ -363,4 +370,22 @@ func (s *Store) EnqueueSignatureFetch(_ context.Context, _ formats.Tx, _ int64, 
 	}
 	s.Fetches = append(s.Fetches, target)
 	return nil
+}
+
+// RegistryKeys answers Keys, none when unset (signatures.md R-SIG-050).
+func (s *Store) RegistryKeys(context.Context) ([]rows.RegistryKey, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]rows.RegistryKey{}, s.Keys...), nil
+}
+
+// SetSignatures gives a version the dist.signatures array the documents render, as the job signing's rows would (R-SIG-050); nil
+// removes them.
+func (s *Store) SetSignatures(repo int64, name, version string, sigs []byte) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.signatures == nil {
+		s.signatures = map[string][]byte{}
+	}
+	s.signatures[key(repo, name, version)] = sigs
 }

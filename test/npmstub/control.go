@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 )
 
@@ -23,6 +24,7 @@ import (
 //	POST /-/stub/restore            {"name","version"}: list it again
 //	POST /-/stub/change             {"name","deleted"}: add a change to the replication feed; deleted removes the package
 //	GET  /-/stub/replication        {"update_seq","requests":[ReplicationRequest]}: what the replication host received
+//	POST /-/stub/keys               a keys document the registry answers at /-/npm/v1/keys (SetKeys); null or no body: 404 again
 const maxControlBody = 1 << 20
 
 type versionRequest struct {
@@ -114,6 +116,24 @@ func (s *Server) serveControl(w http.ResponseWriter, r *http.Request) {
 		}{s.UpdateSeq(), s.Replications()})
 	case "POST /-/stub/restore":
 		s.controlVersion(w, r, func(v versionRequest) error { return s.Restore(v.Name, v.Version) })
+	case "POST /-/stub/keys":
+		var d struct {
+			Keys []json.RawMessage `json:"keys"`
+		}
+		raw, err := io.ReadAll(r.Body)
+		switch {
+		case err != nil:
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		case len(raw) == 0 || string(raw) == "null":
+			s.SetKeys(nil)
+		case json.Unmarshal(raw, &d) != nil || d.Keys == nil:
+			writeError(w, http.StatusBadRequest, `the body is no keys document {"keys": [...]}`)
+			return
+		default:
+			s.SetKeys(raw)
+		}
+		w.WriteHeader(http.StatusNoContent)
 	default:
 		writeError(w, http.StatusNotFound, "not found")
 	}

@@ -88,7 +88,10 @@ RETURNING integrity;
 -- when it is neither trashed nor tombstoned: a version a restore's replay withheld is
 -- stored and tombstoned (R-NPM-047). The README is read only of the version the latest
 -- tag points to. A package whose versions are all gone yields one row with an empty
--- version; a package without an npm row yields none.
+-- version; a package without an npm row yields none. signatures is the JSON array of
+-- Quader's registry signatures of the version's tarball whose identity is listed: current
+-- or previous while some identity is current (signatures.md R-SIG-045, R-SIG-050); '' for
+-- none.
 SELECT p.id AS package_id,
        p.rev_seq,
        p.created_at,
@@ -99,19 +102,27 @@ SELECT p.id AS package_id,
        COALESCE(nv.deprecated, '')::text AS deprecated,
        COALESCE(nv.published_at, p.created_at)::timestamptz AS published_at,
        CASE WHEN pv.version = n.dist_tags ->> 'latest' THEN COALESCE(nv.readme, '') ELSE '' END::text AS readme,
-       CASE WHEN pv.version = n.dist_tags ->> 'latest' THEN COALESCE(nv.readme_filename, '') ELSE '' END::text AS readme_filename
+       CASE WHEN pv.version = n.dist_tags ->> 'latest' THEN COALESCE(nv.readme_filename, '') ELSE '' END::text AS readme_filename,
+       COALESCE(sg.entries, '')::text AS signatures
   FROM packages p
   JOIN npm_packages n ON n.package_id = p.id
   LEFT JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
         AND NOT EXISTS (SELECT 1 FROM npm_tombstones t WHERE t.repo_id = p.repo_id AND t.name = p.name AND t.version = pv.version)
   LEFT JOIN npm_versions nv ON nv.version_id = pv.id
+  LEFT JOIN LATERAL (SELECT '[' || string_agg(convert_from(o.raw, 'UTF8'), ',' ORDER BY s.id) || ']' AS entries
+                       FROM signature_attachments a
+                       JOIN signatures s ON s.id = a.signature_id
+                       JOIN signature_objects o ON o.sha256 = s.object_sha256 AND o.scheme = 'npm-registry' AND o.raw IS NOT NULL
+                       JOIN signing_identities si ON si.id = s.identity_id AND si.state IN ('current', 'previous')
+                      WHERE a.item_id = pv.lead_item_id AND a.source = 'issued'
+                        AND EXISTS (SELECT 1 FROM signing_identities c WHERE c.state = 'current')) AS sg ON true
  WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(name)::text
  ORDER BY pv.id;
 
 -- name: NPMLocalVersion :many
 -- One version of a document, named by its number or by a dist-tag (R-NPM-014), with the
--- tags and the revision of the same snapshot. No row: the package or the version is not
--- in the document.
+-- tags and the revision of the same snapshot and Quader's registry signatures as the
+-- document reads them. No row: the package or the version is not in the document.
 SELECT p.id AS package_id,
        p.rev_seq,
        p.created_at,
@@ -120,11 +131,19 @@ SELECT p.id AS package_id,
        pv.version,
        nv.manifest::text AS manifest,
        COALESCE(nv.deprecated, '')::text AS deprecated,
-       nv.published_at
+       nv.published_at,
+       COALESCE(sg.entries, '')::text AS signatures
   FROM packages p
   JOIN npm_packages n ON n.package_id = p.id
   JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
   JOIN npm_versions nv ON nv.version_id = pv.id
+  LEFT JOIN LATERAL (SELECT '[' || string_agg(convert_from(o.raw, 'UTF8'), ',' ORDER BY s.id) || ']' AS entries
+                       FROM signature_attachments a
+                       JOIN signatures s ON s.id = a.signature_id
+                       JOIN signature_objects o ON o.sha256 = s.object_sha256 AND o.scheme = 'npm-registry' AND o.raw IS NOT NULL
+                       JOIN signing_identities si ON si.id = s.identity_id AND si.state IN ('current', 'previous')
+                      WHERE a.item_id = pv.lead_item_id AND a.source = 'issued'
+                        AND EXISTS (SELECT 1 FROM signing_identities c WHERE c.state = 'current')) AS sg ON true
  WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(name)::text
    AND (pv.version = sqlc.arg(version)::text OR pv.version = n.dist_tags ->> sqlc.arg(tag)::text)
    AND NOT EXISTS (SELECT 1 FROM npm_tombstones t WHERE t.repo_id = p.repo_id AND t.name = p.name AND t.version = pv.version);

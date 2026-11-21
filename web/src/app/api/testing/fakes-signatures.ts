@@ -82,6 +82,38 @@ export function sigstoreEntry(over: Partial<SignatureEntry> = {}): SignatureEntr
   };
 }
 
+/**
+ * npm's registry signature this installation made of a local version with its signing identity (signatures.md R-SIG-050, R-SIG-055):
+ * `source` issued, `issuedBy` set, no trust row.
+ */
+export function issuedNpmEntry(over: Partial<SignatureEntry> = {}): SignatureEntry {
+  return {
+    id: 21,
+    role: 'registry',
+    scheme: 'npm-registry',
+    state: 'valid',
+    reason: null,
+    trust: null,
+    keyIds: ['SHA256:Zq2bQuaderSigningKey0000000000000000000000'],
+    keyId: 'SHA256:Zq2bQuaderSigningKey0000000000000000000000',
+    receivedAt: '2026-11-21T08:42:01Z',
+    log: [],
+    timestamps: [],
+    type: 'application/json',
+    subject: hex('cd34'),
+    subjectName: '@acme/ui@1.2.0',
+    repository: 'web/npm-local',
+    source: 'issued',
+    location: '@acme/ui/-/ui-1.2.0.tgz',
+    attachments: [{ repository: 'web/npm-local', source: 'issued', location: '@acme/ui/-/ui-1.2.0.tgz', name: '@acme/ui' }],
+    mediaType: 'application/json',
+    size: 120,
+    original: `/api/v1/signatures/objects/${hex('cd34')}`,
+    issuedBy: { identity: 3, subject: 'CN=Quader signing,O=Example GmbH', fingerprint: hex('ef56'), state: 'current' },
+    ...over,
+  };
+}
+
 /** A version's report in one repository: verified internally by `entries`, unless `over` says otherwise. */
 export function repositoryReport(over: Partial<SignatureRepositoryReport> = {}): SignatureRepositoryReport {
   return {

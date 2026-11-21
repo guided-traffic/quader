@@ -10,8 +10,9 @@ Quader signs (R-SIG-044 to R-SIG-060,
 [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)),
 and stage 3, the gate per repository (R-SIG-061 to R-SIG-078,
 [ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed)).
-Stage 2 is specified and not built; of stage 3 the gate itself is built (package 1), releases, the preview and the impact count (package 2)
-and the screens (package 3) are not.
+Of stage 2 the identity (package 1), npm's registry signatures (package 2) and the identity's section of the admin area are built, the
+attestations and the rest of the screens are not; of stage 3 the gate itself is built (package 1), releases, the preview and the impact
+count (package 2) and the screens (package 3) are not.
 The perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
 can do to the process that reads it; for stage 2, what Quader's own signature makes others believe, who holds the key that makes it, and
 what a holder of that key can do; and for stage 3, what a repository's gate keeps out, who can open it, and what it does when it cannot
@@ -87,11 +88,14 @@ makes npm's registry signature of every version of a local npm repository (R-SIG
 repository receives (R-SIG-051 to R-SIG-054). Debian's index signatures keep their own per-repository keys
 ([deb-signing.md](deb-signing.md)).
 
-**What is built** (package 1 of 4, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with its states,
-its two ways in, its checks, the announce and the switch under the lock, removal and retirement, the trusted root and the chain, the events,
-metrics and alerts, and the frame of the job `signing`. npm's signatures and the attestations are not built, so today no signature of
-Quader's own exists and the holders below can sign only through code that is not there yet; a taken-over worker with the key can still sign
-outside Quader. Retiring an uploaded identity drops its sealed key from the database
+**What is built** (packages 1 and 2 of 4, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with its
+states, its two ways in, its checks, the announce and the switch under the lock, removal and retirement, the trusted root and the chain, the
+events, metrics and alerts, the frame of the job `signing`, and npm's registry signature of every version of a local repository with the
+local keys endpoint. The job signs in the worker with the session's key inside a transaction that holds the current identity's row; the
+signing code (`internal/signing/npmsign`) receives the key as a `crypto.Signer` from the job and imports neither the key package nor the job
+(`CheckSigningKey`). What an npm signature says is that this installation served this name, version and integrity from a local repository:
+the message is `<name>@<version>:<integrity>`, the integrity the one the publish computed of the stored tarball. The attestations are not
+built. Retiring an uploaded identity drops its sealed key from the database
 ([Q-SIG-149](../spec/signatures.md#q-sig-149--retiring-an-uploaded-identity-drops-its-sealed-key)), and a worker drops an opened key once its
 identity neither signs nor waits to.
 
@@ -189,12 +193,16 @@ object store is answered pending (Q-SIG-140). PostgreSQL down fails the download
 ## What this does not cover
 
 - [H-1176](../spec/signatures.md#h-1176--through-a-virtual-npm-repository-npm-audit-signatures-reports-local-packages-as-missing-a-registry-signature):
-  through a virtual npm repository, `npm audit signatures` reports local packages as missing a registry signature (closed by stage 2 for an
-  installation with a signing identity).
+  through a virtual npm repository, `npm audit signatures` reports local packages as missing a registry signature (closed by stage 2's
+  package 2 for an installation with a current signing identity).
 - [H-1183](../spec/signatures.md#h-1183--npm-audit-signatures-reports-a-local-version-as-missing-until-quader-has-signed-it):
   `npm audit signatures` reports a local version as missing until Quader has signed it.
 - [H-1184](../spec/signatures.md#h-1184--npm-audit-signatures-needs-the-public-sigstore-tuf-repository-before-it-asks-quader):
   `npm audit signatures` needs the public Sigstore TUF repository before it asks Quader.
+- [H-1204](../spec/signatures.md#h-1204--after-a-retirement-a-cached-document-carries-a-signature-whose-key-the-keys-endpoint-no-longer-lists):
+  after a retirement, a document a cache outside Quader still holds carries a signature whose key the keys endpoint no longer lists.
+- [H-1205](../spec/signatures.md#h-1205--between-a-change-of-the-identities-and-the-jobs-next-run-two-renditions-share-a-validator):
+  between a change of the identities and the job's next run, two renditions of an npm document share a validator.
 - [H-1185](../spec/signatures.md#h-1185--an-image-with-an-older-cosign-signature-gets-quaders-attestation-only-through-the-api): an image
   with an older cosign signature gets Quader's attestation only through the API.
 - [H-1186](../spec/signatures.md#h-1186--a-policy-engine-that-demands-a-log-or-a-timestamp-cannot-verify-quaders-attestations): a policy

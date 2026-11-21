@@ -198,8 +198,13 @@ export function entrySentence(e: SignatureEntry): string {
   }
 }
 
-/** The badge of one signature's own verdict in the details (R-SIG-008, R-SIG-009), or null for a state that carries none. */
-export function entryBadgeState(e: Pick<SignatureEntry, 'state' | 'trust'>): SignatureBadgeState | null {
+/**
+ * The badge of one signature's own verdict in the details (R-SIG-008, R-SIG-009), or null for a state that carries none. A signature
+ * this installation made itself (`issuedBy`, npm's registry signature of a local version) carries none: Quader's signature is never the
+ * badge (Q-SIG-1), and its trust is not computed (R-SIG-054).
+ */
+export function entryBadgeState(e: Pick<SignatureEntry, 'state' | 'trust' | 'issuedBy'>): SignatureBadgeState | null {
+  if (e.issuedBy) return null;
   if (e.state === 'invalid') return 'invalid';
   if (e.state !== 'valid' && e.state !== 'no_key') return null;
   switch (e.trust?.state) {

@@ -26,6 +26,15 @@ func parseTags(raw string) (map[string]string, error) {
 	return tags, nil
 }
 
+// signaturesOf is the JSON array of Quader's registry signatures the statement read of a version (signatures.md R-SIG-050), nil for
+// none.
+func signaturesOf(text string) []byte {
+	if text == "" {
+		return nil
+	}
+	return []byte(text)
+}
+
 // LocalDocument reads the rows a package document renders from. found is false for a
 // package without an npm row and for one that holds no version in its document.
 func (s *Store) LocalDocument(ctx context.Context, repoID int64, name string) (rows.LocalPackage, bool, error) {
@@ -55,6 +64,7 @@ func (s *Store) LocalDocument(ctx context.Context, repoID int64, name string) (r
 			}
 			out.Versions = append(out.Versions, rows.LocalVersion{
 				Version: r.Version, Manifest: []byte(r.Manifest), Deprecated: r.Deprecated, PublishedAt: r.PublishedAt.Time,
+				Signatures: signaturesOf(r.Signatures),
 			})
 			if r.Readme != "" || r.ReadmeFilename != "" {
 				out.Readme, out.ReadmeFilename = r.Readme, r.ReadmeFilename
@@ -89,7 +99,10 @@ func (s *Store) LocalVersion(ctx context.Context, repoID int64, name, version, t
 		}
 		out = rows.LocalPackage{
 			PackageID: r.PackageID, RevSeq: r.RevSeq, CreatedAt: r.CreatedAt.Time, ModifiedAt: r.ModifiedAt.Time, Tags: tags,
-			Versions: []rows.LocalVersion{{Version: r.Version, Manifest: []byte(r.Manifest), Deprecated: r.Deprecated, PublishedAt: r.PublishedAt.Time}},
+			Versions: []rows.LocalVersion{{
+				Version: r.Version, Manifest: []byte(r.Manifest), Deprecated: r.Deprecated, PublishedAt: r.PublishedAt.Time,
+				Signatures: signaturesOf(r.Signatures),
+			}},
 		}
 		found = true
 		return nil

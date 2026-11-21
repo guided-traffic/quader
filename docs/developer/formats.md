@@ -505,7 +505,9 @@ Debian). `Host.Signatures()` answers what a format asks of the verdicts before i
 `formats.NoSignatureVerdicts` until the trust step is wired), and `Host.Signatures().Refuse` applies the gate per repository to a stored
 document the format serves without the item store (a remote OCI repository's tag, R-SIG-064); every item served through `Items().Serve`
 passes the gate without a line of the format. A format with a background fetch queues its targets through its data port from the storing
-transaction.
+transaction. Quader's own registry signatures (stage 2: npm's `dist.signatures` of a local version and the keys of a local repository)
+reach the format through its data port as well, not through the contract ([signatures.md](signatures.md#package-2-of-stage-2-built),
+Q-SIG-156): a future format whose clients check a registry's signature reads them the same way.
 
 ## Changing the contract
 

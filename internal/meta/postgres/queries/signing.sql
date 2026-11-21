@@ -1,7 +1,8 @@
 -- The statements of the signing identity and of the job signing (signatures.md R-SIG-045 to R-SIG-049, R-SIG-057, R-SIG-059;
 -- internal/signing and internal/signing/job). A time travels as RFC 3339 text in UTC with microseconds ('' for none), a principal as
--- the text of its uuid ('' for none), as the Debian key statements do. Only internal/signing reads and writes these tables; the sealed
--- key is read by SigningSealedKey alone, which only internal/signing/key calls (R-SIG-049).
+-- the text of its uuid ('' for none), as the Debian key statements do. Only internal/signing writes these tables; the sealed key is read
+-- by SigningSealedKey alone, which only internal/signing/key calls (R-SIG-049). The documents of a local npm repository and the
+-- signatures' views read the states of the identities to serve and show Quader's own signatures (R-SIG-050, R-SIG-055).
 
 -- name: SigningIdentities :many
 -- Every identity in every state, oldest first, without its private part.
@@ -173,6 +174,29 @@ ON CONFLICT (kind, item_id) DO UPDATE
        not_before = CASE WHEN signing_work.failed THEN excluded.not_before ELSE LEAST(signing_work.not_before, excluded.not_before) END,
        attempts = CASE WHEN signing_work.failed THEN 0 ELSE signing_work.attempts END,
        failed = false, code = CASE WHEN signing_work.failed THEN NULL ELSE signing_work.code END;
+
+-- name: SigningEnqueueWorkWhileCurrent :execrows
+-- Work for items of one kind in the caller's transaction, written only while an identity is current (R-SIG-049, Q-SIG-158): a publish
+-- before the installation's first identity leaves its version to discovery, so an installation that never signs keeps no work.
+INSERT INTO signing_work (kind, item_id, reason, priority, not_before)
+SELECT sqlc.arg(kind)::text, i, sqlc.arg(reason)::text, sqlc.arg(priority)::smallint, now()
+  FROM unnest(sqlc.arg(item_ids)::bigint[]) AS i
+ WHERE EXISTS (SELECT 1 FROM signing_identities WHERE state = 'current')
+ON CONFLICT (kind, item_id) DO UPDATE
+   SET reason = CASE WHEN excluded.priority < signing_work.priority OR signing_work.failed THEN excluded.reason ELSE signing_work.reason END,
+       priority = LEAST(signing_work.priority, excluded.priority),
+       not_before = CASE WHEN signing_work.failed THEN excluded.not_before ELSE LEAST(signing_work.not_before, excluded.not_before) END,
+       attempts = CASE WHEN signing_work.failed THEN 0 ELSE signing_work.attempts END,
+       failed = false, code = CASE WHEN signing_work.failed THEN NULL ELSE signing_work.code END;
+
+-- name: SigningServed :one
+-- The ids of the identities whose signatures of a kind the documents served when the job last compared (Q-SIG-160); found is false
+-- before the first comparison.
+SELECT COALESCE(served -> sqlc.arg(kind)::text, '[]'::jsonb)::text AS ids, (served ? sqlc.arg(kind)::text)::boolean AS found
+  FROM signing_settings WHERE id;
+
+-- name: SigningSetServed :exec
+UPDATE signing_settings SET served = served || jsonb_build_object(sqlc.arg(kind)::text, sqlc.arg(ids)::text::jsonb) WHERE id;
 
 -- name: SigningDueWork :many
 -- The due work of the kinds a handler exists for, by priority and time, without the keys in flight (R-SIG-049).

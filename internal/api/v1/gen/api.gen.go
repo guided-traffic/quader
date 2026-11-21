@@ -3571,6 +3571,7 @@ const (
 	SignatureAttachmentSourceDocument     SignatureAttachmentSource = "document"
 	SignatureAttachmentSourceEmbedded     SignatureAttachmentSource = "embedded"
 	SignatureAttachmentSourceIndexEntry   SignatureAttachmentSource = "index_entry"
+	SignatureAttachmentSourceIssued       SignatureAttachmentSource = "issued"
 	SignatureAttachmentSourceReferrer     SignatureAttachmentSource = "referrer"
 	SignatureAttachmentSourceReferrersTag SignatureAttachmentSource = "referrers_tag"
 	SignatureAttachmentSourceRelease      SignatureAttachmentSource = "release"
@@ -3588,6 +3589,8 @@ func (e SignatureAttachmentSource) Valid() bool {
 	case SignatureAttachmentSourceEmbedded:
 		return true
 	case SignatureAttachmentSourceIndexEntry:
+		return true
+	case SignatureAttachmentSourceIssued:
 		return true
 	case SignatureAttachmentSourceReferrer:
 		return true
@@ -3742,6 +3745,30 @@ func (e SignatureIntegrityState) Valid() bool {
 	case SignatureIntegrityStateUnsupported:
 		return true
 	case SignatureIntegrityStateValid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureIssuedByState.
+const (
+	SignatureIssuedByStateAnnounced SignatureIssuedByState = "announced"
+	SignatureIssuedByStateCurrent   SignatureIssuedByState = "current"
+	SignatureIssuedByStatePrevious  SignatureIssuedByState = "previous"
+	SignatureIssuedByStateRetired   SignatureIssuedByState = "retired"
+)
+
+// Valid indicates whether the value is a known member of the SignatureIssuedByState enum.
+func (e SignatureIssuedByState) Valid() bool {
+	switch e {
+	case SignatureIssuedByStateAnnounced:
+		return true
+	case SignatureIssuedByStateCurrent:
+		return true
+	case SignatureIssuedByStatePrevious:
+		return true
+	case SignatureIssuedByStateRetired:
 		return true
 	default:
 		return false
@@ -12433,11 +12460,13 @@ type SignatureAttachment struct {
 	Name *string `json:"name,omitempty"`
 
 	// Repository The repository `<project>/<key>` that holds the attachment.
-	Repository string                    `json:"repository"`
-	Source     SignatureAttachmentSource `json:"source"`
+	Repository string `json:"repository"`
+
+	// Source How the signature reaches its subject; `issued` is a signature this installation made with its signing identity (R-SIG-054).
+	Source SignatureAttachmentSource `json:"source"`
 }
 
-// SignatureAttachmentSource defines model for SignatureAttachment.Source.
+// SignatureAttachmentSource How the signature reaches its subject; `issued` is a signature this installation made with its signing identity (R-SIG-054).
 type SignatureAttachmentSource string
 
 // SignatureBacklog defines model for SignatureBacklog.
@@ -12558,8 +12587,13 @@ type SignatureEntry struct {
 
 	// Identity A Sigstore certificate's identity (a URI or an e-mail), or a certificate's first alternative name.
 	Identity *string `json:"identity,omitempty"`
-	Issuer   *string `json:"issuer,omitempty"`
-	KeyId    *string `json:"keyId,omitempty"`
+
+	// IssuedBy The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
+	// made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
+	// (Q-SIG-1); its trust is not computed (R-SIG-054).
+	IssuedBy *SignatureIssuedBy `json:"issuedBy,omitempty"`
+	Issuer   *string            `json:"issuer,omitempty"`
+	KeyId    *string            `json:"keyId,omitempty"`
 
 	// KeyIds Every identifier an anchor or a block can match (R-SIG-005).
 	KeyIds []string `json:"keyIds"`
@@ -12720,6 +12754,26 @@ type SignatureFingerprint struct {
 // `unsupported` a scheme, algorithm or version Quader does not read, `malformed` the object does not parse, `failed` the check
 // could not run.
 type SignatureIntegrityState string
+
+// SignatureIssuedBy The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
+// made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
+// (Q-SIG-1); its trust is not computed (R-SIG-054).
+type SignatureIssuedBy struct {
+	// Fingerprint The SHA-256 of the identity's certificate, lower-case hex.
+	Fingerprint string `json:"fingerprint"`
+
+	// Identity The id of the identity (`GET /api/v1/signing/identity`).
+	Identity int64 `json:"identity"`
+
+	// State The identity's state now; a `retired` identity's signatures are no longer served (R-SIG-048).
+	State SignatureIssuedByState `json:"state"`
+
+	// Subject The subject of the identity's certificate.
+	Subject string `json:"subject"`
+}
+
+// SignatureIssuedByState The identity's state now; a `retired` identity's signatures are no longer served (R-SIG-048).
+type SignatureIssuedByState string
 
 // SignatureLogEntry A transparency-log entry of a Sigstore signature; `proof` is `promise` (a signed entry timestamp) or `proof` (an inclusion proof).
 type SignatureLogEntry struct {

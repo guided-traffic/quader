@@ -43,18 +43,22 @@ type signaturesArea struct {
 
 // signaturePorts is what the format data ports take of the signatures' configuration (R-SIG-040): the bounds of the store an
 // Ansible post records through (R-SIG-031), whether a record wakes the job signature-verify, and the refresh of the background fetch's
-// queue (R-SIG-026). The zero value is the defaults without a wake-up (the restore's ports).
+// queue (R-SIG-026), and Quader's npm signing the npm data port reaches (R-SIG-050). The zero value is the defaults without a wake-up
+// and without signing (the restore's ports).
 type signaturePorts struct {
 	Enabled       bool
 	MaxObjectSize int64
 	MaxPerSubject int
 	RefreshAfter  time.Duration
+	// NPMSigning is the keys of a local npm repository and the work of a publish; nil: no keys, no work.
+	NPMSigning *npmSigningPort
 }
 
 func (a *App) signaturePorts() signaturePorts {
 	cfg := a.cfg.Signatures
 	return signaturePorts{
 		Enabled: cfg.Enabled, MaxObjectSize: int64(cfg.MaxObjectSize), MaxPerSubject: cfg.MaxPerSubject, RefreshAfter: cfg.Remote.RefreshAfter,
+		NPMSigning: &npmSigningPort{a: a},
 	}
 }
 

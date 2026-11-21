@@ -171,6 +171,9 @@ func (j *Job) RunSigning(ctx context.Context, run Run) error {
 	if res.Retried, err = j.o.Store.RetryFailedDaily(ctx); err != nil {
 		return err
 	}
+	if err := j.served(ctx); err != nil {
+		return err
+	}
 	more, err := j.sign(ctx, &res)
 	if err != nil {
 		return err
@@ -180,6 +183,28 @@ func (j *Job) RunSigning(ctx context.Context, run Run) error {
 		return err
 	}
 	return run.SetResult(res)
+}
+
+// served lets every kind that serves by the identities' states follow them (Kind.Served), after the switch and before any signing, so
+// that a document never serves a signature of an identity that stopped being listed for longer than one run.
+func (j *Job) served(ctx context.Context) error {
+	var ids []signing.Identity
+	for _, name := range j.names {
+		k := j.kinds[name]
+		if k.Served == nil {
+			continue
+		}
+		if ids == nil {
+			var err error
+			if ids, err = j.o.Store.Identities(ctx); err != nil {
+				return err
+			}
+		}
+		if err := k.Served(ctx, ids); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // sign runs discovery and the due work with the current identity; more is true when the slice ended with work left.
