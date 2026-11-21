@@ -55,12 +55,12 @@ func (a *App) startScannerReport(ctx context.Context) error {
 		return nil
 	}
 	s, ok := lookup[scannerArea](a.parts)
-	if !ok || (s.svc == nil && s.malware == nil) {
+	if !ok || !s.built() {
 		return nil
 	}
-	url, unit := a.cfg.Vulnerabilities.Images.Registry.URL, unitVulnScannerTrivy
-	if s.malware != nil {
-		url, unit = a.cfg.Malware.ScanListener.URL, unitMalwareScannerClamav
+	url, unit := a.cfg.Vulnerabilities.Images.Registry.URL, s.unit()
+	if s.malware != nil || s.updater != nil {
+		url = a.cfg.Malware.ScanListener.URL
 	}
 	var link func() *tls.Config
 	if s.link != nil {
@@ -87,13 +87,17 @@ func (a *App) startScannerReport(ctx context.Context) error {
 const clamdVersionTimeout = time.Second
 
 // scannerStatus is what a scanner reports of itself: the state of its readiness and the reason of the check that fails, the version of
-// its tool, the signature database clamd scans with, and its slots. clamd's version is asked until it answers once and kept: a pod's
-// clamd does not change its version.
+// its tool, the signature database clamd scans with, and its slots; the updater the set its directory holds with the daily's build time
+// and no slots (Q-OPS-224). clamd's version is asked until it answers once and kept: a pod's clamd does not change its version.
 func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Status {
 	var clamd atomic.Pointer[string]
 	return func(ctx context.Context) scanreport.Status {
 		snap := a.health.Snapshot()
 		st := scanreport.Status{State: string(snap.State), Reason: failingReason(snap)}
+		if s.updater != nil {
+			st.ToolVersion, st.Database, st.DatabaseBuiltAt = s.updater.Status()
+			return st
+		}
 		if s.malware != nil {
 			st.InUse, st.Total, st.Database = s.malware.Busy(), s.malware.Slots(), s.malware.DatabaseLoaded()
 			if v := clamd.Load(); v != nil {
@@ -135,9 +139,10 @@ func failingReason(snap health.Snapshot) string {
 	return ""
 }
 
-// scannerKindOf is the kind of scanner a request's client certificate names (Q-OPS-223): trivy for the name
-// vulnerabilities.images.registry.client_name, clamav for malware.scan_listener.client_name, "" for neither, for a certificate that
-// lists both, and for a request without TLS. The route of the scanner replicas admits a kind and takes it from here, never from the body.
+// scannerKindOf is the kind of scanner a request's client certificate names (Q-OPS-223, Q-OPS-224): trivy for the name
+// vulnerabilities.images.registry.client_name, clamav for malware.scan_listener.client_name, freshclam for
+// malware.scan_listener.updater_client_name, "" for none, for a certificate that lists two, and for a request without TLS. The route of
+// the scanner replicas admits a kind and takes it from here, never from the body.
 func (a *App) scannerKindOf() func(*http.Request) string {
 	names := map[string]string{}
 	if n := a.cfg.Vulnerabilities.Images.Registry.ClientName; n != "" {
@@ -145,6 +150,9 @@ func (a *App) scannerKindOf() func(*http.Request) string {
 	}
 	if n := a.cfg.Malware.ScanListener.ClientName; n != "" {
 		names[n] = config.ScannerKindClamav
+	}
+	if n := a.cfg.Malware.ScanListener.UpdaterClientName; n != "" {
+		names[n] = config.ScannerKindFreshclam
 	}
 	return func(r *http.Request) string {
 		if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
@@ -180,10 +188,14 @@ func (a *App) registerScannerReportRoutes(router *httpserver.Router) {
 type scannerStore struct{ rows cluster.ScannerReplicas }
 
 func (s scannerStore) Record(ctx context.Context, kind, uid string, r scanreport.Report) (bool, error) {
-	return s.rows.Record(ctx, kind, uid, cluster.ScannerRecord{
+	rec := cluster.ScannerRecord{
 		Name: r.Name, Node: r.Node, Version: r.Version, Revision: r.Revision, State: r.State, Reason: r.Reason,
 		ToolVersion: r.ToolVersion, Database: r.Database, SlotsInUse: r.Slots.InUse, Slots: r.Slots.Total,
-	})
+	}
+	if r.DatabaseBuiltAt != nil {
+		rec.DatabaseBuiltAt = *r.DatabaseBuiltAt
+	}
+	return s.rows.Record(ctx, kind, uid, rec)
 }
 
 func (s scannerStore) Remove(ctx context.Context, kind, uid string) (bool, error) {
@@ -240,6 +252,12 @@ func scannerKinds(cfg *config.Config, role string) []gen.ScannerKind {
 			Kind: gen.ScannerKindKindClamav, Deployment: "malware-scanner-clamav", Purpose: gen.Malware, Tool: "ClamAV",
 			Replicas: mode(m.Scanner.URL, m.ScanListener.ClientName, false),
 		})
+		if m.Database.Source == config.MalwareSourceUpdater {
+			out = append(out, gen.ScannerKind{
+				Kind: gen.ScannerKindKindFreshclam, Deployment: unitMalwareUpdaterFreshclam, Purpose: gen.Malware, Tool: "freshclam",
+				Replicas: mode(m.Updater.URL, m.ScanListener.UpdaterClientName, false),
+			})
+		}
 	}
 	return out
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	mscanner "github.com/guided-traffic/quader/internal/malware/scanner"
+	"github.com/guided-traffic/quader/internal/malware/updater"
 	"github.com/guided-traffic/quader/internal/observability/health"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 	"github.com/guided-traffic/quader/internal/vuln/scanner"
@@ -31,17 +32,21 @@ const AreaScanner Area = "scanner"
 // check, in the scanner's process and in the process that calls it, is that name in camel case (operations-and-observability.md
 // Q-OPS-221).
 const (
-	unitVulnScannerTrivy      = httpserver.LinkVulnScannerTrivy
-	unitMalwareScannerClamav  = httpserver.LinkMalwareScannerClamav
-	checkVulnScannerTrivy     = "vulnScannerTrivy"
-	checkMalwareScannerClamav = "malwareScannerClamav"
+	unitVulnScannerTrivy         = httpserver.LinkVulnScannerTrivy
+	unitMalwareScannerClamav     = httpserver.LinkMalwareScannerClamav
+	unitMalwareUpdaterFreshclam  = httpserver.LinkMalwareUpdaterFreshclam
+	checkVulnScannerTrivy        = "vulnScannerTrivy"
+	checkMalwareScannerClamav    = "malwareScannerClamav"
+	checkMalwareUpdaterFreshclam = "malwareUpdaterFreshclam"
 )
 
 // scannerArea is the scanner of the replica and the TLS of its listener and of its link to the scan listener: the image scanner (svc),
-// or the malware scanner (malware) of a process of the kind clamav (wire_malware_scanner.go).
+// the malware scanner (malware) of a process of the kind clamav (wire_malware_scanner.go), or the updater (updater) of a process of
+// the kind freshclam (wire_malware_updater.go).
 type scannerArea struct {
 	svc     *scanner.Service
 	malware *mscanner.Service
+	updater *updater.Service
 	// listenerTLS serves the pair and requires a client certificate of the internal CA; nil without TLS.
 	listenerTLS *httpserver.ListenerTLS
 	// link is the scanner's side of its pull: the pair it presents and the CA it verifies the scan listener against; nil without TLS.
@@ -52,11 +57,17 @@ type scannerArea struct {
 
 // unit is the name of the scanner unit the area is: the name of its listener and of its component.
 func (s scannerArea) unit() string {
-	if s.malware != nil {
+	switch {
+	case s.malware != nil:
 		return unitMalwareScannerClamav
+	case s.updater != nil:
+		return unitMalwareUpdaterFreshclam
 	}
 	return unitVulnScannerTrivy
 }
+
+// built reports whether the area holds a scanner or the updater.
+func (s scannerArea) built() bool { return s.svc != nil || s.malware != nil || s.updater != nil }
 
 // wireScanner builds the scanner. The blob area is optional (Q-ARCH-300): the role all hands it, and the scanner then takes its room
 // from the one spool of the process; the role scanner has none and opens the spool alone, without the object store.
@@ -66,6 +77,9 @@ func (a *App) wireScanner(ctx context.Context, b blobArea) (scannerArea, error) 
 	}
 	if a.isMalwareScanner() {
 		return a.wireMalwareScanner(ctx)
+	}
+	if a.isMalwareUpdater() {
+		return a.wireMalwareUpdater(ctx)
 	}
 	cfg := a.cfg
 	images := cfg.Vulnerabilities.Images
@@ -219,22 +233,28 @@ func (c *scannerComponent) Start(ctx context.Context) error {
 }
 
 func (c *scannerComponent) Drain(context.Context) {
-	if c.area.malware != nil {
+	switch {
+	case c.area.malware != nil:
 		c.area.malware.Drain()
-		return
+	case c.area.updater != nil:
+		c.area.updater.Drain()
+	default:
+		c.area.svc.Drain()
 	}
-	c.area.svc.Drain()
 }
 
 func (c *scannerComponent) Quiesce(context.Context) { c.stopScans() }
 
-// stopScans ends the scans still running: the analyses, or the malware scanner's calls.
+// stopScans ends the scans still running: the analyses, or the malware scanner's calls; the updater runs none (a listing or a file in
+// flight ends with its server).
 func (c *scannerComponent) stopScans() {
-	if c.area.malware != nil {
+	switch {
+	case c.area.malware != nil:
 		c.area.malware.Stop()
-		return
+	case c.area.updater != nil:
+	default:
+		c.area.svc.Stop()
 	}
-	c.area.svc.Stop()
 }
 
 func (c *scannerComponent) Stop(ctx context.Context) error {
@@ -259,15 +279,18 @@ func (a *App) scannerListenAddr() string {
 func (a *App) startScanner() error {
 	s, ok := lookup[scannerArea](a.parts)
 	switch {
-	case ok && s.svc == nil && s.malware == nil && a.id.Role == config.RoleAll:
+	case ok && !s.built() && a.id.Role == config.RoleAll:
 		return nil
-	case !ok || (s.svc == nil && s.malware == nil):
+	case !ok || !s.built():
 		return errors.New("the scanner's listener: the scanner area is not wired")
 	}
 	var router http.Handler
-	if s.malware != nil {
+	switch {
+	case s.malware != nil:
 		router = malwareScannerRouter(s.malware)
-	} else {
+	case s.updater != nil:
+		router = s.updater.Handler() // the listing and the files (R-MAL-032), its router its own
+	default:
 		router = scannerRouter(s.svc)
 	}
 	srv, err := a.newServer(s.unit(), a.scannerListenAddr(), router, s.listenerTLS)

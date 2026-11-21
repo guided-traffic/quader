@@ -1,9 +1,10 @@
 # ClamAV definitions format
 
-Status: the format, its data port, the endpoint, the switch and the API are built (2026-11-21, [developer/clamav.md](../../developer/clamav.md));
-the database task that fills the repository with verified containers and marks the set in use (R-MAL-010, R-MAL-033, R-MAL-034) and the
-screens (R-UI-194), the client certificates (R-CLAMAV-010) and the setup of the certificate and of the plain download (R-CLAMAV-006) are not
-built yet, nor is the measurement of R-CLAMAV-009. The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
+Status: the format, its data port, the endpoint, the switch and the API are built (2026-11-21, [developer/clamav.md](../../developer/clamav.md)),
+and so are the updater and the database task that fills the repository with verified containers, marks the set in use and cleans up
+(R-MAL-010, R-MAL-032 to R-MAL-034); the screens (R-UI-194), the client certificates (R-CLAMAV-010) and the setup of the certificate and of
+the plain download (R-CLAMAV-006) are not built yet. The measurement of R-CLAMAV-009 against the owner's installation is not made yet; one
+on a kind cluster of the development agent is recorded in [developer/clamav.md](../../developer/clamav.md#measured-on-a-kind-cluster). The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
 spezifisches ClamAV-Repo in Upstream einbindbar machen. ClamAV wird also ein eigenständiges Artefakt-Repo, wir ziehen alle verfügbaren
 Metadaten aus dem ClamAV-Definitionen. Ein Admin kann in den Upstream-Repos ClamAV-Definition-Updates einschalten, wodurch ein
 unternehmens-Endpunkt für alle ClamAV Instanzen bereitgestellt wird, dieser Endpunkt bedient sich automatisch aus dem internen Freshclam

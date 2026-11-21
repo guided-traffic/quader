@@ -17,7 +17,9 @@ import (
 // signature database it scans with, and its slots.
 type Status struct {
 	State, Reason, ToolVersion, Database string
-	InUse, Total                         int
+	// DatabaseBuiltAt is the build time of the daily the updater's directory holds (the kind freshclam); zero for every other kind.
+	DatabaseBuiltAt time.Time
+	InUse, Total    int
 }
 
 // Identity names the replica in its reports.
@@ -143,6 +145,10 @@ func (r *Reporter) Send(ctx context.Context) {
 	rep := Report{
 		Name: id.Name, Node: id.Node, Version: id.Version, Revision: id.Revision, State: st.State, Reason: st.Reason,
 		ToolVersion: st.ToolVersion, Database: st.Database, Slots: Slots{InUse: st.InUse, Total: st.Total},
+	}
+	if !st.DatabaseBuiltAt.IsZero() {
+		at := st.DatabaseBuiltAt.UTC()
+		rep.DatabaseBuiltAt = &at
 	}
 	body, err := json.Marshal(rep)
 	if err == nil {

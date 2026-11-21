@@ -52,7 +52,7 @@ func (c *Config) validateLinkNames(r *Report) {
 	if !c.Server.TLS.Enabled() {
 		return
 	}
-	if r.Role() == RoleScanner && c.Process.ScannerKind != ScannerKindClamav && images.Scanner.ClientName == "" {
+	if r.Role() == RoleScanner && c.Process.ScannerKind == ScannerKindTrivy && images.Scanner.ClientName == "" {
 		r.Add("vulnerabilities.images.scanner.client_name", "is required in a scanner while server.tls serves TLS: it names the worker, the one kind of pod its listener admits (R-ARCH-038); the chart sets it")
 	}
 }

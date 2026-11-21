@@ -5,9 +5,9 @@ R-MAL-034; [formats/clamav.md](../spec/formats/clamav.md); [repositories-and-pro
 [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-069; the client certificates of [formats/clamav.md](../spec/formats/clamav.md)
 R-CLAMAV-010 and [endpoints.md](../spec/endpoints.md) R-EP-008, R-EP-010;
 [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format)). Built:
-the endpoint, its switch, its answers and the refused hand delete (the rows of the table below that name their tests by name). Not built
-yet: the updater, its listener, the worker's verification and the client certificates; for those every statement says what the
-specification requires, and the test column names the tests the specification asks for.
+the endpoint, its switch, its answers and the refused hand delete, the updater with its listener and its seed, and the worker's
+verification (the rows of the table below that name their tests by name). Not built yet: the client certificates; for those every
+statement says what the specification requires, and the test column names the tests the specification asks for.
 
 The perspective of this page is the path of ClamAV's signature databases: what each hop trusts of the one before it, what a hop that is
 taken over can do to the ones after it (Quader's scanners and every ClamAV of the company that updates from Quader), and what the endpoint
@@ -116,8 +116,9 @@ of it ([formats/clamav.md](../spec/formats/clamav.md) R-CLAMAV-010, Q-CLAMAV-8 t
 
 | Guarantee | Enforced by | Test |
 |---|---|---|
-| no container reaches `upstream/clamav` from the updater unless its header's signature verifies against ClamAV's key and its archive has the header's MD5 | the database task's check (R-MAL-033) | `TestR_MAL_033_*` (`internal/malware/database`) |
-| the updater's listener admits the worker's certificate name only, and lists regular files of known names inside its directory | the updater's listener and its `os.Root` (R-MAL-032) | `TestR_MAL_032_*` |
+| no container reaches `upstream/clamav` from the updater unless its header's signature verifies against ClamAV's key and its archive has the header's MD5 | the database task's check (R-MAL-033, `verify.go`) | `TestR_MAL_033_AContainerFromTheUpdaterIsVerified`, `TestR_MAL_033_TheLegacySignature` (`internal/malware/database`), `TestR_MAL_010_TheTaskImportsFromTheUpdater` (area `malware`) |
+| the updater's listener admits the worker's certificate name only, and lists regular files of known names inside its directory | the updater's listener and its `os.Root` (R-MAL-032) | `TestR_MAL_032_TheListing` (`internal/malware/updater`), `TestR_MAL_010_TheTaskImportsFromTheUpdater` (another kind's certificate refused) |
+| the updater's certificate reads the scan listener's database routes only, as its own subject, never the blob route | the stage of the scan listener and `malwareDatabasePeer` (R-MAL-006, R-MAL-032) | `TestR_MAL_006_TheScanListenerAdmitsTheMalwareScannerOnItsRoutes` (`internal/auth`) |
 | the updater's pod mounts no secret but its TLS pair, and `freshclam` mounts none | the chart's volume list (R-HA-069) | `TestR_HA_069_*` (`test/chart`) |
 | the endpoint answers as for a missing repository for every caller while the switch is off, and no route of the format writes | `UpstreamFacts.Closed` in the dispatcher and `/files/`, and the format's routes (R-REPO-075, R-CLAMAV-008) | `TestR_REPO_070_ASystemRepositoryOfUpstreamAnswersNoClient`, `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint`, `TestR_ARCH_010_Conformance` (`internal/formats/clamav`) |
 | no answer of the endpoint is a `403` or a `429` | the format's `WriteError` and the chain's error shape (R-CLAMAV-005) | `TestR_CLAMAV_005_NoAnswerIsA403OrA429` |

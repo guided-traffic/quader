@@ -37,13 +37,14 @@ type Process struct {
 	// --role` overrides it.
 	Role string `yaml:"role" validate:"oneof=api|packages|worker|scanner|web|all" doc:"Role of this replica: api, packages, worker, scanner (a scanning tool's wrapper, the tool chosen by process.scanner_kind, holding no secret of the installation, R-ARCH-036), web (api and packages in one process, development and tests only) or all (local development only). No default."`
 	// ScannerKind chooses the tool a process of the role scanner wraps (R-ARCH-036, Q-ARCH-560, Q-ARCH-561).
-	ScannerKind string `yaml:"scanner_kind" default:"trivy" validate:"oneof=trivy|clamav" doc:"The tool a process of the role scanner wraps: trivy, the analysis of container images with Trivy (R-VULN-041), or clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007). The chart runs trivy on the Deployment <fullname>-vuln-scanner-trivy and sets clamav on <fullname>-malware-scanner-clamav. A scanner of the kind clamav reads the section malware instead of vulnerabilities.images. Read by the role scanner only."`
+	ScannerKind string `yaml:"scanner_kind" default:"trivy" validate:"oneof=trivy|clamav|freshclam" doc:"The tool a process of the role scanner wraps: trivy, the analysis of container images with Trivy (R-VULN-041); clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007); or freshclam, the malware scanning's updater beside ClamAV's freshclam, which seeds, lists and serves freshclam's directory to the worker (R-MAL-032, Q-ARCH-562). The chart runs trivy on the Deployment <fullname>-vuln-scanner-trivy, sets clamav on <fullname>-malware-scanner-clamav and freshclam on <fullname>-malware-updater-freshclam. A scanner of the kind clamav reads the section malware instead of vulnerabilities.images, one of the kind freshclam malware.updater and malware.scan_listener. Read by the role scanner only."`
 }
 
-// The kinds of a scanner, each named after the tool it wraps (Q-ARCH-560, Q-ARCH-561).
+// The kinds of a scanner, each named after the tool it wraps (Q-ARCH-560, Q-ARCH-561, Q-ARCH-562).
 const (
-	ScannerKindTrivy  = "trivy"
-	ScannerKindClamav = "clamav"
+	ScannerKindTrivy     = "trivy"
+	ScannerKindClamav    = "clamav"
+	ScannerKindFreshclam = "freshclam"
 )
 
 // RoleError is the message `quader serve` prints when no valid role is set.

@@ -26,12 +26,13 @@ import (
 // reaches the next call. Without TLS (server.tls.certificates empty) the links are plain HTTP and no name is checked (Q-HA-322).
 
 // Link names, the value of the listener label of a link's material at both of its ends: the unit or the listener the link reaches
-// (ha-and-helm.md Q-HA-373). The worker's call of a scanner names the scanner unit, which carries its tool's name (Q-HA-372); the
-// scanner's pull names the scan listener of packages.
+// (ha-and-helm.md Q-HA-373). The worker's call of a scanner names the scanner unit, which carries its tool's name (Q-HA-372), and so
+// does its link to the updater (R-MAL-032); the scanner's pull and the updater's seed name the scan listener of packages.
 const (
-	LinkVulnScannerTrivy     = "vuln-scanner-trivy"
-	LinkMalwareScannerClamav = "malware-scanner-clamav"
-	LinkScan                 = "scan"
+	LinkVulnScannerTrivy        = "vuln-scanner-trivy"
+	LinkMalwareScannerClamav    = "malware-scanner-clamav"
+	LinkMalwareUpdaterFreshclam = "malware-updater-freshclam"
+	LinkScan                    = "scan"
 )
 
 // ErrLinkNeedsCA is the refusal of a link with TLS and without the internal trust anchor.

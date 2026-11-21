@@ -24,6 +24,11 @@ import (
 // (ha-and-helm.md Q-HA-373).
 const BlobSubject = "malware-scanner-clamav"
 
+// UpdaterSubject is the system subject the stage of the scan listener yields for the updater's certificate on the database routes
+// (R-MAL-032, Q-MAL-101): the name of the unit that reads for its seed, malware-updater-freshclam. No token carries it, and the blob
+// route never admits it.
+const UpdaterSubject = "malware-updater-freshclam"
+
 // The malware scanning's routes of the scan listener (R-MAL-006, R-ARCH-037), beside the registry's below /v2/. BlobPathPrefix followed
 // by the digest, sha256:<64 hex>, is the blob route, which a blob token and nothing else reaches; DatabasePath, and below it
 // <version>/<file>, are the database routes, which take no token and admit the malware scanner's certificate (Q-MAL-27). The stage of

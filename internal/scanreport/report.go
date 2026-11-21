@@ -19,6 +19,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -60,9 +61,13 @@ type Report struct {
 	Reason string `json:"reason,omitempty"`
 	// ToolVersion is the version of the tool the scanner runs (Trivy's, clamd's), empty while it does not know it.
 	ToolVersion string `json:"toolVersion,omitempty"`
-	// Database is the signature database clamd scans with; a scanner of the kind clamav only, empty before its first load.
+	// Database is the signature database clamd scans with (the kind clamav), or the set the updater's directory holds (the kind
+	// freshclam); empty before the first load and while the directory holds no complete set.
 	Database string `json:"database,omitempty"`
-	Slots    Slots  `json:"slots"`
+	// DatabaseBuiltAt is the build time of the daily of the updater's directory (the kind freshclam only, R-OPS-048, Q-OPS-224).
+	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt,omitempty"`
+	// Slots are a scanner's; the updater runs no calls and reports none (zero).
+	Slots Slots `json:"slots"`
 }
 
 // Slots are the calls the scanner runs now and the calls it runs at a time.
@@ -115,10 +120,31 @@ func Decode(body io.Reader) (Report, error) {
 	return r, nil
 }
 
-// Validate checks a report of a scanner of kind (config.ScannerKindTrivy or config.ScannerKindClamav) against the shape the table
-// holds (migration 00090): bounded strings of a fixed character set, a known state, slots within the configuration's bounds, and a
-// signature database only from the kind that has one.
+// Validate checks a report of a scanner of kind (config.ScannerKindTrivy, ScannerKindClamav or ScannerKindFreshclam) against the shape
+// the table holds (migrations 00090 and 00095): bounded strings of a fixed character set, a known state, slots within the configuration's
+// bounds and none from the updater, a signature database only from the kinds that have one, and its build time only from the updater.
 func (r Report) Validate(kind string) error {
+	if err := r.validateCommon(); err != nil {
+		return err
+	}
+	updater := kind == config.ScannerKindFreshclam
+	switch {
+	case r.Database != "" && kind != config.ScannerKindClamav && !updater:
+		return invalid("only a scanner of the kind clamav or freshclam names a signature database")
+	case r.Database != "" && (!bounded(r.Database, 128) || !version.MatchString(r.Database)):
+		return invalid("database must be at most 128 letters, digits or . + _ ~ -")
+	case r.DatabaseBuiltAt != nil && (!updater || r.Database == ""):
+		return invalid("only the updater names the build time of the set it holds")
+	case updater && (r.Slots.Total != 0 || r.Slots.InUse != 0):
+		return invalid("the updater runs no calls and reports no slots")
+	case !updater && (r.Slots.Total < 1 || r.Slots.Total > 64 || r.Slots.InUse < 0 || r.Slots.InUse > r.Slots.Total):
+		return invalid("slots must be 0 to total in use of 1 to 64")
+	}
+	return nil
+}
+
+// validateCommon checks what every kind reports alike.
+func (r Report) validateCommon() error {
 	switch {
 	case !name.MatchString(r.Name):
 		return invalid("name must be 1 to 253 letters, digits, dots, hyphens or underscores")
@@ -134,12 +160,6 @@ func (r Report) Validate(kind string) error {
 		return invalid("reason must be a code of at most 32 letters, digits and underscores")
 	case r.ToolVersion != "" && (!bounded(r.ToolVersion, 64) || !version.MatchString(r.ToolVersion)):
 		return invalid("toolVersion must be at most 64 letters, digits or . + _ ~ -")
-	case r.Database != "" && kind != config.ScannerKindClamav:
-		return invalid("only a scanner of the kind clamav names a signature database")
-	case r.Database != "" && (!bounded(r.Database, 128) || !version.MatchString(r.Database)):
-		return invalid("database must be at most 128 letters, digits or . + _ ~ -")
-	case r.Slots.Total < 1 || r.Slots.Total > 64 || r.Slots.InUse < 0 || r.Slots.InUse > r.Slots.Total:
-		return invalid("slots must be 0 to total in use of 1 to 64")
 	}
 	return nil
 }

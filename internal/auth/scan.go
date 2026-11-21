@@ -116,23 +116,28 @@ func (s *Stage) byScanToken(r *http.Request, ep EndpointRules) (Result, error) {
 	}
 }
 
-// byMalwareScannerCertificate is the credential of the database routes (Q-MAL-27): the client certificate the listener's handshake
-// verified, whose name must be the malware scanner's, and no token. The database is the public signature set, and a scanner needs it
-// before its first call, when it holds no token yet. A request that presents any credential is refused: no token has a meaning here.
-// Without TLS there is no certificate, and the NetworkPolicy is what remains (H-1108).
+// byMalwareScannerCertificate is the credential of the database routes (Q-MAL-27, R-MAL-032): the client certificate the listener's
+// handshake verified, whose name must be the malware scanner's or the updater's, and no token. The database is the public signature
+// set; a scanner needs it before its first call, when it holds no token yet, and the updater for its seed. The principal is the system
+// subject of the unit the certificate names. A request that presents any credential is refused: no token has a meaning here. Without
+// TLS there is no certificate, and the NetworkPolicy is what remains (H-1108).
 func (s *Stage) byMalwareScannerCertificate(r *http.Request, ep EndpointRules, method Method, present bool) (Result, error) {
 	if present {
 		ep.refused(r, Refusal{Reason: RefusedTokenType})
-		return s.fail(method, "type_not_accepted", errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The signature database is read with the malware scanner's certificate and no token."))
+		return s.fail(method, "type_not_accepted", errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The signature database is read with the malware scanner's or the updater's certificate and no token."))
 	}
-	if ep.MalwareScanner != nil && !ep.MalwareScanner(r) {
+	subject := registrytoken.BlobSubject
+	if ep.MalwareDatabase != nil {
+		subject = ep.MalwareDatabase(r)
+	}
+	if subject == "" {
 		ep.refused(r, Refusal{Reason: RefusedAnonymous})
 		return s.fail(MethodClientCertificate, "certificate_not_admitted",
-			errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "The signature database is read by the malware scanner only."))
+			errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "The signature database is read by the malware scanner and the updater only."))
 	}
 	s.o.Metrics.Attempt(string(MethodClientCertificate), "success", "")
 	return Result{
-		Principal:  principal.Principal{Kind: principal.KindSystem, Name: registrytoken.BlobSubject, Status: principal.StatusActive},
+		Principal:  principal.Principal{Kind: principal.KindSystem, Name: subject, Status: principal.StatusActive},
 		Credential: Credential{Method: MethodClientCertificate},
 	}, nil
 }

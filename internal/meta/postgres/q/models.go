@@ -1278,6 +1278,7 @@ type ScannerReplica struct {
 	SlotsTotal  int32
 	StartedAt   pgtype.Timestamptz
 	HeartbeatAt pgtype.Timestamptz
+	DbBuiltAt   pgtype.Timestamptz
 }
 
 type SchemaMigration struct {

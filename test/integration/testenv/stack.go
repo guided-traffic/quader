@@ -181,14 +181,23 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME="+KindName("packages"),
 			// The name by which the scan listener records the image scanner's report of itself (R-OPS-048, Q-OPS-223).
 			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_CLIENT_NAME="+KindName("vuln-scanner-trivy"),
-			`QUADER_SERVER_SCAN_CLIENTS=["`+KindName("vuln-scanner-trivy")+`","`+KindName("malware-scanner-clamav")+`"]`,
-			// The links of the malware scanning, named as the chart names them (R-HA-068, Q-MAL-61).
+			ScanClients(),
+			// The links of the malware scanning, named as the chart names them (R-HA-068, R-HA-069, Q-MAL-61).
 			"QUADER_MALWARE_SCANNER_SERVER_NAME="+KindName("malware-scanner-clamav"), "QUADER_MALWARE_SCANNER_CLIENT_NAME="+KindName("worker"),
-			"QUADER_MALWARE_SCAN_LISTENER_SERVER_NAME="+KindName("packages"), "QUADER_MALWARE_SCAN_LISTENER_CLIENT_NAME="+KindName("malware-scanner-clamav"))
+			"QUADER_MALWARE_SCAN_LISTENER_SERVER_NAME="+KindName("packages"), "QUADER_MALWARE_SCAN_LISTENER_CLIENT_NAME="+KindName("malware-scanner-clamav"),
+			"QUADER_MALWARE_SCAN_LISTENER_UPDATER_CLIENT_NAME="+KindName("malware-updater-freshclam"),
+			"QUADER_MALWARE_UPDATER_SERVER_NAME="+KindName("malware-updater-freshclam"), "QUADER_MALWARE_UPDATER_CLIENT_NAME="+KindName("worker"))
 	}
 	s.base = append(s.base, o.Env...)
 	s.Project(DefaultProject)
 	return s
+}
+
+// ScanClients is server.scan_clients of a stack with TLS, as the chart sets it: the names of the image scanner, the malware scanner and
+// the updater, the kinds of pod the scan listener's handshake admits (R-ARCH-037, R-HA-066, R-HA-069).
+func ScanClients() string {
+	return `QUADER_SERVER_SCAN_CLIENTS=["` + KindName("vuln-scanner-trivy") + `","` + KindName("malware-scanner-clamav") + `","` +
+		KindName("malware-updater-freshclam") + `"]`
 }
 
 // environ is the environment every replica shares: the database, the stack's

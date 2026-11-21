@@ -1,7 +1,8 @@
 // Package cvdtest builds ClamAV definition containers of a few hundred bytes for the tests (formats/clamav.md R-CLAMAV-009): ClamAV's
 // header of 512 bytes with every field, the MD5 of the archive in field 6, and a gzip of a tar that holds the database's index
 // (<db>.info, "name:size:sha256" per member) and the members. No test needs ClamAV's real databases, which no test may download
-// (Q-MAL-90). The signature field holds what the caller passes: the containers verify against no key of ClamAV's.
+// (Q-MAL-90). The signature field holds what the caller passes, or with Signed the signature of the tests' Key: the containers verify
+// against no key of ClamAV's.
 package cvdtest
 
 import (
@@ -9,11 +10,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/md5" //nolint:gosec // the header's field 6 is the MD5 of the archive, ClamAV's legacy check; nothing here relies on it for security
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -84,6 +89,49 @@ func Header(db string, version int, o Options, archive []byte) []byte {
 	}
 	_ = db
 	return out
+}
+
+// testKey is the key of the legacy check the tests sign with, made once per process.
+var testKey = sync.OnceValue(func() *rsa.PrivateKey {
+	k, err := rsa.GenerateKey(rand.Reader, 1024) //nolint:gosec // G403: the size of ClamAV's legacy key; it signs the tests' containers only
+	if err != nil {
+		panic(err)
+	}
+	return k
+})
+
+// Key is the tests' key of ClamAV's legacy check. Its public part (N and E) is what a test hands the database task's seam for ClamAV's
+// key (malware-scanning.md R-MAL-033); the containers Signed writes verify against it and against no key of ClamAV's.
+func Key() *rsa.PrivateKey { return testKey() }
+
+// sigAlphabet is the alphabet of the legacy signature's 6-bit digits, lowest digit first (libclamav/dsig.c cli_ndecode).
+const sigAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/"
+
+// SignMD5 is the header's field 7 for an archive whose MD5 is md5hex (32 lower-case hexadecimal digits), signed with k the way
+// ClamAV's signing service does it for the legacy check: the MD5 as a number raised to k's private exponent modulo its modulus,
+// written in 6-bit digits from the lowest.
+func SignMD5(k *rsa.PrivateKey, md5hex string) string {
+	m, ok := new(big.Int).SetString(md5hex, 16)
+	if !ok {
+		panic("cvdtest: no MD5 " + md5hex)
+	}
+	s := new(big.Int).Exp(m, k.D, k.N)
+	var b strings.Builder
+	sixty3 := big.NewInt(63)
+	for s.Sign() > 0 {
+		b.WriteByte(sigAlphabet[new(big.Int).And(s, sixty3).Int64()])
+		s.Rsh(s, 6)
+	}
+	return b.String()
+}
+
+// Signed is a container like Container whose header's signature is k's over the archive's MD5: what the updater offers once ClamAV
+// signed it, for a key of the tests.
+func Signed(k *rsa.PrivateKey, db string, version int, o Options, members ...Member) []byte {
+	archive := Archive(db, version, o, members...)
+	sum := md5.Sum(archive) //nolint:gosec // see the import
+	o.DSig = SignMD5(k, hex.EncodeToString(sum[:]))
+	return append(Header(db, version, o, archive), archive...)
 }
 
 // Sign is a detached signature file of n signatures: #clamsign-1.0 and n lines.

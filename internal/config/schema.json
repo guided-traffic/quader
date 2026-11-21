@@ -2588,26 +2588,6 @@
         "database": {
           "additionalProperties": false,
           "properties": {
-            "freshclam": {
-              "default": true,
-              "description": "true: the freshclam container beside the worker fetches the database from ClamAV's network; false: an administrator fills the repository by hand with the files of cvdupdate, and the settings page shows the commands (R-MAL-012).",
-              "type": "boolean",
-              "x-quader-env": "QUADER_MALWARE_DATABASE_FRESHCLAM"
-            },
-            "freshclam_dir": {
-              "default": "/var/lib/quader/freshclam",
-              "description": "The directory freshclam writes and the worker reads, the volume the two containers of a worker pod share (R-MAL-010, R-HA-069).",
-              "type": "string",
-              "x-quader-env": "QUADER_MALWARE_DATABASE_FRESHCLAM_DIR"
-            },
-            "keep": {
-              "default": "48h",
-              "description": "How long the task keeps the items of versions that are not in use in upstream/clamav; the version in use is never removed (R-MAL-010).",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_MALWARE_DATABASE_KEEP",
-              "x-quader-type": "duration"
-            },
             "max_file_size": {
               "default": "512MiB",
               "description": "Largest file of a signature database the task reads; a larger one is refused database_invalid (R-MAL-010).",
@@ -2618,17 +2598,21 @@
               "x-quader-env": "QUADER_MALWARE_DATABASE_MAX_FILE_SIZE",
               "x-quader-type": "bytes"
             },
-            "proxy": {
-              "default": "",
-              "description": "An HTTP proxy for freshclam, http://\u003chost\u003e:\u003cport\u003e, rendered into freshclam.conf by the chart; Quader's own outbound proxy does not reach freshclam (H-1106).",
-              "type": "string",
-              "x-quader-env": "QUADER_MALWARE_DATABASE_PROXY"
-            },
             "repository": {
-              "default": "upstream/clamav",
-              "description": "The qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of the repository the signature database is kept in: the system repository upstream/clamav of ClamAV's definitions (R-REPO-075), or a local generic repository of an own project for an installation without internet (R-MAL-012). Whoever holds deploy on such a repository decides what the scanners compare content with (H-1107).",
+              "default": "",
+              "description": "With the source repository: the qualified name \u003cprojectKey\u003e/\u003crepoKey\u003e of the local generic repository an administrator fills (example ops/clamav-db). Whoever holds deploy there decides what the scanners compare content with and what the endpoint of upstream/clamav serves (H-1107). Not read with the source updater.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_DATABASE_REPOSITORY"
+            },
+            "source": {
+              "default": "updater",
+              "description": "Where the database task takes the signature database from: updater, the Deployment malware-updater-freshclam that fetches ClamAV's whole signed containers and that the worker asks every 30 minutes over malware.updater (R-MAL-010); repository, a local generic repository of an own project that an administrator fills by hand with the files of cvdupdate, for an installation without a way to ClamAV's network, where the chart renders no updater and the settings page shows the commands (R-MAL-012).",
+              "enum": [
+                "updater",
+                "repository"
+              ],
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_DATABASE_SOURCE"
             },
             "stale_after": {
               "default": "48h",
@@ -2738,13 +2722,19 @@
             },
             "server_name": {
               "default": "",
-              "description": "The name the malware scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-packages.\u003cnamespace\u003e.svc, the name of packages (R-HA-063).",
+              "description": "The name the malware scanner and the updater require in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-packages.\u003cnamespace\u003e.svc, the name of packages (R-HA-063).",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_SERVER_NAME"
             },
+            "updater_client_name": {
+              "default": "",
+              "description": "The name the scan listener's signature database routes admit besides client_name: the updater's, for its seed (R-MAL-032), and the name by which the listener records the updater's report of itself as the kind freshclam (R-OPS-048, Q-OPS-224). The blob route never admits it. It must differ from client_name and be one of server.scan_clients when that list is set. The chart sets \u003cfullname\u003e-malware-updater-freshclam.\u003cnamespace\u003e.svc while it renders the updater.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_UPDATER_CLIENT_NAME"
+            },
             "url": {
               "default": "",
-              "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a malware scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere.",
+              "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a malware scanner and in the updater; empty in the role all, where it means the process's own scan listener. Neither reads another address: a call cannot point them elsewhere.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_URL"
             }
@@ -2830,6 +2820,36 @@
               "description": "The malware scanner's listener, an origin: https://\u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty: the worker's job makes no call and its check malwareScannerClamav reports why (Q-MAL-60); the blobs wait pending.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCANNER_URL"
+            }
+          },
+          "type": "object"
+        },
+        "updater": {
+          "additionalProperties": false,
+          "properties": {
+            "client_name": {
+              "default": "",
+              "description": "The name the updater's listener requires in a client certificate, listed exactly among its DNS names (Q-ARCH-552): the worker's. Required in the updater while server.tls serves TLS. The chart sets \u003cfullname\u003e-worker.\u003cnamespace\u003e.svc.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_UPDATER_CLIENT_NAME"
+            },
+            "directory": {
+              "default": "/var/lib/clamav",
+              "description": "In the updater: the directory freshclam writes and the updater seeds, lists and serves, the volume its two containers share (R-MAL-032, R-HA-069). Read by the updater only.",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_UPDATER_DIRECTORY"
+            },
+            "server_name": {
+              "default": "",
+              "description": "The name the worker requires in the updater's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-malware-updater-freshclam.\u003cnamespace\u003e.svc, the name of the updater's own pair (R-HA-063).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_UPDATER_SERVER_NAME"
+            },
+            "url": {
+              "default": "",
+              "description": "The updater's listener, an origin: https://\u003cfullname\u003e-malware-updater-freshclam.\u003cnamespace\u003e.svc:8080 in the chart, which sets it. Empty with the source updater: the database task imports nothing and the check malwareUpdaterFreshclam reports the reason no_updater, which does not gate (Q-MAL-98).",
+              "type": "string",
+              "x-quader-env": "QUADER_MALWARE_UPDATER_URL"
             }
           },
           "type": "object"
@@ -3169,10 +3189,11 @@
         },
         "scanner_kind": {
           "default": "trivy",
-          "description": "The tool a process of the role scanner wraps: trivy, the analysis of container images with Trivy (R-VULN-041), or clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007). The chart runs trivy on the Deployment \u003cfullname\u003e-vuln-scanner-trivy and sets clamav on \u003cfullname\u003e-malware-scanner-clamav. A scanner of the kind clamav reads the section malware instead of vulnerabilities.images. Read by the role scanner only.",
+          "description": "The tool a process of the role scanner wraps: trivy, the analysis of container images with Trivy (R-VULN-041); clamav, the malware scanner with clamd beside it (malware-scanning.md R-MAL-005 to R-MAL-007); or freshclam, the malware scanning's updater beside ClamAV's freshclam, which seeds, lists and serves freshclam's directory to the worker (R-MAL-032, Q-ARCH-562). The chart runs trivy on the Deployment \u003cfullname\u003e-vuln-scanner-trivy, sets clamav on \u003cfullname\u003e-malware-scanner-clamav and freshclam on \u003cfullname\u003e-malware-updater-freshclam. A scanner of the kind clamav reads the section malware instead of vulnerabilities.images, one of the kind freshclam malware.updater and malware.scan_listener. Read by the role scanner only.",
           "enum": [
             "trivy",
-            "clamav"
+            "clamav",
+            "freshclam"
           ],
           "type": "string",
           "x-quader-env": "QUADER_PROCESS_SCANNER_KIND"

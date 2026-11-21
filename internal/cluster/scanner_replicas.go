@@ -15,7 +15,9 @@ import (
 // ScannerRecord is what a report writes into a row, checked by the route before (scanreport.Report.Validate).
 type ScannerRecord struct {
 	Name, Node, Version, Revision, State, Reason, ToolVersion, Database string
-	SlotsInUse, Slots                                                   int
+	// DatabaseBuiltAt is the build time the updater reports of the set its directory holds (the kind freshclam); zero otherwise.
+	DatabaseBuiltAt   time.Time
+	SlotsInUse, Slots int
 }
 
 // ScannerReplicas writes the rows on the scan listener of packages.
@@ -32,7 +34,7 @@ type ScannerReplicas struct {
 func (s ScannerReplicas) Record(ctx context.Context, kind, uid string, r ScannerRecord) (bool, error) {
 	n, err := q.New(s.DB).RecordScannerReplica(ctx, q.RecordScannerReplicaParams{
 		InstanceUid: uid, Kind: kind, Name: r.Name, Node: r.Node, Version: r.Version, Revision: r.Revision, State: r.State,
-		Reason: r.Reason, ToolVersion: r.ToolVersion, DbVersion: r.Database,
+		Reason: r.Reason, ToolVersion: r.ToolVersion, DbVersion: r.Database, DbBuiltAt: builtAt(r.DatabaseBuiltAt),
 		SlotsInUse: int32(r.SlotsInUse), SlotsTotal: int32(r.Slots), //nolint:gosec // bounded by the route's check: 0 to 64
 		StaleSecs: s.System.HeartbeatStaleAfter.Seconds(), MaxRows: int32(s.MaxRows), //nolint:gosec // a small constant
 	})
@@ -40,6 +42,14 @@ func (s ScannerReplicas) Record(ctx context.Context, kind, uid string, r Scanner
 		return false, fmt.Errorf("recording the scanner replica %s: %w", uid, err)
 	}
 	return n == 1, nil
+}
+
+// builtAt is a build time as the statement takes it: RFC 3339, "" for none.
+func builtAt(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339Nano)
 }
 
 // Remove deletes the row of a replica that signed off; false when it had none of that kind.
@@ -57,7 +67,8 @@ type ScannerReplica struct {
 	StateSince, StartedAt, HeartbeatAt                              time.Time
 	Lost                                                            bool
 	ToolVersion, DatabaseVersion                                    string
-	// DatabaseBuiltAt is the build time of the signature database in use when the row names that version; zero otherwise.
+	// DatabaseBuiltAt is the build time the updater reported of the set its directory holds (the kind freshclam), else the build time of
+	// the signature database in use when the row names that version; zero otherwise.
 	DatabaseBuiltAt   time.Time
 	SlotsInUse, Slots int
 }

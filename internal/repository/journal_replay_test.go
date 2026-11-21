@@ -262,6 +262,8 @@ func TestR_REPO_061_NarrowedEntriesAreReadStrictly(t *testing.T) {
 		"a vulnerabilities value out of the set":         `{"repositoryId":"5","vulnerabilities":{"before":{"enabled":true},"after":{"matchPublicAdvisories":"sometimes"}}}`,
 		"no part at all":                                 `{"repositoryId":"5","key":"web/x"}`,
 		"autoClaim false is no part":                     `{"repositoryId":"5","autoClaim":false}`,
+		"clientsOff false is no part":                    `{"repositoryId":"5","clientsOff":false}`,
+		"clientsOff that is no boolean":                  `{"repositoryId":"5","clientsOff":"yes"}`,
 	}
 	for name, raw := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -281,6 +283,14 @@ func TestR_REPO_061_NarrowedEntriesAreReadStrictly(t *testing.T) {
 		}
 		if got := e.parts(); len(got) != 7 {
 			t.Fatalf("parts = %v", got)
+		}
+	})
+	// R-REPO-075, Q-REPO-417: the part of switching the clients of upstream/clamav off is read on its own, so the replay after a
+	// restore switches them off again.
+	t.Run("the part clientsOff is read", func(t *testing.T) {
+		e, id, why := readNarrowed(narrowedObject(`{"repositoryId":"41","key":"upstream/clamav","clientsOff":true}`))
+		if why != "" || id != 41 || !e.ClientsOff || strings.Join(e.parts(), ",") != partClientsOff {
+			t.Fatalf("why = %q id = %d parts = %v", why, id, e.parts())
 		}
 	})
 }

@@ -63,6 +63,34 @@ func TestR_OPS_048_AReportIsCheckedForItsSizeAndShape(t *testing.T) {
 	}
 }
 
+// R-OPS-048, Q-OPS-224: the updater reports the set its directory holds with the daily's build time and no slots; a slot from it, a build
+// time from another kind, and a build time without a set are refused.
+func TestQ_OPS_224_TheUpdaterReportsItsSetAndNoSlots(t *testing.T) {
+	built := time.Date(2026, 11, 21, 8, 29, 0, 0, time.UTC)
+	upd := valid()
+	upd.Name, upd.Reason, upd.Slots, upd.DatabaseBuiltAt = "quader-malware-updater-freshclam-7c9d8-k2l4m", "seed", Slots{}, &built
+	if err := upd.Validate(config.ScannerKindFreshclam); err != nil {
+		t.Fatalf("a valid report of the updater: %v", err)
+	}
+	slots, noSet, clamav := upd, upd, valid()
+	slots.Slots = Slots{InUse: 0, Total: 1}
+	noSet.Database = ""
+	clamav.DatabaseBuiltAt = &built
+	for name, c := range map[string]struct {
+		r    Report
+		kind string
+	}{
+		"slots from the updater":      {slots, config.ScannerKindFreshclam},
+		"a build time without a set":  {noSet, config.ScannerKindFreshclam},
+		"a build time from clamav":    {clamav, config.ScannerKindClamav},
+		"the updater's report as one": {upd, config.ScannerKindClamav},
+	} {
+		if err := c.r.Validate(c.kind); err == nil {
+			t.Errorf("%s: admitted", name)
+		}
+	}
+}
+
 func TestR_OPS_048_DecodeIsStrictAndBounded(t *testing.T) {
 	b, _ := json.Marshal(valid())
 	if _, err := Decode(strings.NewReader(string(b))); err != nil {

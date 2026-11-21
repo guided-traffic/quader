@@ -18151,11 +18151,11 @@ components:
       properties:
         kind:
           type: string
-          enum: [trivy, clamav]
-          description: The kind of scanner, `process.scanner_kind`.
+          enum: [trivy, clamav, freshclam]
+          description: The kind of scanner, `process.scanner_kind`; `freshclam` is the malware scanning's updater (R-MAL-032, Q-OPS-224).
         deployment:
           type: string
-          description: The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372); its Deployment is `<fullname>-<deployment>`.
+          description: The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372) or `malware-updater-freshclam`; its Deployment is `<fullname>-<deployment>`.
           example: vuln-scanner-trivy
         purpose:
           type: string
@@ -18178,7 +18178,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [trivy, clamav]
+          enum: [trivy, clamav, freshclam]
           description: The kind the replica's client certificate names.
         instanceUid:
           type: string
@@ -18198,7 +18198,7 @@ components:
           $ref: "#/components/schemas/ReplicaState"
         reason:
           type: [string, "null"]
-          description: "The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `starting`."
+          description: "The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`."
         stateSince:
           type: string
           format: date-time
@@ -18216,7 +18216,7 @@ components:
           description: The last report, by the database's clock.
         toolVersion:
           type: [string, "null"]
-          description: The version of the tool (Trivy's, clamd's); `null` while the scanner does not know it.
+          description: The version of the tool (Trivy's, clamd's, freshclam's); `null` while the scanner does not know it.
         slots:
           type: object
           required: [inUse, total]
@@ -18226,9 +18226,9 @@ components:
               description: Calls the replica runs now.
             total:
               type: integer
-              description: Calls it runs at a time.
+              description: Calls it runs at a time; 0 for the updater (`freshclam`), which runs no calls.
         database:
-          description: The signature database clamd scans with (`clamav` only); `null` before its first load and for `trivy`.
+          description: The signature database clamd scans with (`clamav`), or the set the updater's directory holds (`freshclam`); `null` before its first load, while the updater holds no complete set, and for `trivy`.
           oneOf:
             - $ref: "#/components/schemas/ScannerDatabase"
             - type: "null"
@@ -18242,7 +18242,7 @@ components:
         builtAt:
           type: [string, "null"]
           format: date-time
-          description: The build time of the version while it is the version in use; `null` for another version.
+          description: The build time of the version while it is the version in use; for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
     ReplicaRuntime:
       type: object
       description: |
@@ -24410,7 +24410,7 @@ components:
     MalwareDatabaseState:
       type: object
       additionalProperties: false
-      required: [version, builtAt, importedAt, stale, repository, freshclam, lastError]
+      required: [version, builtAt, importedAt, stale, repository, source, sourceRepository, lastError]
       description: The signature database in use (R-MAL-010, R-MAL-023); `version` is null until the first version is in use.
       properties:
         version:
@@ -24428,10 +24428,14 @@ components:
           description: "`builtAt` is older than `malware.database.stale_after`; scanning goes on with it."
         repository:
           type: string
-          description: The qualified name of the repository the database is kept in (`malware.database.repository`).
-        freshclam:
-          type: boolean
-          description: "`malware.database.freshclam`: false for an installation without internet, whose page shows the commands of R-MAL-012."
+          description: The qualified name of the repository the database is kept in, `upstream/clamav` (R-MAL-011).
+        source:
+          type: string
+          enum: [updater, repository]
+          description: "`malware.database.source`: `updater`, the Deployment malware-updater-freshclam (R-MAL-010); `repository`, an installation without internet whose page shows the commands of R-MAL-012."
+        sourceRepository:
+          type: [string, "null"]
+          description: With the source `repository`, the repository an administrator fills (`malware.database.repository`); `null` with the source `updater`.
         lastError:
           oneOf:
             - $ref: "#/components/schemas/MalwareDatabaseError"
@@ -24443,7 +24447,7 @@ components:
       properties:
         code:
           type: string
-          description: database_missing, database_invalid, database_repository_invalid or store_failed (R-MAL-010).
+          description: updater_unavailable, database_missing, database_invalid, signature_invalid, database_repository_invalid or store_failed (R-MAL-010).
         detail:
           type: string
         at:

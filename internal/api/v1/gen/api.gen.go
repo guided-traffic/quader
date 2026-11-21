@@ -1873,6 +1873,24 @@ func (e MaintenanceModeMode) Valid() bool {
 	}
 }
 
+// Defines values for MalwareDatabaseStateSource.
+const (
+	MalwareDatabaseStateSourceRepository MalwareDatabaseStateSource = "repository"
+	MalwareDatabaseStateSourceUpdater    MalwareDatabaseStateSource = "updater"
+)
+
+// Valid indicates whether the value is a known member of the MalwareDatabaseStateSource enum.
+func (e MalwareDatabaseStateSource) Valid() bool {
+	switch e {
+	case MalwareDatabaseStateSourceRepository:
+		return true
+	case MalwareDatabaseStateSourceUpdater:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MalwareFindState.
 const (
 	MalwareFindStateFailed      MalwareFindState = "failed"
@@ -3282,14 +3300,17 @@ func (e RoleName) Valid() bool {
 
 // Defines values for ScannerKindKind.
 const (
-	ScannerKindKindClamav ScannerKindKind = "clamav"
-	ScannerKindKindTrivy  ScannerKindKind = "trivy"
+	ScannerKindKindClamav    ScannerKindKind = "clamav"
+	ScannerKindKindFreshclam ScannerKindKind = "freshclam"
+	ScannerKindKindTrivy     ScannerKindKind = "trivy"
 )
 
 // Valid indicates whether the value is a known member of the ScannerKindKind enum.
 func (e ScannerKindKind) Valid() bool {
 	switch e {
 	case ScannerKindKindClamav:
+		return true
+	case ScannerKindKindFreshclam:
 		return true
 	case ScannerKindKindTrivy:
 		return true
@@ -3342,14 +3363,17 @@ func (e ScannerKindReplicas) Valid() bool {
 
 // Defines values for ScannerReplicaKind.
 const (
-	ScannerReplicaKindClamav ScannerReplicaKind = "clamav"
-	ScannerReplicaKindTrivy  ScannerReplicaKind = "trivy"
+	ScannerReplicaKindClamav    ScannerReplicaKind = "clamav"
+	ScannerReplicaKindFreshclam ScannerReplicaKind = "freshclam"
+	ScannerReplicaKindTrivy     ScannerReplicaKind = "trivy"
 )
 
 // Valid indicates whether the value is a known member of the ScannerReplicaKind enum.
 func (e ScannerReplicaKind) Valid() bool {
 	switch e {
 	case ScannerReplicaKindClamav:
+		return true
+	case ScannerReplicaKindFreshclam:
 		return true
 	case ScannerReplicaKindTrivy:
 		return true
@@ -9020,7 +9044,7 @@ type MalwareBlob struct {
 type MalwareDatabaseError struct {
 	At time.Time `json:"at"`
 
-	// Code database_missing, database_invalid, database_repository_invalid or store_failed (R-MAL-010).
+	// Code updater_unavailable, database_missing, database_invalid, signature_invalid, database_repository_invalid or store_failed (R-MAL-010).
 	Code   string `json:"code"`
 	Detail string `json:"detail"`
 
@@ -9031,15 +9055,18 @@ type MalwareDatabaseError struct {
 // MalwareDatabaseState The signature database in use (R-MAL-010, R-MAL-023); `version` is null until the first version is in use.
 type MalwareDatabaseState struct {
 	// BuiltAt The build time of the daily file; the database's date that the screens show.
-	BuiltAt *time.Time `json:"builtAt"`
-
-	// Freshclam `malware.database.freshclam`: false for an installation without internet, whose page shows the commands of R-MAL-012.
-	Freshclam  bool                  `json:"freshclam"`
+	BuiltAt    *time.Time            `json:"builtAt"`
 	ImportedAt *time.Time            `json:"importedAt"`
 	LastError  *MalwareDatabaseError `json:"lastError"`
 
-	// Repository The qualified name of the repository the database is kept in (`malware.database.repository`).
+	// Repository The qualified name of the repository the database is kept in, `upstream/clamav` (R-MAL-011).
 	Repository string `json:"repository"`
+
+	// Source `malware.database.source`: `updater`, the Deployment malware-updater-freshclam (R-MAL-010); `repository`, an installation without internet whose page shows the commands of R-MAL-012.
+	Source MalwareDatabaseStateSource `json:"source"`
+
+	// SourceRepository With the source `repository`, the repository an administrator fills (`malware.database.repository`); `null` with the source `updater`.
+	SourceRepository *string `json:"sourceRepository"`
 
 	// Stale `builtAt` is older than `malware.database.stale_after`; scanning goes on with it.
 	Stale bool `json:"stale"`
@@ -9047,6 +9074,9 @@ type MalwareDatabaseState struct {
 	// Version The set's name, `main-<n>.daily-<n>.bytecode-<n>`.
 	Version *string `json:"version"`
 }
+
+// MalwareDatabaseStateSource `malware.database.source`: `updater`, the Deployment malware-updater-freshclam (R-MAL-010); `repository`, an installation without internet whose page shows the commands of R-MAL-012.
+type MalwareDatabaseStateSource string
 
 // MalwareFind defines model for MalwareFind.
 type MalwareFind struct {
@@ -11356,17 +11386,17 @@ type RotateRequest struct {
 
 // ScannerDatabase defines model for ScannerDatabase.
 type ScannerDatabase struct {
-	// BuiltAt The build time of the version while it is the version in use; `null` for another version.
+	// BuiltAt The build time of the version while it is the version in use; for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
 	BuiltAt *time.Time `json:"builtAt"`
 	Version string     `json:"version"`
 }
 
 // ScannerKind defines model for ScannerKind.
 type ScannerKind struct {
-	// Deployment The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372); its Deployment is `<fullname>-<deployment>`.
+	// Deployment The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372) or `malware-updater-freshclam`; its Deployment is `<fullname>-<deployment>`.
 	Deployment string `json:"deployment"`
 
-	// Kind The kind of scanner, `process.scanner_kind`.
+	// Kind The kind of scanner, `process.scanner_kind`; `freshclam` is the malware scanning's updater (R-MAL-032, Q-OPS-224).
 	Kind    ScannerKindKind    `json:"kind"`
 	Purpose ScannerKindPurpose `json:"purpose"`
 
@@ -11380,7 +11410,7 @@ type ScannerKind struct {
 	Tool string `json:"tool"`
 }
 
-// ScannerKindKind The kind of scanner, `process.scanner_kind`.
+// ScannerKindKind The kind of scanner, `process.scanner_kind`; `freshclam` is the malware scanning's updater (R-MAL-032, Q-OPS-224).
 type ScannerKindKind string
 
 // ScannerKindPurpose defines model for ScannerKind.Purpose.
@@ -11403,7 +11433,7 @@ type ScannerList struct {
 
 // ScannerReplica defines model for ScannerReplica.
 type ScannerReplica struct {
-	// Database The signature database clamd scans with (`clamav` only); `null` before its first load and for `trivy`.
+	// Database The signature database clamd scans with (`clamav`), or the set the updater's directory holds (`freshclam`); `null` before its first load, while the updater holds no complete set, and for `trivy`.
 	Database *ScannerDatabase `json:"database"`
 
 	// HeartbeatAt The last report, by the database's clock.
@@ -11424,14 +11454,14 @@ type ScannerReplica struct {
 	// Node The Kubernetes node name the scanner reports; `null` outside Kubernetes.
 	Node *string `json:"node"`
 
-	// Reason The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `starting`.
+	// Reason The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`.
 	Reason   *string `json:"reason"`
 	Revision string  `json:"revision"`
 	Slots    struct {
 		// InUse Calls the replica runs now.
 		InUse int `json:"inUse"`
 
-		// Total Calls it runs at a time.
+		// Total Calls it runs at a time; 0 for the updater (`freshclam`), which runs no calls.
 		Total int `json:"total"`
 	} `json:"slots"`
 
@@ -11444,7 +11474,7 @@ type ScannerReplica struct {
 	// StateSince When the replica's state or its reason last changed, by the database's clock.
 	StateSince time.Time `json:"stateSince"`
 
-	// ToolVersion The version of the tool (Trivy's, clamd's); `null` while the scanner does not know it.
+	// ToolVersion The version of the tool (Trivy's, clamd's, freshclam's); `null` while the scanner does not know it.
 	ToolVersion *string `json:"toolVersion"`
 
 	// Version The scanner's build of Quader.

@@ -6787,12 +6787,12 @@ export interface components {
         };
         ScannerKind: {
             /**
-             * @description The kind of scanner, `process.scanner_kind`.
+             * @description The kind of scanner, `process.scanner_kind`; `freshclam` is the malware scanning's updater (R-MAL-032, Q-OPS-224).
              * @enum {string}
              */
-            kind: "trivy" | "clamav";
+            kind: "trivy" | "clamav" | "freshclam";
             /**
-             * @description The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372); its Deployment is `<fullname>-<deployment>`.
+             * @description The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372) or `malware-updater-freshclam`; its Deployment is `<fullname>-<deployment>`.
              * @example vuln-scanner-trivy
              */
             deployment: string;
@@ -6817,7 +6817,7 @@ export interface components {
              * @description The kind the replica's client certificate names.
              * @enum {string}
              */
-            kind: "trivy" | "clamav";
+            kind: "trivy" | "clamav" | "freshclam";
             /** @description Random per process start. */
             instanceUid: string;
             /** @description The pod name, else the host name with the process ID. The scanner's own statement, at most 253 characters. */
@@ -6828,7 +6828,7 @@ export interface components {
             version: string;
             revision: string;
             state: components["schemas"]["ReplicaState"];
-            /** @description The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `starting`. */
+            /** @description The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `seed` (the updater before its seed ended), `starting`. */
             reason: string | null;
             /**
              * Format: date-time
@@ -6847,15 +6847,15 @@ export interface components {
              * @description The last report, by the database's clock.
              */
             heartbeatAt: string;
-            /** @description The version of the tool (Trivy's, clamd's); `null` while the scanner does not know it. */
+            /** @description The version of the tool (Trivy's, clamd's, freshclam's); `null` while the scanner does not know it. */
             toolVersion: string | null;
             slots: {
                 /** @description Calls the replica runs now. */
                 inUse: number;
-                /** @description Calls it runs at a time. */
+                /** @description Calls it runs at a time; 0 for the updater (`freshclam`), which runs no calls. */
                 total: number;
             };
-            /** @description The signature database clamd scans with (`clamav` only); `null` before its first load and for `trivy`. */
+            /** @description The signature database clamd scans with (`clamav`), or the set the updater's directory holds (`freshclam`); `null` before its first load, while the updater holds no complete set, and for `trivy`. */
             database: components["schemas"]["ScannerDatabase"] | null;
         };
         ScannerDatabase: {
@@ -6863,7 +6863,7 @@ export interface components {
             version: string;
             /**
              * Format: date-time
-             * @description The build time of the version while it is the version in use; `null` for another version.
+             * @description The build time of the version while it is the version in use; for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
              */
             builtAt: string | null;
         };
@@ -11087,14 +11087,19 @@ export interface components {
             importedAt: string | null;
             /** @description `builtAt` is older than `malware.database.stale_after`; scanning goes on with it. */
             stale: boolean;
-            /** @description The qualified name of the repository the database is kept in (`malware.database.repository`). */
+            /** @description The qualified name of the repository the database is kept in, `upstream/clamav` (R-MAL-011). */
             repository: string;
-            /** @description `malware.database.freshclam`: false for an installation without internet, whose page shows the commands of R-MAL-012. */
-            freshclam: boolean;
+            /**
+             * @description `malware.database.source`: `updater`, the Deployment malware-updater-freshclam (R-MAL-010); `repository`, an installation without internet whose page shows the commands of R-MAL-012.
+             * @enum {string}
+             */
+            source: "updater" | "repository";
+            /** @description With the source `repository`, the repository an administrator fills (`malware.database.repository`); `null` with the source `updater`. */
+            sourceRepository: string | null;
             lastError: components["schemas"]["MalwareDatabaseError"] | null;
         };
         MalwareDatabaseError: {
-            /** @description database_missing, database_invalid, database_repository_invalid or store_failed (R-MAL-010). */
+            /** @description updater_unavailable, database_missing, database_invalid, signature_invalid, database_repository_invalid or store_failed (R-MAL-010). */
             code: string;
             detail: string;
             /** Format: date-time */

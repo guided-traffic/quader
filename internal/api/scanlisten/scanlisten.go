@@ -79,6 +79,12 @@ func malwareScanner(p httpserver.Principal) bool {
 	return p.Kind == httpserver.KindSystem && p.Name == registrytoken.BlobSubject
 }
 
+// databaseReader reports whether the request's principal may read the database routes: the malware scanner, or the updater for its
+// seed (registrytoken.UpdaterSubject, R-MAL-032), which the stage yields for their certificates.
+func databaseReader(p httpserver.Principal) bool {
+	return malwareScanner(p) || (p.Kind == httpserver.KindSystem && p.Name == registrytoken.UpdaterSubject)
+}
+
 // blob serves one blob to the malware scanner (R-MAL-006): the token's digest, read through the token's repository while it holds the
 // blob, whole (no Range), with Content-Length, Repr-Digest and application/octet-stream.
 func (h *handler) blob(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +162,7 @@ func (h *handler) copy(w http.ResponseWriter, r *http.Request, body io.Reader, n
 // listing answers the version in use and its files (R-MAL-006, Q-MAL-27).
 func (h *handler) listing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !malwareScanner(httpserver.PrincipalFrom(ctx)) {
+	if !databaseReader(httpserver.PrincipalFrom(ctx)) {
 		notFound(w, r)
 		return
 	}
@@ -190,7 +196,7 @@ func (h *handler) listing(w http.ResponseWriter, r *http.Request) {
 // scanner checks the bytes against (R-MAL-007).
 func (h *handler) file(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !malwareScanner(httpserver.PrincipalFrom(ctx)) {
+	if !databaseReader(httpserver.PrincipalFrom(ctx)) {
 		notFound(w, r)
 		return
 	}

@@ -86,11 +86,11 @@ SELECT count(DISTINCT valkey ->> 'primary')::bigint AS views
 -- bound against a scanner that invents replicas, H-1161), and never over a row of another kind. draining is the last state of an
 -- instance, as in the registry (Q-HA-308); state_since moves when the state or its reason changes. No row affected: refused.
 INSERT INTO scanner_replica (instance_uid, kind, name, node, version, revision, state, reason, state_since, tool_version, db_version,
-                             slots_in_use, slots_total, started_at, heartbeat_at)
+                             db_built_at, slots_in_use, slots_total, started_at, heartbeat_at)
 SELECT sqlc.arg(instance_uid)::text::uuid, sqlc.arg(kind)::text, sqlc.arg(name)::text, NULLIF(sqlc.arg(node)::text, ''),
        sqlc.arg(version)::text, sqlc.arg(revision)::text, sqlc.arg(state)::text, NULLIF(sqlc.arg(reason)::text, ''), now(),
-       NULLIF(sqlc.arg(tool_version)::text, ''), NULLIF(sqlc.arg(db_version)::text, ''), sqlc.arg(slots_in_use)::int,
-       sqlc.arg(slots_total)::int, now(), now()
+       NULLIF(sqlc.arg(tool_version)::text, ''), NULLIF(sqlc.arg(db_version)::text, ''),
+       NULLIF(sqlc.arg(db_built_at)::text, '')::timestamptz, sqlc.arg(slots_in_use)::int, sqlc.arg(slots_total)::int, now(), now()
  WHERE EXISTS (SELECT 1 FROM scanner_replica e WHERE e.instance_uid = sqlc.arg(instance_uid)::text::uuid)
     OR (SELECT count(*) FROM scanner_replica s
          WHERE s.kind = sqlc.arg(kind)::text
@@ -102,7 +102,7 @@ ON CONFLICT (instance_uid) DO UPDATE
        state_since = CASE WHEN scanner_replica.state = 'draining'
                             OR (scanner_replica.state = EXCLUDED.state AND scanner_replica.reason IS NOT DISTINCT FROM EXCLUDED.reason)
                           THEN scanner_replica.state_since ELSE now() END,
-       tool_version = EXCLUDED.tool_version, db_version = EXCLUDED.db_version,
+       tool_version = EXCLUDED.tool_version, db_version = EXCLUDED.db_version, db_built_at = EXCLUDED.db_built_at,
        slots_in_use = EXCLUDED.slots_in_use, slots_total = EXCLUDED.slots_total, heartbeat_at = now()
  WHERE scanner_replica.kind = EXCLUDED.kind;
 
@@ -112,12 +112,13 @@ DELETE FROM scanner_replica WHERE instance_uid = sqlc.arg(instance_uid)::text::u
 
 -- name: ListScannerReplicas :many
 -- The rows as GET /api/v1/system/scanners lists them, with the rule of the registry's list (Q-OPS-210): a row that went stale while
--- draining has signed off and is not listed, every other stale row is lost. db_built_at is the build time of the signature database in
--- use when the row names that version.
+-- draining has signed off and is not listed, every other stale row is lost. db_built_at is the build time the updater reported of the set
+-- its directory holds (the kind freshclam), else the build time of the signature database in use when the row names that version.
 SELECT s.instance_uid, s.kind, s.name, s.node, s.version, s.revision, s.state, s.reason, s.state_since, s.tool_version, s.db_version,
        s.slots_in_use, s.slots_total, s.started_at, s.heartbeat_at,
        (s.heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8))::bool AS lost,
-       (SELECT d.built_at FROM malware_database d WHERE d.version IS NOT NULL AND d.version = s.db_version)::timestamptz AS db_built_at
+       COALESCE(s.db_built_at,
+                (SELECT d.built_at FROM malware_database d WHERE d.version IS NOT NULL AND d.version = s.db_version))::timestamptz AS db_built_at
   FROM scanner_replica s
  WHERE NOT (s.state = 'draining' AND s.heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8))
  ORDER BY s.kind, s.name, s.instance_uid;

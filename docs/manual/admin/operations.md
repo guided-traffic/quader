@@ -28,6 +28,7 @@ The chart's probes use these paths: startup and liveness `/healthz`, readiness `
 | `draining` | from the start of a shutdown |
 | `vulnScannerTrivy` | a pod of `<fullname>-vuln-scanner-trivy` while its certificate has not loaded or does not allow client authentication (`certificate`), Trivy does not answer its version (`analyser`), its working directory is not writable (`spool`), or it drains (`draining`); never a process of the role `all`, which reports it as degraded |
 | `malwareScannerClamav` | a pod of `<fullname>-malware-scanner-clamav` while its certificate has not loaded (`certificate`), no signature database is loaded yet (`database`), `clamd` does not answer (`clamd`), or it drains (`draining`); never a worker, which reports it as degraded with `no_scanner` while `malware.scanner.url` is empty |
+| `malwareUpdaterFreshclam` | the pod of `<fullname>-malware-updater-freshclam` while its certificate has not loaded (`certificate`), it has not seeded `freshclam`'s directory from the database in use yet (`seed`, at most a minute), or it drains (`draining`); it does not wait for `freshclam`'s first download, so an updater that cannot reach ClamAV's network stays ready and the database's age raises the alarm. Never a worker, which reports it as degraded with `no_updater` while `malware.updater.url` is empty and the source is `updater` |
 
 A check of a scanner pod carries the name of its Deployment in camel case, and so does the check a worker or the role `all` reports about
 that scanner; the System page shows a sentence for each when it is degraded.
@@ -320,9 +321,11 @@ there for whoever may open it. With `malware.enabled: false` the side bar has no
 
 | Message | Code | What to do |
 |---|---|---|
+| The updater could not be reached. | `updater_unavailable` | Recorded only once a database was in use: the worker's request to `malware-updater-freshclam` got no answer, a refused handshake or a `5xx`; the updater's row on the System page and the log of its container `quader` say why. Scanning goes on with the database in use |
 | No signature database was found. | `database_missing` | Recorded only once a database was in use: the updater `malware-updater-freshclam` offers no complete set (the logs of its containers `quader` and `freshclam` say why); without internet, the repository holds no database at its root |
-| A file of the signature database was refused. | `database_invalid` | A file failed the checks, or a scanner could not load the version; the version before stays in use and the refused one is not offered again |
-| The repository the configuration names cannot hold the database. | `database_repository_invalid` | `malware.database.repository` names no local generic repository |
+| A file of the signature database was refused. | `database_invalid` | A file failed the checks (no header, too large, a name the updater may not offer, a version lower than the one in use), or a scanner could not load the version; the version before stays in use and the refused one is not offered again |
+| ClamAV's signature of a file did not verify. | `signature_invalid` | A container from the updater does not carry ClamAV's valid signature, or its content differs from what its header states; nothing of that update is stored and the version in use stays. A file damaged on the way is fetched again by `freshclam` at its next check; a lasting failure means the updater, or the mirror it uses, offers files ClamAV did not publish |
+| The repository the configuration names cannot hold the database. | `database_repository_invalid` | `upstream/clamav` is missing (run `quader migrate`), or with the source `repository` `malware.database.repository` names no local generic repository |
 | A file of the signature database could not be stored. | `store_failed` | The object store refused the write; see [When a dependency is unavailable](#when-a-dependency-is-unavailable) |
 
 **Without internet.** With `malware.database.source: repository` and `malware.database.repository` naming a local generic repository of
@@ -352,7 +355,10 @@ malwareUpdaterFreshclam:
 ```
 
 The updater checks for new signatures every two hours and keeps working with what it has when it cannot reach the network: scanning goes
-on with the database in use, and after 48 hours `QuaderMalwareDatabaseStale` fires. Until the first version is stored no alert fires and
+on with the database in use, and after 48 hours `QuaderMalwareDatabaseStale` fires. The worker asks it every 30 minutes and takes only what
+it does not hold yet; a restarted updater first copies the database in use from Quader, so it fetches only what is newer from ClamAV's
+network. `upstream/clamav` keeps the files of the database in use and of the one before it; older versions are listed as **Files removed**
+for 30 days (`malware.rescan.cycle`) and then go. Until the first version is stored no alert fires and
 no failure is recorded: the updater's row on the System page and the empty **Signature database** on this page are what show it.
 
 **A repository's own setting.** A repository's settings have a closed section **Malware scan** with **Only checked artifacts can be

@@ -604,7 +604,8 @@ nothing worth taking.
   scan listener's database routes, the listing and the files of its directory on `GET /updater/v1/database` and
   `GET /updater/v1/database/{name}`, which admit the worker's name), reads `malware.updater` and `malware.scan_listener`, holds its TLS pair,
   the CA and the directory `freshclam` writes, and its readiness, the check `malwareUpdaterFreshclam`, waits for its seed. It serves no scan.
-  The chart renders it as a Deployment of its own with a container `freshclam` beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-069).
+  The chart renders it as a Deployment of its own with a container `freshclam` beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-069). Built
+  (2026-11-21): [wire_malware_updater.go](../../internal/app/wire_malware_updater.go), [internal/malware/updater](../../internal/malware/updater/updater.go).
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
   `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. In the role `all` both are empty and mean the
   process's own listeners over loopback (Q-ARCH-531).

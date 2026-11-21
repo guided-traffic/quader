@@ -4,20 +4,23 @@ import "strings"
 
 // scannerSections are the parts of the tree the role scanner reads (R-ARCH-036, Q-ARCH-527): the process, its listeners and their
 // TLS, the probes, the log, the metrics, the runtime, its spool, and its kind's section: the image scanning for a scanner of the kind
-// trivy, the malware section for one of the kind clamav (Q-ARCH-560, Q-ARCH-561). Every other key keeps its value but is neither validated nor
+// trivy, the malware section for one of the kind clamav (Q-ARCH-560, Q-ARCH-561), the updater's link and the scan listener's for the
+// updater of the kind freshclam, which has no spool (R-MAL-032, Q-ARCH-562). Every other key keeps its value but is neither validated nor
 // resolved in that role, so a file the chart does not mount into the scanner (the database's, Valkey's, the object store's, the key
 // ring's) is no error there; the role builds nothing that would read one (internal/app).
 func scannerSections(kind string) []string {
-	own := "vulnerabilities.images"
-	if kind == ScannerKindClamav {
-		own = "malware"
+	switch kind {
+	case ScannerKindClamav:
+		return []string{"process", "server", "health", "log", "metrics", "runtime", "storage.spool", "malware"}
+	case ScannerKindFreshclam:
+		return []string{"process", "server", "health", "log", "metrics", "runtime", "malware.updater", "malware.scan_listener"}
 	}
-	return []string{"process", "server", "health", "log", "metrics", "runtime", "storage.spool", own}
+	return []string{"process", "server", "health", "log", "metrics", "runtime", "storage.spool", "vulnerabilities.images"}
 }
 
 // scannerReads reports whether the role scanner of the kind reads the key or the section at path.
 func scannerReads(path, kind string) bool {
-	if path == "vulnerabilities.enabled" && kind != ScannerKindClamav {
+	if path == "vulnerabilities.enabled" && kind == ScannerKindTrivy {
 		return true
 	}
 	if path == "system.heartbeat_interval" {

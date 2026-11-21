@@ -40,16 +40,20 @@ func CertDir(tb testing.TB) string {
 func KindName(kind string) string { return kind + ".quader.test" }
 
 // roleKinds are the kinds whose names the pair of a role carries: web serves api and packages, all is every kind in one process but
-// the malware scanner. The two scanners are processes of the role scanner with a pair of their kind each, vuln-scanner-trivy and
-// malware-scanner-clamav (R-HA-065, R-HA-068, Q-HA-372), which a replica names in ReplicaOptions.Pair.
+// the malware scanner. The two scanners and the updater are processes of the role scanner with a pair of their kind each,
+// vuln-scanner-trivy, malware-scanner-clamav and malware-updater-freshclam (R-HA-065, R-HA-068, R-HA-069, Q-HA-372), which a replica
+// names in ReplicaOptions.Pair.
 var roleKinds = map[string][]string{
 	"web": {"api", "packages"}, "api": {"api"}, "packages": {"packages"}, "worker": {"worker"},
 	"vuln-scanner-trivy": {"vuln-scanner-trivy"}, "malware-scanner-clamav": {"malware-scanner-clamav"},
-	"all": {"api", "packages", "worker", "vuln-scanner-trivy"},
+	"malware-updater-freshclam": {"malware-updater-freshclam"},
+	"all":                       {"api", "packages", "worker", "vuln-scanner-trivy"},
 }
 
 // clientRoles are the roles whose pair a link presents as a client, and so carries the usage client auth.
-var clientRoles = map[string]bool{"worker": true, "vuln-scanner-trivy": true, "malware-scanner-clamav": true, "all": true}
+var clientRoles = map[string]bool{
+	"worker": true, "vuln-scanner-trivy": true, "malware-scanner-clamav": true, "malware-updater-freshclam": true, "all": true,
+}
 
 // rolePairs issues a pair per role from the stack's CA into dir: the names of its kinds, localhost, 127.0.0.1 and ::1 (the harness
 // verifies the replicas by address), server authentication, and client authentication for the roles that call a link (worker,

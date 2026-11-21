@@ -726,8 +726,9 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
       builtAt: new Date(Date.now() - 4 * 86_400_000).toISOString(),
       importedAt: new Date(Date.now() - 4 * 86_400_000 + 3_600_000).toISOString(),
       stale: true,
-      repository: 'ops/clamav-db',
-      freshclam: false,
+      repository: 'upstream/clamav',
+      source: 'repository',
+      sourceRepository: 'ops/clamav-db',
       lastError: {
         code: 'database_missing',
         detail: 'The repository ops/clamav-db holds no main.cvd, daily.cvd or bytecode.cvd at its root.',

@@ -645,7 +645,8 @@ already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.m
   its tool (the analyser's version that Trivy answered at the start; `clamd`'s from its answer to `VERSION`, asked until it answered once;
   `freshclam`'s from the first line of `freshclam --version` that its container wrote, [malware-scanning.md](malware-scanning.md)
   R-MAL-032), its slots in use and in all (none for the updater), and for ClamAV the signature database `clamd` scans with, for the updater
-  the set its directory holds and the build time of its newest daily. At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
+  the set its directory holds and the build time of its newest daily (the member `databaseBuiltAt`, kept in the column `db_built_at`,
+  [Q-OPS-226](#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots)). At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
   `DELETE` on the same path.
 - **The kind is the certificate's.** The route takes no token and admits a request whose verified client certificate lists the name of a
   kind exactly: `vulnerabilities.images.registry.client_name` is the kind `trivy`, `malware.scan_listener.client_name` the kind `clamav`,
@@ -6560,6 +6561,25 @@ place is the row that already carries the tool's version and, for ClamAV, its da
 administrator needs the loader's failure reason on the screen, which its log carries today.
 
 **Applied in the spec:** R-OPS-048; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049; [api-and-ui.md](api-and-ui.md) R-UI-038.
+
+### Q-OPS-226 · The updater's report carries its daily's build time in a column of its own, and no slots
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Taken while
+building the updater's report of Q-OPS-224.
+
+Context: the list joins a row's database to `malware_database` for its build time, which names only the version in use; the updater
+usually holds a newer set than the one in use (it fetched it, the worker has not imported it yet), and the table refused a row without a
+slot and a database from any kind but `clamav` (migration 00090).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The report's member `databaseBuiltAt`, from the kind `freshclam` only, kept in a column `db_built_at`; the list shows it before the join; the updater reports the slots `{0, 0}`, which the table admits for its kind only (migration 00095) (chosen) | One column and one member | The System page shows how old the updater's newest daily is whichever version it is, as Q-OPS-224 asks; the API's shape stays (`slots` and `database.builtAt` as they are) | A self-report of a pod that talks to the internet: a taken-over updater can name any build time (H-1161) |
+| (b) The join alone | No schema change | Nothing new | `null` for the newest daily the updater holds, exactly the figure that tells an aging updater |
+| (c) `slots` optional in the API | The honest shape | No made-up zero | A change of every screen that reads the replicas, for one kind |
+
+**Choice:** (a). **Rationale:** the build time is the one figure that tells whether the updater still reaches ClamAV's network, and the
+pod is the only one that knows it. The development agent would revisit this if a screen needs to tell "no slots" from "0 of 0".
+**Applied in the spec:** R-OPS-048; [malware-scanning.md](malware-scanning.md) R-MAL-032.
 
 ## What this does not cover
 
