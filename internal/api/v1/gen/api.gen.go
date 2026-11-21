@@ -3789,22 +3789,22 @@ func (e SignatureRepositoryReportClass) Valid() bool {
 
 // Defines values for SignatureRole.
 const (
-	Attestation SignatureRole = "attestation"
-	Provenance  SignatureRole = "provenance"
-	Publisher   SignatureRole = "publisher"
-	Registry    SignatureRole = "registry"
+	SignatureRoleAttestation SignatureRole = "attestation"
+	SignatureRoleProvenance  SignatureRole = "provenance"
+	SignatureRolePublisher   SignatureRole = "publisher"
+	SignatureRoleRegistry    SignatureRole = "registry"
 )
 
 // Valid indicates whether the value is a known member of the SignatureRole enum.
 func (e SignatureRole) Valid() bool {
 	switch e {
-	case Attestation:
+	case SignatureRoleAttestation:
 		return true
-	case Provenance:
+	case SignatureRoleProvenance:
 		return true
-	case Publisher:
+	case SignatureRolePublisher:
 		return true
-	case Registry:
+	case SignatureRoleRegistry:
 		return true
 	default:
 		return false
@@ -3886,6 +3886,90 @@ func (e SignatureTrustState) Valid() bool {
 	case SignatureTrustStatePublic:
 		return true
 	case SignatureTrustStateUntrusted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningBacklogKind.
+const (
+	SigningBacklogKindAttestation SigningBacklogKind = "attestation"
+	SigningBacklogKindNpm         SigningBacklogKind = "npm"
+)
+
+// Valid indicates whether the value is a known member of the SigningBacklogKind enum.
+func (e SigningBacklogKind) Valid() bool {
+	switch e {
+	case SigningBacklogKindAttestation:
+		return true
+	case SigningBacklogKindNpm:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningIdentitySource.
+const (
+	SigningIdentitySourceConfiguration SigningIdentitySource = "configuration"
+	SigningIdentitySourceUpload        SigningIdentitySource = "upload"
+)
+
+// Valid indicates whether the value is a known member of the SigningIdentitySource enum.
+func (e SigningIdentitySource) Valid() bool {
+	switch e {
+	case SigningIdentitySourceConfiguration:
+		return true
+	case SigningIdentitySourceUpload:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningIdentityState.
+const (
+	SigningIdentityStateAnnounced SigningIdentityState = "announced"
+	SigningIdentityStateCurrent   SigningIdentityState = "current"
+	SigningIdentityStatePending   SigningIdentityState = "pending"
+	SigningIdentityStatePrevious  SigningIdentityState = "previous"
+	SigningIdentityStateRetired   SigningIdentityState = "retired"
+)
+
+// Valid indicates whether the value is a known member of the SigningIdentityState enum.
+func (e SigningIdentityState) Valid() bool {
+	switch e {
+	case SigningIdentityStateAnnounced:
+		return true
+	case SigningIdentityStateCurrent:
+		return true
+	case SigningIdentityStatePending:
+		return true
+	case SigningIdentityStatePrevious:
+		return true
+	case SigningIdentityStateRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningOverviewState.
+const (
+	SigningOverviewStateConfiguration SigningOverviewState = "configuration"
+	SigningOverviewStateNone          SigningOverviewState = "none"
+	SigningOverviewStateUpload        SigningOverviewState = "upload"
+)
+
+// Valid indicates whether the value is a known member of the SigningOverviewState enum.
+func (e SigningOverviewState) Valid() bool {
+	switch e {
+	case SigningOverviewStateConfiguration:
+		return true
+	case SigningOverviewStateNone:
+		return true
+	case SigningOverviewStateUpload:
 		return true
 	default:
 		return false
@@ -12778,6 +12862,144 @@ type SignatureVersionReport struct {
 	Version      string                      `json:"version"`
 }
 
+// SigningBacklog defines model for SigningBacklog.
+type SigningBacklog struct {
+	// Due Work that waits or is due.
+	Due int64 `json:"due"`
+
+	// Failed Work that reached its last attempt; the job makes it due again once a day.
+	Failed      int64              `json:"failed"`
+	Kind        SigningBacklogKind `json:"kind"`
+	OldestDueAt *time.Time         `json:"oldestDueAt"`
+}
+
+// SigningBacklogKind defines model for SigningBacklog.Kind.
+type SigningBacklogKind string
+
+// SigningCertificateUpload defines model for SigningCertificateUpload.
+type SigningCertificateUpload struct {
+	// Ca PEM of the root (and intermediates) when chain does not end in it.
+	Ca *string `json:"ca,omitempty"`
+
+	// Chain PEM, the leaf first, then its intermediates; the root last, or in ca.
+	Chain string `json:"chain"`
+}
+
+// SigningIdentity One signing identity, without key material (R-SIG-045).
+type SigningIdentity struct {
+	AnnouncedAt *time.Time `json:"announcedAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
+
+	// CreatedBy `<kind>:<name>` of the principal that made it; null for the files of the Helm values.
+	CreatedBy *string `json:"createdBy"`
+
+	// Csr The PEM certificate request of a pending key (R-SIG-047).
+	Csr       *string    `json:"csr"`
+	CurrentAt *time.Time `json:"currentAt"`
+
+	// ExpiresAt A previous identity's end of signing, the expiry npm's keys answer lists.
+	ExpiresAt *time.Time `json:"expiresAt"`
+
+	// Fingerprint The lower-case hex SHA-256 of the certificate, "" while pending.
+	Fingerprint string `json:"fingerprint"`
+	Id          int64  `json:"id"`
+
+	// Issuer The certificate's issuer, "" while pending.
+	Issuer string `json:"issuer"`
+
+	// KeySha256 The lower-case hex SHA-256 of the public key.
+	KeySha256 string `json:"keySha256"`
+
+	// Names The alternative names, the URIs first; the first URI is the identity a verifier names.
+	Names     []string   `json:"names"`
+	NotAfter  *time.Time `json:"notAfter"`
+	NotBefore *time.Time `json:"notBefore"`
+
+	// NpmKeyId npm's keyid of the key (R-SIG-050).
+	NpmKeyId  string                `json:"npmKeyId"`
+	RetiredAt *time.Time            `json:"retiredAt"`
+	Source    SigningIdentitySource `json:"source"`
+	State     SigningIdentityState  `json:"state"`
+
+	// Subject The certificate's subject; for a pending key the subject of its request.
+	Subject string `json:"subject"`
+
+	// SwitchAt An announced identity's switch, the end of its announce period.
+	SwitchAt *time.Time `json:"switchAt"`
+}
+
+// SigningIdentitySource defines model for SigningIdentity.Source.
+type SigningIdentitySource string
+
+// SigningIdentityState defines model for SigningIdentity.State.
+type SigningIdentityState string
+
+// SigningIdentityImport defines model for SigningIdentityImport.
+type SigningIdentityImport struct {
+	Ca    *string `json:"ca,omitempty"`
+	Chain string  `json:"chain"`
+
+	// Key One PEM block of PKCS#8, SEC 1 or encrypted PKCS#8. Kept sealed by the key ring, never answered.
+	Key string `json:"key"`
+
+	// Passphrase The passphrase of an encrypted key, used once and kept nowhere.
+	Passphrase *string `json:"passphrase,omitempty"`
+}
+
+// SigningKeyRequest A key request (R-SIG-047). Without a URI and an e-mail address the URI is `server.base_url`.
+type SigningKeyRequest struct {
+	Emails *[]string `json:"emails,omitempty"`
+
+	// Subject The subject a key request asks for; every field at most 64 characters, the country two capital letters.
+	Subject *SigningSubject `json:"subject,omitempty"`
+	Uris    *[]string       `json:"uris,omitempty"`
+}
+
+// SigningOverview Quader's signing identity (R-SIG-045, R-SIG-055).
+type SigningOverview struct {
+	// AnnouncePeriodSeconds `signing.identity.announce_period`: how long a new identity is listed before it signs (R-SIG-048).
+	AnnouncePeriodSeconds int64            `json:"announcePeriodSeconds"`
+	Announced             *SigningIdentity `json:"announced"`
+	Backlog               []SigningBacklog `json:"backlog"`
+	Current               *SigningIdentity `json:"current"`
+
+	// Enabled `signing.enabled` of the configuration: false signs nothing, also with an identity (R-SIG-058).
+	Enabled bool `json:"enabled"`
+
+	// Managed The Helm values name the identity; uploads, key requests and removals are refused (R-SIG-046).
+	Managed bool             `json:"managed"`
+	Pending *SigningIdentity `json:"pending"`
+
+	// Previous The previous identities, newest first. Retired ones are not listed.
+	Previous []SigningIdentity `json:"previous"`
+	Refused  *SigningRefusal   `json:"refused"`
+
+	// State The source of the current identity, or none while no identity is current.
+	State SigningOverviewState `json:"state"`
+}
+
+// SigningOverviewState The source of the current identity, or none while no identity is current.
+type SigningOverviewState string
+
+// SigningRefusal The last pair of the files of the Helm values that failed R-SIG-045 (R-SIG-046).
+type SigningRefusal struct {
+	At time.Time `json:"at"`
+
+	// Fingerprint The SHA-256 of the refused leaf, when it parsed.
+	Fingerprint *string `json:"fingerprint"`
+	Reason      string  `json:"reason"`
+}
+
+// SigningSubject The subject a key request asks for; every field at most 64 characters, the country two capital letters.
+type SigningSubject struct {
+	C  *string `json:"C,omitempty"`
+	CN *string `json:"CN,omitempty"`
+	L  *string `json:"L,omitempty"`
+	O  *string `json:"O,omitempty"`
+	OU *string `json:"OU,omitempty"`
+	ST *string `json:"ST,omitempty"`
+}
+
 // SnippetMark defines model for SnippetMark.
 type SnippetMark struct {
 	// Kind `token`: where the credential goes (a reference to the variable, or the placeholder the browser fills). `value`: a placeholder or an example the reader replaces.
@@ -16967,6 +17189,15 @@ type CreateSignatureBlockJSONRequestBody = NewSignatureBlock
 // UpdateSignatureSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateSignatureSettings for application/merge-patch+json ContentType.
 type UpdateSignatureSettingsApplicationMergePatchPlusJSONRequestBody = SignatureSettingsPatch
 
+// UploadSigningCertificateJSONRequestBody defines body for UploadSigningCertificate for application/json ContentType.
+type UploadSigningCertificateJSONRequestBody = SigningCertificateUpload
+
+// ImportSigningIdentityJSONRequestBody defines body for ImportSigningIdentity for application/json ContentType.
+type ImportSigningIdentityJSONRequestBody = SigningIdentityImport
+
+// CreateSigningKeyJSONRequestBody defines body for CreateSigningKey for application/json ContentType.
+type CreateSigningKeyJSONRequestBody = SigningKeyRequest
+
 // PutSystemBannerJSONRequestBody defines body for PutSystemBanner for application/json ContentType.
 type PutSystemBannerJSONRequestBody = BannerInput
 
@@ -18545,6 +18776,33 @@ type ServerInterface interface {
 	// UpdateSignatureSettings Allow or forbid project trust anchors
 	// (PATCH /api/v1/signatures/settings)
 	UpdateSignatureSettings(w http.ResponseWriter, r *http.Request, params UpdateSignatureSettingsParams)
+	// GetSigningChain The certificate chain of the current signing identity
+	// (GET /api/v1/signing/chain.pem)
+	GetSigningChain(w http.ResponseWriter, r *http.Request)
+	// RetireSigningIdentity Retire a previous signing identity
+	// (POST /api/v1/signing/identities/{id}/retire)
+	RetireSigningIdentity(w http.ResponseWriter, r *http.Request, id string)
+	// RemoveSigningIdentity Remove the current uploaded signing identity
+	// (DELETE /api/v1/signing/identity)
+	RemoveSigningIdentity(w http.ResponseWriter, r *http.Request)
+	// GetSigningIdentity Read Quader's signing identity
+	// (GET /api/v1/signing/identity)
+	GetSigningIdentity(w http.ResponseWriter, r *http.Request)
+	// UploadSigningCertificate Upload the certificate the CA issued for the pending key
+	// (PUT /api/v1/signing/identity/certificate)
+	UploadSigningCertificate(w http.ResponseWriter, r *http.Request)
+	// ImportSigningIdentity Import a signing key and its certificate
+	// (POST /api/v1/signing/identity/import)
+	ImportSigningIdentity(w http.ResponseWriter, r *http.Request)
+	// CreateSigningKey Create a signing key and its certificate request
+	// (POST /api/v1/signing/identity/key)
+	CreateSigningKey(w http.ResponseWriter, r *http.Request)
+	// DiscardSigningKey Discard the pending signing key
+	// (DELETE /api/v1/signing/identity/pending)
+	DiscardSigningKey(w http.ResponseWriter, r *http.Request)
+	// GetSigningTrustedRoot The trusted root of Quader's signatures
+	// (GET /api/v1/signing/trusted-root.json)
+	GetSigningTrustedRoot(w http.ResponseWriter, r *http.Request)
 	// ListBackupRuns List backup runs
 	// (GET /api/v1/system/backups)
 	ListBackupRuns(w http.ResponseWriter, r *http.Request, params ListBackupRunsParams)
@@ -31818,6 +32076,144 @@ func (siw *ServerInterfaceWrapper) UpdateSignatureSettings(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// GetSigningChain operation middleware
+func (siw *ServerInterfaceWrapper) GetSigningChain(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSigningChain(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetireSigningIdentity operation middleware
+func (siw *ServerInterfaceWrapper) RetireSigningIdentity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetireSigningIdentity(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveSigningIdentity operation middleware
+func (siw *ServerInterfaceWrapper) RemoveSigningIdentity(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveSigningIdentity(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSigningIdentity operation middleware
+func (siw *ServerInterfaceWrapper) GetSigningIdentity(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSigningIdentity(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UploadSigningCertificate operation middleware
+func (siw *ServerInterfaceWrapper) UploadSigningCertificate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UploadSigningCertificate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportSigningIdentity operation middleware
+func (siw *ServerInterfaceWrapper) ImportSigningIdentity(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportSigningIdentity(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSigningKey operation middleware
+func (siw *ServerInterfaceWrapper) CreateSigningKey(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSigningKey(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DiscardSigningKey operation middleware
+func (siw *ServerInterfaceWrapper) DiscardSigningKey(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DiscardSigningKey(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSigningTrustedRoot operation middleware
+func (siw *ServerInterfaceWrapper) GetSigningTrustedRoot(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSigningTrustedRoot(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBackupRuns operation middleware
 func (siw *ServerInterfaceWrapper) ListBackupRuns(w http.ResponseWriter, r *http.Request) {
 
@@ -35561,6 +35957,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signatures/blocks", wrapper.CreateSignatureBlock)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signatures/blocks/{id}", wrapper.DeleteSignatureBlock)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/findings", wrapper.ListSignatureFindings)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signing/identity", wrapper.RemoveSigningIdentity)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signing/identity", wrapper.GetSigningIdentity)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signing/identity/key", wrapper.CreateSigningKey)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/signing/identity/certificate", wrapper.UploadSigningCertificate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signing/identity/import", wrapper.ImportSigningIdentity)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signing/identity/pending", wrapper.DiscardSigningKey)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signing/identities/{id}/retire", wrapper.RetireSigningIdentity)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signing/trusted-root.json", wrapper.GetSigningTrustedRoot)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signing/chain.pem", wrapper.GetSigningChain)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror", wrapper.GetRepositoryMirror)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run", wrapper.RunRepositoryMirror)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups", wrapper.ListBackupRuns)

@@ -210,6 +210,9 @@ func layerTable() []layerRule {
 		// Signatures on artifacts (signatures.md): the vocabulary at the root, the store of the signature tables below it. The format
 		// host turns a format's candidates into the store's batch and records it in the hook's transaction.
 		{"internal/signatures", layerDomain},
+		// Quader's own signing identity (signatures.md stage 2): the material, the states and the public parts at the root, the private
+		// key below it in internal/signing/key, the store of the signing tables and the worker's job beside it (R-SIG-049).
+		{"internal/signing", layerDomain},
 
 		// The vocabulary the dispatcher and the registry root share about a request below /v2/ (Q-OCI-56): the standard
 		// library and internal/qname only, so the dispatcher needs neither the registry root nor the authentication stage.

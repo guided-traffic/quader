@@ -368,5 +368,7 @@ The trusted CA bundle (R-HA-043): its files are added to proxy.outbound.tls.ca_f
 {{- include "quader.scannerManagedConfig" (dict "root" . "managed" $managed) -}}
 {{- /* The trust anchors declared in signatures.anchors (R-SIG-018, templates/_signatures.tpl). */ -}}
 {{- include "quader.signaturesManagedConfig" (dict "root" . "managed" $managed) -}}
+{{- /* The files of Quader's signing identity, mounted into the worker pods (R-HA-071, templates/_signing.tpl). */ -}}
+{{- include "quader.signingManagedConfig" (dict "root" . "managed" $managed) -}}
 {{- $managed | mergeOverwrite (deepCopy .Values.config) | toYaml -}}
 {{- end -}}

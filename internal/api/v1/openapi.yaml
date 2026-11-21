@@ -15121,6 +15121,339 @@ paths:
   # <<< signatures
   #
   # >>> M6b mirror
+  /api/v1/signing/identity:
+    get:
+      operationId: getSigningIdentity
+      tags: [signatures]
+      summary: Read Quader's signing identity
+      description: |
+        The installation's signing identity (signatures.md R-SIG-045, R-SIG-055): `state` is the source of the current identity
+        (`configuration` for the files of the Helm values, `upload` for one of the admin area) or `none`; then the current, the
+        announced, the pending and the previous identities, each with its certificate's subject, issuer, alternative names, validity,
+        fingerprint (the SHA-256 of the certificate) and npm key ID; the pending one with its certificate request. `managed` is true
+        while the Helm values name the identity: uploads are refused then. `refused` is the last pair of the files that failed the checks
+        of R-SIG-045, until a pair passes. `backlog` is the job's work per kind. No answer carries key material.
+      x-quader-permission:
+        permission: settings:read
+      responses:
+        "200":
+          description: The signing identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningOverview"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: removeSigningIdentity
+      tags: [signatures]
+      summary: Remove the current uploaded signing identity
+      description: |
+        The current identity becomes previous (R-SIG-048): with no identity current, no key and no npm signature of Quader is on the
+        wire; attestations already made stay served until their certificate expires. An announced identity becomes current at the job's
+        next run. An identity of the Helm values answers `409 signing_identity_managed` (take it out of the values instead); `404` when
+        none is current. A session must have signed in recently (R-AUTHZ-037's rule, R-API-007). Records `signing.identity.removed` with
+        its journal entry.
+      x-quader-permission:
+        permission: security-settings:write
+      x-quader-recent-auth: true
+      responses:
+        "204":
+          description: The identity is previous.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/identity/key:
+    post:
+      operationId: createSigningKey
+      tags: [signatures]
+      summary: Create a signing key and its certificate request
+      description: |
+        Quader makes an ECDSA P-256 key, seals it with the key ring and answers the pending identity with a PKCS#10 request (PEM) for
+        the subject and the alternative names, asking for the key usage `digitalSignature` and the extended key usage `codeSigning`
+        (R-SIG-047). The key never leaves Quader. Without `subject.CN` the common name is `Quader signing`; without a URI and an e-mail
+        address the URI is `server.base_url`. Have the company's CA issue a code-signing certificate for the request, then upload it.
+        `409 signing_identity_managed` while the Helm values name the identity, `409 signing_identity_pending` while a key is pending.
+        A session must have signed in recently. Records `signing.identity.key_created`.
+      x-quader-permission:
+        permission: security-settings:write
+      x-quader-recent-auth: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SigningKeyRequest"
+            example: {subject: {CN: Quader signing, O: Example GmbH, C: DE}, uris: ["https://quader.example.com"], emails: []}
+      responses:
+        "201":
+          description: The pending identity with its certificate request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningIdentity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/identity/certificate:
+    put:
+      operationId: uploadSigningCertificate
+      tags: [signatures]
+      summary: Upload the certificate the CA issued for the pending key
+      description: |
+        The certificate with its chain (PEM, the leaf first; the root last or in `ca`) for the pending key (R-SIG-047). It is checked by
+        R-SIG-045 (an ECDSA P-256 key; a leaf that is no CA, with `digitalSignature`, `codeSigning` and a URI or an e-mail address; valid
+        now with at least 24 hours left; a chain that builds to a self-signed root for code signing; at most 8 certificates of 16 KiB):
+        a failed check answers `422 validation_failed` with the check in `errors[].detail`, a certificate for another key `422
+        signing_key_mismatch`. The identity is announced, or current when none is (R-SIG-048). `409 signing_no_pending_key` without a
+        pending key, `409 signing_identity_announced` while another identity waits for its switch, `409 signing_identity_managed` while
+        the Helm values name the identity. A session must have signed in recently. Records `signing.identity.installed`.
+      x-quader-permission:
+        permission: security-settings:write
+      x-quader-recent-auth: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SigningCertificateUpload"
+      responses:
+        "200":
+          description: The installed identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningIdentity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/identity/import:
+    post:
+      operationId: importSigningIdentity
+      tags: [signatures]
+      summary: Import a signing key and its certificate
+      description: |
+        For a CA that hands out key and certificate together, or a key moved from another installation (R-SIG-047): `key` is one PEM
+        block of PKCS#8, SEC 1 or encrypted PKCS#8 (its `passphrase` is used once and kept nowhere); PKCS#12 is not taken (convert it
+        with `openssl pkcs12 -in <file> -nodes`). The key and the chain are checked by R-SIG-045 as for an upload, the key is sealed with
+        the key ring, and the identity is announced, or current when none is. The key is in no answer, event or log line. A session must
+        have signed in recently. Records `signing.identity.installed`.
+      x-quader-permission:
+        permission: security-settings:write
+      x-quader-recent-auth: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SigningIdentityImport"
+      responses:
+        "201":
+          description: The installed identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningIdentity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/identity/pending:
+    delete:
+      operationId: discardSigningKey
+      tags: [signatures]
+      summary: Discard the pending signing key
+      description: The pending key and its request are removed (R-SIG-047); `404` when none is pending. A session must have signed in recently.
+      x-quader-permission:
+        permission: security-settings:write
+      x-quader-recent-auth: true
+      responses:
+        "204":
+          description: The pending key is gone.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/identities/{id}/retire:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The identity's ID, the decimal `id` of the identity; any other text names none (`404`).
+        schema:
+          type: string
+          pattern: "^[1-9][0-9]{0,18}$"
+    post:
+      operationId: retireSigningIdentity
+      tags: [signatures]
+      summary: Retire a previous signing identity
+      description: |
+        For a key believed taken (R-SIG-048): the identity's key leaves npm's keys at once, none of its signatures is served, its sealed
+        key is dropped, and Quader signs again with the current identity what it signed. `409 signing_identity_not_previous` for an
+        identity that is not previous, `409 signing_key_in_use` when the current or the announced identity has the same key. A session
+        must have signed in recently. Records `signing.identity.retired` with its journal entry.
+      x-quader-permission:
+        permission: security-settings:write
+      x-quader-recent-auth: true
+      responses:
+        "200":
+          description: The retired identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningIdentity"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/trusted-root.json:
+    get:
+      operationId: getSigningTrustedRoot
+      tags: [signatures]
+      summary: The trusted root of Quader's signatures
+      description: |
+        A Sigstore trusted root (`application/vnd.dev.sigstore.trustedroot+json;version=0.1`) with one certificate authority per
+        distinct chain of the current and the previous identities, its intermediates first and its root last, and no transparency log,
+        certificate-transparency log or timestamp authority (R-SIG-052): what `cosign verify-attestation --trusted-root` takes. Public
+        material, anonymous (Q-SIG-72). `404` while no identity is current or previous.
+      security:
+        - {}
+      x-quader-permission:
+        public: true
+      responses:
+        "200":
+          description: The trusted root.
+          content:
+            application/vnd.dev.sigstore.trustedroot+json;version=0.1:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signing/chain.pem:
+    get:
+      operationId: getSigningChain
+      tags: [signatures]
+      summary: The certificate chain of the current signing identity
+      description: |
+        The current identity's leaf, intermediates and root as PEM (R-SIG-052). Public material, anonymous (Q-SIG-72). `404` while no
+        identity is current.
+      security:
+        - {}
+      x-quader-permission:
+        public: true
+      responses:
+        "200":
+          description: The chain.
+          content:
+            application/pem-certificate-chain:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror:
     parameters:
       - $ref: "#/components/parameters/ProjectKey"
@@ -26255,6 +26588,228 @@ components:
           $ref: "#/components/schemas/SignatureTrustRoot"
         backlog:
           $ref: "#/components/schemas/SignatureBacklog"
+    SigningOverview:
+      type: object
+      additionalProperties: false
+      required: [state, enabled, managed, announcePeriodSeconds, current, announced, pending, previous, refused, backlog]
+      description: Quader's signing identity (R-SIG-045, R-SIG-055).
+      properties:
+        state:
+          type: string
+          enum: [none, configuration, upload]
+          description: The source of the current identity, or none while no identity is current.
+        enabled:
+          type: boolean
+          description: "`signing.enabled` of the configuration: false signs nothing, also with an identity (R-SIG-058)."
+        managed:
+          type: boolean
+          description: The Helm values name the identity; uploads, key requests and removals are refused (R-SIG-046).
+        announcePeriodSeconds:
+          type: integer
+          format: int64
+          description: "`signing.identity.announce_period`: how long a new identity is listed before it signs (R-SIG-048)."
+        current:
+          oneOf:
+            - $ref: "#/components/schemas/SigningIdentity"
+            - type: "null"
+        announced:
+          oneOf:
+            - $ref: "#/components/schemas/SigningIdentity"
+            - type: "null"
+        pending:
+          oneOf:
+            - $ref: "#/components/schemas/SigningIdentity"
+            - type: "null"
+        previous:
+          type: array
+          maxItems: 1000
+          description: The previous identities, newest first. Retired ones are not listed.
+          items:
+            $ref: "#/components/schemas/SigningIdentity"
+        refused:
+          oneOf:
+            - $ref: "#/components/schemas/SigningRefusal"
+            - type: "null"
+        backlog:
+          type: array
+          maxItems: 16
+          items:
+            $ref: "#/components/schemas/SigningBacklog"
+    SigningIdentity:
+      type: object
+      additionalProperties: false
+      required: [id, source, state, subject, issuer, names, notBefore, notAfter, fingerprint, npmKeyId, keySha256, csr, createdAt, createdBy, announcedAt, currentAt, switchAt, expiresAt, retiredAt]
+      description: One signing identity, without key material (R-SIG-045).
+      properties:
+        id:
+          type: integer
+          format: int64
+        source:
+          type: string
+          enum: [configuration, upload]
+        state:
+          type: string
+          enum: [pending, announced, current, previous, retired]
+        subject:
+          type: string
+          description: The certificate's subject; for a pending key the subject of its request.
+        issuer:
+          type: string
+          description: The certificate's issuer, "" while pending.
+        names:
+          type: array
+          maxItems: 64
+          description: The alternative names, the URIs first; the first URI is the identity a verifier names.
+          items:
+            type: string
+        notBefore:
+          type: [string, "null"]
+          format: date-time
+        notAfter:
+          type: [string, "null"]
+          format: date-time
+        fingerprint:
+          type: string
+          description: The lower-case hex SHA-256 of the certificate, "" while pending.
+        npmKeyId:
+          type: string
+          description: npm's keyid of the key (R-SIG-050).
+        keySha256:
+          type: string
+          description: The lower-case hex SHA-256 of the public key.
+        csr:
+          type: [string, "null"]
+          description: The PEM certificate request of a pending key (R-SIG-047).
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: [string, "null"]
+          description: '`<kind>:<name>` of the principal that made it; null for the files of the Helm values.'
+        announcedAt:
+          type: [string, "null"]
+          format: date-time
+        currentAt:
+          type: [string, "null"]
+          format: date-time
+        switchAt:
+          type: [string, "null"]
+          format: date-time
+          description: An announced identity's switch, the end of its announce period.
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+          description: A previous identity's end of signing, the expiry npm's keys answer lists.
+        retiredAt:
+          type: [string, "null"]
+          format: date-time
+    SigningRefusal:
+      type: object
+      additionalProperties: false
+      required: [reason, fingerprint, at]
+      description: The last pair of the files of the Helm values that failed R-SIG-045 (R-SIG-046).
+      properties:
+        reason:
+          type: string
+        fingerprint:
+          type: [string, "null"]
+          description: The SHA-256 of the refused leaf, when it parsed.
+        at:
+          type: string
+          format: date-time
+    SigningBacklog:
+      type: object
+      additionalProperties: false
+      required: [kind, due, failed, oldestDueAt]
+      properties:
+        kind:
+          type: string
+          enum: [npm, attestation]
+        due:
+          type: integer
+          format: int64
+          description: Work that waits or is due.
+        failed:
+          type: integer
+          format: int64
+          description: Work that reached its last attempt; the job makes it due again once a day.
+        oldestDueAt:
+          type: [string, "null"]
+          format: date-time
+    SigningSubject:
+      type: object
+      additionalProperties: false
+      description: The subject a key request asks for; every field at most 64 characters, the country two capital letters.
+      properties:
+        CN:
+          type: string
+          maxLength: 64
+        O:
+          type: string
+          maxLength: 64
+        OU:
+          type: string
+          maxLength: 64
+        L:
+          type: string
+          maxLength: 64
+        ST:
+          type: string
+          maxLength: 64
+        C:
+          type: string
+          maxLength: 2
+    SigningKeyRequest:
+      type: object
+      additionalProperties: false
+      description: A key request (R-SIG-047). Without a URI and an e-mail address the URI is `server.base_url`.
+      properties:
+        subject:
+          $ref: "#/components/schemas/SigningSubject"
+        uris:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            maxLength: 512
+        emails:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            maxLength: 254
+    SigningCertificateUpload:
+      type: object
+      additionalProperties: false
+      required: [chain]
+      properties:
+        chain:
+          type: string
+          maxLength: 196608
+          description: PEM, the leaf first, then its intermediates; the root last, or in ca.
+        ca:
+          type: string
+          maxLength: 196608
+          description: PEM of the root (and intermediates) when chain does not end in it.
+    SigningIdentityImport:
+      type: object
+      additionalProperties: false
+      required: [key, chain]
+      properties:
+        key:
+          type: string
+          maxLength: 16384
+          description: One PEM block of PKCS#8, SEC 1 or encrypted PKCS#8. Kept sealed by the key ring, never answered.
+        passphrase:
+          type: string
+          maxLength: 1024
+          description: The passphrase of an encrypted key, used once and kept nowhere.
+        chain:
+          type: string
+          maxLength: 196608
+        ca:
+          type: string
+          maxLength: 196608
     SignatureSettingsPatch:
       type: object
       additionalProperties: false

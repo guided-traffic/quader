@@ -92,6 +92,10 @@ func noFeedEntry() map[string]string {
 		audit.EventSignatureAnchorUpdated:   "narrows a trust anchor; a Bastion serves signatures as bytes and shows no verdict (R-SIG-033)",
 		audit.EventSignatureSettingsChanged: "switches project trust anchors off; a Bastion shows no verdict (R-SIG-033)",
 		audit.EventSignatureSignerBlocked:   "blocks a signer; a Bastion serves signatures as bytes and shows no verdict, so a block changes nothing it serves (R-SIG-033)",
+		// Quader's signing identity (signatures.md R-SIG-048, R-SIG-059): what a withdrawal changes on the wire, npm's keys and the
+		// documents that carry the identity's signatures, reaches a Bastion as those documents' new revisions, not as an entry of its own.
+		audit.EventSigningRemoved: "stops the signing identity; the keys document and the npm documents it changes reach a Bastion as their new revisions (R-SIG-048)",
+		audit.EventSigningRetired: "withdraws a signing identity; the keys document and the npm documents it changes reach a Bastion as their new revisions (R-SIG-048)",
 	}
 }
 

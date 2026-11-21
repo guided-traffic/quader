@@ -86,6 +86,14 @@ makes npm's registry signature of every version of a local npm repository (R-SIG
 repository receives (R-SIG-051 to R-SIG-054). Debian's index signatures keep their own per-repository keys
 ([deb-signing.md](deb-signing.md)).
 
+**What is built** (package 1 of 4, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with its states,
+its two ways in, its checks, the announce and the switch under the lock, removal and retirement, the trusted root and the chain, the events,
+metrics and alerts, and the frame of the job `signing`. npm's signatures and the attestations are not built, so today no signature of
+Quader's own exists and the holders below can sign only through code that is not there yet; a taken-over worker with the key can still sign
+outside Quader. Retiring an uploaded identity drops its sealed key from the database
+([Q-SIG-149](../spec/signatures.md#q-sig-149--retiring-an-uploaded-identity-drops-its-sealed-key)), and a worker drops an opened key once its
+identity neither signs nor waits to.
+
 ```
  Helm values: Secret (cert-manager may issue it)        admin area: key request, certificate upload, import
         │ mounted into worker pods only                        │ api seals the key under the key ring
@@ -123,7 +131,8 @@ administrator retires the identity and, for attestations, until the certificate 
 asks for revocation ([H-1190](#h-1190--a-copied-attestation-outlives-what-it-says)).
 
 **What the design keeps small.** Only the worker loads the key (`api` and `packages`, which face clients and parse their uploads, read
-public parts only, held by the archtest of R-SIG-049); the Helm way keeps the key out of the database and the backups; the plain upload is a
+public parts only, held by the archtest of R-SIG-049, `CheckSigningKey`, which allows `internal/signing/key` to the signing store, the signing
+job and the composition root only, and by the composition root, which builds the key holder on the roles `worker` and `all` alone); the Helm way keeps the key out of the database and the backups; the plain upload is a
 certificate request, so the key never passes a browser (R-SIG-047); a new key is announced before it signs and a signature after its key's
 switch is refused by a lock (R-SIG-048), so no client run aborts on Quader's keys; Quader's referrer never stands where it would hide a
 publisher's older cosign signature (R-SIG-054); every change of the identity is an audit event, and a removal and a retirement carry the
@@ -296,8 +305,10 @@ real: a flaw that runs code in the worker (H-1166 is one way in) or read access 
 Component: the sealed key of an upload (R-SIG-047, Q-SIG-54). Subject: installations whose identity was uploaded in the admin area. Live from
 stage 2 there; dormant with the Helm way. The key ring is mounted into every replica (`api`, `packages`, `worker`) and the restore Job
 ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-030), so a taken-over `api` or `packages` process can read `signing_identities.sealed_key`
-and open it, although only the worker ever does in normal operation. What makes it real: code execution in a role that faces clients; the
-Helm way, whose Secret only the worker pods mount, avoids it.
+and open it, although only the worker ever does in normal operation: the archtest of R-SIG-049 holds which packages import the code that
+opens it, not what a taken-over process does with the key ring. A retired identity's sealed key is gone (Q-SIG-149), so the exposure covers
+the pending, announced, current and previous uploads. What makes it real: code execution in a role that faces clients; the Helm way, whose
+Secret only the worker pods mount, avoids it.
 
 ### H-1189 · The time and the facts of an attestation are Quader's own claim
 

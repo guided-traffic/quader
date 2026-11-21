@@ -30,6 +30,7 @@ type JobsWorkers struct {
 	Vuln        int `yaml:"vuln" default:"1" validate:"min=0" doc:"The advisory sync (R-VULN-004, R-VULN-008)."`
 	Malware     int `yaml:"malware" default:"1" validate:"min=0" doc:"The malware scanning's job and its database task (malware-scanning.md R-MAL-004, R-MAL-010): one job at a time in the installation keeps malware.concurrency calls in flight, so one slot is enough."`
 	Signatures  int `yaml:"signatures" default:"1" validate:"min=0" doc:"The jobs of the signatures on artifacts, signature-verify and signature-trust, and the task signature-trust-root (signatures.md R-SIG-011, R-SIG-012, R-SIG-017): a queue of its own, so neither the malware scanning nor the advisory sync waits behind a backlog of signatures; one job keeps signatures.concurrency checks in flight, so one slot is enough."`
+	Signing     int `yaml:"signing" default:"1" validate:"min=0" doc:"The job signing and its task (signatures.md R-SIG-049): a queue of its own, so that a signature of a publish never waits behind the verification of signatures; one job keeps signing.concurrency operations in flight, so one slot is enough."`
 }
 
 // JobsBackgroundMigrations paces data migrations that run as jobs (R-ARCH-026).
@@ -94,7 +95,7 @@ func (j *Jobs) Claims(queue string) bool { return slices.Contains(j.ClaimedQueue
 // order. A kind registered in another queue is a programming error that the
 // jobs package reports at start-up.
 func (w JobsWorkers) Queues() []string {
-	return []string{"default", "maintenance", "index", "delivery", "mirror", "vuln", "malware", "signatures"}
+	return []string{"default", "maintenance", "index", "delivery", "mirror", "vuln", "malware", "signatures", "signing"}
 }
 
 // Count returns the concurrent jobs of a queue and whether the queue exists.
@@ -116,6 +117,8 @@ func (w JobsWorkers) Count(queue string) (int, bool) {
 		return w.Malware, true
 	case "signatures":
 		return w.Signatures, true
+	case "signing":
+		return w.Signing, true
 	}
 	return 0, false
 }

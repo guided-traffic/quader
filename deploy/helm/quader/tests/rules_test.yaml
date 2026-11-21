@@ -348,6 +348,82 @@ tests:
               summary: The public Sigstore trusted root and npm's registry keys in use are older than 14 days.
               description: The task signature-trust-root has not stored a newer public root for 14 days, so certificate authorities, logs and keys that Sigstore and npm added since are not known, and their signatures read Signed · signer not trusted (R-SIG-017, R-SIG-039). With config.signatures.trust_root.refresh true, the admin page of the signatures and the audit event signature.trust_root.failed name the failure; check the worker's egress to config.signatures.trust_root.url. Without internet (refresh false) the age is that of the release's snapshot (H-1170); upgrade, point trust_root.url at a TUF mirror of the company, or disable the alert.
 
+  # --- QuaderSigningIdentityExpiring -----------------------------------------------------------------------
+  - name: QuaderSigningIdentityExpiring fires an hour after the current certificate has less than 14 days left
+    interval: 1m
+    input_series:
+      - {series: 'quader_signing_identity_not_after_seconds{namespace="default",state="current",pod="w1"}', values: '1000000x200'}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderSigningIdentityExpiring, exp_alerts: []}
+      - eval_time: 70m
+        alertname: QuaderSigningIdentityExpiring
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: The certificate of Quader's signing identity ends within 14 days and no successor is announced.
+              description: When it ends, Quader signs nothing and its attestations stop verifying (R-SIG-045, R-SIG-057). With the Helm values, check that cert-manager renews the Certificate <fullname>-signing (kubectl describe certificate) and that its issuer still issues code signing; a renewal is announced within config.signing.identity.reload_interval. With an uploaded identity, an administrator creates a new key in Admin area › Settings › Signatures and uploads the certificate the CA issues for it (docs/manual/admin/runbook.md).
+  - name: QuaderSigningIdentityExpiring is quiet while a successor is announced or the certificate has time left
+    interval: 1m
+    input_series:
+      - {series: 'quader_signing_identity_not_after_seconds{namespace="default",state="current",pod="w1"}', values: '1000000x200'}
+      - {series: 'quader_signing_identity_not_after_seconds{namespace="default",state="announced",pod="w1"}', values: '9000000x200'}
+      - {series: 'quader_signing_identity_not_after_seconds{namespace="default",state="current",pod="w2"}', values: '1000000x200'}
+      - {series: 'quader_signing_identity_loaded{namespace="default",pod="w1"}', values: '1x200'}
+      - {series: 'quader_signing_oldest_due_seconds{namespace="default",kind="npm",pod="w1"}', values: '5x200'}
+      - {series: 'quader_signing_oldest_due_seconds{namespace="default",kind="attestation",pod="w1"}', values: '9000x200'}
+    alert_rule_test:
+      - {eval_time: 120m, alertname: QuaderSigningIdentityExpiring, exp_alerts: []}
+      - {eval_time: 120m, alertname: QuaderSigningIdentityExpired, exp_alerts: []}
+      - {eval_time: 120m, alertname: QuaderSigningIdentityNotLoaded, exp_alerts: []}
+      - {eval_time: 120m, alertname: QuaderSigningBacklog, exp_alerts: []}
+
+  # --- QuaderSigningIdentityExpired ------------------------------------------------------------------------
+  - name: QuaderSigningIdentityExpired fires at once when the current certificate has ended
+    interval: 1m
+    input_series:
+      - {series: 'quader_signing_identity_not_after_seconds{namespace="default",state="current",pod="w1"}', values: '600x40'}
+    alert_rule_test:
+      - {eval_time: 5m, alertname: QuaderSigningIdentityExpired, exp_alerts: []}
+      - eval_time: 20m
+        alertname: QuaderSigningIdentityExpired
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations:
+              summary: The certificate of Quader's signing identity has ended; Quader signs nothing.
+              description: Local npm versions published from now on carry no registry signature and npm audit signatures reports them missing; no attestation is made, and those made with this certificate stop verifying (R-SIG-045, R-SIG-057). Install a new identity at once (the Helm values or Admin area › Settings › Signatures); the job signs what waited (docs/manual/admin/runbook.md).
+
+  # --- QuaderSigningIdentityNotLoaded ----------------------------------------------------------------------
+  - name: QuaderSigningIdentityNotLoaded fires when no worker holds the current key for 15 minutes
+    interval: 1m
+    input_series:
+      - {series: 'quader_signing_identity_not_after_seconds{namespace="default",state="current",pod="w1"}', values: '100000000x40'}
+      - {series: 'quader_signing_identity_loaded{namespace="default",pod="w1"}', values: '0x40'}
+      - {series: 'quader_signing_identity_loaded{namespace="default",pod="w2"}', values: '0x40'}
+    alert_rule_test:
+      - {eval_time: 10m, alertname: QuaderSigningIdentityNotLoaded, exp_alerts: []}
+      - eval_time: 20m
+        alertname: QuaderSigningIdentityNotLoaded
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: No worker holds the key of the current signing identity.
+              description: An identity is current, but no worker could load its key, so the job signing leaves its work due (R-SIG-049, R-SIG-057). For the Helm values, the worker pods mount the Secret at /var/run/secrets/quader/signing/ and the admin page shows a refused pair of the files with its reason; for an uploaded identity, the key ring of the workers must open signing_identities.sealed_key (quader admin secrets status). A worker started during an announce period holds only the new key until the switch.
+
+  # --- QuaderSigningBacklog --------------------------------------------------------------------------------
+  - name: QuaderSigningBacklog fires when a local npm version waited more than five minutes for its signature
+    interval: 1m
+    input_series:
+      - {series: 'quader_signing_oldest_due_seconds{namespace="default",kind="npm",pod="w1"}', values: '60x10 400x40'}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderSigningBacklog, exp_alerts: []}
+      - eval_time: 30m
+        alertname: QuaderSigningBacklog
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: A local npm version has waited more than five minutes for Quader's registry signature.
+              description: The job signing does not keep up or does not run (R-SIG-049, R-SIG-057); until a version is signed, npm audit signatures reports it missing. Check that a worker claims the queue signing (jobs.workers.signing), quader_signing_identity_loaded and quader_signing_operations_total by result; raise config.signing.concurrency if operations finish but too slowly.
+
   # --- QuaderVulnerabilityClaimedNameMalicious -------------------------------------------------------------
   - name: QuaderVulnerabilityClaimedNameMalicious fires on a malicious match and not on a vulnerability match
     interval: 1m

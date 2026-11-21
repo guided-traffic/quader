@@ -74,6 +74,9 @@ type Config struct {
 	// anchors declared here (R-SIG-018).
 	Signatures Signatures `yaml:"signatures"`
 
+	// Quader's own signing identity and the job signing (signing.go, signatures.md R-SIG-058).
+	Signing Signing `yaml:"signing"`
+
 	// ConfigAsCode holds secrets_dir, which the secret references of M2 use.
 	ConfigAsCode AsCode `yaml:"config_as_code"`
 }

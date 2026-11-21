@@ -1353,6 +1353,7 @@ type Signature struct {
 	Attempts       int32
 	NotBefore      pgtype.Timestamptz
 	Evidence       []byte
+	IdentityID     pgtype.Int8
 }
 
 type SignatureAnchor struct {
@@ -1443,6 +1444,53 @@ type SignatureTrustRoot struct {
 	Document         []byte
 	TufVersionNumber int64
 	FetchedAt        pgtype.Timestamptz
+}
+
+type SigningIdentity struct {
+	ID          int64
+	Source      string
+	State       string
+	PublicKey   []byte
+	KeySha256   []byte
+	NpmKeyid    string
+	SealedKey   pgtype.Text
+	Csr         pgtype.Text
+	Certificate []byte
+	CertSha256  []byte
+	Chain       [][]byte
+	Subject     pgtype.Text
+	Issuer      pgtype.Text
+	Names       []string
+	NotBefore   pgtype.Timestamptz
+	NotAfter    pgtype.Timestamptz
+	AnnouncedAt pgtype.Timestamptz
+	CurrentAt   pgtype.Timestamptz
+	ExpiresAt   pgtype.Timestamptz
+	RetiredAt   pgtype.Timestamptz
+	CreatedAt   pgtype.Timestamptz
+	CreatedBy   pgtype.UUID
+}
+
+type SigningSetting struct {
+	ID                 bool
+	RefusedSha256      []byte
+	RefusedReason      pgtype.Text
+	RefusedFingerprint pgtype.Text
+	RefusedAt          pgtype.Timestamptz
+	FailedRetriedAt    pgtype.Timestamptz
+	FailedReported     json.RawMessage
+	Discovery          json.RawMessage
+}
+
+type SigningWork struct {
+	Kind      string
+	ItemID    int64
+	Reason    string
+	Priority  int16
+	NotBefore pgtype.Timestamptz
+	Attempts  int32
+	Failed    bool
+	Code      pgtype.Text
 }
 
 type StorageUsageDelta struct {

@@ -3555,6 +3555,131 @@
       },
       "additionalProperties": false
     },
+    "signing": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Quader's signing identity (R-HA-071, signatures.md R-SIG-046): at most one source; the Secret reaches the worker pods only",
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "description": "an existing Secret with tls.crt (the leaf and its intermediates), tls.key (an ECDSA P-256 key) and ca.crt (the root); the chart never creates it"
+            },
+            "certManager": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "the cert-manager Certificate <fullname>-signing the chart renders while issuerRef.name is set: ECDSA P-256 with rotationPolicy Always, the usages digital signature and code signing, config.server.base_url as the first URI",
+              "properties": {
+                "issuerRef": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ClusterIssuer",
+                        "Issuer"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "the issuer of the code-signing certificate; empty renders no Certificate"
+                    },
+                    "group": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "commonName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "subject": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "organizations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "countries": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "provinces": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "localities": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "organizationalUnits": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "streetAddresses": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "postalCodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "serialNumber": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "uris": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://[^\\s]+$"
+                  }
+                },
+                "duration": {
+                  "type": "string",
+                  "pattern": "^([0-9]+h)?([0-9]+m)?([0-9]+s)?$",
+                  "minLength": 2
+                },
+                "renewBefore": {
+                  "type": "string",
+                  "pattern": "^([0-9]+h)?([0-9]+m)?([0-9]+s)?$",
+                  "minLength": 2
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "serviceAccount": {
       "type": "object",
       "properties": {

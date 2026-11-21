@@ -350,6 +350,26 @@ const (
 	CodeSignaturesNotEnabled = "signatures_not_enabled"
 )
 
+// Codes of Quader's signing identity (signatures.md R-SIG-047, R-SIG-048, R-SIG-055, Q-SIG-146): answers of its management operations.
+const (
+	// CodeSigningIdentityManaged: the Helm values name the signing identity; uploads, key requests and removals are refused (409).
+	CodeSigningIdentityManaged = "signing_identity_managed"
+	// CodeSigningIdentityPending: a signing key is pending (409).
+	CodeSigningIdentityPending = "signing_identity_pending"
+	// CodeSigningKeyMismatch: the certificate is not for the pending key (422).
+	CodeSigningKeyMismatch = "signing_key_mismatch"
+	// CodeSigningNoPendingKey: a certificate was uploaded while no key is pending (409).
+	CodeSigningNoPendingKey = "signing_no_pending_key"
+	// CodeSigningIdentityAnnounced: another identity waits for its switch (409).
+	CodeSigningIdentityAnnounced = "signing_identity_announced"
+	// CodeSigningIdentityNotPrevious: only a previous identity can be retired (409).
+	CodeSigningIdentityNotPrevious = "signing_identity_not_previous"
+	// CodeSigningKeyInUse: the current or the announced identity has the same key (409).
+	CodeSigningKeyInUse = "signing_key_in_use"
+	// CodeSigningIdentityExists: the certificate is a stored identity's (409).
+	CodeSigningIdentityExists = "signing_identity_exists"
+)
+
 // <<< signatures
 //
 // >>> M6b mirror
@@ -929,6 +949,14 @@ var registry = []CodeInfo{
 	{CodeProjectAnchorsDisabled, Forbidden, "Project trust anchors switched off", "An administrator has not allowed project owners to add trust anchors for their project (the switch of the admin page Signatures). Stored project anchors stay listed and do not apply."},
 	{CodeBlockExists, Conflict, "Signer already blocked", "A block of this signer exists. Lift it first to block it with another reason."},
 	{CodeSignaturesNotEnabled, Conflict, "Signatures off", "signatures.enabled is false in the installation's configuration: no signature is detected or checked."},
+	{CodeSigningIdentityManaged, Conflict, "Signing identity managed by the Helm values", "The Helm values name Quader's signing identity (signing.identity.existingSecret or signing.identity.certManager): it changes with the values, and uploads, key requests and removals are refused while they name one."},
+	{CodeSigningIdentityPending, Conflict, "Signing key pending", "A signing key is pending: upload the certificate the CA issued for its request, or discard it first."},
+	{CodeSigningKeyMismatch, Unprocessable, "Certificate for another key", "The certificate's public key is not the key of the pending certificate request."},
+	{CodeSigningNoPendingKey, Conflict, "No signing key pending", "No signing key is pending: create a signing key first, then upload the certificate the CA issued for its request."},
+	{CodeSigningIdentityAnnounced, Conflict, "Signing identity announced", "Another signing identity is announced and becomes current within the announce period; upload or import the next one after the switch."},
+	{CodeSigningIdentityNotPrevious, Conflict, "Signing identity not previous", "Only a previous signing identity can be retired."},
+	{CodeSigningKeyInUse, Conflict, "Signing key in use", "The current or the announced signing identity has the same key: retiring this certificate would withdraw nothing. Replace the current identity with one of a new key first."},
+	{CodeSigningIdentityExists, Conflict, "Signing identity exists", "The certificate is the certificate of a stored signing identity."},
 	// <<< signatures
 	//
 	// >>> M6b mirror

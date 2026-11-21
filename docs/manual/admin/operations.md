@@ -386,6 +386,27 @@ the blocked signers are set under **Admin area › Settings › Signatures** ([S
 | `QuaderSignatureTrustRootStale` | the public Sigstore root in use is older than 14 days (the refresh's time, or the release's build) | The task `signature-trust-root`'s last error (`GET /api/v1/signatures/settings`, `trustRoot.lastError`) and the egress to `tuf-repo-cdn.sigstore.dev`; without internet set `signatures.trust_root.url` to a TUF mirror of your own, or leave out the alert by name and follow the releases |
 | `quader_signatures_trust_rows_stale` above 0 for long | a change of anchors, blocks or the switch has not reached every signature yet; the API marks such rows `stale` | The jobs `signature-trust` |
 
+## Quader's signing identity
+
+Quader signs with one identity per installation: an ECDSA P-256 key with a code-signing certificate of your company's CA. It comes from the
+Helm values (`signing.identity.existingSecret`, or `signing.identity.certManager` for a cert-manager `Certificate` `<fullname>-signing` whose
+issuer can issue the usage `code signing`), mounted into the worker pods only; or, without either, from the management API: a holder of
+`security-settings:write` creates a key (`POST /api/v1/signing/identity/key`), has the CA issue a certificate for the request it answers,
+and uploads it with its chain (`PUT /api/v1/signing/identity/certificate`); a key and certificate the CA handed out together are imported
+(`POST /api/v1/signing/identity/import`). While the Helm values name an identity, uploads answer `409 signing_identity_managed`. A new
+identity beside the current one is listed for `signing.identity.announce_period` (10 minutes) before it signs; the job `signing` on the
+queue `signing` switches it. `GET /api/v1/signing/identity` shows the identities, a refused pair of the files with its reason, and the
+backlog; the trusted root and the chain are public at `/api/v1/signing/trusted-root.json` and `/api/v1/signing/chain.pem`. npm's registry
+signatures and the receipt attestations that use the identity are not built yet: until they are, nothing is signed with it.
+
+| Signal | Meaning | What to do |
+|---|---|---|
+| `QuaderSigningIdentityExpiring` | the current certificate ends within 14 days and no successor is announced | With the Helm values, `kubectl describe certificate <fullname>-signing` and its issuer; a renewal is announced within `signing.identity.reload_interval`. With an upload, create a key, have it certified, upload it ([runbook](runbook.md#a-signing-identity-that-expires)) |
+| `QuaderSigningIdentityExpired` | the certificate has ended; Quader signs nothing | Install a new identity at once; the job signs what waited |
+| `QuaderSigningIdentityNotLoaded` | an identity is current but no worker holds its key | `refused` of `GET /api/v1/signing/identity` (a pair of the files that fails the checks, with its reason), the worker pods' mount at `/var/run/secrets/quader/signing/`, `quader admin secrets status` for an uploaded key |
+| `QuaderSigningBacklog` | a local npm version has waited more than five minutes for its signature | A worker claims the queue `signing` (`jobs.workers.signing`); `quader_signing_operations_total` by result; `backlog` of the identity's answer |
+| `signing.identity.refused` in the audit log | a pair of the files failed the checks (an RSA key, no `codeSigning`, a chain without its root, less than a day left); the identity in use keeps signing | Fix the Secret or the issuer; the next look of a worker registers the pair |
+
 ## What to watch
 
 | Signal | Meaning |

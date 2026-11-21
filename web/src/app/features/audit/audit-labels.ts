@@ -319,6 +319,20 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.signature.trust_root.failed:Public Sigstore root update failed`;
     case 'signature.trust_root.updated':
       return $localize`:@@audit.action.signature.trust_root.updated:Public Sigstore root updated`;
+    case 'signing.failed':
+      return $localize`:@@audit.action.signing.failed:Signing failed`;
+    case 'signing.identity.installed':
+      return $localize`:@@audit.action.signing.identity.installed:Signing identity installed`;
+    case 'signing.identity.key_created':
+      return $localize`:@@audit.action.signing.identity.key_created:Signing key created`;
+    case 'signing.identity.refused':
+      return $localize`:@@audit.action.signing.identity.refused:Signing identity of the Helm values refused`;
+    case 'signing.identity.removed':
+      return $localize`:@@audit.action.signing.identity.removed:Signing identity removed`;
+    case 'signing.identity.retired':
+      return $localize`:@@audit.action.signing.identity.retired:Signing identity retired`;
+    case 'signing.identity.switched':
+      return $localize`:@@audit.action.signing.identity.switched:Signing identity switched`;
     case 'system.backup.completed':
       return $localize`:@@audit.action.system.backup.completed:Backup completed`;
     case 'system.backup.deleted':

@@ -654,8 +654,9 @@ that calls each verifier, outside the repository:
   package that builds R-SIG-023 reads their state again; a known flaw without a release is a finding of the plan's section 8, not a reason
   to write the verifier anew.
 
-Acceptance criteria: the scheme tests of R-SIG-006; and unit (`internal/archtest`, milliseconds): only `internal/signatures/...` imports
-these libraries, so no format and no other package reaches them.
+Acceptance criteria: the scheme tests of R-SIG-006; and unit (`internal/archtest`, milliseconds): only `internal/signatures/...` and,
+since stage 2 builds its trusted root and its bundles with sigstore-go (R-SIG-052), `internal/signing/...` import these libraries, so no
+format and no other package reaches them.
 
 ## Trust anchors
 
@@ -1662,7 +1663,9 @@ Acceptance criteria: none; the stages bring their own.
 
 ## Quader signs (stage 2)
 
-Status: specified, not built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
+Status: specified; package 1 of 4 is built: the signing identity with its states, its chart, its API, events, metrics and alerts, and the
+frame of the job `signing` ([developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)). npm's registry signatures, the
+attestations and the screens are not built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
 dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden. Hier müssen wir uns aber noch über den Umfang und
 Ziele unterhalten, ich erwarte, dass du mich hier proaktiv berätst.") and decided its frame the same morning: Quader signs as a registry
 where a client checks it with one command, which is Debian (built) and npm ([Q-SIG-10](#q-sig-10--quader-signs-as-a-registry)); it issues
@@ -1797,6 +1800,8 @@ CREATE UNIQUE INDEX signing_identities_current   ON signing_identities ((true)) 
 - **What the database never holds:** the private key of the Helm values. Its row holds the public key, the chain and the state.
 - An identity whose certificate has expired signs nothing, also while `current`; it stays listed (R-SIG-057 alerts before).
 
+- **Built** (package 1 of stage 2, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the checks of the table (`signing.ParseChain`, `Chain.Check`, the refusal naming its check), npm's keyid (`signing.NPMKeyID`) and keys document (`signing.NPMKeys`, which the npm package serves), the table `signing_identities` with the CHECK amended by [Q-SIG-149](#q-sig-149--retiring-an-uploaded-identity-drops-its-sealed-key) and the moves of [Q-SIG-145](#q-sig-145--the-identitys-states-move-by-a-table-a-retired-identity-never-comes-back-a-previous-one-does) ([states.go](../../internal/signing/states.go)).
+
 Acceptance criteria:
 
 - Unit (`internal/signing`, milliseconds, material made by the test with `crypto/x509`): each row of the table with a passing and a
@@ -1826,6 +1831,8 @@ The owner's reading r8: through Helm, a Secret that cert-manager may issue; Helm
   of the files becomes `previous`, and a stored uploaded identity that passes R-SIG-045 is announced; without one Quader signs nothing from
   then on.
 - `api` and `packages` read the public part from the database (the keys endpoint, the chain, the trusted root) and never the files.
+
+- **Built:** the worker's watcher ([job/watcher.go](../../internal/signing/job/watcher.go)) reads the three files at its start and every `reload_interval`, registers a passing pair (its key into the worker's holder) and records a refused one once per content in `signing_settings` (Q-SIG-148), which the API answers as `refused`; a worker that starts with no file named lets the identity of the files go (Q-SIG-145). What "signs an npm publish" shows is the npm package's; the test shows the identity current, rotated and refused.
 
 Acceptance criteria:
 
@@ -1859,6 +1866,8 @@ The plain path is a certificate request: Quader makes the key, and it never leav
 - **Who opens it:** the job `signing` in the worker, for its signing calls (R-SIG-049). `api` never opens it after the generation or the
   import: the check of a certificate against the pending key compares the stored public key.
 - **Re-sealing:** the task `secrets-reencrypt` walks the column like every registered column.
+
+- **Built:** the store ([store/store.go](../../internal/signing/store/store.go)) makes and seals the key in the row's transaction (`internal/signing/key`, the sealed column registered with the key ring and walked by `secrets-reencrypt`), answers the request with the defaults of [Q-SIG-147](#q-sig-147--the-key-requests-defaults-are-the-servers-too-and-its-bounds), takes the CA's certificate against the stored public key, imports PKCS#8, SEC 1 and encrypted PKCS#8 (`signing.ParseKey`), and discards a pending key. The refusals beyond the specification's are [Q-SIG-146](#q-sig-146--the-apis-refusals-beyond-the-three-the-specification-names-and-the-public-answers-without-an-identity)'s.
 
 Acceptance criteria:
 
@@ -1901,6 +1910,8 @@ Priority: **P1** · Covers: quader-only
   (R-SIG-057).
 - **Which signatures a document serves changes** with a removal, a retirement and the first current identity after none: the job raises
   the revision of every npm package whose document changes (R-NPM-009), in batches of 1,000 packages.
+
+- **Built of this** (the identity's own states): the announce period, the switch by the job under the exclusive lock of every identity (`store.SwitchDue`), the shared hold of a signing transaction (`store.HoldCurrent`, refused once the identity is not current or has expired), the removal and the retirement with their events and journal entries, the keys document per state. The npm signatures' and the attestations' part (made again, served or not, the revision raise) is the later packages', which run it through the job's frame (R-SIG-049).
 
 Acceptance criteria:
 
@@ -1949,6 +1960,8 @@ Only the worker holds and opens the key ([Q-SIG-56](#q-sig-56--only-the-worker-h
   R-SIG-048.
 - **No other role opens the key.** `api` and `packages` read public parts; the composition root wires the signer for the roles `worker`
   and `all` only.
+
+- **Built:** the frame ([job/job.go](../../internal/signing/job/job.go)): the table `signing_work`, `store.Enqueue` (in the commit's transaction, waking the job), the job `signing` on the queue `signing` with its task, the order by priority and time, the attempts with their back-off and the daily retry, `signing.failed`, the metrics, and `job.Kind` that a package registers ([Q-SIG-150](#q-sig-150--the-jobs-frame-kinds-the-packages-register-one-discovery-step-per-run-a-job-that-only-switches-without-a-kind)). No kind is registered yet: the commit hook's rows and the signatures are the npm and the attestation packages'. Only the roles worker and all build the holder and the job; `internal/archtest` holds the importers of `internal/signing/key` and `internal/signing/job` (`CheckSigningKey`).
 
 Acceptance criteria:
 
@@ -2266,6 +2279,8 @@ In `api/openapi.yaml` under the tag `signatures`:
   download of the trusted root and the cosign command of R-SIG-052, with the identity's first URI, the predicate type and, for a file, its
   bundle's download).
 
+- **Built:** the rows of the identity (GET, the key, the certificate, the import, the discard, the removal, the retirement, the trusted root and the chain; [signing_api.go](../../internal/api/v1/signing_api.go)). The attestation's route, the answers' `issued` signatures and the client setup's tab `verify` are the attestation and the npm packages'.
+
 Acceptance criteria:
 
 - Integration (area `signing`, `TestR_SIG_055_…`, about 2 s): the operations for an administrator, a `security-admin`, an auditor (reads,
@@ -2343,6 +2358,8 @@ The actor of the job's and the files' events is `system:signing`. No event carri
 | `QuaderSigningIdentityNotLoaded` | `max(quader_signing_identity_loaded) == 0 and on() count(quader_signing_identity_not_after_seconds{state="current"}) > 0` | 15m | warning |
 | `QuaderSigningBacklog` | `max(quader_signing_oldest_due_seconds{kind="npm"}) > 300` | 15m | warning |
 
+- **Built:** the seven events ([events_signing.go](../../internal/audit/events_signing.go)), the five metrics ([job/metrics.go](../../internal/signing/job/metrics.go); `quader_signing_operations_total` counts once a package registers a kind), the four alerts with their promtool tests.
+
 Acceptance criteria:
 
 - Unit (`internal/audit`, under a second): the events are in the registry with their schemas and journal flags.
@@ -2371,14 +2388,18 @@ jobs:
     signing: 1                      # default
 ```
 
-- **Validation** at start, with the key named: `cert_file` and `key_file` both or neither, `ca_file` only with them; `reload_interval`
-  from 10 s to 1 h; `announce_period` from 0 s to 24 h; `wait_for_checks` from 0 s to 7 days; `concurrency` from 1 to 64; `max_attempts`
+- **Validation** at start, with the key named: `cert_file` and `key_file` both or neither, `ca_file` only with them, each a clean
+  absolute path; `reload_interval` from 1 s to 1 h ([Q-SIG-151](#q-sig-151--the-identitys-files-are-read-again-from-every-second-as-the-tls-pairs-are));
+  `announce_period` from 0 s to 24 h; `wait_for_checks` from 0 s to 7 days; `concurrency` from 1 to 64; `max_attempts`
   from 1 to 20.
 - **The chart's values** are R-HA-071's (`signing.identity.existingSecret`, `signing.identity.certManager`).
 - **What it costs:** no Deployment, image or module more (sigstore-go and `golang.org/x/crypto` are in the build); in PostgreSQL about 150
   bytes and a row per npm signature and about 2.5 KiB and a row per attestation, about 3 GB for a million attested artifacts (an
   estimate), with as much written again per rotation (R-SIG-048); for OCI two small objects per attested image in the object store; tens of
   microseconds of the worker's CPU per signature; a revision per npm package and signing run.
+- **Built:** `signing.enabled`, `signing.identity.*`, `signing.concurrency`, `signing.max_attempts` and `jobs.workers.signing`
+  ([config/signing.go](../../internal/config/signing.go)); the keys `signing.attestations.*` join with the attestations
+  ([Q-SIG-152](#q-sig-152--the-identitys-migration-adds-the-column-of-the-issued-signatures-the-attestations-keys-come-with-the-attestations)).
 
 Acceptance criteria: unit (`internal/config`, under a second): the defaults; each refusal of the validation, with the key named.
 
@@ -2398,6 +2419,8 @@ Priority: **P1** · Covers: quader-only
   ([H-1191](../security/artifact-signatures.md#h-1191--a-restore-carries-the-uploaded-identity-into-whichever-installation-restores-it)).
 - **Replicas:** every replica reads the identities from a snapshot that the change area `signing_identities` refreshes within R-ARCH-018's
   bound, so every replica answers the same keys after that bound; the switch's lock is the one coordination (R-SIG-048, R-SIG-049).
+
+- **Built:** the three tables are `data` ([tables_signing.go](../../internal/meta/postgres/tables_signing.go)); the journal re-applies a removal and a retirement ([store/journal.go](../../internal/signing/store/journal.go)); every replica reads the identities from a snapshot that the change area `signing_identities` refreshes ([store/snapshot.go](../../internal/signing/store/snapshot.go)). Not shown at the integration tier: a full backup restored into a fresh installation; the test shows the sealed key opening under its row's id with the installation's key ring, which a restore keeps.
 
 Acceptance criteria: integration (area `signing`, `TestR_SIG_059_…`, about 3 s): a backup with an uploaded identity, restored into a fresh
 installation with the same key ring, keeps signing with it; a retirement recorded after the backup is re-applied by the journal.
@@ -2420,6 +2443,13 @@ the company CA.
 What every leg gains: the unit run under 3 s; the kit milliseconds per format; the integration shard that runs `signing` about 30 s; the
 chart leg about 1 s; `e2e (npm)` about 6 s; `e2e (oci)` about 4 s and the load of the cosign binary in its clients image (not measured).
 No other leg gains anything. With 25 formats: 25 kit cases of milliseconds more, nothing else; no leg loads another format's client.
+
+Measured for package 1 (the identity, its chart, its API; 2026-11-21, the development machine under the load of other builders): unit
+about 0.15 s of test time in `internal/signing`, 0.6 s in `internal/signing/job` (two RSA keys for the refusals), 0.6 s in
+`internal/signing/key`, 1.5 s for the API's two tests; chart 0.5 s for `TestR_HA_071` and the four alerts' promtool cases; integration area
+`signing` 11.6 s for its package with two tests (5.8 s the files, 4.4 s the upload, the rest the stack's start), shard `b`; the replay in
+the area `backup` 0.7 s, shard `c`. The integration tests of R-SIG-048's npm half, R-SIG-049's signing of a publish, R-SIG-050 to R-SIG-054
+and the end-to-end cases are the later packages'.
 
 What only a real client shows and is not tested: `cosign verify-blob-attestation` against a file's bundle (the same verifier library as
 the unit test), Kyverno's and other policy engines' verification in a cluster. Each is measured once by hand when the package that builds
@@ -4831,6 +4861,133 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A row that opens to every file that holds it | | Every holder at once | The answer carries the first holders only (`itemsTruncated`) |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-038.
+
+### Q-SIG-145 · The identity's states move by a table, a retired identity never comes back, a previous one does
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Stage 2's first
+package; R-SIG-045 named the states and left the moves between them open.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Seven moves (pending to announced or current; announced to current or previous; current to previous; previous to announced or retired); a pair of the files whose certificate is a retired identity's is refused; a previous identity is announced again when the files name it again, or, at a worker's start with no file named, when it is the newest upload with 24 hours left (chosen) | | A key believed taken cannot return by a values change; the way back from the Helm values to an upload needs no new upload | A worker that restarts with old values during a rollout lets the identity of the files go again |
+| (b) No way back: a previous identity is final | | Fewer moves | Taking the identity out of the values leaves an installation that had an upload without signing until someone uploads again, against R-SIG-046 |
+| (c) Every move allowed | | Simple | Retiring would mean nothing |
+
+**Choice:** (a). The development agent would revisit the start-only check if rollouts with mixed values cause flapping. **Applied in the spec:**
+R-SIG-045, R-SIG-046. Code: [states.go](../../internal/signing/states.go), [store/files.go](../../internal/signing/store/files.go).
+
+### Q-SIG-146 · The API's refusals beyond the three the specification names, and the public answers without an identity
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `409 signing_no_pending_key` (a certificate without a pending key), `409 signing_identity_announced` (an upload or import while another identity waits for its switch; the files instead replace an announced identity that never signed, Helm wins), `409 signing_identity_not_previous`, `409 signing_key_in_use` (retiring a certificate whose key the current or announced identity has), `409 signing_identity_exists` (a stored certificate again); the trusted root and the chain answer `404` without an identity to trust (chosen) | | Every refusal names its cause; nothing silently replaces an identity that is about to sign; a retirement always withdraws a key | Five more codes |
+| (b) One `409 conflict` for all | | Fewer codes | The screen cannot tell the administrator what to do |
+| (c) An upload during an announce period replaces the announced identity | | No wait | Two identities in ten minutes leave caches with a key that never signs |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-055. Code: [store.go](../../internal/signing/store/store.go), [signing_api.go](../../internal/api/v1/signing_api.go).
+
+### Q-SIG-147 · The key request's defaults are the server's too, and its bounds
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The API applies the form's defaults when a member is absent (common name `Quader signing`; `server.base_url` as the URI when no URI and no e-mail address is given) and refuses at the member: subject fields above 64 characters, a country that is not two capital letters, more than 8 URIs or e-mail addresses, a URI without a host or with a user (chosen) | | A script asks with `{}`; a request that the CA would refuse later is refused now | — |
+| (b) The UI alone fills defaults | | | A call through the API makes a request without an alternative name, which R-SIG-045 then refuses |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-047. Code: [request.go](../../internal/signing/request.go).
+
+### Q-SIG-148 · One row of the signing's state, and the code of the last attempt at the work
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signing_settings`, one row: the last refused pair of the files (its content's SHA-256, the reason, the leaf's fingerprint, the time), the daily retry of failed work, `signing.failed`'s last report per kind and code, discovery's cursor per kind; `signing_work` gains `code`, the reason of its last attempt (chosen) | The pattern of `signature_settings` | "Once per content" and "once an hour per kind and code" hold across workers and restarts; the admin page shows the refusal from any replica | A table more |
+| (b) The refusal and the reports in each worker's memory | | No table | Every worker records the refusal, and the API replica cannot show it |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-046, R-SIG-049, R-SIG-057. Code: migration 00101, [store/work.go](../../internal/signing/store/work.go).
+
+### Q-SIG-149 · Retiring an uploaded identity drops its sealed key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It amends the CHECK
+of R-SIG-045's table: an upload holds a sealed key while it is not retired.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `sealed_key` becomes NULL at the retirement, in its transaction; the journal's replay does the same (chosen) | Debian's retired keys hold none either | A key believed taken is in no backup made after the retirement, and no worker can open it again | A retirement cannot be undone, which Q-SIG-145 wants anyway |
+| (b) Keep it sealed | | Reversible | The key stays in every backup |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-045, R-SIG-048, R-SIG-059.
+
+### Q-SIG-150 · The job's frame: kinds the packages register, one discovery step per run, a job that only switches without a kind
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A package that signs registers a `job.Kind` (its name, `Sign` in a transaction that holds the current identity's row, an optional `Discover`); the job takes due rows of the registered kinds only, runs one discovery step of 10,000 items per kind and run (a step that reached the last item starts the next pass at the first), and a failed row is due again a day after its last attempt; with no kind registered the job switches and reschedules and signs nothing (chosen) | | The npm and the attestation packages add a kind and nothing of the frame; rows of a kind not built yet stay untouched | Discovery passes start again as often as the task runs; a package with a costly discovery bounds it itself |
+| (b) The frame knows npm and attestations by name | | | Every package changes the frame |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-049. Code: [job/kinds.go](../../internal/signing/job/kinds.go), [job/job.go](../../internal/signing/job/job.go).
+
+### Q-SIG-151 · The identity's files are read again from every second, as the TLS pairs are
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It changes R-SIG-058's
+lower bound of `signing.identity.reload_interval` from 10 s to 1 s.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 1 s to 1 h, default 1 minute (chosen) | `server.tls.reload_interval` takes 1 s | The read is three small files compared by content; the integration test rotates in seconds | — |
+| (b) 10 s to 1 h | | | No gain, and a test of a rotation waits ten seconds |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-058.
+
+### Q-SIG-152 · The identity's migration adds the column of the issued signatures; the attestations' keys come with the attestations
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Migration 00101 adds `signatures.identity_id` with `signatures_issued` (R-SIG-054), so that a retirement counts the identity's signatures and both later packages write it; `signature_attachments.source` `issued` and the keys `signing.attestations.*` join with the package that first uses them (chosen) | | The frame is complete for the npm and the attestation packages; no key is documented that nothing reads | Two packages touch the stage 1 tables |
+| (b) Everything of R-SIG-054's schema and R-SIG-058's keys now | | One migration | Keys and a CHECK value no code reads |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-054, R-SIG-058.
+
+### Q-SIG-153 · A worker keeps the key of the files and the one before it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The holder keeps the newest key of the files and the one before it; an opened uploaded key is dropped once its identity is neither current nor announced (chosen) | R-SIG-048: "the old key stays in the memory of the workers that loaded it" | The old identity signs until the switch after cert-manager replaced the files; a retired key leaves memory at the next look | — |
+| (b) Only the key in the files | | Less held | No worker signs between the renewal and the switch |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-048. Code: [job/holder.go](../../internal/signing/job/holder.go).
+
+### Q-SIG-154 · A removal and a retirement yield no entry of the Bastion's feed
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Listed in `noFeedEntry`: what they change on the wire (npm's keys document and the documents with the identity's signatures) reaches a Bastion as those documents' new revisions (chosen) | | No second path for the same change | A Bastion holds the old keys document until its revalidation |
+| (b) A feed entry per withdrawal | | Faster | Duplicates the revisions the npm package raises |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-059; [bastion.md](bastion.md). Code: [bastionmain/feed.go](../../internal/bastionmain/feed.go).
+
+### Q-SIG-155 · The public material: a PEM chain, both answers cacheable for a minute
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `chain.pem` as `application/pem-certificate-chain` (RFC 8555), the trusted root as Sigstore's media type, both with `Cache-Control: public, max-age=60` and `nosniff`, read from the replica's snapshot (chosen) | | An admission controller may poll; a switch is announced ten minutes ahead | — |
+| (b) `no-store` | | Always current | Every poll reads the database's snapshot |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-055.
 
 ## What this does not cover
 

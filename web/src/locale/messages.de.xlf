@@ -27356,6 +27356,69 @@
         <target>Öffentliche Sigstore-Wurzel aktualisiert</target>
       </segment>
     </unit>
+    <unit id="audit.action.signing.failed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
+      </notes>
+      <segment>
+        <source>Signing failed</source>
+        <target>Signieren fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signing.identity.installed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
+      </notes>
+      <segment>
+        <source>Signing identity installed</source>
+        <target>Signaturidentität eingerichtet</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signing.identity.key_created">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
+      </notes>
+      <segment>
+        <source>Signing key created</source>
+        <target>Signaturschlüssel erzeugt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signing.identity.refused">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:329</note>
+      </notes>
+      <segment>
+        <source>Signing identity of the Helm values refused</source>
+        <target>Signaturidentität aus den Helm-Werten abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signing.identity.removed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:331</note>
+      </notes>
+      <segment>
+        <source>Signing identity removed</source>
+        <target>Signaturidentität entfernt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signing.identity.retired">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:333</note>
+      </notes>
+      <segment>
+        <source>Signing identity retired</source>
+        <target>Signaturidentität zurückgezogen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signing.identity.switched">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:335</note>
+      </notes>
+      <segment>
+        <source>Signing identity switched</source>
+        <target>Signaturidentität gewechselt</target>
+      </segment>
+    </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:315</note>

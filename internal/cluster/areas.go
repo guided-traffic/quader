@@ -159,6 +159,11 @@ func init() {
 	// >>> signatures
 	RegisterArea(Area{Name: AreaSignatureAnchors, Owner: "R-SIG-012", Class: ChangeArea, PayloadVersion: 1})
 	// <<< signatures
+	//
+	// The area of Quader's signing identity (signatures.md R-SIG-059). Its cluster_epoch row is seeded by 00101_signing_identity.
+	// >>> signing
+	RegisterArea(Area{Name: AreaSigningIdentities, Owner: "R-SIG-059", Class: ChangeArea, PayloadVersion: 1})
+	// <<< signing
 }
 
 // Names of the areas of this package.
@@ -298,3 +303,12 @@ const AreaMalwareVerdict = "malware_verdict"
 const AreaSignatureAnchors = "signature_anchors"
 
 // <<< signatures
+
+// >>> signing
+
+// AreaSigningIdentities carries a write of Quader's signing identities (R-SIG-045 to R-SIG-048, R-SIG-059): a key request, an
+// installation, a switch, a removal, a retirement. Every replica refreshes its snapshot of the identities, from which npm's keys, the
+// trusted root and the chain are answered. The payload is {"id": <the identity>, "state": "<its state after the write>"}.
+const AreaSigningIdentities = "signing_identities"
+
+// <<< signing

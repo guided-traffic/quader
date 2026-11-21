@@ -678,6 +678,22 @@ carried a name of the revision-column rule without being revision columns (R-ARC
 number is `signature_trust_roots.tuf_version_number`, a number of the update repository that a restore must not raise. Only the ETags
 `signature_settings.version` and `signature_anchors.version` are registered ([signatures.md](signatures.md#the-flow)).
 
+## The signing identity and the job signing (00101)
+
+[00101_signing_identity](../../internal/meta/postgres/migrations/00101_signing_identity.sql) is an expand step of package 1 of the signatures'
+stage 2 ([signatures.md](signatures.md#stage-2-quader-signs), [spec](../spec/signatures.md) R-SIG-045 to R-SIG-049, R-SIG-059):
+`signing_identities` (one row per key and certificate: the source, the state with a partial unique index each for `pending`,
+`announced` and `current`, the public key and its SHA-256, npm's keyid, an upload's `sealed_key` under the key ring (NULL for the files of
+the Helm values and for a retired identity, Q-SIG-149), the pending request, the DER leaf, its SHA-256 (unique), the chain, the names, the
+validity and the times of the states), `signing_work` (a row per kind and item, `item_id REFERENCES items ON DELETE CASCADE`, the reason,
+the priority, the attempts, `failed` and the code of the last attempt, the index of the due rows), `signing_settings` (one row: the last
+refused pair of the files, the daily retry, the hourly report per kind and code, discovery's cursor per kind, Q-SIG-148) and
+`signatures.identity_id REFERENCES signing_identities` with `signatures_issued` (Q-SIG-152). It registers the change area
+`signing_identities` in `cluster_epoch`. No table references `repositories`, so the purge of a retired well-known repository needs none of
+them; no column is a revision (R-ARCH-009). The statements are in [signing.sql](../../internal/meta/postgres/queries/signing.sql); the
+three tables are `data` ([tables_signing.go](../../internal/meta/postgres/tables_signing.go)). The sealed column is registered by
+`internal/signing/key` and walked by `secrets-reencrypt`. The number 00101 follows 00100_signature_trust_names.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

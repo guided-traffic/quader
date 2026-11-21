@@ -32,6 +32,12 @@ import (
 	"github.com/getkin/kin-openapi/routers/legacy"
 )
 
+// The text media types of the document that kin-openapi decodes with no decoder of its own: the PEM certificate chain of the signing
+// identity (RFC 8555 section 9.1, signatures.md R-SIG-052) is text, validated as a string.
+func init() {
+	openapi3filter.RegisterBodyDecoder("application/pem-certificate-chain", openapi3filter.PlainBodyDecoder)
+}
+
 // LoadDocument parses spec and validates it as an OpenAPI 3.1 document: the
 // version, the structure and every reference. It returns the document with
 // servers removed, so a request matches by path alone.

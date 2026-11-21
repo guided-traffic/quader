@@ -1,0 +1,49 @@
+{{- if eq (include "quader.signingSource" .) "certManager" }}
+{{- /*
+The cert-manager Certificate of Quader's signing identity (R-HA-071, Q-HA-385): <fullname>-signing into the Secret of the same name, for
+the URI config.server.base_url and signing.identity.certManager.uris, the usages digital signature and code signing, and an ECDSA P-256
+key with rotationPolicy Always, so that a renewal brings a new key, which the workers announce before it signs (signatures.md R-SIG-048).
+The issuer must be able to issue code signing; the issuer's CA is ca.crt of the Secret.
+*/ -}}
+{{- $c := .Values.signing.identity.certManager }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "quader.signingSecret" . }}
+  labels:
+    {{- include "quader.labels" (dict "root" . "component" "signing") | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  secretName: {{ include "quader.signingSecret" . }}
+  secretTemplate:
+    labels:
+      app.kubernetes.io/name: {{ include "quader.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: signing
+  commonName: {{ $c.commonName | quote }}
+  {{- with $c.subject }}
+  subject:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  uris:
+    - {{ dig "server" "base_url" "" .Values.config | quote }}
+    {{- range $c.uris }}
+    - {{ . | quote }}
+    {{- end }}
+  usages:
+    - digital signature
+    - code signing
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  duration: {{ $c.duration }}
+  renewBefore: {{ $c.renewBefore }}
+  issuerRef:
+    name: {{ $c.issuerRef.name }}
+    kind: {{ $c.issuerRef.kind }}
+    group: {{ $c.issuerRef.group }}
+{{- end }}

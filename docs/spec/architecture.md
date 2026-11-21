@@ -757,6 +757,11 @@ quader/
 │   │   ├── anchors/             # the four kinds of trust anchor, their checks on save (R-SIG-015)
 │   │   ├── shipped/             # the shipped anchors and the release's snapshot of the public Sigstore TUF targets (R-SIG-017)
 │   │   └── job/                 # the jobs signature-verify and signature-trust, the task signature-trust-root (R-SIG-011, R-SIG-012)
+│   ├── signing/                 # Quader's own signing identity: the checks, the states, npm's keyid, the trusted root (signatures.md R-SIG-045 to R-SIG-059)
+│   │   ├── key/                 # the identity's private key: the sealed column, its seal and opening, the key file (R-SIG-047, R-SIG-049)
+│   │   ├── store/               # the store of signing_identities, signing_work and signing_settings, the replay, the snapshot
+│   │   ├── job/                 # the job signing, the watcher of the files, the key holder; worker and all only (R-SIG-046, R-SIG-049)
+│   │   └── signingtest/         # the company CA of the tests
 │   ├── mirror/                  # the mirror mode of remote repositories: dispatch, passes, throttling, status (R-REPO-050 to R-REPO-059)
 │   │   └── discover/            # the discovery contract a format's remote adapter implements (leaf layer, ADR-152)
 │   ├── formatdata/              # store ports of the formats, implemented over the generated queries (Q-ARCH-193)

@@ -258,6 +258,11 @@ type Options struct {
 	Signatures SignatureServices
 	// <<< signatures
 
+	// >>> signing
+	// Signing holds the services of the operations of Quader's signing identity (signing_api.go); without a store they answer 503.
+	Signing SigningServices
+	// <<< signing
+
 	// >>> T-17 deb
 	// DebKeys is the data port's signing-key group behind the Debian key operations (deb_keys.go); nil answers them with 503.
 	DebKeys DebKeyStore

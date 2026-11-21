@@ -31,6 +31,9 @@ var ifMatchExempt = map[string]string{
 	"setUpstreamRepositoryState":      "sets one value; the last write wins and a repeat changes nothing (R-REPO-073)",
 	"setUpstreamRepositoryVisibility": "sets one value; the last write wins and a repeat changes nothing (R-REPO-073, Q-AUTHZ-280)",
 	"setUpstreamRepositoryClients":    "sets one switch with its level; the last write wins (R-REPO-075, Q-API-382)",
+	// R-SIG-047: the certificate binds to the one pending key it was issued for, checked against that key's stored public key; a
+	// second upload finds no pending key (409 signing_no_pending_key).
+	"uploadSigningCertificate": "binds the certificate to the one pending key, compared with its public key (R-SIG-047)",
 }
 
 // ifMatchOnReplace are the PUT operations that create a resource where none exists and replace it where one does (Q-API-354):

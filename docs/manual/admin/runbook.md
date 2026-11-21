@@ -228,6 +228,50 @@ The image scanning works in the scanner pods. Their spool holds the analyses and
 
 **When to escalate.** To the owner of the source for an outage of its own. To your security contact for repeated `archive_digest_mismatch` or a `shrink_refused` that the source does not explain: the data may be tampered with.
 
+## A signing identity that expires
+
+**What you see.** `QuaderSigningIdentityExpiring` (14 days left, nothing announced) or `QuaderSigningIdentityExpired` (Quader signs nothing);
+`GET /api/v1/signing/identity` shows the current identity's `notAfter`.
+
+**What it means.** The certificate of Quader's signing identity ends. An identity is never renewed in place: a renewal is a new identity,
+announced for `signing.identity.announce_period` and then switched; the old one stays listed as previous with the moment it stopped signing.
+
+**What to do.**
+
+1. Helm values with cert-manager: `kubectl -n quader describe certificate <fullname>-signing` and the issuer's events. cert-manager renews
+   `renewBefore` (30 days) before the end; a renewal that fails is the issuer's (it must issue the usage `code signing` for an ECDSA P-256 key).
+   Once the Secret holds the new pair, a worker registers it within `signing.identity.reload_interval` and the identity's answer shows it
+   announced. A pair that fails the checks shows as `refused` with its reason, and `signing.identity.refused` is in the audit log.
+2. Helm values with an existing Secret: put the new `tls.crt`, `tls.key` and `ca.crt` into the Secret; nothing restarts.
+3. An uploaded identity: create a key (`POST /api/v1/signing/identity/key`), have the company's CA issue a code-signing certificate for the
+   request, and upload it with its chain (`PUT /api/v1/signing/identity/certificate`). The current identity signs until the new one switches.
+4. Wait for the switch: `signing.identity.switched` in the audit log, the new identity `current` in the answer.
+
+**When to escalate.** To whoever runs the company's CA when it does not issue the certificate. To the maintainers when a passing pair is
+neither announced nor refused within a few reload intervals, or the switch does not come after the announce period (the job `signing` on the
+Jobs screen and its errors).
+
+## A signing key believed taken
+
+**What you see.** A reason to believe the private key of Quader's signing identity left your control: a Secret readable by someone who should
+not, a worker compromised, a backup with an uploaded key in the wrong hands.
+
+**What it means.** Whoever holds the key can sign npm packages as served by your local repositories and attestations of anything as received
+here, until the identity is retired and, for attestations, until its certificate expires (the security architecture's gap H-1187).
+
+**What to do.**
+
+1. Install a new identity with a new key first (a new Secret with a new key, or a key request and an upload), so that Quader keeps signing.
+   With cert-manager, delete the Secret `<fullname>-signing`: cert-manager issues a new key at once (`rotationPolicy: Always`).
+2. After the switch, retire the old identity: `POST /api/v1/signing/identities/<id>/retire`. Its key leaves npm's keys at once, none of its
+   signatures is served, its sealed key is dropped, and Quader signs again what it signed. A retirement is refused while the current identity
+   has the same key (`409 signing_key_in_use`): replace the key first.
+3. Have the company's CA revoke the old certificate; Quader's verifiers do not ask for revocation, so the retirement and the certificate's
+   expiry are what end the old attestations.
+4. Look for the way the key left: the audit log's `signing.*` events, who reads the Secret, the worker's logs.
+
+**When to escalate.** To your security team at once. To the maintainers when the retirement is refused for another reason than the one above.
+
 ## Alerts
 
 The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.enabled` is set ([Alerts](operations.md#alerts) for the settings, and for leaving one out by name). `QuaderReplicasNotReady` needs kube-state-metrics. The alerts of the backup runs exist only while `backup.enabled` is true.
@@ -273,6 +317,10 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderSignatureInvalid` | warning | A check found a signature that does not match its content in the last hour | The findings of `GET /api/v1/signatures/findings`; block the signer if it is one to stop trusting ([Signatures](operations.md#signatures)) |
 | `QuaderSignatureBacklog` | warning | The oldest due signature has waited over an hour | The queue `signatures` is claimed; the `signature-verify` jobs and their errors |
 | `QuaderSignatureTrustRootStale` | warning | The public Sigstore root in use is older than 14 days | `trustRoot.lastError` of `GET /api/v1/signatures/settings`; the egress to the TUF repository, or a mirror in `signatures.trust_root.url` |
+| `QuaderSigningIdentityExpiring` | warning | The signing identity's certificate ends within 14 days and no successor is announced | [A signing identity that expires](#a-signing-identity-that-expires) |
+| `QuaderSigningIdentityExpired` | critical | The signing identity's certificate has ended; Quader signs nothing | [A signing identity that expires](#a-signing-identity-that-expires) |
+| `QuaderSigningIdentityNotLoaded` | warning | An identity is current and no worker holds its key | `refused` of `GET /api/v1/signing/identity`, the worker pods' mount `/var/run/secrets/quader/signing/`, `quader admin secrets status` |
+| `QuaderSigningBacklog` | warning | A local npm version waits more than five minutes for its registry signature | A worker claims the queue `signing`; the job `signing` and its errors |
 
 ## What this page does not cover
 

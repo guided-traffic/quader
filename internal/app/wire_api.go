@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/secrets"
+	signingkey "github.com/guided-traffic/quader/internal/signing/key"
 	"github.com/guided-traffic/quader/internal/vuln"
 )
 
@@ -232,7 +233,7 @@ type resealDeps struct {
 // (R-ARCH-021, R-OPS-019): no schedule, and the trigger refuses it while the key
 // rings of the live replicas are incompatible (internal/api/v1). The job reseals
 // every value of the sealed-column registry that is not under the active key. The
-// sealed columns are the repository secrets and the private keys of the Debian signing keys: the job walks each in batches
+// sealed columns are the repository secrets, the private keys of the Debian signing keys and the uploaded keys of the signing identity: the job walks each in batches
 // of one transaction each and fails when a value could not be opened (a key the
 // ring lacks, a moved or damaged value); a column registered later without a walk
 // of its own fails the job permanently and names it. The handler finds the
@@ -243,7 +244,7 @@ func (a *App) registerSecretsReencrypt(r *jobs.Registry) {
 		Queue: "maintenance", DedupMode: jobs.Exclusive, MaxAttempts: 3,
 		Handler: a.reseal.handler("key ring", func(ctx context.Context, d resealDeps, run *jobs.Run) error {
 			for _, col := range secrets.Columns() {
-				if c := col.String(); c != repository.RepositorySecrets.String() && c != debdata.SigningKeys.String() {
+				if c := col.String(); c != repository.RepositorySecrets.String() && c != debdata.SigningKeys.String() && c != signingkey.Column().String() {
 					return jobs.Permanent(fmt.Errorf("re-encryption of %s is not implemented yet", col))
 				}
 			}
@@ -258,6 +259,14 @@ func (a *App) registerSecretsReencrypt(r *jobs.Registry) {
 			res.Resealed += keys.Resealed
 			res.Current += keys.Current
 			res.Failed += keys.Failed
+			// The signing identity's uploaded keys (signatures.md R-SIG-047).
+			ident, err := signingkey.Reseal(ctx, d.db, d.ring, 0)
+			if err != nil {
+				return err
+			}
+			res.Resealed += ident.Resealed
+			res.Current += ident.Current
+			res.Failed += ident.Failed
 			if err := run.SetResult(map[string]int64{"columns": int64(len(secrets.Columns())), "resealed": res.Resealed, "current": res.Current, "failed": res.Failed}); err != nil {
 				return err
 			}

@@ -437,6 +437,7 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Kinds of pod with a pair | `api`, `packages`, `worker`, `vuln-scanner-trivy`, `malware-scanner-clamav`, `malware-updater-freshclam` (pools and endpoint pools carry their role's); a kind that runs one third-party tool is `<purpose>-scanner-<tool>`, or `<purpose>-<function>-<tool>` when it scans nothing | yes (`_tls.tpl`) |
 | Name of a kind | `<fullname>-<kind>.<namespace>.svc`, and `<fullname>-ops.<namespace>.svc` in every pair for the scrape; the edge and the links check the kind's name | yes (`_tls.tpl`) |
 | Certificate and Secret of a kind | `<fullname>-tls-<kind>` with `tls.certManager.issuerRef`; else `tls.existingSecrets.<kind>` | yes (`certificates.yaml`) |
+| Certificate and Secret of the signing identity | `<fullname>-signing` with `signing.identity.certManager.issuerRef.name`; else `signing.identity.existingSecret` | yes (`signing-certificate.yaml`) |
 | Listener certificate mount | `/var/run/secrets/quader/tls/` (`tls.crt`, `tls.key` of the pod's own kind; every pod with TLS) | yes (`_secrets.tpl`) |
 | Internal CA mount | `/var/run/secrets/quader/tls/ca.crt` (`ca.crt` of the pod's own Secret; renders `server.internal_tls.ca_file`): the trust anchor of the links of the image scanning and the malware scanning, in the `worker`, main `packages`, `vuln-scanner-trivy`, `malware-scanner-clamav` and `malware-updater-freshclam` pods, never in `api` pods | yes (`_vuln.tpl`) |
 | Listener client CA mount | `/var/run/secrets/quader/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
@@ -658,12 +659,13 @@ of at most 30, or 37 if it contains `quader`); the message names that name and w
 | Endpoint objects | `<fullname>-ep-<name>` (and `<fullname>-api-ep-<name>` for a surface over both roles) for the Services and the Ingress of a further endpoint | yes |
 | Disruption budgets, autoscalers | one per Deployment, named as the Deployment | yes |
 | Migration hook Job | `<fullname>-migrate`; not rendered while `restore.enabled`, because the restore applies the migrations itself | yes |
+| The signing identity's files | the volume `secret-signing` of the worker pods only (the main worker and its pools), mounted read-only at `/var/run/secrets/quader/signing/` with `tls.crt`, `tls.key` and `ca.crt`; `config.signing.identity.cert_file`, `key_file` and `ca_file` name them | yes ([_signing.tpl](deploy/helm/quader/templates/_signing.tpl)) |
 | Material of declared trust anchors | the projected volume `signature-anchors` of the migration Job only, mounted read-only at `/etc/quader/signature-anchors/<anchor key>/` with the files `certificates.pem`, `keys.asc`, `key-<index>.pem` and `trusted_root.json`, one per `*From.configMapKeyRef` of `signatures.anchors` | yes ([_signatures.tpl](deploy/helm/quader/templates/_signatures.tpl)) |
 | ConfigMap | `<fullname>-config`, holding `quader.yaml` | yes |
 | Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port); `<fullname>-vuln-scanner-trivy` (8080, while the image scanning is on), `<fullname>-malware-scanner-clamav` (8080, while the malware scanning is on), `<fullname>-malware-updater-freshclam` (8080, while the updater renders) and `<fullname>-packages-scan` (8082, while either scanning is on), always `ClusterIP` | yes |
 | Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing); `<fullname>-vuln-scanner-trivy` admits 8080 from the worker that claims `vuln`, `<fullname>-malware-scanner-clamav` and `<fullname>-malware-updater-freshclam` 8080 from the worker that claims `malware`, and `<fullname>-packages` 8082 from the pods of both scanners and the updater | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
-| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 43 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`), the four of the malware scanning while `config.malware.enabled` (`QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable`, `QuaderMalwareBacklog`), the three of the signatures while `config.signatures.enabled` (`QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
+| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 47 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`), the four of the malware scanning while `config.malware.enabled` (`QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable`, `QuaderMalwareBacklog`), the three of the signatures while `config.signatures.enabled` (`QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`), the four of the signing identity while `config.signing.enabled` (`QuaderSigningIdentityExpiring`, `QuaderSigningIdentityExpired`, `QuaderSigningIdentityNotLoaded`, `QuaderSigningBacklog`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
 | Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so `<fullname>-backup` must stay within 52 characters, which every `<fullname>` the chart accepts does; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
 | Restore Job | `<fullname>-restore` with `restore.enabled`, `quader backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/quader/templates/restore.yaml)) |
 | Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `quader/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml)) |
@@ -800,6 +802,7 @@ The code registry is [internal/errs/codes.go](internal/errs/codes.go). Every pro
 - Package content (M2): `content_refused`
 - Bastion interface (phase 5b): `bastion_token_invalid` (`401`, the Bastion token of a request is invalid, on every path as problem details), `bastion_interface_mismatch` (`400`, with the member `interfaceVersion`), `invalid_cursor` (`400`, a feed cursor that does not parse), `rate_limited` (`429`, an address with too many rejected Bastion tokens, or a batch of download events beyond the registration's budget) and `not_found` (`404`, a forward of a path outside `/api/<format>/` and `/files/`); the registry also holds `bastion_read_only`, `bastion_not_served`, `bastion_base_url_unknown`, `bastion_not_implemented` and `principal_not_allowed`, and the Bastion's own refusals of R-BAS-029 (`main_failed`, `main_unreachable`, `bastion_busy`, `main_timeout`, `auth_timeout`, `address_blocked`)
 - Signatures: `signature_invalid` (`422`, a signature posted for an Ansible Galaxy version that is no OpenPGP signature, names no issuer fingerprint or does not match `MANIFEST.json`), `signature_limit_reached` (`409`, the version holds 16 signatures)
+- The signing identity (R-SIG-055): `signing_identity_managed` (`409`, the Helm values name the identity), `signing_identity_pending` (`409`), `signing_no_pending_key` (`409`), `signing_identity_announced` (`409`, another identity waits for its switch), `signing_identity_exists` (`409`), `signing_identity_not_previous` (`409`), `signing_key_in_use` (`409`), `signing_key_mismatch` (`422`, the certificate is not for the pending key); a certificate or key that fails a check of R-SIG-045 is `422 validation_failed` with the check in `errors[].detail`
 - Malware scanning: `malware_found` (`403`), `malware_not_checked` (`403`), `malware_check_pending` (`503` with `Retry-After: 30`; the three are the download gate's, each with `Cache-Control: no-store`, in each format's shape; a problem document carries the blob's digest as `sha256`), `malware_weakening_refused` (`403`, an Owner's write that switches `malware.onlyChecked` off), `nothing_to_release` (`409`, the blob is pending or clean), `already_released` (`409`), `malware_not_enabled` (`409`, a rescan while `malware.enabled` is false)
 - Vulnerability scanning (M4b): `vulnerability_blocked` (`403`, a finding blocks the version), `vulnerability_data_missing` (`403`, the repository sets `onMissingData: block` and the ecosystem's data was never imported completely), `vulnerability_data_unavailable` (`503`, the npm audit or the NuGet vulnerability documents before the data is complete), `vulnerability_weakening_refused` (`403`, a write of an Owner without `repositories:write-config` or `vulnerabilities:triage` that weakens the member `vulnerabilities`), `finding_not_confirmed` (`409`, `blocked` on a finding that is not confirmed), `finding_resolved` (`409`), `status_not_settable` (`422`, a person sets `resolved`), `export_too_large` (`422`, above `vulnerabilities.export.max_rows`); the codes of a failed sync run, recorded in `vuln_source_state.last_error` and never an answer to a request: `archive_too_large`, `archive_digest_mismatch`, `archive_limit`, `too_many_invalid_records`, `shrink_refused`, `mirror_repository_invalid`, and for a run that ended before its sync `sync_lease_lost`, `sync_panicked`, `sync_interrupted` and `sync_cancelled` (an operator's cancel, which does not count as a failure)
 - Mirror passes (phase 6b): the codes of a failed pass attempt, recorded in `mirror_state.last_error_code`, in `mirror.pass_failed` and in the status, and never an answer to a request: `discovery_unavailable` (the method that `discovery` names is not offered), `discovery_failed`, `discovery_stalled`, `cursor_too_large`, `not_applicable`, `upstream_unavailable`, `internal`
@@ -837,6 +840,7 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | `deb-index` | `internal/formatdata/deb/jobs.go` (kind), `internal/formatdata/deb/build.go` (handler) | queue `index`, coalesce under the key `index:<repository id>`, 5 attempts, 30 minutes; the build of a local Debian repository's indexes (R-DEB-010): one snapshot, signed, published through the publication port in one transaction per suite; for a remote repository the re-verification of its stored releases and the removal of the by-hash files no remembered release names; for a virtual repository the merge of its members' indexes, signed with its own key (R-DEB-025, R-DEB-026) |
 | `deb-remote-parse` | `internal/formatdata/deb/jobs.go`, `internal/formatdata/deb/remote_parse.go` | queue `index`, coalesce per repository, release directory and index path, 5 attempts, 10 minutes (R-DEB-023): reads the `Packages` (and a mirror's `Sources`) index the stored release of a remote names into rows, at most 1 GiB and 1,000,000 paragraphs; without an index path it fetches the release of its directory and queues the parses of its scope |
 | `signature-fetch` | `internal/signatures/fetch/fetch.go` (kind and handler), `internal/app/wire_signature_fetch.go` (on a replica that claims jobs) | queue `index`, coalesce per repository and target (`signature-fetch:<repository id>:<target>`), 5 attempts, 5 minutes; queued by the OCI and npm data ports in the transaction that stored a remote's top-level manifest or tarball, or a refresh after `signatures.remote.refresh_after` (24 h): asks the upstream for the signatures of the target as background requests, at most 600 requests per remote and hour on the worker (signatures.md R-SIG-026) |
+| `signing` | `internal/signing/job/kinds.go` (kind), `internal/app/wire_signing.go` (the handler, on a replica that claims jobs; the task `signing`, `*/10 * * * *`) | queue `signing`, coalesce, 3 attempts; woken by every change of an identity and by work written in a commit's transaction: switches an announced identity after `signing.identity.announce_period`, makes failed work due once a day, and runs the work of the kinds the packages that sign register, with the current identity's key (signatures.md R-SIG-048, R-SIG-049); until npm's signatures and the attestations are built it signs nothing |
 | `deb-index-refresh` | `internal/formatdata/deb/jobs.go`, `internal/formatdata/deb/refresh.go` | task (`maintenance` queue, exclusive, 3 attempts), `* * * * *`: enqueues what is due and deletes nothing (Q-DEB-33); also enqueues the virtual repositories whose check is due and runs the remote part of its registry (`RemoteHandlers.Refresh`) |
 | `session-cleanup` | `internal/auth/session/cleanup.go` | task |
 | `audit-retention` | `internal/app/wire_audit.go` | task |
@@ -1570,6 +1574,7 @@ jobs:
     vuln: 1                             # the advisory sync (vuln-sync-osv, vuln-sync-osv-full, vuln-sync-kev)
     malware: 1                          # the malware scanning's job and database task
     signatures: 1                       # the signatures' jobs signature-verify and signature-trust and the task signature-trust-root
+    signing: 1                          # the job signing of Quader's signing identity and its task
   queues: []                            # default: every queue; the queues this worker claims, for example ["index"] on a worker pool
   exclude_queues: []                    # default: none; the queues this worker does not claim; not together with queues. As variables: QUADER_JOBS_QUEUES='["index"]' (one JSON list)
   poll_interval: 2s                     # default; at least 100ms; below health.watchdog_timeout
@@ -2374,6 +2379,43 @@ Security: an anchor decides whose signatures read **Verified · internal** in ev
 ConfigMap a `*From.configMapKeyRef` names) chooses whom the installation trusts. The material is public; a private key in any field stops
 `quader migrate` (`secret_material`, R-SIG-015). With `trust_root.refresh: false` the public Sigstore root is the release's snapshot and ages with
 it ([H-1170](docs/security/artifact-signatures.md#h-1170--without-internet-the-public-sigstore-root-is-the-releases-snapshot)).
+
+</details>
+
+<details>
+<summary>Quader's signing identity: the files of the Helm values, the announce period and the job signing</summary>
+
+The keys come from the struct tags of [internal/config/signing.go](internal/config/signing.go) (R-SIG-058). Quader signs with one identity
+per installation, an ECDSA P-256 key with a code-signing certificate of the company's CA (R-SIG-045). It comes from the files of the Helm
+values (`identity.*`, which the chart sets from `signing.identity` and mounts into the worker pods alone, see [Helm values](#helm-values)) or from
+the admin area, where an administrator creates a key and uploads the certificate the CA issued for its request (R-SIG-047). The loader refuses,
+naming the key, `cert_file` without `key_file` or the reverse, `ca_file` without them, a path that is not clean and absolute, and a value out of
+its range. Only the roles `worker` and `all` read the three files; the private key stays in the worker's memory and is never stored. Without
+an identity Quader signs nothing. npm's registry signatures and the receipt attestations that use the identity are not built yet; until
+they are, the job `signing` switches identities and signs nothing.
+
+```yaml
+signing:
+  enabled: true                         # default; false: Quader signs nothing, also with an identity; the identities stay manageable
+  identity:
+    cert_file: ""                       # default: the identity comes from the admin area; the chart sets /var/run/secrets/quader/signing/tls.crt
+    key_file: ""                        # default; the chart sets /var/run/secrets/quader/signing/tls.key (ECDSA P-256, unencrypted PKCS#8 or SEC 1)
+    ca_file: ""                         # default; the chart sets /var/run/secrets/quader/signing/ca.crt (the root of the chain)
+    reload_interval: 1m                 # default; 1s to 1h: how often a worker reads the files again; a renewal needs no restart
+    announce_period: 10m                # default; 0s to 24h: how long a new identity is listed before it signs; 0s: current at once
+  concurrency: 4                        # default; 1 to 64 operations the one job has in flight
+  max_attempts: 5                       # default; 1 to 20 attempts at an operation that could not run, then failed and retried daily
+jobs:
+  workers:
+    signing: 1                          # default; the queue signing: the job signing and its task
+```
+
+Security: while `identity.cert_file` is set, the files are the installation's identity and uploads answer `409 signing_identity_managed`
+(Helm wins). An uploaded key is sealed by the key ring in PostgreSQL and travels with every backup
+([H-1188](docs/security/artifact-signatures.md#h-1188--an-uploaded-identity-can-be-opened-by-every-role-that-holds-the-key-ring-and-the-database));
+the key of the files is in its Secret and in no backup. Whoever holds the key can make clients believe anything was received here
+([H-1187](docs/security/artifact-signatures.md#h-1187--a-holder-of-the-signing-key-can-make-clients-believe-anything-was-received-here)); retire
+an identity whose key is believed taken (`POST /api/v1/signing/identities/{id}/retire`, [runbook](docs/manual/admin/runbook.md)).
 
 </details>
 
@@ -3226,6 +3268,33 @@ configuration file carries that path (`certificates_file`, `keys_file`, `pem_fil
 public. A ConfigMap that does not exist keeps the Job's pod from starting. With `migrations.mode: disabled`, whoever runs `quader migrate`
 provides the files at those paths. Security: whoever can write the values or the named ConfigMaps chooses whom the installation trusts as a signer.
 
+Quader's signing identity ([R-HA-071](docs/spec/ha-and-helm.md#r-ha-071--the-signing-identitys-secret-in-the-worker-pods-only), [signatures.md
+R-SIG-046](docs/spec/signatures.md#r-sig-046--the-identity-from-the-helm-values)): at most one source, mounted into the worker pods only, its
+three files set in `config.signing.identity`. The default names none and renders nothing; an administrator then creates the identity in
+**Admin area › Settings › Signatures** (the API of R-SIG-055 is built, the screen is not yet). The tuning keys are `config.signing.*`.
+
+```yaml
+signing:
+  identity:
+    existingSecret: ""                  # default; example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root)
+    certManager:                        # the Certificate <fullname>-signing, rendered while issuerRef.name is set
+      issuerRef:
+        kind: ClusterIssuer             # default; ClusterIssuer | Issuer (of the release namespace)
+        name: ""                        # default: no Certificate; example: company-code-signing (it must issue the usage code signing)
+        group: cert-manager.io          # default
+      commonName: Quader signing        # default
+      subject: {}                       # default; example: {organizations: [Example GmbH], countries: [DE]}
+      uris: []                          # default; config.server.base_url is always the first URI
+      duration: 2160h                   # default: 90 days
+      renewBefore: 720h                 # default: 30 days; the key is ECDSA P-256 with rotationPolicy Always
+```
+
+Both sources together fail the render, naming both keys; `config.signing.identity.cert_file`, `key_file` and `ca_file` are the chart's. A
+renewal reaches the workers without a restart (`config.signing.identity.reload_interval`) and is announced before it signs
+(`config.signing.identity.announce_period`). Security: the Secret holds the identity's private key; whoever reads it can sign as this
+installation ([H-1187](docs/security/artifact-signatures.md#h-1187--a-holder-of-the-signing-key-can-make-clients-believe-anything-was-received-here)),
+so only the worker pods mount it and no other role reads the files.
+
 Sizing profiles ([R-HA-050](docs/spec/ha-and-helm.md)) are values files of the chart; layer one before your own:
 
 ```shell
@@ -3537,7 +3606,7 @@ metrics:
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     relabelings: []                     # default; appended after the fixed role and pool relabelings
     metricRelabelings: []               # default
-  prometheusRule:                       # R-HA-045; 43 alerts, of which the four QuaderMalware* only with config.malware.enabled, the three QuaderSignature* only with config.signatures.enabled and the six QuaderBackup* run alerts only with backup.enabled
+  prometheusRule:                       # R-HA-045; 47 alerts, of which the four QuaderMalware* only with config.malware.enabled, the three QuaderSignature* only with config.signatures.enabled, the four QuaderSigning* only with config.signing.enabled and the six QuaderBackup* run alerts only with backup.enabled
     enabled: false                      # default; true renders the PrometheusRule <fullname>; needs the Prometheus operator's CRDs
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     disabledAlerts: []                  # default; example: [QuaderVulnerabilitySyncFailing]; a name that is no alert of the chart fails the render
@@ -3558,6 +3627,10 @@ config:
 | `QuaderSignatureInvalid` | with `config.signatures.enabled`: `sum(increase(quader_signatures_checks_total{result="invalid"}[1h])) > 0`: a check found a signature that does not match its content or whose chain or key does not verify it; the audit event `signature.invalid` names it (R-SIG-039) | warning |
 | `QuaderSignatureBacklog` | with `config.signatures.enabled`: `max(quader_signatures_oldest_pending_seconds) > 3600` for 15m: a signature has waited more than an hour for its check | warning |
 | `QuaderSignatureTrustRootStale` | with `config.signatures.enabled`: `max(quader_signatures_trust_root_age_seconds) > 1209600` for 1h: the public Sigstore root and npm's keys in use are older than 14 days; with `config.signatures.trust_root.refresh: false` this is the release's age (H-1170) | warning |
+| `QuaderSigningIdentityExpiring` | with `config.signing.enabled`: `min(quader_signing_identity_not_after_seconds{state="current"}) - time() < 14 * 86400` unless an identity is announced, for 1h: the signing identity's certificate ends within 14 days (R-SIG-057) | warning |
+| `QuaderSigningIdentityExpired` | with `config.signing.enabled`: the current identity's certificate has ended; Quader signs nothing | critical |
+| `QuaderSigningIdentityNotLoaded` | with `config.signing.enabled`: `max(quader_signing_identity_loaded) == 0` while an identity is current, for 15m: no worker holds its key | warning |
+| `QuaderSigningBacklog` | with `config.signing.enabled`: `max(quader_signing_oldest_due_seconds{kind="npm"}) > 300` for 15m: a local npm version waits for its registry signature | warning |
 | `QuaderMirrorFailing` | `max by (repo) (quader_mirror_consecutive_failures) >= 3`: three failed pass attempts in a row, the status's `failing`; a complete pass resets it | warning |
 | `QuaderMirrorStale` | `time() - max by (repo) (quader_mirror_next_pass_timestamp_seconds) > 3600` for 30m: the next pass was due an hour ago and nothing started it (no process claims the queue, a lost job), or the pass in progress has not written for an hour; a mirror that never completed a pass fires too; a paused mirror has no series | warning |
 | `QuaderBackupCheckFailed` | `min(quader_backup_check_ok) == 0` for 1h: a platform protection that `backup.recovery_window` or `backup.object_versioning` declares does not hold; the label `check` names it, `quader admin backup check` prints the reason; an undeclared or unreadable check has no series | critical |

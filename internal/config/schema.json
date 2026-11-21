@@ -2311,6 +2311,13 @@
               "type": "integer",
               "x-quader-env": "QUADER_JOBS_WORKERS_SIGNATURES"
             },
+            "signing": {
+              "default": 1,
+              "description": "The job signing and its task (signatures.md R-SIG-049): a queue of its own, so that a signature of a publish never waits behind the verification of signatures; one job keeps signing.concurrency operations in flight, so one slot is enough.",
+              "minimum": 0,
+              "type": "integer",
+              "x-quader-env": "QUADER_JOBS_WORKERS_SIGNING"
+            },
             "vuln": {
               "default": 1,
               "description": "The advisory sync (R-VULN-004, R-VULN-008).",
@@ -3937,6 +3944,75 @@
             }
           },
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "signing": {
+      "additionalProperties": false,
+      "properties": {
+        "concurrency": {
+          "default": 4,
+          "description": "Signing operations the one job of the installation has in flight at a time (R-SIG-049).",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_SIGNING_CONCURRENCY"
+        },
+        "enabled": {
+          "default": true,
+          "description": "false: Quader signs nothing, also with an identity; the job signing takes no work, the identities stay manageable, and what is stored stays and is served (R-SIG-058).",
+          "type": "boolean",
+          "x-quader-env": "QUADER_SIGNING_ENABLED"
+        },
+        "identity": {
+          "additionalProperties": false,
+          "properties": {
+            "announce_period": {
+              "default": "10m",
+              "description": "How long a new identity beside the current one is listed at npm's keys endpoint before it signs, so that a cache of the keys document learns the key before a signature made with it arrives (R-SIG-048). 0s: a new identity is current at once.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNING_IDENTITY_ANNOUNCE_PERIOD",
+              "x-quader-type": "duration"
+            },
+            "ca_file": {
+              "default": "",
+              "description": "PEM file of the root the chain ends in (ca.crt), when tls.crt does not end in it; it may hold intermediates too. Only with cert_file; the chart sets /var/run/secrets/quader/signing/ca.crt.",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNING_IDENTITY_CA_FILE"
+            },
+            "cert_file": {
+              "default": "",
+              "description": "PEM file of the identity's certificate and its intermediates, the leaf first (tls.crt of a cert-manager Secret). Empty: the identity comes from the admin area (R-SIG-047). While set, the identity of the files is the installation's: uploads and key requests are refused with 409 signing_identity_managed. The chart sets /var/run/secrets/quader/signing/tls.crt while signing.identity.existingSecret or signing.identity.certManager names one (R-HA-071).",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNING_IDENTITY_CERT_FILE"
+            },
+            "key_file": {
+              "default": "",
+              "description": "PEM file of the identity's ECDSA P-256 private key (tls.key), unencrypted PKCS#8 or SEC 1. Read by the worker alone, held in its memory and never stored (R-SIG-046). Set with cert_file or not at all; the chart sets /var/run/secrets/quader/signing/tls.key.",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNING_IDENTITY_KEY_FILE",
+              "x-quader-secret": "file-only"
+            },
+            "reload_interval": {
+              "default": "1m",
+              "description": "How often a worker reads the three files again and compares their content (R-SIG-046): a pair cert-manager renewed is announced within this interval, without a restart (Q-SIG-151).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNING_IDENTITY_RELOAD_INTERVAL",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "max_attempts": {
+          "default": 5,
+          "description": "Attempts at an operation that could not run (the database, the object store), with a doubling back-off from one minute; after the last the work is failed, signing.failed is recorded once an hour per kind and code, and the job makes it due again once a day (R-SIG-049).",
+          "maximum": 20,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_SIGNING_MAX_ATTEMPTS"
         }
       },
       "type": "object"

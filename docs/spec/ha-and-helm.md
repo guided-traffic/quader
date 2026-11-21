@@ -830,7 +830,8 @@ Acceptance criteria:
 ### R-HA-071 · The signing identity's Secret, in the worker pods only
 Priority: **P1** · Covers: quader-only
 
-Specified, not built. The chart's side of Quader's signing identity ([signatures.md](signatures.md) R-SIG-045, R-SIG-046; the owner's
+Built (templates/_signing.tpl, templates/signing-certificate.yaml, the mount in templates/_secrets.tpl, the four alerts in
+templates/_rules.tpl). The chart's side of Quader's signing identity ([signatures.md](signatures.md) R-SIG-045, R-SIG-046; the owner's
 reading r8 of [Q-SIG-16](signatures.md#q-sig-16--the-eight-readings-of-the-request): "through Helm, a Secret that cert-manager may issue";
 [Q-HA-385](#q-ha-385--the-signing-identitys-secret-reaches-the-worker-pods-only-and-the-chart-renders-its-certificate-on-request)).
 
@@ -851,25 +852,10 @@ reading r8 of [Q-SIG-16](signatures.md#q-sig-16--the-eight-readings-of-the-reque
 - **Rotation without a restart.** cert-manager renews the certificate with a new key `renewBefore` its end; the kubelet swaps the volume, the
   worker's reloader reads it (R-SIG-046), and the identity is announced and then switched (R-SIG-048). The pod's checksum follows the
   Secret's name and the paths, not its content, so a renewal rolls nothing.
-- **The values** (R-HA-031, whose copy of the values file gains them with the change that builds them): `signing.identity.existingSecret`,
-  `signing.identity.certManager.issuerRef`, `commonName`, `subject`, `uris`, `duration`, `renewBefore`. As they will stand in the values file:
-
-  ```yaml
-  # At most one source. The Secret reaches the worker pods only; without either, an administrator uploads the identity in the admin area.
-  signing:
-    identity:
-      existingSecret: ""                  # example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root; code signing, a URI as alternative name)
-      certManager:                        # the Certificate <fullname>-signing the chart renders while issuerRef.name is set
-        issuerRef:
-          kind: ClusterIssuer             # ClusterIssuer | Issuer (an Issuer of the release namespace)
-          name: ""                        # empty = no Certificate; example: company-code-signing
-          group: cert-manager.io
-        commonName: Quader signing        # default
-        subject: {}                       # example: {organizations: [Example GmbH], countries: [DE]}
-        uris: []                          # besides config.server.base_url, which is always the first; example: [https://quader.example.com/signing]
-        duration: 2160h                   # default: 90 days
-        renewBefore: 720h                 # default: 30 days; the key is ECDSA P-256 with rotationPolicy Always, not a value
-  ```
+- **The values** (R-HA-031's copy of the values file holds them with their defaults): `signing.identity.existingSecret`,
+  `signing.identity.certManager.issuerRef` (`kind`, `name`, `group`), `commonName`, `subject` (cert-manager's fields: organizations,
+  countries, provinces, localities, organizationalUnits, streetAddresses, postalCodes, serialNumber), `uris`, `duration`, `renewBefore`;
+  `values.schema.json` declares each. The tuning keys are `config.signing` (signatures.md R-SIG-058).
 
 Acceptance criteria:
 
@@ -4733,6 +4719,13 @@ config:
   #   trust_root:
   #     refresh: true                   # false: the release's snapshot of the public Sigstore root (no internet)
   #     url: https://tuf-repo-cdn.sigstore.dev   # or a TUF mirror of the company, https only
+  # Quader's signing identity (docs/spec/signatures.md R-SIG-058). Every key has a default and is rendered only when set here; the
+  # chart reads enabled, which renders the four QuaderSigning* alerts. The identity's files are the chart's (signing.identity below).
+  # signing:
+  #   enabled: true                     # false: Quader signs nothing, also with an identity
+  #   identity:
+  #     reload_interval: 1m             # how often a worker reads the identity's files again, 1s to 1h
+  #     announce_period: 10m            # how long a new identity is listed before it signs; 0s: current at once
 
 # ── TLS on Quader's own listeners ────────────────────
 # Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam) has a pair and a name of its own:
@@ -4902,6 +4895,27 @@ trustedCA:
 #         trustRoot: own                # public: the shipped public Sigstore root (when no trusted root is given) | own: the company's
 #         trustedRootFrom:              # or trustedRoot: inline trusted_root.json, at most 1 MiB
 #           configMapKeyRef: {name: company-sigstore-root, key: trusted_root.json}
+
+# ── Quader's signing identity (R-HA-071, docs/spec/signatures.md R-SIG-046) ──────────────
+# One identity per installation: an ECDSA P-256 key with a code-signing certificate of the company's CA, with which Quader signs as a
+# registry and issues its attestations. At most one source. The Secret (tls.crt: the leaf and its intermediates, tls.key: the key,
+# ca.crt: the root) reaches the worker pods only, mounted at /var/run/secrets/quader/signing/; config.signing.identity.cert_file,
+# key_file and ca_file are set by the chart. A renewal reaches the workers without a restart and is announced before it signs
+# (config.signing.identity.announce_period). Without either source an administrator creates the identity in the admin area
+# (Admin area › Settings › Signatures). The tuning keys are under config.signing.
+signing:
+  identity:
+    existingSecret: ""                  # example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root; code signing, a URI as alternative name)
+    certManager:                        # the Certificate <fullname>-signing the chart renders while issuerRef.name is set
+      issuerRef:
+        kind: ClusterIssuer             # ClusterIssuer | Issuer (an Issuer of the release namespace)
+        name: ""                        # empty = no Certificate; example: company-code-signing
+        group: cert-manager.io
+      commonName: Quader signing
+      subject: {}                       # example: {organizations: [Example GmbH], countries: [DE]}
+      uris: []                          # besides config.server.base_url, which is always the first; example: [https://quader.example.com/signing]
+      duration: 2160h                   # 90 days
+      renewBefore: 720h                 # 30 days; the key is ECDSA P-256 with rotationPolicy Always, not a value
 
 bootstrap:
   existingConfigMap: ""                 # configuration documents (P1)

@@ -388,6 +388,12 @@ process) and [itempublish](../../test/integration/itempublish) (the publication 
 [mirror](../../test/integration/mirror) (`deb_test.go`, shard `a`), [querybudget](../../test/integration/querybudget) (`deb_test.go`) and
 [postgres](../../test/integration/postgres) (`deb_test.go`, `deb_reseal_test.go`) ([deb.md](deb.md#tests)).
 
+The signing identity's suite [signing](../../test/integration/signing) (signatures.md R-SIG-046 to R-SIG-048, R-SIG-055) starts a web replica
+and a worker per test with an announce period and a reload interval of a second: the identity of the files loaded at the worker's start,
+rotated and refused by writing new files and swapping a link as the kubelet swaps a volume, and the uploaded identity through the API with
+a CA of the test ([signatures.md](signatures.md#stage-2-quader-signs)). It runs in shard `b` by the rule of Q-ARCH-544; the replay of a
+withdrawn identity is in [backup](../../test/integration/backup) (`journal_signing_replay_test.go`, shard `c`).
+
 Three things a suite should know. A replica's start is a real start-up: a principal that is named like the break-glass
 account (`auth.break_glass.username`, default `admin`) is refused (the `files` and `api` stacks move the account
 or name the user otherwise). The audit table can be made to refuse an insert with

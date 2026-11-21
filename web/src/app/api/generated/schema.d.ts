@@ -5638,6 +5638,204 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/signing/identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Quader's signing identity
+         * @description The installation's signing identity (signatures.md R-SIG-045, R-SIG-055): `state` is the source of the current identity
+         *     (`configuration` for the files of the Helm values, `upload` for one of the admin area) or `none`; then the current, the
+         *     announced, the pending and the previous identities, each with its certificate's subject, issuer, alternative names, validity,
+         *     fingerprint (the SHA-256 of the certificate) and npm key ID; the pending one with its certificate request. `managed` is true
+         *     while the Helm values name the identity: uploads are refused then. `refused` is the last pair of the files that failed the checks
+         *     of R-SIG-045, until a pair passes. `backlog` is the job's work per kind. No answer carries key material.
+         */
+        get: operations["getSigningIdentity"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove the current uploaded signing identity
+         * @description The current identity becomes previous (R-SIG-048): with no identity current, no key and no npm signature of Quader is on the
+         *     wire; attestations already made stay served until their certificate expires. An announced identity becomes current at the job's
+         *     next run. An identity of the Helm values answers `409 signing_identity_managed` (take it out of the values instead); `404` when
+         *     none is current. A session must have signed in recently (R-AUTHZ-037's rule, R-API-007). Records `signing.identity.removed` with
+         *     its journal entry.
+         */
+        delete: operations["removeSigningIdentity"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/identity/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a signing key and its certificate request
+         * @description Quader makes an ECDSA P-256 key, seals it with the key ring and answers the pending identity with a PKCS#10 request (PEM) for
+         *     the subject and the alternative names, asking for the key usage `digitalSignature` and the extended key usage `codeSigning`
+         *     (R-SIG-047). The key never leaves Quader. Without `subject.CN` the common name is `Quader signing`; without a URI and an e-mail
+         *     address the URI is `server.base_url`. Have the company's CA issue a code-signing certificate for the request, then upload it.
+         *     `409 signing_identity_managed` while the Helm values name the identity, `409 signing_identity_pending` while a key is pending.
+         *     A session must have signed in recently. Records `signing.identity.key_created`.
+         */
+        post: operations["createSigningKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/identity/certificate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload the certificate the CA issued for the pending key
+         * @description The certificate with its chain (PEM, the leaf first; the root last or in `ca`) for the pending key (R-SIG-047). It is checked by
+         *     R-SIG-045 (an ECDSA P-256 key; a leaf that is no CA, with `digitalSignature`, `codeSigning` and a URI or an e-mail address; valid
+         *     now with at least 24 hours left; a chain that builds to a self-signed root for code signing; at most 8 certificates of 16 KiB):
+         *     a failed check answers `422 validation_failed` with the check in `errors[].detail`, a certificate for another key `422
+         *     signing_key_mismatch`. The identity is announced, or current when none is (R-SIG-048). `409 signing_no_pending_key` without a
+         *     pending key, `409 signing_identity_announced` while another identity waits for its switch, `409 signing_identity_managed` while
+         *     the Helm values name the identity. A session must have signed in recently. Records `signing.identity.installed`.
+         */
+        put: operations["uploadSigningCertificate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/identity/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a signing key and its certificate
+         * @description For a CA that hands out key and certificate together, or a key moved from another installation (R-SIG-047): `key` is one PEM
+         *     block of PKCS#8, SEC 1 or encrypted PKCS#8 (its `passphrase` is used once and kept nowhere); PKCS#12 is not taken (convert it
+         *     with `openssl pkcs12 -in <file> -nodes`). The key and the chain are checked by R-SIG-045 as for an upload, the key is sealed with
+         *     the key ring, and the identity is announced, or current when none is. The key is in no answer, event or log line. A session must
+         *     have signed in recently. Records `signing.identity.installed`.
+         */
+        post: operations["importSigningIdentity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/identity/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Discard the pending signing key
+         * @description The pending key and its request are removed (R-SIG-047); `404` when none is pending. A session must have signed in recently.
+         */
+        delete: operations["discardSigningKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/identities/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The identity's ID, the decimal `id` of the identity; any other text names none (`404`). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire a previous signing identity
+         * @description For a key believed taken (R-SIG-048): the identity's key leaves npm's keys at once, none of its signatures is served, its sealed
+         *     key is dropped, and Quader signs again with the current identity what it signed. `409 signing_identity_not_previous` for an
+         *     identity that is not previous, `409 signing_key_in_use` when the current or the announced identity has the same key. A session
+         *     must have signed in recently. Records `signing.identity.retired` with its journal entry.
+         */
+        post: operations["retireSigningIdentity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/trusted-root.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The trusted root of Quader's signatures
+         * @description A Sigstore trusted root (`application/vnd.dev.sigstore.trustedroot+json;version=0.1`) with one certificate authority per
+         *     distinct chain of the current and the previous identities, its intermediates first and its root last, and no transparency log,
+         *     certificate-transparency log or timestamp authority (R-SIG-052): what `cosign verify-attestation --trusted-root` takes. Public
+         *     material, anonymous (Q-SIG-72). `404` while no identity is current or previous.
+         */
+        get: operations["getSigningTrustedRoot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signing/chain.pem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The certificate chain of the current signing identity
+         * @description The current identity's leaf, intermediates and root as PEM (R-SIG-052). Public material, anonymous (Q-SIG-72). `404` while no
+         *     identity is current.
+         */
+        get: operations["getSigningChain"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror": {
         parameters: {
             query?: never;
@@ -12035,6 +12233,130 @@ export interface components {
             updatedBy: string | null;
             trustRoot: components["schemas"]["SignatureTrustRoot"];
             backlog: components["schemas"]["SignatureBacklog"];
+        };
+        /** @description Quader's signing identity (R-SIG-045, R-SIG-055). */
+        SigningOverview: {
+            /**
+             * @description The source of the current identity, or none while no identity is current.
+             * @enum {string}
+             */
+            state: "none" | "configuration" | "upload";
+            /** @description `signing.enabled` of the configuration: false signs nothing, also with an identity (R-SIG-058). */
+            enabled: boolean;
+            /** @description The Helm values name the identity; uploads, key requests and removals are refused (R-SIG-046). */
+            managed: boolean;
+            /**
+             * Format: int64
+             * @description `signing.identity.announce_period`: how long a new identity is listed before it signs (R-SIG-048).
+             */
+            announcePeriodSeconds: number;
+            current: components["schemas"]["SigningIdentity"] | null;
+            announced: components["schemas"]["SigningIdentity"] | null;
+            pending: components["schemas"]["SigningIdentity"] | null;
+            /** @description The previous identities, newest first. Retired ones are not listed. */
+            previous: components["schemas"]["SigningIdentity"][];
+            refused: components["schemas"]["SigningRefusal"] | null;
+            backlog: components["schemas"]["SigningBacklog"][];
+        };
+        /** @description One signing identity, without key material (R-SIG-045). */
+        SigningIdentity: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            source: "configuration" | "upload";
+            /** @enum {string} */
+            state: "pending" | "announced" | "current" | "previous" | "retired";
+            /** @description The certificate's subject; for a pending key the subject of its request. */
+            subject: string;
+            /** @description The certificate's issuer, "" while pending. */
+            issuer: string;
+            /** @description The alternative names, the URIs first; the first URI is the identity a verifier names. */
+            names: string[];
+            /** Format: date-time */
+            notBefore: string | null;
+            /** Format: date-time */
+            notAfter: string | null;
+            /** @description The lower-case hex SHA-256 of the certificate, "" while pending. */
+            fingerprint: string;
+            /** @description npm's keyid of the key (R-SIG-050). */
+            npmKeyId: string;
+            /** @description The lower-case hex SHA-256 of the public key. */
+            keySha256: string;
+            /** @description The PEM certificate request of a pending key (R-SIG-047). */
+            csr: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description `<kind>:<name>` of the principal that made it; null for the files of the Helm values. */
+            createdBy: string | null;
+            /** Format: date-time */
+            announcedAt: string | null;
+            /** Format: date-time */
+            currentAt: string | null;
+            /**
+             * Format: date-time
+             * @description An announced identity's switch, the end of its announce period.
+             */
+            switchAt: string | null;
+            /**
+             * Format: date-time
+             * @description A previous identity's end of signing, the expiry npm's keys answer lists.
+             */
+            expiresAt: string | null;
+            /** Format: date-time */
+            retiredAt: string | null;
+        };
+        /** @description The last pair of the files of the Helm values that failed R-SIG-045 (R-SIG-046). */
+        SigningRefusal: {
+            reason: string;
+            /** @description The SHA-256 of the refused leaf, when it parsed. */
+            fingerprint: string | null;
+            /** Format: date-time */
+            at: string;
+        };
+        SigningBacklog: {
+            /** @enum {string} */
+            kind: "npm" | "attestation";
+            /**
+             * Format: int64
+             * @description Work that waits or is due.
+             */
+            due: number;
+            /**
+             * Format: int64
+             * @description Work that reached its last attempt; the job makes it due again once a day.
+             */
+            failed: number;
+            /** Format: date-time */
+            oldestDueAt: string | null;
+        };
+        /** @description The subject a key request asks for; every field at most 64 characters, the country two capital letters. */
+        SigningSubject: {
+            CN?: string;
+            O?: string;
+            OU?: string;
+            L?: string;
+            ST?: string;
+            C?: string;
+        };
+        /** @description A key request (R-SIG-047). Without a URI and an e-mail address the URI is `server.base_url`. */
+        SigningKeyRequest: {
+            subject?: components["schemas"]["SigningSubject"];
+            uris?: string[];
+            emails?: string[];
+        };
+        SigningCertificateUpload: {
+            /** @description PEM, the leaf first, then its intermediates; the root last, or in ca. */
+            chain: string;
+            /** @description PEM of the root (and intermediates) when chain does not end in it. */
+            ca?: string;
+        };
+        SigningIdentityImport: {
+            /** @description One PEM block of PKCS#8, SEC 1 or encrypted PKCS#8. Kept sealed by the key ring, never answered. */
+            key: string;
+            /** @description The passphrase of an encrypted key, used once and kept nowhere. */
+            passphrase?: string;
+            chain: string;
+            ca?: string;
         };
         SignatureSettingsPatch: {
             projectAnchors?: boolean;
@@ -26267,6 +26589,277 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSigningIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signing identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningOverview"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    removeSigningIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The identity is previous. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createSigningKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "subject": {
+                 *         "CN": "Quader signing",
+                 *         "O": "Example GmbH",
+                 *         "C": "DE"
+                 *       },
+                 *       "uris": [
+                 *         "https://quader.example.com"
+                 *       ],
+                 *       "emails": []
+                 *     }
+                 */
+                "application/json": components["schemas"]["SigningKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description The pending identity with its certificate request. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningIdentity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    uploadSigningCertificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningCertificateUpload"];
+            };
+        };
+        responses: {
+            /** @description The installed identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningIdentity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    importSigningIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningIdentityImport"];
+            };
+        };
+        responses: {
+            /** @description The installed identity. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningIdentity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    discardSigningKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The pending key is gone. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    retireSigningIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The identity's ID, the decimal `id` of the identity; any other text names none (`404`). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The retired identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningIdentity"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSigningTrustedRoot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The trusted root. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.dev.sigstore.trustedroot+json;version=0.1": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSigningChain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The chain. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pem-certificate-chain": string;
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

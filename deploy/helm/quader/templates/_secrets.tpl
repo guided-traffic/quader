@@ -114,6 +114,10 @@ backup (R-BAK-020).
 {{- if eq (dig "metrics" "auth" "" .root.Values.config) "static" -}}
 {{- $out = append $out (dict "name" "metrics" "secret" $s.metricsToken.existingSecret "path" "/var/run/secrets/quader/metrics" "items" (list (dict "key" $s.metricsToken.key "path" "token"))) -}}
 {{- end -}}
+{{- /* Quader's signing identity (R-HA-071, signatures.md R-SIG-049): the pods of the kind worker alone, the main Deployment and its pools. */ -}}
+{{- if and (eq (.role | default "") "worker") (include "quader.signingSource" .root) -}}
+{{- $out = append $out (dict "name" "signing" "secret" (include "quader.signingSecret" .root) "path" (include "quader.signingDir" .root) "items" (list (dict "key" "tls.crt" "path" "tls.crt") (dict "key" "tls.key" "path" "tls.key") (dict "key" "ca.crt" "path" "ca.crt"))) -}}
+{{- end -}}
 {{- /*
 TLS material of the listeners (R-HA-063, Q-HA-345): every pod of a role holds the pair of its kind (api, packages, worker), which
 its operations listener, its client listener and every further endpoint without a pair of its own serve, and never the pair of

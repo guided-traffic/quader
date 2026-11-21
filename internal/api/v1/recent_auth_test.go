@@ -51,6 +51,8 @@ var recentAuthOperations = []string{
 	"setProjectVisibility", "updateVisibilitySettings", "updateLimitSettings",
 	// R-SIG-019: the switch for project trust anchors, R-AUTHZ-037's rule.
 	"updateSignatureSettings",
+	// R-SIG-055: every write of Quader's signing identity.
+	"createSigningKey", "uploadSigningCertificate", "importSigningIdentity", "discardSigningKey", "removeSigningIdentity", "retireSigningIdentity",
 	// R-REPO-073: the address and the account of a well-known repository; raising its level asks inside the write.
 	"setUpstreamRepositoryAddress", "resetUpstreamRepositoryAddress", "setUpstreamRepositoryAccount", "removeUpstreamRepositoryAccount",
 }

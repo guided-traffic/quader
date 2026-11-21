@@ -227,6 +227,84 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 - **Package 4** (the screens): built, [web-ui.md](web-ui.md#the-signatures-screens). It added to the API the format descriptor's
   `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
   repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
+- **Stage 2:** package 1 built, below; packages 2 to 4 are not.
+
+## Stage 2: Quader signs
+
+Stage 2 of [signatures.md](../spec/signatures.md#quader-signs-stage-2) (R-SIG-044 to R-SIG-060, [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker))
+is built in four packages: (1) the signing identity with its chart, its API, events, metrics and alerts, and the frame of the job
+`signing` (built, below); (2) npm's registry signatures of local versions and the local keys endpoint; (3) the receipt attestations with
+the contract's `AttestationSubjects`; (4) the screens. The decisions of package 1 are Q-SIG-145 to Q-SIG-155.
+
+### What has to be in your head first
+
+- **One identity per installation, over time a row per key and certificate** (`signing_identities`): `pending` (an uploaded key with its
+  request), `announced` (listed before it signs), `current` (the one that signs), `previous` (signed until `expires_at`), `retired`
+  (withdrawn). The moves are a table ([states.go](../../internal/signing/states.go), Q-SIG-145); a retired identity never comes back.
+- **Two ways in, Helm wins.** The files of the Helm values (a Secret mounted into the worker pods alone) are read by the worker's watcher
+  and registered with the source `configuration`; their private key is never stored. The admin area's key request makes a key in the
+  `api` replica, seals it with the key ring under the row's id (`signing_identities.sealed_key`) and forgets it. While the configuration
+  names files (`signing.identity.cert_file`), uploads, key requests and removals answer `409 signing_identity_managed`.
+- **Only the worker opens a key.** `internal/signing/key` seals (for the store) and opens and reads the key file (for the job's holder);
+  `internal/archtest` (`CheckSigningKey`) holds its importers to the store, the job and the composition root, and the composition root
+  builds the holder and the job on the roles worker and all only.
+- **Announce, then switch.** A new identity beside the current one is `announced` for `signing.identity.announce_period`; the job switches
+  it in one transaction that locks every identity row exclusively. A signing transaction holds the current identity's row shared
+  (`store.HoldCurrent`), so no signature is written after its identity's switch; the first identity of an installation is current at once.
+- **The public parts are a snapshot.** Every replica answers the trusted root and the chain (and, from package 2, npm's keys) from
+  `store.Snapshot`, which the change area `signing_identities` refreshes.
+
+### Package 1 (built)
+
+| What | Where |
+|---|---|
+| The vocabulary (states, sources, kinds, reasons, priorities), `Identity`, the checks of R-SIG-045 (`ParseChain`, `Chain.Check`, `Refusal`), `ParseKey`, the key request (`KeyRequest.Normalized`, `NewKey`, `CertificateRequest`), npm's keyid and keys document (`NPMKeyID`, `NPMKeys`), the trusted root and the chain (`TrustedRoot`, `ChainPEM`), the moves (`CanMove`) | [internal/signing](../../internal/signing/signing.go) |
+| The private key: the sealed column, `Seal`, `Open`, `Load`, `ReadFile`, `Reseal` (the walk of `secrets-reencrypt`), `Private` that renders nothing | [internal/signing/key](../../internal/signing/key/key.go) |
+| The store: the reads (`Identities`, `Overview`), the API's writes (`CreateKey`, `UploadCertificate`, `Import`, `DiscardPending`, `Remove`, `Retire`), the worker's (`RegisterFiles`, `RecordRefusal`, `ConfigurationGone`, `SwitchDue`, `HoldCurrent`), the work (`Enqueue`, `DueWork`, `LockWork`, `DoneWork`, `DeferWork`, `Backlog`, `RetryFailedDaily`, `ClaimFailedReport`, `Discovery`, `SetDiscovery`), the events and journal entries, the replay of a removal and a retirement, the snapshot | [internal/signing/store](../../internal/signing/store/store.go): `files.go`, `work.go`, `events.go`, `journal.go`, `snapshot.go`; [queries/signing.sql](../../internal/meta/postgres/queries/signing.sql), migration 00101 ([database.md](database.md#the-signing-identity-and-the-job-signing-00101)) |
+| The job `signing` (queue `signing`, coalesce, task `*/10 * * * *`), `job.Kind`, the key holder, the watcher of the files, the metrics | [internal/signing/job](../../internal/signing/job/job.go): `kinds.go`, `holder.go`, `watcher.go`, `metrics.go` |
+| The test CA: a root, an intermediate and code-signing leaves for P-256 keys, a leaf for a PKCS#10 request | [internal/signing/signingtest](../../internal/signing/signingtest/signingtest.go) |
+| The events | [audit/events_signing.go](../../internal/audit/events_signing.go) |
+| The API | [http-api.md](http-api.md#the-signing-identity-r-sig-055), [signing_api.go](../../internal/api/v1/signing_api.go) |
+| The configuration and the chart | [config/signing.go](../../internal/config/signing.go); the chart's `signing.identity` ([_signing.tpl](../../deploy/helm/quader/templates/_signing.tpl), [signing-certificate.yaml](../../deploy/helm/quader/templates/signing-certificate.yaml)) and the four alerts; [helm-chart.md](helm-chart.md) |
+| The wiring: the area `signing` (the store and the snapshot on every role; the holder, the watcher and the job where jobs run), the kind and the task, the re-encryption walk | [app/wire_signing.go](../../internal/app/wire_signing.go), [app/wire_api.go](../../internal/app/wire_api.go) `registerSecretsReencrypt` |
+
+### The flow of an identity
+
+1. **The files:** the watcher (`job.Watcher`) reads `cert_file`, `key_file` and `ca_file` at the worker's start and every
+   `reload_interval`, compares their content, checks a changed pair (`ParseChain`, `key.ReadFile`, `Chain.Check`), puts its key into the
+   holder (the newest and the one before it, Q-SIG-153) and calls `store.RegisterFiles`; a refused pair goes to `store.RecordRefusal`
+   (once per content). A worker that starts with no file named calls `store.ConfigurationGone`.
+2. **The upload:** `CreateKey` writes the pending row with the sealed key and the request; `UploadCertificate` checks the CA's
+   certificate against the stored public key and installs it; `Import` checks, seals and installs in one call.
+3. **Installation** (`store.installed`): `announced` beside a current identity, `current` when none is or the announce period is 0; the
+   event `signing.identity.installed`, the change area, the wake-up of the job.
+4. **The job** switches an announced identity once its period passed (`SwitchDue`, `signing.identity.switched`) and enqueues itself for
+   the end of a period it saw; then, with signing on, a registered kind and the current key in this worker's holder, it runs discovery
+   and the due work.
+5. **Remove** makes the current uploaded identity previous; **retire** withdraws a previous one and drops its sealed key; both carry the
+   journal flag, and the replay re-applies them after a restore.
+
+### What the next packages call
+
+| Need | Call |
+|---|---|
+| Write work in the commit's transaction (an npm publish: `WorkNPM`, priority 0, reason `upload`; an attestation subject: `WorkAttestation`, priority 1 or 2) | `(*store.Store).Enqueue(ctx, tx, kind, reason, priority, itemIDs, delay)`; it wakes the job |
+| Sign one row | register a `job.Kind{Name, Sign, Discover}` in `job.Options.Kinds` ([wire_signing.go](../../internal/app/wire_signing.go)); `Sign(ctx, tx, session, work)` runs in a transaction that holds the current identity's row, with `session.Identity` and `session.Key.Signer()`; return an `internal/errs` error to spend an attempt with its code |
+| Find what lacks a signature | `Kind.Discover(ctx, current, after, limit)`: write work for the items after the cursor, answer the last item id |
+| npm's keys document of a local repository | `signing.NPMKeys(identities)` over `(*store.Snapshot).Identities` |
+| The identity a stored signature was made with | `signatures.identity_id` (migration 00101), counted by a retirement |
+| The trusted root and the chain | `signing.TrustedRoot`, `signing.ChainPEM` (served at `/api/v1/signing/trusted-root.json` and `/chain.pem`) |
+
+### Tests and what they cost
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Unit | `internal/signing`: each row of R-SIG-045 with a passing and a failing sample, the state table, npm's keyid against npmjs's published keys, the keys document per state, the trusted root (one authority per chain, read back by sigstore-go), the key request, the import of three key forms; `internal/signing/key`: the seal under its own row alone, the key file; `internal/signing/job`: the order, a transaction refused after a switch or an expiry, the attempts and `signing.failed`, the frame without a kind, the watcher's load, rotation and refusal, the key that renders nothing; `internal/config`, `internal/audit`, `internal/archtest` (`CheckSigningKey`, R-SIG-014 for the signing tree), `internal/app` (the roles that build a signer); the API's permissions, shapes and public material | about 0.5 s for the three signing packages, about 1.5 s for the API's two tests | certificates and keys made by the tests (two RSA keys of 2048 bits for the refusals) |
+| Chart | the Secret in the worker pods alone, the Certificate, both sources refused, nothing without one; the four alerts and their promtool tests | about 0.5 s and 1 s | rendered YAML |
+| Integration | area `signing` ([signing_test.go](../../test/integration/signing/signing_test.go)): the files loaded, rotated and refused without a restart; the key request, the CA's certificate, a mismatch, an import, the switch, retire and remove, the permissions, the public material, no key material in an answer, an event or a log | 11.6 s for the package (5.8 s and 4.4 s, the rest the stack), shard `b` | certificates of a kilobyte |
+| Integration | area `backup`: the replay of a removal and a retirement into a restored database | 0.7 s, shard `c` | rows |
+
+No end-to-end leg. The integration area `signing` joins shard `b` by the rule of Q-ARCH-544.
 
 ## What this page does not cover
 

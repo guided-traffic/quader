@@ -113,6 +113,8 @@ deploy/helm/quader/
     ├── _malware.tpl        the malware scanning's links and checks, clamd.conf, freshclam.conf, the updater's checks
     ├── _signatures.tpl     the anchors of signatures.anchors rendered into the configuration, their material mounted into the migration Job
     ├── vuln-scanner-trivy.yaml      the image scanning's scanner (Trivy) and its database's loader: Deployment, budget, autoscaler, Service, policy
+    ├── _signing.tpl        the signing identity's source, its Secret, its three files in the configuration, its checks (R-HA-071)
+    ├── signing-certificate.yaml   the cert-manager Certificate <fullname>-signing of the signing identity, on request
     ├── malware-scanner-clamav.yaml  the malware scanner with clamd beside it: Deployment, budget, autoscaler, Service, policy, ConfigMap
     ├── malware-updater-freshclam.yaml  the updater with freshclam beside it: Deployment, Service, policy, ConfigMap
     ├── validate.yaml       renders nothing; includes the validation
@@ -257,6 +259,24 @@ never as an environment variable (the one exception is the non-secret S3 setting
 The file *names* inside a mount are fixed (`username`, `password`, `ca.crt`, …); the Secret's key
 names are the values (`usernameKey`, `passwordKey`, …). The encryption keys are the exception:
 file name equals Secret key, because the file name without `.key` is the key ID (R-ARCH-021).
+
+## The signing identity
+
+Requirement: R-HA-071 ([Q-HA-385](../spec/ha-and-helm.md#q-ha-385--the-signing-identitys-secret-reaches-the-worker-pods-only-and-the-chart-renders-its-certificate-on-request));
+the binary's side is [signatures.md](signatures.md#stage-2-quader-signs) (R-SIG-046). At most one source: `signing.identity.existingSecret`
+(an existing Secret with `tls.crt`, `tls.key` and `ca.crt`), or `signing.identity.certManager.issuerRef.name`, for which
+[signing-certificate.yaml](../../deploy/helm/quader/templates/signing-certificate.yaml) renders the cert-manager `Certificate`
+`<fullname>-signing` (ECDSA P-256 with `rotationPolicy: Always`, the usages `digital signature` and `code signing`, `config.server.base_url`
+as the first URI, then `certManager.uris`). [_signing.tpl](../../deploy/helm/quader/templates/_signing.tpl) holds the source
+(`quader.signingSource`), the Secret's name (`quader.signingSecret`), the three files the configuration gets (`quader.signingManagedConfig`:
+`config.signing.identity.cert_file`, `key_file`, `ca_file` below `/var/run/secrets/quader/signing/`) and the checks
+(`quader.validateSigning`: both sources fail naming both keys; the three files under `config` fail as the chart's). `quader.secretMounts`
+adds the volume `secret-signing` for the role `worker` alone, so the main worker and every worker pool mount it read-only, mode 0440,
+without `subPath`, and no pod of `api`, `packages`, a scanner, the updater or a Job does. A renewal rolls nothing: the checksum follows the
+rendered configuration (the paths), and the worker's watcher reads the swapped files. The issuer must be able to issue `code signing`;
+cert-manager's Secret carries `ca.crt` for a CA issuer, which the mount requires. The four alerts `QuaderSigning*` render while
+`config.signing.enabled` (`quader.signingOn`). Test: `TestR_HA_071_TheSigningIdentityReachesTheWorkerPodsAlone`
+([signing_test.go](../../test/chart/signing_test.go)).
 
 ## TLS
 

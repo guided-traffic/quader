@@ -606,6 +606,8 @@ func (a *App) startClient() error {
 			Malware: a.malwareAPI(),
 			// The signatures' operations and the member signatures of a file and a version (wire_signatures.go).
 			Signatures: a.signaturesAPI(),
+			// Quader's signing identity (wire_signing.go).
+			Signing: a.signingAPI(),
 			// The system repositories' "in use" line, from this replica's configuration: upstream/scanner-trivy while the image
 			// scanning reads its database through it (R-REPO-070, R-VULN-044), upstream/clamav while the malware scanning
 			// keeps its database there (R-REPO-075, wire_malware_database.go).

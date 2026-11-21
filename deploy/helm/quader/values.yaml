@@ -517,6 +517,13 @@ config:
   #   trust_root:
   #     refresh: true                   # false: the release's snapshot of the public Sigstore root (no internet)
   #     url: https://tuf-repo-cdn.sigstore.dev   # or a TUF mirror of the company, https only
+  # Quader's signing identity (docs/spec/signatures.md R-SIG-058). Every key has a default and is rendered only when set here; the
+  # chart reads enabled, which renders the four QuaderSigning* alerts. The identity's files are the chart's (signing.identity below).
+  # signing:
+  #   enabled: true                     # false: Quader signs nothing, also with an identity
+  #   identity:
+  #     reload_interval: 1m             # how often a worker reads the identity's files again, 1s to 1h
+  #     announce_period: 10m            # how long a new identity is listed before it signs; 0s: current at once
 
 # ── TLS on Quader's own listeners ────────────────────
 # Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam) has a pair and a name of its own:
@@ -689,6 +696,27 @@ trustedCA:
 #         trustRoot: own                # public: the shipped public Sigstore root (when no trusted root is given) | own: the company's
 #         trustedRootFrom:              # or trustedRoot: inline trusted_root.json, at most 1 MiB
 #           configMapKeyRef: {name: company-sigstore-root, key: trusted_root.json}
+
+# ── Quader's signing identity (R-HA-071, docs/spec/signatures.md R-SIG-046) ──────────────
+# One identity per installation: an ECDSA P-256 key with a code-signing certificate of the company's CA, with which Quader signs as a
+# registry and issues its attestations. At most one source. The Secret (tls.crt: the leaf and its intermediates, tls.key: the key,
+# ca.crt: the root) reaches the worker pods only, mounted at /var/run/secrets/quader/signing/; config.signing.identity.cert_file,
+# key_file and ca_file are set by the chart. A renewal reaches the workers without a restart and is announced before it signs
+# (config.signing.identity.announce_period). Without either source an administrator creates the identity in the admin area
+# (Admin area › Settings › Signatures). The tuning keys are under config.signing.
+signing:
+  identity:
+    existingSecret: ""                  # example: quader-signing (tls.crt: leaf and intermediates, tls.key: ECDSA P-256, ca.crt: the root; code signing, a URI as alternative name)
+    certManager:                        # the Certificate <fullname>-signing the chart renders while issuerRef.name is set
+      issuerRef:
+        kind: ClusterIssuer             # ClusterIssuer | Issuer (an Issuer of the release namespace)
+        name: ""                        # empty = no Certificate; example: company-code-signing
+        group: cert-manager.io
+      commonName: Quader signing
+      subject: {}                       # example: {organizations: [Example GmbH], countries: [DE]}
+      uris: []                          # besides config.server.base_url, which is always the first; example: [https://quader.example.com/signing]
+      duration: 2160h                   # 90 days
+      renewBefore: 720h                 # 30 days; the key is ECDSA P-256 with rotationPolicy Always, not a value
 
 # ── Monitoring (the ServiceMonitor and the alerts of the chart) ─
 metrics:

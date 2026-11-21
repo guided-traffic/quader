@@ -5,7 +5,7 @@ Q-OPS-160, Q-OPS-171), QuaderBlobMissing (R-HA-024, Q-STOR-152) and
 the sixteen rows of R-HA-045's table whose metrics the binary exports, QuaderBackupCheckFailed (the platform check
 task backup-check, R-HA-023), QuaderRevocationJournalBacklog (R-HA-054) and the six QuaderBackup* alerts of the backup runs
 (R-BAK-014): every alert of the table. The four of the malware scanning (R-MAL-026) render while config.malware.enabled, the three
-of the signatures on artifacts (R-SIG-039) while config.signatures.enabled.
+of the signatures on artifacts (R-SIG-039) while config.signatures.enabled, the four of the signing identity (R-SIG-057) while config.signing.enabled.
 
 The six alerts of the backup runs are rendered only while backup.enabled is true (Q-HA-17): without the CronJob no run
 ever succeeds, and the clause of QuaderBackupStale for a backup that never succeeded would fire one interval after every
@@ -230,6 +230,39 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     summary: The public Sigstore trusted root and npm's registry keys in use are older than 14 days.
     description: The task signature-trust-root has not stored a newer public root for 14 days, so certificate authorities, logs and keys that Sigstore and npm added since are not known, and their signatures read Signed · signer not trusted (R-SIG-017, R-SIG-039). With config.signatures.trust_root.refresh true, the admin page of the signatures and the audit event signature.trust_root.failed name the failure; check the worker's egress to config.signatures.trust_root.url. Without internet (refresh false) the age is that of the release's snapshot (H-1170); upgrade, point trust_root.url at a TUF mirror of the company, or disable the alert.
 {{- end }}
+{{- if include "quader.signingOn" . }}
+- alert: QuaderSigningIdentityExpiring
+  expr: min(quader_signing_identity_not_after_seconds{ {{ $ns }},state="current" }) - time() < 14 * 86400 unless on() count(quader_signing_identity_not_after_seconds{ {{ $ns }},state="announced" }) > 0
+  for: 1h
+  labels:
+    severity: warning
+  annotations:
+    summary: The certificate of Quader's signing identity ends within 14 days and no successor is announced.
+    description: When it ends, Quader signs nothing and its attestations stop verifying (R-SIG-045, R-SIG-057). With the Helm values, check that cert-manager renews the Certificate <fullname>-signing (kubectl describe certificate) and that its issuer still issues code signing; a renewal is announced within config.signing.identity.reload_interval. With an uploaded identity, an administrator creates a new key in Admin area › Settings › Signatures and uploads the certificate the CA issues for it (docs/manual/admin/runbook.md).
+- alert: QuaderSigningIdentityExpired
+  expr: min(quader_signing_identity_not_after_seconds{ {{ $ns }},state="current" }) - time() < 0
+  labels:
+    severity: critical
+  annotations:
+    summary: The certificate of Quader's signing identity has ended; Quader signs nothing.
+    description: Local npm versions published from now on carry no registry signature and npm audit signatures reports them missing; no attestation is made, and those made with this certificate stop verifying (R-SIG-045, R-SIG-057). Install a new identity at once (the Helm values or Admin area › Settings › Signatures); the job signs what waited (docs/manual/admin/runbook.md).
+- alert: QuaderSigningIdentityNotLoaded
+  expr: max(quader_signing_identity_loaded{ {{ $ns }} }) == 0 and on() count(quader_signing_identity_not_after_seconds{ {{ $ns }},state="current" }) > 0
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: No worker holds the key of the current signing identity.
+    description: An identity is current, but no worker could load its key, so the job signing leaves its work due (R-SIG-049, R-SIG-057). For the Helm values, the worker pods mount the Secret at /var/run/secrets/quader/signing/ and the admin page shows a refused pair of the files with its reason; for an uploaded identity, the key ring of the workers must open signing_identities.sealed_key (quader admin secrets status). A worker started during an announce period holds only the new key until the switch.
+- alert: QuaderSigningBacklog
+  expr: max(quader_signing_oldest_due_seconds{ {{ $ns }},kind="npm" }) > 300
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: A local npm version has waited more than five minutes for Quader's registry signature.
+    description: The job signing does not keep up or does not run (R-SIG-049, R-SIG-057); until a version is signed, npm audit signatures reports it missing. Check that a worker claims the queue signing (jobs.workers.signing), quader_signing_identity_loaded and quader_signing_operations_total by result; raise config.signing.concurrency if operations finish but too slowly.
+{{- end }}
 - alert: QuaderMirrorFailing
   expr: max by (repo) (quader_mirror_consecutive_failures{ {{ $ns }} }) >= 3
   labels:
@@ -371,5 +404,5 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader.rules.names" -}}
-{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderSignatureInvalid" "QuaderSignatureBacklog" "QuaderSignatureTrustRootStale" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
+{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderSignatureInvalid" "QuaderSignatureBacklog" "QuaderSignatureTrustRootStale" "QuaderSigningIdentityExpiring" "QuaderSigningIdentityExpired" "QuaderSigningIdentityNotLoaded" "QuaderSigningBacklog" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
 {{- end -}}

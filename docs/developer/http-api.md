@@ -289,6 +289,30 @@ every answer through the response validator against a store in memory ([signatur
 [signatures_views_test.go](../../internal/api/v1/signatures_views_test.go) covers the version's answer through a virtual repository, the
 scopes, OCI's platforms, the origin and the member. The store behind them is tested against the stack by `TestR_SIG_034`.
 
+## The signing identity (R-SIG-055)
+
+The operations of Quader's own signing identity are under the tag `signatures` with the schemas `SigningOverview`, `SigningIdentity`,
+`SigningRefusal`, `SigningBacklog`, `SigningSubject`, `SigningKeyRequest`, `SigningCertificateUpload` and `SigningIdentityImport`. The
+handlers run on `Options.Signing` (`SigningServices`, [signing_api.go](../../internal/api/v1/signing_api.go)): the store of
+`internal/signing/store`, the replica's snapshot of the identities for the public reads, `signing.enabled`, whether the configuration names
+the identity's files (`Managed`, which every write hands the store) and the announce period. Without the store every operation answers
+`503`. No answer carries key material; the import's key and passphrase reach the store and nothing else. The domain is
+[signatures.md](signatures.md#stage-2-quader-signs).
+
+| operationId | Method and path | Permission | Refusals |
+|---|---|---|---|
+| `getSigningIdentity` | GET `/api/v1/signing/identity` | `settings:read` | — |
+| `createSigningKey` | POST `/api/v1/signing/identity/key` (`201`, the pending identity with `csr`) | `security-settings:write`, `x-quader-recent-auth` | `409 signing_identity_managed`, `409 signing_identity_pending`, `422 validation_failed` at the member |
+| `uploadSigningCertificate` | PUT `/api/v1/signing/identity/certificate` (exempt from `If-Match`: it binds to the one pending key) | as above | `409 signing_no_pending_key`, `409 signing_identity_announced`, `409 signing_identity_managed`, `409 signing_identity_exists`, `422 signing_key_mismatch`, `422 validation_failed` with the check of R-SIG-045 |
+| `importSigningIdentity` | POST `/api/v1/signing/identity/import` (`201`) | as above | as the upload, the key's refusals at `/key` |
+| `discardSigningKey` | DELETE `/api/v1/signing/identity/pending` | as above | `404` |
+| `removeSigningIdentity` | DELETE `/api/v1/signing/identity` | as above | `404`, `409 signing_identity_managed` |
+| `retireSigningIdentity` | POST `/api/v1/signing/identities/{id}/retire` | as above | `404`, `409 signing_identity_not_previous`, `409 signing_key_in_use` |
+| `getSigningTrustedRoot` | GET `/api/v1/signing/trusted-root.json` (Sigstore's trusted root media type, cacheable 60 s) | public | `404` without a current or previous identity |
+| `getSigningChain` | GET `/api/v1/signing/chain.pem` (`application/pem-certificate-chain`, cacheable 60 s) | public | `404` without a current identity |
+
+The response validator of the tests decodes `application/pem-certificate-chain` as text ([apitest](../../internal/api/v1/apitest/apitest.go)).
+
 ## Conventions every resource inherits (WP1.6)
 
 The helpers live in [internal/api/v1](../../internal/api/v1). A handler calls them; it never re-implements a rule.
