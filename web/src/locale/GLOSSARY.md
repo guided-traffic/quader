@@ -106,6 +106,7 @@ before using a new term in a German text.
 | switch on, switch off, on, off, switch all on | einschalten, ausschalten, an, aus, alle einschalten |
 | not switched on, switched off, no longer offered, placeholder (member), take no part, skipped | nicht eingeschaltet, ausgeschaltet, nicht mehr angeboten, Platzhalter, wirkt nicht mit, übersprungen |
 | account (of an upstream), archive keys, image scanning | Konto, Archivschlüssel, Image-Analyse |
+| system repository (a repository of the project upstream that Quader keeps for its own work) | System-Repository (Plural System-Repositories) |
 | malware, malware scan, find (a file in which the scan found malware), signatures (of the malware scan) | Malware, Malware-Prüfung, Malware-Befund, Malware-Signaturen |
 | release (a file the malware scan did not pass, for download), withdraw (a release) | zum Download zulassen (Zulassung; not "freigeben", which renders exposure), zurückziehen |
 | signature database, checked (an artifact with a verdict), verdict (of the malware scan) | Signaturdatenbank, geprüft, Prüfergebnis |

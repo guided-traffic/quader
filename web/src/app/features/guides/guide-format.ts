@@ -62,12 +62,15 @@ import { classIcon, classLabel } from '../repositories/repository-class';
             <td class="class-cell">
               <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(r.class) }}</span>{{ classText(r.class) }}</span>
             </td>
-            <td class="actions with-setup">
-              <!-- The row's action (Q-UI-487): a quiet button, its accessible name ending with the key, as in a project's list. -->
-              <a class="btn btn-tertiary row-setup" [routerLink]="setupLink(r)"
-                ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
-                ><span class="visually-hidden" translate="no">&ngsp;{{ r.key }}</span></a
-              >
+            <td class="actions" [class.with-setup]="setupLink(r) !== null">
+              <!-- The row's action (Q-UI-487): a quiet button, its accessible name ending with the key, as in a project's list. A
+                   system repository of upstream answers no client and offers none (Q-UI-896). -->
+              @if (setupLink(r); as setup) {
+                <a class="btn btn-tertiary row-setup" [routerLink]="setup"
+                  ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
+                  ><span class="visually-hidden" translate="no">&ngsp;{{ r.key }}</span></a
+                >
+              }
             </td>
           </tr>
         }
@@ -152,7 +155,7 @@ export class GuideFormat {
     return repositoryCommands(refOf(r));
   }
 
-  protected setupLink(r: RepositorySummary): string[] {
+  protected setupLink(r: RepositorySummary): string[] | null {
     return setupCommands(refOf(r));
   }
 

@@ -349,6 +349,22 @@ function rank(c: RepoSeed['class']): number {
   return c === 'local' ? 0 : c === 'remote' ? 1 : 2;
 }
 
+/**
+ * The public registries of the project upstream that the seed switches on (R-UI-192): the project's page as an installation shows
+ * it, some registries on and some off beside its two system repositories. None is a format's default preset, so the form of a new
+ * remote opens without the line of R-UI-191, and `docker-hub` stays off for the placeholder of `containers` (R-UI-189). Switching on
+ * contacts no upstream (R-REPO-068); the plain user, who is no external user, reads them at their level Internal.
+ */
+export const switchedOnRegistries = ['ghcr', 'quay', 'ubuntu', 'debian-security'] as const;
+
+/** Switches the registries of `switchedOnRegistries` on; a registry that is on already answers 200 and records nothing. */
+export async function seedUpstreamRegistries(admin: Api): Promise<void> {
+  for (const key of switchedOnRegistries) {
+    const res = await admin.put(`/api/v1/upstream-repositories/${key}/state`, { state: 'on' });
+    await expectStatus(res, [200], `switch on upstream/${key}`);
+  }
+}
+
 /** The memberships and the administrator's role; the users exist from their first sign-in (R-AUTH-007). */
 export async function seedGrants(admin: Api): Promise<void> {
   for (const m of memberships) {

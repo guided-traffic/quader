@@ -1,4 +1,5 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
+import { NgTemplateOutlet } from '@angular/common';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import {
   Component,
@@ -12,15 +13,22 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
-import { JobReference, RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
+import { JobReference, RepositoriesApi, RepositoryFilters, RepositorySummary, refOf } from '../../api/repositories-api';
 import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { ProjectContext } from '../../core/project-context';
-import { isUpstreamProject } from '../../core/upstream-project';
+import {
+  UPSTREAM_PROJECT,
+  isSystemRepository,
+  isUpstreamProject,
+  projectDescription,
+  systemRepositoryNames,
+} from '../../core/upstream-project';
 import { UpstreamApi } from '../../api/upstream-api';
 import { stateBadge } from '../upstream/upstream-words';
 import { Confirm } from '../../shared/confirm-dialog';
+import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -32,10 +40,27 @@ import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
+import { collectAll } from '../../api/pagination';
 import { FormatIconView } from '../../shared/format-icon';
 import { FrequentPlaces } from '../../core/frequent-places';
 import { setupCommands } from '../../core/project-links';
 import { classIcon, classLabel } from './repository-class';
+
+/**
+ * Whether the list's filters admit a repository, by the rules the server applies to the list (R-REPO-012): `q` a case-insensitive
+ * substring of `<project>/<key>` or of the description (Q-API-279, `queryMatches` of internal/repository/service.go), `class` and
+ * `format` the value, `state=inactive` a disabled repository. The section of the system repositories filters its rows with it in
+ * the browser, so the head's filter covers both tables (Q-UI-893, Q-UI-894).
+ */
+export function listAdmits(r: RepositorySummary, f: RepositoryFilters): boolean {
+  const q = (f.q ?? '').toLowerCase();
+  return (
+    (!q || refOf(r).toLowerCase().includes(q) || r.description.toLowerCase().includes(q)) &&
+    (!f.class || r.class === f.class) &&
+    (!f.format || r.format === f.format) &&
+    (f.state !== 'inactive' || r.disabled)
+  );
+}
 
 /**
  * The repository list (R-UI-020), its columns from the job of its kind of user (Q-UI-330). Inside a project, the plain user's:
@@ -47,6 +72,10 @@ import { classIcon, classLabel } from './repository-class';
  * (R-UI-003) and restart the cursor walk; "Load more" continues it. A repository is addressed inside its project (R-REPO-002): its key links to
  * the content page `/projects/<project>/repositories/<key>` (R-UI-052), its Settings action to `…/settings`. Delete asks for the key, may offer to detach the repository from
  * the virtual repositories that include it, and follows the deletion job until the row is gone.
+ *
+ * The page of the built-in project `upstream` keeps its system repositories out of the list: they stand below it in the closed
+ * section **System repositories**, with their number, one sentence and a table of the same columns, without **Set up client**
+ * (R-UI-192, the owner's Q-UI-891). The filter of the head covers both tables (Q-UI-894).
  */
 @Component({
   selector: 'quader-repository-list',
@@ -55,9 +84,11 @@ import { classIcon, classLabel } from './repository-class';
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,
+    NgTemplateOutlet,
     RouterLink,
     CopyButton,
     DataTable,
+    Disclosure,
     ErrorNotice,
     FilterCategory,
     FilterPanel,
@@ -152,13 +183,14 @@ export class RepositoryList {
   protected readonly heading = $localize`:@@repo.list.heading:Repositories`;
   /**
    * The one muted line under the heading in a project (Q-UI-317): its description, and for its plain user (at most a reader, no
-   * system role) whom to ask, since their sidebar has no members or settings.
+   * system role) whom to ask, since their sidebar has no members or settings. The built-in project's description is the UI's
+   * localized sentence, not the stored English one (Q-UI-895).
    */
   protected readonly headerLine = computed(() => {
     const key = this.inProject() ? this.projectKey() : null;
     if (!key) return '';
     const p = this.projects.projects().find((x) => x.key === key);
-    const description = p?.description ?? '';
+    const description = projectDescription(key, p?.description);
     const plain = !this.session.isAdministrator() && (this.session.projectRole(key) ?? 'reader') === 'reader';
     const owners = (p?.owners ?? []).map((o) => o.replace(/^(user|group):/, ''));
     if (!plain || owners.length === 0) return description;
@@ -174,6 +206,44 @@ export class RepositoryList {
   protected readonly filtered = computed(
     () => !!(this.q() || this.class() || this.format() || this.state() || this.filterProject()),
   );
+
+  // ---- The system repositories of the project `upstream` (R-UI-192) ----
+
+  /** The page of the built-in project: its system repositories stand apart, below the list (the owner's Q-UI-891). */
+  protected readonly upstreamPage = computed(() => this.inProject() && isUpstreamProject(this.projectKey()));
+  /** The rows of the list: on the page of `upstream` without its system repositories, which its section holds. */
+  protected readonly rows = computed(() =>
+    this.upstreamPage() ? this.list.items().filter((r) => !isSystemRepository(r.project, r.key)) : this.list.items(),
+  );
+  /**
+   * The system repositories the caller may see, asked for by name once per visit (Q-UI-893): two at most, so the section neither
+   * depends on the page of the list they would fall on nor asks again for each filter. A caller who reads none (they are always
+   * Private) gets an empty answer and no section.
+   */
+  protected readonly systemLoad = resource({
+    params: () => (this.upstreamPage() ? systemRepositoryNames() : undefined),
+    loader: ({ params }) => collectAll(this.api.list({ project: UPSTREAM_PROJECT, name: params })),
+  });
+  protected readonly systemFailure = computed(() => {
+    const e = this.systemLoad.error();
+    return e ? asApiError(e) : null;
+  });
+  /** The section's rows: those the filters of the head admit, by the list's own rules (Q-UI-894). */
+  protected readonly systemRows = computed(() => {
+    const filters = { q: this.q(), class: this.class(), format: this.format(), state: this.state() };
+    return (valueOf(this.systemLoad) ?? []).filter((r) => listAdmits(r, filters));
+  });
+  /** The section stands where the caller reads a system repository, or where their read failed and says so. */
+  protected readonly showSystem = computed(
+    () => this.upstreamPage() && ((valueOf(this.systemLoad) ?? []).length > 0 || this.systemFailure() !== null),
+  );
+  /** The number after the heading: the matches of the filters, every one without a filter; none while the read failed. */
+  protected readonly systemCount = computed(() => (this.systemLoad.hasValue() ? this.systemRows().length : null));
+  /** Closed at every visit; a filter opens it where it matches one of them and closes it where it matches none (Q-UI-894). */
+  protected readonly systemOpen = signal(false);
+  protected readonly systemHeading = $localize`:@@repo.system.heading:System repositories`;
+  protected readonly systemHint = $localize`:@@repo.system.hint:Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them.`;
+  protected readonly systemEmptyText = $localize`:@@repo.system.empty-filtered:No system repository matches.`;
   /** The filters of the drawer that are set, as the head's chips (Q-UI-422); the search text is the field's. */
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const out: ListChip[] = [];
@@ -202,6 +272,12 @@ export class RepositoryList {
         this.restage();
         void this.list.start(this.api.list(filters));
       });
+    });
+    // The section of the system repositories follows each change of the filters, and the arrival of its rows: open where a filter
+    // matches one of them, closed where none or no filter is set; the reader's own toggle holds until the next change (Q-UI-894).
+    effect(() => {
+      const open = this.filtered() && this.systemRows().length > 0;
+      untracked(() => this.systemOpen.set(open));
     });
   }
 
@@ -264,8 +340,8 @@ export class RepositoryList {
   protected readonly levelText = levelName;
 
   protected readonly classIcon = classIcon;
-  /** Set up client of a row's repository (R-UI-126). */
-  protected setupLink(row: RepositorySummary): string[] {
+  /** Set up client of a row's repository (R-UI-126); none for a system repository, which answers no client (Q-UI-896). */
+  protected setupLink(row: RepositorySummary): string[] | null {
     return setupCommands(refOf(row));
   }
   /** The admin area's copy button: its name and its tooltip carry the address itself (Q-UI-330). */

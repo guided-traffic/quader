@@ -17,9 +17,10 @@
     </div>
     <ng-container actions>
       <!-- The client address stands on Set up client, with the snippets that use it (R-UI-169, Q-UI-664); the header leads there,
-           first of the page's actions. A disabled repository refuses its clients, so there is nothing to set up; its badge says why. -->
-      @if (!disabled()) {
-        <a class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup">Set up client</a>
+           first of the page's actions. A disabled repository refuses its clients, so there is nothing to set up; its badge says why.
+           A system repository of upstream answers no client either, and has no setup to lead to (Q-UI-896). -->
+      @if (!disabled() && setupLink(); as setup) {
+        <a class="btn btn-default" [routerLink]="setup" i18n="@@repo.content.tab.setup">Set up client</a>
       }
       @if (canConfigure()) {
         <a class="btn btn-default" [routerLink]="settingsLink()" i18n="@@repo.content.settings">Settings</a>
@@ -43,8 +44,9 @@
   </quader-page-header>
 
   @if (view() === 'items') {
-    <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). -->
-    @if (r.class === 'remote') {
+    <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). A system repository is fetched into by Quader's
+         own work, not by clients, so the note about what clients fetched is not its (Q-UI-896). -->
+    @if (r.class === 'remote' && !system()) {
       @if (r.format === 'oci') {
         <p class="content-note" i18n="@@repo.content.oci-remote-note3">Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</p>
       } @else {

@@ -15650,6 +15650,33 @@
         <target>Kein Repository passt.</target>
       </segment>
     </unit>
+    <unit id="repo.system.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-list.ts:252</note>
+      </notes>
+      <segment>
+        <source>System repositories</source>
+        <target>System-Repositories</target>
+      </segment>
+    </unit>
+    <unit id="repo.system.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-list.ts:253</note>
+      </notes>
+      <segment>
+        <source>Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them.</source>
+        <target>Diese Repositories nutzt Quader selbst: Nur seine Scanner lesen sie, und für sie wird kein Client eingerichtet.</target>
+      </segment>
+    </unit>
+    <unit id="repo.system.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-list.ts:254</note>
+      </notes>
+      <segment>
+        <source>No system repository matches.</source>
+        <target>Kein System-Repository passt.</target>
+      </segment>
+    </unit>
     <unit id="auth-settings.pat">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:41,42</note>
@@ -40461,6 +40488,15 @@
       <segment>
         <source>The public registries this installation offers to every project. Each is off until you switch it on.</source>
         <target>Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet. Jede ist aus, bis Sie sie einschalten.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.project.description">
+      <notes>
+        <note category="location">src/app/core/upstream-project.ts:67</note>
+      </notes>
+      <segment>
+        <source>The public registries this installation offers to every project.</source>
+        <target>Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet.</target>
       </segment>
     </unit>
     <unit id="wellknown.search">

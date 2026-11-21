@@ -112,6 +112,29 @@ async function* rowOpened(page: Page): AsyncGenerator<string> {
   yield 'opened';
 }
 
+/**
+ * The page Repositories of the project upstream (R-UI-192): as it opens, with the section of its system repositories closed; with
+ * the section opened by its toggle; and, closed again, with a filter text that matches one of them, which opens the section and
+ * counts the match while the list above says that none of its rows matches.
+ */
+async function* systemRepositories(page: Page): AsyncGenerator<string> {
+  const section = page.locator('main quader-disclosure.system-repositories');
+  const toggle = section.locator('button.toggle');
+  await expect(section.locator('.heading-count')).toHaveText('2');
+  yield '';
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  yield 'opened';
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const field = page.locator('main .list-search input');
+  await field.fill('trivy');
+  await field.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(section.locator('.heading-count')).toHaveText('1');
+  yield 'search';
+}
+
 /** The repository list of the main project with two filters set: a format and a class. */
 const repositoryChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByRole('combobox', { name: 'Format' }).selectOption('npm');
@@ -1157,7 +1180,10 @@ export const screens: readonly Screen[] = [
   { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
-  { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
+  // The built-in project with the registries the seed switched on: the administrator sees its two system repositories in their
+  // section (R-UI-192); the plain user reads the registries that are on and no system repository, so no section.
+  { id: 'repositories-upstream', path: '/ui/projects/upstream/repositories', kinds: ['admin'], walk: systemRepositories },
+  { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },  { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
   { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },

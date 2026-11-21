@@ -8297,7 +8297,8 @@ saving sends `members: ["npm-local", "upstream/npmjs"]`; the selected list shows
 Priority: **MVP** · Covers: quader-only
 
 - **Lists.** The project is listed where R-AUTHZ-041 admits the caller, by its mark and display name **Upstream** with the badge
-  **Built-in** after the name, its key, its description, the number of repositories the caller reads and no role or members
+  **Built-in** after the name, its key, its description (the UI's localized sentence, not the stored English one,
+  [Q-UI-895](#q-ui-895--the-built-in-projects-description-is-a-localized-text-of-the-ui)), the number of repositories the caller reads and no role or members
   ([Q-UI-835](#q-ui-835--the-project-upstream-is-a-project-with-the-badge-built-in-and-no-administration)). The admin area's list of
   projects shows it with the same badge and no **Delete**. It stands first in every list of projects it is in, above the other
   projects whatever the list is sorted by (a filter that does not match it takes it out), and its mark carries an arrow pointing
@@ -8308,7 +8309,7 @@ Priority: **MVP** · Covers: quader-only
 - **Its side bar**: the switcher, **Repositories**, **Packages**, **Vulnerabilities**; no **Access** group (it has no members,
   policies, service accounts or CI mappings) and no **Settings** entry. Its repository list is the project list of R-UI-020 with the
   state of each repository as a badge (**Off**, **No longer offered**) for a caller with `repositories:read-config`; a caller without
-  it sees only what it reads.
+  it sees only what it reads. Its system repositories stand below the list in a closed section of their own (R-UI-192).
 - **A repository's settings page** (R-UI-087): Key and Description read-only; **Visibility** and **Upstream** read-only, each with the
   line "Managed in Admin area › Upstream registries." linked to R-UI-188 for an administrator; **Visibility** has no fold **Wiki
   visibility**, because the repository's one level covers its packages and its documentation and the repository document refuses a
@@ -8320,11 +8321,15 @@ Priority: **MVP** · Covers: quader-only
   the same with "Its visibility is always Private: only Quader's malware scan reads it." (Q-UI-883). The format's settings are read-only, **Hide existence** and **Service accounts** are absent, **Administrator notes**
   stays editable; the vulnerability settings and the cache-fill action have no field on the settings page of any repository and
   are set through the API ([Q-UI-842](#q-ui-842--the-settings-page-of-a-well-known-repository-reads-what-the-product-holds-and-edits-what-an-administrator-narrows)).
-- **Set up client** of a well-known repository is the page of R-UI-120, as for any remote; for `scanner-trivy` the page says "Quader's
-  image scanning reads its database through this repository. Clients cannot use it." and shows no snippet; for `scanner-clamav` "Quader's
-  malware scan keeps its signature database in this repository. Clients cannot use it." (Q-UI-883).
+- **Set up client** of a preset repository is the page of R-UI-120, as for any remote. A system repository has none: no screen offers
+  **Set up client** for it, neither its row, its page, the guides nor a package's install panel (the owner's
+  [Q-UI-891](#q-ui-891--the-system-repositories-of-upstream-stand-apart-below-the-list-closed-and-without-set-up-client),
+  [Q-UI-896](#q-ui-896--no-screen-offers-a-client-action-for-a-system-repository-one-function-decides-the-link)). Its page `…/setup`, opened
+  by its address, says for `scanner-trivy` "Quader's image scanning reads its database through this repository. Clients cannot use it."
+  and shows no snippet; for `scanner-clamav` "Quader's malware scan keeps its signature database in this repository. Clients cannot use
+  it." (Q-UI-883).
 - **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
-  mark (R-UI-095, R-UI-167, R-UI-124).
+  mark (R-UI-095, R-UI-167, R-UI-124); a system repository without **Set up client** (Q-UI-896).
 - **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them.
 
 Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**, first, above a
@@ -8343,6 +8348,50 @@ Priority: **MVP** · Covers: quader-only
 
 Acceptance criteria (Vitest, about 1 s): with `upstream/docker-hub` active and readable, **New OCI (Docker) repository** of class
 Remote shows the line under the presets; with it off, it does not.
+
+### R-UI-192 · The system repositories of the project `upstream` stand apart on its page
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-21 ([Q-UI-891](#q-ui-891--the-system-repositories-of-upstream-stand-apart-below-the-list-closed-and-without-set-up-client)).
+
+- **The list** of the project's page **Repositories** (`/projects/upstream/repositories`, R-UI-020) holds the preset repositories only.
+  A system repository (`scanner-trivy`, `scanner-clamav`; R-REPO-066) is none of its rows, on any of its pages.
+- **Below it**, set apart by room of its own over a hairline, the section **System repositories** (German "System-Repositories",
+  [Q-UI-892](#q-ui-892--the-section-is-named-system-repositories)): the one collapsible section of every screen (`<quader-disclosure>`,
+  Q-UI-322) with the number of its repositories after its heading as the neutral badge of a count, and one muted sentence under it,
+  "Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them." It is closed at every
+  visit; nothing of its state is stored. Opened, it holds a table of the list's columns (Repository, Format, Class and the row's
+  actions) with the system repositories the caller reads, by key.
+- **No Set up client.** A row of the section has no **Set up client**; its menu offers what the API lets the caller do with the
+  repository: **Settings** (to whoever reads the configuration, as every row), **Files** (the management API lists its items) and, for
+  `scanner-trivy`, **Vulnerabilities** (the report, which the product leaves empty: the repository's scanning is off, R-REPO-070). No
+  **Delete** (R-UI-190) and nothing a client does.
+- **Who sees it.** The section stands only for a caller who reads a system repository; they are always Private, so a plain user, who
+  reads the registries that are on, sees the list alone. The rows are read by name once per visit
+  ([Q-UI-893](#q-ui-893--the-section-reads-its-rows-by-name-once-per-visit-and-filters-them-in-the-browser)); a read that fails shows
+  its error and **Retry** inside the section.
+- **The filter** of the list's head (the search and the drawer's format, class and state) covers both tables
+  ([Q-UI-894](#q-ui-894--the-filter-covers-both-tables-and-opens-the-section-where-it-matches-one-of-its-rows)): the heading counts
+  the section's matches; a filter that matches one of its rows opens it, one that matches none closes it, at 0; without a filter it is
+  closed. The reader's own toggle holds until the filters change.
+- **The project's description** under the title is the UI's localized sentence
+  ([Q-UI-895](#q-ui-895--the-built-in-projects-description-is-a-localized-text-of-the-ui)).
+- **Nowhere a client action.** No screen offers **Set up client** for a system repository, and its content page offers no upload, no
+  new folder and no sentence about what clients fetch or publish
+  ([Q-UI-896](#q-ui-896--no-screen-offers-a-client-action-for-a-system-repository-one-function-decides-the-link)).
+
+Acceptance criteria (Vitest, `system-repositories.spec.ts`, about 0.4 s, and the R-UI-192 cases of `repository-content.spec.ts` and
+`core/upstream-project.spec.ts`; rendered under rule 11, `repositories-upstream` as the administrator closed, opened and searched, and
+`repositories-upstream-plain`):
+
+- The page of `upstream` lists `debian`, `docker-hub` and `npmjs` with **Set up client** each and no system repository; below it
+  **System repositories 2**, closed, with the sentence; opened, `scanner-clamav` and `scanner-trivy` with the same columns, no **Set up
+  client**; the row menu of `scanner-trivy` is **Settings**, **Files**, **Vulnerabilities**, of `scanner-clamav` **Settings**, **Files**.
+- `?q=TRIVY` shows "No repository matches." above and the section open with **1**; `?format=oci` opens it with `scanner-trivy`;
+  `?q=docker` leaves it closed with **0**; the rows are asked for once, by name.
+- A caller who reads no system repository gets no section; `setupCommands` of `upstream/scanner-trivy` is null; the page of
+  `upstream/scanner-trivy` has no **Set up client** and says "This repository has cached no images yet.", that of
+  `upstream/scanner-clamav` offers no upload.
 
 ## Deferred
 
@@ -20248,6 +20297,134 @@ the start page, the admin area's projects and the search's **Projects**; the swi
 revisit this if the project ever has a level that decides something.
 
 **Applied in the spec:** R-UI-190.
+
+### Q-UI-891 · The system repositories of `upstream` stand apart below the list, closed and without Set up client
+
+Status: **Decided by the owner (2026-11-21)**, with a picture of the page **Repositories** of the project `upstream` on his
+installation (dark scheme, German): one table of 14 rows in key order, `scanner-clamav` and `scanner-trivy` among the twelve registries,
+every row with **Client einrichten**. His words: "Bitte die internen Repos wie: scanner-trivy und scanner-clamav unter die Liste packen,
+am besten als seperate Tabelle die standardmäßig eingeklappt ist. Sowas wie system repositories, oder etwas besseres. Ohne den client
+einrichten button. Einfach bewusst abgesetzt." How the section folds is decided by the development agent from the options below; the
+owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The one collapsible section of every screen, `<quader-disclosure>`, with the number after its heading and its sentence as the hint (chosen) | R-UI-192 | One fold, one chevron, one animation in the whole app (Q-UI-322, Q-UI-552); the hint says what they are while it is closed | The disclosure gains an input, the count |
+| (b) A heading and a button **Show system repositories** under the list | A second way to fold | — | Two looks for one job; the style guide has one |
+| (c) A bare `<details>` | The browser's own fold | No code | The lint refuses it outside rendered Markdown; another chevron and no animation |
+
+**Choice:** (a). The count is the neutral badge a page's heading and a tab carry (Q-UI-550), heard after the heading ("System
+repositories 2"). Room of `--quader-space-6` above the disclosure's hairline keeps it from reading as the list's last rows.
+
+**Rationale:** the owner asked for a table of its own, closed, set apart; the app's details on demand are this one section. The
+development agent would revisit the room above it if the owner reads it as part of the list.
+
+**Applied in the spec:** R-UI-192, R-UI-190. Code: [repository-list.html](../../web/src/app/features/repositories/repository-list.html),
+[disclosure.ts](../../web/src/app/shared/ui/disclosure.ts).
+
+### Q-UI-892 · The section is named System repositories
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **System repositories**, German "System-Repositories" (chosen) | The heading names the group | The spec's word for them since R-REPO-066 ("the system repositories the product declares for its own work"), the API's `kind: system`, the owner's own suggestion; a noun, as a section's title is | The admin area's page names the same two **Used by Quader** (Q-UI-834) |
+| (b) **Used by Quader** | The admin page's heading | One word for one thing across the two pages | A phrase, not a noun; beside the registries an administrator switches it says why they have no switch, on a team's page it names no group |
+| (c) **Internal repositories** | The owner's "internen Repos" | His first word | "Internal" is a visibility level (Q-UI-228), and both repositories are Private: it would read as their level |
+
+**Choice:** (a). The glossary gains "system repository: System-Repository (Plural System-Repositories)", after "Remote-Repositories".
+
+**Rationale:** the word the spec, the API and the owner already use, and the one that does not collide with a level. The development
+agent would revisit the admin page's **Used by Quader** if the owner wants one name on both pages; that page is not changed here.
+
+**Applied in the spec:** R-UI-192. Code: [GLOSSARY.md](../../web/src/locale/GLOSSARY.md).
+
+### Q-UI-893 · The section reads its rows by name once per visit and filters them in the browser
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the repository list carries no mark of a system repository; the API's `kind` is the admin area's item, which a caller without
+`repositories:read-config` cannot read. The UI knows the two by key (`isSystemRepository` of
+[upstream-project.ts](../../web/src/app/core/upstream-project.ts), the one place that knows them, Q-UI-837), as the product declares them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One request `name=upstream/scanner-trivy,upstream/scanner-clamav` per visit, the head's filters applied to its rows in the browser by the list's rules (chosen) | `listAdmits` of [repository-list.ts](../../web/src/app/features/repositories/repository-list.ts): `q` a case-insensitive substring of `<project>/<key>` or of the description (Q-API-279), format, class, `state=inactive` | The section holds them whatever page of the list they would fall on; one request; an empty answer says the caller reads none | The browser repeats four filter rules of the server's |
+| (b) The list's loaded pages split in the browser | No request more | — | With the presets of 25 formats the system repositories fall past the first 50 rows: the section would be empty until **Load more** |
+| (c) A request with the filters at each change | The server filters | No rule repeated | A request per filter, and an empty answer no longer tells "reads none" (no section) from "matches none" (a section at 0) without a second one |
+
+**Choice:** (a). A failed read shows its error and **Retry** in the section, which then stands without a number.
+
+**Rationale:** the two rows are known by name, so asking for them by name is exact and cheap. The development agent would revisit this
+if the repository list ever carries the kind itself, which makes the key test and the extra request unnecessary.
+
+**Applied in the spec:** R-UI-192.
+
+### Q-UI-894 · The filter covers both tables and opens the section where it matches one of its rows
+
+Status: **Decided by the development agent** — selected from the options below, after the owner's ask that a filter that matches a
+system repository opens the section and one that matches none there leaves it closed; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every change of a filter (the search, and the drawer's format, class, state) sets the section: open where it matches one of its rows, closed where none, closed without a filter; the heading counts the matches (chosen) | R-UI-192 | What is found is shown; a filter that finds nothing there still says so, with **0**; the reader's own toggle holds until the filters change | A reader who opened it and then types a text that matches none sees it close |
+| (b) Hide the section where a filter matches none of its rows | — | A shorter page | The reader cannot tell that the filter looked there too |
+| (c) Open it on a match of the search text only | The owner's words taken literally | — | **Format: OCI (Docker)** would count `scanner-trivy` as **1** in a closed section |
+
+**Choice:** (a). The list above says "No repository matches." while the section shows the match, so a search for `trivy` reads as found
+below.
+
+**Rationale:** one filter, one rule for both tables, and the state of the fold follows what the reader asked for. The development agent
+would revisit it if the owner wants a section a reader opened to stay open while he types.
+
+**Applied in the spec:** R-UI-192.
+
+### Q-UI-895 · The built-in project's description is a localized text of the UI
+
+Status: **Decided by the development agent** — selected from the options below, after the development agent saw in the owner's picture
+the stored English sentence under the title of the German page; the owner reviews it at the walkthrough.
+
+Context: the project's description is the product's fixed sentence (R-REPO-066), stored in English by the migration and never
+changed; the API carries no localized text anywhere.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The UI shows its own localized sentence for the project `upstream` wherever the project's description stands: the header line of its page, the start page, the search's **Projects** (`projectDescription` of [upstream-project.ts](../../web/src/app/core/upstream-project.ts)) (chosen) | As the UI draws the project's mark itself (Q-UI-837) | German in the German UI, in every place at once; nothing beyond the UI | The UI repeats the product's sentence |
+| (b) The server answers the description in the caller's language | `Accept-Language` | One source | The first localized text of the API; a change of the server for one sentence |
+| (c) No description for `upstream` | — | Nothing repeated | A plain user loses the one line that says what the project is |
+
+**Choice:** (a), the English text the migration's, the German "Die öffentlichen Registrys, die diese Installation jedem Projekt
+anbietet.".
+
+**Rationale:** the sentence is the product's, as the mark and the badge **Built-in** are, and the UI shows those in its own words. The
+development agent would revisit it if the product ever lets an installation change the project's description.
+
+**Applied in the spec:** R-UI-190, R-UI-192.
+
+### Q-UI-896 · No screen offers a client action for a system repository: one function decides the link
+
+Status: **Decided by the development agent** — selected from the options below, carrying the owner's "Ohne den client einrichten
+button" (Q-UI-891) to every screen; the owner reviews it at the walkthrough.
+
+Context: a system repository answers every client's request and every deploy with 404, as a repository that does not exist; the
+management API reads its document and lists and deletes its items (R-REPO-070, R-REPO-075). **Set up client** was offered by its row,
+its page, the guides of its format and a package's install panel; its page `…/setup` already said that clients cannot use it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `setupCommands` of [project-links.ts](../../web/src/app/core/project-links.ts) answers `null` for a system repository, so every place that builds the button must decide by its type; the content page leaves out its upload, its new folder and its sentences about clients; the page `…/setup` stays and says why (chosen) | R-UI-192 | One decision for every entry point, held by the compiler; nothing offered that the server refuses | A row of the guides' table without an action |
+| (b) Each screen tests `isSystemRepository` before its button | — | — | Five places, and a sixth forgets it |
+| (c) No route `…/setup` for a system repository | — | Nothing to reach | An address typed or kept answers not found instead of saying why |
+
+**Choice:** (a). The empty state of its content says only what it holds ("This repository has cached no images yet."), as a disabled
+repository's does.
+
+**Rationale:** the owner's rule for the section is a fact of the repository, not of the section; one function makes it so everywhere.
+The development agent would revisit the guides' rows if the owner wants system repositories out of the guides (it lists them as any
+repository today, R-UI-190).
+
+**Applied in the spec:** R-UI-190, R-UI-192. Code: [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
+[guide-format.ts](../../web/src/app/features/guides/guide-format.ts), [install-panel.html](../../web/src/app/features/packages/install-panel.html).
 
 ### Q-UI-850 · The sources screen names the database's repository, links it, and shows how to fill a local one
 

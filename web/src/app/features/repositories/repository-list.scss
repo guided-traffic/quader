@@ -16,6 +16,12 @@
   color: var(--quader-text-muted);
 }
 
+// The section of the system repositories of the project upstream (R-UI-192): set apart from the list above it by room of its own
+// over the disclosure's hairline, so it does not read as the list's last rows (the owner's "bewusst abgesetzt", Q-UI-891).
+.system-repositories {
+  margin-block-start: var(--quader-space-6);
+}
+
 // The admin area's row: the quiet copy button and the menu side by side (Q-UI-330).
 td.actions {
   quader-copy-button {

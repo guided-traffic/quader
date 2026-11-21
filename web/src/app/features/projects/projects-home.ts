@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { collectAll } from '../../api/pagination';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
-import { isUpstreamProject, upstreamFirst } from '../../core/upstream-project';
+import { isUpstreamProject, projectDescription, upstreamFirst } from '../../core/upstream-project';
 import { SessionStore } from '../../core/session-store';
 import { valueOf } from '../../shared/paged-resource';
 import { Checkbox } from '../../shared/ui/checkbox';
@@ -66,7 +66,7 @@ import { projectRoleLabel } from './project-roles';
               </span>
             </span>
           </th>
-          <td>{{ p.description }}</td>
+          <td>{{ descriptionOf(p.key, p.description) }}</td>
           <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
           @if (!anonymous()) {
             <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
@@ -127,6 +127,8 @@ export class ProjectsHome {
     return upstreamFirst([...matching.filter((p) => p.role !== undefined), ...matching.filter((p) => p.role === undefined)], (p) => p.key);
   });
   protected readonly builtIn = isUpstreamProject;
+  /** The built-in project's description is the UI's localized sentence (Q-UI-895). */
+  protected readonly descriptionOf = projectDescription;
   protected readonly emptyText = computed(() => {
     if (this.context.projects().length > 0) return $localize`:@@projects-home.empty-filtered:No project matches.`;
     return this.session.state() === 'anonymous'

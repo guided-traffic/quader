@@ -23,14 +23,17 @@
       }
     </quader-install-command>
 
-    <p class="setup-link">
-      <a
-        class="btn btn-default"
-        [routerLink]="setupLink()"
-        [queryParams]="{ client: client() ?? clients()[0]?.id }"
-        i18n="@@repo.content.tab.setup"
-        >Set up client</a
-      >
-    </p>
+    <!-- None for a system repository of upstream, which answers no client (Q-UI-896). -->
+    @if (setupLink(); as setup) {
+      <p class="setup-link">
+        <a
+          class="btn btn-default"
+          [routerLink]="setup"
+          [queryParams]="{ client: client() ?? clients()[0]?.id }"
+          i18n="@@repo.content.tab.setup"
+          >Set up client</a
+        >
+      </p>
+    }
   }
 </section>

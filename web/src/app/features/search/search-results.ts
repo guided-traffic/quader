@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
-import { isUpstreamProject } from '../../core/upstream-project';
+import { isUpstreamProject, projectDescription } from '../../core/upstream-project';
 import { NoValue } from '../../shared/ui/no-value';
 import { Router, RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
@@ -153,7 +153,7 @@ const PAGE = 25;
                     </span>
                   </span>
                 </th>
-                <td>{{ p.description }}</td>
+                <td>{{ descriptionOf(p.key, p.description) }}</td>
                 <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
                 <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
                 <td class="num">{{ p.repositories }}</td>
@@ -307,6 +307,8 @@ export class SearchResults {
   protected readonly classIcon = classIcon;
 
   protected readonly builtIn = isUpstreamProject;
+  /** The built-in project's description is the UI's localized sentence (Q-UI-895). */
+  protected readonly descriptionOf = projectDescription;
 
   protected roleLabel(role: ProjectRole): string {
     return projectRoleLabel(role);

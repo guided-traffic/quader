@@ -12,7 +12,9 @@ of each configuring the same public registry ([Members of a virtual repository](
 
 The project's key is `upstream`, so its repositories are named `upstream/<key>`. Nobody creates, moves or deletes a repository in it,
 and the project has no members, policies, service accounts or settings. In the lists of projects it stands first with the badge
-**Built-in**, its mark is an arrow pointing up, and its visibility is a dash: each registry has its own level.
+**Built-in**, its mark is an arrow pointing up, and its visibility is a dash: each registry has its own level. On the project's own page
+**Repositories** the two system repositories are not among the registries: they stand below them in the closed section **System
+repositories**, without **Set up client** ([Repositories](../user/repositories.md#the-project-upstream)).
 
 | Format | Registry (repository) | Upstream |
 |---|---|---|
@@ -131,7 +133,8 @@ repository ([Download limits and usage](download-limits.md)).
 **Used by Quader** under the list holds `scanner-trivy`, **Image scanning database**: the repository through which the image scanning
 reads the vulnerability database of its analyser, the image `aquasec/trivy-db`. It has no switch and its level is always Private: it is
 **In use by the image scanning** while the scanning is on and reads its database through it, else **Not in use**. It answers no client,
-administrators included, which its **Set up client** says instead of showing snippets. Its page lets you change the address and store
+administrators included: no screen offers **Set up client** for it, and its page `…/setup`, opened by its address, says so instead of
+showing snippets. Its page lets you change the address and store
 an account like any registry; the address must serve the image `aquasec/trivy-db`. For a registry that publishes the database under
 another name, set the image scanning's database setting instead ([Advisory sources](vulnerability-sources.md#container-images)).
 
@@ -143,7 +146,7 @@ signature database. `freshclam` beside the worker fetches the database from Clam
 the malware scanners load, and it removes versions older than two days that are neither in use nor the one before. An unchanged
 `main.cvd` is one stored file for every version. It has no switch, no address and no account, and its level is always Private: it is
 **In use by the malware scan** while the scanning is on and `malware.database.repository` names it (the default), else **Not in use**.
-It answers no client, administrators included, and nobody deploys to it, so its page carries the badge **Local repository** and
+It answers no client, administrators included, and nobody deploys to it, so its repository's page offers no upload, and its page here carries the badge **Local repository** and
 its **Details** hold only the link to its settings page and its dates. Its files are listed on the repository's page; removing one
 makes the next run store its version again. An installation without internet names a repository of its own instead
 ([Monitoring and operations](operations.md#malware-scanning)).

@@ -35,7 +35,11 @@ export type SystemWork = 'image-scanning' | 'malware-scan';
  */
 const SYSTEM_REPOSITORIES: Readonly<Record<string, SystemWork>> = { 'scanner-trivy': 'image-scanning', 'scanner-clamav': 'malware-scan' };
 
-/** Whether `<project>/<key>` is a system repository of the project `upstream`, which no client uses (R-UI-190). */
+/**
+ * Whether `<project>/<key>` is a system repository of the project `upstream`, which no client uses (R-UI-190): the one test of every
+ * screen that treats one apart (its section of the project's page, R-UI-192; no **Set up client**, `setupCommands`). The repository
+ * list's items carry no mark of their own: the API's `kind` is the admin area's item only (`UpstreamRepository`).
+ */
 export function isSystemRepository(project: string | null | undefined, key: string | null | undefined): boolean {
   return isUpstreamProject(project) && !!key && Object.hasOwn(SYSTEM_REPOSITORIES, key);
 }
@@ -43,6 +47,25 @@ export function isSystemRepository(project: string | null | undefined, key: stri
 /** The work a system repository of the project `upstream` serves, by its key; `null` for any other key. */
 export function systemWork(key: string | null | undefined): SystemWork | null {
   return (key && Object.hasOwn(SYSTEM_REPOSITORIES, key) && SYSTEM_REPOSITORIES[key]) || null;
+}
+
+/**
+ * The qualified names of the system repositories, `upstream/scanner-trivy` and `upstream/scanner-clamav`: the project's page asks
+ * for them by name (`name` of the list, R-API-063), so its section holds them whatever page of the list they would fall on (R-UI-192).
+ */
+export function systemRepositoryNames(): string[] {
+  return Object.keys(SYSTEM_REPOSITORIES).map(upstreamName);
+}
+
+/**
+ * A project's description as the UI shows it (R-UI-192, Q-UI-895): the built-in project's is the product's fixed sentence
+ * (R-REPO-066), stored in English and never changed, so the UI says it in its own localized words, as it draws the project's mark
+ * itself (Q-UI-837); every other project's is the stored one.
+ */
+export function projectDescription(key: string | null | undefined, stored: string | null | undefined): string {
+  return isUpstreamProject(key)
+    ? $localize`:@@upstream.project.description:The public registries this installation offers to every project.`
+    : (stored ?? '');
 }
 
 /**

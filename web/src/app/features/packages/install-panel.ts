@@ -36,7 +36,7 @@ export class InstallPanel {
     );
   });
   protected readonly repository = computed(() => this.chosenRepository() ?? this.defaultRepository());
-  /** Set up client of the chosen repository (R-UI-126); the client goes with it. */
+  /** Set up client of the chosen repository (R-UI-126); the client goes with it. None for a system repository (Q-UI-896). */
   protected readonly setupLink = computed(() => {
     const ref = this.repository();
     return ref ? setupCommands(ref) : null;

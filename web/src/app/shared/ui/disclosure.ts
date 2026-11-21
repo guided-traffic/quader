@@ -27,6 +27,10 @@ let nextDisclosureId = 1;
       >
         <span class="material-icons chevron" aria-hidden="true">chevron_right</span>
         <span>{{ heading() }}</span>
+        <!-- The space is the heard one between the heading and its number ("System repositories 2"); a flex row gives it no room. -->
+        @if (count() !== null) {
+          &ngsp;<span class="badge heading-count" translate="no">{{ count() }}</span>
+        }
         @if (note()) {
           <span class="note">{{ note() }}</span>
         }
@@ -129,6 +133,11 @@ export class Disclosure {
   readonly hint = input('');
   /** A short state after the heading, such as "Unsaved changes" of a closed section that holds one (R-UI-087). */
   readonly note = input('');
+  /**
+   * The number of entries of a section that is a list, after its heading as the neutral badge of a count, as a page's heading and a
+   * tab carry it (Q-UI-550): **System repositories 2** (R-UI-192). `null` shows none.
+   */
+  readonly count = input<number | null>(null);
   readonly expanded = model(false);
   /** A fold inside a section or a cell: the toggle without a heading, a rule or room around it (Q-UI-552). */
   readonly inline = input(false);

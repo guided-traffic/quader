@@ -220,6 +220,37 @@ describe('Repository content page', () => {
     expect([...reader.root.querySelectorAll('a, button')].filter((b) => text(b) === 'Set up client')).toHaveLength(1);
   });
 
+  it('R-UI-192 Q-UI-896 the page of a system repository offers no client action: no Set up client, no upload, no sentence about clients', async () => {
+    const trivy = await open(
+      { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci', description: 'Image scanning database' },
+      ({ packages }) => {
+        packages.packages = [];
+      },
+    );
+    expect([...trivy.root.querySelectorAll('a, button')].some((b) => text(b) === 'Set up client')).toBe(false);
+    expect([...trivy.root.querySelectorAll('a')].some((a) => (a.getAttribute('href') ?? '').endsWith('/setup'))).toBe(false);
+    expect(text(trivy.root.querySelector('quader-data-table quader-empty-state')!)).toBe('This repository has cached no images yet.');
+    expect(text(trivy.root)).not.toContain('clients have pulled');
+    expect(text(trivy.root.querySelector('quader-page-header .page-header-actions')!)).toContain('Settings');
+
+    // The local one: the server refuses every deploy to it (R-REPO-075), so neither the toolbar nor the empty state offers one.
+    const clamav = await renderScreen(RepositoryContent, {
+      inputs: { project: 'upstream', key: 'scanner-clamav' },
+      setup: (get) => {
+        const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
+        catalog.repositories = [
+          ...catalog.repositories,
+          { key: 'scanner-clamav', project: 'upstream', class: 'local', format: 'generic', description: 'Malware scan database' } as never,
+        ];
+        (get(FilesApi) as FakeFilesApi).tree.set('upstream/scanner-clamav', []);
+      },
+    });
+    await settle(clamav.fixture);
+    expect(clamav.root.querySelector('.files-actions')?.textContent ?? '').not.toMatch(/Upload files|New folder/);
+    expect(text(clamav.root.querySelector('quader-data-table quader-empty-state')!)).toBe('This repository holds no files yet.');
+    expect([...clamav.root.querySelectorAll('a, button')].some((b) => text(b) === 'Set up client')).toBe(false);
+  });
+
   it('R-UI-144 Q-UI-555 an empty package repository shows Set up client once, in its header, and its empty state says what fills it and for whom', async () => {
     const owner = await open(NPM_REPO, ({ packages }) => {
       packages.packages = [];

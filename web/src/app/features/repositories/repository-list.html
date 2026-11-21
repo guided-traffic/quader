@@ -16,7 +16,8 @@
   <quader-error-notice [error]="f" />
 }
 <!-- The head of the list (Q-UI-420): the search by key or description, Filters and the filters that are set; the filters open in a
-     drawer over the page, so the list keeps its width. -->
+     drawer over the page, so the list keeps its width. On the page of the project upstream it filters the section of the system
+     repositories too (Q-UI-894). -->
 <quader-list-head
   [searchLabel]="searchLabel"
   [search]="q() ?? ''"
@@ -91,139 +92,172 @@
   [loaded]="list.loaded()"
   [loading]="list.loading()"
   [error]="list.error()"
-  [empty]="list.items().length === 0"
+  [empty]="rows().length === 0"
   [emptyText]="filtered() ? emptyFilteredText : emptyText"
   [hasMore]="list.hasMore()"
   (more)="list.more()"
   (retry)="list.more()"
 >
-  @for (row of list.items(); track refOf(row)) {
-    <tr>
-      <!-- The first column names the thing: the visibility icon and the key each in a column of the cell, so a long key breaks
-           inside itself beside the icon (Q-UI-425); the description is its muted second line and the only one: every other
-           property is a column of its own (ui-style-guide.md, Lists; Q-UI-302, Q-UI-330). The admin area has the level as a column. -->
-      <th scope="row">
-        <span class="icon-name">
-          @if (inProject()) {
-            <quader-visibility-icon [level]="row.visibility.artifacts" />
-          }
-          <span class="icon-name-text">
-            <a
-              [routerLink]="['/projects', row.project, 'repositories', row.key]"
-              (click)="visit(row)"
-              translate="no"
-              >{{ row.key }}</a
-            >
-            @if (wellKnownBadge(row); as b) {
-              <span class="badge">{{ b }}</span>
-            } @else if (row.disabled) {
-              <span class="badge" i18n="@@repo.badge.disabled">disabled</span>
-            }
-            @if (row.lifecycle === 'deleting') {
-              <span class="badge" i18n="@@repo.badge.deleting">being deleted</span>
-            }
-            @if (row.description) {
-              <span class="secondary">{{ row.description }}</span>
-            }
-          </span>
-        </span>
-      </th>
-      @if (!inProject()) {
-        <!-- A row names its project by its mark and its name (Q-UI-424). -->
-        <td class="project-cell"><quader-project-link [key]="row.project" /></td>
-      }
-      <!-- A format is its icon and its name (UI-A-24), a class its icon and its name, each a column (Q-UI-330). -->
-      <td class="format-cell">
-        <span class="format-name"><quader-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span>
-      </td>
-      <td class="class-cell">
-        <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(row.class) }}</span>{{ classText(row.class) }}</span>
-      </td>
-      @if (!inProject()) {
-        <td class="level-cell">
-          <quader-visibility-icon [level]="row.visibility.artifacts" />{{ levelText(row.visibility.artifacts) }}
-        </td>
-      }
-      <!-- A time relative to now, the absolute time its title (Q-UI-431); the administrator's, while a row has one (Q-UI-312,
-           Q-UI-330). -->
-      @if (showActivity()) {
-        <td class="narrow-drop">
-          @if (row.lastActivityAt; as at) {
-            <quader-time-ago [at]="at" absolute="title" />
-          } @else {
-            <quader-no-value />
-          }
-        </td>
-      }
-      <td class="actions" [class.with-setup]="inProject()">
-        <!-- Inside a project the address is no column: it means nothing without its client, so the row offers the repository's
-             page Set up client, where the address stands with the snippets that use it (Q-UI-426, R-UI-126), in the quiet form of a
-             row's action (Q-UI-487). -->
-        @if (inProject()) {
-          <a class="btn btn-tertiary row-setup" [routerLink]="setupLink(row)"
-            ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
-            ><span class="visually-hidden" translate="no">&ngsp;{{ row.key }}</span></a
-          >
-        }
-        <!-- The administrator manages and copies the address now and then: a quiet copy button whose name and tooltip carry the
-             address, beside the menu, which has the same action (Q-UI-330). -->
-        @if (!inProject() && address(row); as a) {
-          <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
-        }
-        <!-- The row's actions are a menu (ui-style-guide.md, Lists; Q-UI-302): four buttons pushed the list sideways. -->
-        <button
-          class="btn btn-tertiary btn-icon"
-          type="button"
-          [attr.aria-label]="actionsLabel(row)"
-          [cdkMenuTriggerFor]="rowMenu"
-        >
-          <span class="material-icons" aria-hidden="true">more_vert</span>
-        </button>
-        <ng-template #rowMenu>
-          <div class="menu" cdkMenu>
-            <!-- Settings for who may read or change them; a reader is offered no read-only settings (UI-A-06, Q-UI-313). -->
-            @if (canConfigureRow(row)) {
-              <a class="menu-item" cdkMenuItem
-                [routerLink]="['/projects', row.project, 'repositories', row.key, 'settings']"
-                (click)="visit(row)"
-                i18n="@@repo.action.settings"
-                >Settings</a
-              >
-            }
-            @if (!inProject() && address(row); as a) {
-              <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="copyAddress(a)" i18n="@@repo.action.copy-address"
-                >Copy client address</button
-              >
-            }
-            <!-- A repository's folders and files are on its page (ADR-203). -->
-            <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'repositories', row.key, 'files']" i18n="@@repo.content.files-menu"
-              >Files</a
-            >
-            <!-- >>> M4b vulnerabilities -->
-            @if (row.format !== 'generic' && row.class !== 'virtual') {
-              <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'vulnerabilities']" [queryParams]="{ repository: refOf(row) }" i18n="@@repo.action.vulnerabilities"
-                >Vulnerabilities</a
-              >
-            }
-            <!-- <<< M4b vulnerabilities -->
-            @if (canDeleteRow(row) && row.lifecycle !== 'deleting' && !deleting().has(refOf(row))) {
-              <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="remove(row)" i18n="@@repo.action.delete">
-                Delete
-              </button>
-            }
-          </div>
-        </ng-template>
-        @if (deleting().get(refOf(row)); as job) {
-          <div class="deleting">
-            <span i18n="@@repo.deleting">Deleting</span>
-            <quader-job-progress
-              [jobId]="job.id"
-              [label]="deleteLabel"
-              (finished)="jobEnded(refOf(row), $event.state)"
-            />
-          </div>
-        }
-      </td>
-    </tr>
+  @for (row of rows(); track refOf(row)) {
+    <ng-container [ngTemplateOutlet]="repositoryRow" [ngTemplateOutletContext]="{ $implicit: row }" />
   }
 </quader-data-table>
+
+<!-- The system repositories of the project upstream (R-UI-192, the owner's Q-UI-891): set apart below the list in one closed
+     section, the one disclosure of every screen, with their number after the heading and one sentence that says what they are; the
+     same columns inside, and no Set up client, since they answer no client. -->
+@if (showSystem()) {
+  <quader-disclosure
+    class="system-repositories"
+    [heading]="systemHeading"
+    [hint]="systemHint"
+    [count]="systemCount()"
+    [(expanded)]="systemOpen"
+  >
+    <quader-data-table
+      [caption]="systemHeading"
+      [columns]="columns()"
+      [loaded]="systemLoad.hasValue() || systemFailure() !== null"
+      [loading]="systemLoad.isLoading()"
+      [error]="systemFailure()"
+      [empty]="systemRows().length === 0"
+      [emptyText]="systemEmptyText"
+      (retry)="systemLoad.reload()"
+    >
+      @for (row of systemRows(); track refOf(row)) {
+        <ng-container [ngTemplateOutlet]="repositoryRow" [ngTemplateOutletContext]="{ $implicit: row }" />
+      }
+    </quader-data-table>
+  </quader-disclosure>
+}
+
+<!-- One row of either table. -->
+<ng-template #repositoryRow let-row>
+  <tr>
+    <!-- The first column names the thing: the visibility icon and the key each in a column of the cell, so a long key breaks
+         inside itself beside the icon (Q-UI-425); the description is its muted second line and the only one: every other
+         property is a column of its own (ui-style-guide.md, Lists; Q-UI-302, Q-UI-330). The admin area has the level as a column. -->
+    <th scope="row">
+      <span class="icon-name">
+        @if (inProject()) {
+          <quader-visibility-icon [level]="row.visibility.artifacts" />
+        }
+        <span class="icon-name-text">
+          <a
+            [routerLink]="['/projects', row.project, 'repositories', row.key]"
+            (click)="visit(row)"
+            translate="no"
+            >{{ row.key }}</a
+          >
+          @if (wellKnownBadge(row); as b) {
+            <span class="badge">{{ b }}</span>
+          } @else if (row.disabled) {
+            <span class="badge" i18n="@@repo.badge.disabled">disabled</span>
+          }
+          @if (row.lifecycle === 'deleting') {
+            <span class="badge" i18n="@@repo.badge.deleting">being deleted</span>
+          }
+          @if (row.description) {
+            <span class="secondary">{{ row.description }}</span>
+          }
+        </span>
+      </span>
+    </th>
+    @if (!inProject()) {
+      <!-- A row names its project by its mark and its name (Q-UI-424). -->
+      <td class="project-cell"><quader-project-link [key]="row.project" /></td>
+    }
+    <!-- A format is its icon and its name (UI-A-24), a class its icon and its name, each a column (Q-UI-330). -->
+    <td class="format-cell">
+      <span class="format-name"><quader-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span>
+    </td>
+    <td class="class-cell">
+      <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(row.class) }}</span>{{ classText(row.class) }}</span>
+    </td>
+    @if (!inProject()) {
+      <td class="level-cell">
+        <quader-visibility-icon [level]="row.visibility.artifacts" />{{ levelText(row.visibility.artifacts) }}
+      </td>
+    }
+    <!-- A time relative to now, the absolute time its title (Q-UI-431); the administrator's, while a row has one (Q-UI-312,
+         Q-UI-330). -->
+    @if (showActivity()) {
+      <td class="narrow-drop">
+        @if (row.lastActivityAt; as at) {
+          <quader-time-ago [at]="at" absolute="title" />
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+    }
+    <td class="actions" [class.with-setup]="inProject() && setupLink(row) !== null">
+      <!-- Inside a project the address is no column: it means nothing without its client, so the row offers the repository's
+           page Set up client, where the address stands with the snippets that use it (Q-UI-426, R-UI-126), in the quiet form of a
+           row's action (Q-UI-487). A system repository answers no client and offers none (Q-UI-896). -->
+      @if (inProject() && setupLink(row); as setup) {
+        <a class="btn btn-tertiary row-setup" [routerLink]="setup"
+          ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
+          ><span class="visually-hidden" translate="no">&ngsp;{{ row.key }}</span></a
+        >
+      }
+      <!-- The administrator manages and copies the address now and then: a quiet copy button whose name and tooltip carry the
+           address, beside the menu, which has the same action (Q-UI-330). -->
+      @if (!inProject() && address(row); as a) {
+        <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
+      }
+      <!-- The row's actions are a menu (ui-style-guide.md, Lists; Q-UI-302): four buttons pushed the list sideways. -->
+      <button
+        class="btn btn-tertiary btn-icon"
+        type="button"
+        [attr.aria-label]="actionsLabel(row)"
+        [cdkMenuTriggerFor]="rowMenu"
+      >
+        <span class="material-icons" aria-hidden="true">more_vert</span>
+      </button>
+      <ng-template #rowMenu>
+        <div class="menu" cdkMenu>
+          <!-- Settings for who may read or change them; a reader is offered no read-only settings (UI-A-06, Q-UI-313). -->
+          @if (canConfigureRow(row)) {
+            <a class="menu-item" cdkMenuItem
+              [routerLink]="['/projects', row.project, 'repositories', row.key, 'settings']"
+              (click)="visit(row)"
+              i18n="@@repo.action.settings"
+              >Settings</a
+            >
+          }
+          @if (!inProject() && address(row); as a) {
+            <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="copyAddress(a)" i18n="@@repo.action.copy-address"
+              >Copy client address</button
+            >
+          }
+          <!-- A repository's folders and files are on its page (ADR-203). -->
+          <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'repositories', row.key, 'files']" i18n="@@repo.content.files-menu"
+            >Files</a
+          >
+          <!-- >>> M4b vulnerabilities -->
+          @if (row.format !== 'generic' && row.class !== 'virtual') {
+            <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'vulnerabilities']" [queryParams]="{ repository: refOf(row) }" i18n="@@repo.action.vulnerabilities"
+              >Vulnerabilities</a
+            >
+          }
+          <!-- <<< M4b vulnerabilities -->
+          @if (canDeleteRow(row) && row.lifecycle !== 'deleting' && !deleting().has(refOf(row))) {
+            <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="remove(row)" i18n="@@repo.action.delete">
+              Delete
+            </button>
+          }
+        </div>
+      </ng-template>
+      @if (deleting().get(refOf(row)); as job) {
+        <div class="deleting">
+          <span i18n="@@repo.deleting">Deleting</span>
+          <quader-job-progress
+            [jobId]="job.id"
+            [label]="deleteLabel"
+            (finished)="jobEnded(refOf(row), $event.state)"
+          />
+        </div>
+      }
+    </td>
+  </tr>
+</ng-template>

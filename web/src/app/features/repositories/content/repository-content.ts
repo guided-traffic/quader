@@ -19,6 +19,7 @@ import { Notifier } from '../../../core/notifier';
 import { filesCommands, setupCommands } from '../../../core/project-links';
 import { ServerAddress } from '../../../core/server-address';
 import { SessionStore } from '../../../core/session-store';
+import { isSystemRepository } from '../../../core/upstream-project';
 import { Confirm } from '../../../shared/confirm-dialog';
 import { CopyButton } from '../../../shared/copy-button';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -95,8 +96,14 @@ export class RepositoryContent {
   readonly sort = input<string | undefined>();
 
   protected readonly ref = computed(() => repoRef(this.project(), this.key()));
-  /** Set up client of this repository (R-UI-126). */
+  /** Set up client of this repository (R-UI-126); none for a system repository of `upstream`, which answers no client (Q-UI-896). */
   protected readonly setupLink = computed(() => setupCommands(this.ref()));
+  /**
+   * A system repository of the project `upstream` (R-REPO-070, R-REPO-075): Quader's own work fills and reads it, every client's
+   * request and every deploy answers 404, and the management API lists and deletes its items. The page offers it no client
+   * action: no **Set up client**, no upload or new folder, no sentence about what clients fetch or publish (Q-UI-896).
+   */
+  protected readonly system = computed(() => isSystemRepository(this.project(), this.key()));
   protected readonly loaded = resource({
     params: () => this.ref(),
     loader: ({ params }) => this.api.get(params),
@@ -260,13 +267,14 @@ export class RepositoryContent {
   /**
    * The operations offered (R-UI-011, Q-UI-512): uploads and new folders in a local repository of a format served below the
    * files path (R-API-025) for a holder of `deploy`; deletes for a holder of `delete`, never in a virtual repository (it holds no
-   * items) and never of the root. A disabled repository offers none of them.
+   * items) and never of the root. A disabled repository offers none of them; a system repository no upload, which the server
+   * refuses there (R-REPO-075), and the deletes the management API admits.
    */
   protected readonly permissions = computed<FilePermissions>(() => {
     const r = this.repository();
     const can = valueOf(this.allowed) ?? NO_FILE_PERMISSIONS;
     if (!r || this.disabled()) return NO_FILE_PERMISSIONS;
-    const uploads = r.class === 'local' && isFilesAddress(this.descriptor()?.protocolBasePath ?? '');
+    const uploads = r.class === 'local' && isFilesAddress(this.descriptor()?.protocolBasePath ?? '') && !this.system();
     return {
       deploy: can.deploy && uploads,
       overwrite: can.overwrite && uploads,
@@ -280,7 +288,8 @@ export class RepositoryContent {
    * does; a remote repository fills by every client's fetches; a disabled one says only that it is empty.
    */
   protected readonly fill = computed<'publisher' | 'other' | 'none'>(() => {
-    if (this.disabled()) return 'none';
+    // A system repository is filled by Quader's own work, not by a client the header could set up (Q-UI-896).
+    if (this.disabled() || this.system()) return 'none';
     return valueOf(this.allowed)?.deploy ? 'publisher' : 'other';
   });
 

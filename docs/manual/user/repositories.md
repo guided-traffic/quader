@@ -34,6 +34,20 @@ A virtual repository is one address for several npm repositories, several NuGet 
 - A name that a local member has claimed is served only from that member, so a public package with the same name and a higher version never replaces an internal one.
 - A member may be a public registry Quader offers to every project, `upstream/npmjs` or `upstream/docker-hub`, of the built-in project **Upstream**, which stands first in the list of projects with an arrow as its mark. Until an administrator switches it on, the virtual repository skips it, and a package only it would have served answers not found with a message that says so.
 
+## The project Upstream
+
+The built-in project **Upstream** holds the public registries Quader offers to every project, such as `upstream/docker-hub` and
+`upstream/npmjs`. You see the registries an administrator switched on whose level admits you, and you use them like any remote
+repository: **Set up client** in a registry's row shows how. The line under the title of its page says what the project is, in the
+language of the page.
+
+Below the registries, set apart and closed, **System repositories** with their number holds the two repositories Quader keeps for its
+own work: `scanner-trivy`, the database of the image scanning, and `scanner-clamav`, the signature database of the malware scan. Only
+Quader's scanners read them, and their addresses answer `404` to every client, so neither their rows nor their pages offer **Set up
+client**, and nothing can be uploaded to them. They are always Private: the section is there only if you may read them, normally as
+an administrator. Select its heading to open it. The filter above the list covers it too: a text or a filter that matches one of them
+opens it and its number counts the matches; one that matches none of them leaves it closed, at 0.
+
 ## Projects and repository keys
 
 Every repository belongs to exactly one project, for example the project `web` of a team. The project's key and the repository's key together name the repository: `web/npm-internal`. The key is unique within its project only, so the projects `web` and `mobile` can each have a repository `npm-remote`, and the two are different repositories.
@@ -92,7 +106,7 @@ Open a project and you land on its **Repositories**. Select a repository to see 
 
 The page is titled with the repository's key and says what the repository is. At the top right:
 
-- **Set up client** opens the page of this repository that shows the address your package manager needs, with its copy button, and how to configure your client, with the commands and their explanation; you only pick your client where its package type has several. A disabled repository has no **Set up client**, because clients cannot use it. [Connecting a package client](client-setup.md) describes the page.
+- **Set up client** opens the page of this repository that shows the address your package manager needs, with its copy button, and how to configure your client, with the commands and their explanation; you only pick your client where its package type has several. A disabled repository has no **Set up client**, because clients cannot use it, and neither has a system repository of the project **Upstream** ([The project Upstream](#the-project-upstream)). [Connecting a package client](client-setup.md) describes the page.
 - **Settings** opens the repository's settings, if you may read them.
 - **More actions** holds **Files**, the raw files of a repository of a package format ([Browsing and transferring files](files.md)), and **Vulnerabilities**.
 
@@ -131,4 +145,4 @@ format's settings (for example **npm settings**), **Details** and **API**. How a
 
 **Set up client** at the top of a repository's page opens the configuration of your client for this repository, with this installation's addresses, and below it the guide that explains what the repository's class allows, how the client signs in, installs and publishes, and what its errors mean. A guide never contains a token: snippets read it from an environment variable such as `QUADER_TOKEN`, and the page for an anonymous reader uses no credential at all.
 
-**Guides** in the start side bar and in the user menu shows the package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client**, and the guide of each kind of repository for when you have none yet. See [Connecting a package client](client-setup.md).
+**Guides** in the start side bar and in the user menu shows the package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client** but a system repository of **Upstream**, and the guide of each kind of repository for when you have none yet. See [Connecting a package client](client-setup.md).
