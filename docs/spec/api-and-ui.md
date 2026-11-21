@@ -5088,6 +5088,18 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   The screen says what it cannot see: disruption budgets, free capacity on other nodes and whether
   the remaining replicas carry the peak (the N + 1 rule of R-HA-059), because Quader holds no
   Kubernetes permissions (R-HA-033).
+- **The scanner replicas** (from `GET /api/v1/system/scanners`, [operations-and-observability.md](operations-and-observability.md)
+  R-OPS-048, [Q-UI-897](#q-ui-897--a-scanner-replica-is-one-more-kind-of-row-one-table-for-the-system-page-and-the-settings-of-both-scannings)).
+  After the roles, one more group `scanner` with its `live` and `ready` counts, and in it one sub-group per kind named with its tool,
+  `vuln-scanner-trivy` and `malware-scanner-clamav` (Q-HA-372), each with its counts and a table in the form of the replicas': name, node,
+  version, state with the reason beside it in words ("No database loaded yet" for `database`, "clamd does not answer", "Analyser does not
+  run", "Certificate not loaded", "Spool not writable", "Still starting", else the code), **State changed** (the relative time of
+  `stateSince`), heartbeat, and **Tool** in place of the Valkey view ("Trivy 0.67.2", "ClamAV 1.5.5"). A replica that is not ready is shown
+  with its reason, a lost one as lost. A kind without a replica says why in a sentence instead of an empty table: none has reported
+  (`reporting`, a warning), the scan listener cannot tell the kind (`unverified`), the development role `all` analyses images in its own
+  process (`inProcess`), or no scanner of the kind is configured (`none`, naming the setting). A failure of the read stands in the group's
+  place and leaves the roles. The rows are the scanners' own statements, bound as text (H-1161 in
+  [security/scanner-replicas.md](../security/scanner-replicas.md)).
 - Readiness checks per replica, from the `checks` of `/system/replicas` (R-OPS-001, R-OPS-003; Q-OPS-2
   in [operations-and-observability.md](operations-and-observability.md)), in two kinds that the
   screen never merges:
@@ -5113,7 +5125,8 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
     unless a live `all` replica serves them; `web`, `all` and an unknown role while one of its replicas is live) that has no
     ready replica (Q-UI-602); "Replicas unready" while a live replica fails a gating check after it was ready;
   - as a warning: "Lost without draining: `<names>`, last heartbeat `<time>`" while a replica is listed as lost (owner,
-    2026-11-18, Q-UI-602); "Degraded" while a ready replica's reported check fails;
+    2026-11-18, Q-UI-602); "Degraded" while a ready replica's reported check fails; "No ready replica of `<kind>`" for a kind of scanner
+    whose replicas report themselves (`reporting`) and none of which is ready, its scans waiting (Q-UI-897);
   - else "All roles ready";
   - and after them, informing and neutral: "Replicas are being replaced (`n` draining, `m` starting), as during every update"
     while replicas drain or start (Q-UI-600), and "Not drain-safe" while a role it needs is not drain-safe (Q-UI-603). The
@@ -20811,6 +20824,55 @@ teams, its limits and its dates." It is a local repository, no virtual repositor
 
 **Choice:** (a). **Applied in the spec:** R-UI-188. Code: [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html),
 [messages.de.xlf](../../web/src/locale/messages.de.xlf) ("Lokales Repository", "Seine Einstellungsseite und seine Daten.").
+
+### Q-API-381 · The scanner replicas are an operation of their own, `GET /api/v1/system/scanners`, with the kinds beside them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Part of the
+owner's order of 2026-11-21 that the screens name every scanner pod and its tool
+([operations-and-observability.md](operations-and-observability.md) Q-OPS-223).
+
+Context: three screens show the scanner replicas: the System page, **Settings › Malware scanning** and **Advisory sources**, each read with
+`settings:read`. A scanner's row has none of what a replica's row carries (the view of Valkey, the key ring, the leases, the runtime), and
+the screens must say why a kind has no row: the role `all` runs no scanner pod, no scanner is configured, or the scan listener cannot tell
+the kind.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One operation of its own: `kinds` from the answering replica's configuration, each with `replicas` (`reporting`, `unverified`, `inProcess`, `none`), and `items` (chosen) | One shape, one handler, read by the three screens | No reader of `/system/replicas` (the dashboard, the key rings, the support bundle) has to learn to leave a scanner out; the screens say why a kind is empty from the server's words, not from a guess of the role | One more read on the System page every 15 s |
+| (b) Rows of `/system/replicas` with the role `scanner` and the members of a replica made optional | One list | The System page reads one answer | Every member of a replica becomes optional for every reader, and every count of replicas has to leave scanners out |
+| (c) A member in each screen's own answer (the malware settings, the sources) | No new operation | One read per screen | Three shapes of one thing, and the System page still needs one |
+
+**Choice:** (a). **Rationale:** a scanner replica is not a replica of the registry and has a shape of its own; one operation keeps both
+lists true. The permission is the one of the three screens, `settings:read`, so the auditor reads the rows as every other fact of them; no
+new permission. **Applied in the spec:** R-UI-038; [operations-and-observability.md](operations-and-observability.md) R-OPS-048. Code:
+[scanners_api.go](../../internal/api/v1/scanners_api.go), [wire_scanner_report.go](../../internal/app/wire_scanner_report.go), the schemas
+`ScannerList`, `ScannerKind`, `ScannerReplica` of [openapi.yaml](../../api/openapi.yaml), whose `ReplicaState` both lists share.
+
+### Q-UI-897 · A scanner replica is one more kind of row: one table for the System page and the settings of both scannings
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's
+order of 2026-11-21: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten. Das ist alles wichtig und muss umgesetzt werden."
+
+Context: the System page showed no scanner, **Settings › Malware scanning** only "N ready, M scans running", and **Advisory sources**, where
+the admin area shows the image scanning, nothing of its scanners. An administrator should see each scanner pod, its kind with the tool in
+it, the tool's version, its state and why it is not ready, and on the settings pages the database it scans with and its slots.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One shared table `<quader-scanner-replicas>`: on the System page a group `scanner` after the roles with a sub-group per kind in the replicas' form (the tool where a replica shows Valkey, and **State changed**); on the two settings pages the same rows closed in a fold **Replicas of `<kind>` (n)** under the page's summary, with the tool's version, ClamAV's database and the slots (chosen) | The System page is the detail view and shows them open; the settings pages keep their summary and fold the detail | One look and one wording on three screens; the plain path of the settings pages stays a line, details on demand | The settings pages' rows stand as blocks where their columns do not fit (the malware page's column at 1440 px) |
+| (b) A page of its own for the scanners | — | Room | A second page of replicas, against the owner's form |
+| (c) The rows open on the settings pages | — | Seen at once | The settings pages are for settings; a summary line answers the usual question |
+
+**Choice:** (a). A kind without a row says why in a sentence, never an empty table: none has reported (a warning, which the System
+page's header repeats as "No ready replica of `<kind>`" while the kind's replicas report and none is ready), the scan listener cannot tell
+the kind, the role `all` analyses images in its own process, or no scanner of the kind is configured. The reason of a state is a few words
+beside its badge ("No database loaded yet"), so that its first words stand on the row's line (R-UI-172). The malware page keeps the
+worker's summary (Q-MAL-43); the advisory sources gain the section **Image scanners** with a summary of the rows ("2 ready, 1 scan
+running"). **Applied in the spec:** R-UI-038; [malware-scanning.md](malware-scanning.md) R-MAL-023;
+[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code: [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
+[scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts), [system-status.html](../../web/src/app/features/system/system-status.html),
+[malware-settings.html](../../web/src/app/features/settings/malware-settings.html),
+[vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
 
 ## What this does not cover
 

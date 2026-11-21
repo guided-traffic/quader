@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -30,6 +31,7 @@ type VulnerabilityScannerLink struct {
 type VulnerabilityPullLink struct {
 	URL        string `yaml:"url" default:"" doc:"The scan listener of packages, an origin: https://<fullname>-packages-scan.<namespace>.svc:8082 in the chart, which sets it. Required in a scanner; empty in the role all, where it means the process's own scan listener. The scanner reads no other address: a call cannot point it elsewhere."`
 	ServerName string `yaml:"server_name" default:"" doc:"The name the scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets <fullname>-packages.<namespace>.svc, the name of packages (R-HA-063). The names the scan listener admits are server.scan_clients."`
+	ClientName string `yaml:"client_name" default:"" doc:"The name by which the scan listener knows the image scanner (the kind trivy): a scanner's report of itself is recorded as a replica of vuln-scanner-trivy only from a client certificate that lists it exactly among its DNS names (R-OPS-048, Q-OPS-223). It must be one of server.scan_clients when that list is set, and differ from malware.scan_listener.client_name. Empty: the scan listener records no image scanner (the role all, where no scanner pod runs). The chart sets <fullname>-vuln-scanner-trivy.<namespace>.svc."`
 }
 
 // validateLinkNames requires the name the scanner's listener checks while the links speak TLS (R-ARCH-038, Q-ARCH-552): the worker's.
@@ -41,6 +43,7 @@ func (c *Config) validateLinkNames(r *Report) {
 		{"scanner.server_name", images.Scanner.ServerName},
 		{"scanner.client_name", images.Scanner.ClientName},
 		{"registry.server_name", images.Registry.ServerName},
+		{"registry.client_name", images.Registry.ClientName},
 	} {
 		if !exactName(n.name) {
 			r.Add("vulnerabilities.images."+n.key, "%q must be a DNS name or an IP address without a wildcard, a port or a path: it is compared exactly with a name of the certificate (Q-ARCH-552)", n.name)
@@ -51,6 +54,22 @@ func (c *Config) validateLinkNames(r *Report) {
 	}
 	if r.Role() == RoleScanner && c.Process.ScannerKind != ScannerKindClamav && images.Scanner.ClientName == "" {
 		r.Add("vulnerabilities.images.scanner.client_name", "is required in a scanner while server.tls serves TLS: it names the worker, the one kind of pod its listener admits (R-ARCH-038); the chart sets it")
+	}
+}
+
+// validateScannerReportNames checks the names by which the scan listener tells the kinds of scanner apart when they report themselves
+// (R-OPS-048, Q-OPS-223): the image scanner's name must be one the listener's handshake admits, as the malware scanner's must
+// (validateMalwareRouteName), and the two must differ, or a report could not be told by its certificate.
+func (c *Config) validateScannerReportNames(r *Report) {
+	trivy, clamav := c.Vulnerabilities.Images.Registry.ClientName, c.Malware.ScanListener.ClientName
+	if trivy != "" && strings.EqualFold(trivy, clamav) {
+		r.Add("vulnerabilities.images.registry.client_name", "%q is also malware.scan_listener.client_name: the scan listener tells the kinds of scanner apart by these names, so they must differ (Q-OPS-223)", trivy)
+	}
+	if trivy == "" || c.Server.ScanListen == "" || len(c.Server.ScanClients) == 0 {
+		return
+	}
+	if !slices.ContainsFunc(c.Server.ScanClients, func(n string) bool { return strings.EqualFold(n, trivy) }) {
+		r.Add("vulnerabilities.images.registry.client_name", "%q is not one of server.scan_clients %v: the scan listener would refuse the image scanner in the handshake before it could report itself (Q-OPS-223)", trivy, c.Server.ScanClients)
 	}
 }
 

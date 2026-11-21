@@ -37,6 +37,7 @@ this page covers what is built on it.
 | `internal/cluster/changelog_prune.go` | `PruneChanges` |
 | `internal/cluster/signal_bus.go`, `signal_coalescer.go` | `Bus` (what Valkey must offer), `Signals` (post-commit coalescer, subscriptions) |
 | `internal/cluster/replica_registry.go`, `replica_list.go` | `Registry` (register, heartbeat, drain, delete), `ListReplicas`, `PruneReplicas` |
+| `internal/cluster/scanner_replicas.go`, `scanner_tables.go` | `ScannerReplicas` (`Record`, `Remove`), `ListScannerReplicas`, `PruneScannerReplicas`: the rows of the scanner replicas (R-OPS-048) |
 | `internal/cluster/replica_roles.go` | the role constants, `ValidRole`, `FillsClientMisses`, `FillCount` |
 | `internal/cache/` | `Registry`, `Register[K,V]`, `Cache[K,V]`: bounded LRU, SafetyTTL, fill rule |
 | `internal/meta/postgres/queries/jobs.sql`, `cluster.sql` | The sqlc queries of the above |
@@ -331,6 +332,18 @@ delete the rows of lost replicas stale for 24 h and signed-off rows stale for `s
 `cluster.FillCount` (same file) is the n of the fetch share of a remote repository (R-REPO-040, Q-ARCH-297, Q-OPS-165): the live replicas whose role fills client misses
 (`FillsClientMisses`: `packages`, `web`, `all`, pools included), counted by `CountFillingReplicas` once per heartbeat interval over the control connection. A failed read keeps the
 last value, n is at least 1, and `Get` is the `Replicas` function of `proxy.Options`. It is not the limiters' `replicaCount` of `internal/app`, which counts the replicas of the process's own role and pool.
+
+### The scanner replicas beside the registry
+
+A replica of the role `scanner` has no database connection and no `cluster.Registry`. It reports itself to the scan listener instead
+(operations-and-observability.md R-OPS-048, Q-OPS-223), and `packages` writes the row of `scanner_replica` through
+`cluster.ScannerReplicas` ([scanner_replicas.go](../../internal/cluster/scanner_replicas.go)): `Record` is one statement that inserts or
+refreshes the row on PostgreSQL's clock, keeps `draining` as the last state as the heartbeat does, moves `state_since` only when the state
+or its reason changes, and refuses a new UID beyond `MaxRows` live rows of the kind or a UID of another kind; `Remove` is the sign-off.
+`ListScannerReplicas` lists by the rule of `ListReplicas` (lost, signed off), and `replica-registry-prune` runs `PruneScannerReplicas` with
+the same two ages ([builtin.go](../../internal/jobs/builtin.go)). The sending side is [internal/scanreport](../../internal/scanreport/reporter.go)
+and [wire_scanner_report.go](../../internal/app/wire_scanner_report.go); the route is [scanlisten/replicas.go](../../internal/api/scanlisten/replicas.go).
+Tests: `TestR_OPS_048_TheRowsOfTheScannerReplicas` against PostgreSQL ([scanner_replicas_test.go](../../test/integration/coordination/scanner_replicas_test.go)).
 
 ## Bounds P-13 and P-14
 

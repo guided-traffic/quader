@@ -110,3 +110,4 @@ before using a new term in a German text.
 | malware, malware scan, find (a file in which the scan found malware), signatures (of the malware scan) | Malware, Malware-Prüfung, Malware-Befund, Malware-Signaturen |
 | release (a file the malware scan did not pass, for download), withdraw (a release) | zum Download zulassen (Zulassung; not "freigeben", which renders exposure), zurückziehen |
 | signature database, checked (an artifact with a verdict), verdict (of the malware scan) | Signaturdatenbank, geprüft, Prüfergebnis |
+| scanner replica, image scanner, tool (that a scanner runs), slots (of a scanner), scan listener, state changed | Scanner-Replikat, Image-Scanner, Werkzeug, Slots, Scan-Listener, Zustand geändert |

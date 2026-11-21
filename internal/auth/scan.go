@@ -2,11 +2,13 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/scanreport"
 )
 
 // scanRoute is the kind of route a request of the scan listener addresses, read from its escaped and its unescaped path alike, so that
@@ -21,6 +23,8 @@ const (
 	scanRouteBlob
 	// scanRouteDatabase is the database routes of the malware scanning: the malware scanner's certificate (Q-MAL-27).
 	scanRouteDatabase
+	// scanRouteReplica is the route of the scanner replicas: the certificate of a kind of scanner (R-OPS-048).
+	scanRouteReplica
 )
 
 func scanRouteOf(p, raw string) scanRoute {
@@ -31,6 +35,8 @@ func scanRouteOf(p, raw string) scanRoute {
 		return scanRouteNone
 	case registrytoken.IsDatabasePath(raw):
 		return scanRouteDatabase
+	case strings.HasPrefix(raw, scanreport.PathPrefix):
+		return scanRouteReplica
 	}
 	if _, ok := registrytoken.BlobOfPath(raw); ok {
 		return scanRouteBlob
@@ -50,6 +56,9 @@ func (s *Stage) byScanToken(r *http.Request, ep EndpointRules) (Result, error) {
 	secret, method, _, present := credentialHeader(r, &routeAnswer{})
 	if route == scanRouteDatabase {
 		return s.byMalwareScannerCertificate(r, ep, method, present)
+	}
+	if route == scanRouteReplica {
+		return s.byScannerCertificate(r, ep, method, present)
 	}
 	if !present {
 		ep.refused(r, Refusal{Reason: RefusedAnonymous})
@@ -124,6 +133,30 @@ func (s *Stage) byMalwareScannerCertificate(r *http.Request, ep EndpointRules, m
 	s.o.Metrics.Attempt(string(MethodClientCertificate), "success", "")
 	return Result{
 		Principal:  principal.Principal{Kind: principal.KindSystem, Name: registrytoken.BlobSubject, Status: principal.StatusActive},
+		Credential: Credential{Method: MethodClientCertificate},
+	}, nil
+}
+
+// ScannerReportSubject is the system subject of a scanner's report of itself on the scan listener (R-OPS-048): the principal the route
+// of the scanner replicas runs as, whichever kind the certificate names.
+const ScannerReportSubject = "scanner-report"
+
+// byScannerCertificate is the credential of the route of the scanner replicas (R-OPS-048, Q-OPS-223): the client certificate the
+// listener's handshake verified, whose name must be the one of a kind of scanner, and no token. The handler asks the certificate for
+// the kind again; nothing of it is read from the request. Without TLS there is no certificate, and the route admits nothing.
+func (s *Stage) byScannerCertificate(r *http.Request, ep EndpointRules, method Method, present bool) (Result, error) {
+	if present {
+		ep.refused(r, Refusal{Reason: RefusedTokenType})
+		return s.fail(method, "type_not_accepted", errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "A scanner reports itself with the certificate of its kind and no token."))
+	}
+	if ep.ScannerKind == nil || ep.ScannerKind(r) == "" {
+		ep.refused(r, Refusal{Reason: RefusedAnonymous})
+		return s.fail(MethodClientCertificate, "certificate_not_admitted",
+			errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "Only a scanner reports itself here, with the certificate of its kind."))
+	}
+	s.o.Metrics.Attempt(string(MethodClientCertificate), "success", "")
+	return Result{
+		Principal:  principal.Principal{Kind: principal.KindSystem, Name: ScannerReportSubject, Status: principal.StatusActive},
 		Credential: Credential{Method: MethodClientCertificate},
 	}, nil
 }

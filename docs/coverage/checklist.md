@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,048 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,049 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 788 specified (510 of them implemented), 1,451 open.
-1,048 spec requirements: 719 cover catalog features, 329 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 788 specified (509 of them implemented), 1,451 open.
+1,049 spec requirements: 720 cover catalog features, 329 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -39,7 +39,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Storage and blob providers](#storage-and-blob-providers-stor) | `STOR` | 41 | 12 of 12 | 21 | 20 | 13 |
 | [Retention, cleanup and archiving](#retention-cleanup-and-archiving-ret) | `RET` | 42 | – | 26 | 16 | 0 |
 | [High availability and deployment](#high-availability-and-deployment-ha) | `HA` | 79 | 49 of 49 | 61 | 18 | 43 |
-| [Operations, monitoring and configuration](#operations-monitoring-and-configuration-ops) | `OPS` | 100 | 17 of 17 | 43 | 57 | 27 |
+| [Operations, monitoring and configuration](#operations-monitoring-and-configuration-ops) | `OPS` | 100 | 17 of 17 | 43 | 57 | 26 |
 | [Events and extensibility](#events-and-extensibility-evt) | `EVT` | 82 | 1 of 1 | 26 | 56 | 3 |
 | [Distribution and release lifecycle](#distribution-and-release-lifecycle-dist) | `DIST` | 70 | 2 of 2 | 2 | 68 | 2 |
 | [Security scanning and curation](#security-scanning-and-curation-sec) | `SEC` | 98 | 18 of 18 | 18 | 80 | 7 |
@@ -968,7 +968,7 @@ Catalog page: [ha-and-deployment.md](../features/ha-and-deployment.md) · specif
 Catalog page: [operations-and-monitoring.md](../features/operations-and-monitoring.md) · specified by priority: MVP 17 of 17 · P1 19 of 23 · P2 7 of 34 · Later 0 of 1 · Out of scope 0 of 25
 
 <details>
-<summary>100 features: 43 specified, 57 open, 27 implemented</summary>
+<summary>100 features: 43 specified, 57 open, 26 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -979,7 +979,7 @@ Catalog page: [operations-and-monitoring.md](../features/operations-and-monitori
 | OPS-005 | Version information | MVP | implemented | [R-OPS-002](../spec/operations-and-observability.md) (implemented) |
 | OPS-006 | Application headers for anonymous callers | P1 | implemented | [R-OPS-002](../spec/operations-and-observability.md) (implemented) |
 | OPS-007 | System information report | P2 | implemented | [R-OPS-004](../spec/operations-and-observability.md) (implemented) |
-| OPS-008 | Service status overview | P1 | implemented | [R-API-038](../spec/api-and-ui.md) (implemented), [R-UI-038](../spec/api-and-ui.md) (implemented), [R-OPS-003](../spec/operations-and-observability.md) (implemented) |
+| OPS-008 | Service status overview | P1 | specified | [R-API-038](../spec/api-and-ui.md) (implemented), [R-UI-038](../spec/api-and-ui.md) (implemented), [R-OPS-003](../spec/operations-and-observability.md) (implemented), [R-OPS-048](../spec/operations-and-observability.md) |
 | OPS-009 | Cluster lock diagnostics | P2 | specified | [R-OPS-026](../spec/operations-and-observability.md) |
 | OPS-010 | Outbound connection test | P2 | open | – |
 | OPS-011 | Metrics endpoint | MVP | implemented | [R-OPS-006](../spec/operations-and-observability.md) (implemented) |

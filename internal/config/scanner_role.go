@@ -20,6 +20,9 @@ func scannerReads(path, kind string) bool {
 	if path == "vulnerabilities.enabled" && kind != ScannerKindClamav {
 		return true
 	}
+	if path == "system.heartbeat_interval" {
+		return true // the period of the scanner's report of itself (R-OPS-048)
+	}
 	for _, p := range scannerSections(kind) {
 		if path == p || strings.HasPrefix(path, p+".") {
 			return true

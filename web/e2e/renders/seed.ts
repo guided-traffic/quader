@@ -955,8 +955,12 @@ export const anonymousV6 = '2001:db8:1:2::/64';
 export const blockedAddress = '198.51.100.23';
 export const quietAddress = '203.0.113.9';
 
-/** The UI development profile's PostgreSQL container (deploy/ui-dev/compose.yaml). */
-const postgresContainer = 'quader-ui-dev-postgres';
+/**
+ * The UI development profile's PostgreSQL container (deploy/ui-dev/compose.yaml). UI_RENDERS_POSTGRES names another one: a
+ * worktree that renders against a stack of its own beside the running profile, whose database the seed must not write
+ * (docs/developer/web-ui.md#local-ui-development).
+ */
+const postgresContainer = process.env['UI_RENDERS_POSTGRES'] ?? 'quader-ui-dev-postgres';
 
 /**
  * Runs SQL in the UI development profile's database through its container (deploy/ui-dev/compose.yaml), as the profile's

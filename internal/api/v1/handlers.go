@@ -109,7 +109,9 @@ type Options struct {
 	PublicVersion bool
 	Access        Access
 	Replicas      ReplicaLister
-	Facts         FactSource
+	// Scanners lists the kinds of scanner and the scanner replicas (R-OPS-048); nil answers the operation with 503.
+	Scanners ScannerLister
+	Facts    FactSource
 	// Formats is the list of served package formats, from the format registry.
 	Formats []string
 

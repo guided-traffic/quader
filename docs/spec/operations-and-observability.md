@@ -439,7 +439,8 @@ replica whose heartbeat has not reached its row for longer than `system.heartbea
 lost, and again when a heartbeat reaches the row (Q-HA-309). A replica that reaches PostgreSQL at no point of its shutdown leaves its
 row in its last state, which is listed as lost; nothing in the process can remove it (Q-HA-310). Backup pods, the restore Job and the migration Job never register
 ([ha-and-helm.md](ha-and-helm.md) R-HA-003), and neither does a `scanner` replica, which has no database connection
-([architecture.md](architecture.md) R-ARCH-036, [Q-OPS-215](#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes)).
+([architecture.md](architecture.md) R-ARCH-036): it reports itself through the scan listener of `packages` into rows of its own
+([R-OPS-048](#r-ops-048--a-scanner-replica-reports-itself-through-the-scan-listener)), which no reader of this registry counts.
 
 A row whose heartbeat is older than `system.heartbeat_stale_after` is one of two things, by the state it last wrote
 ([Q-OPS-210](#q-ops-210--a-row-that-went-stale-while-draining-has-signed-off-the-list-leaves-it-out-and-the-prune-deletes-it)):
@@ -623,6 +624,87 @@ system:
 - After `SENTINEL FAILOVER quader`, every entry's `valkey.primary` names the new primary within
   `valkey.sentinel.refresh_interval` plus `system.heartbeat_interval`.
 - While a backup Job and the migration Job run, the list contains no entry for their pods.
+
+### R-OPS-048 · A scanner replica reports itself through the scan listener
+Priority: **MVP** · Covers: OPS-008
+
+**Status.** Built ([Q-OPS-223](#q-ops-223--a-scanner-reports-itself-on-the-scan-listener-and-packages-records-it-under-the-kind-its-certificate-names),
+[decisions.md](../decisions.md) ADR-224). The owner's words of 2026-11-21: "Also immer so benennen, dass man sieht um welches Tool es sich
+handelt und das man später evtl mal mehrere Tools nebeneinander laufen lassen kann." and, to the report that no screen named a scanner pod
+or its tool: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten. Das ist alles wichtig und muss umgesetzt werden."
+
+A replica of the role `scanner` ([architecture.md](architecture.md) R-ARCH-036) holds no credential of PostgreSQL
+([decisions.md](../decisions.md) ADR-212) and so no row of R-OPS-003. It reports itself instead, to the scan listener of `packages` it
+already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.md) R-HA-066), and `packages` writes the row:
+
+- **The report.** At its start and every `system.heartbeat_interval` the scanner sends `PUT /scan/v1/replicas/{instanceUid}` (the UID random
+  per process, in a UUID's canonical form) with its pod name (`QUADER_POD_NAME`, else the host's name and the process ID), its node
+  (`QUADER_NODE_NAME`), its build of Quader, its state in the vocabulary of R-OPS-003 (`starting`, `ready`, `unready`, `draining`) with the
+  reason of the readiness check that fails (`database` for a malware scanner that has no signature database loaded yet, `clamd`, `analyser`,
+  `certificate`, `spool`, `starting`, or the check's name where it gave none), the version of its tool (the analyser's version that Trivy
+  answered at the start; `clamd`'s from its answer to `VERSION`, asked until it answered once), its slots in use and in all, and for
+  ClamAV the signature database `clamd` scans with. At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
+  `DELETE` on the same path.
+- **The kind is the certificate's.** The route takes no token and admits a request whose verified client certificate lists the name of a
+  kind exactly: `vulnerabilities.images.registry.client_name` is the kind `trivy`, `malware.scan_listener.client_name` the kind `clamav` (the
+  chart sets both, [ha-and-helm.md](ha-and-helm.md) R-HA-066, R-HA-068). A certificate of neither, of both, and a request without TLS are
+  refused with `401`; the body names no kind, and a member it does not know is refused. The two names must differ and each must be one of
+  `server.scan_clients` (the configuration refuses otherwise).
+- **Nothing beyond its size and shape.** A body of at most 4 KiB, decoded strictly; the pod's and the node's name 1 to 253 letters, digits,
+  dots, hyphens or underscores; a version, a revision, a tool's version and a database's version of letters, digits and `. + _ ~ -`; a
+  reason of at most 32 letters, digits and underscores; slots 1 to 64, in use 0 to all; a database only from the kind `clamav`. Anything
+  else is `400`. The table checks the same bounds.
+- **The row.** `packages` writes it with PostgreSQL's clock: `heartbeat_at` at every report, `started_at` at the first, `state_since` when
+  the state or its reason changes. `draining` is the last state of a row, as in R-OPS-003. A kind has at most 64 live rows: the report of a
+  new UID beyond them is refused `409`, and so is a report whose UID is a row of the other kind. The route writes no other table.
+- **Gone the way a replica goes.** The list reads the rows by the rule of R-OPS-003 (Q-OPS-210): a row whose report is older than
+  `system.heartbeat_stale_after` is `lost`, unless it went stale while `draining`, and then it is not listed; `replica-registry-prune`
+  deletes them by the same rule.
+- **The table** `scanner_replica` (migration 00090, export class `transient`) is apart from `replica`: the key rings, the support bundle,
+  the fetch shares and the rate-limit shares count no scanner.
+
+API: `GET /api/v1/system/scanners` → `200`. Requires `settings:read`, the permission of the replica list.
+
+```json
+{
+  "kinds": [
+    {"kind": "trivy", "deployment": "vuln-scanner-trivy", "purpose": "vuln", "tool": "Trivy", "replicas": "reporting"},
+    {"kind": "clamav", "deployment": "malware-scanner-clamav", "purpose": "malware", "tool": "ClamAV", "replicas": "reporting"}
+  ],
+  "items": [
+    {
+      "kind": "clamav", "instanceUid": "5c0f8a52-1d4e-4b7a-9f3c-2e6d7a8b9c05",
+      "name": "quader-malware-scanner-clamav-6d9c7b5f4-x2v4q", "node": "pool-a-7x2k", "version": "0.42.0", "revision": "4f1c2a9e0d7b",
+      "state": "starting", "reason": "database", "stateSince": "2026-11-21T09:58:02Z", "lost": false,
+      "startedAt": "2026-11-21T09:58:02Z", "heartbeatAt": "2026-11-21T10:02:12Z",
+      "toolVersion": "1.5.5", "slots": {"inUse": 0, "total": 2}, "database": null
+    }
+  ]
+}
+```
+
+*(example values)* `kinds` are the kinds whose scanning is on, the image scanning's first. `replicas` says whether their replicas report
+here, from the answering replica's configuration (every role reads the same file, [ha-and-helm.md](ha-and-helm.md) R-HA-002): `reporting`
+while the installation calls scanner pods of the kind (`vulnerabilities.images.scanner.url`, `malware.scanner.url`) and the scan listener
+can tell their kind (TLS and the kind's name), so an empty list is a fault; `unverified` while it calls them but cannot tell their kind and
+records none; `inProcess` for the image scanning of the role `all`, which analyses in its own process and runs no pod; `none` while no
+scanner of the kind is configured. `database.builtAt` is the build time of the version in use when the row names it, `null` for another
+version. The screens are [api-and-ui.md](api-and-ui.md) R-UI-038 (the System page), [malware-scanning.md](malware-scanning.md) R-MAL-023
+and [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 (Q-UI-897).
+
+**Acceptance criteria:**
+
+- With the defaults of the chart, `GET /api/v1/system/scanners` lists every running pod of `quader-vuln-scanner-trivy` as a row of the
+  kind `trivy` and every pod of `quader-malware-scanner-clamav` as one of the kind `clamav`, by its pod name; an image scanner that
+  analysed an image is `ready` and names its Trivy's version (the end-to-end set `vuln`).
+- A malware scanner before its first database is listed `starting` with the reason `database`, its row names `clamd`'s version, and once a
+  database is loaded the row is `ready` with that version and its build time. Stopped cleanly, its row is gone at once (integration,
+  `test/integration/malware`).
+- A report with the image scanner's certificate is recorded as `trivy` whatever its body says; a member `kind`, markup in a name, a
+  database from `trivy`, the worker's certificate, a token and a request without TLS are refused (unit tests of `internal/scanreport`,
+  `internal/api/scanlisten`, `internal/auth`).
+- With 64 live rows of a kind, the report of a 65th UID is refused and a stale row does not count; a row that went stale while draining is
+  not listed and the prune deletes it at once, a lost one after 24 h (integration, `test/integration/coordination`).
 
 ### R-OPS-004 · System information
 Priority: **MVP** · Covers: ADMAPI-070, OPS-007
@@ -6329,7 +6411,10 @@ built and administrators want the state and the levels of the registries in a do
 
 ### Q-OPS-215 · The scanner has no row in the replica registry, and shows through its metrics and the worker's codes
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Superseded** by the owner's order of 2026-11-21 that the screens name every scanner pod and its tool
+([Q-OPS-223](#q-ops-223--a-scanner-reports-itself-on-the-scan-listener-and-packages-records-it-under-the-kind-its-certificate-names)).
+The scanner still has no row of R-OPS-003; it has one of R-OPS-048. Decided before by the development agent — selected from the options
+below.
 
 Context: the registry of R-OPS-003 is a table in PostgreSQL, and the role `scanner` holds no database credential by the owner's decision
 (2026-11-20, [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)).
@@ -6390,6 +6475,37 @@ Context: beside its calls, the malware scanner's process runs the loader that fe
 that unit's readiness reason `database`: it is a part of the unit, not a unit of its own. Among the process's components, which only a failed
 start or stop names, it is `malware-scanner-clamav-database-loader`. **Applied in the spec:** [ha-and-helm.md](ha-and-helm.md) Q-HA-373 (R-OPS-012
 lists no component of the scanners). Code: [wire_malware_scanner.go](../../internal/app/wire_malware_scanner.go).
+
+### Q-OPS-223 · A scanner reports itself on the scan listener, and `packages` records it under the kind its certificate names
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The frame is the
+owner's: "Also immer so benennen, dass man sieht um welches Tool es sich handelt und das man später evtl mal mehrere Tools nebeneinander
+laufen lassen kann." (2026-11-21, [ha-and-helm.md](ha-and-helm.md) Q-HA-372), and to the report that the System page showed no scanner and
+**Settings › Malware scanning** only two counts: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten. Das ist alles wichtig und muss
+umgesetzt werden." It supersedes Q-OPS-215. The bounds were his too: a scanner holds no secret of the installation and gets no means to
+write the registry (ADR-212), and the kind is taken from what is verified, not from what a pod says about itself.
+
+Context: a scanner already calls the scan listener of `packages` with the certificate of its kind (`server.scan_clients`, R-HA-066), and the
+worker calls each kind's Service over mutual TLS. Either end could carry what the screens need.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scanner reports itself on the scan listener; `packages` writes the row under the kind the client certificate names (chosen) | One small `PUT` per pod per `system.heartbeat_interval` on the link the scanner has; a table of its own | Every pod reports, whichever the Service would pick and whether it is ready or not: a scanner that waits for its database is shown; the row goes stale and is pruned exactly as a replica's (R-OPS-003); no new chart object, no new permission; the kind is the verified certificate's | A taken-over scanner holds its kind's certificate, which every pod of the kind shares, and can write made-up rows of that kind, up to the bound (H-1161); a scanner whose certificate is broken cannot report |
+| (b) The worker records what it learns from its calls (the malware call's `Quader-Scanner-Instance`, Q-MAL-43) | Rows by proxy, written by the worker's job | No new route; the kind is the server certificate the worker checked | The Service routes only to ready pods, so a scanner that is not ready is never seen; only the pods a call happened to reach; nothing is learned while nothing is scanned, and a row's end is a guess from the calls that stopped |
+| (c) The worker probes every pod through a headless Service with `publishNotReadyAddresses` | A loop on one worker that resolves the pods and asks each for its state | One row per pod address by construction, so a taken-over scanner writes only its own | Two new Services, a status route on the scanner, a lease for the loop, DNS in the worker; the row's end follows DNS, not the registry's rule; the role `all` has no DNS to resolve |
+| (d) The scanner writes the registry itself, or reaches `api` with a credential | Real rows of R-OPS-003 | One mechanism for every replica | A credential in the scanner, against ADR-212; and every reader of the registry would have to learn to leave a scanner out |
+
+**Choice:** (a). **Rationale:** it is the one option that shows a scanner that is not ready, which is the state an administrator most needs
+to see, and its row comes and goes by the rule every other replica follows. What a taken-over scanner gains is a lie about its own kind's
+pods on a screen, which nothing decides on: it can already answer false verdicts, which is worse, and the bound and the shape keep the lie
+small and plain text. The kind comes from the certificate the handshake verified, the clock from PostgreSQL. Cost: per scanner pod one
+request of a few hundred bytes and one `INSERT … ON CONFLICT` every ten seconds, six a minute; the API's read is one statement over a table
+of a handful of rows. **Applied in the spec:** R-OPS-003, R-OPS-048; [ha-and-helm.md](ha-and-helm.md) R-HA-002, R-HA-065, R-HA-066,
+R-HA-068; [architecture.md](architecture.md) R-ARCH-036, R-ARCH-037; [api-and-ui.md](api-and-ui.md) R-UI-038, Q-API-381, Q-UI-897;
+[malware-scanning.md](malware-scanning.md) R-MAL-023; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022; H-1161 in
+[security/scanner-replicas.md](../security/scanner-replicas.md). Code: [scanreport](../../internal/scanreport/report.go),
+[replicas.go](../../internal/api/scanlisten/replicas.go), [wire_scanner_report.go](../../internal/app/wire_scanner_report.go),
+[scanner_replicas.go](../../internal/cluster/scanner_replicas.go).
 
 ## What this does not cover
 

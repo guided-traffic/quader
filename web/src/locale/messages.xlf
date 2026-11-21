@@ -25634,7 +25634,7 @@
     </unit>
     <unit id="malware.settings.backlog-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:86,89</note>
+        <note category="location">src/app/features/settings/malware-settings.html:91,94</note>
       </notes>
       <segment>
         <source> Under the switch, an artifact without a verdict waits for its scan when it is downloaded; one that could not be checked is refused. </source>
@@ -25642,8 +25642,8 @@
     </unit>
     <unit id="malware.rescan.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:94,97</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:237</note>
+        <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:250</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -25651,7 +25651,7 @@
     </unit>
     <unit id="malware.settings.finds-link">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
+        <note category="location">src/app/features/settings/malware-settings.html:104,107</note>
       </notes>
       <segment>
         <source>Finds are in the security dashboard</source>
@@ -25659,7 +25659,7 @@
     </unit>
     <unit id="malware.settings.database">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:105,107</note>
+        <note category="location">src/app/features/settings/malware-settings.html:110,112</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -25667,7 +25667,7 @@
     </unit>
     <unit id="malware.db.error.when">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:112,113</note>
+        <note category="location">src/app/features/settings/malware-settings.html:117,118</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {Failed once,} other {Failed <ph id="0" equiv="INTERPOLATION"/> times in a row,}}</source>
@@ -25675,7 +25675,7 @@
     </unit>
     <unit id="malware.db.error.last">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:113</note>
+        <note category="location">src/app/features/settings/malware-settings.html:118</note>
       </notes>
       <segment>
         <source>last</source>
@@ -25683,7 +25683,7 @@
     </unit>
     <unit id="malware.db.version">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:122,123</note>
+        <note category="location">src/app/features/settings/malware-settings.html:127,128</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -25691,7 +25691,7 @@
     </unit>
     <unit id="malware.db.date">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:124,126</note>
+        <note category="location">src/app/features/settings/malware-settings.html:129,131</note>
       </notes>
       <segment>
         <source>Date</source>
@@ -25699,7 +25699,7 @@
     </unit>
     <unit id="malware.db.stale">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:130,131</note>
+        <note category="location">src/app/features/settings/malware-settings.html:135,136</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -25707,7 +25707,7 @@
     </unit>
     <unit id="malware.db.current">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:132,133</note>
+        <note category="location">src/app/features/settings/malware-settings.html:137,138</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -25715,7 +25715,7 @@
     </unit>
     <unit id="malware.db.stored">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:136,137</note>
+        <note category="location">src/app/features/settings/malware-settings.html:141,142</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -25723,8 +25723,8 @@
     </unit>
     <unit id="malware.db.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:139,141</note>
-        <note category="location">src/app/features/settings/malware-settings.html:162,164</note>
+        <note category="location">src/app/features/settings/malware-settings.html:144,146</note>
+        <note category="location">src/app/features/settings/malware-settings.html:167,169</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -25732,7 +25732,7 @@
     </unit>
     <unit id="malware.db.stale-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:150,152</note>
+        <note category="location">src/app/features/settings/malware-settings.html:155,157</note>
       </notes>
       <segment>
         <source> The database is older than two days. Scanning goes on with it; new signatures arrive when the next update succeeds. </source>
@@ -25740,7 +25740,7 @@
     </unit>
     <unit id="malware.db.none-badge">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:155,156</note>
+        <note category="location">src/app/features/settings/malware-settings.html:160,161</note>
       </notes>
       <segment>
         <source>None yet</source>
@@ -25748,7 +25748,7 @@
     </unit>
     <unit id="malware.db.none">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:157,159</note>
+        <note category="location">src/app/features/settings/malware-settings.html:162,164</note>
       </notes>
       <segment>
         <source>No signature database is in use yet, so nothing is scanned. Under the switch, downloads wait and are refused as not checked yet.</source>
@@ -25756,7 +25756,7 @@
     </unit>
     <unit id="malware.db.offline">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:174,175</note>
+        <note category="location">src/app/features/settings/malware-settings.html:179,180</note>
       </notes>
       <segment>
         <source>Fill the repository</source>
@@ -25764,7 +25764,7 @@
     </unit>
     <unit id="malware.db.offline-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:176,178</note>
+        <note category="location">src/app/features/settings/malware-settings.html:181,183</note>
       </notes>
       <segment>
         <source> This installation fetches no database itself. On a machine that reaches the internet, fetch the files with ClamAV&apos;s mirror tool and upload the whole files to the root of the repository; Quader reads them at its next run. </source>
@@ -25772,7 +25772,7 @@
     </unit>
     <unit id="malware.db.error.missing">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:27</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:29</note>
       </notes>
       <segment>
         <source>No signature database was found.</source>
@@ -25780,7 +25780,7 @@
     </unit>
     <unit id="malware.db.error.invalid">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:29</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:31</note>
       </notes>
       <segment>
         <source>A file of the signature database was refused.</source>
@@ -25788,7 +25788,7 @@
     </unit>
     <unit id="malware.db.error.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:31</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:33</note>
       </notes>
       <segment>
         <source>The repository the configuration names cannot hold the database.</source>
@@ -25796,7 +25796,7 @@
     </unit>
     <unit id="malware.db.error.store">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:33</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:35</note>
       </notes>
       <segment>
         <source>A file of the signature database could not be stored.</source>
@@ -25804,7 +25804,7 @@
     </unit>
     <unit id="malware.db.error.other">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:35</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:37</note>
       </notes>
       <segment>
         <source>The last update of the signature database failed.</source>
@@ -25812,7 +25812,7 @@
     </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:170</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:183</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -25820,7 +25820,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:180</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:193</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -25828,7 +25828,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:182</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:195</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -25836,7 +25836,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:192</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:205</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -25844,7 +25844,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:193</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:206</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -25852,7 +25852,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:233</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:246</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -25860,7 +25860,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:235</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:248</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -25868,7 +25868,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:245</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:258</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
@@ -27068,8 +27068,8 @@
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:233,237</note>
         <note category="location">src/app/features/system/jobs-page.ts:109,113</note>
-        <note category="location">src/app/features/system/system-status.html:547,551</note>
-        <note category="location">src/app/features/system/system-status.html:568,571</note>
+        <note category="location">src/app/features/system/system-status.html:577,581</note>
+        <note category="location">src/app/features/system/system-status.html:598,601</note>
         <note category="location">src/app/features/system/tasks-card.ts:99,102</note>
       </notes>
       <segment>
@@ -28244,7 +28244,7 @@
     <unit id="jobs.cancelling">
       <notes>
         <note category="location">src/app/features/system/jobs-page.ts:212</note>
-        <note category="location">src/app/features/system/system-status.ts:251</note>
+        <note category="location">src/app/features/system/system-status.ts:271</note>
       </notes>
       <segment>
         <source>Job <ph id="0" equiv="kind" disp="job.kind"/> is being cancelled.</source>
@@ -28354,9 +28354,17 @@
         <source>All roles ready</source>
       </segment>
     </unit>
+    <unit id="system.summary.no-ready-scanner">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:47,48</note>
+      </notes>
+      <segment>
+        <source>No ready replica of <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
+      </segment>
+    </unit>
     <unit id="system.summary.replacing">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:49,50</note>
+        <note category="location">src/app/features/system/system-status.html:56,57</note>
       </notes>
       <segment>
         <source>Replicas are being replaced (<ph id="0" equiv="INTERPOLATION" disp="{{ c.draining }}"/> draining, <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.starting }}"/> starting), as during every update</source>
@@ -28364,7 +28372,7 @@
     </unit>
     <unit id="system.summary.not-drain-safe">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:54,58</note>
+        <note category="location">src/app/features/system/system-status.html:61,65</note>
       </notes>
       <segment>
         <source>Not drain-safe</source>
@@ -28372,7 +28380,7 @@
     </unit>
     <unit id="system.install.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:65,67</note>
+        <note category="location">src/app/features/system/system-status.html:72,74</note>
       </notes>
       <segment>
         <source>Installation</source>
@@ -28380,7 +28388,7 @@
     </unit>
     <unit id="system.install.version">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:67,69</note>
+        <note category="location">src/app/features/system/system-status.html:74,76</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -28388,7 +28396,7 @@
     </unit>
     <unit id="system.install.base-url">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:71,72</note>
+        <note category="location">src/app/features/system/system-status.html:78,79</note>
       </notes>
       <segment>
         <source>Base URL</source>
@@ -28396,7 +28404,7 @@
     </unit>
     <unit id="system.install.base-url-source">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:73,75</note>
+        <note category="location">src/app/features/system/system-status.html:80,82</note>
       </notes>
       <segment>
         <source>Base URL source</source>
@@ -28404,7 +28412,7 @@
     </unit>
     <unit id="system.install.source.config">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:76,78</note>
+        <note category="location">src/app/features/system/system-status.html:83,85</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -28412,7 +28420,7 @@
     </unit>
     <unit id="system.install.source.request">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:79,82</note>
+        <note category="location">src/app/features/system/system-status.html:86,89</note>
       </notes>
       <segment>
         <source>Derived from the request (development only)</source>
@@ -28420,7 +28428,7 @@
     </unit>
     <unit id="system.install.maintenance">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:84,86</note>
+        <note category="location">src/app/features/system/system-status.html:91,93</note>
       </notes>
       <segment>
         <source>Maintenance mode</source>
@@ -28428,7 +28436,7 @@
     </unit>
     <unit id="system.install.answered-by">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:90,91</note>
+        <note category="location">src/app/features/system/system-status.html:97,98</note>
       </notes>
       <segment>
         <source>Answered by</source>
@@ -28436,7 +28444,7 @@
     </unit>
     <unit id="system.install.licences">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:94,95</note>
+        <note category="location">src/app/features/system/system-status.html:101,102</note>
       </notes>
       <segment>
         <source>Licences of the bundled software</source>
@@ -28444,7 +28452,7 @@
     </unit>
     <unit id="system.db.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:100,101</note>
+        <note category="location">src/app/features/system/system-status.html:107,108</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -28452,7 +28460,7 @@
     </unit>
     <unit id="system.db.server">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:103,104</note>
+        <note category="location">src/app/features/system/system-status.html:110,111</note>
       </notes>
       <segment>
         <source>Server version</source>
@@ -28460,7 +28468,7 @@
     </unit>
     <unit id="system.db.schema">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:105,107</note>
+        <note category="location">src/app/features/system/system-status.html:112,114</note>
       </notes>
       <segment>
         <source>Schema version</source>
@@ -28468,7 +28476,7 @@
     </unit>
     <unit id="system.db.schema.supported">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:111,113</note>
+        <note category="location">src/app/features/system/system-status.html:118,120</note>
       </notes>
       <segment>
         <source>Supported</source>
@@ -28476,7 +28484,7 @@
     </unit>
     <unit id="system.db.schema.unsupported">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:116,118</note>
+        <note category="location">src/app/features/system/system-status.html:123,125</note>
       </notes>
       <segment>
         <source>Not supported by this build</source>
@@ -28484,7 +28492,7 @@
     </unit>
     <unit id="system.db.unknown">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:122,125</note>
+        <note category="location">src/app/features/system/system-status.html:129,132</note>
       </notes>
       <segment>
         <source>Not read yet by this replica.</source>
@@ -28492,7 +28500,7 @@
     </unit>
     <unit id="system.versions.mixed">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:131,135</note>
+        <note category="location">src/app/features/system/system-status.html:138,142</note>
       </notes>
       <segment>
         <source>Replicas of two versions run side by side: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span
@@ -28501,7 +28509,7 @@
     </unit>
     <unit id="system.replicas.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:141,142</note>
+        <note category="location">src/app/features/system/system-status.html:148,149</note>
       </notes>
       <segment>
         <source>Replicas by role</source>
@@ -28509,8 +28517,8 @@
     </unit>
     <unit id="system.role.counts">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:147,149</note>
-        <note category="location">src/app/features/system/system-status.html:180,181</note>
+        <note category="location">src/app/features/system/system-status.html:154,156</note>
+        <note category="location">src/app/features/system/system-status.html:187,188</note>
       </notes>
       <segment>
         <source>live <ph id="0" equiv="INTERPOLATION" disp="{{ g.live }}"/>, ready <ph id="1" equiv="INTERPOLATION_1" disp="{{ g.ready }}"/>, degraded <ph id="2" equiv="INTERPOLATION_2" disp="{{ g.degraded }}"/></source>
@@ -28518,7 +28526,7 @@
     </unit>
     <unit id="system.role.no-worker">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:156,158</note>
+        <note category="location">src/app/features/system/system-status.html:163,165</note>
       </notes>
       <segment>
         <source>No live worker replica: jobs and scheduled tasks are queued but nothing runs them.</source>
@@ -28526,7 +28534,7 @@
     </unit>
     <unit id="system.role.no-packages">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:162,164</note>
+        <note category="location">src/app/features/system/system-status.html:169,171</note>
       </notes>
       <segment>
         <source>No live packages replica: package clients and raw downloads get no answer from the edge, while the UI keeps working.</source>
@@ -28534,7 +28542,7 @@
     </unit>
     <unit id="system.pool.main">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:175,176</note>
+        <note category="location">src/app/features/system/system-status.html:182,183</note>
       </notes>
       <segment>
         <source>Main</source>
@@ -28542,7 +28550,7 @@
     </unit>
     <unit id="system.pool.named">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:177</note>
+        <note category="location">src/app/features/system/system-status.html:184</note>
       </notes>
       <segment>
         <source>Pool</source>
@@ -28550,7 +28558,7 @@
     </unit>
     <unit id="system.role.fewer">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:195,197</note>
+        <note category="location">src/app/features/system/system-status.html:202,204</note>
       </notes>
       <segment>
         <source>Fewer than two ready replicas: a node drain or the loss of one pod interrupts this role.</source>
@@ -28558,7 +28566,7 @@
     </unit>
     <unit id="system.role.one-node">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:201,203</note>
+        <note category="location">src/app/features/system/system-status.html:208,210</note>
       </notes>
       <segment>
         <source>All ready replicas on one node: a drain of that node interrupts this role.</source>
@@ -28566,7 +28574,7 @@
     </unit>
     <unit id="system.pool.no-live">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:207,208</note>
+        <note category="location">src/app/features/system/system-status.html:214,215</note>
       </notes>
       <segment>
         <source>No live replica in the pool <ph id="0" equiv="INTERPOLATION" disp="{{ p.pool }}"/>: what it claims or serves waits until one is ready.</source>
@@ -28574,7 +28582,7 @@
     </unit>
     <unit id="system.state.lost">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:234,235</note>
+        <note category="location">src/app/features/system/system-status.html:241,242</note>
       </notes>
       <segment>
         <source>Lost</source>
@@ -28582,7 +28590,7 @@
     </unit>
     <unit id="system.state.ready">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:241,242</note>
+        <note category="location">src/app/features/system/system-status.html:248,249</note>
       </notes>
       <segment>
         <source>Ready</source>
@@ -28590,7 +28598,7 @@
     </unit>
     <unit id="system.state.starting">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:247,248</note>
+        <note category="location">src/app/features/system/system-status.html:254,255</note>
       </notes>
       <segment>
         <source>Starting</source>
@@ -28598,7 +28606,7 @@
     </unit>
     <unit id="system.state.draining">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:253,254</note>
+        <note category="location">src/app/features/system/system-status.html:260,261</note>
       </notes>
       <segment>
         <source>Draining</source>
@@ -28606,7 +28614,7 @@
     </unit>
     <unit id="system.state.unready">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:259,260</note>
+        <note category="location">src/app/features/system/system-status.html:266,267</note>
       </notes>
       <segment>
         <source>Unready</source>
@@ -28614,7 +28622,7 @@
     </unit>
     <unit id="system.checks.failing">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:268</note>
+        <note category="location">src/app/features/system/system-status.html:275</note>
       </notes>
       <segment>
         <source>Failing checks:</source>
@@ -28622,7 +28630,7 @@
     </unit>
     <unit id="system.valkey.available">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:291,292</note>
+        <note category="location">src/app/features/system/system-status.html:298,299</note>
       </notes>
       <segment>
         <source>Available</source>
@@ -28630,7 +28638,7 @@
     </unit>
     <unit id="system.valkey.degraded">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:296,297</note>
+        <note category="location">src/app/features/system/system-status.html:303,304</note>
       </notes>
       <segment>
         <source>Degraded</source>
@@ -28638,15 +28646,24 @@
     </unit>
     <unit id="system.valkey.circuit-open">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:303,305</note>
+        <note category="location">src/app/features/system/system-status.html:310,312</note>
       </notes>
       <segment>
         <source>, circuit open</source>
       </segment>
     </unit>
+    <unit id="system.scanner.counts">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:334,335</note>
+        <note category="location">src/app/features/system/system-status.html:340,341</note>
+      </notes>
+      <segment>
+        <source>live <ph id="0" equiv="INTERPOLATION" disp="{{ scannerCounts().live }}"/>, ready <ph id="1" equiv="INTERPOLATION_1" disp="{{ scannerCounts().ready }}"/></source>
+      </segment>
+    </unit>
     <unit id="system.replicas.limits">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:319,325</note>
+        <note category="location">src/app/features/system/system-status.html:349,355</note>
       </notes>
       <segment>
         <source> This screen cannot see disruption budgets, free capacity on other nodes, or whether the remaining replicas carry the peak load, because Quader holds no Kubernetes permissions. </source>
@@ -28654,7 +28671,7 @@
     </unit>
     <unit id="system.valkey.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:327,328</note>
+        <note category="location">src/app/features/system/system-status.html:357,358</note>
       </notes>
       <segment>
         <source>Valkey</source>
@@ -28662,7 +28679,7 @@
     </unit>
     <unit id="system.valkey.summary.ok">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:331,334</note>
+        <note category="location">src/app/features/system/system-status.html:361,364</note>
       </notes>
       <segment>
         <source>Available on every replica</source>
@@ -28670,7 +28687,7 @@
     </unit>
     <unit id="system.valkey.summary.degraded">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:337,339</note>
+        <note category="location">src/app/features/system/system-status.html:367,369</note>
       </notes>
       <segment>
         <source>Degraded on <ph id="0" equiv="INTERPOLATION" disp="{{ v.degradedReplicas }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ v.liveReplicas }}"/> replicas</source>
@@ -28678,7 +28695,7 @@
     </unit>
     <unit id="system.valkey.disagree">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:347,350</note>
+        <note category="location">src/app/features/system/system-status.html:377,380</note>
       </notes>
       <segment>
         <source>Replicas disagree about the primary</source>
@@ -28686,7 +28703,7 @@
     </unit>
     <unit id="system.valkey.sentinels">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:354,358</note>
+        <note category="location">src/app/features/system/system-status.html:384,388</note>
       </notes>
       <segment>
         <source>Sentinels unreachable: no failover can happen while this lasts.</source>
@@ -28694,7 +28711,7 @@
     </unit>
     <unit id="system.valkey.mode">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:360,361</note>
+        <note category="location">src/app/features/system/system-status.html:390,391</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -28702,7 +28719,7 @@
     </unit>
     <unit id="system.valkey.primary-name">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:362,363</note>
+        <note category="location">src/app/features/system/system-status.html:392,393</note>
       </notes>
       <segment>
         <source>Primary name</source>
@@ -28710,7 +28727,7 @@
     </unit>
     <unit id="system.valkey.sentinels-configured">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:364,365</note>
+        <note category="location">src/app/features/system/system-status.html:394,395</note>
       </notes>
       <segment>
         <source>Configured Sentinels</source>
@@ -28718,7 +28735,7 @@
     </unit>
     <unit id="system.valkey.tls">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:366,367</note>
+        <note category="location">src/app/features/system/system-status.html:396,397</note>
       </notes>
       <segment>
         <source>TLS verification</source>
@@ -28726,7 +28743,7 @@
     </unit>
     <unit id="system.valkey.last-change">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:369,371</note>
+        <note category="location">src/app/features/system/system-status.html:399,401</note>
       </notes>
       <segment>
         <source>Last primary change</source>
@@ -28734,7 +28751,7 @@
     </unit>
     <unit id="system.valkey.server-version">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:375,376</note>
+        <note category="location">src/app/features/system/system-status.html:405,406</note>
       </notes>
       <segment>
         <source>Server version</source>
@@ -28742,7 +28759,7 @@
     </unit>
     <unit id="system.keys.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:384,385</note>
+        <note category="location">src/app/features/system/system-status.html:414,415</note>
       </notes>
       <segment>
         <source>Stored-secret keys</source>
@@ -28750,8 +28767,8 @@
     </unit>
     <unit id="system.keys.active">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:389,390</note>
-        <note category="location">src/app/features/system/system-status.ts:94</note>
+        <note category="location">src/app/features/system/system-status.html:419,420</note>
+        <note category="location">src/app/features/system/system-status.ts:96</note>
       </notes>
       <segment>
         <source>Active key ID</source>
@@ -28759,7 +28776,7 @@
     </unit>
     <unit id="system.keys.answered-by">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:392,394</note>
+        <note category="location">src/app/features/system/system-status.html:422,424</note>
       </notes>
       <segment>
         <source>(answered by <ph id="0" equiv="INTERPOLATION" disp="{{ e.answeredBy }}"/>)</source>
@@ -28767,7 +28784,7 @@
     </unit>
     <unit id="system.keys.compatible">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:398,400</note>
+        <note category="location">src/app/features/system/system-status.html:428,430</note>
       </notes>
       <segment>
         <source>Key rings are compatible.</source>
@@ -28775,7 +28792,7 @@
     </unit>
     <unit id="system.keys.incompatible">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:402,406</note>
+        <note category="location">src/app/features/system/system-status.html:432,436</note>
       </notes>
       <segment>
         <source>Key rings are not compatible: a value sealed by one replica cannot be opened by another.</source>
@@ -28783,7 +28800,7 @@
     </unit>
     <unit id="system.keys.canary.ok">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:417,418</note>
+        <note category="location">src/app/features/system/system-status.html:447,448</note>
       </notes>
       <segment>
         <source>OK</source>
@@ -28791,7 +28808,7 @@
     </unit>
     <unit id="system.keys.canary.failed">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:423,425</note>
+        <note category="location">src/app/features/system/system-status.html:453,455</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -28799,7 +28816,7 @@
     </unit>
     <unit id="system.keys.canary.absent">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:429,431</note>
+        <note category="location">src/app/features/system/system-status.html:459,461</note>
       </notes>
       <segment>
         <source>Absent</source>
@@ -28807,7 +28824,7 @@
     </unit>
     <unit id="system.keys.status.active">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:439,441</note>
+        <note category="location">src/app/features/system/system-status.html:469,471</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -28815,7 +28832,7 @@
     </unit>
     <unit id="system.keys.status.pending">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:445,447</note>
+        <note category="location">src/app/features/system/system-status.html:475,477</note>
       </notes>
       <segment>
         <source>Re-encryption pending</source>
@@ -28823,7 +28840,7 @@
     </unit>
     <unit id="system.keys.status.unused">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:450,452</note>
+        <note category="location">src/app/features/system/system-status.html:480,482</note>
       </notes>
       <segment>
         <source>No values left under this key: its key file can be removed.</source>
@@ -28831,7 +28848,7 @@
     </unit>
     <unit id="system.keys.replicas.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:459,460</note>
+        <note category="location">src/app/features/system/system-status.html:489,490</note>
       </notes>
       <segment>
         <source>Key IDs per replica</source>
@@ -28839,7 +28856,7 @@
     </unit>
     <unit id="system.keys.replicas.missing">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:471</note>
+        <note category="location">src/app/features/system/system-status.html:501</note>
       </notes>
       <segment>
         <source>Lacks</source>
@@ -28847,7 +28864,7 @@
     </unit>
     <unit id="system.keys.replicas.complete">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:478,480</note>
+        <note category="location">src/app/features/system/system-status.html:508,510</note>
       </notes>
       <segment>
         <source>Complete</source>
@@ -28855,7 +28872,7 @@
     </unit>
     <unit id="system.keys.step.incompatible">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:491,495</note>
+        <note category="location">src/app/features/system/system-status.html:521,525</note>
       </notes>
       <segment>
         <source>Next step: give every replica the key files it lacks. Re-encryption stays disabled until all rings hold the same key IDs.</source>
@@ -28863,7 +28880,7 @@
     </unit>
     <unit id="system.keys.step.reencrypt">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:500,504</note>
+        <note category="location">src/app/features/system/system-status.html:530,534</note>
       </notes>
       <segment>
         <source>Next step: re-encrypt the values that are still sealed under an old key ID.</source>
@@ -28871,7 +28888,7 @@
     </unit>
     <unit id="system.keys.step.remove">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:508,511</note>
+        <note category="location">src/app/features/system/system-status.html:538,541</note>
       </notes>
       <segment>
         <source>Next step: no values are left under an old key ID, so its key file can be removed from every replica.</source>
@@ -28879,7 +28896,7 @@
     </unit>
     <unit id="system.keys.last">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:517,518</note>
+        <note category="location">src/app/features/system/system-status.html:547,548</note>
       </notes>
       <segment>
         <source>Last re-encryption</source>
@@ -28887,7 +28904,7 @@
     </unit>
     <unit id="system.keys.reencrypt">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:538,540</note>
+        <note category="location">src/app/features/system/system-status.html:568,570</note>
       </notes>
       <segment>
         <source> Re-encrypt now </source>
@@ -28895,7 +28912,7 @@
     </unit>
     <unit id="system.keys.reencrypt-reason">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:542,546</note>
+        <note category="location">src/app/features/system/system-status.html:572,576</note>
       </notes>
       <segment>
         <source> Disabled while the key rings are not compatible. </source>
@@ -28903,7 +28920,7 @@
     </unit>
     <unit id="system.jobs.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:554,555</note>
+        <note category="location">src/app/features/system/system-status.html:584,585</note>
       </notes>
       <segment>
         <source>Recent jobs</source>
@@ -28911,7 +28928,7 @@
     </unit>
     <unit id="jobs.empty-recent">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:559,561</note>
+        <note category="location">src/app/features/system/system-status.html:589,591</note>
       </notes>
       <segment>
         <source>No job has run yet.</source>
@@ -28919,8 +28936,8 @@
     </unit>
     <unit id="system.col.name">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:72</note>
-        <note category="location">src/app/features/system/system-status.ts:92</note>
+        <note category="location">src/app/features/system/system-status.ts:74</note>
+        <note category="location">src/app/features/system/system-status.ts:94</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -28928,7 +28945,7 @@
     </unit>
     <unit id="system.col.node">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:73</note>
+        <note category="location">src/app/features/system/system-status.ts:75</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -28936,7 +28953,7 @@
     </unit>
     <unit id="system.col.version">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:74</note>
+        <note category="location">src/app/features/system/system-status.ts:76</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -28944,8 +28961,8 @@
     </unit>
     <unit id="system.col.state">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:75</note>
-        <note category="location">src/app/features/system/system-status.ts:96</note>
+        <note category="location">src/app/features/system/system-status.ts:77</note>
+        <note category="location">src/app/features/system/system-status.ts:98</note>
       </notes>
       <segment>
         <source>State</source>
@@ -28953,7 +28970,7 @@
     </unit>
     <unit id="system.col.heartbeat">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:76</note>
+        <note category="location">src/app/features/system/system-status.ts:78</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -28961,7 +28978,7 @@
     </unit>
     <unit id="system.col.valkey">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:77</note>
+        <note category="location">src/app/features/system/system-status.ts:79</note>
       </notes>
       <segment>
         <source>Valkey</source>
@@ -28969,7 +28986,7 @@
     </unit>
     <unit id="system.keys.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:80</note>
+        <note category="location">src/app/features/system/system-status.ts:82</note>
       </notes>
       <segment>
         <source>Key IDs and sealed values</source>
@@ -28977,7 +28994,7 @@
     </unit>
     <unit id="system.keys.col.id">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:84</note>
+        <note category="location">src/app/features/system/system-status.ts:86</note>
       </notes>
       <segment>
         <source>Key ID</source>
@@ -28985,7 +29002,7 @@
     </unit>
     <unit id="system.keys.col.sealed">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:85</note>
+        <note category="location">src/app/features/system/system-status.ts:87</note>
       </notes>
       <segment>
         <source>Sealed values</source>
@@ -28993,7 +29010,7 @@
     </unit>
     <unit id="system.keys.col.canary-by">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:86</note>
+        <note category="location">src/app/features/system/system-status.ts:88</note>
       </notes>
       <segment>
         <source>Canary (reported by <ph id="0" equiv="replica" disp="by"/>)</source>
@@ -29001,7 +29018,7 @@
     </unit>
     <unit id="system.keys.col.status">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:87</note>
+        <note category="location">src/app/features/system/system-status.ts:89</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -29009,7 +29026,7 @@
     </unit>
     <unit id="system.keys.replicas.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:90</note>
+        <note category="location">src/app/features/system/system-status.ts:92</note>
       </notes>
       <segment>
         <source>Key rings of the live replicas</source>
@@ -29017,7 +29034,7 @@
     </unit>
     <unit id="system.keys.replicas.role">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:93</note>
+        <note category="location">src/app/features/system/system-status.ts:95</note>
       </notes>
       <segment>
         <source>Role</source>
@@ -29025,7 +29042,7 @@
     </unit>
     <unit id="system.keys.replicas.ring">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:95</note>
+        <note category="location">src/app/features/system/system-status.ts:97</note>
       </notes>
       <segment>
         <source>Key IDs held</source>
@@ -29033,7 +29050,7 @@
     </unit>
     <unit id="system.replicas.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:100</note>
+        <note category="location">src/app/features/system/system-status.ts:102</note>
       </notes>
       <segment>
         <source>Replicas of the role <ph id="0" equiv="role" disp="role"/></source>
@@ -29041,7 +29058,7 @@
     </unit>
     <unit id="system.replicas.caption-pool">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:101</note>
+        <note category="location">src/app/features/system/system-status.ts:103</note>
       </notes>
       <segment>
         <source>Replicas of the pool <ph id="0" equiv="pool" disp="pool"/> of the role <ph id="1" equiv="role" disp="role"/></source>
@@ -29049,7 +29066,7 @@
     </unit>
     <unit id="system.reencrypt.started">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:224</note>
+        <note category="location">src/app/features/system/system-status.ts:244</note>
       </notes>
       <segment>
         <source>Re-encryption started.</source>
@@ -29057,7 +29074,7 @@
     </unit>
     <unit id="system.reencrypt.failed">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:230</note>
+        <note category="location">src/app/features/system/system-status.ts:250</note>
       </notes>
       <segment>
         <source>Re-encryption could not be started.</source>
@@ -29065,7 +29082,7 @@
     </unit>
     <unit id="jobs.cancel.failed">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:256</note>
+        <note category="location">src/app/features/system/system-status.ts:276</note>
       </notes>
       <segment>
         <source>The job could not be cancelled.</source>
@@ -29073,7 +29090,7 @@
     </unit>
     <unit id="system.jobs.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:263</note>
+        <note category="location">src/app/features/system/system-status.ts:283</note>
       </notes>
       <segment>
         <source>Recent jobs</source>
@@ -29081,7 +29098,7 @@
     </unit>
     <unit id="system.reencrypt.progress">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:264</note>
+        <note category="location">src/app/features/system/system-status.ts:284</note>
       </notes>
       <segment>
         <source>Re-encryption</source>
@@ -29089,7 +29106,7 @@
     </unit>
     <unit id="system.check.objectStore">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:270</note>
+        <note category="location">src/app/features/system/system-status.ts:290</note>
       </notes>
       <segment>
         <source>Object store: blob requests on this replica fail with a retryable 503; everything else keeps working.</source>
@@ -29097,7 +29114,7 @@
     </unit>
     <unit id="system.check.valkey">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:272</note>
+        <note category="location">src/app/features/system/system-status.ts:292</note>
       </notes>
       <segment>
         <source>Valkey: no request fails, but remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to per-replica shares, and changes arrive through the change-log poll.</source>
@@ -29105,7 +29122,7 @@
     </unit>
     <unit id="system.check.vulnScannerTrivy">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:274</note>
+        <note category="location">src/app/features/system/system-status.ts:294</note>
       </notes>
       <segment>
         <source>Image scanning: the Trivy scanner of this replica cannot analyse images (its analyser is missing or does not run, its certificate did not load, or its working directory is not writable), so new images get no vulnerability results until it works again.</source>
@@ -34580,7 +34597,7 @@
     </unit>
     <unit id="vuln.sources.database-copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:82</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:85</note>
       </notes>
       <segment>
         <source>On a machine that reaches both</source>
@@ -34588,7 +34605,7 @@
     </unit>
     <unit id="vuln.sources.database-two-steps">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:87</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:90</note>
       </notes>
       <segment>
         <source>On two machines, one on each side</source>
@@ -34596,7 +34613,7 @@
     </unit>
     <unit id="vuln.sources.db-invalid">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:104</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:107</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> is not a local or remote OCI repository.</source>
@@ -34604,7 +34621,7 @@
     </unit>
     <unit id="vuln.sources.db-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:106</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:109</note>
       </notes>
       <segment>
         <source>The repository <ph id="0" equiv="repository" disp="repository"/> is switched off.</source>
@@ -34612,7 +34629,7 @@
     </unit>
     <unit id="vuln.sources.db-missing">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:108</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:111</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> does not hold <ph id="1" equiv="reference" disp="reference"/>.</source>
@@ -34620,7 +34637,7 @@
     </unit>
     <unit id="vuln.sources.db-upstream">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:110</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:113</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> cannot reach its registry.</source>
@@ -34628,7 +34645,7 @@
     </unit>
     <unit id="vuln.sources.db-too-large">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:112</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:115</note>
       </notes>
       <segment>
         <source>The image database is larger than the limit of this installation.</source>
@@ -34636,7 +34653,7 @@
     </unit>
     <unit id="vuln.sources.db-archive">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:114</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:117</note>
       </notes>
       <segment>
         <source>The image database is damaged and was not used.</source>
@@ -34644,7 +34661,7 @@
     </unit>
     <unit id="vuln.sources.heading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:131,133</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:135,137</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -34652,7 +34669,7 @@
     </unit>
     <unit id="vuln.sources.hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:134,137</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:138,141</note>
       </notes>
       <segment>
         <source>
@@ -34662,7 +34679,7 @@
     </unit>
     <unit id="vuln.sources.database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:161,162</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:165,166</note>
       </notes>
       <segment>
         <source>Image database</source>
@@ -34670,7 +34687,7 @@
     </unit>
     <unit id="vuln.sources.database-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:162,164</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:166,168</note>
       </notes>
       <segment>
         <source>for the image scanning</source>
@@ -34678,7 +34695,7 @@
     </unit>
     <unit id="vuln.sources.state-empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:196,197</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:200,201</note>
       </notes>
       <segment>
         <source>Not imported yet</source>
@@ -34686,7 +34703,7 @@
     </unit>
     <unit id="vuln.sources.state-stale">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:198,199</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:202,203</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -34694,7 +34711,7 @@
     </unit>
     <unit id="vuln.sources.state-current">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:200,202</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:204,206</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -34702,7 +34719,7 @@
     </unit>
     <unit id="vuln.sources.rejected-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:227,228</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:231,232</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ s.fullRejected | number }}"/> in the last full sync</source>
@@ -34710,7 +34727,7 @@
     </unit>
     <unit id="vuln.sources.run-group">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:245</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:249</note>
       </notes>
       <segment>
         <source>Run now</source>
@@ -34718,7 +34735,7 @@
     </unit>
     <unit id="vuln.sources.run-osv">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:246,247</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:250,251</note>
       </notes>
       <segment>
         <source>Run the incremental sync now</source>
@@ -34726,7 +34743,7 @@
     </unit>
     <unit id="vuln.sources.run-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:247,248</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:251,252</note>
       </notes>
       <segment>
         <source>Run a full sync now</source>
@@ -34734,7 +34751,7 @@
     </unit>
     <unit id="vuln.sources.run-kev">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:248,249</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:252,253</note>
       </notes>
       <segment>
         <source>Refresh the known-exploited catalog now</source>
@@ -34742,7 +34759,7 @@
     </unit>
     <unit id="vuln.sources.run-database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:249,251</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:253,255</note>
       </notes>
       <segment>
         <source>Fetch the image database now</source>
@@ -34750,7 +34767,7 @@
     </unit>
     <unit id="vuln.sources.osv-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:252,254</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:256,258</note>
       </notes>
       <segment>
         <source>OSV is off, so it cannot run. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.mode</pc> turns it on.</source>
@@ -34758,7 +34775,7 @@
     </unit>
     <unit id="vuln.sources.kev-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:255,257</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:259,261</note>
       </notes>
       <segment>
         <source>CISA KEV is off, so its catalog cannot be refreshed. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.mode</pc> turns it on.</source>
@@ -34766,15 +34783,39 @@
     </unit>
     <unit id="vuln.sources.database-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:258,260</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:262,264</note>
       </notes>
       <segment>
         <source>The image scanning is off, so its database is not fetched. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> turns it on.</source>
       </segment>
     </unit>
+    <unit id="vuln.sources.scanners">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:270,271</note>
+      </notes>
+      <segment>
+        <source>Image scanners</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.scanners-ready">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:273,274</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.scanners-busy">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:274,276</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
+      </segment>
+    </unit>
     <unit id="vuln.sources.mirror">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:278,279</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:299,300</note>
       </notes>
       <segment>
         <source>Load the files into the mirror</source>
@@ -34782,7 +34823,7 @@
     </unit>
     <unit id="vuln.sources.mirror-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:281,283</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:302,304</note>
       </notes>
       <segment>
         <source>
@@ -34792,7 +34833,7 @@
     </unit>
     <unit id="vuln.sources.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:321</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:351</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -34800,7 +34841,7 @@
     </unit>
     <unit id="vuln.sources.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:322</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:352</note>
       </notes>
       <segment>
         <source>There is no advisory source yet.</source>
@@ -34808,7 +34849,7 @@
     </unit>
     <unit id="vuln.sources.copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:323</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:353</note>
       </notes>
       <segment>
         <source>Copy the commands</source>
@@ -34816,7 +34857,7 @@
     </unit>
     <unit id="vuln.sources.database-fill">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:324</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:354</note>
       </notes>
       <segment>
         <source>Fill the repository of the image database</source>
@@ -34824,7 +34865,7 @@
     </unit>
     <unit id="vuln.sources.database-fill-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:325</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:355</note>
       </notes>
       <segment>
         <source>The image database comes from a local repository of this installation, which makes no request for it. Copy the database into it with oras, from a machine that reaches both the publisher and this installation, or in two steps through a file.</source>
@@ -34832,7 +34873,7 @@
     </unit>
     <unit id="vuln.sources.col-source">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:334</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:364</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -34840,7 +34881,7 @@
     </unit>
     <unit id="vuln.sources.col-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:335</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:365</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -34848,7 +34889,7 @@
     </unit>
     <unit id="vuln.sources.help-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:335</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:365</note>
       </notes>
       <segment>
         <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was. The image database always comes from the repository of this installation named here.</source>
@@ -34856,7 +34897,7 @@
     </unit>
     <unit id="vuln.sources.col-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:336</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:366</note>
       </notes>
       <segment>
         <source>State</source>
@@ -34864,7 +34905,7 @@
     </unit>
     <unit id="vuln.sources.help-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:336</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:366</note>
       </notes>
       <segment>
         <source>Stale means the last successful sync is older than the configured limit.</source>
@@ -34872,7 +34913,7 @@
     </unit>
     <unit id="vuln.sources.col-synced">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:337</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:367</note>
       </notes>
       <segment>
         <source>Last sync</source>
@@ -34880,7 +34921,7 @@
     </unit>
     <unit id="vuln.sources.col-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:339</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:369</note>
       </notes>
       <segment>
         <source>Failures</source>
@@ -34888,7 +34929,7 @@
     </unit>
     <unit id="vuln.sources.help-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:340</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:370</note>
       </notes>
       <segment>
         <source>The count of consecutive failed runs and the error of the last one.</source>
@@ -34896,7 +34937,7 @@
     </unit>
     <unit id="vuln.sources.col-records">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:342</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:372</note>
       </notes>
       <segment>
         <source>Records</source>
@@ -34904,7 +34945,7 @@
     </unit>
     <unit id="vuln.sources.col-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:343</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:373</note>
       </notes>
       <segment>
         <source>Rejected</source>
@@ -34912,7 +34953,7 @@
     </unit>
     <unit id="vuln.sources.help-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:343</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:373</note>
       </notes>
       <segment>
         <source>Records of the last run that were rejected: they failed validation or crossed the size or compression limit of a record. Below it, the count of the last full sync, which an incremental run does not change. A rejected record that was stored before keeps its stored copy.</source>
@@ -34920,7 +34961,7 @@
     </unit>
     <unit id="vuln.sources.col-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:344</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:374</note>
       </notes>
       <segment>
         <source>Unevaluable</source>
@@ -34928,7 +34969,7 @@
     </unit>
     <unit id="vuln.sources.help-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:344</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:374</note>
       </notes>
       <segment>
         <source>Affected ranges Quader cannot compare with a version; a version they name is not flagged by them.</source>
@@ -34936,7 +34977,7 @@
     </unit>
     <unit id="vuln.sources.col-next">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:345</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:375</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -34944,7 +34985,7 @@
     </unit>
     <unit id="vuln.sources.mode-online">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:363</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:393</note>
       </notes>
       <segment>
         <source>Online</source>
@@ -34952,7 +34993,7 @@
     </unit>
     <unit id="vuln.sources.mode-repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:365</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:395</note>
       </notes>
       <segment>
         <source>Mirror repository</source>
@@ -34960,7 +35001,7 @@
     </unit>
     <unit id="vuln.sources.mode-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:367</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:397</note>
       </notes>
       <segment>
         <source>Off</source>
@@ -34968,7 +35009,7 @@
     </unit>
     <unit id="vuln.sources.queued">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:434</note>
       </notes>
       <segment>
         <source>The run is queued. Reload the page to see its result.</source>
@@ -36209,6 +36250,249 @@
       </notes>
       <segment>
         <source> Dismiss </source>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.database">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:14</note>
+      </notes>
+      <segment>
+        <source>No database loaded yet</source>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.clamd">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:16</note>
+      </notes>
+      <segment>
+        <source>clamd does not answer</source>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.analyser">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:18</note>
+      </notes>
+      <segment>
+        <source>Analyser does not run</source>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.certificate">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:20</note>
+      </notes>
+      <segment>
+        <source>Certificate not loaded</source>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.spool">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:22</note>
+      </notes>
+      <segment>
+        <source>Spool not writable</source>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.starting">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:24</note>
+      </notes>
+      <segment>
+        <source>Still starting</source>
+      </segment>
+    </unit>
+    <unit id="scanners.slots-value">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:105,106</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.slots.inUse }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.slots.total }}"/></source>
+      </segment>
+    </unit>
+    <unit id="scanners.none.reporting">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:116,117</note>
+      </notes>
+      <segment>
+        <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> has reported itself, so no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is known to run.</source>
+      </segment>
+    </unit>
+    <unit id="scanners.none.unverified">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:120,121</note>
+      </notes>
+      <segment>
+        <source>The replicas of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> are not listed: without TLS, or without the name of their certificate, the scan listener cannot tell their kind.</source>
+      </segment>
+    </unit>
+    <unit id="scanners.none.in-process">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:124,125</note>
+      </notes>
+      <segment>
+        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: the development role <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">all</pc> analyses images in its own process.</source>
+      </segment>
+    </unit>
+    <unit id="scanners.none.none">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:128,129</note>
+      </notes>
+      <segment>
+        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
+      </segment>
+    </unit>
+    <unit id="scanners.none.off">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:132,133</note>
+      </notes>
+      <segment>
+        <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> is listed.</source>
+      </segment>
+    </unit>
+    <unit id="scanners.state.lost">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:142,143</note>
+      </notes>
+      <segment>
+        <source>Lost</source>
+      </segment>
+    </unit>
+    <unit id="scanners.state.ready">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:146,147</note>
+      </notes>
+      <segment>
+        <source>Ready</source>
+      </segment>
+    </unit>
+    <unit id="scanners.state.starting">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:149,151</note>
+      </notes>
+      <segment>
+        <source>Starting</source>
+      </segment>
+    </unit>
+    <unit id="scanners.state.draining">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:152,154</note>
+      </notes>
+      <segment>
+        <source>Draining</source>
+      </segment>
+    </unit>
+    <unit id="scanners.state.unready">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:155,157</note>
+      </notes>
+      <segment>
+        <source>Unready</source>
+      </segment>
+    </unit>
+    <unit id="scanners.caption">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:225</note>
+      </notes>
+      <segment>
+        <source>Replicas of <ph id="0" equiv="deployment" disp="d"/></source>
+      </segment>
+    </unit>
+    <unit id="scanners.fold">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:231</note>
+      </notes>
+      <segment>
+        <source>Replicas of <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.name">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:240</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:255</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.node">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:241</note>
+      </notes>
+      <segment>
+        <source>Node</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.version">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:242</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.state">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:243</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:256</note>
+      </notes>
+      <segment>
+        <source>State</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.since">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:246</note>
+      </notes>
+      <segment>
+        <source>State changed</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.since-help">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:247</note>
+      </notes>
+      <segment>
+        <source>When the replica entered the state it shows, or the reason beside it changed.</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.heartbeat">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:249</note>
+      </notes>
+      <segment>
+        <source>Heartbeat</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.tool">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:250</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:257</note>
+      </notes>
+      <segment>
+        <source>Tool</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.database">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:259</note>
+      </notes>
+      <segment>
+        <source>Signature database</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.slots">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:263</note>
+      </notes>
+      <segment>
+        <source>Slots</source>
+      </segment>
+    </unit>
+    <unit id="scanners.col.slots-help">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:265</note>
+      </notes>
+      <segment>
+        <source>The scans the replica runs now, of the scans it runs at a time.</source>
       </segment>
     </unit>
     <unit id="session.ended.title">

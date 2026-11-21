@@ -17,6 +17,7 @@ import {
 } from './seed';
 import { authFile, edge, outDir, stateDir } from './paths';
 import { seedMalwareContent, seedMalwareVerdicts } from './malware';
+import { seedScannerReplicas } from './scanners';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
@@ -51,6 +52,8 @@ export default async function setup(): Promise<void> {
     // After the content, whose blobs the verdicts name, and the auditor's sign-in, who released two of them (R-MAL-024, R-MAL-025).
     await seedMalwareContent(admin);
     seedMalwareVerdicts();
+    // The scanner replicas, with the database in use the verdicts name (R-OPS-048).
+    seedScannerReplicas();
     await syncAdvisories(admin);
     for (const kind of ['plain', 'power', 'admin'] as const) await openRecent(browser, kind);
   } finally {

@@ -14,7 +14,7 @@ const (
 	// KindClusterChangePrune deletes change-log rows (R-ARCH-018).
 	KindClusterChangePrune = "cluster-change-prune"
 	// KindReplicaRegistryPrune deletes the registry rows of lost replicas stale for 24 h and those of replicas that
-	// signed off (R-OPS-003, Q-OPS-210).
+	// signed off (R-OPS-003, Q-OPS-210), and the rows of the scanner replicas by the same rule (R-OPS-048).
 	KindReplicaRegistryPrune = "replica-registry-prune"
 )
 
@@ -45,10 +45,15 @@ func RegisterCoordinationKinds(r *Registry, c config.Cluster, s config.System) {
 		Queue: "maintenance", DedupMode: Exclusive, MaxAttempts: 3,
 		Handler: func(ctx context.Context, run *Run) error {
 			n, err := cluster.PruneReplicas(ctx, run.DB(), replicaPruneAfter, s.HeartbeatStaleAfter)
-			if err == nil {
-				err = run.SetResult(map[string]int64{"deleted": n})
+			if err != nil {
+				return err
 			}
-			return err
+			// The rows of the scanner replicas go by the same rule (R-OPS-048).
+			scanners, err := cluster.PruneScannerReplicas(ctx, run.DB(), replicaPruneAfter, s.HeartbeatStaleAfter)
+			if err != nil {
+				return err
+			}
+			return run.SetResult(map[string]int64{"deleted": n, "scanners": scanners})
 		},
 	})
 	r.RegisterTask(KindReplicaRegistryPrune, TaskSpec{Schedule: "*/10 * * * *"})

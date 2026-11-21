@@ -137,6 +137,10 @@ type EndpointRules struct {
 	// (malware.scan_listener.client_name): the malware scanning's routes admit no other kind of pod (Q-MAL-27, Q-MAL-61). A request
 	// without TLS has no certificate to ask and passes (H-1108). Nil admits every client the listener's handshake admitted.
 	MalwareScanner func(*http.Request) bool
+	// ScannerKind is the kind of scanner the client certificate of a request on the scan listener names (trivy, clamav), "" for none:
+	// the route of the scanner replicas admits a request of a kind and nothing else (R-OPS-048, Q-OPS-223). Without TLS there is no
+	// certificate and no kind. Nil admits nothing there.
+	ScannerKind func(*http.Request) string
 }
 
 // The reasons of an endpoint's refusal, the values of the reason label of

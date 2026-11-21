@@ -606,6 +606,18 @@ in `vuln_source_state` (`etag` the layer's digest, `archive_sha256` its bytes; `
 layer's (Q-VULN-191). It also creates the function `vuln_image_database_in_use(sha256 bytea)`, the exemption the remote-cache cleanup
 applies to every candidate (storage.md R-STOR-045, Q-VULN-190): `STABLE`, one indexed read of the source's row.
 
+## The scanner replicas (00090)
+
+[00090_scanner_replica](../../internal/meta/postgres/migrations/00090_scanner_replica.sql) is an expand step of the scanner replicas
+(operations-and-observability.md R-OPS-048, Q-OPS-223): `scanner_replica`, one row per scanner process keyed by its instance UID, with the
+kind its client certificate named (`trivy`, `clamav`), what the scanner reported (bounded by `CHECK`s as the route bounds it) and the
+times on PostgreSQL's clock. It is apart from `replica`, so no reader of the registry counts a scanner. The statements are in
+[cluster.sql](../../internal/meta/postgres/queries/cluster.sql) (`RecordScannerReplica`: the bound of 64 live rows of a kind and the kind of
+an existing row in one `INSERT … ON CONFLICT`; `DeleteScannerReplica`; `ListScannerReplicas`, which reads the database version's build
+time from `malware_database`; `PruneScannerReplicas`, run by `replica-registry-prune`). The table is registered `Transient` in
+[scanner_tables.go](../../internal/cluster/scanner_tables.go): a restore brings back no row, and every scanner reports itself again
+within one heartbeat.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

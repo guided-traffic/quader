@@ -1229,6 +1229,24 @@ type RevocationOutbox struct {
 	Entry json.RawMessage
 }
 
+type ScannerReplica struct {
+	InstanceUid pgtype.UUID
+	Kind        string
+	Name        string
+	Node        pgtype.Text
+	Version     string
+	Revision    string
+	State       string
+	Reason      pgtype.Text
+	StateSince  pgtype.Timestamptz
+	ToolVersion pgtype.Text
+	DbVersion   pgtype.Text
+	SlotsInUse  int32
+	SlotsTotal  int32
+	StartedAt   pgtype.Timestamptz
+	HeartbeatAt pgtype.Timestamptz
+}
+
 type SchemaMigration struct {
 	Version       int32
 	Name          string

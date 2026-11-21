@@ -135,6 +135,10 @@ func layerTable() []layerRule {
 		// engine share, standard library only, so the contract and the formats speak them and the engine imports no edge.
 		{"internal/mirror/discover", layerLeaf},
 		{"docs/manual", layerLeaf}, // the embedded files of the manual, nothing but embed (R-API-054)
+		// A scanner replica's report of itself (R-OPS-048, Q-OPS-223): the route, the body, its bounds and the loop that sends it. The
+		// configuration's kinds, a UUID parser and the standard library only, so that the scanner (the composition root), the scan
+		// listener's stage (auth) and its handler (edge) share one shape.
+		{"internal/scanreport", layerLeaf},
 		// The quader Bastion (R-BAS-001, Q-BAS-51): the wire contract, the answers' validity rules and the metrics are
 		// leaves that the main installation's side and the Bastion's share or read; they import nothing of the module.
 		{"internal/bastion/iface", layerLeaf},

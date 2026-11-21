@@ -263,16 +263,51 @@ async function* explained(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The advisory sources as they open, then, where the image database comes from a local repository, with the fold of the commands
- * that fill it open (R-VULN-045, Q-UI-890). With the database's default repository, a remote, there is no fold and no second state.
+ * The advisory sources as they open; with the fold of the image scanners' replicas open (R-OPS-048, Q-UI-897); where the image
+ * database comes from a local repository, with the fold of the commands that fill it open (R-VULN-045, Q-UI-890), which the
+ * database's default repository, a remote, does not have; and without a replica, the profile's own answer: its role all analyses
+ * images in its own process.
  */
 async function* databaseCommandsOpen(page: Page): AsyncGenerator<string> {
   yield '';
-  const closed = page.locator('main quader-disclosure button[aria-expanded="false"]');
-  if ((await closed.count()) === 0) return;
-  await closed.first().click();
-  await expect(page.locator('main quader-disclosure button[aria-expanded="true"]')).toHaveCount(1);
-  yield 'commands';
+  const scanners = page.locator('main [data-testid="image-scanners"] quader-disclosure button.inline-toggle');
+  await expect(scanners).toHaveAttribute('aria-expanded', 'false');
+  await scanners.click();
+  await expect(scanners).toHaveAttribute('aria-expanded', 'true');
+  yield 'scanners';
+  const closed = page.locator('main quader-vulnerability-sources > quader-disclosure button[aria-expanded="false"]');
+  if ((await closed.count()) > 0) {
+    await closed.first().click();
+    await expect(page.locator('main quader-vulnerability-sources > quader-disclosure button[aria-expanded="true"]')).toHaveCount(1);
+    yield 'commands';
+  }
+  const url = '**/api/v1/system/scanners';
+  await answerWith(page, url, (b) => ({ ...b, items: [] }));
+  await expect(page.locator('main [data-testid="scanners-none-trivy"]')).toBeVisible();
+  yield 'scanners-none';
+  await page.unroute(url);
+}
+
+/**
+ * The System page's scanner replicas (R-OPS-048, Q-UI-897): as seeded (both kinds, a malware scanner that waits for its first database
+ * with the longest pod name); no replica of either kind reported though both report, which the header warns of; and the profile's own
+ * answer without rows: its role all runs no scanner pod and says so.
+ */
+async function* systemScanners(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="scanner-replicas"] table')).toHaveCount(2);
+  yield '';
+  const url = '**/api/v1/system/scanners';
+  await answerWith(page, url, (b) => ({
+    ...b,
+    items: [],
+    kinds: (b['kinds'] as Record<string, unknown>[]).map((k) => ({ ...k, replicas: 'reporting' })),
+  }));
+  await expect(page.locator('main [data-testid="scanners-none-clamav"]')).toBeVisible();
+  yield 'scanners-none';
+  await answerWith(page, url, (b) => ({ ...b, items: [] }));
+  await expect(page.locator('main [data-testid="scanners-none-trivy"]')).toBeVisible();
+  yield 'scanners-all';
+  await page.unroute(url);
 }
 
 /** Opens every folded section of the explanation; false where there is none. */
@@ -598,6 +633,11 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
   const settings = '**/api/v1/malware/settings';
   await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
   yield '';
+  // The replicas of malware-scanner-clamav under the summary, the fold opened (R-OPS-048, Q-UI-897).
+  const fold = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle');
+  await fold.click();
+  await expect(fold).toHaveAttribute('aria-expanded', 'true');
+  yield 'scanners';
   await page.getByRole('checkbox', { name: 'Only checked artifacts can be downloaded' }).check();
   await page.getByRole('button', { name: /^Save changes/ }).click();
   await expect(page.getByRole('dialog', { name: 'Let only checked artifacts be downloaded?' })).toBeVisible();
@@ -633,6 +673,12 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
   }));
   await expect(page.locator('main [data-testid="malware-db-none"]')).toBeVisible();
   yield 'none';
+  // No malware scanner replica: the profile's own answer, in which no scanner is configured (R-OPS-048).
+  const scanners = '**/api/v1/system/scanners';
+  await answerWith(page, scanners, (b) => ({ ...b, items: [] }));
+  await expect(page.locator('main [data-testid="scanners-none-clamav"]')).toBeVisible();
+  yield 'scanners-none';
+  await page.unroute(scanners);
   await answerWith(page, settings, (b) => ({ ...b, enabled: false }));
   await expect(page.locator('main [data-testid="malware-off"]')).toBeVisible();
   yield 'off';
@@ -1400,7 +1446,11 @@ export const screens: readonly Screen[] = [
   ...upstreams,
   { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen() },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
-  { id: 'admin-system', path: '/ui/admin/system', kinds: admins },
+  // The auditor reads the sources and the image scanners (settings:read, R-OPS-048).
+  { id: 'admin-advisory-sources-read', path: '/ui/admin/advisory-sources', kinds: ['auditor'] },
+  { id: 'admin-system', path: '/ui/admin/system', kinds: admins, walk: systemScanners },
+  // The auditor reads the replicas and the scanner replicas (settings:read, R-OPS-048).
+  { id: 'admin-system-read', path: '/ui/admin/system', kinds: ['auditor'] },
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins },

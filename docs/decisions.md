@@ -217,6 +217,7 @@ checked every earlier decision against them:
 | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) | The malware scanner is a kind of the role `scanner`, with `clamd` beside it, and reads one blob by its digest | Accepted (owner decisions of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-222](#adr-222--freshclam-fetches-the-clamav-database-and-quader-keeps-it-in-upstreamscanner-clamav) | `freshclam` fetches the ClamAV database, and Quader keeps it in `upstream/scanner-clamav` | Accepted (owner decision of 2026-11-20); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) | A unit that runs a tool carries the tool's name | Accepted (owner decisions of 2026-11-21, the second moving the boundary); the forms decided by the development agent — owner review at the walkthrough |
+| [ADR-224](#adr-224--a-scanner-reports-itself-through-the-scan-listener-and-packages-keeps-its-row) | A scanner reports itself through the scan listener, and `packages` keeps its row | Accepted (owner decision of 2026-11-21); the mechanism decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1640,6 +1641,42 @@ credentials are changed by hand. The rule stands in the repository's `CLAUDE.md`
 [architecture.md](spec/architecture.md) R-ARCH-001, R-ARCH-036, R-ARCH-038, Q-ARCH-561; [operations-and-observability.md](spec/operations-and-observability.md)
 R-OPS-001, R-OPS-008, Q-OPS-221, Q-OPS-222; [authorization.md](spec/authorization.md) R-AUTHZ-002; [usage-and-limits.md](spec/usage-and-limits.md)
 R-LIM-001; [formats/oci.md](spec/formats/oci.md) R-OCI-037; [malware-scanning.md](spec/malware-scanning.md) R-MAL-006.
+
+### ADR-224 · A scanner reports itself through the scan listener, and `packages` keeps its row
+
+**Status:** Accepted (owner decision of 2026-11-21: "Also immer so benennen, dass man sieht um welches Tool es sich handelt und das man
+später evtl mal mehrere Tools nebeneinander laufen lassen kann." and, to the report that no screen named a scanner pod or its tool: "Vom
+Builder gemeldet, nicht geändert: direkt nacharbeiten. Das ist alles wichtig und muss umgesetzt werden."); the mechanism decided by the
+development agent — owner review at the walkthrough. Supersedes
+[Q-OPS-215](spec/operations-and-observability.md#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes).
+
+**Context.** A scanner holds no secret of the installation
+([ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret)) and so no row of the replica registry. The System page
+showed no scanner, **Settings › Malware scanning** two counts, the image scanning's page nothing.
+
+**Decision.**
+- Each replica of the role `scanner` reports itself every `system.heartbeat_interval` with `PUT /scan/v1/replicas/{uid}` to the scan
+  listener of `packages` it already reaches with its kind's certificate, and signs off with `DELETE` at its clean shutdown
+  ([operations-and-observability.md](spec/operations-and-observability.md) R-OPS-048, Q-OPS-223).
+- `packages` takes the kind from the verified client certificate (`vulnerabilities.images.registry.client_name` is `trivy`,
+  `malware.scan_listener.client_name` `clamav`), checks the report's size and shape, and writes a row of `scanner_replica`, a table apart
+  from the registry, on PostgreSQL's clock; a kind holds at most 64 live rows; the rows go by the registry's rule.
+- `GET /api/v1/system/scanners` (`settings:read`) lists the kinds and the rows (Q-API-381); one shared table shows them on the System page,
+  under the summary of the malware settings and in the section **Image scanners** of the advisory sources (Q-UI-897).
+
+**Consequences.** Every scanner pod is seen, ready or not, with its tool's version; the scanner gains no credential and no route of
+another kind. A taken-over scanner can make an administrator read made-up rows of its own kind (H-1161). Without TLS no scanner is listed.
+
+**Alternatives considered.** The worker records the replicas its calls reach; the worker probes every pod through a headless Service; the
+scanner writes the registry with a credential.
+
+**Revisit condition:** a second tool for one purpose, which adds a kind and its certificate's name; a need to tie a row to its pod beyond
+the kind's certificate.
+
+**Spec:** [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-003, R-OPS-048, Q-OPS-215, Q-OPS-223;
+[api-and-ui.md](spec/api-and-ui.md) R-UI-038, Q-API-381, Q-UI-897; [architecture.md](spec/architecture.md) R-ARCH-036, R-ARCH-037;
+[ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-065, R-HA-066, R-HA-068; [malware-scanning.md](spec/malware-scanning.md) R-MAL-023;
+[vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-022.
 
 ## Design invariants
 
@@ -9392,9 +9429,10 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-OPS-182](spec/operations-and-observability.md#q-ops-182--the-clause-of-quaderbackupstale-for-a-backup-that-never-succeeded-reads-its-window-from-the-chart) | How does `QuaderBackupStale` tell a backup that never succeeded from a young installation? | (b) the gauge of the expected interval, one interval back, and the same interval as the chart renders it | — |
 | [Q-OPS-188](spec/operations-and-observability.md#q-ops-188--the-statement-metrics-label-by-the-sqlc-query-name-and-are-recorded-by-the-pools-query-tracer) | How are `quader_db_slow_queries_total` and `quader_db_query_duration_seconds` recorded and labelled? | (a) by the pool's statement tracer, labelled with the sqlc query name (`begin`, `commit`, `rollback` for pgx's transaction statements, `unnamed` for other inline SQL, `pipeline` for a batch); the histogram exists only with the flag; a threshold of 0 counts none | — |
 | [Q-OPS-211](spec/operations-and-observability.md#q-ops-211--configuration-as-code-declares-no-part-of-the-project-upstream-and-managed-by-the-product-is-a-mechanism-of-its-own) | Is the product's ownership configuration as code? | (a) a mechanism of its own; documents refuse `upstream` | — |
-| [Q-OPS-215](spec/operations-and-observability.md#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes) | Is the scanner in the replica registry? | (a) no; its metrics and the worker's codes show it | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
+| [Q-OPS-215](spec/operations-and-observability.md#q-ops-215--the-scanner-has-no-row-in-the-replica-registry-and-shows-through-its-metrics-and-the-workers-codes) | Is the scanner in the replica registry? | (a) no; its metrics and the worker's codes show it; superseded by Q-OPS-223 | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
 | [Q-OPS-221](spec/operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) | How is a scanner unit's readiness check named? | (a) the unit's name in camel case, the same in the process that calls it | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
 | [Q-OPS-222](spec/operations-and-observability.md#q-ops-222--the-loader-of-the-signature-database-logs-as-its-unit) | Under which component does the signature database's loader log? | (a) its unit's, `malware-scanner-clamav` | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) |
+| [Q-OPS-223](spec/operations-and-observability.md#q-ops-223--a-scanner-reports-itself-on-the-scan-listener-and-packages-records-it-under-the-kind-its-certificate-names) | How does a screen learn of every scanner pod and its tool? | (a) the scanner reports itself on the scan listener; `packages` records it under the kind its certificate names | [ADR-224](#adr-224--a-scanner-reports-itself-through-the-scan-listener-and-packages-keeps-its-row) |
 | [Q-LIM-62](spec/usage-and-limits.md#q-lim-62--a-request-through-a-virtual-repository-to-a-well-known-member-is-decided-at-the-addressed-repository-and-the-members-ceilings-bound-it) | Which limits apply through a virtual repository to a central member? | (a) Q-LIM-2 unchanged; the member's ceilings | — |
 | [Q-LIM-63](spec/usage-and-limits.md#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository) | Does a team see its traffic through a central member? | (a) `via_repository_id`; the Owner sees those rows | — |
 | [Q-LIM-66](spec/usage-and-limits.md#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing) | How is the scanner's pull charged? | (a) the subject `system`, recorded, limited by nothing; the credential renamed by Q-HA-373 | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
@@ -9498,6 +9536,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-API-363](spec/api-and-ui.md#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them) | How does the item tell which virtual repositories list a well-known repository? Decided by the development agent | (a) `listedBy` and `listedByProjects` on every item, `listedByNames` on every answer but the list | (b) names on the item read only; (c) names in the list too; (d) an operation of its own |
 | [Q-API-364](spec/api-and-ui.md#q-api-364--a-writer-of-a-virtual-repository-reads-the-state-and-the-level-of-a-formats-well-known-repositories-through-an-operation-of-its-own) | How does the member picker learn the state and the level of a well-known repository? Decided by the development agent | (a) `GET /api/v1/formats/{format}/upstream-repositories` for `repositories:write-config` and the Owner of any project | (a') the same for every signed-in caller; (b) the project's summaries for everyone; (c) the UI's fallback |
 | [Q-API-370](spec/api-and-ui.md#q-api-370--the-malware-scans-operations-and-the-member-malware-of-a-file) | Which API does the malware scanning have? | (a) operations under `/api/v1/malware/` and a member `malware` of a file | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
+| [Q-API-381](spec/api-and-ui.md#q-api-381--the-scanner-replicas-are-an-operation-of-their-own-get-apiv1systemscanners-with-the-kinds-beside-them) | Through which API do the screens read the scanner replicas? | (a) `GET /api/v1/system/scanners`, the kinds beside the rows | [ADR-224](#adr-224--a-scanner-reports-itself-through-the-scan-listener-and-packages-keeps-its-row) |
 | [Q-UI-1](spec/api-and-ui.md#q-ui-1--component-library) | Which component library? | (a) Angular Material with the CDK and `@angular/aria`; font icons | [ADR-086](#adr-086--ui-baseline-angular-22-defaults-a-strict-csp-nothing-from-foreign-origins) |
 | [Q-UI-2](spec/api-and-ui.md#q-ui-2--visual-direction-of-the-shell-example-screenshot-requested) | Shell layout and density? | (c) a left side bar, compact density, container queries | [ADR-086](#adr-086--ui-baseline-angular-22-defaults-a-strict-csp-nothing-from-foreign-origins) |
 | [Q-UI-3](spec/api-and-ui.md#q-ui-3--layout-of-the-package-details-page-example-screenshot-requested) | Layout of the package details page? | (c) two columns with a sticky install panel from 960 CSS px of content width; one column below | [ADR-086](#adr-086--ui-baseline-angular-22-defaults-a-strict-csp-nothing-from-foreign-origins) |
@@ -9631,6 +9670,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-UI-870](spec/api-and-ui.md#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group) | Where is the switch? | (a) `/admin/settings/malware` | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-UI-871](spec/api-and-ui.md#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware) | Where are the finds? | (a) a view `/security/malware` of the dashboard | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-UI-872](spec/api-and-ui.md#q-ui-872--the-malware-status-sits-where-a-file-is-shown) | Where is a file's status shown? | (a) a fact per file; a banner when a file is refused | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
+| [Q-UI-897](spec/api-and-ui.md#q-ui-897--a-scanner-replica-is-one-more-kind-of-row-one-table-for-the-system-page-and-the-settings-of-both-scannings) | Where does an administrator see the scanner pods? | (a) one shared table: open on the System page, folded on the settings of both scannings | [ADR-224](#adr-224--a-scanner-reports-itself-through-the-scan-listener-and-packages-keeps-its-row) |
 | [Q-EP-1](spec/endpoints.md#q-ep-1--how-the-endpoint-of-a-request-is-identified) | How is the endpoint of a request identified? | (a) by the listener the connection arrived on; `Host` only selects among the endpoint's own hosts, a foreign host answers `421` | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
 | [Q-EP-2](spec/endpoints.md#q-ep-2--where-endpoint-configuration-and-exposure-rules-live) | Where do endpoint configuration and exposure rules live? | (c) network binding in the file, exposure rules in PostgreSQL, compiled into the grant index | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
 | [Q-EP-3](spec/endpoints.md#q-ep-3--separate-pool-or-shared-pods-for-a-further-endpoint) | Separate pool or shared pods for a further endpoint? | (c) an optional pool per endpoint, off by default, recommended for endpoints with exposure rules | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |

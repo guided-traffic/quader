@@ -240,8 +240,10 @@ Acceptance criteria:
 
 - With default values, `kubectl get deploy -l app.kubernetes.io/instance=quader` lists `quader-api`, `quader-packages`,
   `quader-worker`, `quader-vuln-scanner-trivy` and `quader-malware-scanner-clamav`, and `GET /api/v1/system/replicas` shows roles
-  `["api"]`, `["packages"]` and `["worker"]` (a scanner has no row, [operations-and-observability.md](operations-and-observability.md)
-  Q-OPS-215); with `config.vulnerabilities.images.enabled: false` no `quader-vuln-scanner-trivy` is rendered.
+  `["api"]`, `["packages"]` and `["worker"]`, while `GET /api/v1/system/scanners` lists every pod of `quader-vuln-scanner-trivy` under the
+  kind `trivy` and every pod of `quader-malware-scanner-clamav` under the kind `clamav` (a scanner has no row of the registry but one of its
+  own, [operations-and-observability.md](operations-and-observability.md) R-OPS-048, Q-OPS-223); with
+  `config.vulnerabilities.images.enabled: false` no `quader-vuln-scanner-trivy` is rendered.
 - A manual GC run (`POST /api/v1/system/tasks/gc/run`) sent to an `api` pod is executed on a
   `worker` pod (the worker's instance ID appears in `job.locked_by` of the gc job), and the
   instance ID of no `api` or `packages` pod ever appears in `job.locked_by`.
@@ -450,9 +452,12 @@ database, the object store or Valkey. What it serves and holds is [architecture.
 - **Drain** (R-HA-011): `terminationGracePeriodSeconds: 60` and the shutdown timeout derived from it. At `SIGTERM` the readiness fails at
   once and a new call is answered `503` `scanner_draining`; an analysis still running at the shutdown timeout is killed with its process
   group and answered `503` `scanner_draining`; the worker puts either off without an attempt.
-- **No registry row** ([operations-and-observability.md](operations-and-observability.md) R-OPS-003, Q-OPS-215): the scanner has no
-  database connection. Its replicas show as the Deployment's, as the series of the ServiceMonitor (the Service `<fullname>-ops` selects its
-  pods on `8081` by their label `quader/serve`, which no Valkey policy admits by itself, Q-HA-344) and through the worker's codes and `QuaderVulnerabilityImageScannerUnavailable` (R-VULN-024).
+- **A row of its own, not of the registry** ([operations-and-observability.md](operations-and-observability.md) R-OPS-003, R-OPS-048,
+  Q-OPS-223): the scanner has no database connection. Each replica reports itself every `system.heartbeat_interval` to the scan listener
+  with its kind's certificate, and the System page and **Advisory sources** list it with its state, its reason and Trivy's version. Its
+  replicas show besides as the Deployment's, as the series of the ServiceMonitor (the Service `<fullname>-ops` selects its pods on `8081` by
+  their label `quader/serve`, which no Valkey policy admits by itself, Q-HA-344) and through the worker's codes and
+  `QuaderVulnerabilityImageScannerUnavailable` (R-VULN-024).
 - **Chart checks** (R-HA-029): the scanner's spool budget (`vulnScannerTrivy.spool.sizeLimit` minus `spool.headroom`) at least
   `slots × (max_image_size + 64 MiB)`, the failure naming the three values (Q-HA-318); `vulnScannerTrivy.replicaCount` at least 1, and at least 2 with
   `highAvailability.enforce`; with `tls.existingSecrets`, a Secret for the scanner that no other kind names (R-HA-063).
@@ -486,6 +491,7 @@ Priority: **P1** · Covers: HA-018
   | `vulnerabilities.images.scanner.client_name` | `<fullname>-worker.<namespace>.svc` | the scanner's listener, in the client's certificate |
   | `vulnerabilities.images.registry.url` | `https://<fullname>-packages-scan.<namespace>.svc:8082` | the scanner |
   | `vulnerabilities.images.registry.server_name` | `<fullname>-packages.<namespace>.svc` | the scanner, in the scan listener's certificate |
+  | `vulnerabilities.images.registry.client_name` | `<fullname>-vuln-scanner-trivy.<namespace>.svc` | the scan listener: the name by which it records a report of itself as one of the kind `trivy` ([operations-and-observability.md](operations-and-observability.md) R-OPS-048) |
   | `server.scan_clients` | `[<fullname>-vuln-scanner-trivy.<namespace>.svc, <fullname>-malware-scanner-clamav.<namespace>.svc]`: one entry per kind of scanner the release renders (`quader.tlsKindTable`) | the scan listener, in the client's certificate |
   | `server.internal_tls.ca_file` | `/var/run/secrets/quader/tls/ca.crt` | all three, the `ca.crt` of the pod's own Secret |
 - **TLS** (R-HA-063, R-ARCH-038). Each end of a link presents its own kind's pair and checks the other's name
@@ -598,7 +604,9 @@ leaves their text to them.
   `packages` Deployment while either scanning is on. The names of the two links, chart-managed as well: `malware.scanner.server_name`
   `<fullname>-malware-scanner-clamav.<namespace>.svc` and `malware.scanner.client_name` `<fullname>-worker.<namespace>.svc` (the call),
   `malware.scan_listener.server_name` `<fullname>-packages.<namespace>.svc` and `malware.scan_listener.client_name`
-  `<fullname>-malware-scanner-clamav.<namespace>.svc` (the read, [malware-scanning.md](malware-scanning.md) Q-MAL-61), and the malware scanner's
+  `<fullname>-malware-scanner-clamav.<namespace>.svc` (the read, [malware-scanning.md](malware-scanning.md) Q-MAL-61, and the name by which
+  the scan listener records the malware scanner's report of itself as one of the kind `clamav`,
+  [operations-and-observability.md](operations-and-observability.md) R-OPS-048), and the malware scanner's
   name as one more entry of `server.scan_clients` (the configuration refuses a `scan_listener.client_name` outside that list). The pool
   list of the worker accepts the queue `malware` (R-HA-062).
 - **Alerts.** The chart's rules carry the four alerts of [malware-scanning.md](malware-scanning.md) R-MAL-026 while the malware scanning

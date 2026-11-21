@@ -266,6 +266,7 @@ func (a *App) credentialRules(rt *endpointRuntime) auth.EndpointRules {
 	rules.Refused = a.credentialRefused(rt)
 	if isScanListener(rt) {
 		rules.MalwareScanner = a.malwareScannerPeer() // the malware routes admit the malware scanner's name (Q-MAL-61)
+		rules.ScannerKind = a.scannerKindOf()         // the route of the scanner replicas admits a kind of scanner (R-OPS-048)
 	}
 	return rules
 }

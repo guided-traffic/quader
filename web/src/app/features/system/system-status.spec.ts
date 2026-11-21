@@ -9,6 +9,8 @@ import {
   provideFakeApis,
   sampleInfo,
   sampleReplica,
+  sampleScannerReplica,
+  sampleScanners,
 } from '../../api/testing/fakes';
 import { EncryptionApi, Replica, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
@@ -100,6 +102,8 @@ describe('System status screen', () => {
       'api live 2, ready 2, degraded 0',
       'packages live 2, ready 2, degraded 0',
       'worker live 3, ready 3, degraded 0',
+      // The scanner replicas, one more kind of row after the roles (R-OPS-048).
+      'scanner live 2, ready 2',
     ]);
     const worker = root.querySelectorAll<HTMLElement>('section.role')[2]!;
     const pools = [...worker.querySelectorAll('section.pool > h4')].map(spoken);
@@ -123,7 +127,7 @@ describe('System status screen', () => {
       ];
     });
     const headings = [...root.querySelectorAll('section.role > h3 > span:first-child')].map((h) => h.textContent?.trim());
-    expect(headings).toEqual(['api', 'packages', 'worker', 'web']);
+    expect(headings).toEqual(['api', 'packages', 'worker', 'web', 'scanner']);
     expect(text(root)).toContain('quader-web-0');
   });
 
@@ -319,6 +323,57 @@ describe('System status screen', () => {
     await fixture.whenStable();
     expect(spy).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it('R-OPS-048 Q-UI-897 the scanner replicas are one more group of rows after the roles, a sub-group per kind with its tool, and a kind with no ready replica is a warning of the header', async () => {
+    const { root } = await render((system) => {
+      system.scannersResult = sampleScanners({
+        items: [
+          sampleScannerReplica(),
+          sampleScannerReplica({ instanceUid: 't2', name: 'quader-vuln-scanner-trivy-7d9f6c5b8-fghij', node: 'node-b' }),
+          sampleScannerReplica({ kind: 'clamav', instanceUid: 'c1', name: 'quader-malware-scanner-clamav-6d9c7b5f4-x2v4q', state: 'starting', reason: 'database', toolVersion: '1.5.5', slots: { inUse: 0, total: 2 } }),
+        ],
+      });
+    });
+    const group = root.querySelector<HTMLElement>('[data-testid="scanner-replicas"]')!;
+    const spoken = (h: Element) => [...h.children].map((c) => c.textContent?.trim()).join(' ');
+    expect(spoken(group.querySelector('h3')!)).toBe('scanner live 3, ready 2');
+    expect([...group.querySelectorAll('section.pool > h4')].map(spoken)).toEqual([
+      'vuln-scanner-trivy live 2, ready 2',
+      'malware-scanner-clamav live 1, ready 0',
+    ]);
+    expect(text(group)).toContain('Trivy 0.67.2');
+    expect(text(group)).toContain('No database loaded yet');
+    const summary = text(root.querySelector('p.summary')!);
+    expect(summary).toContain('No ready replica of malware-scanner-clamav');
+    expect(summary).not.toContain('No ready replica of vuln-scanner-trivy');
+  });
+
+  it('R-OPS-048 Q-UI-897 the role all runs no scanner pod, and the page says so instead of an empty table', async () => {
+    const { root } = await render((system) => {
+      system.replicasResult = [sampleReplica({ name: 'quader-all-0', roles: ['all'] })];
+      system.scannersResult = sampleScanners({
+        kinds: [
+          { kind: 'trivy', deployment: 'vuln-scanner-trivy', purpose: 'vuln', tool: 'Trivy', replicas: 'inProcess' },
+          { kind: 'clamav', deployment: 'malware-scanner-clamav', purpose: 'malware', tool: 'ClamAV', replicas: 'none' },
+        ],
+        items: [],
+      });
+    });
+    const group = root.querySelector<HTMLElement>('[data-testid="scanner-replicas"]')!;
+    expect(group.querySelector('table')).toBeNull();
+    expect(text(group.querySelector('[data-testid="scanners-none-trivy"]') as HTMLElement)).toContain('the development role all analyses images in its own process');
+    expect(text(group.querySelector('[data-testid="scanners-none-clamav"]') as HTMLElement)).toContain('malware.scanner.url is empty');
+    expect(text(root.querySelector('p.summary')!)).not.toContain('No ready replica of');
+  });
+
+  it('R-OPS-048 a failure of the scanners is shown in their place and leaves the roles', async () => {
+    const { root } = await render((system) => {
+      system.scannersResult = new ApiError(503, { code: 'database_unavailable', requestId: 'rid-sc' }, 'rid-sc');
+    });
+    expect(root.querySelector('[data-testid="scanner-replicas"]')).toBeNull();
+    expect(text(root)).toContain('rid-sc');
+    expect(root.querySelectorAll('section.role').length).toBe(3);
   });
 
   it('R-UI-038 Q-UI-144 the installation card links the notices of the bundled software next to the version', async () => {

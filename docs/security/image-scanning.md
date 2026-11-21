@@ -105,7 +105,8 @@ A scan that did not finish, for any reason, leaves the evaluation `scan_failed` 
 made to look clean by being too large, malformed or slow to analyse, or by ending its scanner. A scan put off for a reason of the installation
 (no scanner, a busy or draining one, a scan listener that cannot be reached, a refused token) stays `pending` and spends no attempt;
 `QuaderVulnerabilityImageScannerUnavailable` shows it when it lasts. The price is an image that stays unevaluated until an operator acts;
-that is the right way round.
+that is the right way round. Each scanner pod is listed with its state on the System page and under **Advisory sources** by its own report
+through the scan listener; what of that report can be believed is [scanner-replicas.md](scanner-replicas.md).
 
 ## The working space
 
@@ -268,13 +269,6 @@ Q-VULN-165). Subject: the findings of remote images. Live, as before the role. A
 layers, or whose background download was not started or refused (R-REPO-065, H-1018), has its layers outside the repository; the scan ends
 `layer_missing` until `max_attempts` and then shows `scan_failed`. What makes it real: clients that pull a remote image by digest only, or a
 remote with `downloadOnProbe` off; the image is then served from Quader without a finding, which `onMissingData: block` refuses instead.
-
-### H-1042 · The status screen does not list the scanners
-
-Component: the replica registry ([operations-and-observability.md](../spec/operations-and-observability.md) Q-OPS-215). Subject: an operator
-who reads only the status screen. Live. A scanner has no database connection and so no registry row; a fleet that is
-down shows as scans put off with `scanner_unavailable`, as `QuaderVulnerabilityImageScannerUnavailable` after half an hour, as the
-Deployment's state and as missing `quader_scanner_*` series. What makes it real: an installation without the PrometheusRule.
 
 ### H-1043 · With `tls.enabled: false` the scanner's links are not authenticated
 

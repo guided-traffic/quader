@@ -12,6 +12,10 @@ export type Banner = Schema<'Banner'>;
 export type BannerInput = Schema<'BannerInput'>;
 export type MaintenanceMode = Schema<'MaintenanceMode'>;
 export type MaintenanceInput = Schema<'MaintenanceInput'>;
+/** The kinds of scanner and the scanner replicas (R-OPS-048). */
+export type ScannerList = Schema<'ScannerList'>;
+export type ScannerKind = Schema<'ScannerKind'>;
+export type ScannerReplica = Schema<'ScannerReplica'>;
 
 /**
  * Replica registry and installation facts: `GET /api/v1/system/info` and `/system/replicas`; the counts and the stored
@@ -20,6 +24,8 @@ export type MaintenanceInput = Schema<'MaintenanceInput'>;
 export abstract class SystemApi {
   abstract info(): Promise<SystemInfo>;
   abstract replicas(): Promise<readonly Replica[]>;
+  /** `GET /api/v1/system/scanners` (R-OPS-048, Q-OPS-223): the kinds of scanner and every scanner replica that reported itself. */
+  abstract scanners(): Promise<ScannerList>;
   abstract overview(): Promise<SystemOverview>;
   /** `GET /api/v1/system/banner` (R-OPS-025): public, because the sign-in page shows it. */
   abstract banner(): Promise<Banner>;
@@ -41,6 +47,10 @@ export class HttpSystemApi extends SystemApi {
 
   async replicas(): Promise<readonly Replica[]> {
     return (await this.client.get('/api/v1/system/replicas')).body.items;
+  }
+
+  async scanners(): Promise<ScannerList> {
+    return (await this.client.get('/api/v1/system/scanners')).body;
   }
 
   async overview(): Promise<SystemOverview> {

@@ -38,6 +38,24 @@ func (q *Queries) DeleteReplica(ctx context.Context, instanceUid string) error {
 	return err
 }
 
+const deleteScannerReplica = `-- name: DeleteScannerReplica :execrows
+DELETE FROM scanner_replica WHERE instance_uid = $1::text::uuid AND kind = $2::text
+`
+
+type DeleteScannerReplicaParams struct {
+	InstanceUid string
+	Kind        string
+}
+
+// A scanner's sign-off at its clean shutdown: its own row, of the kind its certificate names.
+func (q *Queries) DeleteScannerReplica(ctx context.Context, arg DeleteScannerReplicaParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteScannerReplica, arg.InstanceUid, arg.Kind)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const listClusterChanges = `-- name: ListClusterChanges :many
 SELECT epoch, payload, created_at FROM cluster_change
  WHERE area = $1::text AND epoch >= $2::bigint AND epoch <= $3::bigint
@@ -173,6 +191,77 @@ func (q *Queries) ListReplicas(ctx context.Context, staleSecs float64) ([]ListRe
 	return items, nil
 }
 
+const listScannerReplicas = `-- name: ListScannerReplicas :many
+SELECT s.instance_uid, s.kind, s.name, s.node, s.version, s.revision, s.state, s.reason, s.state_since, s.tool_version, s.db_version,
+       s.slots_in_use, s.slots_total, s.started_at, s.heartbeat_at,
+       (s.heartbeat_at < now() - make_interval(secs => $1::float8))::bool AS lost,
+       (SELECT d.built_at FROM malware_database d WHERE d.version IS NOT NULL AND d.version = s.db_version)::timestamptz AS db_built_at
+  FROM scanner_replica s
+ WHERE NOT (s.state = 'draining' AND s.heartbeat_at < now() - make_interval(secs => $1::float8))
+ ORDER BY s.kind, s.name, s.instance_uid
+`
+
+type ListScannerReplicasRow struct {
+	InstanceUid pgtype.UUID
+	Kind        string
+	Name        string
+	Node        pgtype.Text
+	Version     string
+	Revision    string
+	State       string
+	Reason      pgtype.Text
+	StateSince  pgtype.Timestamptz
+	ToolVersion pgtype.Text
+	DbVersion   pgtype.Text
+	SlotsInUse  int32
+	SlotsTotal  int32
+	StartedAt   pgtype.Timestamptz
+	HeartbeatAt pgtype.Timestamptz
+	Lost        bool
+	DbBuiltAt   pgtype.Timestamptz
+}
+
+// The rows as GET /api/v1/system/scanners lists them, with the rule of the registry's list (Q-OPS-210): a row that went stale while
+// draining has signed off and is not listed, every other stale row is lost. db_built_at is the build time of the signature database in
+// use when the row names that version.
+func (q *Queries) ListScannerReplicas(ctx context.Context, staleSecs float64) ([]ListScannerReplicasRow, error) {
+	rows, err := q.db.Query(ctx, listScannerReplicas, staleSecs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListScannerReplicasRow{}
+	for rows.Next() {
+		var i ListScannerReplicasRow
+		if err := rows.Scan(
+			&i.InstanceUid,
+			&i.Kind,
+			&i.Name,
+			&i.Node,
+			&i.Version,
+			&i.Revision,
+			&i.State,
+			&i.Reason,
+			&i.StateSince,
+			&i.ToolVersion,
+			&i.DbVersion,
+			&i.SlotsInUse,
+			&i.SlotsTotal,
+			&i.StartedAt,
+			&i.HeartbeatAt,
+			&i.Lost,
+			&i.DbBuiltAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const pruneClusterChanges = `-- name: PruneClusterChanges :execrows
 DELETE FROM cluster_change c
  USING (SELECT area, epoch, lead(created_at) OVER (PARTITION BY area ORDER BY epoch) AS next_created_at
@@ -207,6 +296,95 @@ type PruneReplicasParams struct {
 // signed_off_secs while draining (a replica that signed off, Q-OPS-210).
 func (q *Queries) PruneReplicas(ctx context.Context, arg PruneReplicasParams) (int64, error) {
 	result, err := q.db.Exec(ctx, pruneReplicas, arg.StaleSecs, arg.SignedOffSecs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const pruneScannerReplicas = `-- name: PruneScannerReplicas :execrows
+DELETE FROM scanner_replica
+ WHERE heartbeat_at < now() - make_interval(secs => $1::float8)
+    OR (state = 'draining' AND heartbeat_at < now() - make_interval(secs => $2::float8))
+`
+
+type PruneScannerReplicasParams struct {
+	StaleSecs     float64
+	SignedOffSecs float64
+}
+
+// replica-registry-prune for the scanner replicas, by the registry's rule (R-OPS-003, Q-OPS-210).
+func (q *Queries) PruneScannerReplicas(ctx context.Context, arg PruneScannerReplicasParams) (int64, error) {
+	result, err := q.db.Exec(ctx, pruneScannerReplicas, arg.StaleSecs, arg.SignedOffSecs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const recordScannerReplica = `-- name: RecordScannerReplica :execrows
+
+INSERT INTO scanner_replica (instance_uid, kind, name, node, version, revision, state, reason, state_since, tool_version, db_version,
+                             slots_in_use, slots_total, started_at, heartbeat_at)
+SELECT $1::text::uuid, $2::text, $3::text, NULLIF($4::text, ''),
+       $5::text, $6::text, $7::text, NULLIF($8::text, ''), now(),
+       NULLIF($9::text, ''), NULLIF($10::text, ''), $11::int,
+       $12::int, now(), now()
+ WHERE EXISTS (SELECT 1 FROM scanner_replica e WHERE e.instance_uid = $1::text::uuid)
+    OR (SELECT count(*) FROM scanner_replica s
+         WHERE s.kind = $2::text
+           AND s.heartbeat_at >= now() - make_interval(secs => $13::float8)) < $14::int
+ON CONFLICT (instance_uid) DO UPDATE
+   SET name = EXCLUDED.name, node = EXCLUDED.node, version = EXCLUDED.version, revision = EXCLUDED.revision,
+       state = CASE WHEN scanner_replica.state = 'draining' THEN scanner_replica.state ELSE EXCLUDED.state END,
+       reason = CASE WHEN scanner_replica.state = 'draining' THEN scanner_replica.reason ELSE EXCLUDED.reason END,
+       state_since = CASE WHEN scanner_replica.state = 'draining'
+                            OR (scanner_replica.state = EXCLUDED.state AND scanner_replica.reason IS NOT DISTINCT FROM EXCLUDED.reason)
+                          THEN scanner_replica.state_since ELSE now() END,
+       tool_version = EXCLUDED.tool_version, db_version = EXCLUDED.db_version,
+       slots_in_use = EXCLUDED.slots_in_use, slots_total = EXCLUDED.slots_total, heartbeat_at = now()
+ WHERE scanner_replica.kind = EXCLUDED.kind
+`
+
+type RecordScannerReplicaParams struct {
+	InstanceUid string
+	Kind        string
+	Name        string
+	Node        string
+	Version     string
+	Revision    string
+	State       string
+	Reason      string
+	ToolVersion string
+	DbVersion   string
+	SlotsInUse  int32
+	SlotsTotal  int32
+	StaleSecs   float64
+	MaxRows     int32
+}
+
+// The scanner replicas (R-OPS-048, Q-OPS-223): a scanner reports itself on the scan listener, and packages writes its row. kind is
+// the kind the client certificate named; heartbeat_at, started_at and state_since are the database's clock.
+// A report in one statement, as the registry's heartbeat is: a new row only while its kind has fewer than max_rows live rows (the
+// bound against a scanner that invents replicas, H-1161), and never over a row of another kind. draining is the last state of an
+// instance, as in the registry (Q-HA-308); state_since moves when the state or its reason changes. No row affected: refused.
+func (q *Queries) RecordScannerReplica(ctx context.Context, arg RecordScannerReplicaParams) (int64, error) {
+	result, err := q.db.Exec(ctx, recordScannerReplica,
+		arg.InstanceUid,
+		arg.Kind,
+		arg.Name,
+		arg.Node,
+		arg.Version,
+		arg.Revision,
+		arg.State,
+		arg.Reason,
+		arg.ToolVersion,
+		arg.DbVersion,
+		arg.SlotsInUse,
+		arg.SlotsTotal,
+		arg.StaleSecs,
+		arg.MaxRows,
+	)
 	if err != nil {
 		return 0, err
 	}

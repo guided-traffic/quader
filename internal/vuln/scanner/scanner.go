@@ -152,6 +152,12 @@ func (s *Service) Stop() {
 // Busy is the number of slots that hold an analysis.
 func (s *Service) Busy() int { return int(s.busy.Load()) }
 
+// Slots is the number of analyses the scanner runs at a time (vulnerabilities.images.scanner.slots).
+func (s *Service) Slots() int { return cap(s.slots) }
+
+// AnalyserVersion is the version the analyser answered at the start: the version the scanner reports of itself (R-OPS-048).
+func (s *Service) AnalyserVersion() string { return s.o.Analyser.Version() }
+
 // Handler serves POST /scan/v1/analyses (R-VULN-041). The router of the scanner's listener mounts it and nothing else.
 func (s *Service) Handler() http.Handler { return http.HandlerFunc(s.serve) }
 

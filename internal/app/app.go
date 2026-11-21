@@ -423,6 +423,10 @@ func (a *App) bootstrap(ctx context.Context) error {
 		if err := a.startScanner(); err != nil {
 			return err
 		}
+		// A scanner reports itself to the scan listener of packages (wire_scanner_report.go, R-OPS-048).
+		if err := a.startScannerReport(ctx); err != nil {
+			return err
+		}
 	}
 	a.linkLoopback()
 
@@ -573,7 +577,7 @@ func (a *App) startClient() error {
 			Document: doc, Identity: v1.Identity{Replica: a.id.Instance, Role: a.id.Role},
 			Ready: a.health.Serving, PublicVersion: cfg.System.PublicVersion, Formats: formatNames(),
 			Access:   a.access(),
-			Replicas: replicaSource{a: a}, Facts: configFacts{cfg: cfg, a: a},
+			Replicas: replicaSource{a: a}, Scanners: scannerSource{a: a}, Facts: configFacts{cfg: cfg, a: a},
 			API:  a.apiServices(),
 			Auth: a.authServices(), Avatars: avatars, AuditStore: a.auditStoreForAPI(), Authz: a.authzServices(), CI: a.ciAPI(),
 			// The endpoint and exposure-rule operations (R-EP-016, wire_exposure.go).
@@ -628,6 +632,8 @@ func (a *App) startClient() error {
 		if isScanListener(rt) {
 			// The malware scanning's routes of the scan listener, beside the registry's (wire_malware_scanlisten.go).
 			a.registerMalwareScanRoutes(router)
+			// The scanner replicas' reports of themselves (wire_scanner_report.go, R-OPS-048).
+			a.registerScannerReportRoutes(router)
 		}
 		router.Handle(webui.MountPath, ui)
 		if a.o.Extra != nil {

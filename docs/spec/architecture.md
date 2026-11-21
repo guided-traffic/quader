@@ -254,8 +254,8 @@ routes read them. The areas of the client listener are split by route family:
   `X-Request-Id`, `Date`, the problem's `requestId` and `instance` and the `Content-Length` that follows them (Q-ARCH-306).
 - A `worker` replica serves only the ops listener and is not selected by any client Service.
 - A `scanner` replica serves its own listener to the worker and the ops listener, is selected by no client Service, claims no job,
-  opens no connection to PostgreSQL, Valkey or the object store, and registers in no registry (R-ARCH-036,
-  [operations-and-observability.md](operations-and-observability.md) Q-OPS-215).
+  opens no connection to PostgreSQL, Valkey or the object store, and registers in no registry (R-ARCH-036); it reports itself to the scan
+  listener of `packages`, which writes its row ([operations-and-observability.md](operations-and-observability.md) R-OPS-048).
 - Load is shared by adding replicas of a role (INV-12). No code path depends on the number of
   replicas of a role, and each role scales and drains on its own. A role is split further by path prefix (`api`,
   `packages`) or by queue (`worker`) into pools through chart values without code changes (INV-2,
@@ -579,12 +579,15 @@ nothing worth taking.
   readiness is [ha-and-helm.md](ha-and-helm.md) R-HA-065's, the check `vulnScannerTrivy`. Its log field `component` is the unit's name,
   `vuln-scanner-trivy` or `malware-scanner-clamav` ([ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373).
 - **Reads.** Its configuration load reads and validates only the keys it uses: `process`, `server` (`listen`, `ops_listen`, `tls`, `ops_tls`,
-  `internal_tls`, the timeouts, `shutdown_timeout`), `health`, `log`, `metrics`, `runtime`, `storage.spool` and `vulnerabilities.images`. It
+  `internal_tls`, the timeouts, `shutdown_timeout`), `health`, `log`, `metrics`, `runtime`, `storage.spool`, `system.heartbeat_interval` (the
+  period of its report of itself, R-OPS-048) and `vulnerabilities.images`. It
   resolves no secret file: a `database`, `valkey`, `storage.s3`, `secrets`, `auth` or `proxy` key that names a file it does not have is not
   read, and its absence is no error in this role.
 - **Holds.** The TLS pair it serves and presents, the internal CA, and, for the length of a call, the call's scan token and the image's
   bytes. It never opens a connection to PostgreSQL, Valkey, the object store, an upstream or the Kubernetes API, and never calls a worker.
-- **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls.
+- **Never** claims jobs, holds leases, writes the replica registry, enqueues, or keeps anything between two calls. It reports itself, its
+  state, its tool's version and its slots, to the scan listener it pulls from, and `packages` writes that row
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-048).
 - **Kinds** ([Q-ARCH-560](#q-arch-560--a-scanner-is-of-a-kind-image-or-malware-chosen-by-configuration),
   [Q-ARCH-561](#q-arch-561--processscanner_kind-names-the-tool-trivy-or-clamav)). `process.scanner_kind` names the tool a scanner process
   wraps: `trivy` (the default, everything above) or `clamav`, the malware scanning's scanner
@@ -638,6 +641,12 @@ scanner's pull, and no client can use a scan token.
   scan token of an image is refused on these routes, a blob token below `/v2/`. The paths below `/scan/` belong to the family `packages`,
   the listener's surface, and no other endpoint registers them ([internal/auth/scan.go](../../internal/auth/scan.go),
   [internal/api/scanlisten](../../internal/api/scanlisten/scanlisten.go)).
+- **The route of the scanner replicas** ([operations-and-observability.md](operations-and-observability.md) R-OPS-048, Q-OPS-223).
+  `PUT` and `DELETE /scan/v1/replicas/{instanceUid}` take no token and admit a client whose certificate lists the name of a kind of scanner,
+  `vulnerabilities.images.registry.client_name` (`trivy`) or `malware.scan_listener.client_name` (`clamav`), as the principal
+  `system:scanner-report`; a certificate of neither or of both, a token and a request without TLS are refused with `401`. The handler takes
+  the kind from the certificate again, checks the report's size and shape, and writes the row of the scanner replicas
+  ([replicas.go](../../internal/api/scanlisten/replicas.go)); it is not a protocol path of the download limits.
 
 Acceptance criteria:
 
@@ -690,6 +699,7 @@ quader/
 │   ├── authz/
 │   ├── repository/              # model, snapshot, CleanPath, classification, routing of virtual repositories (members, claims, pins)
 │   ├── wellknown/               # the built-in project upstream: its names, the states of its repositories, the declarations from the catalog (leaf layer, R-REPO-066)
+│   ├── scanreport/              # a scanner replica's report of itself: route, body, bounds, the sending loop (leaf layer, R-OPS-048)
 │   ├── items/                   # the item store: spool, the one commit, stat, open, listing rows, subtree delete, statistics; no authz (Q-ARCH-207)
 │   ├── files/                   # the generic layer: decides on the request's index, resolves and admits, over items (R-STOR-007 to R-STOR-018, Q-ARCH-206)
 │   ├── formats/                 # contract (Format, Host), registry

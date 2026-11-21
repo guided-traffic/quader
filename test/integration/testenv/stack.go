@@ -179,6 +179,8 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 		s.base = append(s.base, "QUADER_SERVER_INTERNAL_TLS_CA_FILE="+CAFile(tb),
 			"QUADER_VULNERABILITIES_IMAGES_SCANNER_SERVER_NAME="+KindName("vuln-scanner-trivy"), "QUADER_VULNERABILITIES_IMAGES_SCANNER_CLIENT_NAME="+KindName("worker"),
 			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_SERVER_NAME="+KindName("packages"),
+			// The name by which the scan listener records the image scanner's report of itself (R-OPS-048, Q-OPS-223).
+			"QUADER_VULNERABILITIES_IMAGES_REGISTRY_CLIENT_NAME="+KindName("vuln-scanner-trivy"),
 			`QUADER_SERVER_SCAN_CLIENTS=["`+KindName("vuln-scanner-trivy")+`","`+KindName("malware-scanner-clamav")+`"]`,
 			// The links of the malware scanning, named as the chart names them (R-HA-068, Q-MAL-61).
 			"QUADER_MALWARE_SCANNER_SERVER_NAME="+KindName("malware-scanner-clamav"), "QUADER_MALWARE_SCANNER_CLIENT_NAME="+KindName("worker"),

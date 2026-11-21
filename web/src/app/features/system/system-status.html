@@ -40,6 +40,13 @@
         <span i18n="@@system.summary.ready">All roles ready</span>
       </span>
     }
+    <!-- A kind of scanner whose replicas report themselves and none of which is ready: its scans wait (R-OPS-048, Q-UI-897). -->
+    @for (d of waitingScanners(); track d) {
+      <span class="condition">
+        <span class="material-icons warn" aria-hidden="true">warning</span>
+        <span i18n="@@system.summary.no-ready-scanner">No ready replica of <span translate="no">{{ d }}</span></span>
+      </span>
+    }
     @for (c of notes(st); track c.kind) {
       <span class="condition note">
         <span class="material-icons" aria-hidden="true">info</span>
@@ -314,6 +321,29 @@
           }
         }
       </section>
+    }
+    <!-- The scanner replicas: one more kind of row, a group of the role scanner with one sub-group per kind, named with its tool
+         (R-OPS-048, Q-HA-372, Q-UI-897). A kind without a replica says why. -->
+    @if (scannersFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="scanners.reload()" />
+    } @else if (valueOf(scanners); as list) {
+      @if (scannerGroups().length > 0) {
+        <section class="role" aria-labelledby="role-scanner" data-testid="scanner-replicas">
+          <h3 id="role-scanner">
+            <span translate="no">scanner</span>
+            <span class="counts" i18n="@@system.scanner.counts">live {{ scannerCounts().live }}, ready {{ scannerCounts().ready }}</span>
+          </h3>
+          @for (g of scannerGroups(); track g.kind) {
+            <section class="pool" [attr.aria-labelledby]="'scanner-' + g.kind">
+              <h4 id="scanner-{{ g.kind }}">
+                <span translate="no">{{ g.deployment }}</span>
+                <span class="counts" i18n="@@system.scanner.counts">live {{ g.live }}, ready {{ g.ready }}</span>
+              </h4>
+              <quader-scanner-replicas [list]="list" [kind]="g.kind" view="system" />
+            </section>
+          }
+        </section>
+      }
     }
     <p class="limits" i18n="@@system.replicas.limits">
       This screen cannot see disruption budgets, free capacity on other nodes, or whether the

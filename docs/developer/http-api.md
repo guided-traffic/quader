@@ -107,6 +107,7 @@ an endpoint whose host check fails answers `421` `misdirected_request` before ro
 | `getVersion` | `GET /api/v1/system/version` | authenticated, or anonymous with `system.public_version` |
 | `getSystemInfo` | `GET /api/v1/system/info` | `settings:read` |
 | `listReplicas` | `GET /api/v1/system/replicas` | `settings:read` |
+| `listScanners` | `GET /api/v1/system/scanners` | `settings:read` |
 | `getSystemOverview` | `GET /api/v1/system/overview` | `settings:read`; not opened by `system.bootstrap_anonymous_read` ([System overview](#system-overview-r-ops-004-q-ops-175)) |
 | `getOpenApiJson` / `getOpenApiYaml` | `GET /api/v1/openapi.json`, `.yaml` | public; `servers[0].url` is the public base URL |
 | `getProblemType` | `GET /api/v1/problems/{code}` | public; resolves the `type` URI of a problem |

@@ -5048,6 +5048,12 @@
             "registry": {
               "additionalProperties": false,
               "properties": {
+                "client_name": {
+                  "default": "",
+                  "description": "The name by which the scan listener knows the image scanner (the kind trivy): a scanner's report of itself is recorded as a replica of vuln-scanner-trivy only from a client certificate that lists it exactly among its DNS names (R-OPS-048, Q-OPS-223). It must be one of server.scan_clients when that list is set, and differ from malware.scan_listener.client_name. Empty: the scan listener records no image scanner (the role all, where no scanner pod runs). The chart sets \u003cfullname\u003e-vuln-scanner-trivy.\u003cnamespace\u003e.svc.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_VULNERABILITIES_IMAGES_REGISTRY_CLIENT_NAME"
+                },
                 "server_name": {
                   "default": "",
                   "description": "The name the scanner requires in the scan listener's certificate, which must chain to server.internal_tls.ca_file and list it exactly among its DNS names (Q-ARCH-552); empty is the host of url. The chart sets \u003cfullname\u003e-packages.\u003cnamespace\u003e.svc, the name of packages (R-HA-063). The names the scan listener admits are server.scan_clients.",

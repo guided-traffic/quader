@@ -157,6 +157,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/scanners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The scanner replicas and the kinds of scanner
+         * @description The kinds of scanner the installation runs, each with whether its replicas report themselves here (`replicas`), and every
+         *     scanner replica that reported itself on the scan listener of `packages`: its kind, pod name, state and the reason it is not
+         *     ready, since when, the version of its tool, its slots and, for ClamAV, the signature database it scans with (R-OPS-048,
+         *     Q-OPS-223). The kind is the one the replica's client certificate names; everything else is the scanner's own statement,
+         *     bounded in size and shape (H-1161). A replica whose report is older than `system.heartbeat_stale_after` is `lost`, unless it
+         *     went stale while `draining`: such a replica signed off and is not listed (Q-OPS-210).
+         */
+        get: operations["listScanners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/migrations": {
         parameters: {
             query?: never;
@@ -6661,8 +6686,7 @@ export interface components {
             roles: ("api" | "packages" | "worker" | "web" | "all")[];
             /** @description The endpoint pool or worker pool the replica belongs to (`QUADER_POOL_NAME`); `null` for the main Deployment of its role. */
             pool?: string | null;
-            /** @enum {string} */
-            state: "starting" | "ready" | "unready" | "draining";
+            state: components["schemas"]["ReplicaState"];
             /** @description The heartbeat is older than `system.heartbeat_stale_after` and the replica had not begun to drain (a crash, a kill or the loss of its node). A replica whose heartbeat went stale while `draining` signed off and is not listed (Q-OPS-210). */
             lost: boolean;
             /** Format: date-time */
@@ -6685,6 +6709,99 @@ export interface components {
             valkey: components["schemas"]["ValkeyView"] | null;
             /** @description The replica's own measurements of its last heartbeat period (Q-OPS-175); `null` until its first heartbeat after the start, and for a replica of a release before them. */
             runtime?: components["schemas"]["ReplicaRuntime"] | null;
+        };
+        /**
+         * @description The state of a replica of the registry or of a scanner replica (R-OPS-003, R-OPS-048).
+         * @enum {string}
+         */
+        ReplicaState: "starting" | "ready" | "unready" | "draining";
+        ScannerList: {
+            /** @description The kinds of scanner whose scanning is on in this installation, the image scanning's first. */
+            kinds: components["schemas"]["ScannerKind"][];
+            /** @description The scanner replicas, by kind and name. A row of a kind that is not in `kinds` is still listed until it is pruned. */
+            items: components["schemas"]["ScannerReplica"][];
+        };
+        ScannerKind: {
+            /**
+             * @description The kind of scanner, `process.scanner_kind`.
+             * @enum {string}
+             */
+            kind: "trivy" | "clamav";
+            /**
+             * @description The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372); its Deployment is `<fullname>-<deployment>`.
+             * @example vuln-scanner-trivy
+             */
+            deployment: string;
+            /** @enum {string} */
+            purpose: "vuln" | "malware";
+            /**
+             * @description The name of the tool the kind runs.
+             * @example Trivy
+             */
+            tool: string;
+            /**
+             * @description Whether the kind's replicas report themselves here (Q-OPS-223): `reporting`, the installation calls scanner pods of the kind
+             *     and the scan listener records their reports, so an empty list is a fault; `unverified`, it calls them but the scan listener
+             *     cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `inProcess`, the development role
+             *     `all` runs the scanner in its own process and no pod reports; `none`, no scanner of the kind is configured.
+             * @enum {string}
+             */
+            replicas: "reporting" | "unverified" | "inProcess" | "none";
+        };
+        ScannerReplica: {
+            /**
+             * @description The kind the replica's client certificate names.
+             * @enum {string}
+             */
+            kind: "trivy" | "clamav";
+            /** @description Random per process start. */
+            instanceUid: string;
+            /** @description The pod name, else the host name with the process ID. The scanner's own statement, at most 253 characters. */
+            name: string;
+            /** @description The Kubernetes node name the scanner reports; `null` outside Kubernetes. */
+            node: string | null;
+            /** @description The scanner's build of Quader. */
+            version: string;
+            revision: string;
+            state: components["schemas"]["ReplicaState"];
+            /** @description The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `starting`. */
+            reason: string | null;
+            /**
+             * Format: date-time
+             * @description When the replica's state or its reason last changed, by the database's clock.
+             */
+            stateSince: string;
+            /** @description The last report is older than `system.heartbeat_stale_after` and the replica had not begun to drain. */
+            lost: boolean;
+            /**
+             * Format: date-time
+             * @description The first report of this process, by the database's clock.
+             */
+            startedAt: string;
+            /**
+             * Format: date-time
+             * @description The last report, by the database's clock.
+             */
+            heartbeatAt: string;
+            /** @description The version of the tool (Trivy's, clamd's); `null` while the scanner does not know it. */
+            toolVersion: string | null;
+            slots: {
+                /** @description Calls the replica runs now. */
+                inUse: number;
+                /** @description Calls it runs at a time. */
+                total: number;
+            };
+            /** @description The signature database clamd scans with (`clamav` only); `null` before its first load and for `trivy`. */
+            database: components["schemas"]["ScannerDatabase"] | null;
+        };
+        ScannerDatabase: {
+            /** @example main-62.daily-27841.bytecode-339 */
+            version: string;
+            /**
+             * Format: date-time
+             * @description The build time of the version while it is the version in use; `null` for another version.
+             */
+            builtAt: string | null;
         };
         /**
          * @description Written with the replica's heartbeat (Q-OPS-175): the requests it finished on its client listener, its CPU and memory,
@@ -13206,6 +13323,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReplicaList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listScanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The kinds and the replicas. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScannerList"];
                 };
             };
             401: components["responses"]["Unauthenticated"];

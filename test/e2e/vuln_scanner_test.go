@@ -4,8 +4,9 @@ package e2e
 
 // The one case of the role scanner in the set vuln (R-VULN-046): an image of a few hundred bytes, pushed through the registry API by the
 // test's own client, is analysed by the pinned analyser in a scanner pod. The stored analysis shows the whole way over the chart's links -
-// the worker's call to <fullname>-scanner and the scanner's pull from <fullname>-packages-scan, both mutual TLS with the profile's
-// certificate and admitted by the policies of R-HA-042. It asserts the analysis, not a detection, so it needs no database (Q-VULN-168).
+// the worker's call to <fullname>-vuln-scanner-trivy and the scanner's pull from <fullname>-packages-scan, both mutual TLS with the
+// profile's certificate and admitted by the policies of R-HA-042. It asserts the analysis, not a detection, so it needs no database
+// (Q-VULN-168), and that every scanner pod of both kinds is listed under its kind by its report of itself (R-OPS-048).
 
 import (
 	"archive/tar"
@@ -125,6 +126,33 @@ func TestVuln_R_VULN_041_AnImagePushedToALocalRepositoryIsAnalysedByAScannerPod(
 	if want := []string{"tls/ca.crt", "tls/tls.crt", "tls/tls.key"}; strings.Join(files, ",") != strings.Join(want, ",") {
 		t.Errorf("below /var/run/secrets/quader/ the scanner pod holds %v, want %v", files, want)
 	}
+
+	// R-OPS-048, Q-OPS-223: every scanner pod of both kinds reports itself to the scan listener with the certificate of its kind, and the
+	// API lists it by its pod name under that kind; an image scanner that analysed the image is ready and names its Trivy's version.
+	// The malware scanners are listed whatever their state: they wait for a database until the malware case deployed one.
+	want := map[string]string{}
+	for _, p := range pods {
+		want[p.Name] = "trivy"
+	}
+	for _, p := range livePods(t, "app.kubernetes.io/component=malware-scanner-clamav") {
+		want[p.Name] = "clamav"
+	}
+	waitFor(t, "every scanner pod listed under its kind", time.Minute, 2*time.Second, func() bool {
+		var list struct {
+			Items []struct {
+				Kind, Name, State string
+				ToolVersion       *string
+			}
+		}
+		v.adm.do(http.MethodGet, "/api/v1/system/scanners", nil).want(t, "the scanner replicas", 200).JSON(t, &list)
+		listed := 0
+		for _, r := range list.Items {
+			if kind, ok := want[r.Name]; ok && r.Kind == kind && (kind != "trivy" || (r.State == "ready" && r.ToolVersion != nil)) {
+				listed++
+			}
+		}
+		return listed == len(want)
+	})
 }
 
 // scannerImageBlobs are the config and the one layer of the case's image: a file that names the run, so every run pushes a new digest.

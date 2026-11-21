@@ -19,6 +19,8 @@ import {
   MaintenanceMode,
   Replica,
   ReplicaRuntime,
+  ScannerList,
+  ScannerReplica,
   SystemApi,
   SystemInfo,
   SystemOverview,
@@ -245,6 +247,50 @@ export function sampleReplica(over: Partial<Replica> = {}): Replica {
   };
 }
 
+/** A scanner replica as `GET /api/v1/system/scanners` lists it (R-OPS-048): a ready image scanner unless changed. */
+export function sampleScannerReplica(over: Partial<ScannerReplica> = {}): ScannerReplica {
+  return {
+    kind: 'trivy',
+    instanceUid: 'scanner-uid-0',
+    name: 'quader-vuln-scanner-trivy-7d9f6c5b8-abcde',
+    node: 'node-a',
+    version: '0.1.1',
+    revision: 'abc',
+    state: 'ready',
+    reason: null,
+    stateSince: '2026-11-21T08:00:00Z',
+    lost: false,
+    startedAt: '2026-11-21T08:00:00Z',
+    heartbeatAt: '2026-11-21T09:00:00Z',
+    toolVersion: '0.67.2',
+    slots: { inUse: 0, total: 1 },
+    database: null,
+    ...over,
+  };
+}
+
+/** The kinds of an installation of the chart and one ready replica of each (R-OPS-048). */
+export function sampleScanners(over: Partial<ScannerList> = {}): ScannerList {
+  return {
+    kinds: [
+      { kind: 'trivy', deployment: 'vuln-scanner-trivy', purpose: 'vuln', tool: 'Trivy', replicas: 'reporting' },
+      { kind: 'clamav', deployment: 'malware-scanner-clamav', purpose: 'malware', tool: 'ClamAV', replicas: 'reporting' },
+    ],
+    items: [
+      sampleScannerReplica(),
+      sampleScannerReplica({
+        kind: 'clamav',
+        instanceUid: 'scanner-uid-1',
+        name: 'quader-malware-scanner-clamav-6d9c7b5f4-x2v4q',
+        toolVersion: '1.5.5',
+        slots: { inUse: 1, total: 2 },
+        database: { version: 'main-62.daily-27841.bytecode-339', builtAt: '2026-11-21T04:00:00Z' },
+      }),
+    ],
+    ...over,
+  };
+}
+
 export function sampleInfo(over: Partial<SystemInfo> = {}): SystemInfo {
   return {
     installationId: null,
@@ -298,6 +344,15 @@ export class FakeSystemApi extends SystemApi {
 
   override async info(): Promise<SystemInfo> {
     return this.infoResult;
+  }
+
+  scannersResult: ScannerList | ApiError = sampleScanners();
+  scannersReads = 0;
+
+  override async scanners(): Promise<ScannerList> {
+    this.scannersReads++;
+    if (this.scannersResult instanceof ApiError) throw this.scannersResult;
+    return structuredClone(this.scannersResult);
   }
 
   overviewResult: SystemOverview | ApiError = sampleOverview();

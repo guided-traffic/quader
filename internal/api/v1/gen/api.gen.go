@@ -3277,6 +3277,84 @@ func (e RoleName) Valid() bool {
 	}
 }
 
+// Defines values for ScannerKindKind.
+const (
+	ScannerKindKindClamav ScannerKindKind = "clamav"
+	ScannerKindKindTrivy  ScannerKindKind = "trivy"
+)
+
+// Valid indicates whether the value is a known member of the ScannerKindKind enum.
+func (e ScannerKindKind) Valid() bool {
+	switch e {
+	case ScannerKindKindClamav:
+		return true
+	case ScannerKindKindTrivy:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScannerKindPurpose.
+const (
+	Malware ScannerKindPurpose = "malware"
+	Vuln    ScannerKindPurpose = "vuln"
+)
+
+// Valid indicates whether the value is a known member of the ScannerKindPurpose enum.
+func (e ScannerKindPurpose) Valid() bool {
+	switch e {
+	case Malware:
+		return true
+	case Vuln:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScannerKindReplicas.
+const (
+	ScannerKindReplicasInProcess  ScannerKindReplicas = "inProcess"
+	ScannerKindReplicasNone       ScannerKindReplicas = "none"
+	ScannerKindReplicasReporting  ScannerKindReplicas = "reporting"
+	ScannerKindReplicasUnverified ScannerKindReplicas = "unverified"
+)
+
+// Valid indicates whether the value is a known member of the ScannerKindReplicas enum.
+func (e ScannerKindReplicas) Valid() bool {
+	switch e {
+	case ScannerKindReplicasInProcess:
+		return true
+	case ScannerKindReplicasNone:
+		return true
+	case ScannerKindReplicasReporting:
+		return true
+	case ScannerKindReplicasUnverified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScannerReplicaKind.
+const (
+	ScannerReplicaKindClamav ScannerReplicaKind = "clamav"
+	ScannerReplicaKindTrivy  ScannerReplicaKind = "trivy"
+)
+
+// Valid indicates whether the value is a known member of the ScannerReplicaKind enum.
+func (e ScannerReplicaKind) Valid() bool {
+	switch e {
+	case ScannerReplicaKindClamav:
+		return true
+	case ScannerReplicaKindTrivy:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SecretFieldSet.
 const (
 	SecretFieldSetTrue SecretFieldSet = true
@@ -10734,16 +10812,15 @@ type Replica struct {
 	// Runtime The replica's own measurements of its last heartbeat period (Q-OPS-175); `null` until its first heartbeat after the start, and for a replica of a release before them.
 	Runtime   *ReplicaRuntime `json:"runtime,omitempty"`
 	StartedAt time.Time       `json:"startedAt"`
-	State     ReplicaState    `json:"state"`
-	Valkey    *ValkeyView     `json:"valkey"`
-	Version   string          `json:"version"`
+
+	// State The state of a replica of the registry or of a scanner replica (R-OPS-003, R-OPS-048).
+	State   ReplicaState `json:"state"`
+	Valkey  *ValkeyView  `json:"valkey"`
+	Version string       `json:"version"`
 }
 
 // ReplicaRoles defines model for Replica.Roles.
 type ReplicaRoles string
-
-// ReplicaState defines model for Replica.State.
-type ReplicaState string
 
 // ReplicaList defines model for ReplicaList.
 type ReplicaList struct {
@@ -10784,6 +10861,9 @@ type ReplicaRuntime struct {
 	// WindowSeconds The period the counts, the rate and the percentiles cover.
 	WindowSeconds float32 `json:"windowSeconds"`
 }
+
+// ReplicaState The state of a replica of the registry or of a scanner replica (R-OPS-003, R-OPS-048).
+type ReplicaState string
 
 // ReplicaSummary defines model for ReplicaSummary.
 type ReplicaSummary struct {
@@ -11231,6 +11311,106 @@ type RotateRequest struct {
 	// OverlapSeconds Keeps the old value valid that long. `0` revokes it with reason `rotated`.
 	OverlapSeconds *int `json:"overlapSeconds,omitempty"`
 }
+
+// ScannerDatabase defines model for ScannerDatabase.
+type ScannerDatabase struct {
+	// BuiltAt The build time of the version while it is the version in use; `null` for another version.
+	BuiltAt *time.Time `json:"builtAt"`
+	Version string     `json:"version"`
+}
+
+// ScannerKind defines model for ScannerKind.
+type ScannerKind struct {
+	// Deployment The name of the kind of pod, `<purpose>-scanner-<tool>` (Q-HA-372); its Deployment is `<fullname>-<deployment>`.
+	Deployment string `json:"deployment"`
+
+	// Kind The kind of scanner, `process.scanner_kind`.
+	Kind    ScannerKindKind    `json:"kind"`
+	Purpose ScannerKindPurpose `json:"purpose"`
+
+	// Replicas Whether the kind's replicas report themselves here (Q-OPS-223): `reporting`, the installation calls scanner pods of the kind
+	// and the scan listener records their reports, so an empty list is a fault; `unverified`, it calls them but the scan listener
+	// cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `inProcess`, the development role
+	// `all` runs the scanner in its own process and no pod reports; `none`, no scanner of the kind is configured.
+	Replicas ScannerKindReplicas `json:"replicas"`
+
+	// Tool The name of the tool the kind runs.
+	Tool string `json:"tool"`
+}
+
+// ScannerKindKind The kind of scanner, `process.scanner_kind`.
+type ScannerKindKind string
+
+// ScannerKindPurpose defines model for ScannerKind.Purpose.
+type ScannerKindPurpose string
+
+// ScannerKindReplicas Whether the kind's replicas report themselves here (Q-OPS-223): `reporting`, the installation calls scanner pods of the kind
+// and the scan listener records their reports, so an empty list is a fault; `unverified`, it calls them but the scan listener
+// cannot tell their kind (no TLS, or no name for the kind's certificate) and records none; `inProcess`, the development role
+// `all` runs the scanner in its own process and no pod reports; `none`, no scanner of the kind is configured.
+type ScannerKindReplicas string
+
+// ScannerList defines model for ScannerList.
+type ScannerList struct {
+	// Items The scanner replicas, by kind and name. A row of a kind that is not in `kinds` is still listed until it is pruned.
+	Items []ScannerReplica `json:"items"`
+
+	// Kinds The kinds of scanner whose scanning is on in this installation, the image scanning's first.
+	Kinds []ScannerKind `json:"kinds"`
+}
+
+// ScannerReplica defines model for ScannerReplica.
+type ScannerReplica struct {
+	// Database The signature database clamd scans with (`clamav` only); `null` before its first load and for `trivy`.
+	Database *ScannerDatabase `json:"database"`
+
+	// HeartbeatAt The last report, by the database's clock.
+	HeartbeatAt time.Time `json:"heartbeatAt"`
+
+	// InstanceUid Random per process start.
+	InstanceUid string `json:"instanceUid"`
+
+	// Kind The kind the replica's client certificate names.
+	Kind ScannerReplicaKind `json:"kind"`
+
+	// Lost The last report is older than `system.heartbeat_stale_after` and the replica had not begun to drain.
+	Lost bool `json:"lost"`
+
+	// Name The pod name, else the host name with the process ID. The scanner's own statement, at most 253 characters.
+	Name string `json:"name"`
+
+	// Node The Kubernetes node name the scanner reports; `null` outside Kubernetes.
+	Node *string `json:"node"`
+
+	// Reason The code of the readiness check that fails, `null` while ready: `database` (no signature database loaded yet), `clamd`, `analyser`, `certificate`, `spool`, `starting`.
+	Reason   *string `json:"reason"`
+	Revision string  `json:"revision"`
+	Slots    struct {
+		// InUse Calls the replica runs now.
+		InUse int `json:"inUse"`
+
+		// Total Calls it runs at a time.
+		Total int `json:"total"`
+	} `json:"slots"`
+
+	// StartedAt The first report of this process, by the database's clock.
+	StartedAt time.Time `json:"startedAt"`
+
+	// State The state of a replica of the registry or of a scanner replica (R-OPS-003, R-OPS-048).
+	State ReplicaState `json:"state"`
+
+	// StateSince When the replica's state or its reason last changed, by the database's clock.
+	StateSince time.Time `json:"stateSince"`
+
+	// ToolVersion The version of the tool (Trivy's, clamd's); `null` while the scanner does not know it.
+	ToolVersion *string `json:"toolVersion"`
+
+	// Version The scanner's build of Quader.
+	Version string `json:"version"`
+}
+
+// ScannerReplicaKind The kind the replica's client certificate names.
+type ScannerReplicaKind string
 
 // ScopeSummary The ceiling of the caller's credential (R-AUTHZ-013).
 type ScopeSummary struct {
@@ -16971,6 +17151,9 @@ type ServerInterface interface {
 	// ListReplicas The replica registry
 	// (GET /api/v1/system/replicas)
 	ListReplicas(w http.ResponseWriter, r *http.Request)
+	// ListScanners The scanner replicas and the kinds of scanner
+	// (GET /api/v1/system/scanners)
+	ListScanners(w http.ResponseWriter, r *http.Request)
 	// ListTasks List the maintenance tasks
 	// (GET /api/v1/system/tasks)
 	ListTasks(w http.ResponseWriter, r *http.Request, params ListTasksParams)
@@ -29801,6 +29984,20 @@ func (siw *ServerInterfaceWrapper) ListReplicas(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListScanners operation middleware
+func (siw *ServerInterfaceWrapper) ListScanners(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListScanners(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListTasks operation middleware
 func (siw *ServerInterfaceWrapper) ListTasks(w http.ResponseWriter, r *http.Request) {
 
@@ -32793,6 +32990,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system/maintenance", wrapper.PutSystemMaintenance)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/info", wrapper.GetSystemInfo)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/replicas", wrapper.ListReplicas)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/scanners", wrapper.ListScanners)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/migrations", wrapper.GetMigrationStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/overview", wrapper.GetSystemOverview)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/openapi.json", wrapper.GetOpenApiJson)

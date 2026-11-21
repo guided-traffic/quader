@@ -208,6 +208,7 @@ quader/
 │   ├── formatdata/           # the data ports of the formats (npm/, nuget/, oci/, deb/, ansible/): sqlc-backed side tables, jobs such as oci-sweep
 │   ├── uploads/              # the upload-session service of multi-request blob uploads (R-STOR-011): sessions, parts, tails, finalize
 │   ├── secrets/              # key ring and sealed-column registry
+│   ├── scanreport/           # a scanner replica's report of itself: route, body, bounds, the sending loop (a leaf, R-OPS-048)
 │   ├── vuln/                 # vulnerability scanning (contracts laid, vulnerabilities.md): the domain vocabulary and ports; advisory/, match/, osv/, metrics/ are leaves; store/, sync/, evaluate/, triage/, report/ are the work packages'
 │   ├── mirror/               # the mirror mode of remote repositories (mirror.md): the engine (dispatch, pass, fence, window, bounds, store, metrics) beside the names of its job kinds and queue; discover/ is the leaf contract a format's remote adapter implements
 │   ├── importer/             # the import tooling (import.md): the runner, the clients of the source and of the target, the state file, the npm and NuGet formats of the importer

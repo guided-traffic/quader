@@ -33,6 +33,8 @@ import {
 } from './system-status-model';
 import { valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
+import { scannerGroups, waitingScanners } from '../../shared/scanner/scanner-model';
 import { NoValue } from '../../shared/ui/no-value';
 import { SystemRefresh } from './system-refresh';
 
@@ -52,12 +54,12 @@ export const RECENT_JOBS = 10;
 export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
 
 /**
- * The tab Status of the page System status (R-UI-038, R-UI-164): installation facts, replicas per role, Valkey, stored-secret
- * keys, the scheduled tasks and the recent jobs. The page's header refreshes it and pauses its timer (Q-UI-651).
+ * The tab Status of the page System status (R-UI-038, R-UI-164): installation facts, replicas per role and the scanner replicas per
+ * kind (R-OPS-048, Q-UI-897), Valkey, stored-secret keys, the scheduled tasks and the recent jobs. The page's header refreshes it and pauses its timer (Q-UI-651).
  */
 @Component({
   selector: 'quader-system-status',
-  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, TasksCard],
+  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',
 })
@@ -114,6 +116,23 @@ export class SystemStatus {
   protected readonly info = resource({ loader: () => this.system.info() });
   protected readonly replicas = resource({ loader: () => this.system.replicas() });
   protected readonly encryption = resource({ loader: () => this.encryptionApi.status() });
+  /** The kinds of scanner and the scanner replicas (R-OPS-048, Q-UI-897): one more kind of row of the replicas, after the roles. */
+  protected readonly scanners = resource({ loader: () => this.system.scanners() });
+  protected readonly scannerGroups = computed(() => {
+    const s = valueOf(this.scanners);
+    return s ? scannerGroups(s) : [];
+  });
+  /** The scanner replicas live and ready, the counts of the group's heading. */
+  protected readonly scannerCounts = computed(() => ({
+    live: this.scannerGroups().reduce((n, g) => n + g.live, 0),
+    ready: this.scannerGroups().reduce((n, g) => n + g.ready, 0),
+  }));
+  /** The kinds whose replicas report themselves and none of which is ready: the header warns that their scans wait. */
+  protected readonly waitingScanners = computed(() => waitingScanners(this.scannerGroups()));
+  protected readonly scannersFailure = computed(() => {
+    const e = this.scanners.error();
+    return e instanceof ApiError ? e : e ? new ApiError(0, null, null) : null;
+  });
 
   // >>> M1 ui-a
   protected readonly recentJobs = resource({
@@ -200,6 +219,7 @@ export class SystemStatus {
   protected reload(): void {
     this.info.reload();
     this.replicas.reload();
+    this.scanners.reload();
     this.encryption.reload();
     // >>> M1 ui-a
     this.recentJobs.reload();

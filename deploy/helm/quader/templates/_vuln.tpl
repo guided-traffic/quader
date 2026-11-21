@@ -58,6 +58,8 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 {{- $_ := set $links "server_name" (include "quader.tlsName" (dict "root" $ "kind" "vuln-scanner-trivy")) -}}
 {{- $_ := set $links "client_name" (include "quader.tlsName" (dict "root" $ "kind" "worker")) -}}
 {{- $_ := set $pull "server_name" (include "quader.tlsName" (dict "root" $ "kind" "packages")) -}}
+{{- /* The scan listener records a scanner's report of itself under the kind its certificate names (R-OPS-048, Q-OPS-223). */ -}}
+{{- $_ := set $pull "client_name" (include "quader.tlsName" (dict "root" $ "kind" "vuln-scanner-trivy")) -}}
 {{- end -}}
 {{- $_ := set $m "vulnerabilities" (dict "images" (dict "scanner" $links "registry" $pull)) -}}
 {{- end -}}
@@ -66,7 +68,7 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 
 {{/* The configuration keys the chart manages for the links of both scannings, refused when set in config (R-HA-029). Returns a YAML list. */}}
 {{- define "quader.scannerManagedPaths" -}}
-{{- toYaml (concat (list "vulnerabilities.images.scanner.url" "vulnerabilities.images.scanner.server_name" "vulnerabilities.images.scanner.client_name" "vulnerabilities.images.registry.url" "vulnerabilities.images.registry.server_name" "server.internal_tls" "server.scan_listen" "server.scan_clients") (include "quader.malwareManagedPaths" . | fromYamlArray)) -}}
+{{- toYaml (concat (list "vulnerabilities.images.scanner.url" "vulnerabilities.images.scanner.server_name" "vulnerabilities.images.scanner.client_name" "vulnerabilities.images.registry.url" "vulnerabilities.images.registry.server_name" "vulnerabilities.images.registry.client_name" "server.internal_tls" "server.scan_listen" "server.scan_clients") (include "quader.malwareManagedPaths" . | fromYamlArray)) -}}
 {{- end -}}
 
 {{/*

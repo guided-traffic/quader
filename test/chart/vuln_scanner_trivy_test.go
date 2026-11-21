@@ -225,6 +225,8 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 			"vulnerabilities.images.scanner.client_name":  "quader-worker.default.svc",
 			"vulnerabilities.images.registry.url":         "https://quader-packages-scan.default.svc:8082",
 			"vulnerabilities.images.registry.server_name": "quader-packages.default.svc",
+			// The name by which the scan listener records the image scanner's report of itself (R-OPS-048, Q-OPS-223).
+			"vulnerabilities.images.registry.client_name": "quader-vuln-scanner-trivy.default.svc",
 			"server.internal_tls.ca_file":                 "/var/run/secrets/quader/tls/ca.crt",
 		} {
 			if got := str(cfg, strings.Split(path, ".")...); got != want {
@@ -234,6 +236,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.url=https://evil.example.com"}, "config.vulnerabilities.images.scanner.url is managed by the chart")
 		renderFails(t, required(), []string{"config.server.scan_listen=:9999"}, "config.server.scan_listen is managed by the chart")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.client_name=x"}, "config.vulnerabilities.images.scanner.client_name is managed by the chart")
+		renderFails(t, required(), []string{"config.vulnerabilities.images.registry.client_name=x"}, "config.vulnerabilities.images.registry.client_name is managed by the chart")
 		// The scan listener admits every kind of scanner the release renders, one entry each (quader.tlsKindTable).
 		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-vuln-scanner-trivy.default.svc\n- quader-malware-scanner-clamav.default.svc\n" {
 			t.Errorf("server.scan_clients = %q, want the names of the two scanners", got)
