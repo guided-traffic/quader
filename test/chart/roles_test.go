@@ -72,7 +72,7 @@ func TestRolesDeployments(t *testing.T) {
 	t.Run("R-HA-002 R-HA-062 a Deployment, PodDisruptionBudget and NetworkPolicy per role, pool and endpoint pool, named alike", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := []string{
-			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-malware-scanner-clamav", "quader-packages", "quader-packages-ep-customers",
+			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-malware-scanner-clamav", "quader-malware-updater-freshclam", "quader-packages", "quader-packages-ep-customers",
 			"quader-packages-npm", "quader-vuln-scanner-trivy", "quader-worker", "quader-worker-bulk", "quader-worker-vuln",
 		}
 		if got := deploymentNames(docs); !equalStrings(got, want) {
@@ -80,8 +80,9 @@ func TestRolesDeployments(t *testing.T) {
 		}
 		for _, kind := range []string{"PodDisruptionBudget", "NetworkPolicy"} {
 			for _, n := range want {
-				if find(docs, kind, n) == nil {
-					t.Errorf("%s %s not rendered", kind, n)
+				// The updater has no disruption budget: one replica, replaced, whose absence costs nothing (Q-HA-376).
+				if updater := n == "quader-malware-updater-freshclam" && kind == "PodDisruptionBudget"; (find(docs, kind, n) == nil) != updater {
+					t.Errorf("%s %s rendered: %v", kind, n, !updater)
 				}
 			}
 		}
@@ -114,14 +115,14 @@ func TestRolesDeployments(t *testing.T) {
 		for _, d := range ofKind(docs, "Deployment") {
 			name := str(d, "metadata", "name")
 			role, _, _ := strings.Cut(strings.TrimPrefix(name, "quader-"), "-")
-			if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" { // the two kinds of the role scanner, a component each (R-HA-065, R-HA-068, Q-HA-372)
+			if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" || name == "quader-malware-updater-freshclam" { // the three kinds of the role scanner, a component each (R-HA-065, R-HA-068, R-HA-069, Q-HA-372)
 				role = strings.TrimPrefix(name, "quader-")
 			}
 			labels := at(d, "spec", "template", "metadata", "labels")
 			if got := str(labels, "app.kubernetes.io/component"); got != role {
 				t.Errorf("%s component = %q, want %q", name, got, role)
 			}
-			if role == "vuln-scanner-trivy" || role == "malware-scanner-clamav" {
+			if role == "vuln-scanner-trivy" || role == "malware-scanner-clamav" || role == "malware-updater-freshclam" {
 				// The scanner has no pools; quader/pool belongs to the serving roles only (R-HA-028, R-HA-065).
 				if at(labels, "quader/pool") != nil {
 					t.Errorf("%s carries quader/pool = %v, which only the pods of api, packages and worker do", name, at(labels, "quader/pool"))
@@ -136,7 +137,7 @@ func TestRolesDeployments(t *testing.T) {
 			if got := podsSelectedBy(docs, at(d, "spec", "selector", "matchLabels")); !equalStrings(got, []string{name}) {
 				t.Errorf("the selector of %s selects the pods of %v", name, got)
 			}
-			if pdb := find(docs, "PodDisruptionBudget", name); !equalMaps(at(pdb, "spec", "selector", "matchLabels"), at(d, "spec", "selector", "matchLabels")) {
+			if pdb := find(docs, "PodDisruptionBudget", name); name != "quader-malware-updater-freshclam" && !equalMaps(at(pdb, "spec", "selector", "matchLabels"), at(d, "spec", "selector", "matchLabels")) {
 				t.Errorf("the PodDisruptionBudget of %s selects other pods than the Deployment", name)
 			}
 			if np := find(docs, "NetworkPolicy", name); !equalMaps(at(np, "spec", "podSelector", "matchLabels"), at(d, "spec", "selector", "matchLabels")) {
@@ -150,7 +151,7 @@ func TestRolesDeployments(t *testing.T) {
 		for _, d := range ofKind(docs, "Deployment") {
 			name := str(d, "metadata", "name")
 			role, _, _ := strings.Cut(strings.TrimPrefix(name, "quader-"), "-")
-			if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" {
+			if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" || name == "quader-malware-updater-freshclam" {
 				role = "scanner"
 			}
 			pod := at(d, "spec", "template", "spec")
@@ -234,16 +235,17 @@ func TestRolesServices(t *testing.T) {
 	t.Run("R-HA-002 R-HA-062 each Service selects the pods of one Deployment; the ops Service every serving pod", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := map[string][]string{
-			"quader-api":                    {"quader-api"},
-			"quader-packages":               {"quader-packages"},
-			"quader-api-admin":              {"quader-api-admin"},
-			"quader-packages-npm":           {"quader-packages-npm"},
-			"quader-ep-customers":           {"quader-packages-ep-customers"},
-			"quader-api-ep-customers":       {"quader-api-ep-customers"},
-			"quader-vuln-scanner-trivy":     {"quader-vuln-scanner-trivy"},
-			"quader-malware-scanner-clamav": {"quader-malware-scanner-clamav"},
-			"quader-packages-scan":          {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
-			"quader-ops":                    deploymentNames(docs),
+			"quader-api":                       {"quader-api"},
+			"quader-packages":                  {"quader-packages"},
+			"quader-api-admin":                 {"quader-api-admin"},
+			"quader-packages-npm":              {"quader-packages-npm"},
+			"quader-ep-customers":              {"quader-packages-ep-customers"},
+			"quader-api-ep-customers":          {"quader-api-ep-customers"},
+			"quader-vuln-scanner-trivy":        {"quader-vuln-scanner-trivy"},
+			"quader-malware-scanner-clamav":    {"quader-malware-scanner-clamav"},
+			"quader-malware-updater-freshclam": {"quader-malware-updater-freshclam"},
+			"quader-packages-scan":             {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
+			"quader-ops":                       deploymentNames(docs),
 		}
 		for _, s := range ofKind(docs, "Service") {
 			name := str(s, "metadata", "name")
@@ -519,9 +521,10 @@ func TestRolesNetworkPolicy(t *testing.T) {
 						t.Errorf("%s: 8080 has a from, want from anywhere by default", n)
 					}
 				case len(p) == 1 && p[0] == 8082:
-					if !has || len(from) != 2 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "vuln-scanner-trivy" ||
-						str(from[1], "podSelector", "matchLabels", "app.kubernetes.io/component") != "malware-scanner-clamav" {
-						t.Errorf("%s: 8082 from %v, want the pods of the two scanners only", n, from)
+					if !has || len(from) != 3 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "vuln-scanner-trivy" ||
+						str(from[1], "podSelector", "matchLabels", "app.kubernetes.io/component") != "malware-scanner-clamav" ||
+						str(from[2], "podSelector", "matchLabels", "app.kubernetes.io/component") != "malware-updater-freshclam" {
+						t.Errorf("%s: 8082 from %v, want the pods of the two scanners and the updater only", n, from)
 					}
 				}
 			}
@@ -544,7 +547,7 @@ func TestRolesNetworkPolicy(t *testing.T) {
 			got = append(got, str(np, "metadata", "name"))
 		}
 		sort.Strings(got)
-		if want := []string{"quader-api", "quader-malware-scanner-clamav", "quader-migrate", "quader-packages", "quader-vuln-scanner-trivy", "quader-worker"}; !equalStrings(got, want) {
+		if want := []string{"quader-api", "quader-malware-scanner-clamav", "quader-malware-updater-freshclam", "quader-migrate", "quader-packages", "quader-vuln-scanner-trivy", "quader-worker"}; !equalStrings(got, want) {
 			t.Errorf("policies = %v, want %v", got, want)
 		}
 		if _, d := render(t, required(), backupSets()...); find(d, "NetworkPolicy", "quader-backup") == nil {
@@ -577,7 +580,7 @@ func TestRolesValidation(t *testing.T) {
 		{"an api pool path equal to the role's prefix", pools("api.pools[0].name=a", "api.pools[0].paths={/api/v1}"), []string{"api.pools[a].paths", "/api/v1"}},
 		{"a worker pool queue that does not exist", pools("worker.pools[0].name=a", "worker.pools[0].queues={nope}"), []string{"worker.pools[a].queues", "nope"}},
 		{"two worker pools with the same queue", pools("worker.pools[0].name=a", "worker.pools[0].queues={vuln}", "worker.pools[1].name=b", "worker.pools[1].queues={vuln}"), []string{"worker.pools[b].queues", "vuln", "pool a"}},
-		{"a pool name too long for a Deployment name", pools("fullnameOverride="+strings.Repeat("a", 40), "packages.pools[0].name=abcdefghijklmnopqrst", "packages.pools[0].paths={/api/npm}"), []string{"packages.pools[abcdefghijklmnopqrst].name", "63"}},
+		{"a pool name too long for a Deployment name", pools("fullnameOverride="+strings.Repeat("a", 37), "packages.pools[0].name=abcdefghijklmnopqrst", "packages.pools[0].paths={/api/npm}"), []string{"packages.pools[abcdefghijklmnopqrst].name", "63"}},
 		{"a pool below two replicas", pools("worker.pools[0].name=a", "worker.pools[0].queues={vuln}", "worker.pools[0].replicaCount=1"), []string{"worker.pools[a].replicaCount", "quader-worker-a"}},
 		{"a pool without a disruption budget", pools("api.pools[0].name=a", "api.pools[0].paths={/ui/x}", "api.pools[0].podDisruptionBudget.enabled=false"), []string{"api.pools[a].podDisruptionBudget.enabled"}},
 		{"a pool without a memory limit", pools("packages.pools[0].name=a", "packages.pools[0].paths={/api/npm}", "packages.pools[0].resources.limits.memory="), []string{"packages.pools[a].resources.limits.memory is required"}},

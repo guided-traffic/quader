@@ -44,7 +44,7 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 {{- if and (include "quader.scanListenOn" $) $.Values.tls.enabled -}}
 {{- $srv := get $m "server" | default (dict) -}}
 {{- $_ := set $srv "internal_tls" (dict "ca_file" (include "quader.internalCAPath" $)) -}}
-{{- /* The scan listener admits every kind of scanner the release renders (quader.tlsKindTable). */ -}}
+{{- /* The scan listener admits every kind of the role scanner the release renders (quader.tlsKindTable). */ -}}
 {{- $_ := set $srv "scan_clients" (include "quader.scanClients" $ | fromYamlArray) -}}
 {{- $_ := set $m "server" $srv -}}
 {{- end -}}
@@ -74,7 +74,8 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 {{/*
 "true" when the pods of a role verify a link with the internal CA (R-HA-066, R-HA-068), so their Secret's ca.crt joins their pair: the
 main packages pods, which serve the scan listener, and every worker pod, which calls a scanner, while either scanning is on. The
-scanners' own mounts are in templates/vuln-scanner-trivy.yaml and templates/malware-scanner-clamav.yaml. Argument: dict "root" . "role" "pool".
+own mounts of the kinds of the role scanner are in templates/vuln-scanner-trivy.yaml, templates/malware-scanner-clamav.yaml and
+templates/malware-updater-freshclam.yaml. Argument: dict "root" . "role" "pool".
 */}}
 {{- define "quader.linkNeedsCA" -}}
 {{- if and .root.Values.tls.enabled (include "quader.scanListenOn" .root) (or (eq .role "worker") (and (eq .role "packages") (not .pool))) -}}true{{- end -}}
@@ -89,9 +90,9 @@ scanners' own mounts are in templates/vuln-scanner-trivy.yaml and templates/malw
 {{- end -}}
 
 {{/*
-The ingress rule of the scan listener in the policy of the main packages Deployment (R-HA-042, R-HA-066, R-HA-068): port 8082 from the
-pods of the scanners the release renders (vuln-scanner-trivy, malware-scanner-clamav), never from anywhere. Argument: as
-quader.scanListenEnv. Returns one YAML list item, or nothing.
+The ingress rule of the scan listener in the policy of the main packages Deployment (R-HA-042, R-HA-066, R-HA-068, R-HA-069): port 8082
+from the pods of the kinds of the role scanner the release renders (vuln-scanner-trivy, malware-scanner-clamav and, for its seed and its
+report, malware-updater-freshclam), never from anywhere. Argument: as quader.scanListenEnv. Returns one YAML list item, or nothing.
 */}}
 {{- define "quader.scanListenRule" -}}
 {{- if and (include "quader.scanListenOn" .root) (eq .role "packages") (not .pool) -}}
@@ -108,6 +109,11 @@ quader.scanListenEnv. Returns one YAML list item, or nothing.
     - podSelector:
         matchLabels:
           {{- include "quader.selectorLabels" (dict "root" .root "component" "malware-scanner-clamav") | nindent 10 }}
+    {{- end }}
+    {{- if include "quader.malwareUpdaterOn" .root }}
+    - podSelector:
+        matchLabels:
+          {{- include "quader.selectorLabels" (dict "root" .root "component" "malware-updater-freshclam") | nindent 10 }}
     {{- end }}
 {{- end -}}
 {{- end -}}

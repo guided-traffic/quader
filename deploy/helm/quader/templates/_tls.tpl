@@ -6,8 +6,9 @@ through tls.certManager.issuerRef (templates/certificates.yaml) or named per kin
 {{/*
 The kinds of pod that hold a pair (Q-HA-346), one entry each: "kind" (its name, <fullname>-<kind>.<namespace>.svc, its Secret
 <fullname>-tls-<kind> and its key of tls.existingSecrets), "client" (its pair also allows client authentication, because it calls a
-link), "scanClient" (the scan listener admits it: a kind of scanner, server.scan_clients) and "on" (the release renders it). A kind
-that runs one third-party tool is named <purpose>-scanner-<tool> (Q-HA-372): vuln-scanner-trivy, malware-scanner-clamav. A further
+link), "scanClient" (the scan listener admits it: a kind of the role scanner, server.scan_clients) and "on" (the release renders it).
+A kind that runs one third-party tool is named after its purpose, its function and its tool (Q-HA-372, Q-HA-375): vuln-scanner-trivy,
+malware-scanner-clamav, malware-updater-freshclam, the last the longest name the chart builds from <fullname>. A further
 kind of pod is one entry here, one key of tls.existingSecrets in values.yaml and values.schema.json, and its Deployment's mount of
 quader.tlsSecret; the Certificates, the checks, the Secrets' validation, the scan listener's names and the bound on the length of
 <fullname> (quader.validateNames) follow from this list. Argument:
@@ -16,11 +17,13 @@ the root context. Returns a YAML list.
 {{- define "quader.tlsKindTable" -}}
 {{- $vuln := include "quader.imageScanOn" . | eq "true" -}}
 {{- $malware := include "quader.malwareOn" . | eq "true" -}}
+{{- $updater := include "quader.malwareUpdaterOn" . | eq "true" -}}
 {{- $t := list (dict "kind" "api" "client" false "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "packages" "client" false "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "worker" "client" true "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "vuln-scanner-trivy" "client" true "scanClient" true "on" $vuln) -}}
 {{- $t = append $t (dict "kind" "malware-scanner-clamav" "client" true "scanClient" true "on" $malware) -}}
+{{- $t = append $t (dict "kind" "malware-updater-freshclam" "client" true "scanClient" true "on" $updater) -}}
 {{- toYaml $t -}}
 {{- end -}}
 
@@ -33,8 +36,8 @@ the root context. Returns a YAML list.
 {{- toYaml $k -}}
 {{- end -}}
 
-{{/* The names the scan listener admits, server.scan_clients (R-HA-066): every kind of scanner the release renders. Argument: the root
-context. Returns a YAML list. */}}
+{{/* The names the scan listener admits, server.scan_clients (R-HA-066, R-HA-069): every kind of the role scanner the release renders.
+Argument: the root context. Returns a YAML list. */}}
 {{- define "quader.scanClients" -}}
 {{- $n := list -}}
 {{- range $e := include "quader.tlsKindTable" . | fromYamlArray -}}

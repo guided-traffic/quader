@@ -13,9 +13,9 @@ Per Deployment the policy admits the ports its pods open:
                         from anywhere
 A worker listens on no client port, so its policy holds the 8081 rule only. The migration Job, the
 pods of the backup CronJob, the restore Job and the post-restore Job accept nothing. Replicas never talk to each other, so no rule admits one quader pod from another,
-but the seams of the scannings (R-HA-066, R-HA-068): the main packages Deployment admits 8082, its scan listener, from the scanners' pods
-(quader.scanListenRule below); each scanner's own policy, which admits 8080 from the worker that claims its queue, is in
-templates/vuln-scanner-trivy.yaml and templates/malware-scanner-clamav.yaml.
+but the seams of the scannings (R-HA-066, R-HA-068, R-HA-069): the main packages Deployment admits 8082, its scan listener, from the pods
+of the kinds of the role scanner (quader.scanListenRule below); the own policy of each of them, which admits 8080 from the worker that
+claims its queue, is in templates/vuln-scanner-trivy.yaml, templates/malware-scanner-clamav.yaml and templates/malware-updater-freshclam.yaml.
 */ -}}
 {{- if .Values.networkPolicy.enabled }}
 {{- $np := .Values.networkPolicy }}

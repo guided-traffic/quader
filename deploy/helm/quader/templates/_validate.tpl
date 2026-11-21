@@ -174,7 +174,7 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- end -}}
 {{- if not $t.certManager.issuerRef.name -}}
 {{- if not $named -}}
-{{- fail "quader: tls.certManager.issuerRef.name or tls.existingSecrets is required while tls.enabled is true (default): every kind of pod has a pair of its own (R-HA-063). Name a cert-manager issuer (example: tls.certManager.issuerRef.name: cluster-ca, tls.certManager.issuerRef.kind: ClusterIssuer) and the chart issues them, or name an existing Secret per kind in tls.existingSecrets (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav), or opt out with tls.enabled: false (plain HTTP inside the cluster)" -}}
+{{- fail "quader: tls.certManager.issuerRef.name or tls.existingSecrets is required while tls.enabled is true (default): every kind of pod has a pair of its own (R-HA-063). Name a cert-manager issuer (example: tls.certManager.issuerRef.name: cluster-ca, tls.certManager.issuerRef.kind: ClusterIssuer) and the chart issues them, or name an existing Secret per kind in tls.existingSecrets (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam), or opt out with tls.enabled: false (plain HTTP inside the cluster)" -}}
 {{- end -}}
 {{- $seen := dict -}}
 {{- range $k := $kinds -}}

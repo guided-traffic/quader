@@ -129,10 +129,10 @@ func TestTLS(t *testing.T) {
 	t.Run("R-HA-063 Q-HA-346 the chart issues a Certificate per kind with its name, the ops name and the usages of the kind", func(t *testing.T) {
 		_, docs := render(t, required())
 		certs := ofKind(docs, "Certificate")
-		if len(certs) != 5 {
-			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav)", len(certs))
+		if len(certs) != 6 {
+			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam)", len(certs))
 		}
-		for i, kind := range []string{"api", "packages", "worker", "vuln-scanner-trivy", "malware-scanner-clamav"} {
+		for i, kind := range []string{"api", "packages", "worker", "vuln-scanner-trivy", "malware-scanner-clamav", "malware-updater-freshclam"} {
 			c := certs[i]
 			name := "quader-tls-" + kind
 			if str(c, "metadata", "name") != name || str(c, "spec", "secretName") != name {
@@ -150,7 +150,7 @@ func TestTLS(t *testing.T) {
 				usages = append(usages, u.(string))
 			}
 			want := "digital signature,server auth"
-			if kind == "worker" || kind == "vuln-scanner-trivy" || kind == "malware-scanner-clamav" {
+			if kind != "api" && kind != "packages" {
 				want += ",client auth"
 			}
 			if strings.Join(usages, ",") != want {
@@ -184,7 +184,7 @@ func TestTLS(t *testing.T) {
 		renderFails(t, required(), []string{noIssuer}, "tls.certManager.issuerRef.name", "tls.existingSecrets", "tls.enabled: false")
 		named := []string{
 			noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s",
-			"tls.existingSecrets.malware-scanner-clamav=m",
+			"tls.existingSecrets.malware-scanner-clamav=m", "tls.existingSecrets.malware-updater-freshclam=u",
 		}
 		_, docs := render(t, required(), named...)
 		if n := len(ofKind(docs, "Certificate")); n != 0 {

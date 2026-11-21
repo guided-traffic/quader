@@ -1937,7 +1937,7 @@
         "image": {
           "type": "string",
           "pattern": "^[a-z0-9][a-z0-9./_-]*:[A-Za-z0-9._-]+(@sha256:[a-f0-9]{64})?$",
-          "description": "the ClamAV image of the clamd and freshclam containers, <repository>:<tag>@sha256:<digest>"
+          "description": "the ClamAV image of the clamd container of malware-scanner-clamav and the freshclam container of malware-updater-freshclam, <repository>:<tag>@sha256:<digest>"
         },
         "pullPolicy": {
           "type": "string",
@@ -2264,9 +2264,28 @@
       "additionalProperties": false,
       "description": "The Deployment <fullname>-malware-scanner-clamav, the malware scanner of the role scanner with clamd beside it (R-HA-068, Q-HA-372): rendered while config.malware.enabled is true"
     },
-    "freshclam": {
+    "malwareUpdaterFreshclam": {
       "type": "object",
       "properties": {
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "at least 1 while the updater renders, checked by the chart; exempt from highAvailability.enforce (Q-HA-376)"
+        },
+        "privateMirror": {
+          "type": "string",
+          "pattern": "^$|^https?://[^\\s/?#@]+(/[^\\s?#]*)?$",
+          "description": "empty for ClamAV's network, else the http or https URL of an internal mirror of whole containers, rendered as PrivateMirror; not ClamAV's own network (R-HA-069, R-MAL-012)"
+        },
+        "proxy": {
+          "type": "string",
+          "pattern": "^$|^http://[^\\s/?#@:\\[\\]]+(:[0-9]{1,5})?/?$",
+          "description": "empty, or the HTTP proxy of freshclam as http://<host>[:<port>], rendered as HTTPProxyServer and HTTPProxyPort (port 80 when none is given)"
+        },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 1
+        },
         "resources": {
           "type": "object",
           "properties": {
@@ -2293,6 +2312,38 @@
           },
           "additionalProperties": false
         },
+        "freshclam": {
+          "type": "object",
+          "properties": {
+            "resources": {
+              "type": "object",
+              "properties": {
+                "requests": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ],
+                    "description": "Kubernetes quantity"
+                  }
+                },
+                "limits": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ],
+                    "description": "Kubernetes quantity"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
         "database": {
           "type": "object",
           "properties": {
@@ -2305,9 +2356,46 @@
             }
           },
           "additionalProperties": false
+        },
+        "affinity": {
+          "type": "object"
+        },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "priorityClassName": {
+          "type": "string"
+        },
+        "podAnnotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "podLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "extraEnv": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "The Deployment <fullname>-malware-updater-freshclam, freshclam beside a quader container of the role scanner and the kind freshclam (R-HA-069, Q-HA-375): rendered while config.malware.enabled is true and config.malware.database.source is updater"
     },
     "config": {
       "type": "object",
@@ -3399,6 +3487,9 @@
               "type": "string"
             },
             "malware-scanner-clamav": {
+              "type": "string"
+            },
+            "malware-updater-freshclam": {
               "type": "string"
             }
           }

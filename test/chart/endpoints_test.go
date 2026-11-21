@@ -401,7 +401,7 @@ func TestEndpoints(t *testing.T) {
 			{"a base URL with a path", []string{"endpoints.c.port=8443", "endpoints.c.baseUrl=https://p.example.com/x"}, []string{"endpoints.c.baseUrl"}},
 			{"an invalid name", []string{"endpoints.Cust.port=8443", "endpoints.Cust.baseUrl=https://p.example.com"}, []string{"endpoints"}},
 			{"a name that is too long", []string{"endpoints.abcdefghijklmnopqrstu.port=8443", "endpoints.abcdefghijklmnopqrstu.baseUrl=https://p.example.com"}, []string{"endpoints"}},
-			{"a Service name over 63 characters", []string{"fullnameOverride=" + strings.Repeat("a", 40), "endpoints.abcdefghijklmnopqrst.port=8443", "endpoints.abcdefghijklmnopqrst.baseUrl=https://p.example.com"}, []string{"endpoints.abcdefghijklmnopqrst", "63"}},
+			{"a pool Deployment name over 63 characters", []string{"fullnameOverride=" + strings.Repeat("a", 37), "endpoints.abcdefghijklmnopqrst.port=8443", "endpoints.abcdefghijklmnopqrst.baseUrl=https://p.example.com", "endpoints.abcdefghijklmnopqrst.pool.enabled=true"}, []string{"endpoints.abcdefghijklmnopqrst.pool", "63"}},
 			{"a host in two endpoints", base("endpoints.d.port=8444", "endpoints.d.baseUrl=https://q.example.com", "endpoints.d.hosts={p.example.com}"), []string{"endpoints.d", "p.example.com", "endpoints.c"}},
 			{"a host of the default endpoint", base("endpoints.c.hosts={quader.example.com}"), []string{"endpoints.c", "quader.example.com"}},
 			{"a wildcard host that covers another endpoint's host", base("endpoints.d.port=8444", "endpoints.d.baseUrl=https://q.example.com", "endpoints.d.wildcardHost=*.example.com"), []string{"endpoints.d.wildcardHost", "p.example.com"}},
@@ -445,9 +445,9 @@ func TestEndpoints(t *testing.T) {
 		if n := len(ofKind(docs, "Ingress")); n != 0 {
 			t.Errorf("%d Ingresses rendered without ingress.enabled", n)
 		}
-		// The three Services of every render, the two of the image scanning's links (R-HA-066), the malware scanner's (R-HA-068) and
-		// one per endpoint.
-		if n := len(ofKind(docs, "Service")); n != 3+2+1+16 {
+		// The three Services of every render, the two of the image scanning's links (R-HA-066), the malware scanner's (R-HA-068), the
+		// updater's (R-HA-069) and one per endpoint.
+		if n := len(ofKind(docs, "Service")); n != 3+2+1+1+16 {
 			t.Errorf("%d Services", n)
 		}
 	})

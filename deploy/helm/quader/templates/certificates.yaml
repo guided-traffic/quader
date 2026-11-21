@@ -2,7 +2,7 @@
 {{- /*
 A cert-manager Certificate per kind of pod (R-HA-063, Q-HA-345 to Q-HA-347): <fullname>-tls-<kind> into the Secret of the same name,
 for the kind's name and the operations name (plus tls.certManager.extraDnsNames and extraIpAddresses), with the usage server auth and,
-for the kinds that present themselves on a link (worker, vuln-scanner-trivy, malware-scanner-clamav), client auth. Ordinary objects of the release, so cert-manager
+for the kinds that present themselves on a link (worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam), client auth. Ordinary objects of the release, so cert-manager
 renews them; rotationPolicy Always makes a renewal change the key too. Each Secret carries ca.crt, which the pods of the links and
 the edge verify against.
 */ -}}

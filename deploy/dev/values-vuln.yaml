@@ -23,13 +23,14 @@ config:
       public_upstreams:
         npm: [registry.npmjs.org, npmstub.quader.svc]
         nuget: [api.nuget.org, www.nuget.org, nugetstub.quader.svc]
-  # The malware scanning, on in this profile only (values-dev.yaml): as an installation without internet (R-MAL-012), without
-  # freshclam, its database the files of a few signatures that the end-to-end case deploys to e2e/clamav-db (vuln_malware_test.go).
-  # Until they are there the malware scanners are not ready, and up.sh waits for every other Deployment (Q-MAL-90).
+  # The malware scanning, on in this profile only (values-dev.yaml): as an installation without internet (R-MAL-012), with the source
+  # repository, so the chart renders no updater and no test cluster talks to ClamAV's network; its database the files of a few
+  # signatures that the end-to-end case deploys to e2e/clamav-db (vuln_malware_test.go). Until they are there the malware scanners are
+  # not ready, and up.sh waits for every other Deployment (Q-MAL-90).
   malware:
     enabled: true
     database:
-      freshclam: false
+      source: repository
       repository: e2e/clamav-db
   # The three scheduled syncs are off: the tests start every sync through the task API, and a scheduled one that fires inside a
   # test's window is a request to the test advisory source that no test caused (the KEV sync fires at minute 41 of hours 0, 6, 12

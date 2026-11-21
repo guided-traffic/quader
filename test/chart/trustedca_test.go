@@ -15,8 +15,8 @@ func trustedCAPods(t *testing.T, sets ...string) map[string]any {
 	pods := map[string]any{}
 	_, docs := render(t, required(), append(backupSets(), sets...)...)
 	for name, pod := range podSpecs(docs) {
-		if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" {
-			// The scanners open no connection that they would verify with the bundle and mount none (R-HA-065, R-HA-068).
+		if name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" || name == "quader-malware-updater-freshclam" {
+			// The kinds of the role scanner open no connection that they would verify with the bundle and mount none (R-HA-065, R-HA-068, R-HA-069).
 			if volumeNamed(pod, "secret-trusted-ca") != nil {
 				t.Errorf("%s mounts the trusted CA bundle", name)
 			}

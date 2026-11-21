@@ -268,7 +268,7 @@ vulnScannerTrivy:
   podLabels: {}
   extraEnv: []                          # the scanner's own; the shared extraEnv does not reach it (Q-HA-321)
 
-# ── ClamAV: the clamd container of malware-scanner-clamav and the freshclam container of the worker ────
+# ── ClamAV: the clamd container of malware-scanner-clamav and the freshclam container of malware-updater-freshclam ────
 clamav:
   image: docker.io/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7  # the CLAMAV_IMAGE of tools/versions.env, which a chart test holds it to: ClamAV's own multi-arch image without a database
   pullPolicy: IfNotPresent
@@ -341,19 +341,39 @@ malwareScannerClamav:
   podLabels: {}
   extraEnv: []                          # the quader container's own; the shared extraEnv does not reach it
 
-# ── freshclam container of every worker Deployment that claims the queue malware (R-HA-069) ────
-# Rendered while config.malware.enabled and config.malware.database.freshclam are true. It fetches ClamAV's database from ClamAV's
-# network into a directory it shares with the worker container, which stores each version in upstream/scanner-clamav. It holds no
-# credential and mounts no Secret; it needs DNS and HTTPS to database.clamav.net, which an egress policy of the cluster must admit.
-freshclam:
-  resources:
+# ── malware-updater-freshclam Deployment: freshclam and quader serve --role scanner of the kind freshclam (R-HA-069, Q-HA-375) ────
+# <fullname>-malware-updater-freshclam, rendered while config.malware.enabled is true and config.malware.database.source is updater. The one
+# pod that reaches ClamAV's network: freshclam fetches whole signed containers, the quader container seeds its directory from the set in use
+# and lists it for the worker, which takes each new set. No credential, no Secret but its TLS pair; an egress policy of the cluster admits it
+# by a label of podLabels.
+malwareUpdaterFreshclam:
+  replicaCount: 1                       # at least 1; exempt from highAvailability.enforce: one fetcher per network (Q-HA-376)
+  privateMirror: ""                     # an internal mirror of whole containers instead of ClamAV's network, rendered as PrivateMirror (R-MAL-012); example: https://clamav-mirror.example.com
+  proxy: ""                             # an HTTP proxy for freshclam, rendered as HTTPProxyServer and HTTPProxyPort; example: http://proxy.example.com:3128
+  terminationGracePeriodSeconds: 30
+  resources:                            # the quader container
     requests:
       cpu: 50m
-      memory: 128Mi
+      memory: 64Mi
+      ephemeral-storage: 64Mi
     limits:
-      memory: 512Mi                     # TestDatabases no: freshclam does not load the database it fetched
+      memory: 256Mi
+  freshclam:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 512Mi                   # TestDatabases no: freshclam does not load the database it fetched
   database:
-    sizeLimit: 1Gi                      # freshclam-db: the database (about 110 MiB) and freshclam's temporary copies
+    sizeLimit: 1Gi                      # freshclam-db: the containers (about 110 MiB) and freshclam's temporary copies
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  priorityClassName: ""
+  podAnnotations: {}
+  podLabels: {}                         # the label an egress policy of the cluster admits for the way to ClamAV's network
+  extraEnv: []                          # the quader container's own; the shared extraEnv does not reach it
 
 # ── Quader configuration (rendered to /etc/quader/quader.yaml) ─────────────────
 # Chart-managed keys (secret file paths, storage.spool.dir) must not be set here.
@@ -481,7 +501,7 @@ config:
   #       ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt  # example: an instance behind a private CA
 
 # ── TLS on Quader's own listeners ────────────────────
-# Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav) has a pair and a name of its own:
+# Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam) has a pair and a name of its own:
 # <fullname>-<kind>.<namespace>.svc, and <fullname>-ops.<namespace>.svc for the scrape (R-HA-063). With tls.certManager the chart
 # renders a cert-manager Certificate per kind into the Secret <fullname>-tls-<kind>; tls.existingSecrets names an existing Secret per
 # kind instead. A pod mounts its kind's Secret only, as a directory volume without subPath, so a rotated Secret reaches its pods
@@ -495,6 +515,7 @@ tls:
     worker: ""                          # example: quader-tls-worker (<fullname>-worker.<namespace>.svc and the ops name, server auth and client auth)
     vuln-scanner-trivy: ""              # example: quader-tls-vuln-scanner-trivy (<fullname>-vuln-scanner-trivy.<namespace>.svc and the ops name, server auth and client auth); needed while the image scanning is on
     malware-scanner-clamav: ""          # example: quader-tls-malware-scanner-clamav (<fullname>-malware-scanner-clamav.<namespace>.svc and the ops name, server auth and client auth); needed while the malware scanning is on
+    malware-updater-freshclam: ""       # example: quader-tls-malware-updater-freshclam (<fullname>-malware-updater-freshclam.<namespace>.svc and the ops name, server and client auth)
   certManager:                          # the Certificate per kind the chart renders while existingSecrets is empty: <fullname>-tls-<kind>
     issuerRef:
       kind: ClusterIssuer               # ClusterIssuer | Issuer (an Issuer of the release namespace)

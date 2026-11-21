@@ -348,24 +348,24 @@ func TestChart(t *testing.T) {
 		}
 	})
 
-	// Q-HA-374: the longest name built from <fullname> alone is the Service of the kind malware-scanner-clamav, so <fullname> has at most
-	// 63 - 1 - 22 = 40 characters, for every release whichever kinds it renders, and <fullname> is never cut.
-	t.Run("R-HA-029 Q-HA-374 a fullname too long for the names the chart builds fails the render, naming the name and what fits", func(t *testing.T) {
-		at := strings.Repeat("a", 40)
+	// Q-HA-374: the longest name built from <fullname> alone is the Service of the kind malware-updater-freshclam (R-HA-069), so <fullname>
+	// has at most 63 - 1 - 25 = 37 characters, for every release whichever kinds it renders, and <fullname> is never cut.
+	t.Run("R-HA-029 R-HA-069 Q-HA-374 a fullname too long for the names the chart builds fails the render, naming the name and what fits", func(t *testing.T) {
+		at := strings.Repeat("a", 37)
 		_, docs := render(t, required(), "fullnameOverride="+at)
-		if find(docs, "Service", at+"-malware-scanner-clamav") == nil {
-			t.Errorf("no Service %s-malware-scanner-clamav", at)
+		if find(docs, "Service", at+"-malware-updater-freshclam") == nil {
+			t.Errorf("no Service %s-malware-updater-freshclam", at)
 		}
-		over := strings.Repeat("a", 41)
-		renderFails(t, required(), []string{"fullnameOverride=" + over}, over+"-malware-scanner-clamav has 64 characters",
-			"at most 63", "set fullnameOverride to at most 40 characters")
+		over := strings.Repeat("a", 38)
+		renderFails(t, required(), []string{"fullnameOverride=" + over}, over+"-malware-updater-freshclam has 64 characters",
+			"at most 63", "set fullnameOverride to at most 37 characters")
 		renderFails(t, required(), []string{"fullnameOverride=" + over, "config.malware.enabled=false", "config.vulnerabilities.enabled=false"},
-			over+"-malware-scanner-clamav")
-		renderRelease(t, strings.Repeat("r", 33), required())
-		_, stderr, err := helm(t, templateArgs(strings.Repeat("r", 34), required(), nil)...)
-		if err == nil || !strings.Contains(stderr, strings.Repeat("r", 34)+"-quader-malware-scanner-clamav has 64 characters") ||
-			!strings.Contains(stderr, "a release name of at most 33 characters, or one of at most 40 that contains quader") {
-			t.Errorf("a release name of 34 characters: %v\n%s", err, stderr)
+			over+"-malware-updater-freshclam")
+		renderRelease(t, strings.Repeat("r", 30), required())
+		_, stderr, err := helm(t, templateArgs(strings.Repeat("r", 31), required(), nil)...)
+		if err == nil || !strings.Contains(stderr, strings.Repeat("r", 31)+"-quader-malware-updater-freshclam has 64 characters") ||
+			!strings.Contains(stderr, "a release name of at most 30 characters, or one of at most 37 that contains quader") {
+			t.Errorf("a release name of 31 characters: %v\n%s", err, stderr)
 		}
 	})
 
@@ -392,7 +392,7 @@ func TestChart(t *testing.T) {
 			for _, d := range ofKind(docs, "Deployment") {
 				name := strings.TrimPrefix(str(d, "metadata", "name"), "quader-")
 				role, _, _ := strings.Cut(name, "-")
-				if name == "vuln-scanner-trivy" || name == "malware-scanner-clamav" { // the two kinds of the role scanner (R-HA-065, R-HA-068)
+				if name == "vuln-scanner-trivy" || name == "malware-scanner-clamav" || name == "malware-updater-freshclam" { // the three kinds of the role scanner (R-HA-065, R-HA-068, R-HA-069)
 					role = "scanner"
 				}
 				if role != "api" && role != "packages" && role != "worker" && role != "scanner" {
@@ -544,8 +544,8 @@ func TestChart(t *testing.T) {
 			switch {
 			case strings.HasSuffix(name, "-malware-scanner-clamav"): // clamd's socket and the database it loads (R-HA-068)
 				want["/run/clamd"], want["/var/lib/clamav"] = true, true
-			case strings.HasSuffix(name, "-worker"): // freshclam's directory, which the worker seeds and reads (R-HA-069)
-				want["/var/lib/quader/freshclam"] = true
+			case strings.HasSuffix(name, "-malware-updater-freshclam"): // the directory it seeds and freshclam fills; no spool (R-HA-069)
+				want["/var/lib/clamav"] = true
 			}
 			for p := range mounts {
 				if !want[p] {
@@ -851,7 +851,8 @@ func TestChart(t *testing.T) {
 				}
 				if !strings.HasSuffix(name, "-migrate") {
 					for _, v := range []string{"QUADER_RUNTIME_MEMORY_LIMIT_BYTES", "QUADER_RUNTIME_TERMINATION_GRACE_PERIOD", "QUADER_STORAGE_SPOOL_MAX_BYTES"} {
-						if env[v] == nil {
+						// The updater has no spool, and so no spool budget (R-HA-069).
+						if env[v] == nil && (v != "QUADER_STORAGE_SPOOL_MAX_BYTES" || !strings.HasSuffix(name, "-malware-updater-freshclam")) {
 							t.Errorf("%s lacks %s", name, v)
 						}
 					}
@@ -875,9 +876,9 @@ func TestChart(t *testing.T) {
 							if name != "quader-packages" {
 								t.Errorf("%s sets QUADER_SERVER_SCAN_LISTEN, which only the main packages Deployment does", name)
 							}
-						case "QUADER_PROCESS_SCANNER_KIND": // the malware scanner's kind (R-HA-068)
-							if name != "quader-malware-scanner-clamav" {
-								t.Errorf("%s sets QUADER_PROCESS_SCANNER_KIND, which only the malware scanner does", name)
+						case "QUADER_PROCESS_SCANNER_KIND": // the kinds clamav and freshclam (R-HA-068, R-HA-069); trivy is the default
+							if name != "quader-malware-scanner-clamav" && name != "quader-malware-updater-freshclam" {
+								t.Errorf("%s sets QUADER_PROCESS_SCANNER_KIND, which only the malware scanner and the updater do", name)
 							}
 						default:
 							t.Errorf("%s sets %s, which the spec does not list (R-HA-030)", name, v)

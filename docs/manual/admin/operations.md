@@ -320,21 +320,40 @@ there for whoever may open it. With `malware.enabled: false` the side bar has no
 
 | Message | Code | What to do |
 |---|---|---|
-| No signature database was found. | `database_missing` | `freshclam` beside the worker has not fetched one yet or cannot reach ClamAV's network (its log says which); without internet, the repository holds no database at its root |
+| No signature database was found. | `database_missing` | Recorded only once a database was in use: the updater `malware-updater-freshclam` offers no complete set (the logs of its containers `quader` and `freshclam` say why); without internet, the repository holds no database at its root |
 | A file of the signature database was refused. | `database_invalid` | A file failed the checks, or a scanner could not load the version; the version before stays in use and the refused one is not offered again |
 | The repository the configuration names cannot hold the database. | `database_repository_invalid` | `malware.database.repository` names no local generic repository |
 | A file of the signature database could not be stored. | `store_failed` | The object store refused the write; see [When a dependency is unavailable](#when-a-dependency-is-unavailable) |
 
-**Without internet.** With `malware.database.freshclam: false` and `malware.database.repository` naming a local generic repository of
-your own, the page shows the commands that fill it, with this installation's address and the repository filled in: ClamAV's mirror tool
+**Without internet.** With `malware.database.source: repository` and `malware.database.repository` naming a local generic repository of
+your own, the chart runs no updater and the page shows the commands that fill it, with this installation's address and the repository filled in: ClamAV's mirror tool
 `cvdupdate` fetches the files on a machine that reaches the network, and the three whole files are uploaded to the root of the repository.
 Whoever may deploy to that repository decides what the scanners compare content with: besides the publisher's signed files it also
 takes ClamAV's unsigned `.cud` containers, which ClamAV loads without a publisher's signature.
 
-**`freshclam` and your network.** `freshclam` runs beside every worker that claims the queue `malware` and needs DNS and HTTPS to
-`database.clamav.net`. The chart restricts no egress; if a policy of your cluster does, admit the worker pods by the labels you give them
-in `worker.podLabels` (or a pool's `podLabels`), or name an HTTP proxy in `malware.database.proxy`. Until the first version is stored no
-alert fires, only the page's failure `database_missing`.
+**The updater and your network.** One pod fetches ClamAV's signatures: the updater `<fullname>-malware-updater-freshclam`, which runs
+ClamAV's own `freshclam` and holds no credential. No other pod of Quader needs a way to ClamAV's network; the worker asks the updater
+inside the cluster. The chart restricts no egress, so where a policy of your cluster denies egress by default, admit the updater's pods by
+a label you give them in `malwareUpdaterFreshclam.podLabels`, for:
+
+| Where to | Port | When |
+|---|---|---|
+| the cluster's DNS resolver | 53, UDP and TCP | always |
+| `database.clamav.net` | 443 | by default. ClamAV serves it from Cloudflare's addresses, which change: a policy by address has to admit Cloudflare's published ranges, a policy by name needs a policy engine that matches host names |
+| the host and port of `malwareUpdaterFreshclam.privateMirror` | as in the URL (443 for `https`, 80 for `http`) | instead of ClamAV's network, when you run a mirror of whole containers (`cvdupdate`'s `cvd serve`, or the ClamAV definitions endpoint of another Quader) |
+| the host and port of `malwareUpdaterFreshclam.proxy` | as in the URL (80 when none is given) | when the way out is an HTTP proxy |
+
+```yaml
+malwareUpdaterFreshclam:
+  podLabels:
+    egress/clamav: "allow"                        # example: the label your egress policy admits
+  privateMirror: ""                               # default: ClamAV's network; example: https://clamav-mirror.example.com
+  proxy: ""                                       # default: none; example: http://proxy.example.com:3128
+```
+
+The updater checks for new signatures every two hours and keeps working with what it has when it cannot reach the network: scanning goes
+on with the database in use, and after 48 hours `QuaderMalwareDatabaseStale` fires. Until the first version is stored no alert fires and
+no failure is recorded: the updater's row on the System page and the empty **Signature database** on this page are what show it.
 
 **A repository's own setting.** A repository's settings have a closed section **Malware scan** with **Only checked artifacts can be
 downloaded from this repository**: a team that wants checked content without the installation's switch sets it. It only makes a

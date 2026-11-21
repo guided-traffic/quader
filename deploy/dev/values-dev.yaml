@@ -100,7 +100,8 @@ config:
     tasks:
       vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
   # The malware scanning is off in every profile but `vuln` (values-vuln.yaml): no other leg pulls the ClamAV image or runs clamd,
-  # and no test cluster runs freshclam, which would fetch ClamAV's real database from ClamAV's network (R-MAL-030, Q-MAL-90).
+  # and no test cluster runs the updater malware-updater-freshclam, which would fetch ClamAV's real database from ClamAV's network
+  # (R-MAL-030, Q-MAL-90).
   malware:
     enabled: false
   system:

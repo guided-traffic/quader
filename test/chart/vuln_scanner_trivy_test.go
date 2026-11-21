@@ -106,7 +106,7 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 	}
 	// With named Secrets the scanner mounts its own and no other kind's (Q-HA-347).
 	_, docs = render(t, required(), "tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p",
-		"tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s", "tls.existingSecrets.malware-scanner-clamav=m")
+		"tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s", "tls.existingSecrets.malware-scanner-clamav=m", "tls.existingSecrets.malware-updater-freshclam=u")
 	if got := secretVolumes(scannerPod(t, docs)); got["secret-tls"] != "s" || len(got) != 1 {
 		t.Fatalf("with tls.existingSecrets the scanner's secret volumes are %v", got)
 	}
@@ -208,7 +208,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 				t.Errorf("%s: QUADER_SERVER_SCAN_LISTEN %v", name, scan)
 			}
 			ca := slices.Contains(tlsItems(pod), "ca.crt")
-			wantCA := name == "quader-packages" || name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" || strings.HasPrefix(name, "quader-worker")
+			wantCA := name == "quader-packages" || name == "quader-vuln-scanner-trivy" || name == "quader-malware-scanner-clamav" || name == "quader-malware-updater-freshclam" || strings.HasPrefix(name, "quader-worker")
 			if ca != wantCA {
 				t.Errorf("%s: internal CA mounted %v", name, ca)
 			}
@@ -238,7 +238,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.client_name=x"}, "config.vulnerabilities.images.scanner.client_name is managed by the chart")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.registry.client_name=x"}, "config.vulnerabilities.images.registry.client_name is managed by the chart")
 		// The scan listener admits every kind of scanner the release renders, one entry each (quader.tlsKindTable).
-		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-vuln-scanner-trivy.default.svc\n- quader-malware-scanner-clamav.default.svc\n" {
+		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-vuln-scanner-trivy.default.svc\n- quader-malware-scanner-clamav.default.svc\n- quader-malware-updater-freshclam.default.svc\n" {
 			t.Errorf("server.scan_clients = %q, want the names of the two scanners", got)
 		}
 		renderFails(t, required(), []string{"config.server.scan_clients[0]=x"}, "config.server.scan_clients is managed by the chart")
@@ -332,7 +332,7 @@ func TestQ_VULN_185_TheDocumentedPairsAllowTheLinksOfEachKind(t *testing.T) {
 		t.Fatal("the dev profile does not let the chart issue its pairs from the dev CA")
 	}
 	manual := read(t, "docs/manual/admin/tls-and-certificates.md")
-	for _, kind := range []string{"worker", "vuln-scanner-trivy", "malware-scanner-clamav"} {
+	for _, kind := range []string{"worker", "vuln-scanner-trivy", "malware-scanner-clamav", "malware-updater-freshclam"} {
 		if !strings.Contains(manual, "  name: quader-tls-"+kind+"\n") || !strings.Contains(manual, "- quader-"+kind+".quader.svc\n") {
 			t.Errorf("the manual's example of named Secrets lacks the pair of %s with its name", kind)
 		}

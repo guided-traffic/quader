@@ -281,7 +281,7 @@ func TestServiceMonitor(t *testing.T) {
 			t.Errorf("tlsConfig = %v scheme %q", at(ep, "tlsConfig"), str(ep, "scheme"))
 		}
 		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a",
-			"tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s", "tls.existingSecrets.malware-scanner-clamav=m")
+			"tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s", "tls.existingSecrets.malware-scanner-clamav=m", "tls.existingSecrets.malware-updater-freshclam=u")
 		if got := str(at(find(d, "ServiceMonitor", "quader"), "spec", "endpoints", "0"), "tlsConfig", "ca", "secret", "name"); got != "a" {
 			t.Errorf("CA Secret = %q, want the api kind's a", got)
 		}
