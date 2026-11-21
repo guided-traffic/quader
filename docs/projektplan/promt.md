@@ -1236,7 +1236,8 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (08:10): three builders, and the rename's landing. **What the rename's builder reported and left is
+- **In work** (08:13): three builders; the rename is landed and its release is awaited, with the look at the owner's
+  installation after it. **What the rename's builder reported and left is
   built at once** (the owner, 2026-11-21, to that report: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten.
   Das ist alles wichtig und muss umgesetzt werden"), in two packages on top of the rename's commit, both since
   08:08. (1) **No name of a scanner unit that an operator reads is left without its tool:** the label `listener` of
@@ -1264,8 +1265,8 @@ runs are in `git log`; this section holds the current state.
   match. Seen by the development agent in the same picture and given to the builder: the description under the
   title is the stored description of the built-in project, English in a German UI, and comes from a localized text
   instead. The builder reports every other place that lists a system repository among the repositories a user works
-  with, and renders the page in both schemes, wide and narrow, closed and opened. **The two scanner units' rename is built and stands before its landing** (builder from 06:48 to 07:54, one commit,
-  84 files): the kinds `vuln-scanner-trivy` and `malware-scanner-clamav` in the chart's table of kinds, from which
+  with, and renders the page in both schemes, wide and narrow, closed and opened. **The two scanner units' rename, landed on 2026-11-21 at 08:12** (builder from 06:48 to 07:54, one commit,
+  84 files; pipeline 44879147044): the kinds `vuln-scanner-trivy` and `malware-scanner-clamav` in the chart's table of kinds, from which
   every Deployment, Service, disruption budget, autoscaler, NetworkPolicy, Certificate and Secret follows, with the
   component label, the names in the certificates, `server.scan_clients`, the scanners' addresses and the keys of
   `tls.existingSecrets`; the value blocks `vulnScannerTrivy` and `malwareScannerClamav` (the schema refuses the old
@@ -1284,8 +1285,9 @@ runs are in `git log`; this section holds the current state.
   render with an issuer and with five existing Secrets read for old names. **Of the development agent on the commit
   rebased onto `main`:** build, the full unit run, links and check, each exit 0; the owner's values rendered against
   the new chart (35 objects, the five Deployments and Certificates under the new names, no old name); the set `push`
-  on a cluster of its own, because its Valkey case names a component and the builder had not run it (running at
-  07:58). **What an operator still sees with the purpose's name, reported by the builder and left for the package
+  on a cluster of its own, because its Valkey case names a component and the builder had not run it (exit 0 at
+  08:11 after 719 s, the Valkey case with its three start cases among them); and before the push the owner's UI
+  backend started with it from the main checkout and answers ready. **What an operator still sees with the purpose's name, reported by the builder and left for the package
   that moves the detection into the unit:** the label `listener` of the links' certificate metrics (`scanner`,
   `malware-scanner`), the log field `component` of both scanner processes, and the readiness check `scanner` that both
   kinds register. **What the screens show for a scanner:** nothing on the admin area's System page (a scanner writes
