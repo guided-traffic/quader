@@ -559,6 +559,9 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- The decisions' index (`docs/decisions.md`) has no rows for the decisions of the signatures' second stage (Q-SIG-53 to
+  Q-SIG-74); found on 2026-11-21 by the planner of the third stage, left. (The index also stops at Q-UI-844, an older
+  entry of this list.)
 - A ClamAV inside the cluster that names the definitions' endpoint by a host the endpoint does not accept gets 421, which
   `freshclam` counts as a failed attempt without a cool-down; the client setup does not say which host to use from inside the
   cluster (found on 2026-11-21 by the builder of the ClamAV import's measurement, left).
@@ -1301,10 +1304,11 @@ runs are in `git log`; this section holds the current state.
   built meanwhile; rebased, its decision numbers set behind those of the first stage's package 1, the decision
   blocks of both merged, links and check exit 0, the count test at 1,131 requirements); its worktree and branch
   are removed. Its four packages are built after the first stage, in the order it names.
-- **Planner in work since 13:25: the third stage of the signatures, the gate per repository** (the owner's
-  decision 9, "With the owner"): the detail setting of a repository, what counts as verified state by state,
-  where the gate acts per format, what a client gets, the preview of what would be refused before switching
-  on, with the malware gate as the pattern and a build plan of at most three packages.
+- **The planner of the signatures' third stage, the gate per repository (13:25 to 14:01), is done:** its
+  specification is on `main` since 14:02 ("With the owner" holds what it says and its three questions to the
+  owner; rebased without a conflict, links and check exit 0, the count test at 1,149 requirements; it does not
+  touch the chart's page); its worktree and branch are removed. Its three packages follow the first stage's.
+  **Found by it and left (section 8):** the decisions' index has no rows for the second stage's decisions.
 - **In work since 12:56, two builders on `main` with package 1: the signatures' packages 2 and 3.** Package 2:
   the read, the integrity check of each scheme, time, the trust step, the job `signature-verify`, the four kinds
   of anchor in their scopes with the chart's declared ones, the switch for project Owners, the block of a
@@ -2254,7 +2258,47 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   flag gives cosign its older behaviour back; whether the signing library takes a trusted root without logs as
   Quader builds it (read, not run); an admission controller's check with a certificate chain; every figure of
   CPU, storage and duration, which are estimates.
-  The third stage, the gate per repository, is specified when the first stage's verdicts exist.
+  **The third stage, the gate per repository, is specified on `main` since 2026-11-21, 14:02** (R-SIG-061 to
+  R-SIG-078, Q-SIG-75 to Q-SIG-95, ADR-231, H-1194 to H-1200; nothing of it is built). **The setting:** a
+  repository's detail section **Signatures** gets "only artifacts with a verified signature" (off by default)
+  and optionally the anchors that count; never in a creation flow; narrowing it is any settings writer's,
+  weakening it needs the right that weakening the malware gate needs. **What passes:** an artifact with one
+  signature of its publisher or its provenance that shows as verified (with chosen anchors: by one of them);
+  a registry's signature alone never passes, nor does Quader's own of the second stage; untrusted, blocked,
+  invalid, unreadable and missing are refused, each with its reason; not checked yet is pending. **Where it
+  acts:** at the download, for every format, where the malware gate sits; not at the upload, because half the
+  formats sign after the push. An image is judged at its manifest, an index's signature covers its platform
+  manifests, and signatures, attestations and SBOMs of an image stay fetchable (recognised by content, not by
+  the tag's name); npm passes on provenance; NuGet on an author's signature; Ansible on a publisher's
+  signature; a generic file on its sibling; Debian is not offered the setting, because no package carries a
+  publisher's signature. A remote's first request fetches and checks the signatures first, with a bounded wait
+  of 25 seconds; in a virtual repository its own gate and the holding member's both apply. **What a client
+  gets:** 403 with a reason or 503 with a retry hint, in the shapes each format already has for the malware
+  gate, never cached; an audit event, two metrics, and one alert for the case that clients wait because the
+  checks do not keep up. **A removed anchor or a blocked signer** is subtracted by the gate itself within the
+  propagation bound; a widening waits for the recomputation. **Before switching on** a bounded preview says
+  how many artifacts of the repository would be refused, and before an anchor is removed or a signer blocked
+  how many artifacts of gated repositories lose their state. A holder of the triage right can release one
+  artifact in one repository. The three checks (malware, vulnerability, signature) decide before one shared
+  wait, in a fixed order of refusals.
+  **Three questions of the planner to the owner, each built with its recommendation meanwhile:** (1) how strong
+  the gate is without chosen anchors (Q-SIG-76): (a) whatever shows as verified passes, the shipped public
+  anchors included, with a sentence of warning at the setting; (b) only what is verified by an internal anchor,
+  unless anchors are chosen; (c) anchors must be chosen. Built: (a), so that the gate is what the screen shows;
+  (b) would refuse artifacts that show green, (c) is against his "optionally". (2) Debian (Q-SIG-80): (a) not
+  offered; (b) a package passes when a covering index of the remote is verified by an administrator's anchor,
+  which is an exception to his decision 1 and never passes in a local repository. Built: (a). (3) A gate at
+  the upload as well for npm and NuGet, the two formats whose signature arrives with the upload (Q-SIG-79):
+  (a) no; (b) yes for those two. Built: (a), one behaviour for every format, and the checks stay in the worker
+  as he decided. **Build plan, three packages, after the first stage's packages 2 and 3:** (1) the gate with
+  the contract's method that classifies an item, the serve points, the wait and the held fill, the combined
+  decision with the malware gate, event, metrics, alert; (2) releases, the preview, the impact count, the API,
+  the Bastion's feed, backups; (3) the screens. The second stage is no prerequisite. **Its tests cost** about
+  2 s of unit tests, milliseconds per format in the kit and about 22 s in the integration area `signatures`;
+  no end-to-end case (one measurement by hand), no new leg. **Verified by the planner:** that cosign signs only
+  the index of a multi-platform tag unless told otherwise (its source); what a symbol package of NuGet is
+  signed with (documentation). **Not verified:** whether authors or nuget.org sign symbol packages in
+  practice; the clients' behaviour on 403 and 503 was taken from the malware gate's record, not read again.
 
 **Questions he has not answered**
 
