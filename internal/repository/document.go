@@ -79,6 +79,10 @@ type Settings struct {
 	// Malware is the member owned by malware-scanning.md (R-MAL-020): on every class of every format, it only adds strictness to
 	// the installation's switch. It is absent until set, and an absent member is the default (onlyChecked false).
 	Malware *MalwareSettings `json:"malware,omitempty"`
+	// Signatures is the member owned by signatures.md (R-SIG-026, R-SIG-040): on a remote repository, fetch switches the background fetch
+	// of the upstream's signatures; an absent member, or one without fetch, is the default (on). The job signature-fetch reads it from the
+	// stored document.
+	Signatures *SignatureSettings `json:"signatures,omitempty"`
 
 	// pending are the secret fields of the validated document that still have to
 	// be written to repository_secrets. They carry the plaintext of a request, so
@@ -90,6 +94,12 @@ type Settings struct {
 // repository, and through every virtual repository that lists it, also while the installation's switch is off.
 type MalwareSettings struct {
 	OnlyChecked bool `json:"onlyChecked"`
+}
+
+// SignatureSettings is the member `signatures` of a document (R-SIG-040): fetch, on a remote repository, lets the background fetch
+// ask the upstream for the signatures of what the remote stored (R-SIG-026); false is for an upstream whose rate limits are tight.
+type SignatureSettings struct {
+	Fetch *bool `json:"fetch,omitempty"`
 }
 
 // malwareOnlyChecked is the effective value of the member: an absent member is false.

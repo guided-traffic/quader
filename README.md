@@ -656,11 +656,12 @@ of at most 30, or 37 if it contains `quader`); the message names that name and w
 | Endpoint objects | `<fullname>-ep-<name>` (and `<fullname>-api-ep-<name>` for a surface over both roles) for the Services and the Ingress of a further endpoint | yes |
 | Disruption budgets, autoscalers | one per Deployment, named as the Deployment | yes |
 | Migration hook Job | `<fullname>-migrate`; not rendered while `restore.enabled`, because the restore applies the migrations itself | yes |
+| Material of declared trust anchors | the projected volume `signature-anchors` of the migration Job only, mounted read-only at `/etc/quader/signature-anchors/<anchor key>/` with the files `certificates.pem`, `keys.asc`, `key-<index>.pem` and `trusted_root.json`, one per `*From.configMapKeyRef` of `signatures.anchors` | yes ([_signatures.tpl](deploy/helm/quader/templates/_signatures.tpl)) |
 | ConfigMap | `<fullname>-config`, holding `quader.yaml` | yes |
 | Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port); `<fullname>-vuln-scanner-trivy` (8080, while the image scanning is on), `<fullname>-malware-scanner-clamav` (8080, while the malware scanning is on), `<fullname>-malware-updater-freshclam` (8080, while the updater renders) and `<fullname>-packages-scan` (8082, while either scanning is on), always `ClusterIP` | yes |
 | Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing); `<fullname>-vuln-scanner-trivy` admits 8080 from the worker that claims `vuln`, `<fullname>-malware-scanner-clamav` and `<fullname>-malware-updater-freshclam` 8080 from the worker that claims `malware`, and `<fullname>-packages` 8082 from the pods of both scanners and the updater | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
-| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 36 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
+| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 43 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`), the four of the malware scanning while `config.malware.enabled` (`QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable`, `QuaderMalwareBacklog`), the three of the signatures while `config.signatures.enabled` (`QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
 | Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so `<fullname>-backup` must stay within 52 characters, which every `<fullname>` the chart accepts does; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
 | Restore Job | `<fullname>-restore` with `restore.enabled`, `quader backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/quader/templates/restore.yaml)) |
 | Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `quader/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml)) |
@@ -1566,6 +1567,7 @@ jobs:
     mirror: 2                           # the passes of mirrored remote repositories
     vuln: 1                             # the advisory sync (vuln-sync-osv, vuln-sync-osv-full, vuln-sync-kev)
     malware: 1                          # the malware scanning's job and database task
+    signatures: 1                       # the signatures' jobs signature-verify and signature-trust and the task signature-trust-root
   queues: []                            # default: every queue; the queues this worker claims, for example ["index"] on a worker pool
   exclude_queues: []                    # default: none; the queues this worker does not claim; not together with queues. As variables: QUADER_JOBS_QUEUES='["index"]' (one JSON list)
   poll_interval: 2s                     # default; at least 100ms; below health.watchdog_timeout
@@ -2292,6 +2294,79 @@ its header's signature verified against ClamAV's public key (R-MAL-033).
 malware:                                # repository document member, every class of every format
   onlyChecked: false                    # default; true: only checked artifacts are served from this repository and through every virtual repository that lists it; an Owner switches it on, switching it off needs repositories:write-config or vulnerabilities:triage
 ```
+
+</details>
+
+<details>
+<summary>Signatures on artifacts: the job, the bounds, the trust root's refresh and the declared trust anchors</summary>
+
+The keys come from the struct tags of [internal/config/signatures.go](internal/config/signatures.go) (R-SIG-040, the bounds R-SIG-013 and
+[Q-SIG-45](docs/spec/signatures.md#q-sig-45--the-bounds-and-their-defaults)). The loader refuses, naming the key, a `max_object_size` above 1 MiB, a
+`concurrency` of 0 and a `trust_root.url` that is not an `https://` URL with a host. `anchors` is a map keyed by the anchor's key, so a key cannot appear
+twice; in the environment it is one JSON object (`QUADER_SIGNATURES_ANCHORS`). The loader checks the shape of each entry (the key, the title, the kind
+with exactly its block, the material from exactly one place, an absolute file path, the subject attributes, an RFC 3339 `expires`); `quader migrate`
+reads the files and checks the material itself with the rules of [R-SIG-015](docs/spec/signatures.md#r-sig-015--the-four-kinds-of-anchor-and-the-checks-on-save),
+and stops with the anchor's key and the reason. In the chart, `signatures.anchors` renders the map (see [Helm values](#helm-values)); the chart refuses
+`config.signatures.anchors`.
+
+```yaml
+signatures:
+  enabled: true                         # default; false: no signature is detected, checked or shown with a badge; the stored rows stay
+  concurrency: 4                        # default; 1 to 64 checks the one job has in flight (QUADER_SIGNATURES_CONCURRENCY)
+  run_slice: 10m                        # default; 10s to 24h: how long one job keeps the queue signatures before the next job
+  max_attempts: 5                       # default; 1 to 100 attempts at a check that could not run, then failed and retried daily by discovery
+  check_timeout: 5s                     # default; 100ms to 5m: one check; a check past it spends an attempt
+  max_object_size: 256KiB               # default; 1KiB to 1MiB: a larger signature object is not read, malformed (limits_exceeded)
+  max_per_subject: 32                   # default; 1 to 1000 signatures read per subject and repository; the details say how many of how many
+  max_chain: 8                          # default; 1 to 32 certificates in a chain (each at most 16 KiB); a longer one is malformed (limits_exceeded)
+  max_content_size: 8GiB                # default; at least 1MiB: content a keyless scheme or NuGet reads; larger leaves the signature unsupported (limits_exceeded)
+  remote:                               # the background fetch through remote repositories (R-SIG-026)
+    max_manifests_per_subject: 4        # default; 0 to 64 OCI signature and attestation manifests fetched per image, signature types first
+    refresh_after: 24h                  # default; 1m to 8760h: an unchanged tag's signatures are asked for again after this
+    requests_per_hour: 600              # default; 1 to 1000000 background requests per remote and replica (H-1173)
+  trust_root:                           # the public Sigstore root and npm's registry keys (R-SIG-017)
+    refresh: true                       # default; false: the release's snapshot holds and ages with the release (H-1170)
+    url: https://tuf-repo-cdn.sigstore.dev   # default; https only; or a TUF mirror of the company (QUADER_SIGNATURES_TRUST_ROOT_URL)
+  anchors: {}                           # default: none; applied by quader migrate with the scope configuration, read-only in the API and the UI
+  # anchors:
+  #   company-ca:                       # example key: ^[a-z0-9]+(-[a-z0-9]+)*$, at most 64 characters
+  #     title: Company code-signing CA  # 1 to 128 characters, the name shown at a signature
+  #     kind: ca                        # ca | openpgp | public-key | sigstore; exactly the block of the kind
+  #     ca:
+  #       certificates_file: /etc/quader/signature-anchors/company-ca/certificates.pem   # or certificates: inline PEM, not both
+  #       use: codeSigning              # default when left out; or timestamping (a timestamp authority's root, never a signer)
+  #       subject: {O: Example GmbH}    # optional: O, OU, CN, C the signer's certificate must carry exactly
+  #       subject_alt_names: []         # optional: RE2 patterns, one of which an alternative name of the signer must match
+  #   release-key:
+  #     title: Release signing key
+  #     kind: openpgp
+  #     openpgp:
+  #       keys_file: /etc/quader/signature-anchors/release-key/keys.asc   # or keys: inline, 1 to 32 armored public certificates
+  #   npm-mirror-keys:
+  #     title: npm mirror signing keys
+  #     kind: public-key
+  #     public_key:
+  #       keys:                         # 1 to 16
+  #         - pem_file: /etc/quader/signature-anchors/npm-mirror-keys/key-0.pem   # or pem: inline PEM
+  #           keyid: "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA"           # optional: npm's keyid
+  #           expires: "2027-01-01T00:00:00Z"                                      # optional: RFC 3339
+  #   company-sigstore:
+  #     title: Company Sigstore
+  #     kind: sigstore
+  #     sigstore:
+  #       issuer: https://gitlab.example.com
+  #       identity_pattern: "^https://gitlab\\.example\\.com/platform/.+$"   # or identity: an exact value
+  #       trust_root: own               # optional: public when no trusted root is given, own when one is
+  #       trusted_root_file: /etc/quader/signature-anchors/company-sigstore/trusted_root.json   # or trusted_root: inline JSON, at most 1 MiB
+jobs:
+  workers:
+    signatures: 1                       # default; the queue signatures: signature-verify, signature-trust and signature-trust-root
+```
+
+Security: an anchor decides whose signatures read **Verified · internal** in every repository, so whoever can change the values (or the
+ConfigMap a `*From.configMapKeyRef` names) chooses whom the installation trusts. The material is public; a private key in any field stops
+`quader migrate` (`secret_material`, R-SIG-015). With `trust_root.refresh: false` the public Sigstore root is the release's snapshot and ages with
+it ([H-1170](docs/security/artifact-signatures.md#h-1170--without-internet-the-public-sigstore-root-is-the-releases-snapshot)).
 
 </details>
 
@@ -3113,6 +3188,34 @@ rotation of the source reaches the pods at the kubelet's pace and the binary rea
 Security: whoever can write the source can make Quader accept a certificate it signs, so protect it like the issuer of the pairs. PostgreSQL never uses
 the bundle: the database connection trusts `secrets.databaseCA` only. With `useForObjectStore` the file is the object store's whole trust store.
 
+Trust anchors of the signatures on artifacts ([R-SIG-018](docs/spec/signatures.md#r-sig-018--anchors-declared-in-the-helm-values)): the
+chart renders `signatures.anchors` into `config.signatures.anchors` (a map keyed by `key`, the members in snake case, see
+[Configuration keys](#configuration-keys)), and the migration Job applies them on every install and upgrade. The default declares none and
+renders nothing. The tuning keys are `config.signatures.*`.
+
+```yaml
+signatures:
+  anchors: []                           # default: none
+  # - key: gitlab-ci-signing            # example; ^[a-z0-9]+(-[a-z0-9]+)*$, at most 64 characters, unique (a duplicate fails the render)
+  #   title: GitLab CI signing CA       # 1 to 128 characters
+  #   kind: ca                          # ca | openpgp | public-key | sigstore; the schema requires exactly the kind's block
+  #   ca:
+  #     certificatesFrom:               # or certificates: inline PEM; exactly one of the two
+  #       configMapKeyRef: {name: company-ca, key: ca.crt}
+  #     use: codeSigning                # or timestamping
+  #     subject: {O: Example GmbH}      # keys O, OU, CN, C
+  #     subjectAltNames: []
+  #   openpgp:                          # kind openpgp: keys or keysFrom.configMapKeyRef
+  #   publicKey:                        # kind public-key: keys: 1 to 16 of {pem or pemFrom.configMapKeyRef, keyid, expires}
+  #   sigstore:                         # kind sigstore: issuer (https), identity or identityPattern, trustRoot (public | own), trustedRoot or trustedRootFrom.configMapKeyRef
+```
+
+A `*From.configMapKeyRef` names a key of a ConfigMap in the release namespace; only the migration Job mounts it, read-only and without
+`subPath`, at `/etc/quader/signature-anchors/<key>/<file>` (`certificates.pem`, `keys.asc`, `key-<index>.pem`, `trusted_root.json`), and the
+configuration file carries that path (`certificates_file`, `keys_file`, `pem_file`, `trusted_root_file`). A Secret is not accepted: the material is
+public. A ConfigMap that does not exist keeps the Job's pod from starting. With `migrations.mode: disabled`, whoever runs `quader migrate`
+provides the files at those paths. Security: whoever can write the values or the named ConfigMaps chooses whom the installation trusts as a signer.
+
 Sizing profiles ([R-HA-050](docs/spec/ha-and-helm.md)) are values files of the chart; layer one before your own:
 
 ```shell
@@ -3424,7 +3527,7 @@ metrics:
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     relabelings: []                     # default; appended after the fixed role and pool relabelings
     metricRelabelings: []               # default
-  prometheusRule:                       # R-HA-045; 32 alerts, of which the six QuaderBackup* run alerts only with backup.enabled
+  prometheusRule:                       # R-HA-045; 43 alerts, of which the four QuaderMalware* only with config.malware.enabled, the three QuaderSignature* only with config.signatures.enabled and the six QuaderBackup* run alerts only with backup.enabled
     enabled: false                      # default; true renders the PrometheusRule <fullname>; needs the Prometheus operator's CRDs
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     disabledAlerts: []                  # default; example: [QuaderVulnerabilitySyncFailing]; a name that is no alert of the chart fails the render
@@ -3442,6 +3545,9 @@ config:
 | `QuaderVulnerabilityDataStale` | `time() - max by (source, ecosystem) (quader_vuln_source_last_success_timestamp_seconds) > stale_after` for 15m; a source that never synced fires too | warning |
 | `QuaderVulnerabilitySyncFailing` | `max by (source, ecosystem) (quader_vuln_source_consecutive_failures) >= 3` | warning |
 | `QuaderVulnerabilityClaimedNameMalicious` | `max(quader_vuln_claimed_name_matches{kind="malicious"}) > 0` | critical |
+| `QuaderSignatureInvalid` | with `config.signatures.enabled`: `sum(increase(quader_signatures_checks_total{result="invalid"}[1h])) > 0`: a check found a signature that does not match its content or whose chain or key does not verify it; the audit event `signature.invalid` names it (R-SIG-039) | warning |
+| `QuaderSignatureBacklog` | with `config.signatures.enabled`: `max(quader_signatures_oldest_pending_seconds) > 3600` for 15m: a signature has waited more than an hour for its check | warning |
+| `QuaderSignatureTrustRootStale` | with `config.signatures.enabled`: `max(quader_signatures_trust_root_age_seconds) > 1209600` for 1h: the public Sigstore root and npm's keys in use are older than 14 days; with `config.signatures.trust_root.refresh: false` this is the release's age (H-1170) | warning |
 | `QuaderMirrorFailing` | `max by (repo) (quader_mirror_consecutive_failures) >= 3`: three failed pass attempts in a row, the status's `failing`; a complete pass resets it | warning |
 | `QuaderMirrorStale` | `time() - max by (repo) (quader_mirror_next_pass_timestamp_seconds) > 3600` for 30m: the next pass was due an hour ago and nothing started it (no process claims the queue, a lost job), or the pass in progress has not written for an hour; a mirror that never completed a pass fires too; a paused mirror has no series | warning |
 | `QuaderBackupCheckFailed` | `min(quader_backup_check_ok) == 0` for 1h: a platform protection that `backup.recovery_window` or `backup.object_versioning` declares does not hold; the label `check` names it, `quader admin backup check` prints the reason; an undeclared or unreadable check has no series | critical |

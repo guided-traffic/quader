@@ -1352,6 +1352,23 @@ type Signature struct {
 	Priority       int16
 	Attempts       int32
 	NotBefore      pgtype.Timestamptz
+	Evidence       []byte
+}
+
+type SignatureAnchor struct {
+	ID        int64
+	Scope     string
+	ProjectID pgtype.UUID
+	Key       string
+	Title     string
+	Kind      string
+	Material  json.RawMessage
+	Enabled   bool
+	Note      pgtype.Text
+	Version   int64
+	CreatedAt pgtype.Timestamptz
+	CreatedBy pgtype.UUID
+	UpdatedAt pgtype.Timestamptz
 }
 
 type SignatureAttachment struct {
@@ -1362,6 +1379,16 @@ type SignatureAttachment struct {
 	Source      string
 	Name        pgtype.Text
 	CreatedAt   pgtype.Timestamptz
+}
+
+type SignatureBlock struct {
+	ID        int64
+	Kind      string
+	Value     string
+	Issuer    pgtype.Text
+	Reason    string
+	CreatedAt pgtype.Timestamptz
+	CreatedBy pgtype.UUID
 }
 
 type SignatureFetch struct {
@@ -1384,6 +1411,38 @@ type SignatureObject struct {
 	Locator     pgtype.Text
 	Size        int64
 	FirstSeenAt pgtype.Timestamptz
+}
+
+type SignatureSetting struct {
+	ID                  bool
+	ProjectAnchors      bool
+	AnchorEpoch         int64
+	DiscoveryAfter      int64
+	DiscoveryPassAt     pgtype.Timestamptz
+	FailedRetriedAt     pgtype.Timestamptz
+	TrustRootError      pgtype.Text
+	TrustRootErrorAt    pgtype.Timestamptz
+	TrustRootReportedAt pgtype.Timestamptz
+	Version             int64
+	UpdatedAt           pgtype.Timestamptz
+	UpdatedBy           pgtype.UUID
+}
+
+type SignatureTrust struct {
+	SignatureID int64
+	ProjectID   pgtype.UUID
+	State       string
+	AnchorIds   []int64
+	BlockID     pgtype.Int8
+	Epoch       int64
+	ComputedAt  pgtype.Timestamptz
+}
+
+type SignatureTrustRoot struct {
+	Name       string
+	Document   []byte
+	TufVersion int64
+	FetchedAt  pgtype.Timestamptz
 }
 
 type StorageUsageDelta struct {

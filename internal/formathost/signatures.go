@@ -27,6 +27,15 @@ type SignatureRecorder interface {
 // detector's error never fails the commit: it is logged, and the content is stored without candidates (Q-SIG-47). A store error
 // does: the rows and the content commit together.
 func (d Deps) recordSignatures(ctx context.Context, tx meta.Tx, f formats.Format, ev formats.SignatureEvent, fresh bool) error {
+	priority := signatures.PriorityFill
+	if ev.Origin == formats.OriginUpload {
+		priority = signatures.PriorityUpload
+	}
+	return d.recordAt(ctx, tx, f, ev, fresh, priority)
+}
+
+// recordAt is recordSignatures with the priority the batch's signatures are due at: a commit's, or discovery's (R-SIG-011).
+func (d Deps) recordAt(ctx context.Context, tx meta.Tx, f formats.Format, ev formats.SignatureEvent, fresh bool, priority int) error {
 	if d.Signatures == nil {
 		return nil
 	}
@@ -40,12 +49,9 @@ func (d Deps) recordSignatures(ctx context.Context, tx meta.Tx, f formats.Format
 			"format", f.Descriptor().ID, "repo", ev.Repo.Name.String(), "path", ev.Path.Path, "err", err)
 		got = nil
 	}
-	b := signatures.Batch{RepoID: ev.Repo.ID, CarrierItem: ev.Item.ID, Fresh: fresh && ev.Item.ID != 0, Priority: signatures.PriorityFill}
+	b := signatures.Batch{RepoID: ev.Repo.ID, CarrierItem: ev.Item.ID, Fresh: fresh && ev.Item.ID != 0, Priority: priority}
 	if ev.Item.ID == 0 {
 		b.Document = ev.Path.Path
-	}
-	if ev.Origin == formats.OriginUpload {
-		b.Priority = signatures.PriorityUpload
 	}
 	stored, err := d.resolveNamed(ctx, tx, ev, got)
 	if err != nil {

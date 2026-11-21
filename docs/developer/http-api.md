@@ -136,6 +136,7 @@ an endpoint whose host check fails answers `421` `misdirected_request` before ro
 | `getItem`, `deleteItem`, `listChildren`, `getItemStats` | `/api/v1/projects/{projectKey}/repositories/{repoKey}/items`, `/children`, `/stats` | `{action: read\|delete, repository: path.repoKey, project: path.projectKey, path: query.path}` ([files.md](files.md)) |
 | `downloadContent`, `headContent`, `deployContent` | `GET`, `HEAD`, `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}` | as the `/files/` operations with the same method, decided by the files handler; the session cookie only ([files.md](files.md#the-content-routes)) |
 | `downloadFile`, `headFile`, `deployFile`, `deleteFile` | `GET`, `HEAD`, `PUT`, `DELETE /files/{projectKey}/{repoKey}/{path}` | `{action: read\|deploy\|delete, …}`, in the document but decided by the files handler |
+| the signature operations (tag `signatures`) | `/api/v1/signatures/…`, `/api/v1/packages/{packageId}/versions/{version}/signatures`, `/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures`, `/api/v1/projects/{projectKey}/signatures/anchors[/{id}]` | the reads of an artifact as its metadata (`public` declaration decided in the handler, or the item's `read`); anchors, blocks and the switch `settings:read` / `security-settings:write`; a project's anchors its members and its Owner ([The operations of signatures](#the-operations-of-signatures-r-sig-034)) |
 | the vulnerability operations (tag `vulnerabilities`) | `/api/v1/vulnerabilities/…`, `/api/v1/packages/{packageId}/…/vulnerabilities`, `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` | reads `authenticated`, narrowed in SQL by what the caller can read (filters `project` and `repository`, a qualified name; a bare key is 400; the item and the CSV carry `project`); status changes `vulnerabilities:triage`; sources `settings:read`; claimed-name matches `repositories:read-config`; rescan `manage` on the repository ([vulnerabilities.md](vulnerabilities.md#e--api-and-triage)) |
 
 `bridgeAccess` ([access.go](../../internal/app/access.go)) puts the dev-profile switch in front of the authorization
@@ -216,6 +217,73 @@ Tests: [search_api_test.go](../../internal/api/v1/search_api_test.go) (`TestR_AP
 of R-AUTHZ-035 (levels, an external user, a scoped token, a path-scoped grant, hidden existence, an endpoint with exposure rules, the
 administrator's users and groups, the indexes' plans, `name` on the list), with the statement count in
 [querybudget](../../test/integration/querybudget/search_test.go).
+
+## The operations of signatures (R-SIG-034)
+
+The document's block `signatures` holds the operations under the tag `signatures` and the schemas `Signature…`, `NewSignatureAnchor`,
+`NewSignatureBlock` and `ProjectSignatureAnchorList`, with the parameter `SignatureAnchorId`; the member `signatures` (`SignatureStatus`)
+is added to `Item`, `PackageFile` and `PackageVersion`. The Ansible operations that attach a signature to a local version (R-SIG-031) are
+documented with the Ansible format. The handlers run on `Options.Signatures` (`SignatureServices`,
+[signatures_services.go](../../internal/api/v1/signatures_services.go)); without its `Store` every operation answers `503` and no answer
+carries the member. The domain is [signatures.md](signatures.md).
+
+| operationId | Method and path | Permission (R-SIG-021) | File |
+|---|---|---|---|
+| `getPackageVersionSignatures` | GET `/api/v1/packages/{packageId}/versions/{version}/signatures` (`repository=`) | public declaration; the package view's scope decides which repositories hold the version for the caller (`read`, or `content:metadata-read`) | [signatures_views.go](../../internal/api/v1/signatures_views.go) |
+| `getFileSignatures` | GET `/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures?path=` | `{action: read, …, path: query.path}`, as `getItem`; a folder and a virtual repository's path answer `404` | signatures_views.go |
+| `getSignatureObject` | GET `/api/v1/signatures/objects/{sha256}` | public declaration; `read` on a repository that holds an attachment (malware's scope of finds), `404` otherwise | signatures_views.go |
+| `getSignatureSettings`, `updateSignatureSettings` | GET, PATCH `/api/v1/signatures/settings` (merge patch, `If-Match` required) | `settings:read`; `security-settings:write` and `x-quader-recent-auth` | [signatures_api.go](../../internal/api/v1/signatures_api.go) |
+| `listSignatureAnchors`, `createSignatureAnchor` | GET (`scope=`), POST `/api/v1/signatures/anchors` | `settings:read`; `security-settings:write` | signatures_api.go |
+| `getSignatureAnchor`, `updateSignatureAnchor`, `deleteSignatureAnchor` | GET, PATCH (`If-Match` required), DELETE `/api/v1/signatures/anchors/{id}` | `settings:read`; `security-settings:write` (removes a project anchor whatever the switch says) | signatures_api.go |
+| `listProjectSignatureAnchors`, `createProjectSignatureAnchor` | GET, POST `/api/v1/projects/{projectKey}/signatures/anchors` | `settings:read` or a member (`projectRole: reader`); `security-settings:write` or an Owner (`projectRole: owner`) | signatures_api.go |
+| `updateProjectSignatureAnchor`, `deleteProjectSignatureAnchor` | PATCH, DELETE `…/signatures/anchors/{id}` | `security-settings:write` or an Owner; an anchor of another project or scope is `404` | signatures_api.go |
+| `listSignatureBlocks`, `createSignatureBlock`, `deleteSignatureBlock` | GET, POST `/api/v1/signatures/blocks`, DELETE `…/{id}` | `settings:read`; `security-settings:write` | signatures_api.go |
+| `listSignatureFindings` | GET `/api/v1/signatures/findings` (`kind`, `repository`, `q`, cursor) | signed in; the files the caller may read as metadata, as `listMalwareFinds` | [signatures_findings.go](../../internal/api/v1/signatures_findings.go) |
+
+What the handlers decide and what they leave to the store:
+
+- **Scope of the trust rows** ([Q-SIG-26](../spec/signatures.md#q-sig-26--the-scope-is-the-project-of-the-addressed-repository)):
+  `scopeProject` hands the store the project of the addressed repository (its uuid as text) and `""`, the installation's scope, for a
+  repository of the project `upstream`. A virtual repository's entry asks with its own project for the members that hold the version and
+  that the caller reads (`members`), and each signature names the member in `repository`.
+- **Subjects** (`versionSubjects`): per holding repository the blobs of the version's files at the paths the package view read, looked up
+  in that repository through the files service (`sigItems`, decided as `getItem` decides), so a holder whose file has other bytes is asked
+  for its own; an OCI tag adds its manifest and each platform's manifest while the repository's tag points at that manifest; npm adds the
+  subject name `<name>@<version>` of the registry signature (Q-SIG-50). Without the files service the subjects are the view's and no
+  entry carries an origin.
+- **Entries**: the views of the roles `publisher`, `provenance` and `registry` in `signatures`, those of the role `attestation` in
+  `attestations`, ordered by role and receipt; `state` and `stale` are `signatures.Badge` over them. The signer is the read's
+  `signatures.Signer`, returned as text. `covering` lists the releases the format's coverage names (`SignatureServices.Coverage`, bound
+  to Debian's `formats.SignatureCoverage`; [signatures_covering.go](../../internal/api/v1/signatures_covering.go)), each with the
+  signatures attached to it in the repository and its state read as a publisher's (R-SIG-030).
+- **Origin** (`signatureOrigin`, R-SIG-010): the store's `artifact_origins` row, else `fetched` from the item's upstream URL, else the
+  principal the item names. The CI snapshot is read by claim name (`project_path`, `ref_protected`, ...); `user_email` is never mapped.
+- **Anchors**: a create is read with the material members kept as raw JSON, checked for the key's grammar, the title and exactly the
+  kind's member (`anchorInput`), and the store validates the material (422 at the member: `invalid_value`, `secret_material`). A PATCH
+  merges into the stored material of the kind (`anchorPatch`) and hands the store only the members the patch names, with the If-Match
+  revision as the version (`*` is 0, no check). `409 anchor_managed`, `403 project_anchors_disabled`, `409 anchor_exists`,
+  `409 block_exists` and `412` are the store's errors, passed through. The Owner's DELETE of a project anchor is refused in the handler
+  while the switch is off (`ownerWhileSwitchOn`), because the store removes a project anchor for an administrator whatever it says.
+- **A project's list** carries the switch and, in `installation`, the installation's applied anchors without material, note and creator,
+  because the project's members read the page without `settings:read` (R-SIG-037).
+- **The original** is an attachment with `nosniff` and `Content-Security-Policy: sandbox; default-src 'none'`: its media type is the
+  format's and so the uploader's.
+- **The member `signatures`** (`signatureMember` for the item, `addSignatureStatus` for a version and its files): one `Store.Counts` per
+  answer over the repository the file or the version was read from, absent for a folder, while `signatures.enabled` is false and without
+  a store. The version list carries it per row (`versionListSignatures`, [signatures_versionlist.go](../../internal/api/v1/signatures_versionlist.go)):
+  one `Store.VersionBlobs` for the page's files in the rows' repositories and one `Store.Counts` per project of those repositories, none
+  per row; a version's state is the best of its files' signatures in every repository that holds it for the caller.
+- **The repository member `signatures`** (`RepositorySignatureSettings`): `fetch` on a remote repository switches the background fetch of
+  R-SIG-026; on a local or a virtual one it answers `422 not_applicable` at `/signatures/fetch` (R-SIG-040).
+- The anchor and block IDs of a path are strings of digits in the document (`signatureID`): the generated wrapper would answer an
+  unreadable integer `400` before the `428` of a missing `If-Match` (R-API-012); any other text names nothing and answers `404`.
+
+Tests: [signatures_api_test.go](../../internal/api/v1/signatures_api_test.go) (`TestR_SIG_021_Permissions`: the table of R-SIG-021 for
+an administrator, a security-admin, an auditor, an Owner of `web` with the switch on and off, a member and an anonymous caller;
+`TestR_SIG_034_TheSwitch`, `TestR_SIG_034_Anchors`, `TestR_SIG_020_Blocks`, `TestR_SIG_034_Objects`, `TestR_SIG_038_Findings`) runs
+every answer through the response validator against a store in memory ([signatures_fakes_test.go](../../internal/api/v1/signatures_fakes_test.go));
+[signatures_views_test.go](../../internal/api/v1/signatures_views_test.go) covers the version's answer through a virtual repository, the
+scopes, OCI's platforms, the origin and the member. The store behind them is tested against the stack by `TestR_SIG_034`.
 
 ## Conventions every resource inherits (WP1.6)
 

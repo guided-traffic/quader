@@ -191,6 +191,42 @@ type SignatureFetcher interface {
 	FetchSignatures(ctx context.Context, u discover.Upstream, target string) error
 }
 
+// SignatureFetchLimits are the bounds of one background fetch (signatures.md R-SIG-026, R-SIG-040): signatures.remote.max_manifests_per_subject
+// and signatures.max_object_size. The job hands them to the format in the context of a run ([WithSignatureFetchLimits]); a fetch reads
+// them with [SignatureFetchLimitsFrom], which answers the defaults for a context without them.
+type SignatureFetchLimits struct {
+	// MaxManifests is the most signature or attestation manifests a fetch asks for per subject; 0 fetches none.
+	MaxManifests int
+	// MaxObjectSize is the largest layer a fetch asks for.
+	MaxObjectSize int64
+}
+
+// DefaultSignatureFetchLimits are the defaults of R-SIG-040: four manifests per subject, objects of at most 256 KiB.
+func DefaultSignatureFetchLimits() SignatureFetchLimits {
+	return SignatureFetchLimits{MaxManifests: 4, MaxObjectSize: MaxSignatureRaw}
+}
+
+type signatureFetchLimitsKey struct{}
+
+// WithSignatureFetchLimits returns ctx carrying the bounds of a fetch; a negative or zero object size keeps the default.
+func WithSignatureFetchLimits(ctx context.Context, l SignatureFetchLimits) context.Context {
+	if l.MaxObjectSize <= 0 {
+		l.MaxObjectSize = DefaultSignatureFetchLimits().MaxObjectSize
+	}
+	if l.MaxManifests < 0 {
+		l.MaxManifests = 0
+	}
+	return context.WithValue(ctx, signatureFetchLimitsKey{}, l)
+}
+
+// SignatureFetchLimitsFrom answers the bounds a fetch runs under: those of the context, else the defaults.
+func SignatureFetchLimitsFrom(ctx context.Context) SignatureFetchLimits {
+	if l, ok := ctx.Value(signatureFetchLimitsKey{}).(SignatureFetchLimits); ok {
+		return l
+	}
+	return DefaultSignatureFetchLimits()
+}
+
 // SignatureVerdicts is what a format asks of the verdicts of signatures it serves (signatures.md R-SIG-028, Q-SIG-35): an npm local
 // repository serves a version's provenance bundle to npm only when it verified against the public Sigstore, because npm checks
 // provenance against that root alone. The trust step (internal/signatures, package 2 of stage 1) implements it; a host without it

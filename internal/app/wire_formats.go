@@ -63,7 +63,7 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 	if err := requireInputs(AreaFormatPorts, given("database", in.db), given("audit recorder", in.rec)); err != nil {
 		return formatPortsArea{}, err
 	}
-	ports, err := formatPorts(in.db, in.rec, in.blobs, in.queue, in.ring, a.cfg.Deb)
+	ports, err := formatPorts(in.db, in.rec, in.blobs, in.queue, in.ring, a.cfg.Deb, a.signaturePorts())
 	if err != nil {
 		return formatPortsArea{}, err
 	}
@@ -170,6 +170,8 @@ type formatsArea struct {
 	deps  formathost.Deps
 	hooks items.Hooks
 	seam  files.Formats
+	// discoverer is the discovery of the job signature-verify (signatures.md R-SIG-011), nil while the signatures are off.
+	discoverer *formathost.Discoverer
 }
 
 // formatHostArea is the Host and the dispatcher of a replica with a client
@@ -199,9 +201,9 @@ var _ ansibleformat.Store = (*ansibledata.Store)(nil)
 // The same for the data port of ClamAV's definitions.
 var _ clamavformat.Store = (*clamavdata.Store)(nil)
 
-func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nugetdata.Jobs, ring *secrets.KeyRing, debCfg config.Deb) (map[formats.ID]any, error) {
+func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nugetdata.Jobs, ring *secrets.KeyRing, debCfg config.Deb, sig signaturePorts) (map[formats.ID]any, error) {
 	// The background fetch of a remote's signatures (signatures.md R-SIG-026), queued by the OCI and the npm data ports.
-	fetches := signatureFetchQueue(db, queue)
+	fetches := signatureFetchQueue(db, queue, sig.RefreshAfter)
 	npmOpts := npm.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom,
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
@@ -247,8 +249,9 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	ansibleOpts := ansibledata.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom, Blobs: ansibleBlobs(blobs),
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
-		// A signature a client posts for a version is recorded in the signature store (signatures.md R-SIG-031).
-		Signatures: sigstore.New(sigstore.Options{Runner: db}),
+		// A signature a client posts for a version is recorded in the signature store (signatures.md R-SIG-031) with the bounds of the
+		// configuration, and wakes the job signature-verify in the post's transaction (R-SIG-011).
+		Signatures: sigstore.New(sig.storeOptions(db)),
 	}
 	// The reindex queue: the restore's refusing queue has no Running and enqueues no job.
 	if jq, ok := queue.(ansibledata.Jobs); ok {
@@ -319,7 +322,7 @@ type hostBinder interface {
 // ownership (R-AUTHZ-018) and the namespace auto claim (R-REPO-023) are bound to
 // the seams of the package writer; a seam that is not bound makes the writer refuse
 // the claim, so a publish is never let through unchecked (fail closed).
-func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr virtualArea, ow ownershipArea, vz vulnArea, mw malwareArea) (formatsArea, error) {
+func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr virtualArea, ow ownershipArea, vz vulnArea, mw malwareArea, sg signaturesArea) (formatsArea, error) {
 	if err := requireInputs(AreaFormats, given("format data ports", fp.bindings)); err != nil {
 		return formatsArea{}, err
 	}
@@ -330,10 +333,11 @@ func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr vi
 		}
 		return nil
 	}}
-	if in.db != nil {
+	if sg.store != nil {
 		// The signature store: the hooks record what a commit or a remote's stored document carries and the origin of an upload
-		// (signatures.md R-SIG-010, R-SIG-011). The job that reads and checks the rows is wired by the package that builds it.
-		d.Signatures = sigstore.New(sigstore.Options{Runner: in.db})
+		// (signatures.md R-SIG-010, R-SIG-011), and wake the job signature-verify in the commit's transaction (wire_signatures.go).
+		// While signatures.enabled is false nothing is recorded (R-SIG-040).
+		d.Signatures = sg.store
 	}
 	// A nil pointer in an interface would not be nil: a seam is set only where its
 	// component exists.
@@ -351,7 +355,11 @@ func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr vi
 		}
 		return h, nil
 	}, d)
-	return formatsArea{deps: d, hooks: mw.hooks(vz.hooks(formathost.NewHooks(d))), seam: seam}, nil
+	out := formatsArea{deps: d, hooks: mw.hooks(vz.hooks(formathost.NewHooks(d))), seam: seam}
+	if sg.store != nil {
+		out.discoverer = &formathost.Discoverer{Deps: d, Items: sg.store, DB: in.db, Blobs: in.blobs}
+	}
+	return out, nil
 }
 
 // The routing is the link's router of a virtual source: a drift of its method would silently turn every mount from a virtual repository into a
@@ -395,6 +403,10 @@ func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo r
 	// A nil pointer in an interface would not be nil: the session service is set only where it was built.
 	if a.uploads != nil {
 		hostOpts.Uploads = a.uploads
+	}
+	// The verdicts of the signatures a format asks before it serves one (R-SIG-028), set only where the signatures are on.
+	if v := a.signatureVerdicts(); v != nil {
+		hostOpts.Verdicts = v
 	}
 	host, err := formathost.New(hostOpts)
 	if err != nil {

@@ -246,6 +246,73 @@ func (q *Queries) SignatureDetach(ctx context.Context, arg SignatureDetachParams
 	return result.RowsAffected(), nil
 }
 
+const signatureDiscoverItems = `-- name: SignatureDiscoverItems :many
+SELECT i.id, i.path::text AS path, i.blob_sha256, i.size::bigint AS size, COALESCE(i.media_type, '')::text AS media_type,
+       COALESCE(i.upstream_url, '')::text AS upstream_url, r.id AS repo_id, r.key AS repo_key, r.format, r.class,
+       pr.key AS project_key
+  FROM items i
+  JOIN repositories r ON r.id = i.repo_id
+  JOIN project pr ON pr.id = r.project_id
+ WHERE i.id > $1::bigint AND i.kind = 'file' AND i.trashed_at IS NULL AND NOT i.generated
+   AND NOT EXISTS (SELECT 1 FROM upstream_repository u WHERE u.repository_id = r.id AND u.kind = 'system')
+ ORDER BY i.id
+ LIMIT $2::int
+`
+
+type SignatureDiscoverItemsParams struct {
+	After    int64
+	RowLimit int32
+}
+
+type SignatureDiscoverItemsRow struct {
+	ID          int64
+	Path        string
+	BlobSha256  []byte
+	Size        int64
+	MediaType   string
+	UpstreamUrl string
+	RepoID      int64
+	RepoKey     string
+	Format      string
+	Class       string
+	ProjectKey  string
+}
+
+// Discovery's batch (R-SIG-011): the live files after the cursor in item order, with their repository, that a client or a fill stored
+// (a file Quader derived carries no signature of a publisher, Q-SIG-52). A system repository of the project upstream (the analysers'
+// databases, R-REPO-070) holds the product's own files and is not asked: its files cost discovery nothing.
+func (q *Queries) SignatureDiscoverItems(ctx context.Context, arg SignatureDiscoverItemsParams) ([]SignatureDiscoverItemsRow, error) {
+	rows, err := q.db.Query(ctx, signatureDiscoverItems, arg.After, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SignatureDiscoverItemsRow{}
+	for rows.Next() {
+		var i SignatureDiscoverItemsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Path,
+			&i.BlobSha256,
+			&i.Size,
+			&i.MediaType,
+			&i.UpstreamUrl,
+			&i.RepoID,
+			&i.RepoKey,
+			&i.Format,
+			&i.Class,
+			&i.ProjectKey,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const signatureIDs = `-- name: SignatureIDs :many
 SELECT k.ord::bigint AS ord, s.id::bigint AS id
   FROM (SELECT unnest($1::bytea[]) AS object_sha256, unnest($2::smallint[]) AS part,
@@ -542,17 +609,18 @@ func (q *Queries) SignatureReplaceAttachments(ctx context.Context, arg Signature
 
 const signatureSetResult = `-- name: SignatureSetResult :execrows
 UPDATE signatures
-   SET state = $1::text, reason = NULLIF($2::text, ''), role = $3::text,
-       predicate_type = NULLIF($4::text, ''), signer = $5::jsonb,
-       key_ids = $6::text[], signed_digest = NULLIF($7::bytea, ''::bytea),
-       digest_alg = NULLIF($8::text, ''), claimed_at = NULLIF($9::text, '')::timestamptz,
-       proven_at = NULLIF($10::text, '')::timestamptz, time_proof = NULLIF($11::text, ''),
+   SET state = $1::text, evidence = NULLIF($2::bytea, ''::bytea), reason = NULLIF($3::text, ''), role = $4::text,
+       predicate_type = NULLIF($5::text, ''), signer = $6::jsonb,
+       key_ids = $7::text[], signed_digest = NULLIF($8::bytea, ''::bytea),
+       digest_alg = NULLIF($9::text, ''), claimed_at = NULLIF($10::text, '')::timestamptz,
+       proven_at = NULLIF($11::text, '')::timestamptz, time_proof = NULLIF($12::text, ''),
        checked_at = now(), due = false, attempts = 0
- WHERE id = $12::bigint
+ WHERE id = $13::bigint
 `
 
 type SignatureSetResultParams struct {
 	State         string
+	Evidence      []byte
 	Reason        string
 	Role          string
 	PredicateType string
@@ -566,10 +634,12 @@ type SignatureSetResultParams struct {
 	ID            int64
 }
 
-// The read and the integrity check of one signature (R-SIG-005, R-SIG-006): the row is no longer due.
+// The read and the integrity check of one signature (R-SIG-005, R-SIG-006) with the evidence the trust step judges it by (Q-SIG-109):
+// the row is no longer due.
 func (q *Queries) SignatureSetResult(ctx context.Context, arg SignatureSetResultParams) (int64, error) {
 	result, err := q.db.Exec(ctx, signatureSetResult,
 		arg.State,
+		arg.Evidence,
 		arg.Reason,
 		arg.Role,
 		arg.PredicateType,

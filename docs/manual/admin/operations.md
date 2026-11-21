@@ -239,7 +239,7 @@ The caches of remote repositories (fetched packages and their metadata) are a di
 
 ## Alerts
 
-With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with the alerts below and those of [Vulnerability scanning](#vulnerability-scanning), and the mirror mode. It needs the Prometheus operator's custom resource definitions and a scrape of the ops port (the chart's ServiceMonitor, see Metrics above). Every selector is scoped to the release's namespace. Every alert can be left out by name in `metrics.prometheusRule.disabledAlerts`; a name that is no alert of the chart fails the install.
+With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with the alerts below and those of [Vulnerability scanning](#vulnerability-scanning), the mirror mode, the malware scanning and the [signatures](#signatures). It needs the Prometheus operator's custom resource definitions and a scrape of the ops port (the chart's ServiceMonitor, see Metrics above). Every selector is scoped to the release's namespace. Every alert can be left out by name in `metrics.prometheusRule.disabledAlerts`; a name that is no alert of the chart fails the install.
 
 | Alert | Fires when | For | Severity |
 |---|---|---|---|
@@ -367,6 +367,23 @@ repository stricter: while the installation's switch is on, it is checked and ca
 everything the repository serves from its members, and a strict member stays strict through every virtual repository. An Owner of the
 project may switch it on; switching it off needs `repositories:write-config` or `vulnerabilities:triage`, and the section tells an Owner
 whom to ask. It is not part of the form that creates a repository.
+
+## Signatures
+
+Quader detects the signatures of every artifact, checks each once per content for the whole installation, and decides whether a trust
+anchor knows its signer. It refuses no download for a signature. The checks run in the worker's jobs `signature-verify` and
+`signature-trust` on the queue `signatures` (`jobs.workers.signatures`, one slot); the task `signature-verify` runs every five minutes
+and finds what was stored before the signatures existed, and the task `signature-trust-root` refreshes the public Sigstore root and npm's
+registry keys once a day from `signatures.trust_root.url` through the outbound client. The trust anchors, the switch for project Owners and
+the blocked signers are written through the management API (`/api/v1/signatures/…`) by a holder of
+`security-settings:write`; anchors of the Helm values (`signatures.anchors`) are applied by `quader migrate` and read-only.
+
+| Signal | Meaning | What to do |
+|---|---|---|
+| `QuaderSignatureInvalid` | a check found a signature that does not match its content within the last hour | The security dashboard's list of invalid signatures (`GET /api/v1/signatures/findings`): which repository holds it, the reason, the signer it claims. An invalid signature beside a valid one lowers no badge; one alone reads **Invalid signature**. If the signer is one to stop trusting, block it |
+| `QuaderSignatureBacklog` | the oldest due signature has waited over an hour | A worker claims the queue `signatures`; the jobs `signature-verify` on the Jobs screen and their errors; `quader_signatures_backlog` by priority |
+| `QuaderSignatureTrustRootStale` | the public Sigstore root in use is older than 14 days (the refresh's time, or the release's build) | The task `signature-trust-root`'s last error (`GET /api/v1/signatures/settings`, `trustRoot.lastError`) and the egress to `tuf-repo-cdn.sigstore.dev`; without internet set `signatures.trust_root.url` to a TUF mirror of your own, or leave out the alert by name and follow the releases |
+| `quader_signatures_trust_rows_stale` above 0 for long | a change of anchors, blocks or the switch has not reached every signature yet; the API marks such rows `stale` | The jobs `signature-trust` |
 
 ## What to watch
 

@@ -270,6 +270,7 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- include "quader.validateRoles" . -}}
 {{- include "quader.validateVulnScannerTrivy" . -}}
 {{- include "quader.validateMalware" . -}}
+{{- include "quader.validateSignatures" . -}}
 
 {{- /* The PrometheusRule (R-HA-045): a name in disabledAlerts that is no alert is a typo. */ -}}
 {{- $alertNames := include "quader.rules.names" . | fromJsonArray -}}

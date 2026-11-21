@@ -366,7 +366,9 @@ dropping the first `.` segment and hands the format the path as received, and `F
 The five presets carry `deb.upstreamKeys` (`UpstreamPreset.Settings`, [format.go](../../internal/formats/deb/format.go), Q-REPO-379, which supersedes
 Q-REPO-326): the well-known repositories of the project `upstream` are the product's ([wellknown.md](wellknown.md)), and a remote of a project created
 from a preset's URL takes them as it takes the preset's hosts (`applyPresetSettings`,
-[upstream_managed.go](../../internal/repository/upstream_managed.go)). The keys are embedded from [archivekeys/](../../internal/formats/deb/archivekeys/):
+[upstream_managed.go](../../internal/repository/upstream_managed.go)). The keys are embedded by the leaf package [archivekeys](../../internal/formats/deb/archivekeys/archivekeys.go)
+(`Debian()`, `Ubuntu()`), which the format and the shipped trust anchors `debian-archive` and `ubuntu-archive` of the signatures
+([signatures.md](../spec/signatures.md) R-SIG-017) both read:
 
 | File | Source | Keys | Signs |
 |---|---|---|---|

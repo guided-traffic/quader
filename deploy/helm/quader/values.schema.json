@@ -2964,6 +2964,557 @@
       },
       "additionalProperties": false
     },
+    "signatures": {
+      "type": "object",
+      "description": "The trust anchors of the signatures on artifacts declared in the values (R-SIG-018): rendered into config.signatures.anchors and applied by the migration Job with the scope configuration",
+      "properties": {
+        "anchors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "key",
+              "title",
+              "kind"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "maxLength": 64
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "ca",
+                  "openpgp",
+                  "public-key",
+                  "sigstore"
+                ]
+              },
+              "ca": {
+                "type": "object",
+                "properties": {
+                  "certificates": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "1 to 16 PEM certificates: the CA certificates, or pinned end-entity certificates that are the signer itself"
+                  },
+                  "certificatesFrom": {
+                    "type": "object",
+                    "description": "The certificates from a key of a ConfigMap of the release namespace, mounted read-only into the migration Job; public material only, a Secret is not accepted",
+                    "required": [
+                      "configMapKeyRef"
+                    ],
+                    "properties": {
+                      "configMapKeyRef": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "key"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+                            "maxLength": 253
+                          },
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[-._a-zA-Z0-9]+$",
+                            "maxLength": 253
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "use": {
+                    "type": "string",
+                    "enum": [
+                      "codeSigning",
+                      "timestamping"
+                    ]
+                  },
+                  "subject": {
+                    "type": "object",
+                    "propertyNames": {
+                      "enum": [
+                        "O",
+                        "OU",
+                        "CN",
+                        "C"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "subjectAltNames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "required": [
+                      "certificates"
+                    ],
+                    "not": {
+                      "required": [
+                        "certificatesFrom"
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "certificatesFrom"
+                    ],
+                    "not": {
+                      "required": [
+                        "certificates"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "openpgp": {
+                "type": "object",
+                "properties": {
+                  "keys": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "1 to 32 armored OpenPGP public certificates"
+                  },
+                  "keysFrom": {
+                    "type": "object",
+                    "description": "The armored public certificates from a key of a ConfigMap of the release namespace, mounted read-only into the migration Job; public material only, a Secret is not accepted",
+                    "required": [
+                      "configMapKeyRef"
+                    ],
+                    "properties": {
+                      "configMapKeyRef": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "key"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+                            "maxLength": 253
+                          },
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[-._a-zA-Z0-9]+$",
+                            "maxLength": 253
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "required": [
+                      "keys"
+                    ],
+                    "not": {
+                      "required": [
+                        "keysFrom"
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "keysFrom"
+                    ],
+                    "not": {
+                      "required": [
+                        "keys"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "publicKey": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "pem": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "A PKIX public key, PEM"
+                        },
+                        "pemFrom": {
+                          "type": "object",
+                          "description": "The PEM public key from a key of a ConfigMap of the release namespace, mounted read-only into the migration Job; public material only, a Secret is not accepted",
+                          "required": [
+                            "configMapKeyRef"
+                          ],
+                          "properties": {
+                            "configMapKeyRef": {
+                              "type": "object",
+                              "required": [
+                                "name",
+                                "key"
+                              ],
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+                                  "maxLength": 253
+                                },
+                                "key": {
+                                  "type": "string",
+                                  "pattern": "^[-._a-zA-Z0-9]+$",
+                                  "maxLength": 253
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "keyid": {
+                          "type": "string"
+                        },
+                        "expires": {
+                          "type": "string",
+                          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "oneOf": [
+                        {
+                          "required": [
+                            "pem"
+                          ],
+                          "not": {
+                            "required": [
+                              "pemFrom"
+                            ]
+                          }
+                        },
+                        {
+                          "required": [
+                            "pemFrom"
+                          ],
+                          "not": {
+                            "required": [
+                              "pem"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "sigstore": {
+                "type": "object",
+                "required": [
+                  "issuer"
+                ],
+                "properties": {
+                  "issuer": {
+                    "type": "string",
+                    "pattern": "^https://[^/?#\\s]+"
+                  },
+                  "identity": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "identityPattern": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "trustRoot": {
+                    "type": "string",
+                    "enum": [
+                      "public",
+                      "own"
+                    ]
+                  },
+                  "trustedRoot": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "A trusted_root.json of the company's Sigstore, at most 1 MiB"
+                  },
+                  "trustedRootFrom": {
+                    "type": "object",
+                    "description": "The trusted_root.json of the company's Sigstore from a key of a ConfigMap of the release namespace, mounted read-only into the migration Job; public material only, a Secret is not accepted",
+                    "required": [
+                      "configMapKeyRef"
+                    ],
+                    "properties": {
+                      "configMapKeyRef": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "key"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+                            "maxLength": 253
+                          },
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[-._a-zA-Z0-9]+$",
+                            "maxLength": 253
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "not": {
+                  "required": [
+                    "trustedRoot",
+                    "trustedRootFrom"
+                  ]
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "required": [
+                        "trustRoot"
+                      ],
+                      "properties": {
+                        "trustRoot": {
+                          "const": "own"
+                        }
+                      }
+                    },
+                    "then": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "trustedRoot"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "trustedRootFrom"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "trustRoot"
+                      ],
+                      "properties": {
+                        "trustRoot": {
+                          "const": "public"
+                        }
+                      }
+                    },
+                    "then": {
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "trustedRoot"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "trustedRootFrom"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "kind"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "ca"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "ca"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "openpgp"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "publicKey"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "sigstore"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "kind"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "openpgp"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "openpgp"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "ca"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "publicKey"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "sigstore"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "kind"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "public-key"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "publicKey"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "ca"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "openpgp"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "sigstore"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "if": {
+                  "required": [
+                    "kind"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "sigstore"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "sigstore"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "ca"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "openpgp"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "publicKey"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "serviceAccount": {
       "type": "object",
       "properties": {

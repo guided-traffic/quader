@@ -333,6 +333,25 @@ const (
 
 // <<< malware
 //
+// >>> signatures
+
+// Codes of signatures on artifacts (signatures.md R-SIG-016, R-SIG-019, R-SIG-020, R-SIG-034): answers of the management API. A refused
+// anchor material is 422 validation_failed with errors[].code invalid_value or secret_material at the member (R-SIG-015).
+const (
+	// CodeAnchorManaged: a write of a shipped anchor's material or of an anchor of the Helm values (409, R-SIG-016).
+	CodeAnchorManaged = "anchor_managed"
+	// CodeAnchorExists: an anchor with the key exists in the scope (409, R-SIG-015).
+	CodeAnchorExists = "anchor_exists"
+	// CodeProjectAnchorsDisabled: a write of a project anchor while the switch is off (403, R-SIG-019).
+	CodeProjectAnchorsDisabled = "project_anchors_disabled"
+	// CodeBlockExists: a block of the same signer exists (409, R-SIG-020).
+	CodeBlockExists = "block_exists"
+	// CodeSignaturesNotEnabled: an operation that needs the signatures while signatures.enabled is false (409, R-SIG-040).
+	CodeSignaturesNotEnabled = "signatures_not_enabled"
+)
+
+// <<< signatures
+//
 // >>> M6b mirror
 
 // Codes of the mirror mode of remote repositories (repositories-and-proxy.md R-REPO-050 to R-REPO-052): the validation of
@@ -903,6 +922,14 @@ var registry = []CodeInfo{
 	{CodeAlreadyReleased, Conflict, "Already released", "A release already passes the blob; withdraw it first to grant another."},
 	{CodeMalwareNotEnabled, Conflict, "Malware scanning off", "malware.enabled is false in the installation's configuration: no verdict is made, so there is nothing to scan again."},
 	// <<< malware
+	//
+	// >>> signatures
+	{CodeAnchorManaged, Conflict, "Trust anchor managed", "The anchor is shipped with Quader or declared in the Helm values: its material cannot be changed or removed through the API. A shipped anchor can only be switched off and on; an anchor of the Helm values changes with the values."},
+	{CodeAnchorExists, Conflict, "Trust anchor exists", "An anchor with this key exists in the scope. Choose another key, or change the existing anchor."},
+	{CodeProjectAnchorsDisabled, Forbidden, "Project trust anchors switched off", "An administrator has not allowed project owners to add trust anchors for their project (the switch of the admin page Signatures). Stored project anchors stay listed and do not apply."},
+	{CodeBlockExists, Conflict, "Signer already blocked", "A block of this signer exists. Lift it first to block it with another reason."},
+	{CodeSignaturesNotEnabled, Conflict, "Signatures off", "signatures.enabled is false in the installation's configuration: no signature is detected or checked."},
+	// <<< signatures
 	//
 	// >>> M6b mirror
 	{CodeMirrorUnbounded, Invalid, "Mirror unbounded", "A mirror of the format's well-known upstream needs a bound: include patterns that each have a literal prefix, or remote.mirror.maxBytes."},

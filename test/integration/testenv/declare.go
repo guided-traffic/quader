@@ -23,8 +23,19 @@ func (s *Stack) Declare(bindings ...config.AuthzRoleBinding) error {
 // own: db is the configuration the installation's replicas open (the session host
 // is the direct server also behind PgBouncer).
 func DeclareRoleBindings(db config.Database, bindings ...config.AuthzRoleBinding) error {
+	return declareWith(db, func(cfg *config.Config) { cfg.Authz.RoleBindings = bindings })
+}
+
+// DeclareWith runs `quader migrate up` as [Stack.Declare] does, with the declared state of the configuration that edit sets: the trust
+// anchors of signatures.anchors, for example (signatures.md R-SIG-018).
+func (s *Stack) DeclareWith(edit func(*config.Config)) error {
+	s.tb.Helper()
+	return declareWith(s.pg, edit)
+}
+
+func declareWith(db config.Database, edit func(*config.Config)) error {
 	cfg := &config.Config{Database: db}
-	cfg.Authz.RoleBindings = bindings
+	edit(cfg)
 	cfg.Cluster = config.Cluster{EpochPollInterval: time.Second, EpochMaxStaleness: 20 * time.Second, ChangeRetention: time.Hour}
 	cfg.Health.WatchdogTimeout = 30 * time.Second
 	cfg.Audit = config.Audit{AsyncBuffer: 100, RetentionDays: 365}

@@ -11,7 +11,7 @@ import (
 type layer int
 
 const (
-	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
+	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index,archivekeys}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
 	layerInfra               // meta/postgres, blob, cluster, outbound, secrets
 	layerDomain              // repository, proxy, virtual, formatdata, authz, project, auth, jobs, audit, backup, manual, mirror
 	layerEdge                // httpserver, api/v1, webui, formats
@@ -65,7 +65,8 @@ func layerTable() []layerRule {
 		// S3 sink of a restore (internal/blob/s3) can name its digest type without importing a domain package (R-BAK-021).
 		{"internal/backup/format", layerLeaf},
 		{"internal/tlsfiles", layerLeaf},
-		// The OpenPGP signer and verifier of the Debian repositories (R-DEB-015, R-DEB-016, R-DEB-020, Q-ARCH-383): the only importer
+		// The OpenPGP signer and verifier of the Debian repositories (R-DEB-015, R-DEB-016, R-DEB-020, Q-ARCH-383): with the verifier of
+		// OpenPGP signatures on artifacts (internal/signatures/scheme/openpgp, signatures.md R-SIG-006) the only importer
 		// of the OpenPGP module, standard library otherwise. A leaf so that the format (edge), its data port (domain) and the
 		// repository service's creation hook can all use it.
 		{"internal/openpgp", layerLeaf},
@@ -102,6 +103,9 @@ func layerTable() []layerRule {
 		// The reader of a Release document of an APT archive (Date, names, checksum section): control and rows only, shared by the
 		// remote's format, its jobs and the builds that merge remote members (R-DEB-019, R-DEB-021).
 		{"internal/formats/deb/release", layerLeaf},
+		// The archive keyrings of the Debian and Ubuntu presets (Q-REPO-379): two embedded files and nothing else, a leaf so that the
+		// format (edge) gives them to its presets and the signatures (domain) ship them as anchors (R-SIG-017).
+		{"internal/formats/deb/archivekeys", layerLeaf},
 		// The Ansible Galaxy rule libraries import only errs, internal/formats/untrusted, the standard library, the YAML module (one
 		// scalar of meta/runtime.yml) and each other: semantic versions and their sort key (version), the collection archive reader
 		// (collection, with collectiontest, its builder of archives for tests), the Galaxy documents (galaxydoc), the generator and the markup

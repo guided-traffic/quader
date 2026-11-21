@@ -251,6 +251,13 @@ type Options struct {
 	Malware MalwareServices
 	// <<< malware
 
+	// >>> signatures
+	// Signatures holds the services of the operations of signatures on artifacts and of the member signatures of a stored file and
+	// of a version (signatures_api.go, signatures_views.go, signatures_findings.go); without a store the operations answer 503 and no
+	// answer carries the member.
+	Signatures SignatureServices
+	// <<< signatures
+
 	// >>> T-17 deb
 	// DebKeys is the data port's signing-key group behind the Debian key operations (deb_keys.go); nil answers them with 503.
 	DebKeys DebKeyStore

@@ -1,8 +1,9 @@
 # Signatures on artifacts
 
-Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins are built, and so is the formats'
-wire behaviour (an OCI attachment follows its image, the background fetch of a remote's signatures, npm's keys and attestations endpoints,
-the signatures a client posts for a local Ansible Galaxy version); the read, the checks and the trust step are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
+Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins, the read and the integrity check of
+every scheme, the trust step, the anchors with the switch and the blocks, the jobs and the API are built, and so is the formats' wire
+behaviour (an OCI attachment follows its image, the background fetch of a remote's signatures, npm's keys and attestations endpoints,
+the signatures a client posts for a local Ansible Galaxy version); the screens are not ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
 [ADR-228](../decisions.md#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version)) and stage 2,
 Quader signs (R-SIG-044 to R-SIG-060,
@@ -42,9 +43,16 @@ fails a commit: a detector's error is logged and the content is stored without c
 resolved in the event's repository only, so a signature in one repository can never name content of another.
 
 The worker's exposure is kept small by three things the specification fixes: the bounds of R-SIG-013 sit outside the libraries (an object
-of at most 256 KiB, chains of eight certificates, JSON scanned for depth and count before any decoder, a check bounded to 5 s, a panic
-recovered per check); the libraries are memory-safe Go (R-SIG-014), reached only from `internal/signatures`; and the content a keyless
-scheme or NuGet reads is streamed from the blob store and hashed, never written to disk or parsed beyond what the scheme needs.
+of at most 256 KiB, chains of eight certificates, JSON scanned for depth and count before any decoder, ASN.1 and CBOR nesting of at most 32
+levels, a check bounded to 5 s, a panic recovered per check, [all.go](../../internal/signatures/scheme/all/all.go)); the libraries are
+memory-safe Go (R-SIG-014), reached only from `internal/signatures` (`TestR_SIG_014_OnlyTheSignaturesTreeImportsTheVerificationLibraries` in
+[internal/archtest](../../internal/archtest/signatures_test.go)); and the content a keyless scheme or NuGet reads is streamed from the blob
+store and hashed, never written to disk or parsed beyond what the scheme needs.
+
+The trust step reads no content at all: it judges the evidence the check stored in `signatures.evidence` (the chain as carried, the
+timestamps that matched, a Sigstore bundle with the digest it was checked against, a keyless scheme's signature; [Q-SIG-109](../spec/signatures.md#q-sig-109--the-trust-step-judges-the-evidence-the-check-stored)),
+so an anchor change, a block or a restore never reads an artifact. That evidence is as trustworthy as the worker that wrote it and the row
+that holds it, exactly as the committed digest of a keyless scheme is.
 
 ## Who decides what reads as trusted
 
@@ -54,7 +62,8 @@ scheme or NuGet reads is streamed from the blob store and hashed, never written 
 | An upstream of a remote | the signatures its documents and referrers carry, for the remote's readers | the integrity check against the content Quader stored; trust only through anchors the installation chose |
 | A project's Owner, while the administrator's switch is on | **Verified · internal** for signatures its anchors know, for every reader of the project's repositories and of what its virtual repositories serve | anchors only add; the administrator lists and removes them; off again, they stop applying ([H-1167](#h-1167--a-project-owners-anchor-is-shown-to-every-reader-of-the-projects-repositories)) |
 | An administrator (`security-settings:write`) | trust for the whole installation: anchors, switching shipped ones off, blocks, the switch | audit events; removals and blocks carry the journal flag, so a restore does not bring back withdrawn trust |
-| The release | the shipped anchors: the public Sigstore root, npm's keys, Debian's and Ubuntu's keyrings, nuget.org's certificates and timestamping roots | each can be switched off; the public root and npm's keys are refreshed through TUF from the embedded root ([H-1170](#h-1170--without-internet-the-public-sigstore-root-is-the-releases-snapshot)) |
+| The release | the shipped anchors: the public Sigstore root, npm's keys, Debian's and Ubuntu's keyrings, nuget.org's certificates and timestamping roots ([shipped/data](../../internal/signatures/shipped/data)) | each can be switched off; the public root and npm's keys are refreshed through TUF from the root sigstore-go embeds, a target the chain does not sign refused ([H-1170](#h-1170--without-internet-the-public-sigstore-root-is-the-releases-snapshot)) |
+| The operator of the Helm values | anchors of the scope `configuration`, applied by `quader migrate` | read-only in the API (`409 anchor_managed`); the material is public, mounted from ConfigMaps into the migrate Job only, never from a Secret (R-SIG-018) |
 | A writer of `deb.upstreamKeys` | which releases a Debian remote stores (as built) | not what reads as trusted: those keys are no anchors ([Q-SIG-31](../spec/signatures.md#q-sig-31--debians-upstream-keys-stay-the-remotes-condition-and-are-no-anchor)) |
 
 ## What a verdict rests on
@@ -190,8 +199,9 @@ Component: the read and the integrity check of the job `signature-verify` (R-SIG
 credentials the worker holds. Live from stage 1. A signature object is parsed by sigstore-go, notation-core-go with go-cose, tspclient-go,
 digitorus/pkcs7 and digitorus/timestamp, go-crypto and code of this repository (ASN.1, CBOR, protobuf JSON, OpenPGP packets, zip offsets for NuGet). A flaw that
 turns a crafted object into more than a refusal (a memory blow-up past the bounds, a hang the deadline does not reach, a logic flaw in a
-verifier) runs in the worker. What makes it real: a library flaw of that kind and a push or an upstream that delivers the object; the owner
-chose the worker over a unit without secrets (Q-SIG-5).
+verifier) runs in the worker. What bounds it: the refusals of R-SIG-013, tested with crafted objects at the unit tier; the heap bound
+of 64 MiB that R-SIG-013's criterion names is not asserted by a test. What makes it real: a library flaw of that kind and a push or an
+upstream that delivers the object; the owner chose the worker over a unit without secrets (Q-SIG-5).
 
 ### H-1167 · A project Owner's anchor is shown to every reader of the project's repositories
 
@@ -257,7 +267,8 @@ address shared with other clients, and a mirror of many tags of Docker Hub.
 ### H-1174 · "Signed · signer not trusted" can stand for a signature whose match was not checked
 
 Component: the state `no_key` ([Q-SIG-24](../spec/signatures.md#q-sig-24--a-signature-without-a-key-or-with-a-blocked-signer-reads-signed--signer-not-trusted)).
-Subject: readers of OpenPGP, npm-registry and raw-key signatures whose key neither an anchor nor the upstream announces. Live from stage 1. The
+Subject: readers of OpenPGP, npm-registry and raw-key signatures, and of Sigstore bundles and older cosign signatures made with a key and no
+certificate, whose key neither an anchor nor the upstream announces. Live from stage 1. The
 badge reads like that of a matching signature by an unknown signer, although the bytes were not matched; anyone can write a well-formed
 OpenPGP packet. The details say "could not be matched with the content: no key of this signer is known". What makes it real: a reader who
 takes "Signed" for "signed by someone, unchanged since".
@@ -378,3 +389,21 @@ writes through the package writer and has no transaction of the data port. A tar
 fetched, and npm queues no refresh of a version), so attestations the cache lost with it come back only when a client asks the attestations
 endpoint, and the gate would read "fetched" from the earlier run. What makes it real: an eviction of a version's attestations document
 together with its tarball, and a later fill of the tarball alone.
+
+### H-1202 · A project that starts to reach a signature is served the installation's trust until the next recomputation
+
+Component: the trust job (R-SIG-008, R-SIG-012). Subject: readers of a project with anchors of its own (switch on) when a signature it did not
+reach before becomes attached in one of its repositories, or in a repository of `upstream` one of its virtual repositories lists. Live where
+project anchors are used. The project's row is computed when the signature is checked and when the anchor epoch changes; a new attachment of
+a signature that is checked already changes neither, so the project's readers see the installation's row (often **Signed · signer not
+trusted** where the project's anchor would say **Verified · internal**) until the next change of anchors, blocks or the switch. It errs
+towards less trust, never more. What makes it real: the same signed bytes pushed to a second project after the first project's push was
+checked.
+
+### H-1203 · An object store that breaks off inside a package or an archive makes a signature unreadable instead of retried
+
+Component: the read of NuGet's signature entry and unsigned bytes and of an Ansible collection's files (R-SIG-006). Subject: a signature
+whose content read broke off in the middle. Live from stage 1. A whole-blob read or a hash stream that fails is a check that could not run
+and is tried again with its back-off; an error inside the bounded zip or tar reader is reported by the reader as a damaged archive, so the
+signature is recorded `malformed` ("Signature could not be read") and is checked again only when its subject is committed again. What
+makes it real: a transient object-store failure during the check of a NuGet package or an Ansible collection.

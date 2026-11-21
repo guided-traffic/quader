@@ -12,7 +12,7 @@ import (
 type alertSeverity struct{ name, severity string }
 
 // alertSeverities are the alerts the chart renders, in the order of templates/_rules.tpl, with their severity: every row of
-// R-HA-045's table, and the alerts of the vulnerability scanning and the mirror.
+// R-HA-045's table, and the alerts of the vulnerability scanning, the malware scanning, the signatures and the mirror.
 func alertSeverities() []alertSeverity {
 	return []alertSeverity{
 		{"QuaderReplicasNotReady", "critical"},
@@ -37,6 +37,9 @@ func alertSeverities() []alertSeverity {
 		{"QuaderMalwareDatabaseStale", "warning"},
 		{"QuaderMalwareScannerUnavailable", "critical"},
 		{"QuaderMalwareBacklog", "warning"},
+		{"QuaderSignatureInvalid", "warning"},
+		{"QuaderSignatureBacklog", "warning"},
+		{"QuaderSignatureTrustRootStale", "warning"},
 		{"QuaderMirrorFailing", "warning"},
 		{"QuaderMirrorStale", "warning"},
 
@@ -136,6 +139,8 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			"QuaderValkeySentinelsDegraded": "5m", "QuaderValkeyFailoverFlapping": "", "QuaderValkeyPrimaryDisagreement": "5m",
 			"QuaderBackupCheckFailed": "1h", "QuaderRevocationJournalBacklog": "15m", "QuaderRevocationJournalQuarantined": "", "QuaderBackupStale": "", "QuaderBackupFailed": "", "QuaderBackupRunningLong": "",
 			"QuaderBackupGlobalHoldLong": "30m", "QuaderBackupSourceDamage": "", "QuaderBackupVerifyFindings": "",
+			// R-SIG-039's table.
+			"QuaderSignatureInvalid": "", "QuaderSignatureBacklog": "15m", "QuaderSignatureTrustRootStale": "1h",
 		}
 		for _, r := range renderedRules(t) {
 			name := str(r, "alert")

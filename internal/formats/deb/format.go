@@ -16,7 +16,6 @@
 package deb
 
 import (
-	_ "embed" // the archive keys of the presets
 	"encoding/json"
 	"net/http"
 	"reflect"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/deb/archivekeys"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
@@ -51,21 +51,13 @@ func upstreamPresets() []catalog.UpstreamPreset {
 	}
 }
 
-// The archive keys of the presets (Q-REPO-379): the keyring files apt verifies the archives with, armored, unchanged in their keys.
-//   - debian-archive-keyring.asc is /usr/share/keyrings/debian-archive-keyring.gpg of the package debian-archive-keyring 2025.1
-//     (Debian 13 trixie): the archive, security and stable release keys of Debian 11, 12 and 13. It signs deb.debian.org/debian and
-//     deb.debian.org/debian-security.
-//   - ubuntu-archive-keyring.asc is /usr/share/keyrings/ubuntu-archive-keyring.gpg of the package ubuntu-keyring 2023.11.28.1 (Ubuntu
-//     24.04 noble): the archive keys of 2012 and 2018 and the CD image key of 2012. The 2018 key signs the archive, its security
-//     updates and its ports.
-//
-// How they were obtained and checked is in docs/developer/deb.md (The archive keys of the presets); TestQ_REPO_379_TheArchiveKeys
-// pins every fingerprint and fails 90 days before a key expires. A key change of either keyring is a release of Quader.
+// The archive keys of the presets (Q-REPO-379): the keyring files of the leaf internal/formats/deb/archivekeys, which says what each is
+// and where it comes from; the signatures ship the same files as the anchors debian-archive and ubuntu-archive (R-SIG-017).
+// TestQ_REPO_379_TheArchiveKeys pins every fingerprint and fails 90 days before a key expires. A key change of either keyring is a
+// release of Quader.
 var (
-	//go:embed archivekeys/debian-archive-keyring.asc
-	debianArchiveKeyring string
-	//go:embed archivekeys/ubuntu-archive-keyring.asc
-	ubuntuArchiveKeyring string
+	debianArchiveKeyring = string(archivekeys.Debian())
+	ubuntuArchiveKeyring = string(archivekeys.Ubuntu())
 )
 
 // archiveKeySettings is the deb member a preset carries: its keys as deb.upstreamKeys.

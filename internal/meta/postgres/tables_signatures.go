@@ -1,11 +1,21 @@
 package postgres
 
-import "github.com/guided-traffic/quader/internal/backup/tables"
+import (
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
+)
 
-// Registration of the tables of 00092_signatures (signatures.md R-SIG-041, R-BAK-004): every one is data. A signature object, its
-// signature rows and their verdicts cost a read of the content to make again, an attachment says where a signature reaches its
-// subject, and an origin is a snapshot of claims that may be gone from the issuance records (Q-SIG-40). After a restore, discovery
-// names the signatures of items the backup had no attachment for (R-SIG-011).
+// Registration of the tables of 00092_signatures and 00098_signature_trust (signatures.md R-SIG-041, R-BAK-004):
+//
+//   - signature_objects, signatures, signature_attachments, artifact_origins: data. A signature object, its signature rows and their
+//     verdicts cost a read of the content to make again, an attachment says where a signature reaches its subject, and an origin is a
+//     snapshot of claims that may be gone from the issuance records (Q-SIG-40). After a restore, discovery names the signatures of
+//     items the backup had no attachment for (R-SIG-011).
+//   - signature_settings, signature_anchors, signature_blocks, signature_trust_roots: data. The switch, the anchors and the blocks are
+//     security decisions (Q-SIG-39); a stored public root is what the installation trusted when the backup was made. The journal
+//     re-applies what narrowed after the restore point (R-SIG-041, Q-SIG-42).
+//   - signature_trust: transient. Every row is computed from the restored fields alone: after a restore no signature has a trust row,
+//     and the trust job computes them all again, reading no artifact (R-SIG-012).
 func init() {
 	tables.Register("signature_objects", tables.Data, tables.Options{})
 	tables.Register("signatures", tables.Data, tables.Options{})
@@ -14,4 +24,14 @@ func init() {
 	// The state of the background fetch of a remote's signatures (00096_signature_wire, R-SIG-026) is transient: after a restore the
 	// next fill or refresh of a target queues its fetch again, which costs an upstream request and no data.
 	tables.Register("signature_fetches", tables.Transient, tables.Options{})
+	tables.Register("signature_settings", tables.Data, tables.Options{})
+	tables.Register("signature_anchors", tables.Data, tables.Options{})
+	tables.Register("signature_blocks", tables.Data, tables.Options{})
+	tables.Register("signature_trust_roots", tables.Data, tables.Options{})
+	tables.Register("signature_trust", tables.Transient, tables.Options{})
+
+	// version is the ETag of the settings and of an anchor (R-API-012, R-SIG-019, R-SIG-034); a restore raises it like every
+	// client-held revision (R-BAK-022), so a change prepared against the state before the restore is refused with 412.
+	meta.RegisterRevisionColumn("signature_settings", "version")
+	meta.RegisterRevisionColumn("signature_anchors", "version")
 }

@@ -164,9 +164,10 @@ SELECT a.repo_id, a.signature_id, a.location, COALESCE(a.item_id, 0)::bigint AS 
  ORDER BY a.location, a.signature_id;
 
 -- name: SignatureSetResult :execrows
--- The read and the integrity check of one signature (R-SIG-005, R-SIG-006): the row is no longer due.
+-- The read and the integrity check of one signature (R-SIG-005, R-SIG-006) with the evidence the trust step judges it by (Q-SIG-109):
+-- the row is no longer due.
 UPDATE signatures
-   SET state = sqlc.arg(state)::text, reason = NULLIF(sqlc.arg(reason)::text, ''), role = sqlc.arg(role)::text,
+   SET state = sqlc.arg(state)::text, evidence = NULLIF(sqlc.arg(evidence)::bytea, ''::bytea), reason = NULLIF(sqlc.arg(reason)::text, ''), role = sqlc.arg(role)::text,
        predicate_type = NULLIF(sqlc.arg(predicate_type)::text, ''), signer = sqlc.narg(signer)::jsonb,
        key_ids = sqlc.arg(key_ids)::text[], signed_digest = NULLIF(sqlc.arg(signed_digest)::bytea, ''::bytea),
        digest_alg = NULLIF(sqlc.arg(digest_alg)::text, ''), claimed_at = NULLIF(sqlc.arg(claimed_at)::text, '')::timestamptz,
@@ -201,3 +202,17 @@ DELETE FROM signature_objects o
 -- signature that loses its last attachment (R-SIG-011).
 DELETE FROM signature_attachments
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND location = ANY(sqlc.arg(locations)::text[]);
+-- name: SignatureDiscoverItems :many
+-- Discovery's batch (R-SIG-011): the live files after the cursor in item order, with their repository, that a client or a fill stored
+-- (a file Quader derived carries no signature of a publisher, Q-SIG-52). A system repository of the project upstream (the analysers'
+-- databases, R-REPO-070) holds the product's own files and is not asked: its files cost discovery nothing.
+SELECT i.id, i.path::text AS path, i.blob_sha256, i.size::bigint AS size, COALESCE(i.media_type, '')::text AS media_type,
+       COALESCE(i.upstream_url, '')::text AS upstream_url, r.id AS repo_id, r.key AS repo_key, r.format, r.class,
+       pr.key AS project_key
+  FROM items i
+  JOIN repositories r ON r.id = i.repo_id
+  JOIN project pr ON pr.id = r.project_id
+ WHERE i.id > sqlc.arg(after)::bigint AND i.kind = 'file' AND i.trashed_at IS NULL AND NOT i.generated
+   AND NOT EXISTS (SELECT 1 FROM upstream_repository u WHERE u.repository_id = r.id AND u.kind = 'system')
+ ORDER BY i.id
+ LIMIT sqlc.arg(row_limit)::int;

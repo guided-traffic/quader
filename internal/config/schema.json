@@ -2304,6 +2304,13 @@
               "type": "integer",
               "x-quader-env": "QUADER_JOBS_WORKERS_MIRROR"
             },
+            "signatures": {
+              "default": 1,
+              "description": "The jobs of the signatures on artifacts, signature-verify and signature-trust, and the task signature-trust-root (signatures.md R-SIG-011, R-SIG-012, R-SIG-017): a queue of its own, so neither the malware scanning nor the advisory sync waits behind a backlog of signatures; one job keeps signatures.concurrency checks in flight, so one slot is enough.",
+              "minimum": 0,
+              "type": "integer",
+              "x-quader-env": "QUADER_JOBS_WORKERS_SIGNATURES"
+            },
             "vuln": {
               "default": 1,
               "description": "The advisory sync (R-VULN-004, R-VULN-008).",
@@ -3795,6 +3802,140 @@
           },
           "type": "array",
           "x-quader-env": "QUADER_SERVER_TRUSTED_PROXIES"
+        }
+      },
+      "type": "object"
+    },
+    "signatures": {
+      "additionalProperties": false,
+      "properties": {
+        "anchors": {
+          "default": {},
+          "description": "Trust anchors declared here, keyed by the anchor's key (R-SIG-018): quader migrate applies them with the scope configuration in one transaction, creates what is declared, removes what is no longer declared, and stops with the key and the reason when the material fails the checks of R-SIG-015. The API and the UI show them read-only. Each entry names title, kind and exactly the block of its kind (ca, openpgp, public_key, sigstore); material is given inline or as a file (certificates_file, keys_file, pem_file, trusted_root_file), never both. The material is public: no private key is accepted. In the chart, signatures.anchors renders this map. As an environment variable the map is JSON, for example QUADER_SIGNATURES_ANCHORS='{\"company-ca\":{\"title\":\"Company CA\",\"kind\":\"ca\",\"ca\":{\"certificates_file\":\"/etc/quader/signature-anchors/company-ca/certificates.pem\"}}}'.",
+          "type": "object",
+          "x-quader-env": "QUADER_SIGNATURES_ANCHORS"
+        },
+        "check_timeout": {
+          "default": "5s",
+          "description": "The longest one check may take; a check past it spends an attempt, and after the last attempt the signature is failed (R-SIG-013).",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_SIGNATURES_CHECK_TIMEOUT",
+          "x-quader-type": "duration"
+        },
+        "concurrency": {
+          "default": 4,
+          "description": "Checks the one job of the installation has in flight at a time (R-SIG-011). At least 1: with none no signature would ever be checked.",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_SIGNATURES_CONCURRENCY"
+        },
+        "enabled": {
+          "default": true,
+          "description": "false: no signature is detected, checked or shown with a badge; the stored rows stay as they are and are used again when the switch is turned back on (R-SIG-040).",
+          "type": "boolean",
+          "x-quader-env": "QUADER_SIGNATURES_ENABLED"
+        },
+        "max_attempts": {
+          "default": 5,
+          "description": "Attempts at a check that could not run (the object store, a timeout), with a doubling back-off from one minute; after the last the signature is failed, and the discovery of the task signature-verify makes it due once a day (R-SIG-011).",
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_SIGNATURES_MAX_ATTEMPTS"
+        },
+        "max_chain": {
+          "default": 8,
+          "description": "Certificates in one chain, each of at most 16 KiB; a longer chain is malformed with limits_exceeded (R-SIG-013).",
+          "maximum": 32,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_SIGNATURES_MAX_CHAIN"
+        },
+        "max_content_size": {
+          "default": "8GiB",
+          "description": "Largest content a keyless scheme or a NuGet signature reads to compare its digest, streamed from the blob store and never written to disk; larger content leaves the signature unsupported with limits_exceeded (R-SIG-013).",
+          "type": [
+            "string",
+            "integer"
+          ],
+          "x-quader-env": "QUADER_SIGNATURES_MAX_CONTENT_SIZE",
+          "x-quader-type": "bytes"
+        },
+        "max_object_size": {
+          "default": "256KiB",
+          "description": "Largest signature object that is read; a larger one is not read and is malformed with limits_exceeded (R-SIG-013). At most 1MiB: every real signature seen is below 20 KiB, and the worker that reads them holds the installation's secrets (H-1166).",
+          "type": [
+            "string",
+            "integer"
+          ],
+          "x-quader-env": "QUADER_SIGNATURES_MAX_OBJECT_SIZE",
+          "x-quader-type": "bytes"
+        },
+        "max_per_subject": {
+          "default": 32,
+          "description": "Signatures read per subject and repository; the rest is not read, and the details say how many of how many were read (R-SIG-013).",
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer",
+          "x-quader-env": "QUADER_SIGNATURES_MAX_PER_SUBJECT"
+        },
+        "remote": {
+          "additionalProperties": false,
+          "properties": {
+            "max_manifests_per_subject": {
+              "default": 4,
+              "description": "OCI signature and attestation manifests fetched per image in the background, signature types first (R-SIG-026); each GET of one counts against the upstream's pull limit where the upstream has one. 0 fetches none.",
+              "maximum": 64,
+              "minimum": 0,
+              "type": "integer",
+              "x-quader-env": "QUADER_SIGNATURES_REMOTE_MAX_MANIFESTS_PER_SUBJECT"
+            },
+            "refresh_after": {
+              "default": "24h",
+              "description": "An image's signatures are asked for again when a client's revalidation finds its tag unchanged and the last fetch is older than this, so a signature added upstream after the image was cached arrives within this span of use (R-SIG-026).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNATURES_REMOTE_REFRESH_AFTER",
+              "x-quader-type": "duration"
+            },
+            "requests_per_hour": {
+              "default": 600,
+              "description": "Background requests for signatures one replica sends to one remote per hour; what is above it waits for the next hour (R-SIG-026, H-1173). A client's own requests do not count.",
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_SIGNATURES_REMOTE_REQUESTS_PER_HOUR"
+            }
+          },
+          "type": "object"
+        },
+        "run_slice": {
+          "default": "10m",
+          "description": "How long one job keeps its slot on the queue signatures before the rest of the work goes to the next job; a check in flight is finished first (R-SIG-011).",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_SIGNATURES_RUN_SLICE",
+          "x-quader-type": "duration"
+        },
+        "trust_root": {
+          "additionalProperties": false,
+          "properties": {
+            "refresh": {
+              "default": true,
+              "description": "true: the task signature-trust-root fetches the public Sigstore trusted root and npm's registry keys from url once a day, verified from the TUF root embedded in the release. false: the release's snapshot holds and ages with the release (H-1170); QuaderSignatureTrustRootStale fires 14 days after the release was built.",
+              "type": "boolean",
+              "x-quader-env": "QUADER_SIGNATURES_TRUST_ROOT_REFRESH"
+            },
+            "url": {
+              "default": "https://tuf-repo-cdn.sigstore.dev",
+              "description": "The TUF repository the task reads, through the outbound client and its egress rules: the public one, or a TUF mirror of the company for an installation without internet. https only: the chain is verified from the embedded TUF root either way, and TLS keeps the request and its answer private.",
+              "type": "string",
+              "x-quader-env": "QUADER_SIGNATURES_TRUST_ROOT_URL"
+            }
+          },
+          "type": "object"
         }
       },
       "type": "object"

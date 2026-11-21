@@ -60,6 +60,9 @@ func DeclaredState(cfg *config.Config, instance string, log *slog.Logger) func(c
 		if err := applyDeclaredCIIssuers(ctx, s, changes, recorder, cfg, log); err != nil {
 			return err
 		}
+		if err := applySignatureAnchors(ctx, s, changes, recorder, cfg, log); err != nil {
+			return err
+		}
 		return ReconcileUpstream(ctx, s, changes, recorder, cfg, catalog.Default(), log)
 	}
 }

@@ -139,7 +139,9 @@ When an image comes through a remote repository, Quader asks the upstream for it
 them even if no client asked: the referrers, and cosign's `.sig` and `.att` tags, which it asks for with `HEAD` requests that Docker Hub does
 not count as pulls. At most four signature manifests are fetched per image. An image whose tag you pull again is asked again at most once a
 day, so a signature published later arrives. A mirror asks for the signatures of every tag it keeps. The fetch makes at most 600 requests
-an hour per remote repository.
+an hour per remote repository. An administrator can switch it off for a remote repository whose upstream counts requests tightly (Docker
+Hub without an account), with the repository's setting `signatures.fetch` of the management API; the bounds are the installation's
+configuration.
 
 ## When something goes wrong
 

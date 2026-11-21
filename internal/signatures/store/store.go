@@ -1,8 +1,18 @@
-// Package store is the PostgreSQL store of signatures on artifacts (signatures.md R-SIG-003, R-SIG-004, R-SIG-010, R-SIG-011): the
-// one door to signature_objects, signatures, signature_attachments and artifact_origins. The commit hook of the item store and the fill
-// of a remote's document record through it in their own transaction (Record, SubjectArrived, RecordOrigin); the job of R-SIG-011
-// reads the due rows and writes what its read and check found (Due, SetResult, Defer, RemoveOrphans); the API reads the rows of an
-// artifact (BySubject, AttachmentsUnder, Object, Origin).
+// Package store is the PostgreSQL store of signatures on artifacts (signatures.md R-SIG-003, R-SIG-004, R-SIG-008, R-SIG-010 to
+// R-SIG-021, R-SIG-034, R-SIG-038, R-SIG-039, R-SIG-041): the one door to signature_objects, signatures, signature_attachments,
+// artifact_origins, signature_settings, signature_anchors, signature_blocks, signature_trust and signature_trust_roots.
+//
+//   - The commit hook of the item store and the fill of a remote's document record through it in their own transaction (Record,
+//     SubjectArrived, RecordOrigin).
+//   - The jobs of R-SIG-011, R-SIG-012 and R-SIG-017 read the due rows and write what the read and the check found, the trust rows and
+//     the public Sigstore root (job.go, trust.go, roots.go).
+//   - The API's operations (v1.SignatureStore) read and write the settings, the anchors, the blocks, the findings and what a reader sees
+//     of a subject (settings.go, anchors.go, blocks.go, findings.go, views.go).
+//   - quader migrate applies the shipped anchors and the anchors of the Helm values (declared.go).
+//
+// Every write of an anchor, a block, the switch and a stored public root records its audit event (with its journal entry where it
+// narrows trust, Q-SIG-42) in its transaction, raises the anchor epoch, notifies the change area signature_anchors and wakes the trust
+// job (R-SIG-012, R-SIG-039). The replay of the journal's entries is journal_replay.go.
 package store
 
 import (
@@ -12,10 +22,12 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/signatures"
+	"github.com/guided-traffic/quader/internal/signatures/scheme"
 )
 
 // Options configure [New].
@@ -30,6 +42,22 @@ type Options struct {
 	// Wake, when set, wakes the job signature-verify in the transaction of a batch that recorded a candidate (R-SIG-011). The job's
 	// package sets it.
 	Wake func(ctx context.Context, tx meta.Tx) error
+	// WakeTrust, when set, wakes the job signature-trust in the transaction of a write that raised the anchor epoch (R-SIG-012).
+	WakeTrust func(ctx context.Context, tx meta.Tx) error
+	// Audit records the events of R-SIG-039; nil records nothing.
+	Audit audit.Recorder
+	// Changes announces the change area signature_anchors in the transaction of a write (R-SIG-041); nil announces nothing.
+	Changes Notifier
+	// Blobs reads stored blobs: the original of a signature object a stored file keeps (ObjectBytes) and an npm remote's stored keys
+	// document (UpstreamKeys). Nil answers those reads with an error.
+	Blobs scheme.Blobs
+	// Now is the clock of the checks on save; nil is the wall clock.
+	Now func() time.Time
+}
+
+// Notifier announces a change area in a transaction; *cluster.Changes implements it.
+type Notifier interface {
+	Notify(tx meta.Tx, area string, version int, payload any) error
 }
 
 // Store is the store.
@@ -42,6 +70,12 @@ func New(o Options) *Store {
 	}
 	if o.MaxPerSubject <= 0 {
 		o.MaxPerSubject = signatures.DefaultMaxPerSubject
+	}
+	if o.Audit == nil {
+		o.Audit = audit.Nop{}
+	}
+	if o.Now == nil {
+		o.Now = time.Now
 	}
 	return &Store{o: o}
 }
@@ -388,7 +422,7 @@ func (s *Store) Due(ctx context.Context, tx meta.Tx, limit int) ([]signatures.Si
 	return out, nil
 }
 
-// SetResult writes what the read and the integrity check of a signature found; the row is no longer due.
+// SetResult writes what the read and the integrity check of a signature found, with its evidence (Q-SIG-109); the row is no longer due.
 func (s *Store) SetResult(ctx context.Context, tx meta.Tx, id int64, r signatures.Result) error {
 	if !r.State.Valid() || r.State == signatures.StatePending {
 		return fmt.Errorf("signatures: %q is no result of a check", r.State)
@@ -402,7 +436,7 @@ func (s *Store) SetResult(ctx context.Context, tx meta.Tx, id int64, r signature
 		keys = []string{}
 	}
 	_, err = qs.SignatureSetResult(ctx, q.SignatureSetResultParams{
-		ID: id, State: string(r.State), Reason: r.Reason, Role: r.Role, PredicateType: r.PredicateType, Signer: r.Signer, KeyIds: keys,
+		ID: id, State: string(r.State), Evidence: r.Evidence, Reason: r.Reason, Role: r.Role, PredicateType: r.PredicateType, Signer: r.Signer, KeyIds: keys,
 		SignedDigest: r.SignedDigest, DigestAlg: r.DigestAlg, ClaimedAt: rfc3339(r.ClaimedAt), ProvenAt: rfc3339(r.ProvenAt), TimeProof: r.TimeProof,
 	})
 	return err

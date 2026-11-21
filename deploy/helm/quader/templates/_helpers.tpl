@@ -366,5 +366,7 @@ The trusted CA bundle (R-HA-043): its files are added to proxy.outbound.tls.ca_f
 {{- end -}}
 {{- /* The links of both scannings (R-HA-066, R-HA-068, templates/_vuln.tpl and templates/_malware.tpl). */ -}}
 {{- include "quader.scannerManagedConfig" (dict "root" . "managed" $managed) -}}
+{{- /* The trust anchors declared in signatures.anchors (R-SIG-018, templates/_signatures.tpl). */ -}}
+{{- include "quader.signaturesManagedConfig" (dict "root" . "managed" $managed) -}}
 {{- $managed | mergeOverwrite (deepCopy .Values.config) | toYaml -}}
 {{- end -}}

@@ -223,6 +223,7 @@ checked every earlier decision against them:
 | [ADR-230](#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker) | Quader signs with one identity per installation: npm's registry signatures and a receipt attestation of every artifact, signed in the worker | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-231](#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed) | A repository can serve only artifacts with a verified signature: a gate at download for every format, judged from stored verdicts and failing closed | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) | The guide data names the addresses on which a client certificate reads the repository | Decided by the development agent — owner review at the walkthrough |
+| [ADR-233](#adr-233--the-background-fetch-hands-its-bounds-to-a-formats-fetch-in-the-context-of-a-run) | The background fetch hands its bounds to a format's fetch in the context of a run | Decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -2010,6 +2011,29 @@ the kit (milliseconds). Another format that admits certificate readers later use
 
 **Spec:** [formats/clamav.md](spec/formats/clamav.md) R-CLAMAV-006, R-CLAMAV-010, Q-CLAMAV-18; [architecture.md](spec/architecture.md)
 R-ARCH-025.
+
+### ADR-233 · The background fetch hands its bounds to a format's fetch in the context of a run
+
+**Status:** Decided by the development agent — owner review at the walkthrough. An addition to the format contract at version 8.
+
+**Context.** The configuration of R-SIG-040 bounds the background fetch of a remote's signatures: `signatures.remote.max_manifests_per_subject`
+and `signatures.max_object_size` decide what one run asks an upstream for. The job `signature-fetch` (internal/signatures/fetch, domain) calls
+the format's `SignatureFetcher` (edge), whose signature carries a context, an upstream and a target; package 3 of stage 1 fixed the two
+bounds as constants of the OCI format until the configuration existed.
+
+**Decision.** The contract gains `SignatureFetchLimits` with `WithSignatureFetchLimits` and `SignatureFetchLimitsFrom`: the composition root
+decorates the context of a run with the configured bounds (`fetch.HandlerOptions.RunContext`), and a format's fetch reads them, the defaults
+(four manifests, 256 KiB) for a context without them. `FetchSignatures` keeps its signature and the contract its version.
+
+**Consequences.** A format that fetches reads its bounds in one call; a mirror's plan, which calls the same code without the job, runs under
+the defaults; the job's package stays free of the contract.
+
+**Alternatives considered.** A fourth parameter of `FetchSignatures` (raises the contract's version and moves every implementation); a value
+of the upstream (the upstream is the engine's, not the fetch's); constants of the format (the configuration would bound nothing).
+
+**Revisit condition:** a bound a format needs that is no context value of a run.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-026, R-SIG-040; [architecture.md](spec/architecture.md) R-ARCH-008.
 
 ## Design invariants
 
@@ -10303,6 +10327,21 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-SIG-93](spec/signatures.md#q-sig-93--a-project-anchor-counts-for-the-gate-of-its-projects-repositories) | Project anchors and the gate? | (a) they count while allowed | — |
 | [Q-SIG-94](spec/signatures.md#q-sig-94--the-bastion-learns-a-narrowing-as-content-entries-for-the-gated-repositories) | The Bastion and a narrowing? | (a) content entries for the gated repositories | — |
 | [Q-SIG-95](spec/signatures.md#q-sig-95--no-end-to-end-case-one-measurement-by-hand) | An end-to-end case? | (a) none; one measurement by hand | — |
+| [Q-SIG-109](spec/signatures.md#q-sig-109--the-trust-step-judges-the-evidence-the-check-stored) | What does the trust step judge a signature by? | (a) the evidence the check stored in `signatures.evidence`, at most 512 KiB | — |
+| [Q-SIG-110](spec/signatures.md#q-sig-110--what-the-store-decides-of-mixed-verdicts-epochs-and-narrowing-writes) | What does the store decide of mixed verdicts, epochs and narrowing writes? | (a) a refuting key makes a signature invalid for all; the epoch rises on a changed value; a replayed narrowing switches the anchor off | — |
+| [Q-SIG-111](spec/signatures.md#q-sig-111--discovery-walks-the-items-by-a-cursor-and-starts-a-new-pass-once-a-day) | How does discovery walk the items? | (a) by a cursor, with a new pass at most once a day | — |
+| [Q-SIG-112](spec/signatures.md#q-sig-112--the-first-step-of-the-check-that-fails-decides) | Which reason wins when several apply? | (a) the first step of the check that fails | — |
+| [Q-SIG-113](spec/signatures.md#q-sig-113--cosigns-older-layout-is-converted-to-a-bundle-of-version-01) | How is cosign's older layout verified? | (a) converted to a bundle of version 0.1 | — |
+| [Q-SIG-114](spec/signatures.md#q-sig-114--a-trust-root-knows-a-log-by-its-key-id-and-an-authority-by-its-key) | When does a trust root know a log or an authority? | (a) a log by its key ID, an authority by its key | — |
+| [Q-SIG-115](spec/signatures.md#q-sig-115--what-a-keyless-check-can-tell-without-a-key) | What can a keyless check tell without a key? | (a) an OpenPGP hash-tag mismatch is invalid; a raw key's signature over other bytes stays no_key | — |
+| [Q-SIG-116](spec/signatures.md#q-sig-116--every-nuget-part-checks-the-primary-signature-and-the-package) | What does a NuGet countersignature's part check? | (a) the primary signature and the package too | — |
+| [Q-SIG-117](spec/signatures.md#q-sig-117--a-ca-anchors-leaf-carries-codesigning-explicitly) | Must a CA anchor's leaf carry codeSigning? | (a) explicitly | — |
+| [Q-SIG-118](spec/signatures.md#q-sig-118--the-time-of-a-signature-in-a-scope) | Which time judges a signature in a scope? | (a) the scope's own proof computed from the evidence; the rows keep no time | — |
+| [Q-SIG-119](spec/signatures.md#q-sig-119--what-a-block-matches) | What does a block match? | (a) every key ID and the keys of the anchors that verified, hexadecimal whatever its case | — |
+| [Q-SIG-120](spec/signatures.md#q-sig-120--the-shipped-anchors-titles-presets-and-the-version-a-refresh-compares) | What do the shipped anchors carry, and what does a refresh compare? | (a) presets and titles; the TUF snapshot's version | — |
+| [Q-SIG-121](spec/signatures.md#q-sig-121--the-bounds-and-checks-of-anchor-material-the-table-leaves-open) | Which checks of anchor material does the table leave open? | (a) key usage and extended key use, pattern and value bounds, keyid format, OpenPGP algorithms by purpose | — |
+| [Q-SIG-122](spec/signatures.md#q-sig-122--anchors-of-the-configuration-are-a-map-and-their-material-a-mounted-file) | How are anchors of the configuration written? | (a) a map keyed by the anchor's key, material inline or as a mounted file | — |
+| [Q-SIG-123](spec/signatures.md#q-sig-123--the-api-the-project-list-the-virtual-members-and-the-original) | What shapes does the API take? | (a) the project list with the installation's anchors, every virtual member that holds the version, attestations apart, IDs as digit text | — |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

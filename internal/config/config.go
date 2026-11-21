@@ -70,6 +70,10 @@ type Config struct {
 	// The malware scanning (malware.go, malware-scanning.md).
 	Malware Malware `yaml:"malware"`
 
+	// The signatures on artifacts (signatures.go, signatures.md R-SIG-040): the job, its bounds, the trust root's refresh and the
+	// anchors declared here (R-SIG-018).
+	Signatures Signatures `yaml:"signatures"`
+
 	// ConfigAsCode holds secrets_dir, which the secret references of M2 use.
 	ConfigAsCode AsCode `yaml:"config_as_code"`
 }

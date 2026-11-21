@@ -3591,6 +3591,78 @@
         <source>Authentication settings changed</source>
       </segment>
     </unit>
+    <unit id="audit.action.signature.anchor.created">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:301</note>
+      </notes>
+      <segment>
+        <source>Trust anchor added</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.anchor.removed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:303</note>
+      </notes>
+      <segment>
+        <source>Trust anchor removed</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.anchor.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
+      </notes>
+      <segment>
+        <source>Trust anchor changed</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.invalid">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+      </notes>
+      <segment>
+        <source>Invalid signature found</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.settings.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
+      </notes>
+      <segment>
+        <source>Project trust anchor setting changed</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.signer.blocked">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+      </notes>
+      <segment>
+        <source>Signer blocked</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.signer.unblocked">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
+      </notes>
+      <segment>
+        <source>Signer unblocked</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.trust_root.failed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+      </notes>
+      <segment>
+        <source>Public Sigstore root update failed</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.trust_root.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+      </notes>
+      <segment>
+        <source>Public Sigstore root updated</source>
+      </segment>
+    </unit>
     <unit id="audit.action.system.backup.completed">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:305</note>

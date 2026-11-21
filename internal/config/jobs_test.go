@@ -7,9 +7,9 @@ import (
 )
 
 func TestJobsWorkersQueues(t *testing.T) {
-	w := JobsWorkers{Default: 4, Maintenance: 1, Index: 2, Delivery: 8, Mirror: 2, Vuln: 1, Malware: 3}
+	w := JobsWorkers{Default: 4, Maintenance: 1, Index: 2, Delivery: 8, Mirror: 2, Vuln: 1, Malware: 3, Signatures: 5}
 	t.Run("R-ARCH-016 every queue has its worker slots", func(t *testing.T) {
-		want := map[string]int{"default": 4, "maintenance": 1, "index": 2, "delivery": 8, "mirror": 2, "vuln": 1, "malware": 3}
+		want := map[string]int{"default": 4, "maintenance": 1, "index": 2, "delivery": 8, "mirror": 2, "vuln": 1, "malware": 3, "signatures": 5}
 		for _, q := range w.Queues() {
 			n, ok := w.Count(q)
 			if !ok || n != want[q] {
@@ -87,7 +87,7 @@ func TestJobsQueueSettings(t *testing.T) {
 		if got := issues(j); len(got) != 0 {
 			t.Fatalf("issues %v", got)
 		}
-		if got := j.ClaimedQueues(); len(got) != 7 || !j.Claims("malware") {
+		if got := j.ClaimedQueues(); len(got) != 8 || !j.Claims("malware") || !j.Claims("signatures") {
 			t.Fatalf("claimed %v", got)
 		}
 	})
@@ -96,7 +96,7 @@ func TestJobsQueueSettings(t *testing.T) {
 			t.Fatalf("queues: %v", got)
 		}
 		j := &Jobs{ExcludeQueues: []string{"index", "mirror"}}
-		if got := j.ClaimedQueues(); len(got) != 5 || j.Claims("index") || !j.Claims("vuln") || !j.Claims("malware") {
+		if got := j.ClaimedQueues(); len(got) != 6 || j.Claims("index") || !j.Claims("vuln") || !j.Claims("malware") || !j.Claims("signatures") {
 			t.Fatalf("exclude: %v", got)
 		}
 	})

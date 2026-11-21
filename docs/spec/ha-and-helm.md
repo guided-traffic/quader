@@ -635,6 +635,10 @@ leaves their text to them.
   is on: `QuaderMalwareFound`, `QuaderMalwareDatabaseStale` (its threshold `config.malware.database.stale_after`, default 48 h),
   `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog`, with their `promtool` tests in
   [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml).
+- **The signatures' alerts and anchors.** The rules carry the three alerts of [signatures.md](signatures.md) R-SIG-039 while
+  `config.signatures.enabled` (the default): `QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`. The values'
+  `signatures.anchors` (R-SIG-018) render into `config.signatures.anchors`; material from a `<member>From.configMapKeyRef` is mounted
+  read-only into the migration Job alone ([Q-SIG-122](signatures.md#q-sig-122--anchors-of-the-configuration-are-a-map-and-their-material-a-mounted-file)).
 - **Chart checks** (R-HA-029): `clamd-tmp`'s size at least `slots × (max_file_size + max_scan_size)`, the failure naming the three values;
   `clamd`'s memory limit at least 1.5 GiB; `malwareScannerClamav.replicaCount` at least 1.
 
@@ -4700,6 +4704,15 @@ config:
       auto_redirect: true               # true: with exactly one OIDC provider the sign-in page goes straight to it; /ui/login?auto_sign_in=false still shows the page with the break-glass form. false: the page lists the providers
   authz: {}                             # empty; authorization.md
   ci: {}                                # empty; gitlab-ci-oidc.md
+  # The signatures on artifacts (docs/spec/signatures.md R-SIG-040). Every key has a default and is rendered only when set here; the
+  # chart reads enabled, which renders the three QuaderSignature* alerts. The anchors are declared in signatures.anchors (below
+  # trustedCA), never here.
+  # signatures:
+  #   enabled: true                     # false: no signature is detected, checked or shown; the stored rows stay
+  #   max_object_size: 256KiB           # largest signature object read, at most 1MiB
+  #   trust_root:
+  #     refresh: true                   # false: the release's snapshot of the public Sigstore root (no internet)
+  #     url: https://tuf-repo-cdn.sigstore.dev   # or a TUF mirror of the company, https only
 
 # ── TLS on Quader's own listeners ────────────────────
 # Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam) has a pair and a name of its own:
@@ -4821,6 +4834,54 @@ trustedCA:
   existingConfigMap: ""                 # example: corp-ca-bundle (a trust-manager Bundle target)
   keys: [ca-bundle.crt]                 # the files of the source that are mounted, each a PEM bundle; they are added to config.proxy.outbound.tls.ca_files
   useForObjectStore: false              # true also sets storage.s3.ca_file to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
+
+# ── Trust anchors of the signatures on artifacts (R-SIG-018) ──────────────────────
+# Who the installation trusts as a signer, beside the shipped anchors and those an administrator adds in the UI. The chart renders
+# the list into config.signatures.anchors; the migration Job (quader migrate) applies it on every install and upgrade with the scope
+# configuration, removes an anchor taken out of it, and fails with the anchor's key and the reason when its material does not pass the
+# checks (R-SIG-015). The API and the UI show these anchors read-only. Each entry has a key (^[a-z0-9]+(-[a-z0-9]+)*$, at most 64
+# characters, unique), a title (1 to 128 characters, the name shown at a signature), a kind (ca | openpgp | public-key | sigstore) and
+# exactly the block of its kind. The material is public: inline, or <member>From.configMapKeyRef naming a key of a ConfigMap in the
+# release namespace, which only the migration Job mounts, read-only, at /etc/quader/signature-anchors/<key>/. A Secret is not accepted.
+# With migrations.mode disabled, whoever runs quader migrate provides those files. The default is no declaration; the tuning keys of
+# the signatures are under config.signatures.
+# signatures:
+#   anchors:
+#     - key: gitlab-ci-signing          # the company CA that signs the CI's images and packages
+#       title: GitLab CI signing CA
+#       kind: ca
+#       ca:
+#         certificatesFrom:             # or certificates: inline PEM, 1 to 16 certificates
+#           configMapKeyRef: {name: company-ca, key: ca.crt}
+#         use: codeSigning              # codeSigning (when left out) | timestamping (a timestamp authority's root, never a signer)
+#         subject: {O: Example GmbH}    # optional: attributes O, OU, CN, C the signer's certificate must carry exactly
+#         subjectAltNames: []           # optional: RE2 patterns, one of which an alternative name of the signer must match
+#     - key: release-key                # an OpenPGP key that signs Debian repositories or files
+#       title: Release signing key
+#       kind: openpgp
+#       openpgp:
+#         keysFrom:                     # or keys: inline, 1 to 32 armored public certificates
+#           configMapKeyRef: {name: release-keys, key: release.asc}
+#     - key: npm-mirror-keys            # raw public keys, such as an npm registry's signing keys
+#       title: npm mirror signing keys
+#       kind: public-key
+#       publicKey:
+#         keys:                         # 1 to 16
+#           - pem: |                    # or pemFrom.configMapKeyRef
+#               -----BEGIN PUBLIC KEY-----
+#               ...
+#               -----END PUBLIC KEY-----
+#             keyid: "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA"   # optional: npm's keyid
+#             expires: "2027-01-01T00:00:00Z"   # optional: when the key stops signing, RFC 3339
+#     - key: company-sigstore           # a Sigstore identity: who signed keyless, under which issuer
+#       title: Company Sigstore
+#       kind: sigstore
+#       sigstore:
+#         issuer: https://gitlab.example.com
+#         identityPattern: "^https://gitlab.example.com/platform/.+//\\.gitlab-ci\\.yml@refs/heads/main$"   # or identity: an exact value
+#         trustRoot: own                # public: the shipped public Sigstore root (when no trusted root is given) | own: the company's
+#         trustedRootFrom:              # or trustedRoot: inline trusted_root.json, at most 1 MiB
+#           configMapKeyRef: {name: company-sigstore-root, key: trusted_root.json}
 
 bootstrap:
   existingConfigMap: ""                 # configuration documents (P1)

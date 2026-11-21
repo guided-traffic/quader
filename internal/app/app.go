@@ -605,6 +605,8 @@ func (a *App) startClient() error {
 			Limits: a.limitsAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).
 			Malware: a.malwareAPI(),
+			// The signatures' operations and the member signatures of a file and a version (wire_signatures.go).
+			Signatures: a.signaturesAPI(),
 			// The system repositories' "in use" line, from this replica's configuration: upstream/scanner-trivy while the image
 			// scanning reads its database through it (R-REPO-070, R-VULN-044), upstream/clamav while the malware scanning
 			// keeps its database there (R-REPO-075, wire_malware_database.go).

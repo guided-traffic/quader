@@ -86,6 +86,12 @@ func noFeedEntry() map[string]string {
 		audit.EventGroupUpdated:            "clearing auto-join removes no membership that exists (R-AUTH-019): only users created afterwards stay out of the group; a rename or a description changes no grant",
 		audit.EventUserUpdated:             "removes a pending identity link, which no caller holds until a login completes it; a profile change changes no grant",
 		audit.EventMalwareSettingsChanged:  "turning the switch on changes which bytes the main installation serves in every repository; a content entry for every repository would empty every Bastion's cache, so a Bastion learns it at its next revalidation (H-1102, Q-BAS-164)",
+		// The trust of signatures (signatures.md R-SIG-033): a Bastion serves the bytes of signatures and judges none, so withdrawn trust
+		// changes nothing it keeps.
+		audit.EventSignatureAnchorRemoved:   "withdraws a trust anchor; a Bastion serves signatures as bytes and shows no verdict, so it keeps nothing an anchor decides (R-SIG-033)",
+		audit.EventSignatureAnchorUpdated:   "narrows a trust anchor; a Bastion serves signatures as bytes and shows no verdict (R-SIG-033)",
+		audit.EventSignatureSettingsChanged: "switches project trust anchors off; a Bastion shows no verdict (R-SIG-033)",
+		audit.EventSignatureSignerBlocked:   "blocks a signer; a Bastion serves signatures as bytes and shows no verdict, so a block changes nothing it serves (R-SIG-033)",
 	}
 }
 

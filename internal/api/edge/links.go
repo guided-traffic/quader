@@ -96,6 +96,16 @@ type ItemView struct {
 	ItemURL          string     `json:"itemUrl"`
 	// Malware is the member of R-MAL-022; the caller sets it with [DescribeMalware], nil where the answer carries none.
 	Malware *MalwareView `json:"malware,omitempty"`
+	// Signatures is the member of R-SIG-034, the badge of the file's signatures; nil for a folder and while signatures are off.
+	Signatures *SignatureView `json:"signatures,omitempty"`
+}
+
+// SignatureView is the member signatures of an answer that describes a stored file (R-SIG-034, R-SIG-009): the badge's state
+// (verified_internal, verified_public, untrusted, invalid, not_checked, unsupported, none) and whether a trust row that decides it
+// lags the last change of anchors (R-SIG-012).
+type SignatureView struct {
+	State string `json:"state"`
+	Stale bool   `json:"stale"`
 }
 
 func nonEmpty(s string) *string {

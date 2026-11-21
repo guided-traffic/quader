@@ -514,6 +514,8 @@ formats.SignatureEvent: field Origin Origin
 formats.SignatureEvent: field Path Path
 formats.SignatureEvent: field Repo RepoRef
 formats.SignatureEvent: field Variant string
+formats.SignatureFetchLimits: field MaxManifests int
+formats.SignatureFetchLimits: field MaxObjectSize int64
 formats.SignatureFetcher: method FetchSignatures(context.Context, discover.Upstream, string) error
 formats.SignatureKind: field Client string
 formats.SignatureKind: field Covers string
@@ -628,6 +630,7 @@ formats.CallerVersions: func(context.Context, *Request, string) (*VersionView, e
 formats.CapabilitiesFor: func(ID) Capabilities
 formats.CapabilitiesOf: func(Format) Capabilities
 formats.CatalogEntry: func(Format) catalog.Entry
+formats.DefaultSignatureFetchLimits: func() SignatureFetchLimits
 formats.Descriptors: func() []Descriptor
 formats.ExecuteGuide: func(GuideSection, GuideData) (string, error)
 formats.GuideTopics: func() []string
@@ -647,12 +650,14 @@ formats.RepositoryAllowed: func(context.Context, RepoRef) error
 formats.RequiredGuideTopics: func() []string
 formats.ServeRoute: func(Format, http.ResponseWriter, *Request, bool)
 formats.SetupTokenRefs: func() []string
+formats.SignatureFetchLimitsFrom: func(context.Context) SignatureFetchLimits
 formats.SignatureRoleValid: func(string) bool
 formats.SignatureSchemeValid: func(string) bool
 formats.SignatureSourceValid: func(string) bool
 formats.Template: func(string) (func(string) (Params, bool))
 formats.Validate: func(Format) error
 formats.WithRefusal: func(*http.Request, Refusal) *http.Request
+formats.WithSignatureFetchLimits: func(context.Context, SignatureFetchLimits) context.Context
 formats.ActionAnnotate: value = authz.Annotate
 formats.ActionDelete: value = authz.Delete
 formats.ActionDeploy: value = authz.Deploy

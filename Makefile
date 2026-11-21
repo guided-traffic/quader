@@ -152,6 +152,10 @@ image-marked: ## Build IMAGE_MARKED: make image with the second UI bundle (UI_BU
 generate: ## Run every go:generate directive (config schemas and the Bastion chart files derived from them, sqlc, oapi-codegen)
 	go generate $(PKGS)
 
+.PHONY: shipped-anchors
+shipped-anchors: ## Refresh the release's snapshot of the public Sigstore TUF repository (trusted_root.json, npm's keys, the TUF metadata) into internal/signatures/shipped/data (R-SIG-017; needs the network; commit the result)
+	go run ./internal/tools/shippedanchors -out internal/signatures/shipped/data
+
 .PHONY: generate-check
 generate-check: generate ## Generate, then fail when the tree differs from the committed files (CI: E0.1)
 	git diff --exit-code

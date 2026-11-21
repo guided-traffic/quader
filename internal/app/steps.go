@@ -208,6 +208,7 @@ func wiringSteps() []step {
 		newStep(AreaCI, everyRole, (*App).wireCI),
 		newStep(AreaVuln, everyRole, (*App).wireVuln),
 		newStep(AreaMalware, everyRole, (*App).wireMalware),
+		newStep(AreaSignatures, everyRole, (*App).wireSignatures),
 		newStep(AreaMirror, everyRole, (*App).wireMirror),
 		newStep(AreaFormats, everyRole, (*App).wireFormats),
 		newStep(AreaFiles, everyRole, (*App).wireFiles),

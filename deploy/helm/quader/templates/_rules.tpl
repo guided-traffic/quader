@@ -4,7 +4,8 @@ stable. Rendered: the alerts of the vulnerability scanning (R-VULN-024), the two
 Q-OPS-160, Q-OPS-171), QuaderBlobMissing (R-HA-024, Q-STOR-152) and
 the sixteen rows of R-HA-045's table whose metrics the binary exports, QuaderBackupCheckFailed (the platform check
 task backup-check, R-HA-023), QuaderRevocationJournalBacklog (R-HA-054) and the six QuaderBackup* alerts of the backup runs
-(R-BAK-014): every alert of the table.
+(R-BAK-014): every alert of the table. The four of the malware scanning (R-MAL-026) render while config.malware.enabled, the three
+of the signatures on artifacts (R-SIG-039) while config.signatures.enabled.
 
 The six alerts of the backup runs are rendered only while backup.enabled is true (Q-HA-17): without the CronJob no run
 ever succeeds, and the clause of QuaderBackupStale for a backup that never succeeded would fire one interval after every
@@ -204,6 +205,31 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     summary: A stored file has waited more than an hour for its malware scan.
     description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by priority; raise malwareScannerClamav.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
 {{- end }}
+{{- if include "quader.signaturesOn" . }}
+- alert: QuaderSignatureInvalid
+  expr: sum(increase(quader_signatures_checks_total{ {{ $ns }},result="invalid" }[1h])) > 0
+  labels:
+    severity: warning
+  annotations:
+    summary: A signature on a stored artifact was found invalid within the last hour.
+    description: The signature does not match the content it signs, or its chain or key does not verify it, so the artifact's badge says Invalid signature (R-SIG-003, R-SIG-039). The content was changed after signing, or the signature was made for other content or forged. The audit event signature.invalid names the signature, its subject and the repositories that hold it; quader_signatures_invalid counts the invalid signatures still attached to something.
+- alert: QuaderSignatureBacklog
+  expr: max(quader_signatures_oldest_pending_seconds{ {{ $ns }} }) > 3600
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: A signature has waited more than an hour for its check.
+    description: The job signature-verify does not keep up with what is stored, or does not run (R-SIG-011, R-SIG-039). quader_signatures_backlog shows the due signatures by priority. Check that a worker claims the queue signatures (jobs.workers.signatures), the object store, and quader_signatures_checks_total by result; raise config.signatures.concurrency if checks finish but too slowly.
+- alert: QuaderSignatureTrustRootStale
+  expr: max(quader_signatures_trust_root_age_seconds{ {{ $ns }} }) > 1209600
+  for: 1h
+  labels:
+    severity: warning
+  annotations:
+    summary: The public Sigstore trusted root and npm's registry keys in use are older than 14 days.
+    description: The task signature-trust-root has not stored a newer public root for 14 days, so certificate authorities, logs and keys that Sigstore and npm added since are not known, and their signatures read Signed · signer not trusted (R-SIG-017, R-SIG-039). With config.signatures.trust_root.refresh true, the admin page of the signatures and the audit event signature.trust_root.failed name the failure; check the worker's egress to config.signatures.trust_root.url. Without internet (refresh false) the age is that of the release's snapshot (H-1170); upgrade, point trust_root.url at a TUF mirror of the company, or disable the alert.
+{{- end }}
 - alert: QuaderMirrorFailing
   expr: max by (repo) (quader_mirror_consecutive_failures{ {{ $ns }} }) >= 3
   labels:
@@ -345,5 +371,5 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader.rules.names" -}}
-{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
+{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderSignatureInvalid" "QuaderSignatureBacklog" "QuaderSignatureTrustRootStale" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
 {{- end -}}

@@ -111,6 +111,7 @@ deploy/helm/quader/
     ├── _tls.tpl            the kinds of pod with a pair (quader.tlsKindTable), their names and Secrets, the edge's backend settings
     ├── _vuln.tpl           the image scanning's links and checks, the scan listener both scannings read through
     ├── _malware.tpl        the malware scanning's links and checks, clamd.conf, freshclam.conf, the updater's checks
+    ├── _signatures.tpl     the anchors of signatures.anchors rendered into the configuration, their material mounted into the migration Job
     ├── vuln-scanner-trivy.yaml      the image scanning's scanner (Trivy): Deployment, budget, autoscaler, Service, policy
     ├── malware-scanner-clamav.yaml  the malware scanner with clamd beside it: Deployment, budget, autoscaler, Service, policy, ConfigMap
     ├── malware-updater-freshclam.yaml  the updater with freshclam beside it: Deployment, Service, policy, ConfigMap
@@ -162,7 +163,7 @@ deploy/helm/quader/
 | HorizontalPodAutoscaler | one per Deployment, named as it | `autoscaling.enabled` of the role or pool; `autoscaling/v2` |
 | NetworkPolicy | one per Deployment, named as it, and `<fullname>-migrate` (hook) | `networkPolicy.enabled`, ingress only, see [Network policy](#network-policy) |
 | ConfigMap, ServiceAccount (hook, weight -10) | `<fullname>-migrate` | same `quader.yaml` as `<fullname>-config` |
-| Job (hook, weight 0) | `<fullname>-migrate` | `quader migrate up`, which also applies `config.authz.role_bindings` (R-AUTHZ-010; `TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob`); `backoffLimit` 2, deadline 1800 s, TTL 86400 s |
+| Job (hook, weight 0) | `<fullname>-migrate` | `quader migrate up`, which also applies `config.authz.role_bindings` (R-AUTHZ-010; `TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob`) and the trust anchors of `signatures.anchors` with the release's shipped ones (R-SIG-017, R-SIG-018; the anchors' ConfigMaps mounted read-only at `/etc/quader/signature-anchors/<key>/` in this Job only, `TestR_SIG_018_DeclaredAnchorsReachTheMigrationJob`); `backoffLimit` 2, deadline 1800 s, TTL 86400 s |
 | Service, Ingress; pool Deployments, PodDisruptionBudgets, HorizontalPodAutoscalers `<fullname>-<role>-ep-<name>` | `<fullname>-ep-<name>` (and `-api`) | per further endpoint, see [Endpoints](#endpoints) |
 | Ingress | `<fullname>` | `ingress.enabled`; per host the path rules of R-HA-037 (all `Prefix`, port name `http`); backend-over-TLS annotations per controller, see [TLS](#tls) |
 | BackendTLSPolicy | one per Service the default Ingress names, named as the Service | `tls.backendTLSPolicy.enabled` only; Gateway API CRD, see [TLS](#tls) |

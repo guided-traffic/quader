@@ -98,6 +98,10 @@ func (s *Server) GetItem(w http.ResponseWriter, r *http.Request, projectKey, rep
 	if err == nil && it.Kind == items.KindFile {
 		view.Malware, err = s.malwareMember(r.Context(), repoKey, it.Malware, it.Generated)
 	}
+	if err == nil {
+		// The badge of the file's signatures (R-SIG-034): absent for a folder and while signatures are off.
+		view.Signatures, err = s.signatureMember(r.Context(), repoKey, it)
+	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return

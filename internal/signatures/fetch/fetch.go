@@ -157,6 +157,9 @@ type HandlerOptions struct {
 	// Observe, when set, is told every request of a run with the format and "ok" or "error": the counter
 	// quader_signatures_remote_requests_total of R-SIG-039, which the package of the metrics registers.
 	Observe func(format, result string)
+	// RunContext, when set, decorates the context a run hands the format's fetch: the composition root carries the bounds of R-SIG-040
+	// (signatures.remote.max_manifests_per_subject, signatures.max_object_size) through it, which the format reads.
+	RunContext func(context.Context) context.Context
 	// Now is the clock of the budget; nil is time.Now.
 	Now func() time.Time
 }
@@ -201,7 +204,11 @@ func Handler(o HandlerOptions) jobs.Handler {
 		lim := &limited{take: func() error { return budgets.take(a.RepoID) }, observe: observer(o.Observe, format)}
 		lim.Upstream, err = o.Background.Upstream(ctx, a.RepoID, run.ID)
 		if err == nil {
-			err = f.FetchSignatures(ctx, lim, a.Target)
+			fctx := ctx
+			if o.RunContext != nil {
+				fctx = o.RunContext(ctx)
+			}
+			err = f.FetchSignatures(fctx, lim, a.Target)
 		}
 		var spent errBudget
 		switch {

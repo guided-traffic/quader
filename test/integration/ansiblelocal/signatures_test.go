@@ -95,6 +95,14 @@ func TestR_SIG_031_ASignaturePostedForALocalVersionIsServed(t *testing.T) {
 	                     WHERE a.repo_id = $1 AND a.source = 'upload' AND s.role = 'publisher' AND s.content_locator = 'entry:MANIFEST.json'`, e.repoID()); n != 1 {
 		t.Errorf("%d attachments of the posted signature, want 1", n)
 	}
+	// The post wakes the job signature-verify in its transaction, at the priority of an upload (R-SIG-011).
+	if n := e.st.Number(`SELECT count(*) FROM job WHERE kind = 'signature-verify'`); n < 1 {
+		t.Errorf("the post queued no job signature-verify")
+	}
+	if n := e.st.Number(`SELECT count(*) FROM signatures s JOIN signature_attachments a ON a.signature_id = s.id
+	                     WHERE a.repo_id = $1 AND s.priority = 0 AND s.due`, e.repoID()); n != 1 {
+		t.Errorf("%d posted signatures due at the priority of an upload, want 1", n)
+	}
 
 	if a := e.st.Do(e.r, http.MethodDelete, op+"/"+fp, e.tokA, nil); a.Status != http.StatusNoContent {
 		t.Fatalf("the removal: %d %s", a.Status, a.Body)

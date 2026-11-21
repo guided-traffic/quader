@@ -40,6 +40,37 @@ func (s State) Valid() bool {
 	return false
 }
 
+// The schemes of a signature object (R-SIG-001): the names formats.SignatureScheme* declare, spelled here for the packages below the
+// edge layer, which may not import the format contract.
+const (
+	SchemeSigstoreBundle = "sigstore-bundle"
+	SchemeCosignLegacy   = "cosign-legacy"
+	SchemeNotationJWS    = "notation-jws"
+	SchemeNotationCOSE   = "notation-cose"
+	SchemeNuGetCMS       = "nuget-cms"
+	SchemeOpenPGP        = "openpgp"
+	SchemeNPMRegistry    = "npm-registry"
+	SchemePublicKey      = "public-key"
+	SchemeUnknown        = "unknown"
+)
+
+// The roles of a signature (R-SIG-001), as formats.SignatureRole* declare them.
+const (
+	RolePublisher   = "publisher"
+	RoleProvenance  = "provenance"
+	RoleRegistry    = "registry"
+	RoleAttestation = "attestation"
+)
+
+// RoleValid reports whether role is one of the four roles.
+func RoleValid(role string) bool {
+	switch role {
+	case RolePublisher, RoleProvenance, RoleRegistry, RoleAttestation:
+		return true
+	}
+	return false
+}
+
 // The closed reasons of R-SIG-006.
 const (
 	ReasonDigestMismatch     = "digest_mismatch"
@@ -205,4 +236,7 @@ type Result struct {
 	ClaimedAt     time.Time
 	ProvenAt      time.Time
 	TimeProof     string
+	// Evidence is what the trust step judges the signature by without reading content (signatures.evidence, Q-SIG-109): the JSON of
+	// scheme.Evidence, nil when the state has no trust step.
+	Evidence []byte
 }

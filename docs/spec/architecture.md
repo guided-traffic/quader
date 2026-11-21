@@ -457,7 +457,7 @@ Normative rules:
   1. Edge: `httpserver`, `api/v1`, `api/edge`, `api/dispatch`, `webui`, `formats` (the contract and the format handlers), `formathost`.
   2. Domain: `repository`, `files`, `items`, `packages`, `proxy`, `virtual`, `formatdata`, `authz`, `auth`, `jobs`, `audit`, `backup`, `journal`.
   3. Infrastructure: `meta/postgres`, `blob` (the store and its spool; the S3 client is `blob/s3`), `cluster`, `outbound`, `secrets`.
-  4. Leaf: `config`, `errs`, `buildinfo`, `observability`, `cache`, `meta`, `backup/tables`, `backup/target` (the port of the backup target, Q-BAK-15), `tlsfiles`, `formats/catalog`, `formats/nuget/id`, `formats/nuget/version`, `formats/nuget/nupkg`, `formats/nuget/nuspec`, `formats/deb/control`, `formats/deb/debfile`, `formats/deb/version`, `formats/deb/index` (the Debian rule libraries: the deb822 parser and writer, the package archive reader, dpkg's version order and the index renderers, shared by the format, its data port and its jobs, Q-ARCH-383), `formats/ansible/version`, `formats/ansible/collection`, `formats/ansible/galaxydoc`, `formats/ansible/merge` (the Ansible Galaxy rule libraries: semantic versions and their sort key, the collection archive reader, the Galaxy documents and the merge of version lists, shared by the format, its data port and the importer, R-ANS-002, R-ANS-004, R-ANS-010), `formats/npm/semver` (the version order and the dist-tag rule, shared by the format and its data port's journal replay, R-NPM-047), `formats/<id>/rows`, `auth/scope`, `auth/jws` (the compact-JWS verifier the login and the CI exchange share, Q-CI-19), `ci/reason`, `ci/claims`, `ci/subject` (the pure parts of the CI federation, Q-CI-21). Every layer may import them, and they import only each other.
+  4. Leaf: `config`, `errs`, `buildinfo`, `observability`, `cache`, `meta`, `backup/tables`, `backup/target` (the port of the backup target, Q-BAK-15), `tlsfiles`, `formats/catalog`, `formats/nuget/id`, `formats/nuget/version`, `formats/nuget/nupkg`, `formats/nuget/nuspec`, `formats/deb/control`, `formats/deb/debfile`, `formats/deb/version`, `formats/deb/index` (the Debian rule libraries: the deb822 parser and writer, the package archive reader, dpkg's version order and the index renderers, shared by the format, its data port and its jobs, Q-ARCH-383), `formats/deb/archivekeys` (the archive keyrings of Debian and Ubuntu, embedded once and read by the format's presets and the shipped trust anchors of the signatures, R-SIG-017), `formats/ansible/version`, `formats/ansible/collection`, `formats/ansible/galaxydoc`, `formats/ansible/merge` (the Ansible Galaxy rule libraries: semantic versions and their sort key, the collection archive reader, the Galaxy documents and the merge of version lists, shared by the format, its data port and the importer, R-ANS-002, R-ANS-004, R-ANS-010), `formats/npm/semver` (the version order and the dist-tag rule, shared by the format and its data port's journal replay, R-NPM-047), `formats/<id>/rows`, `auth/scope`, `auth/jws` (the compact-JWS verifier the login and the CI exchange share, Q-CI-19), `ci/reason`, `ci/claims`, `ci/subject` (the pure parts of the CI federation, Q-CI-21). Every layer may import them, and they import only each other.
      `formats/<id>/rows` is the values of a format's data port, shared by the format and `formatdata/<id>` (Q-ARCH-193). It is a leaf by rule, not by a
      list entry: archtest's `layerOf` gives every `internal/formats/<id>/rows` the leaf layer, and `CheckLayers` fails it when it imports anything but `errs` and
      the standard library (npm and NuGet each have one).
@@ -744,8 +744,13 @@ quader/
 │   │   ├── match/               # the matcher over a format's version order (leaf layer)
 │   │   ├── osv/                 # the OSV and KEV decoders (leaf layer)
 │   │   └── store/ sync/ evaluate/ triage/ report/   # the tables' wrappers, the sync jobs, evaluation and lifecycle, status changes, the report
-│   ├── signatures/              # signatures on artifacts: states, roles, the batch the commit hook records (signatures.md R-SIG-001 to R-SIG-043)
-│   │   └── store/               # the store of signature_objects, signatures, signature_attachments and artifact_origins
+│   ├── signatures/              # signatures on artifacts: states, roles, the batch the commit hook records, the badge rule (signatures.md R-SIG-001 to R-SIG-043)
+│   │   ├── store/               # the store of the signature tables: objects, signatures, attachments, origins, anchors, blocks, trust rows, settings
+│   │   ├── scheme/              # the contract of a verifier; sigstore/ notation/ nugetcms/ openpgp/ rawkey/ verify each family, all/ dispatches (R-SIG-006)
+│   │   ├── trust/               # the trust step: one signature in one scope under the blocks (R-SIG-008)
+│   │   ├── anchors/             # the four kinds of trust anchor, their checks on save (R-SIG-015)
+│   │   ├── shipped/             # the shipped anchors and the release's snapshot of the public Sigstore TUF targets (R-SIG-017)
+│   │   └── job/                 # the jobs signature-verify and signature-trust, the task signature-trust-root (R-SIG-011, R-SIG-012)
 │   ├── mirror/                  # the mirror mode of remote repositories: dispatch, passes, throttling, status (R-REPO-050 to R-REPO-059)
 │   │   └── discover/            # the discovery contract a format's remote adapter implements (leaf layer, ADR-152)
 │   ├── formatdata/              # store ports of the formats, implemented over the generated queries (Q-ARCH-193)
@@ -2207,6 +2212,18 @@ func SignatureSourceValid(source string) bool
 type SignatureFetcher interface {
 	FetchSignatures(ctx context.Context, u discover.Upstream, target string) error
 }
+
+// SignatureFetchLimits are the bounds of one fetch the job hands the format in the context of a run (R-SIG-040, ADR-233):
+// signatures.remote.max_manifests_per_subject and signatures.max_object_size. SignatureFetchLimitsFrom answers them, or the defaults
+// (DefaultSignatureFetchLimits: four manifests, 256 KiB) for a context without them; WithSignatureFetchLimits sets them.
+type SignatureFetchLimits struct {
+	MaxManifests  int
+	MaxObjectSize int64
+}
+
+func DefaultSignatureFetchLimits() SignatureFetchLimits
+func WithSignatureFetchLimits(ctx context.Context, l SignatureFetchLimits) context.Context
+func SignatureFetchLimitsFrom(ctx context.Context) SignatureFetchLimits
 
 // SignatureVerdicts is what a format asks of the verdicts of signatures before it serves one (Q-SIG-35): npm serves a local provenance
 // bundle only when it verified against the public Sigstore. The trust step implements it; Host.Signatures answers NoSignatureVerdicts

@@ -301,6 +301,24 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.settings.registry_presets.changed:Registries of this installation changed`;
     case 'settings.auth.changed':
       return $localize`:@@audit.action.settings.auth.changed:Authentication settings changed`;
+    case 'signature.anchor.created':
+      return $localize`:@@audit.action.signature.anchor.created:Trust anchor added`;
+    case 'signature.anchor.removed':
+      return $localize`:@@audit.action.signature.anchor.removed:Trust anchor removed`;
+    case 'signature.anchor.updated':
+      return $localize`:@@audit.action.signature.anchor.updated:Trust anchor changed`;
+    case 'signature.invalid':
+      return $localize`:@@audit.action.signature.invalid:Invalid signature found`;
+    case 'signature.settings.changed':
+      return $localize`:@@audit.action.signature.settings.changed:Project trust anchor setting changed`;
+    case 'signature.signer.blocked':
+      return $localize`:@@audit.action.signature.signer.blocked:Signer blocked`;
+    case 'signature.signer.unblocked':
+      return $localize`:@@audit.action.signature.signer.unblocked:Signer unblocked`;
+    case 'signature.trust_root.failed':
+      return $localize`:@@audit.action.signature.trust_root.failed:Public Sigstore root update failed`;
+    case 'signature.trust_root.updated':
+      return $localize`:@@audit.action.signature.trust_root.updated:Public Sigstore root updated`;
     case 'system.backup.completed':
       return $localize`:@@audit.action.system.backup.completed:Backup completed`;
     case 'system.backup.deleted':

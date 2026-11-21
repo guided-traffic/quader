@@ -392,10 +392,17 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 		httpserver.Problem(w, r, err)
 		return
 	}
+	// The member signatures of each row (R-SIG-034): one statement for the page's files and one count per project, none per row.
+	sigs, err := s.versionListSignatures(ctx, name, rows)
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	WritePage(w, r, MapPage(NewPage(lq, rows, order.VersionKey), func(v view.VersionSummary) gen.PackageVersionSummary {
 		summary := gen.PackageVersionSummary{
 			Version: v.Version, Prerelease: v.Prerelease, PublishedAt: v.PublishedAt, SizeBytes: v.SizeBytes, SizePartial: v.SizePartial,
 			Repositories: repoTexts(v.Repositories), DownloadCount: v.DownloadCount, LastDownloadedAt: v.LastDownloadedAt,
+			Signatures: sigs[v.Version],
 		}
 		if v.Digest != "" {
 			digest := v.Digest
@@ -438,6 +445,10 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 	base := httpserver.InfoFrom(ctx).BaseURL
 	out := versionOf(base, d)
 	if err := s.addMalwareStatus(ctx, d, out.Files); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	if err := s.addSignatureStatus(ctx, d, &out); err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}

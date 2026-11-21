@@ -1,13 +1,15 @@
 # Signatures on artifacts
 
-Status: stage 1 is in work. Built (package 1 of 4): the format contract's declaration and detector of every format, kit check 18, the
-store of signature objects, signatures, attachments and origins with the commit hook and the fill hook that record them, and OCI's
-attachment tags without a version row ([developer/signatures.md](../developer/signatures.md)). Built (package 3 of 4), the formats' wire
+Status: stage 1 is in work. Built (packages 1, 2 and 3 of 4, [developer/signatures.md](../developer/signatures.md)): the format
+contract's declaration and detector of every format, kit check 18, the store of signature objects, signatures, attachments and origins
+with the commit hook and the fill hook that record them, and OCI's attachment tags without a version row (package 1); the read and the
+integrity check of every scheme, time, the trust step with its scopes, the four kinds of anchor with the shipped ones, those of the Helm
+values and the projects' with the switch, blocks, the jobs `signature-verify` and `signature-trust` with discovery, the task
+`signature-trust-root`, the API of R-SIG-034, the audit events, metrics, alerts and the configuration (package 2); the formats' wire
 behaviour of R-SIG-023 to R-SIG-033: an OCI attachment follows its image on delete and eviction and stays out of the image scanning and
 of a mirror's versions; the background fetch of a remote's signatures (job `signature-fetch`) and the mirror's; npm's keys and
-attestations endpoints of every class; the signatures a client posts for a local Ansible Galaxy version; Debian's coverage port; the kit's
-case that a signature follows its subject. Not built: the read, the integrity check, the trust step and its anchors, the job
-`signature-verify`, the API of R-SIG-034 but Ansible's operation, the screens. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
+attestations endpoints of every class; the signatures a client posts for a local Ansible Galaxy version; Debian's coverage port; the
+kit's case that a signature follows its subject (package 3). Not built: the screens. Stage 1 of three: Quader detects, reads and verifies the signatures of artifacts of every format, keeps
 each original signature with its verdict, decides trust against trust anchors of the installation and, where the administrator allows it,
 of a project, shows the result at the artifact, alarms on an invalid signature, and serves signatures to every client the way its
 protocol expects. It blocks nothing. Stage 2, Quader signs, is specified in the section
@@ -222,7 +224,7 @@ CREATE INDEX signatures_invalid ON signatures (checked_at) WHERE state = 'invali
   |---|---|---|
   | `pending` | detected, not checked yet, or its subject is not stored yet (`reason` `subject_missing`) | no icon; "Not checked yet" |
   | `valid` | the signature matches its subject; the trust step decides the rest | by the trust step |
-  | `no_key` | the scheme carries no key (OpenPGP, `npm-registry`, `public-key`) and no anchor or announced key with the signer's ID is known; the signature cannot be matched with the content yet | "Signed · signer not trusted" |
+  | `no_key` | the signature carries no key (OpenPGP, `npm-registry`, `public-key`, and a Sigstore bundle or an older cosign signature made with a key and no certificate) and no anchor or announced key with the signer's ID is known; the signature cannot be matched with the content yet | "Signed · signer not trusted" |
   | `invalid` | the signature does not match its subject, or a part the scheme requires is broken (a digest mismatch, a payload that names another digest, a certificate chain that does not sign the signature, a log entry that does not verify) | "Invalid signature" |
   | `unsupported` | a scheme, an algorithm or a version Quader does not read, or a weak algorithm (`weak_algorithm`: SHA-1, RSA below 2048 bits) | no icon; "Scheme not supported" |
   | `malformed` | the object does not parse within the bounds of R-SIG-013 | no icon; "Signature could not be read" |
@@ -231,6 +233,9 @@ CREATE INDEX signatures_invalid ON signatures (checked_at) WHERE state = 'invali
 - **The verdict follows the bytes.** Every repository that holds the subject and an attachment of the signature (R-SIG-004) shows the same
   integrity verdict; a re-check changes it for all of them at once.
 - **Orphans.** The job removes a signature whose last attachment went, and a signature object whose last signature went (R-SIG-011).
+- **The evidence** of a check (`signatures.evidence`, at most 512 KiB) holds what the trust step judges the signature by without reading
+  content ([Q-SIG-109](#q-sig-109--the-trust-step-judges-the-evidence-the-check-stored)); mixed integrity verdicts of anchor keys, the
+  epoch and narrowing writes follow [Q-SIG-110](#q-sig-110--what-the-store-decides-of-mixed-verdicts-epochs-and-narrowing-writes).
 
 Acceptance criteria:
 
@@ -297,6 +302,12 @@ integrity check and the trust step confirm it; the screens say which (R-SIG-035)
 - `key_ids` holds every identifier a trust anchor or a block can match: the SHA-256 fingerprint of each certificate of the chain, the issuer
   and serial of the leaf (`<issuer DN>|<serial>`), an OpenPGP fingerprint and key ID, an npm `keyid`, the SHA-256 of a raw public key.
 - The read keeps at most the bounds of R-SIG-013; what lies beyond them is cut and the cut is recorded in `signer.cut`.
+- cosign's older layout is read by converting each layer and its annotations into a Sigstore bundle of version 0.1, which allows an
+  inclusion promise without a proof, so that one verifier checks both layouts and an identity anchor judges both
+  ([Q-SIG-113](#q-sig-113--cosigns-older-layout-is-converted-to-a-bundle-of-version-01)); a log entry of a kind sigstore-go does not parse
+  inside a cosign annotation (the `intoto` 0.0.1 entries of old attestations) is dropped with a note and proves no time.
+- `signer` is the JSON of `signatures.Signer` ([signer.go](../../internal/signatures/signer.go)); its CI member holds every Fulcio extension
+  of a CI job (1.1 to 1.22; the deprecated 1.2, 1.3, 1.5 and 1.6 fill their successors' members when those are absent).
 
 Acceptance criteria:
 
@@ -331,11 +342,21 @@ The integrity check runs in the worker with libraries in process (R-SIG-014), on
   content), `signature_mismatch`, `chain_broken`, `log_entry_invalid`, `timestamp_invalid`, `attribute_missing`, `weak_algorithm`,
   `scheme_unknown`, `version_unsupported`, `limits_exceeded`, `subject_missing`, `content_unreadable`.
 - An `invalid` verdict records `signature.invalid` once per signature and counts in `quader_signatures_invalid` (R-SIG-039).
+- **The first step that fails decides** ([Q-SIG-112](#q-sig-112--the-first-step-of-the-check-that-fails-decides)): the object is found and
+  parsed within the bounds; the read; a weak algorithm; the subject or the digest; the chain; the signature; the log entries and
+  timestamps. An OpenPGP signature whose committed digest does not begin with the packet's hash tag is `invalid` (`digest_mismatch`)
+  without any key; a `public-key` signature names no key, so a file replaced under it stays `no_key` (no known key verifies it) rather
+  than `invalid` ([Q-SIG-115](#q-sig-115--what-a-keyless-check-can-tell-without-a-key)); an Ed25519 raw signature signs the message, not a
+  digest, so a `no_key` one is not decided later from the stored digest.
+- **Every NuGet part checks the primary signature and the package**
+  ([Q-SIG-116](#q-sig-116--every-nuget-part-checks-the-primary-signature-and-the-package)): a countersignature vouches only for a primary
+  signature that covers the bytes stored.
 
 Acceptance criteria:
 
 - Unit (`internal/signatures/scheme/…`, milliseconds each, bytes made by the test): each scheme answers `valid` for its signature, and
-  `invalid` with the reason of the table for a flipped byte of the content, of the signature and of the payload's digest; NuGet's
+  `invalid` with the reason of the table for a flipped byte of the content (`public-key`: `no_key`, Q-SIG-115), of the signature and of the
+  payload's digest; NuGet's
   unsigned-package hash of a signed package built by the test equals the hash of the package before it was signed, with the signature
   entry first, in the middle and last; an OpenPGP signature checked with a key added later against the stored digest equals the check
   over the content.
@@ -365,6 +386,13 @@ since is information in the details.
 - **Valid at its time:** a certificate's validity window holds the time; an OpenPGP key was created before and had not expired at the
   time; an npm key's `expires` lies after it (pacote compares it with the version's publish time; Quader with the time of this
   requirement). A certificate or key that expired since is a fact of the details ("certificate expired on …"), not a verdict.
+- **What a trust root knows** ([Q-SIG-114](#q-sig-114--a-trust-root-knows-a-log-by-its-key-id-and-an-authority-by-its-key)): a log by its
+  key ID, a timestamp authority by its key (a token whose authority's leaf key, or a certificate its chain issued, verifies it). A token
+  that only names an authority proves nothing and invalidates nothing. `proven_at` is the earliest time a root verified; `claimed_at` also
+  holds the earliest integrated time or timestamp no root verified.
+- **The integrity check judges the proofs against every trust root** (the public one and every Sigstore identity anchor's own) and every
+  CA anchor of the use `timestamping` of any scope, and stores the time it found; the trust step decides a scope's verdict at the time a
+  proof of that scope verifies ([Q-SIG-118](#q-sig-118--the-time-of-a-signature-in-a-scope)), and the rows keep no time of their own.
 - **No revocation lists** ([Q-SIG-7](#q-sig-7--time-expiry-and-revocation)): Quader asks no CRL and no OCSP responder; an administrator
   blocks a signer instead (R-SIG-020, [H-1168](../security/artifact-signatures.md#h-1168--a-revoked-certificate-stays-verified-until-an-administrator-blocks-its-signer)).
 
@@ -384,7 +412,7 @@ reaches it ([Q-SIG-26](#q-sig-26--the-scope-is-the-project-of-the-addressed-repo
 ```sql
 CREATE TABLE signature_trust (
   signature_id  bigint  NOT NULL REFERENCES signatures (id) ON DELETE CASCADE,
-  project_id    bigint  NULL REFERENCES projects (id) ON DELETE CASCADE,   -- NULL: the installation's scope
+  project_id    uuid    NULL REFERENCES project (id) ON DELETE CASCADE,    -- NULL: the installation's scope
   state         text    NOT NULL CHECK (state IN ('public', 'internal', 'untrusted', 'blocked')),
   anchor_ids    bigint[] NOT NULL DEFAULT '{}',   -- every anchor that knows the signer (a gate of stage 3 asks for a set, R-SIG-043)
   block_id      bigint  NULL,
@@ -415,6 +443,14 @@ CREATE TABLE signature_trust (
   | `blocked` | a block of R-SIG-020 matches one of its `key_ids` or its identity, whatever anchors know it | **Signed · signer not trusted**, the details say "blocked by an administrator" (Q-SIG-24) |
 
   When shipped and own anchors both know a signer, `internal` wins: the company's own statement is the more specific one (Q-SIG-25).
+- **A CA anchor's leaf carries `codeSigning` explicitly** ([Q-SIG-117](#q-sig-117--a-ca-anchors-leaf-carries-codesigning-explicitly)): Go's
+  `crypto/x509` alone would accept a leaf without extended key use. A subject attribute of the restriction matches when it equals any one
+  of the leaf's values.
+- **A block** matches the key IDs of the signature and the keys of the anchors that verified it; a fingerprint or key ID in hexadecimal
+  matches whatever its case, npm's keyid exactly; a `no_key` signature can be blocked too
+  ([Q-SIG-119](#q-sig-119--what-a-block-matches)).
+- **Measured:** a judgement of a CA anchor with a chain of three certificates takes about 0.19 ms, of an OpenPGP anchor with its
+  certificate's parse about 0.10 ms (one run on the development machine).
 - **Anchors never repair the bytes.** An `invalid`, `unsupported`, `malformed`, `pending` or `failed` signature has no trust row and is
   shown by its integrity state.
 
@@ -511,8 +547,11 @@ process, no tool binary and no new Deployment. The shape is the malware scanning
   signature, an attachment per place), in the commit's transaction, then wakes the job (`signature-verify`, queue `signatures`,
   `coalesce`). An upload, a remote fill, a mirror pass, a background fetch (R-SIG-026) and a link of every format pass through it. A
   commit of a subject whose signature waits with `subject_missing` makes that signature due.
-- **Discovery.** The job's first step and the task `signature-verify` (default `*/5 * * * *`) ask the formats for the signatures of items
-  that have no attachment yet, in batches of 10,000 in item order: what was stored before stage 1 and what a restore loaded.
+- **Discovery.** The job's first step and the task `signature-verify` (default `*/5 * * * *`) ask the formats for the signatures of items,
+  in batches of 10,000 in item order from a cursor (`signature_settings.discovery_after`): what was stored before stage 1, what a restore
+  loaded and a row removed since. A pass that reached the last item starts again from the first once a day
+  ([Q-SIG-111](#q-sig-111--discovery-walks-the-items-by-a-cursor-and-starts-a-new-pass-once-a-day)). The format host asks each file's format
+  as its commit did and records at priority 3; a file Quader derived is not asked.
 - **Order.** A row is due while `due` is set; the job takes due rows whose `not_before` has passed by `priority` (0: a client's upload,
   whose publisher looks for the badge; 1: a fill, a pass or a background fetch; 2: a subject that arrived after its signature; 3: discovery
   and the daily retry of `failed`), then `not_before`, with `signatures.concurrency` (default 4) checks in flight.
@@ -543,8 +582,12 @@ artifact is read again.
   no upstream.
 - **Until a run reaches a row** the screens show the row computed under the older epoch, and an answer of the API says
   `"stale": true` for it ([H-1175](../security/artifact-signatures.md#h-1175--the-shown-trust-lags-a-change-of-anchors-by-the-recomputation)).
-- **Cost:** a CA anchor's chain building takes tens of microseconds per signature, an OpenPGP or ECDSA check of a stored digest well under
-  a millisecond; a million signatures take minutes of one worker's CPU (an estimate, to be measured by the package that builds it).
+- **Cost:** measured once on the development machine, a CA anchor's judgement with a chain of three certificates takes about 0.19 ms, an
+  OpenPGP anchor's with the certificate's parse about 0.10 ms; a million signatures take a few minutes of one worker's CPU.
+- **What reaches a project** is computed when the trust job runs: a project that starts to reach a signature it did not reach (a new
+  attachment in one of its repositories) gets its row at the next change of the epoch or the next check of the signature; until then its
+  readers are served the installation's row
+  ([H-1202](../security/artifact-signatures.md#h-1202--a-project-that-starts-to-reach-a-signature-is-served-the-installations-trust-until-the-next-recomputation)).
 
 Acceptance criteria:
 
@@ -566,7 +609,8 @@ bounds sit outside the libraries ([Q-SIG-45](#q-sig-45--the-bounds-and-their-def
 | `signatures.max_per_subject`: signatures read per subject and repository | 32 | the rest is not read; the details say "32 of 40 signatures read" |
 | `signatures.max_chain`: certificates in a chain, and the size of each | 8, 16 KiB | `malformed`, `limits_exceeded` |
 | JSON documents (bundles, JWS, payloads, statements) | `untrusted.CheckJSON`: 32 levels, 100,000 values, before any decoder | `malformed` |
-| ASN.1 and CBOR (CMS, COSE, timestamps) | the object's size; no indefinite length deeper than 32 levels | `malformed` |
+| ASN.1 and CBOR (CMS, COSE, timestamps) | the object's size; no nesting deeper than 32 levels, of definite or indefinite length | `malformed` |
+| OpenPGP packets in one object, NuGet countersignatures, timestamps per signer | 32, 16, 4 | `malformed`, `limits_exceeded` |
 | RSA keys | 2048 to 8192 bits | `unsupported` (`weak_algorithm`) or `malformed` |
 | `signatures.check_timeout`: one check | 5 s | `failed` after the attempts |
 | `signatures.max_content_size`: content a keyless scheme or NuGet reads | 8 GiB | `unsupported`, `limits_exceeded` |
@@ -579,7 +623,8 @@ Acceptance criteria:
 
 - Unit (`internal/signatures/scheme/…`, under a second, crafted inputs built by the test): an object of 257 KiB, a chain of nine
   certificates, a JSON bundle 100,000 levels deep, a COSE envelope with a 2 GiB declared length and a CMS with an indefinitely nested
-  attribute are refused within the bounds without a panic and with the heap within 64 MiB of its baseline.
+  attribute are refused within the bounds without a panic and with the heap within 64 MiB of its baseline. Built: the refusals; the heap
+  bound is not asserted by a test (H-1166).
 
 ### R-SIG-014 · Libraries in process, one version each
 Priority: **P1** · Covers: quader-only
@@ -600,7 +645,10 @@ that calls each verifier, outside the repository:
 - Together they add **4.76 MiB (6.6 %)** and 52 modules, all under Apache-2.0, MIT, BSD-2-Clause or BSD-3-Clause, and one under MPL-2.0
   (`go-cose`, file-level copyleft: its unmodified source stays available upstream). The repository has no list of third-party licences to
   update. No module of the build was upgraded by them.
-- They are pinned once in `go.mod`, as every dependency is; Renovate raises them.
+- They are pinned once in `go.mod`, as every dependency is; Renovate raises them. Built with exactly these versions; the TUF refresh of
+  R-SIG-017 uses `github.com/theupdateframework/go-tuf/v2` v2.4.2, which sigstore-go pulls in.
+- **Measured with the code of package 2** (2026-11-21, `linux/amd64`, `-trimpath -ldflags "-s -w"`): the binary grows from 71.90 MiB to
+  78.21 MiB, by 6.30 MiB (8.8 %) and 52 modules: the libraries and the verifiers, the trust step, the jobs, the store and the API.
 - notation-core-go and tspclient-go had no release for 19 and 23 months on 2026-11-21 (the Notary Project is a project of the CNCF). The
   package that builds R-SIG-023 reads their state again; a known flaw without a release is a finding of the plan's section 8, not a reason
   to write the verifier anew.
@@ -620,7 +668,7 @@ requires code signing and may restrict the subject ([Q-SIG-30](#q-sig-30--a-ca-a
 CREATE TABLE signature_anchors (
   id            bigserial PRIMARY KEY,
   scope         text   NOT NULL CHECK (scope IN ('shipped', 'configuration', 'installation', 'project')),
-  project_id    bigint NULL REFERENCES projects (id) ON DELETE CASCADE,
+  project_id    uuid   NULL REFERENCES project (id) ON DELETE CASCADE,
   key           text   NOT NULL CHECK (key ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(key) <= 64),  -- unique per scope and project
   title         text   NOT NULL CHECK (length(title) BETWEEN 1 AND 128),   -- the name shown at a signature
   kind          text   NOT NULL CHECK (kind IN ('ca', 'openpgp', 'public-key', 'sigstore')),
@@ -647,6 +695,13 @@ CREATE TABLE signature_anchors (
   whether it is switched on, and the number of signatures it knows in the installation's scope (read from `signature_trust.anchor_ids`).
 - An anchor's material is public data: no secret is accepted (a PEM block of a private key, an OpenPGP secret key answer 422
   `secret_material`).
+- **What the table leaves open, decided** ([Q-SIG-121](#q-sig-121--the-bounds-and-checks-of-anchor-material-the-table-leaves-open)): a CA
+  certificate with key usage set allows `certSign` (a CA) or `digitalSignature` (a pinned signer); a certificate with extended key use names
+  the anchor's use (`codeSigning` or `timeStamping`) or any; at most 16 alternative-name patterns of at most 512 characters, wrapped
+  `^(?:…)$`; subject values of 1 to 256 characters; a keyid's format only (`SHA256:` and the base64 of 32 bytes); an expired public key is
+  kept (npm keeps its expired key to judge old signatures); OpenPGP signing keys RSA, ECDSA or EdDSA, X25519 only on an encryption subkey;
+  a Sigstore anchor's issuer is required on save (only the shipped `sigstore-public` matches any issuer, and it is never saved through the
+  checks).
 
 Acceptance criteria:
 
@@ -685,7 +740,7 @@ together with their preset; no general list of public code-signing CAs; every sh
 | `npmjs` | `public-key` | the registry signing keys of `registry.npmjs.org`, with their `keyid` and `expires` | the same task: npm's CLI reads them first from the public Sigstore TUF repository as the target `registry.npmjs.org/keys.json` (verified 2026-11-21 in npm's `lib/utils/verify-signatures.js`), else the release's snapshot |
 | `debian-archive`, `ubuntu-archive` | `openpgp` | the archive keyrings Quader embeds today for the well-known Debian and Ubuntu repositories (`internal/formats/deb/archivekeys`, [repositories-and-proxy.md](repositories-and-proxy.md#q-repo-379--the-debian-and-ubuntu-well-known-repositories-carry-their-archive-keys) Q-REPO-379) | the release |
 | `nuget-org` | `ca` (pinned certificates) | nuget.org's repository signing certificates as its `RepositorySignatures` resource lists them (three on 2026-11-21, 2018 to 2027) | the release |
-| `nuget-org-timestamping` | `ca`, use `timestamping` | the roots of the timestamp authorities whose tokens nuget.org's repository countersignatures carry, so that a countersignature made with a certificate that expired since is judged at its stamped time ([Q-SIG-29](#q-sig-29--nugetorgs-preset-ships-the-timestamping-roots-its-countersignatures-need)) | the release |
+| `nuget-org-timestamping` | `ca`, use `timestamping` | the roots of the timestamp authorities whose tokens nuget.org's repository countersignatures carry, so that a countersignature made with a certificate that expired since is judged at its stamped time ([Q-SIG-29](#q-sig-29--nugetorgs-preset-ships-the-timestamping-roots-its-countersignatures-need)): VeriSign Universal Root CA, DigiCert Assured ID Root CA and DigiCert Trusted Root G4, read on 2026-11-21 from twelve packages | the release |
 
 - Each is a shipped anchor of the preset that names it ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-062), present whether
   or not the well-known repository is switched on; `sigstore-public` belongs to no preset.
@@ -694,8 +749,11 @@ together with their preset; no general list of public code-signing CAs; every sh
   committed; the Debian, Ubuntu and nuget.org material as files.
 - **Kept current online.** The task `signature-trust-root` (queue `signatures`, `exclusive`, default `17 4 * * *`) fetches the TUF
   metadata from `signatures.trust_root.url` (default `https://tuf-repo-cdn.sigstore.dev`) through the outbound client and its egress rules,
-  verifies the chain from the embedded TUF root with sigstore-go's TUF client, and stores the targets `trusted_root.json` and
-  `registry.npmjs.org/keys.json` in `signature_trust_roots` when they are newer than the release's; a stored document raises the anchor
+  verifies the chain from the TUF root sigstore-go embeds with go-tuf's updater (the code sigstore-go's client wraps, driven directly so
+  that the reference time is the task's), and stores the targets `trusted_root.json` and `registry.npmjs.org/keys.json` in
+  `signature_trust_roots` when the TUF snapshot's version is newer than the stored one and the release's (the snapshot's, not the targets'
+  version: npm's keys sit in the delegated role `registry.npmjs.org`, whose change leaves `targets.json` alone,
+  [Q-SIG-120](#q-sig-120--the-shipped-anchors-titles-presets-and-the-version-a-refresh-compares)); a stored document raises the anchor
   epoch (R-SIG-012) and records `signature.trust_root.updated`. A failure keeps the previous document and records
   `signature.trust_root.failed` (at most once a day).
 - **Without internet** (`signatures.trust_root.refresh: false`): the release's snapshot holds, and it ages with the release
@@ -720,7 +778,11 @@ The owner's decision ([Q-SIG-3](#q-sig-3--where-anchors-are-maintained)): anchor
 values beside them, read-only; the pattern of the system role bindings ([authorization.md](authorization.md) R-AUTHZ-010, Q-AUTHZ-170).
 
 - The chart renders `signatures.anchors` of its values into the configuration file; each entry is an anchor of R-SIG-015 with its `key`,
-  `title`, `kind` and material, the material inline or from a `configMapKeyRef` the chart mounts (public material, no Secret):
+  `title`, `kind` and material, the material inline or from a `<member>From.configMapKeyRef` (`certificatesFrom`, `keysFrom`, a key's
+  `pemFrom`, `trustedRootFrom`) that the chart mounts read-only into the `quader migrate` Job only (public material, no Secret); the
+  configuration file carries the mounted files as `certificates_file`, `keys_file`, `pem_file` and `trusted_root_file`
+  ([Q-SIG-122](#q-sig-122--anchors-of-the-configuration-are-a-map-and-their-material-a-mounted-file)). `trustRoot` may be left out: a trusted
+  root given means `own`, none `public`:
 
   ```yaml
   signatures:
@@ -740,10 +802,12 @@ values beside them, read-only; the pattern of the system role bindings ([authori
         sigstore:
           issuer: https://gitlab.example.com
           identity: "^https://gitlab.example.com/platform/.+//\\.gitlab-ci\\.yml@refs/heads/main$"
-          trustRootConfigMap: { name: company-sigstore-root, key: trusted_root.json }
+          trustedRootFrom: { configMapKeyRef: { name: company-sigstore-root, key: trusted_root.json } }
   ```
 
-- `quader migrate` applies them in one transaction with the scope `configuration`: a declared anchor exists afterwards with its material,
+- In the configuration file `signatures.anchors` is a map keyed by the anchor's key (the configuration's lists hold no nested lists,
+  R-ARCH-020). `quader migrate` applies them, after the release's shipped anchors (R-SIG-017), in one transaction with the scope
+  `configuration`: a declared anchor exists afterwards with its material,
   one no longer declared is removed, both recorded (`signature.anchor.created`, `signature.anchor.removed`, actor `system:configuration`);
   an invalid declaration stops `quader migrate` with the anchor's key and the reason of R-SIG-015.
 - The API lists them with `scope: "configuration"`; a write answers 409 `anchor_managed`; the admin page shows them with "From the Helm
@@ -762,7 +826,9 @@ The owner's reading ([Q-SIG-16](#q-sig-16--the-eight-readings-of-the-request) r4
 ([authorization.md](authorization.md) R-AUTHZ-037): one switch of the installation, off by default.
 
 - **The switch** is `project_anchors` of the one row of `signature_settings` (`project_anchors boolean NOT NULL DEFAULT false`,
-  `anchor_epoch`, `version`, `updated_at`, `updated_by`), read and changed through `GET` and `PATCH /api/v1/signatures/settings`
+  `anchor_epoch`, `version`, `updated_at`, `updated_by`, and the job's own members: `discovery_after` and `discovery_pass_at` of discovery,
+  `failed_retried_at` of the daily retry, `trust_root_error`, `trust_root_error_at` and `trust_root_reported_at` of the task
+  `signature-trust-root`), read and changed through `GET` and `PATCH /api/v1/signatures/settings`
   (`settings:read`; `security-settings:write` with a recent authentication, R-AUTHZ-037's rule), with `If-Match`. Its label: **Project
   owners may add trust anchors for their project**.
 - **On:** the Owner of a project maintains anchors of the scope `project` through `/api/v1/projects/{projectKey}/signatures/anchors`;
@@ -1036,9 +1102,13 @@ signatures along.
   are stored and detected without a request more.
 - **A repository's detail setting** `signatures.fetch` (remote repositories, default `true`) switches the background fetch off for an
   upstream whose limits are tight; it is in the closed section **Signatures** of the repository's settings, never in the creation form.
-  The job reads it from the repository document; the member `signatures` of the document, which accepts it, is R-SIG-040's and built with
-  it, so until then the repository API refuses the member and every remote fetches
-  ([Q-SIG-108](#q-sig-108--the-fetch-switch-waits-for-the-member-of-r-sig-040-and-the-manual-promises-none)).
+  The job reads it from the repository document; the member `signatures` of the document accepts it on a remote repository and answers
+  `not_applicable` on a local or a virtual one (R-SIG-040, built with package 2,
+  [Q-SIG-108](#q-sig-108--the-fetch-switch-waits-for-the-member-of-r-sig-040-and-the-manual-promises-none)).
+- **The configuration** bounds what one run fetches: the job reads `signatures.remote.refresh_after` and `.requests_per_hour`, and hands
+  `signatures.remote.max_manifests_per_subject` and `signatures.max_object_size` to the format's fetch in the context of the run
+  ([ADR-233](../decisions.md#adr-233--the-background-fetch-hands-its-bounds-to-a-formats-fetch-in-the-context-of-a-run)); a mirror's plan
+  runs under the defaults. Every request of a run counts in `quader_signatures_remote_requests_total` (R-SIG-039).
 - **What it costs against Docker Hub** (read 2026-11-21 on [Docker's page on pulls](https://docs.docker.com/docker-hub/usage/pulls/)):
   "Using GET emulates a real pull and counts towards the limit. Using HEAD won't"; the limits are 100 pulls per six hours per IPv4 address or
   IPv6 /64 without an account and 200 with a personal account. The `HEAD` requests count nothing; a `GET` of a signature manifest counts
@@ -1279,8 +1349,16 @@ The operations, in `api/openapi.yaml` under the tag `signatures` ([Q-SIG-44](#q-
 | GET | `/api/v1/signatures/findings` | Invalid signatures and the signatures of blocked signers, with the artifacts and repositories that hold them; filters `kind` (`invalid`, `blocked`), `repository`, `q`; cursor paging (R-API-010) | `content:metadata-read`; a caller with `read` on some repositories sees those |
 | POST, DELETE | `/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{namespace}/{name}/versions/{version}/signatures[/{fingerprint}]` | R-SIG-031 | `deploy` / `delete` on the version |
 
+- **Built** ([http-api.md](../developer/http-api.md)): every operation of the table, the Ansible operation of R-SIG-031 with the formats'
+  package. The version list carries the member per row from one statement for the page's files and one count per project of the rows'
+  repositories, none per row. `covering` lists the releases Debian's coverage port names (`formats.SignatureCoverage`) with the
+  signatures attached to each in the repository, its state read as a publisher's would be. An anchor's and a block's `{id}` in a path is digit text. The settings carry `enabled` (signatures.enabled) besides the table's
+  members; a project's list carries the switch (`projectAnchors`) and, under `installation`, the installation's applied anchors without
+  their material, because a member holds no `settings:read`
+  ([Q-SIG-123](#q-sig-123--the-api-the-project-list-the-virtual-members-and-the-original)). An Owner's removal of a project anchor while the
+  switch is off answers `403 project_anchors_disabled`; an administrator removes one whatever the switch says.
 - **The member `signatures` of a stored file and of a version** (the items API, a version's files, a version's summary in the package
-  views): `{"state", "stale"}` with `state` one of `verified_public`, `verified_internal`, `untrusted`, `invalid`, `not_checked`,
+  views and the rows of the version list): `{"state", "stale"}` with `state` one of `verified_public`, `verified_internal`, `untrusted`, `invalid`, `not_checked`,
   `unsupported`, `none`, absent for a folder and while `signatures.enabled` is false; the version list carries it per version for the badge.
   Stage 3 adds `refused` and `refusedReason` while a gate applies (R-SIG-073).
 - Every text a signature carries (a subject, a user ID, an identity, a predicate) is shown as text and never as markup.
@@ -1446,7 +1524,7 @@ signatures:
   trust_root:
     refresh: true                   # default; false: the release's snapshot of the public Sigstore root and npm's keys
     url: https://tuf-repo-cdn.sigstore.dev   # default; or a TUF mirror of the company
-  anchors: []                       # default; anchors declared by the Helm values (R-SIG-018)
+  anchors: {}                       # default; anchors declared by the Helm values, keyed by the anchor's key (R-SIG-018)
 jobs:
   workers:
     signatures: 1                   # default
@@ -1504,6 +1582,13 @@ bytes to kilobytes. Every one of the owner's three ways is exercised by a real s
 What every leg gains: the unit run under 5 s; the kit milliseconds per format; the integration shard that runs `signatures` about 50 s; the
 chart leg about 1 s; `e2e (npm)` about 5 s. No other leg gains anything. With 25 formats the cost is the same plus 25 kit cases of
 milliseconds and one small case per format that serves signatures in its own integration test; no leg loads another format's client.
+
+**Measured for packages 1 and 2** (2026-11-21, the development machine): the unit tests of `internal/signatures/...` take about 1 s a
+package and about 10 s together, the API's new tests about 5 s; the area `signatures` runs in about 15 s (package 1's two tests and
+package 2's three of about 4 s each, files of a kilobyte); the chart's signature tests about 2 s. R-SIG-017's refresh is tested at the
+unit tier against a TUF repository the test builds (`shipped/tuftest`), not in the area. R-SIG-041's replay of what narrowed trust is
+tested in the area `backup` against a restored database (`TestR_SIG_041_WhatNarrowedTrustIsReplayedIntoARestore`, about 2 s, rows); a
+whole backup and restore of the signature tables is not, nor R-SIG-012's variant with the object store stopped.
 
 What only a real client shows and is not tested: cosign, Notation, `dotnet nuget verify` and `ansible-galaxy --keyring` against Quader. Each
 is measured once by hand when its format's part is built, and the result written into this requirement.
@@ -3390,7 +3475,12 @@ before it.
 | (a) The preset ships the roots of the authorities its countersignatures' tokens chain to, as anchors of the use `timestamping` only (chosen) | | nuget.org's packages read as they are; a timestamping anchor proves a time and never trusts a signer | A few roots more to keep with the release |
 | (b) Nothing more | | Q-SIG-4 to the letter | Most of nuget.org's packages would read "signer not trusted" |
 
-**Choice:** (a). The builder reads which roots the countersignatures carry from a sample of nuget.org packages and records them. **Applied
+**Choice:** (a). The builder reads which roots the countersignatures carry from a sample of nuget.org packages and records them. **Read on
+2026-11-21** from the `.signature.p7s` of twelve packages (Newtonsoft.Json 9.0.1, 11.0.2 and 13.0.3; Serilog 2.9.0, 2.10.0, 2.12.0, 4.0.0,
+4.3.0, 4.4.0 and 4.4.1-dev-02453; Serilog.Sinks.Console 4.0.0; Microsoft.Extensions.Logging 11.0.0): VeriSign Universal Root CA (the
+Symantec timestamping signers of the packages countersigned with the certificates of 2018 and 2021), DigiCert Assured ID Root CA (the
+DigiCert timestamp responders of 2022 to 2026) and DigiCert Trusted Root G4 (whose cross-certificate those tokens carry until 2031), shipped
+in [nuget-org-timestamping.pem](../../internal/signatures/shipped/data/nuget-org-timestamping.pem). **Applied
 in the spec:** R-SIG-007, R-SIG-017, R-SIG-029.
 
 ### Q-SIG-30 · A CA anchor requires code signing and may restrict the subject
@@ -4436,6 +4526,183 @@ reads `signatures.fetch` from the repository document (default `true`); the docu
 | (b) Add `signatures: {fetch}` to the document now | | The switch works at once | A member whose schema, settings section and UI are another package's, written twice |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-026; [manual/user/container-images.md](../manual/user/container-images.md).
+**Built with package 2:** the member `signatures: {"fetch": …}` is settable on a remote repository and validated (`not_applicable` on a
+local or a virtual one, R-SIG-040), and the user manual says again that an administrator can switch a remote's fetch off.
+
+### Q-SIG-109 · The trust step judges the evidence the check stored
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: the
+trust step reads no blob, no item and no upstream (R-SIG-012), but a Sigstore bundle, a Notation envelope and a NuGet `.p7s` live in a
+layer, an item or a package, and the signer columns are bounded to 64 KiB of what the screens show.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A column `signatures.evidence` (bytea, at most 512 KiB) holds what the check found the trust step needs: the chain as carried, the timestamps that matched, a Sigstore bundle with the digest it was checked against, a keyless scheme's signature (chosen) | `scheme.Evidence` | An anchor change judges every signature from PostgreSQL alone, with the object store stopped; one shape for every family | A copy of what the object holds, up to 512 KiB a row |
+| (b) The trust step reads the object again | | No copy | Reads the object store on every anchor change, against Q-SIG-5 |
+| (c) Keep the evidence in `signer` | | One column | 64 KiB is too small for a bundle with an SLSA statement; the API would carry DER and bundles |
+
+**Choice:** (a). Evidence above the bound is dropped and logged; the trust step then finds no signer for that signature (it reads
+untrusted). **Applied in the spec:** R-SIG-003, R-SIG-012; migration 00098.
+
+### Q-SIG-110 · What the store decides of mixed verdicts, epochs and narrowing writes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An anchor key that refutes a `no_key` signature in any scope makes it `invalid` for all (the bytes decide); the epoch rises only when a write changes a value; a project anchor's count is its project's rows; a narrowed update replayed by the journal switches the anchor off; the trust root's failure event is kept once a day across replicas in the row (chosen) | | The integrity verdict stays a fact of the bytes; no recomputation for a write that changes nothing; a restore never revives trust an administrator narrowed | A replayed narrowing switches off an anchor that may also have gained material |
+| (b) Per-scope integrity, an epoch per write, a count of installation rows only | | Simpler code | Two integrity verdicts for one signature; installation rows never hold a project anchor, so its count would always be 0 |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-012, R-SIG-016, R-SIG-039, R-SIG-041.
+
+### Q-SIG-111 · Discovery walks the items by a cursor and starts a new pass once a day
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Context: "items
+that have no attachment yet" are almost every item, because most content carries no signature.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A cursor over items in id order in `signature_settings`; a pass that reached the last item starts again from the first once a day (chosen) | | Each item is asked once a day at most; a row removed is found again; a restore that loaded items before the cursor is reached by the next pass | A signature removed by hand reappears only on the next pass |
+| (b) Every run over every item without an attachment | | Literal | The detectors run over every item every five minutes |
+| (c) One pass only | | Cheapest | A row removed is never found again |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-011.
+
+### Q-SIG-112 · The first step of the check that fails decides
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The steps run in one order (parse and bounds, read, weak algorithm, subject or digest, chain, signature, log entries and timestamps) and the first that fails gives the state and reason (chosen) | | A changed payload breaks the signature too; checking the subject first shows the more useful `subject_mismatch` | One reason where several apply |
+| (b) Every failure listed | | Complete | A list of reasons the screens cannot say in one sentence |
+
+**Choice:** (a). A message digest other than SHA-256 or SHA-512 and a DSSE payload other than in-toto are `unsupported`
+(`version_unsupported`); a bundle version outside 0.1 to 0.3 is refused before it is parsed. **Applied in the spec:** R-SIG-006.
+
+### Q-SIG-113 · cosign's older layout is converted to a bundle of version 0.1
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each layer and its annotations become a Sigstore bundle of version 0.1, which allows an inclusion promise without a proof and a chain beside the leaf (chosen) | | One verifier for both layouts; an identity anchor judges both | A bundle Quader made, not the publisher |
+| (b) A verifier of its own for the older layout | | No conversion | Two paths of security code |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-005, R-SIG-023.
+
+### Q-SIG-114 · A trust root knows a log by its key ID and an authority by its key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A log by its key ID; a timestamp authority by its key: the authority's leaf, or a certificate its chain issued, verifies the token (chosen) | | A token that only names an authority proves nothing and cannot make a good bundle invalid | A token of an unknown authority is silently no proof |
+| (b) By the authority's name and serial | | Simple | Anyone can name an authority |
+
+**Choice:** (a). `proven_at` is the earliest time a root verified, `claimed_at` the earliest time none verified. **Applied in the spec:**
+R-SIG-007.
+
+### Q-SIG-115 · What a keyless check can tell without a key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An OpenPGP digest that misses the packet's hash tag is `invalid` without a key; a `public-key` signature over other bytes stays `no_key` (chosen) | | A replaced file under an OpenPGP signature shows at once; a raw signature names no key, so "other bytes" and "unknown key" cannot be told apart | The `public-key` case cannot meet R-SIG-006's "invalid for a flipped content byte" |
+| (b) Both stay `no_key` until a key is known | | Uniform | Hides a replaced file the hash tag already shows |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-006.
+
+### Q-SIG-116 · Every NuGet part checks the primary signature and the package
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A countersignature's part checks the primary signature and the unsigned-package hash too (chosen) | | A valid countersignature never reads "Origin confirmed by registry" on altered bytes | Each part reads the package once |
+| (b) A countersignature checks only its own signature over the primary's value | | Cheaper | Vouches for bytes nobody checked |
+
+**Choice:** (a). The attribute rules: signing-certificate-v2 on every signer, content-type on the primary, a repository signature's service
+index, all required (`attribute_missing`); a primary signature without a commitment type is an author's; a countersignature is proof of
+receipt; the signature content takes CRLF or LF; a Zip64 package is `unsupported`. **Applied in the spec:** R-SIG-006, R-SIG-029.
+
+### Q-SIG-117 · A CA anchor's leaf carries codeSigning explicitly
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The leaf names `codeSigning` in its extended key use (chosen) | | A web server's certificate without the use signs nothing (Q-SIG-30) | A company CA that leaves the use out must add it |
+| (b) `crypto/x509`'s rule: a leaf without any extended key use passes | | Fewer refusals | Every certificate of the CA without the extension becomes a signer |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-008.
+
+### Q-SIG-118 · The time of a signature in a scope
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The trust step computes the time of each scope from the evidence (the earliest timestamp under a `timestamping` anchor of the scope; a Sigstore anchor's verified log time), the rows keep no time, the signature keeps the time the check found against every root and authority (chosen) | | Q-SIG-41 holds per scope; no column per row | The details show the check's time, not the reader's scope's |
+| (b) A proven time per trust row | | Exact per reader | A column per row for a rare difference |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-007, R-SIG-008.
+
+### Q-SIG-119 · What a block matches
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The signature's key IDs and the keys of the anchors that verified it; hexadecimal fingerprints and key IDs whatever their case, npm's keyid exactly; a serial as `<issuer DN>\|<serial>`; an identity under its required OIDC issuer, anchored; a `no_key` signature too (chosen) | | A block finds the signer by any name it carries | A block of a short key ID can match more than one key |
+| (b) Exact values only | | Predictable | An upper-case fingerprint pasted from a tool would block nothing |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-008, R-SIG-020; [http-api.md](../developer/http-api.md).
+
+### Q-SIG-120 · The shipped anchors' titles, presets and the version a refresh compares
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The presets `npmjs`, `debian`, `ubuntu`, `nuget-org` (both of nuget.org's anchors); titles in plain words; a refresh compares the TUF snapshot's version; go-tuf's updater from sigstore-go's embedded root with the task's clock; `NPMKeys` reads the TUF target's shape and the registry's `-/npm/v1/keys` (chosen) | | npm's keys change in a delegated role that leaves `targets.json` alone; sigstore-go's client reads the wall clock | A version that rises with every timestamp |
+| (b) The targets' version, sigstore-go's client | | Fewer lines | A key change of npm is missed; no reference time |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-017.
+
+### Q-SIG-121 · The bounds and checks of anchor material the table leaves open
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The checks listed under R-SIG-015's table: key usage and extended key use, pattern and value bounds, a keyid's format, expired public keys kept, OpenPGP algorithms by the key's purpose, a Sigstore issuer required on save (chosen) | | A certificate that can never take part in a signature is refused on save; npm's old key judges old signatures | More refusals to explain |
+| (b) Only the table's checks | | Shorter | A TLS-only certificate saved as a code-signing anchor |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-015.
+
+### Q-SIG-122 · Anchors of the configuration are a map and their material a mounted file
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signatures.anchors` is a map keyed by the anchor's key; material inline or as `*_file` the chart mounts from a `<member>From.configMapKeyRef` into the migrate Job alone (chosen) | | The configuration framework holds no nested lists (R-ARCH-020); a duplicate key cannot be written; replicas read no material | The values keep the list form, the file the map |
+| (b) A list as the values, with the framework changed | | One shape | A change of the shared framework for one section |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-018, R-SIG-040; [ha-and-helm.md](ha-and-helm.md).
+
+### Q-SIG-123 · The API: the project list, the virtual members and the original
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A project's list carries the installation's applied anchors read-only; a virtual repository's answer lists every member that holds the version and the caller reads, judged in the virtual repository's project; attestations stand apart from signatures; IDs in paths are digit text; an original is served as an attachment with `nosniff` and a sandboxing policy (chosen) | | A member sees the whole scope without `settings:read`; a media type the uploader chose is never rendered | A longer answer |
+| (b) The UI reads the installation's list; only the winning member | | Shorter | Members hold no `settings:read`; a signature of a member that does not win stays hidden |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-034; [http-api.md](../developer/http-api.md).
 
 ## What this does not cover
 

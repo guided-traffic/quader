@@ -24,15 +24,10 @@ import (
 //     by digest, an attachment tag as the tag's document.
 //  5. GET of their layers up to signatures.max_object_size, at most maxFetchLayers per manifest; never an SBOM's.
 
-// The bounds of a fetch (R-SIG-040's defaults; the configuration that changes them belongs to the package of R-SIG-040).
-const (
-	// maxFetchManifests is signatures.remote.max_manifests_per_subject.
-	maxFetchManifests = 4
-	// maxFetchObject is signatures.max_object_size: a layer above it is not fetched (the read would refuse it).
-	maxFetchObject = 256 << 10
-	// maxFetchLayers bounds the layers fetched of one signature manifest: cosign's older layout holds one signature per layer.
-	maxFetchLayers = 8
-)
+// maxFetchLayers bounds the layers fetched of one signature manifest: cosign's older layout holds one signature per layer. The other
+// bounds of a fetch are the configuration's (signatures.remote.max_manifests_per_subject, signatures.max_object_size), handed in the
+// context of the run (formats.SignatureFetchLimitsFrom).
+const maxFetchLayers = 8
 
 var _ formats.SignatureFetcher = remoteAdapter{}
 
@@ -102,8 +97,8 @@ func fetchImageSignatures(ctx context.Context, u discover.Upstream, name, dgst s
 		}
 	}
 	sort.SliceStable(refs, func(i, j int) bool { return refs[i].rank < refs[j].rank })
-	if len(refs) > maxFetchManifests {
-		refs = refs[:maxFetchManifests]
+	if lim := formats.SignatureFetchLimitsFrom(ctx); len(refs) > lim.MaxManifests {
+		refs = refs[:lim.MaxManifests]
 	}
 	for _, r := range refs {
 		if err := fetchRefAndLayers(ctx, u, name, r); err != nil {
@@ -189,16 +184,16 @@ func fetchRefAndLayers(ctx context.Context, u discover.Upstream, name string, r 
 	if sbomType(art) {
 		return nil
 	}
-	n := 0
+	n, maxObject := 0, formats.SignatureFetchLimitsFrom(ctx).MaxObjectSize
 	for _, l := range m.Layers {
 		if n >= maxFetchLayers {
 			break
 		}
-		if l.Size <= 0 || l.Size > maxFetchObject || sbomType(l.MediaType) || !ValidDigest(l.Digest) {
+		if l.Size <= 0 || l.Size > maxObject || sbomType(l.MediaType) || !ValidDigest(l.Digest) {
 			continue
 		}
 		n++
-		if _, _, err := u.Artifact(ctx, BlobPath(name, l.Digest), maxFetchObject); err != nil {
+		if _, _, err := u.Artifact(ctx, BlobPath(name, l.Digest), maxObject); err != nil {
 			return err
 		}
 	}

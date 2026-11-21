@@ -153,6 +153,12 @@ func init() {
 	RegisterArea(Area{Name: AreaMalwareDatabase, Owner: "R-MAL-010", Class: ChangeArea, PayloadVersion: 1})
 	RegisterArea(Area{Name: AreaMalwareVerdict, Owner: "R-MAL-014", Class: SignalArea})
 	// <<< malware
+	//
+	// The area of signatures on artifacts (signatures.md R-SIG-012, R-SIG-041). Its cluster_epoch row is seeded by
+	// 00098_signature_trust.
+	// >>> signatures
+	RegisterArea(Area{Name: AreaSignatureAnchors, Owner: "R-SIG-012", Class: ChangeArea, PayloadVersion: 1})
+	// <<< signatures
 }
 
 // Names of the areas of this package.
@@ -283,3 +289,12 @@ const AreaMalwareDatabase = "malware_database"
 const AreaMalwareVerdict = "malware_verdict"
 
 // <<< malware
+
+// >>> signatures
+
+// AreaSignatureAnchors carries a write of a trust anchor, a block, the switch for project Owners or a stored public Sigstore root
+// (R-SIG-012, R-SIG-041): every replica refreshes what it holds of them, and the trust job recomputes the trust rows under the raised
+// anchor epoch. The payload is {"epoch": <the anchor epoch after the write>}.
+const AreaSignatureAnchors = "signature_anchors"
+
+// <<< signatures

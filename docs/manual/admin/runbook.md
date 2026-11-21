@@ -273,6 +273,9 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderVulnerabilityImageScannerUnavailable` | warning | For half an hour scans were put off because the scanner or its pull could not work, and none finished | [The image scanner](#an-image-scanner-that-does-not-answer) |
 | `QuaderMirrorFailing` | warning | A mirror failed three pass attempts in a row | [Mirror](#a-mirror-that-is-stuck) |
 | `QuaderMirrorStale` | warning | A mirror is over an hour behind its schedule | [Mirror](#a-mirror-that-is-stuck); the queue `mirror` is claimed |
+| `QuaderSignatureInvalid` | warning | A check found a signature that does not match its content in the last hour | The findings of `GET /api/v1/signatures/findings`; block the signer if it is one to stop trusting ([Signatures](operations.md#signatures)) |
+| `QuaderSignatureBacklog` | warning | The oldest due signature has waited over an hour | The queue `signatures` is claimed; the `signature-verify` jobs and their errors |
+| `QuaderSignatureTrustRootStale` | warning | The public Sigstore root in use is older than 14 days | `trustRoot.lastError` of `GET /api/v1/signatures/settings`; the egress to the TUF repository, or a mirror in `signatures.trust_root.url` |
 
 ## What this page does not cover
 

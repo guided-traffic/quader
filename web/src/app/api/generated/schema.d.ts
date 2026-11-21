@@ -5307,6 +5307,337 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/packages/{packageId}/versions/{version}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The signatures of one version, per repository
+         * @description Per readable repository that holds the version (R-SIG-034): the badge `state` and `stale` (R-SIG-009), every signature of
+         *     the version's files and, for an OCI tag, of its manifest and of each platform's manifest (R-SIG-024), the attestations and
+         *     SBOMs apart, the releases that cover a Debian package (R-SIG-030) and the origin of the upload (R-SIG-010). A virtual
+         *     repository lists the signatures attached in its members that hold the version and that the caller may read, each naming the
+         *     member in `repository`, and names those members in `members` (R-SIG-004). The trust of each signature is judged in the scope
+         *     of the project of the listed repository; a repository of the project `upstream` is judged in the installation's scope
+         *     (Q-SIG-26). `repository` (`<project>/<key>`) answers only that repository, `404` when it does not hold the version for the
+         *     caller. The caller needs `read` on a repository that holds the version, or `content:metadata-read`; a version no such
+         *     repository holds answers `404`. Every text a signature carries (a subject, a user ID, an identity, a predicate type) is text
+         *     and is never rendered as markup.
+         */
+        get: operations["getPackageVersionSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures": {
+        parameters: {
+            query: {
+                /** @description The canonical path of a stored file, without a leading or trailing slash. */
+                path: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The signatures of one stored file
+         * @description The answer of the version's signatures for one stored file of a local or remote repository (R-SIG-034): its badge, its
+         *     signatures and attestations, the releases that cover a Debian package and its origin, judged in the scope of the
+         *     repository's project (Q-SIG-26). Decided as the item (R-STOR-016): `read` on the path; a path the caller may not read answers
+         *     `404`, as a missing one, a folder and a path of a virtual repository do. Every text a signature carries is text and is never
+         *     rendered as markup.
+         */
+        get: operations["getFileSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/objects/{sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The signature object's own SHA-256 as 64 lower-case hexadecimal digits (R-SIG-003). */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Download the original of a signature
+         * @description The bytes of a signature object as they arrived (R-SIG-001, R-SIG-003), with the media type the format gave it, else
+         *     `application/octet-stream`, as an attachment. The caller needs `read` on a repository that holds an attachment of a signature
+         *     of the object, or `content:metadata-read`; every other caller gets `404`, whether the object exists or not.
+         */
+        get: operations["getSignatureObject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the switch for project trust anchors and the state of the signatures
+         * @description The switch **Project owners may add trust anchors for their project** with its `ETag` (R-SIG-019), the anchor epoch
+         *     (R-SIG-012), where the public Sigstore root in use comes from (R-SIG-017), and the backlog of the job: signatures waiting for
+         *     their check and trust rows computed under an older epoch. `enabled` is `signatures.enabled` of the configuration (R-SIG-040).
+         */
+        get: operations["getSignatureSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Allow or forbid project trust anchors
+         * @description A JSON merge patch with `projectAnchors` (R-SIG-019); `If-Match` is required, and a session must have signed in recently
+         *     (R-AUTHZ-037's rule, R-API-007). Switching on lets the Owners of projects maintain anchors of their project; switching off
+         *     keeps the project anchors stored and stops them applying, and carries the journal flag (Q-SIG-42). The trust job recomputes
+         *     (R-SIG-012). Records `signature.settings.changed`. The answer is the settings after the change.
+         */
+        patch: operations["updateSignatureSettings"];
+        trace?: never;
+    };
+    "/api/v1/signatures/anchors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the trust anchors
+         * @description The anchors of the installation (R-SIG-015, R-SIG-016): without `scope` the shipped ones, those of the Helm values and the
+         *     administrator's, in that order and then by title; `scope=project` every project's anchors with their project (R-SIG-019).
+         *     Each carries its material, its fingerprints and expiries, whether it applies and the number of signatures it knows in the
+         *     installation's scope.
+         */
+        get: operations["listSignatureAnchors"];
+        put?: never;
+        /**
+         * Add a trust anchor of the installation
+         * @description An anchor of the scope `installation` (R-SIG-015): `key`, `title`, `kind` and the member of the kind (`ca`, `openpgp`,
+         *     `publicKey`, `sigstore`), checked on save; a refused material answers `422 validation_failed` with `errors[].code`
+         *     `invalid_value` or `secret_material` at the member. `409 anchor_exists` for a key the scope has. The trust job recomputes
+         *     (R-SIG-012). Records `signature.anchor.created`.
+         */
+        post: operations["createSignatureAnchor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/anchors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read one trust anchor
+         * @description One anchor of any scope, a project's included (R-SIG-019), with its `ETag`.
+         */
+        get: operations["getSignatureAnchor"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a trust anchor
+         * @description Removes an anchor of the installation or of a project, whatever the switch says (R-SIG-016, R-SIG-019); a shipped anchor and
+         *     an anchor of the Helm values answer `409 anchor_managed`. The trust job recomputes. Records `signature.anchor.removed` with
+         *     the journal flag (Q-SIG-42).
+         */
+        delete: operations["deleteSignatureAnchor"];
+        options?: never;
+        head?: never;
+        /**
+         * Change or switch a trust anchor
+         * @description A JSON merge patch of `title`, `note`, `enabled` and the member of the anchor's kind (R-SIG-016, R-SIG-017); `If-Match` is
+         *     required. A shipped anchor takes only `enabled`; an anchor of the Helm values nothing: any other member answers
+         *     `409 anchor_managed`. A project anchor is changed here as through its project, and `403 project_anchors_disabled` while the
+         *     switch is off. A refused material answers `422` as on create. Records `signature.anchor.changed`; switching off or removing
+         *     material carries the journal flag (Q-SIG-42).
+         */
+        patch: operations["updateSignatureAnchor"];
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/signatures/anchors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the trust anchors of a project
+         * @description The project's own anchors, each with `applied` (false while the switch is off, R-SIG-019), the switch itself, and the
+         *     installation's anchors that judge in the project's scope as well, read-only and without their notes and material, so that the
+         *     project's page shows the whole scope (R-SIG-037, R-SIG-016). The members of the project read it, and a holder of
+         *     `settings:read` (R-SIG-021); a project the caller cannot see answers `404`.
+         */
+        get: operations["listProjectSignatureAnchors"];
+        put?: never;
+        /**
+         * Add a trust anchor of a project
+         * @description An anchor of the scope `project` (R-SIG-019): the body and the checks of an installation's anchor. It judges only the
+         *     signatures in the project's scope and only adds (R-SIG-016). `403 project_anchors_disabled` while the switch is off. The
+         *     project's Owner adds it, or a holder of `security-settings:write`. Records `signature.anchor.created`.
+         */
+        post: operations["createProjectSignatureAnchor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/signatures/anchors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a trust anchor of a project
+         * @description Removes an anchor of the project (R-SIG-019). The project's Owner removes it while the switch is on (`403
+         *     project_anchors_disabled` while it is off); a holder of `security-settings:write` removes it whatever the switch says. An
+         *     anchor of another project or scope answers `404`. Records `signature.anchor.removed` with the journal flag.
+         */
+        delete: operations["deleteProjectSignatureAnchor"];
+        options?: never;
+        head?: never;
+        /**
+         * Change or switch a trust anchor of a project
+         * @description The merge patch of an installation's anchor for an anchor of the project (R-SIG-019); `If-Match` is required. An anchor of
+         *     another project or scope answers `404`. `403 project_anchors_disabled` while the switch is off. The project's Owner changes
+         *     it, or a holder of `security-settings:write`.
+         */
+        patch: operations["updateProjectSignatureAnchor"];
+        trace?: never;
+    };
+    "/api/v1/signatures/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the blocked signers
+         * @description The blocks of R-SIG-020, newest first, each with the number of signatures it matches in the installation's scope.
+         */
+        get: operations["listSignatureBlocks"];
+        put?: never;
+        /**
+         * Block a signer
+         * @description Blocks a signer in every scope, whatever anchors know it (R-SIG-020): `kind` `fingerprint` (a certificate's or an OpenPGP
+         *     key's), `serial` (the issuer's distinguished name and the serial in `value` as a signature's key IDs carry them,
+         *     `<issuer DN>|<serial>`), `keyid` (npm's or a raw key's, or the SHA-256 of a raw key) or `identity` (a Sigstore `issuer`, required,
+         *     and an identity pattern in `value`, matched anchored), with a `reason` of 1 to 1000 characters; only an identity names an
+         *     `issuer`. Its signatures read **Signed · signer not trusted** once the trust job reached them. `409 block_exists` for a block of
+         *     the same signer. Records `signature.signer.blocked` with the journal flag (Q-SIG-42).
+         */
+        post: operations["createSignatureBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/blocks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The block's ID, the decimal `id` of the block; any other text names no block (`404`). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Lift a block
+         * @description The trust job recomputes the signer's signatures (R-SIG-020). Records `signature.block.removed`.
+         */
+        delete: operations["deleteSignatureBlock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List invalid signatures and the signatures of blocked signers
+         * @description The security dashboard's view of signatures (R-SIG-038): one entry per signature that is `invalid` or whose signer is
+         *     `blocked`, newest first, with the artifacts that hold it (repository, path, and the package and version the format gives the
+         *     path), the signer as it claims, the reason, when it was found and the number of repositories. A holder of
+         *     `content:metadata-read` sees every entry; a caller with `read` on some repositories sees the files in those, and an entry only
+         *     with them. A page may hold fewer entries than `limit`; `nextCursor` is null only on the last page. An entry lists at most 100
+         *     files and 100 repositories. Filters: `kind` (repeatable), `repository` (`<project>/<key>`), `q` (a fragment of the signer's
+         *     subject, identity or key ID, any case). An unknown filter answers `400`. Every text a signature carries is text and is never
+         *     rendered as markup.
+         */
+        get: operations["listSignatureFindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror": {
         parameters: {
             query?: never;
@@ -5721,6 +6052,74 @@ export interface paths {
          *     journaled audit event `ansible.tombstone.cleared`. Needs `manage` on the repository.
          */
         delete: operations["clearAnsibleTombstone"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The collection, `<namespace>.<name>`. */
+                collection: string;
+                /** @description The version as written. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a detached signature to a version of a local Ansible Galaxy repository
+         * @description Stores a detached OpenPGP signature of the version's `MANIFEST.json` (R-SIG-031, Q-SIG-37): `ansible-galaxy` has no command to
+         *     upload one, so a CI job posts it with its token. The signature is checked before it is stored, as far as no key is needed: it is
+         *     an OpenPGP signature within the bounds of untrusted content, it names the fingerprint of its key, and the hash it signs begins as
+         *     the hash of the version's `MANIFEST.json` does (an invalid one answers `422 signature_invalid`). The check with the key is the
+         *     job's: one whose key no trust anchor has reads "Signed · signer not trusted". It is served in `signatures[]` of the version
+         *     document as `{"signature", "pubkey_fingerprint", "signing_service": null}`; a second signature of the same key replaces the
+         *     first; a version takes at most 16 (`409 signature_limit_reached`). Other classes answer `405 not_applicable`. Needs `deploy` on
+         *     the collection.
+         */
+        post: operations["addAnsibleVersionSignature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The collection, `<namespace>.<name>`. */
+                collection: string;
+                /** @description The version as written. */
+                version: string;
+                /** @description The fingerprint of the signature's key, lower-case hexadecimal. */
+                fingerprint: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a signature of a version of a local Ansible Galaxy repository
+         * @description Removes the signature of a key from the version (R-SIG-031): it is no longer served in `signatures[]` and its attachment goes.
+         *     Other classes answer `405 not_applicable`. Needs `delete` on the collection.
+         */
+        delete: operations["removeAnsibleVersionSignature"];
         options?: never;
         head?: never;
         patch?: never;
@@ -9454,6 +9853,7 @@ export interface components {
             ansible?: components["schemas"]["AnsibleSettings"];
             vulnerabilities?: components["schemas"]["VulnerabilitySettings"];
             malware?: components["schemas"]["RepositoryMalwareSettings"];
+            signatures?: components["schemas"]["RepositorySignatureSettings"];
             /** @enum {string} */
             readonly lifecycle?: "active" | "deleting";
             /** Format: date-time */
@@ -9681,6 +10081,7 @@ export interface components {
             listingUrl?: string;
             itemUrl: string;
             malware?: components["schemas"]["MalwareStatus"];
+            signatures?: components["schemas"]["SignatureStatus"];
         };
         Child: {
             /** @description Relative to the listed folder. */
@@ -9958,6 +10359,7 @@ export interface components {
             sizePartial: boolean;
             /** @description With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one. */
             digest?: string;
+            signatures?: components["schemas"]["SignatureStatus"];
             /**
              * @description With `include=state` only, the version's state from the format's metadata (the member `state` of its details): for the
              *     ClamAV definitions `in_use`, `previous`, `superseded` or `files_removed` (R-CLAMAV-003, R-UI-194); absent for a format
@@ -10004,6 +10406,7 @@ export interface components {
             /** @description The relative URL of the content route of the file item (`/api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}`), which the session cookie authenticates on the role `api`; the UI's downloads use it (R-API-025, R-API-029, Q-UI-106). */
             contentUrl: string;
             malware?: components["schemas"]["MalwareStatus"];
+            signatures?: components["schemas"]["SignatureStatus"];
         };
         PackageVersion: {
             packageId: string;
@@ -10049,6 +10452,7 @@ export interface components {
             };
             repositories: components["schemas"]["PackageVersionRepository"][];
             files: components["schemas"]["PackageFile"][];
+            signatures?: components["schemas"]["SignatureStatus"];
         };
         PackageReadme: {
             /**
@@ -11260,6 +11664,559 @@ export interface components {
             /** @default false */
             onlyChecked: boolean;
         };
+        /**
+         * @description The member `signatures` of a repository document (R-SIG-040, R-REPO-004). `fetch`, on a remote repository, lets the background
+         *     fetch ask the upstream for the signatures of what the remote stored (R-SIG-026): `false` for an upstream whose rate limits are
+         *     tight (Docker Hub without an account). On a local or a virtual repository it answers `422 not_applicable` at `/signatures/fetch`.
+         *     An absent member, or one without `fetch`, is the default (on). It belongs in the closed section **Signatures** of a repository's
+         *     settings, never in the form that creates one.
+         */
+        RepositorySignatureSettings: {
+            /** @default true */
+            fetch: boolean;
+        };
+        /**
+         * @description The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
+         *     reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
+         *     signer not trusted** (no anchor knows the signer, no key of it is known, or it is blocked), `invalid` **Invalid signature**
+         *     (only invalid signatures); without a badge `not_checked` (pending or failed), `unsupported` (a scheme Quader does not read, or
+         *     an object that could not be read) and `none` (no signature).
+         * @enum {string}
+         */
+        SignatureBadgeState: "verified_internal" | "verified_public" | "untrusted" | "invalid" | "not_checked" | "unsupported" | "none";
+        /**
+         * @description The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
+         *     signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
+         *     read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
+         *     Absent for a folder and while `signatures.enabled` is false.
+         */
+        SignatureStatus: {
+            state: components["schemas"]["SignatureBadgeState"];
+            /** @description A trust row that decides the badge was computed before the last change of anchors, blocks or the switch; the trust job has not reached it yet (R-SIG-012). */
+            stale: boolean;
+        };
+        /**
+         * @description The state of a signature's read and integrity check (R-SIG-003): `pending` not checked yet, `valid` the signature matches its
+         *     subject (the trust decides the rest), `no_key` no key of the signer is known, `invalid` it does not match (`reason`),
+         *     `unsupported` a scheme, algorithm or version Quader does not read, `malformed` the object does not parse, `failed` the check
+         *     could not run.
+         * @enum {string}
+         */
+        SignatureIntegrityState: "pending" | "valid" | "invalid" | "no_key" | "unsupported" | "malformed" | "failed";
+        /**
+         * @description The role of a signature (R-SIG-001); only `publisher` and `provenance` count for the badge (R-SIG-009).
+         * @enum {string}
+         */
+        SignatureRole: "publisher" | "provenance" | "registry" | "attestation";
+        /** @enum {string} */
+        SignatureScheme: "sigstore-bundle" | "cosign-legacy" | "notation-jws" | "notation-cose" | "nuget-cms" | "openpgp" | "npm-registry" | "public-key" | "unknown";
+        /**
+         * @description The trust of a valid signature in the reader's scope (R-SIG-008); `blocked` reads **Signed · signer not trusted** with the block's date and reason (Q-SIG-24).
+         * @enum {string}
+         */
+        SignatureTrustState: "public" | "internal" | "untrusted" | "blocked";
+        /**
+         * @description Where an anchor comes from (R-SIG-016): shipped with Quader, declared in the Helm values, added by an administrator, or added by a project's Owner.
+         * @enum {string}
+         */
+        SignatureAnchorScope: "shipped" | "configuration" | "installation" | "project";
+        /**
+         * @description The kind of a trust anchor (R-SIG-015); the anchor carries the member of its kind (`ca`, `openpgp`, `publicKey`, `sigstore`).
+         * @enum {string}
+         */
+        SignatureAnchorKind: "ca" | "openpgp" | "public-key" | "sigstore";
+        /** @description An anchor that knows the signer of a signature, as a reader sees it. */
+        SignatureAnchorRef: {
+            /** Format: int64 */
+            id: number;
+            title: string;
+            scope: components["schemas"]["SignatureAnchorScope"];
+        };
+        /** @description The block that matches the signer, shown as "Blocked by an administrator on <date>; <reason>" (R-SIG-020). */
+        SignatureBlockRef: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["SignatureBlockKind"];
+            reason: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @description The trust row of a signature in the scope of the answer (R-SIG-008); null for a signature whose integrity state is neither `valid` nor `no_key`. */
+        SignatureTrust: {
+            state: components["schemas"]["SignatureTrustState"];
+            /** @description Every anchor of the scope that knows the signer. */
+            anchors: components["schemas"]["SignatureAnchorRef"][];
+            block: components["schemas"]["SignatureBlockRef"] | null;
+            /** Format: date-time */
+            computedAt: string;
+            /** @description Computed under an older anchor epoch (R-SIG-012). */
+            stale: boolean;
+        };
+        /**
+         * @description The claims of a CI job a Sigstore certificate carries in Fulcio's extensions (R-SIG-005): what the certificate says, which
+         *     the integrity check and the trust step confirm or not.
+         */
+        SignatureCertificateCI: {
+            issuer?: string;
+            buildSignerUri?: string;
+            buildSignerDigest?: string;
+            runnerEnvironment?: string;
+            sourceRepositoryUri?: string;
+            sourceRepositoryDigest?: string;
+            sourceRepositoryRef?: string;
+            sourceRepositoryOwner?: string;
+            buildConfigUri?: string;
+            buildTrigger?: string;
+            runInvocationUri?: string;
+        };
+        /** @description A transparency-log entry of a Sigstore signature; `proof` is `promise` (a signed entry timestamp) or `proof` (an inclusion proof). */
+        SignatureLogEntry: {
+            logId?: string;
+            /** Format: int64 */
+            index: number;
+            /** Format: date-time */
+            integratedTime?: string;
+            proof?: string;
+        };
+        /** @description An RFC 3161 timestamp the signature carries (R-SIG-007). */
+        SignatureTimestamp: {
+            /** Format: date-time */
+            time: string;
+            authority?: string;
+        };
+        /** @description Where the signature reaches its subject in a repository (R-SIG-004). */
+        SignatureAttachment: {
+            /** @description The repository `<project>/<key>` that holds the attachment. */
+            repository: string;
+            /** @enum {string} */
+            source: "referrer" | "referrers_tag" | "cosign_tag" | "index_entry" | "document" | "embedded" | "sibling" | "release" | "upload";
+            /** @description The item path of the original, or `path#pointer` in a document. */
+            location: string;
+            /** @description The package or image name the attachment is under. */
+            name?: string;
+        };
+        /**
+         * @description One signature as the reader sees it (R-SIG-034, R-SIG-035). Every value but `state`, `reason` and `trust` is what the
+         *     signature claims (R-SIG-005); every text is text and is never rendered as markup. An absent member is one the scheme does not
+         *     carry.
+         */
+        SignatureEntry: {
+            /** Format: int64 */
+            id: number;
+            role: components["schemas"]["SignatureRole"];
+            scheme: components["schemas"]["SignatureScheme"];
+            state: components["schemas"]["SignatureIntegrityState"];
+            /** @description The closed reason of R-SIG-006 for an `invalid`, `unsupported`, `pending` or `failed` signature. */
+            reason: string | null;
+            /** @description Why a state was reached, in plain words ("timestamp by an authority no trust anchor knows"). */
+            detail?: string;
+            trust: components["schemas"]["SignatureTrust"] | null;
+            /** @description The certificate's subject, or an OpenPGP key's user ID once the key is known. */
+            signer?: string;
+            issuer?: string;
+            /** @description A Sigstore certificate's identity (a URI or an e-mail), or a certificate's first alternative name. */
+            identity?: string;
+            oidcIssuer?: string;
+            alternativeNames?: string[];
+            serial?: string;
+            /** @description The subjects of the chain the signature carries, leaf first. */
+            chain?: string[];
+            ci?: components["schemas"]["SignatureCertificateCI"];
+            /** @description Every identifier an anchor or a block can match (R-SIG-005). */
+            keyIds: string[];
+            keyId?: string;
+            fingerprint?: string;
+            algorithm?: string;
+            hashAlgorithm?: string;
+            /**
+             * Format: date-time
+             * @description The signer's own claim of time; it proves nothing (R-SIG-007).
+             */
+            claimedAt?: string;
+            /**
+             * Format: date-time
+             * @description The time a timestamp or a log entry proves.
+             */
+            provenAt?: string;
+            /** @enum {string} */
+            timeProof?: "timestamp" | "log";
+            /**
+             * Format: date-time
+             * @description When Quader received the signature; the signature's time when nothing proves one.
+             */
+            receivedAt: string;
+            /** Format: date-time */
+            checkedAt?: string;
+            /** Format: date-time */
+            certificateNotBefore?: string;
+            /**
+             * Format: date-time
+             * @description The leaf's expiry; a certificate that expired since is a fact of the details, not a verdict (R-SIG-007).
+             */
+            certificateNotAfter?: string;
+            log: components["schemas"]["SignatureLogEntry"][];
+            timestamps: components["schemas"]["SignatureTimestamp"][];
+            predicateType?: string;
+            statementSubjects?: string[];
+            /** @description What the screen names the entry by - the predicate type of an attestation, else the object's media type, else the scheme. */
+            type: string;
+            signingScheme?: string;
+            signingAgent?: string;
+            /** Format: date-time */
+            expiry?: string;
+            /** @enum {string} */
+            commitmentType?: "author" | "repository";
+            serviceIndex?: string;
+            owners?: string[];
+            /** @description The image reference an older cosign payload names; shown, judged by nothing (R-SIG-023). */
+            dockerReference?: string;
+            /** @description The name of a scheme Quader does not read, where it can tell it. */
+            schemeName?: string;
+            /** @description What the read cut at the bounds of R-SIG-013. */
+            cut?: string;
+            /** @description The SHA-256 of what the signature covers. */
+            subject: string;
+            /** @description npm's registry signature: `<name>@<version>`, part of the signed message. */
+            subjectName?: string;
+            /** @description The file of the answer the signature covers, absent when its subject is no file of it (an OCI platform's manifest, npm's registry message). */
+            path?: string;
+            /** @description OCI: the platform whose manifest the signature covers, absent for the tag's own manifest. */
+            platform?: string;
+            /** @description The repository of the first attachment; through a virtual repository the member that holds it. */
+            repository: string;
+            /** @description The source of the first attachment. */
+            source: string;
+            /** @description The location of the first attachment. */
+            location: string;
+            attachments: components["schemas"]["SignatureAttachment"][];
+            mediaType?: string;
+            /**
+             * Format: int64
+             * @description The size of the signature object.
+             */
+            size: number;
+            /** @description The relative URL of the original (`/api/v1/signatures/objects/{sha256}`). */
+            original: string;
+        };
+        /** @description A release whose signed index names a Debian package (R-SIG-030). */
+        SignatureCovering: {
+            /** @description The path of the release document. */
+            release: string;
+            suite: string;
+            /** Format: date-time */
+            date?: string;
+            state: components["schemas"]["SignatureBadgeState"];
+            signatures: components["schemas"]["SignatureEntry"][];
+        };
+        /** @description The verified claims of the CI job that uploaded, as the token's issuance recorded them (R-SIG-010); never an e-mail address. */
+        SignatureOriginCI: {
+            issuer?: string;
+            projectPath?: string;
+            projectId?: string;
+            namespacePath?: string;
+            pipelineId?: string;
+            jobId?: string;
+            ref?: string;
+            refType?: string;
+            refProtected?: boolean;
+            pipelineSource?: string;
+            environment?: string;
+            sha?: string;
+            userLogin?: string;
+        };
+        /**
+         * @description Where the artifact came from (R-SIG-010, R-SIG-035): `uploaded` by a principal (`principalKind` `user`, `service_account`,
+         *     `ci`, ...), with the CI job's claims for an upload from CI; or `fetched` from the remote's upstream at `at`.
+         */
+        SignatureOrigin: {
+            /** @enum {string} */
+            kind: "uploaded" | "fetched";
+            principalKind?: string;
+            principalName?: string;
+            /** Format: date-time */
+            at?: string;
+            ci?: components["schemas"]["SignatureOriginCI"];
+            upstreamUrl?: string;
+        };
+        /** @description What one repository shows of a version's signatures (R-SIG-034). */
+        SignatureRepositoryReport: {
+            repository: string;
+            /** @enum {string} */
+            class: "local" | "remote" | "virtual";
+            state: components["schemas"]["SignatureBadgeState"];
+            stale: boolean;
+            /** @description For a virtual repository, the members that hold the version and that the caller may read, whose attachments are listed; empty otherwise. */
+            members: string[];
+            /** @description The signatures of the roles publisher, provenance and registry, ordered by role, then by the time received. */
+            signatures: components["schemas"]["SignatureEntry"][];
+            /** @description The attachments of the role attestation (OCI - attestations and SBOMs, R-SIG-024), with their type and size. */
+            attestations: components["schemas"]["SignatureEntry"][];
+            /**
+             * @description Debian: the releases whose signed index names the package (R-SIG-030). Filled once the format answers the coverage
+             *     through its data port; empty until then and for every other format.
+             */
+            covering: components["schemas"]["SignatureCovering"][];
+            origin: components["schemas"]["SignatureOrigin"] | null;
+        };
+        SignatureVersionReport: {
+            packageId: string;
+            version: string;
+            repositories: components["schemas"]["SignatureRepositoryReport"][];
+        };
+        /** @description What a stored file shows of its signatures (R-SIG-034). */
+        SignatureFileReport: {
+            repository: string;
+            path: string;
+            sha256: string;
+            state: components["schemas"]["SignatureBadgeState"];
+            stale: boolean;
+            signatures: components["schemas"]["SignatureEntry"][];
+            attestations: components["schemas"]["SignatureEntry"][];
+            /** @description As in the version's answer; empty until the format answers the coverage. */
+            covering: components["schemas"]["SignatureCovering"][];
+            origin: components["schemas"]["SignatureOrigin"] | null;
+        };
+        /** @description Where the public Sigstore root and npm's keys in use come from (R-SIG-017). */
+        SignatureTrustRoot: {
+            /**
+             * @description `refreshed` the task stored a newer root; `release` the release's snapshot.
+             * @enum {string}
+             */
+            source: "refreshed" | "release";
+            /**
+             * Format: date-time
+             * @description The refresh's time, or the snapshot's build time.
+             */
+            fetchedAt: string | null;
+            /** Format: int64 */
+            tufVersion: number;
+            /** @description The last failure of the task since its last success. */
+            lastError: string | null;
+            /** Format: date-time */
+            lastErrorAt: string | null;
+        };
+        SignatureBacklog: {
+            /**
+             * Format: int64
+             * @description Signatures due or waiting for their check.
+             */
+            pending: number;
+            /**
+             * Format: int64
+             * @description Trust rows computed under an older anchor epoch.
+             */
+            stale: number;
+        };
+        SignatureSettings: {
+            /** @description `signatures.enabled` of the configuration (R-SIG-040). */
+            enabled: boolean;
+            /** @description Project owners may add trust anchors for their project (R-SIG-019). */
+            projectAnchors: boolean;
+            /** Format: int64 */
+            anchorEpoch: number;
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            updatedAt: string;
+            updatedBy: string | null;
+            trustRoot: components["schemas"]["SignatureTrustRoot"];
+            backlog: components["schemas"]["SignatureBacklog"];
+        };
+        SignatureSettingsPatch: {
+            projectAnchors?: boolean;
+        };
+        /** @description A CA anchor's material (R-SIG-015, Q-SIG-30). */
+        SignatureAnchorCa: {
+            /** @description 1 to 16 PEM certificates - CA certificates, or a pinned end-entity certificate that is the signer itself. */
+            certificates: string;
+            /**
+             * @default codeSigning
+             * @enum {string}
+             */
+            use: "codeSigning" | "timestamping";
+            /** @description Attributes of the leaf's subject that must match exactly. */
+            subject?: {
+                O?: string;
+                OU?: string;
+                CN?: string;
+                C?: string;
+            };
+            /** @description RE2 patterns, anchored; one of the leaf's alternative names must match one. */
+            subjectAltNames?: string[];
+        };
+        SignatureAnchorOpenpgp: {
+            /** @description 1 to 32 armored public certificates. */
+            keys: string;
+        };
+        SignatureAnchorPublicKeyEntry: {
+            pem: string;
+            /** @description npm's keyid, `SHA256:<base64>`. */
+            keyid?: string;
+            /** Format: date-time */
+            expires?: string;
+        };
+        SignatureAnchorPublicKey: {
+            keys: components["schemas"]["SignatureAnchorPublicKeyEntry"][];
+        };
+        /** @description A Sigstore identity (R-SIG-015, Q-SIG-27); `identity` or `identityPattern`. */
+        SignatureAnchorSigstore: {
+            /** @description The OIDC issuer, exact, an HTTPS URL. */
+            issuer: string;
+            identity?: string;
+            /** @description An RE2 pattern, anchored. */
+            identityPattern?: string;
+            /** @enum {string} */
+            trustRoot: "public" | "own";
+            /** @description The company's `trusted_root.json` when `trustRoot` is `own`, at most 1 MiB. */
+            trustedRoot?: {
+                [key: string]: unknown;
+            };
+        };
+        SignatureFingerprint: {
+            /** @description `sha256` of a certificate or a key, `openpgp` of a key. */
+            kind: string;
+            value: string;
+            subject?: string;
+            /** Format: date-time */
+            notAfter?: string;
+        };
+        /**
+         * @description A trust anchor (R-SIG-015). It carries the member of its kind; its material is public data. In the installation's anchors of
+         *     a project's list the material, the note and the creator are left out.
+         */
+        SignatureAnchor: {
+            /** Format: int64 */
+            id: number;
+            scope: components["schemas"]["SignatureAnchorScope"];
+            /** @description The project's key, for a project anchor. */
+            project: string | null;
+            key: string;
+            title: string;
+            kind: components["schemas"]["SignatureAnchorKind"];
+            ca?: components["schemas"]["SignatureAnchorCa"];
+            openpgp?: components["schemas"]["SignatureAnchorOpenpgp"];
+            publicKey?: components["schemas"]["SignatureAnchorPublicKey"];
+            sigstore?: components["schemas"]["SignatureAnchorSigstore"];
+            enabled: boolean;
+            /** @description False for a switched-off anchor and for a project anchor while project anchors are switched off. */
+            applied: boolean;
+            note: string | null;
+            /** Format: int64 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description The principal that created it; null for the release and the Helm values. */
+            createdBy: string | null;
+            fingerprints: components["schemas"]["SignatureFingerprint"][];
+            /**
+             * Format: int64
+             * @description The number of signatures it knows in the installation's scope.
+             */
+            signatures: number;
+        };
+        SignatureAnchorList: {
+            items: components["schemas"]["SignatureAnchor"][];
+        };
+        ProjectSignatureAnchorList: {
+            /** @description The switch of R-SIG-019; the project's page shows its section while it is on, or while the project holds anchors. */
+            projectAnchors: boolean;
+            /** @description The project's own anchors. */
+            items: components["schemas"]["SignatureAnchor"][];
+            /** @description The installation's anchors that apply in the project's scope ("Also trusted in this project"), without material, note and creator. */
+            installation: components["schemas"]["SignatureAnchor"][];
+        };
+        NewSignatureAnchor: {
+            key: string;
+            title: string;
+            kind: components["schemas"]["SignatureAnchorKind"];
+            ca?: components["schemas"]["SignatureAnchorCa"];
+            openpgp?: components["schemas"]["SignatureAnchorOpenpgp"];
+            publicKey?: components["schemas"]["SignatureAnchorPublicKey"];
+            sigstore?: components["schemas"]["SignatureAnchorSigstore"];
+            note?: string;
+            /** @default true */
+            enabled: boolean;
+        };
+        SignatureAnchorPatch: {
+            title?: string;
+            note?: string | null;
+            enabled?: boolean;
+            ca?: components["schemas"]["SignatureAnchorCa"];
+            openpgp?: components["schemas"]["SignatureAnchorOpenpgp"];
+            publicKey?: components["schemas"]["SignatureAnchorPublicKey"];
+            sigstore?: components["schemas"]["SignatureAnchorSigstore"];
+        };
+        /** @enum {string} */
+        SignatureBlockKind: "fingerprint" | "serial" | "keyid" | "identity";
+        /** @description A blocked signer (R-SIG-020). */
+        SignatureBlock: {
+            /** Format: int64 */
+            id: number;
+            kind: components["schemas"]["SignatureBlockKind"];
+            value: string;
+            issuer: string | null;
+            reason: string;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string | null;
+            /**
+             * Format: int64
+             * @description The number of signatures it matches in the installation's scope.
+             */
+            signatures: number;
+        };
+        SignatureBlockList: {
+            items: components["schemas"]["SignatureBlock"][];
+        };
+        NewSignatureBlock: {
+            kind: components["schemas"]["SignatureBlockKind"];
+            value: string;
+            /** @description The OIDC issuer of an identity block; no other kind names one. */
+            issuer?: string;
+            reason: string;
+        };
+        /** @enum {string} */
+        SignatureFindingKind: "invalid" | "blocked";
+        SignatureFindingItem: {
+            repository: string;
+            format: string;
+            /** @description The file whose content the signature covers; absent when the repository holds only the attachment (npm's registry signature). */
+            path?: string;
+            package?: string;
+            version?: string;
+        };
+        /** @description One entry of the security dashboard's view of signatures (R-SIG-038). The signer's texts are claims and are text, never markup. */
+        SignatureFinding: {
+            /**
+             * Format: int64
+             * @description The signature's ID.
+             */
+            id: number;
+            kind: components["schemas"]["SignatureFindingKind"];
+            scheme: components["schemas"]["SignatureScheme"];
+            role: components["schemas"]["SignatureRole"];
+            reason: string | null;
+            signer?: string;
+            identity?: string;
+            issuer?: string;
+            keyId?: string;
+            subject: string;
+            subjectName?: string;
+            /** Format: date-time */
+            foundAt: string;
+            block: components["schemas"]["SignatureBlockRef"] | null;
+            repositoryCount: number;
+            firstRepository: string;
+            repositories: string[];
+            items: components["schemas"]["SignatureFindingItem"][];
+            itemsTruncated: boolean;
+        };
+        SignatureFindingPage: {
+            items: components["schemas"]["SignatureFinding"][];
+            nextCursor: string | null;
+        };
         /** @description The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value. */
         VulnerabilityCvss: {
             /** @enum {string} */
@@ -12132,6 +13089,16 @@ export interface components {
             items: components["schemas"]["AnsibleTombstone"][];
             /** @description Opaque; `null` on the last page. */
             nextCursor: string | null;
+        };
+        AnsibleSignatureInput: {
+            /** @description The ASCII-armored detached OpenPGP signature of the version's `MANIFEST.json`. */
+            signature: string;
+        };
+        AnsibleSignature: {
+            /** @description The fingerprint of the key the signature names, lower-case hexadecimal. */
+            fingerprint: string;
+            /** @description The armored signature as it was posted. */
+            signature: string;
         };
         /**
          * @description The settings of the Debian (APT) format, the `deb` member of a repository document (R-REPO-004, R-DEB-008, R-DEB-024). The
@@ -13182,6 +14149,8 @@ export interface components {
         Limit: number;
         /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
         Cursor: string;
+        /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+        SignatureAnchorId: string;
         /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
         IfMatch: string;
         /** @description The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012). */
@@ -24550,6 +25519,739 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    getPackageVersionSignatures: {
+        parameters: {
+            query?: {
+                /** @description One repository `<project>/<key>`, whose entry alone is answered, judged in its project's scope. */
+                repository?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signatures per repository. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "packageId": "pkg_01JBQ6V7S3K9",
+                     *       "version": "1.4.0",
+                     *       "repositories": [
+                     *         {
+                     *           "repository": "web/npm-local",
+                     *           "class": "local",
+                     *           "state": "verified_public",
+                     *           "stale": false,
+                     *           "members": [],
+                     *           "signatures": [
+                     *             {
+                     *               "id": 4711,
+                     *               "role": "provenance",
+                     *               "scheme": "sigstore-bundle",
+                     *               "state": "valid",
+                     *               "reason": null,
+                     *               "trust": {
+                     *                 "state": "public",
+                     *                 "anchors": [
+                     *                   {
+                     *                     "id": 1,
+                     *                     "title": "Public Sigstore",
+                     *                     "scope": "shipped"
+                     *                   }
+                     *                 ],
+                     *                 "block": null,
+                     *                 "computedAt": "2026-11-21T09:12:45Z",
+                     *                 "stale": false
+                     *               },
+                     *               "issuer": "sigstore-intermediate",
+                     *               "identity": "https://gitlab.example.com/web/ui//.gitlab-ci.yml@refs/heads/main",
+                     *               "oidcIssuer": "https://gitlab.example.com",
+                     *               "keyIds": [],
+                     *               "provenAt": "2026-11-21T09:12:40Z",
+                     *               "timeProof": "log",
+                     *               "receivedAt": "2026-11-21T09:12:44Z",
+                     *               "certificateNotAfter": "2026-11-21T09:22:40Z",
+                     *               "log": [
+                     *                 {
+                     *                   "index": 151233891,
+                     *                   "integratedTime": "2026-11-21T09:12:40Z",
+                     *                   "proof": "proof"
+                     *                 }
+                     *               ],
+                     *               "timestamps": [],
+                     *               "predicateType": "https://slsa.dev/provenance/v1",
+                     *               "type": "https://slsa.dev/provenance/v1",
+                     *               "subject": "5be0c1d2e8f3a4b5c6d7e8f90123456789abcdef0123456789abcdef01234567",
+                     *               "path": "@team-a/ui/-/ui-1.4.0.tgz",
+                     *               "repository": "web/npm-local",
+                     *               "source": "document",
+                     *               "location": "@team-a/ui#/versions/1.4.0/dist/attestations",
+                     *               "attachments": [
+                     *                 {
+                     *                   "repository": "web/npm-local",
+                     *                   "source": "document",
+                     *                   "location": "@team-a/ui#/versions/1.4.0/dist/attestations"
+                     *                 }
+                     *               ],
+                     *               "size": 4211,
+                     *               "original": "/api/v1/signatures/objects/2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+                     *             }
+                     *           ],
+                     *           "attestations": [],
+                     *           "covering": [],
+                     *           "origin": {
+                     *             "kind": "uploaded",
+                     *             "principalKind": "ci",
+                     *             "principalName": "web-release",
+                     *             "at": "2026-11-21T09:12:44Z",
+                     *             "ci": {
+                     *               "issuer": "gitlab",
+                     *               "projectPath": "web/ui",
+                     *               "pipelineId": "8812",
+                     *               "ref": "main",
+                     *               "refProtected": true
+                     *             }
+                     *           }
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SignatureVersionReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getFileSignatures: {
+        parameters: {
+            query: {
+                /** @description The canonical path of a stored file, without a leading or trailing slash. */
+                path: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signatures of the file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureFileReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSignatureObject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The signature object's own SHA-256 as 64 lower-case hexadecimal digits (R-SIG-003). */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The original bytes. */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSignatureSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureSettings"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateSignatureSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "projectAnchors": true
+                 *     }
+                 */
+                "application/merge-patch+json": components["schemas"]["SignatureSettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description The settings after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listSignatureAnchors: {
+        parameters: {
+            query?: {
+                /** @description One scope; without it every scope of the installation but `project`. */
+                scope?: components["schemas"]["SignatureAnchorScope"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The anchors. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureAnchorList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "key": "company-ca",
+                 *       "title": "Company code signing CA",
+                 *       "kind": "ca",
+                 *       "ca": {
+                 *         "certificates": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n",
+                 *         "subject": {
+                 *           "O": "Example GmbH"
+                 *         }
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["NewSignatureAnchor"];
+            };
+        };
+        responses: {
+            /** @description The anchor. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureAnchor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The anchor. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureAnchor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The anchor is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "enabled": false
+                 *     }
+                 */
+                "application/merge-patch+json": components["schemas"]["SignatureAnchorPatch"];
+            };
+        };
+        responses: {
+            /** @description The anchor after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureAnchor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listProjectSignatureAnchors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The anchors of the project and of the installation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSignatureAnchorList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createProjectSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "key": "release-key",
+                 *       "title": "Release key of team web",
+                 *       "kind": "openpgp",
+                 *       "openpgp": {
+                 *         "keys": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n...\n-----END PGP PUBLIC KEY BLOCK-----\n"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["NewSignatureAnchor"];
+            };
+        };
+        responses: {
+            /** @description The anchor. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureAnchor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteProjectSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The anchor is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateProjectSignatureAnchor: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
+                id: components["parameters"]["SignatureAnchorId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "Release key of team web (2027)"
+                 *     }
+                 */
+                "application/merge-patch+json": components["schemas"]["SignatureAnchorPatch"];
+            };
+        };
+        responses: {
+            /** @description The anchor after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureAnchor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listSignatureBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The blocks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureBlockList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createSignatureBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "kind": "identity",
+                 *       "issuer": "https://gitlab.example.com",
+                 *       "value": "^https://gitlab.example.com/web/ui//.+$",
+                 *       "reason": "The CI job of web/ui was compromised on 2026-11-20; its signatures are no longer trusted."
+                 *     }
+                 */
+                "application/json": components["schemas"]["NewSignatureBlock"];
+            };
+        };
+        responses: {
+            /** @description The block. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureBlock"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteSignatureBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The block's ID, the decimal `id` of the block; any other text names no block (`404`). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The block is lifted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listSignatureFindings: {
+        parameters: {
+            query?: {
+                /** @description invalid or blocked. Repeat for both; without it both. */
+                kind?: components["schemas"]["SignatureFindingKind"][];
+                /** @description A repository name `<project>/<key>`: only entries a file of it holds. */
+                repository?: string;
+                /** @description A fragment of the signer's subject, identity or key ID, matched without regard to case. */
+                q?: string;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureFindingPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     getRepositoryMirror: {
         parameters: {
             query?: never;
@@ -25278,6 +26980,102 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The tombstone is cleared. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The repository is not a local Ansible Galaxy repository (`not_applicable`). */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    addAnsibleVersionSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The collection, `<namespace>.<name>`. */
+                collection: string;
+                /** @description The version as written. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnsibleSignatureInput"];
+            };
+        };
+        responses: {
+            /** @description The signature is stored. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnsibleSignature"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The repository is not a local Ansible Galaxy repository (`not_applicable`). */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    removeAnsibleVersionSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The collection, `<namespace>.<name>`. */
+                collection: string;
+                /** @description The version as written. */
+                version: string;
+                /** @description The fingerprint of the signature's key, lower-case hexadecimal. */
+                fingerprint: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signature is removed. */
             204: {
                 headers: {
                     [name: string]: unknown;

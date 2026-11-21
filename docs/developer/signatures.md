@@ -10,7 +10,7 @@ ones build on, and what each format's detector hands over. The security perspect
 
 - **Detect, read, verify are three steps in two places.** Detection runs in the transaction that stores the content (the commit of an
   item, the fill of a remote's document) and only names candidates; the read, the integrity check and the trust step run later in the
-  worker's job (package 2). Nothing in package 1 checks a signature.
+  worker's job (package 2).
 - **A detector is pure.** `formats.SignatureAdapter.Detect` reads the bytes it is handed, bounded, and runs no SQL. What it cannot know
   (the blob of a file beside the signature, the tarball of a bundle) it names by a path of the event's repository; the core resolves it
   there and nowhere else, and drops a candidate whose path holds nothing (Q-SIG-47). The other side's commit names it again.
@@ -79,24 +79,91 @@ The formats' wire behaviour, R-SIG-023 to R-SIG-033; the decisions are Q-SIG-97 
 
 ### Where packages 2 and 3 meet
 
-- **`Host.Signatures()`** answers `formats.NoSignatureVerdicts` until package 2 sets `formathost.Options.Verdicts` to its trust step: a
+- **`Host.Signatures()`** answers `formats.NoSignatureVerdicts` until package 2 sets `formathost.Options.Verdicts` to its trust step (wired,
+  below): a
   local npm provenance bundle is served to npm only when `PublicProvenance` vouches for it (valid, trusted by a shipped public anchor in the
   installation's scope).
-- **The fetch's knobs** are read with their defaults (`signatures.remote.refresh_after` 24 h, `requests_per_hour` 600, four manifests per
-  subject, `max_object_size` 256 KiB): `fetch.Options.RefreshAfter` and `fetch.HandlerOptions.RequestsPerHour` take the configuration of
-  R-SIG-040 when package 2 adds it. The job reads the repository member `signatures.fetch` from the repository document (default true);
-  its schema and its API member are R-SIG-040's, and until package 2 adds them the document refuses the member, so every remote fetches
-  (Q-SIG-108).
+- **The fetch's knobs** take the configuration of R-SIG-040 (wired, below): `fetch.Options.RefreshAfter`,
+  `fetch.HandlerOptions.RequestsPerHour`, and the format's bounds through `fetch.HandlerOptions.RunContext` (ADR-233). The job reads the
+  repository member `signatures.fetch` from the repository document (default true), which a remote repository now accepts (Q-SIG-108).
 - **The fetch state for stage 3's gate** (Q-SIG-106): `signature_fetches` keeps per target `queued_at` (due or running), `fetched_at` (asked
   to the end, found or not), `attempts` and `failed_at` (`SignatureFetchFailed`, written by the handler; the last attempt marks it failed),
   and the item's digest in `subject_sha256`. The gate's builder adds the raise of a waiting job's priority and the signal after a run.
 - **The audit events of a posted Ansible signature** (`ansible.signature.added`, `ansible.signature.removed`) are the format's
   (`internal/audit/events_ansible.go`, Q-SIG-107); R-SIG-039's events stay package 2's.
 - **The counter** `quader_signatures_remote_requests_total` of R-SIG-039: `fetch.HandlerOptions.Observe` is told every request of a run
-  with the format and `ok` or `error`; package 2 registers the metric and wires the observer.
+  with the format and `ok` or `error`; package 2 registers the metric and wires the observer (wired, below).
 - **Who wakes the job `signature-verify`:** what the fetch stores passes through the commit hook and `proxy.DocumentHook`, so
   `store.Options.Wake` wakes it as for a client's fill; the posted Ansible signature records through `store.Record` with priority 0.
-- **Debian's coverage** is asked by the API of R-SIG-034 through `formats.CapabilitiesFor(id).SignatureCoverage`.
+- **Debian's coverage** is asked by the API of R-SIG-034 through `formats.CapabilitiesFor(id).SignatureCoverage` (wired, below).
+## Package 2 (built)
+
+Verification, trust, anchors, the jobs, the API, events and metrics (R-SIG-005 to R-SIG-021, R-SIG-034, R-SIG-039 to R-SIG-041).
+
+| What | Where |
+|---|---|
+| The contract between the job and the verifiers: `Input` (the row, the object, the subject with its SHA-512 and size, the signed content, the keys, the trust roots, the bounds, a blob reader), `Output` (the `Result`, the evidence, the number of parts), `Evidence` (what the trust step judges: chain, timestamps, a Sigstore bundle with its artifact digest, a keyless scheme's signature), `ErrTransient`, `ErrBlobMissing` | [scheme/scheme.go](../../internal/signatures/scheme/scheme.go) |
+| The dispatch by scheme with the object bound, the check's deadline and the recovery of a panic | [scheme/all](../../internal/signatures/scheme/all/all.go) |
+| `sigstore-bundle` and `cosign-legacy` (sigstore-go; the older layout converted to a bundle of version 0.1), `LoadRoot` and `Judge` for an identity anchor | [scheme/sigstore](../../internal/signatures/scheme/sigstore/sigstore.go) |
+| `notation-jws`, `notation-cose` (notation-core-go, tspclient-go) | [scheme/notation](../../internal/signatures/scheme/notation/notation.go) |
+| `nuget-cms`: the CMS, the countersignatures, the timestamps, the unsigned-package hash | [scheme/nugetcms](../../internal/signatures/scheme/nugetcms/nugetcms.go) |
+| `openpgp`: the committed digest, `VerifyDigest` for a key added later, Debian's cleartext, Ansible's chain to every file | [scheme/openpgp](../../internal/signatures/scheme/openpgp/openpgp.go) |
+| `npm-registry`, `public-key`, and `Verify` of a stored digest | [scheme/rawkey](../../internal/signatures/scheme/rawkey/rawkey.go) |
+| What the verifiers share (refusals, the signer's certificate fields, chains, keys, bounded ASN.1 and CBOR) and the tests' certificate authority and keys | [scheme/rawkey/pki](../../internal/signatures/scheme/rawkey/pki/outcome.go), [pki/pkitest](../../internal/signatures/scheme/rawkey/pki/pkitest/pkitest.go) |
+| The trust step: `Judge` of one signature in one scope under the blocks, the time of a scope, the precedence | [trust](../../internal/signatures/trust/trust.go) |
+| The anchors: the material of the four kinds (the API's and the Helm values' JSON), `Validate` (the checks on save), `Parse`, the fingerprints | [anchors](../../internal/signatures/anchors/anchors.go) |
+| The shipped anchors, the release's snapshot of the TUF targets, `Refresh` (go-tuf's updater from sigstore-go's embedded root), `NPMKeys`; a TUF repository for tests | [shipped](../../internal/signatures/shipped/shipped.go), [shipped/data](../../internal/signatures/shipped/data), [shipped/tuftest](../../internal/signatures/shipped/tuftest/tuftest.go); `make shipped-anchors` ([internal/tools/shippedanchors](../../internal/tools/shippedanchors/main.go)) |
+| The badge rule | [badge.go](../../internal/signatures/badge.go) |
+| The records of the management side, the `Signer` JSON | [records.go](../../internal/signatures/records.go), [signer.go](../../internal/signatures/signer.go) |
+| The store's new half: settings, anchors, blocks, findings, views and counts, originals, the job's reads and writes, the trust rows, the trust roots, the declared anchors, the journal's replay | [store](../../internal/signatures/store/store.go): `settings.go`, `anchors.go`, `blocks.go`, `findings.go`, `views.go`, `checks.go`, `trust.go`, `roots.go`, `declared.go`, `discovery.go`, `journal_replay.go`; [queries/signature_trust.sql](../../internal/meta/postgres/queries/signature_trust.sql), migration 00098 ([database.md](database.md#signatures-trust-anchors-and-the-trust-step-00098)) |
+| The jobs `signature-verify`, `signature-trust`, the task `signature-trust-root`, their metrics, the wake-ups, the verifiers' blob reader | [job](../../internal/signatures/job/job.go): `kinds.go`, `trust.go`, `metrics.go`, `blobs.go` |
+| Discovery: the format host asks each stored file's format as its commit did | [formathost/discover.go](../../internal/formathost/discover.go) |
+| The audit events | [audit/events_signatures.go](../../internal/audit/events_signatures.go) |
+| The API | [http-api.md](http-api.md#the-operations-of-signatures-r-sig-034), [signatures_api.go](../../internal/api/v1/signatures_api.go), `signatures_views.go`, `signatures_findings.go` |
+| The configuration and the chart | [config/signatures.go](../../internal/config/signatures.go), the chart's `signatures.anchors` ([_signatures.tpl](../../deploy/helm/quader/templates/_signatures.tpl)) and the three alerts; the configuration reference of [README.md](../../README.md) |
+| The wiring: the area `signatures` on every role (the store, and the jobs where jobs run), `quader migrate`'s anchors | [app/wire_signatures.go](../../internal/app/wire_signatures.go), [app/migrate_signatures.go](../../internal/app/migrate_signatures.go) |
+
+### The flow
+
+1. A commit or a fill records candidates (package 1) and wakes `signature-verify` in its transaction.
+2. The job (queue `signatures`, one at a time in the installation) runs discovery from its cursor, removes orphans, makes `failed` rows due
+   once a day, then checks the due rows by priority and time with `signatures.concurrency` in flight: a row whose subject is not stored waits
+   `subject_missing`; otherwise the store hands the object, the subject's SHA-512 and size, the content blob, the keys of every enabled
+   anchor and the upstream keys of the repositories that attach it (a Debian remote's `deb.upstreamKeys`, an npm remote's stored
+   `-/npm/v1/keys`), and the trust roots; `all.Check` runs the scheme's verifier under the deadline. A transient error spends an attempt with a
+   doubling back-off from a minute; a result is written with its evidence, the parts a detector could not name are added (`AddParts`), and the
+   signature's trust rows are judged at once under the current epoch; a state that turned `invalid` records `signature.invalid` once.
+3. A write of an anchor, a block, the switch or a stored public root raises `signature_settings.anchor_epoch`, announces the change area
+   `signature_anchors` and wakes `signature-trust`, which judges every `valid` or `no_key` signature whose rows are older than the epoch, in
+   batches of 10,000, from the stored fields alone: the installation's scope and every project's with anchors of its own (switch on) that
+   reaches the signature. An anchor key that decides a `no_key` signature rewrites its integrity state.
+4. The task `signature-trust-root` (daily) refreshes the public Sigstore root and npm's keys through TUF; a newer snapshot raises the epoch.
+5. `quader migrate` applies the release's shipped anchors (an administrator's `enabled` kept) and the anchors of `signatures.anchors`.
+
+### What package 2 wires of package 3
+
+| Meeting point | Wired | Test |
+|---|---|---|
+| `formathost.Options.Verdicts` | the store's `PublicProvenance` (valid, not blocked, known by the shipped `sigstore-public` in the installation's scope) through `storeVerdicts` ([wire_signatures.go](../../internal/app/wire_signatures.go)), set on the format host while the signatures are on | the npm format's unit tests of `localAttestations` with a fake; the query in the area `signatures` is not exercised by a public bundle (none can be made in a test) |
+| `fetch.HandlerOptions.Observe` | `(*job.Metrics).RemoteRequest`, the counter of R-SIG-039 registered by the jobs of the replica | — |
+| The configuration of the fetch | `refresh_after` to the queue, `requests_per_hour` to the handler, `max_manifests_per_subject` and `max_object_size` to the format in the context of a run (`formats.WithSignatureFetchLimits`, ADR-233) | `TestR_SIG_026_TheFetchStoresAtMostFourManifests` |
+| The repository member `signatures.fetch` | `repository.SignatureSettings`, validated in `validateSignatures` (remote only), in the document schema `RepositorySignatureSettings` | `TestR_SIG_040_TheFetchSwitchIsAMemberOfARemoteRepository` |
+| Debian's coverage | `v1.SignatureServices.Coverage`, bound to `formats.CapabilitiesFor(format).SignatureCoverage` with the format's data port; the API's `covering` of a file and of a version | `TestR_SIG_030_TheCoveringReleasesOfAPackageAreListedWithTheirSignatures` |
+| An npm remote's keys | the store reads the remote's stored document at `-/npm/v1/keys` (the path package 3 stores it at) as upstream keys of the integrity check | `TestR_SIG_028_ARemotesRegistrySignatureIsMatchedByTheKeysItsUpstreamAnnounces` (area `npm`) |
+| Ansible's posted signature | the data port's store takes the configuration's bounds and `job.WakeVerify` (`signaturePorts.storeOptions`), so a post wakes the job | `TestR_SIG_031_ASignaturePostedForALocalVersionIsServed` (area `ansiblelocal`) |
+| A format without signatures | discovery asks no format that declares none (the ClamAV definitions) and no system repository of `upstream` | `TestR_SIG_011_DiscoveryAsksNoFormatWithoutSignatures` |
+
+### Tests and what they cost
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Unit | every scheme's read and check with signatures made in the test (the company's Sigstore as a Fulcio, log and timestamp authority of the test, the public one as a second; the company CA made with `crypto/x509`; the release key made by go-crypto), the bounds, the trust step and its precedence, the anchors' checks, the shipped documents and the TUF refresh against a test repository, the badge rule, the job's order and decisions, the store's checks, the configuration, the events, the API's operations and permissions | about 1 s a package, about 10 s for the signatures' packages together; the API's new tests about 5 s | bytes to kilobytes; the bound tests up to 1 MiB in memory |
+| Chart | the three alerts with promtool, a declared anchor's mount | about 1 s | rendered YAML |
+| Integration | area `signatures`, [trust_test.go](../../test/integration/signatures/trust_test.go): the job, the trust following anchors, blocks and discovery, an invalid signature in the findings; project anchors and the switch with their permissions; the anchors of the configuration through `quader migrate` | about 13 s for the three tests (the area about 15 s with package 1's) | files of a kilobyte |
+| Integration | area `backup`: the journal's replay of what narrowed trust into a restored database; area `npm`: a remote's registry signature matched by its upstream's keys; area `ansiblelocal`: a posted signature wakes the job | about 2 s, 4 s and nothing measurable (an assertion more) | rows, a recorded document |
+
+No end-to-end leg and no client image. The integration shards gain about 13 s (`signatures`), 2 s (`backup`) and 4 s (`npm`); the unit leg
+about 15 s; the chart leg about 1 s. With 25 formats the cost is the same: the core is format-neutral.
 
 ## The interface for packages 2 and 3
 
@@ -147,15 +214,13 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 
 ## What the later packages build
 
-- **Package 2** (verification and trust): `internal/signatures/{scheme,trust,anchors,shipped,job}`, the libraries of R-SIG-014, the
-  tables of the anchors, blocks, settings, trust roots and trust rows (a migration of its own), the configuration of R-SIG-040, the job
-  and its wake through `store.Options.Wake`, discovery of items without attachments, the API, events and metrics.
+- **Package 2** (verification and trust): built, above.
 - **Package 3** (the formats' wire behaviour): built, above.
 - **Package 4**: the screens.
 
 ## What this page does not cover
 
-- The read of the parts a detector could not see: a Debian `Release` named before its `Release.gpg` names part 0 only, and a referrers
-  tag names part 0 of each listed manifest; the read of package 2 adds the others.
+- A project that starts to reach a checked signature gets its own trust row only at the next recomputation
+  ([H-1202](../security/artifact-signatures.md#h-1202--a-project-that-starts-to-reach-a-signature-is-served-the-installations-trust-until-the-next-recomputation)).
 - A format added later (ClamAV's definitions, [formats/clamav.md](../spec/formats/clamav.md)) declares its kinds and adds its row to the
   table of R-SIG-002 when it registers.

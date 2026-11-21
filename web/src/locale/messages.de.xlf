@@ -27275,6 +27275,87 @@
         <target>Authentifizierungseinstellungen geändert</target>
       </segment>
     </unit>
+    <unit id="audit.action.signature.anchor.created">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:301</note>
+      </notes>
+      <segment>
+        <source>Trust anchor added</source>
+        <target>Vertrauensanker hinzugefügt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.anchor.removed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:303</note>
+      </notes>
+      <segment>
+        <source>Trust anchor removed</source>
+        <target>Vertrauensanker entfernt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.anchor.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:305</note>
+      </notes>
+      <segment>
+        <source>Trust anchor changed</source>
+        <target>Vertrauensanker geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.invalid">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+      </notes>
+      <segment>
+        <source>Invalid signature found</source>
+        <target>Ungültige Signatur gefunden</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.settings.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
+      </notes>
+      <segment>
+        <source>Project trust anchor setting changed</source>
+        <target>Einstellung für Vertrauensanker der Projekte geändert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.signer.blocked">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+      </notes>
+      <segment>
+        <source>Signer blocked</source>
+        <target>Signierer gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.signer.unblocked">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
+      </notes>
+      <segment>
+        <source>Signer unblocked</source>
+        <target>Sperre des Signierers aufgehoben</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.trust_root.failed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+      </notes>
+      <segment>
+        <source>Public Sigstore root update failed</source>
+        <target>Aktualisierung der öffentlichen Sigstore-Wurzel fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.trust_root.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+      </notes>
+      <segment>
+        <source>Public Sigstore root updated</source>
+        <target>Öffentliche Sigstore-Wurzel aktualisiert</target>
+      </segment>
+    </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:315</note>

@@ -54,6 +54,23 @@ config:
         public_issuer: false                       # example: an instance without open sign-up
         allowed_audiences: ["https://packages.example.com"]
         ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt # example: an instance behind a private CA
+signatures:
+  anchors:                                         # applied by the migration Job, read-only in the API and the UI
+    - key: gitlab-ci-signing
+      title: GitLab CI signing CA
+      kind: ca
+      ca:
+        certificatesFrom:                          # mounted into the migration Job only
+          configMapKeyRef: {name: company-ca, key: ca.crt}
+        subject: {O: Example GmbH}                 # only certificates of this organisation are trusted
+    - key: company-sigstore
+      title: Company Sigstore
+      kind: sigstore
+      sigstore:
+        issuer: https://gitlab.example.com
+        identityPattern: "^https://gitlab\\.example\\.com/platform/.+$"
+        trustedRootFrom:                           # the company's own Sigstore, not the public one
+          configMapKeyRef: {name: company-sigstore-root, key: trusted_root.json}
 secrets:
   backupSource:
     existingSecret: quader-s3-read             # a login that only reads the blob bucket

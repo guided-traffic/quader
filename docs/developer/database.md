@@ -655,6 +655,19 @@ store's orphans for the job of R-SIG-011, and `artifact_origins` goes with the i
 
 The statements are in [signature_fetch.sql](../../internal/meta/postgres/queries/signature_fetch.sql) and
 [ansible_local.sql](../../internal/meta/postgres/queries/ansible_local.sql).
+## Signatures: trust anchors and the trust step (00098)
+
+[00098_signature_trust](../../internal/meta/postgres/migrations/00098_signature_trust.sql) is an expand step of package 2 of the signatures
+([signatures.md](signatures.md), [spec](../spec/signatures.md) R-SIG-008, R-SIG-012, R-SIG-015, R-SIG-017, R-SIG-019, R-SIG-020):
+`signatures.evidence` (what the trust step judges a signature by without reading content, at most 512 KiB, Q-SIG-109),
+`signature_settings` (one row: the switch for project Owners, the anchor epoch, discovery's cursor and pass, the daily retry of failed,
+the trust root task's last failure), `signature_anchors` (the four kinds in four scopes, `project_id uuid REFERENCES project` for a project's,
+unique per scope, project and key), `signature_blocks` (unique per kind, value and issuer), `signature_trust` (one row per signature and
+scope, `project_id` NULL for the installation's, with the epoch it was computed under) and `signature_trust_roots` (the refreshed public
+Sigstore root and npm's keys with the TUF snapshot's version). It also registers the change area `signature_anchors` in `cluster_epoch`.
+No table references `repositories`. The statements are in [signature_trust.sql](../../internal/meta/postgres/queries/signature_trust.sql);
+`signature_trust` is `transient` (after a restore the trust job computes every row again from the restored fields), the others are `data`
+([tables_signatures.go](../../internal/meta/postgres/tables_signatures.go)). The number 00098 follows 00097_usage_certificate.
 
 ## Debian tables (00060 to 00065)
 

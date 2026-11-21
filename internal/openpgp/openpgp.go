@@ -1,6 +1,7 @@
 // Package openpgp is quader's only door to the OpenPGP module (Q-ARCH-383, Q-DEB-24). It signs the Release documents of local
 // and virtual Debian repositories with keys quader generates or imports, and it verifies the signatures of the documents a remote
-// repository's upstream signs. Nothing outside this package imports the module.
+// repository's upstream signs. Besides it, only the verifier of OpenPGP signatures on artifacts (internal/signatures/scheme/openpgp and its
+// test helper, signatures.md R-SIG-006) imports the module, for the packet-level check of a stored digest this package does not offer.
 //
 // The package is a leaf: it reads no clock (every function takes the time it decides against), writes no log line and has no
 // state. Every input is untrusted and bounded by Limits (R-DEB-034).

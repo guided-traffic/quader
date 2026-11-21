@@ -299,6 +299,55 @@ tests:
               summary: A stored file has waited more than an hour for its malware scan.
               description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by priority; raise malwareScannerClamav.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
 
+  # --- QuaderSignatureInvalid --------------------------------------------------------------------------------
+  - name: QuaderSignatureInvalid fires on an invalid verdict and is quiet an hour later
+    interval: 1m
+    input_series:
+      - {series: 'quader_signatures_checks_total{namespace="default",scheme="cosign",result="valid",pod="w1"}', values: '0+3x180'}
+      - {series: 'quader_signatures_checks_total{namespace="default",scheme="notation-jws",result="invalid",pod="w1"}', values: '0x10 1x170'}
+    alert_rule_test:
+      - {eval_time: 5m, alertname: QuaderSignatureInvalid, exp_alerts: []}
+      - eval_time: 20m
+        alertname: QuaderSignatureInvalid
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: A signature on a stored artifact was found invalid within the last hour.
+              description: The signature does not match the content it signs, or its chain or key does not verify it, so the artifact's badge says Invalid signature (R-SIG-003, R-SIG-039). The content was changed after signing, or the signature was made for other content or forged. The audit event signature.invalid names the signature, its subject and the repositories that hold it; quader_signatures_invalid counts the invalid signatures still attached to something.
+      - {eval_time: 150m, alertname: QuaderSignatureInvalid, exp_alerts: []}
+
+  # --- QuaderSignatureBacklog --------------------------------------------------------------------------------
+  - name: QuaderSignatureBacklog fires when the oldest due signature waited more than an hour
+    interval: 1m
+    input_series:
+      - {series: 'quader_signatures_oldest_pending_seconds{namespace="default",pod="w1"}', values: '600x30 4000x60'}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderSignatureBacklog, exp_alerts: []}
+      - {eval_time: 40m, alertname: QuaderSignatureBacklog, exp_alerts: []}
+      - eval_time: 60m
+        alertname: QuaderSignatureBacklog
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: A signature has waited more than an hour for its check.
+              description: The job signature-verify does not keep up with what is stored, or does not run (R-SIG-011, R-SIG-039). quader_signatures_backlog shows the due signatures by priority. Check that a worker claims the queue signatures (jobs.workers.signatures), the object store, and quader_signatures_checks_total by result; raise config.signatures.concurrency if checks finish but too slowly.
+
+  # --- QuaderSignatureTrustRootStale -------------------------------------------------------------------------
+  - name: QuaderSignatureTrustRootStale fires an hour after the public root turned 14 days old
+    interval: 1m
+    input_series:
+      - {series: 'quader_signatures_trust_root_age_seconds{namespace="default",pod="w1"}', values: '86400x30 1300000x120'}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderSignatureTrustRootStale, exp_alerts: []}
+      - {eval_time: 80m, alertname: QuaderSignatureTrustRootStale, exp_alerts: []}
+      - eval_time: 100m
+        alertname: QuaderSignatureTrustRootStale
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: The public Sigstore trusted root and npm's registry keys in use are older than 14 days.
+              description: The task signature-trust-root has not stored a newer public root for 14 days, so certificate authorities, logs and keys that Sigstore and npm added since are not known, and their signatures read Signed · signer not trusted (R-SIG-017, R-SIG-039). With config.signatures.trust_root.refresh true, the admin page of the signatures and the audit event signature.trust_root.failed name the failure; check the worker's egress to config.signatures.trust_root.url. Without internet (refresh false) the age is that of the release's snapshot (H-1170); upgrade, point trust_root.url at a TUF mirror of the company, or disable the alert.
+
   # --- QuaderVulnerabilityClaimedNameMalicious -------------------------------------------------------------
   - name: QuaderVulnerabilityClaimedNameMalicious fires on a malicious match and not on a vulnerability match
     interval: 1m

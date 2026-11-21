@@ -132,29 +132,36 @@ func TestR_SIG_026_WithoutTheReferrersAPITheReferrersTagIsAsked(t *testing.T) {
 	}
 }
 
-// TestR_SIG_026_TheFetchStoresAtMostFourManifests: signatures.remote.max_manifests_per_subject bounds what one image costs; a target
-// that names no manifest asks nothing. Unit, milliseconds.
+// TestR_SIG_026_TheFetchStoresAtMostFourManifests: signatures.remote.max_manifests_per_subject bounds what one image costs, four by
+// default and what the run's context carries otherwise (ADR-233); a target that names no manifest asks nothing. Unit, milliseconds.
 func TestR_SIG_026_TheFetchStoresAtMostFourManifests(t *testing.T) {
-	var ms [][]byte
-	f := newFake(t, "https://registry.example.com/", ``)
-	for i := range 6 {
-		env := []byte(`{"payload":"e30","protected":"e30","signature":"` + strings.Repeat("A", i+1) + `"}`)
-		m := signatureManifest(artifactNotation, emptyConfig, seedSubject(), nil, descOf(layerJWS, env))
-		ms = append(ms, m)
-		f.artifacts[ManifestPath("acme/a", sha(m))] = m
-	}
-	f.sig = signatureFixture{referrers: referrersAnswer(t, ms...)}.answer
-	if err := adapter().FetchSignatures(context.Background(), f, SignatureFetchTarget("acme/a", seedDigest)); err != nil {
-		t.Fatal(err)
-	}
-	manifests := 0
-	for _, a := range f.asked {
-		if strings.Contains(a, "/_manifests/") {
-			manifests++
+	stored := func(ctx context.Context) int {
+		t.Helper()
+		var ms [][]byte
+		f := newFake(t, "https://registry.example.com/", ``)
+		for i := range 6 {
+			env := []byte(`{"payload":"e30","protected":"e30","signature":"` + strings.Repeat("A", i+1) + `"}`)
+			m := signatureManifest(artifactNotation, emptyConfig, seedSubject(), nil, descOf(layerJWS, env))
+			ms = append(ms, m)
+			f.artifacts[ManifestPath("acme/a", sha(m))] = m
 		}
+		f.sig = signatureFixture{referrers: referrersAnswer(t, ms...)}.answer
+		if err := adapter().FetchSignatures(ctx, f, SignatureFetchTarget("acme/a", seedDigest)); err != nil {
+			t.Fatal(err)
+		}
+		manifests := 0
+		for _, a := range f.asked {
+			if strings.Contains(a, "/_manifests/") {
+				manifests++
+			}
+		}
+		return manifests
 	}
-	if manifests != maxFetchManifests {
-		t.Errorf("%d manifests stored, want %d", manifests, maxFetchManifests)
+	if n, want := stored(context.Background()), formats.DefaultSignatureFetchLimits().MaxManifests; n != want {
+		t.Errorf("%d manifests stored, want %d", n, want)
+	}
+	if n := stored(formats.WithSignatureFetchLimits(context.Background(), formats.SignatureFetchLimits{MaxManifests: 2})); n != 2 {
+		t.Errorf("%d manifests stored under a bound of 2, want 2", n)
 	}
 	g := newFake(t, "https://registry.example.com/", ``)
 	for _, target := range []string{"", "acme/a", "acme/a@1.0", "ACME@" + seedDigest} {

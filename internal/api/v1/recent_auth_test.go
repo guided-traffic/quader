@@ -49,6 +49,8 @@ var recentAuthOperations = []string{
 	"removePackageOwner", "removeProjectMember", "replaceCiIssuer", "replaceCiMapping", "replaceProjectCiMapping", "replaceExposureRule",
 	"replacePermissionPolicy", "replaceProjectPermissionPolicy", "replaceProject", "rotateToken", "setProjectMember", "unbindRole", "updateAuthSettings",
 	"setProjectVisibility", "updateVisibilitySettings", "updateLimitSettings",
+	// R-SIG-019: the switch for project trust anchors, R-AUTHZ-037's rule.
+	"updateSignatureSettings",
 	// R-REPO-073: the address and the account of a well-known repository; raising its level asks inside the write.
 	"setUpstreamRepositoryAddress", "resetUpstreamRepositoryAddress", "setUpstreamRepositoryAccount", "removeUpstreamRepositoryAccount",
 }

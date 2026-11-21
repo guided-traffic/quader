@@ -29,6 +29,7 @@ type JobsWorkers struct {
 	Mirror      int `yaml:"mirror" default:"2" validate:"min=0" doc:"The passes of mirrored remote repositories and their dispatch (R-REPO-053)."`
 	Vuln        int `yaml:"vuln" default:"1" validate:"min=0" doc:"The advisory sync (R-VULN-004, R-VULN-008)."`
 	Malware     int `yaml:"malware" default:"1" validate:"min=0" doc:"The malware scanning's job and its database task (malware-scanning.md R-MAL-004, R-MAL-010): one job at a time in the installation keeps malware.concurrency calls in flight, so one slot is enough."`
+	Signatures  int `yaml:"signatures" default:"1" validate:"min=0" doc:"The jobs of the signatures on artifacts, signature-verify and signature-trust, and the task signature-trust-root (signatures.md R-SIG-011, R-SIG-012, R-SIG-017): a queue of its own, so neither the malware scanning nor the advisory sync waits behind a backlog of signatures; one job keeps signatures.concurrency checks in flight, so one slot is enough."`
 }
 
 // JobsBackgroundMigrations paces data migrations that run as jobs (R-ARCH-026).
@@ -93,7 +94,7 @@ func (j *Jobs) Claims(queue string) bool { return slices.Contains(j.ClaimedQueue
 // order. A kind registered in another queue is a programming error that the
 // jobs package reports at start-up.
 func (w JobsWorkers) Queues() []string {
-	return []string{"default", "maintenance", "index", "delivery", "mirror", "vuln", "malware"}
+	return []string{"default", "maintenance", "index", "delivery", "mirror", "vuln", "malware", "signatures"}
 }
 
 // Count returns the concurrent jobs of a queue and whether the queue exists.
@@ -113,6 +114,8 @@ func (w JobsWorkers) Count(queue string) (int, bool) {
 		return w.Vuln, true
 	case "malware":
 		return w.Malware, true
+	case "signatures":
+		return w.Signatures, true
 	}
 	return 0, false
 }

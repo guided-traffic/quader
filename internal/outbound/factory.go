@@ -32,6 +32,8 @@ const (
 	PurposeOIDCDiscovery = "oidc_discovery"
 	PurposeJWKS          = "jwks"
 	PurposeObjectStore   = "objectstore"
+	// PurposeSignatureTrustRoot is the task signature-trust-root's read of the Sigstore TUF repository (signatures.md R-SIG-017).
+	PurposeSignatureTrustRoot = "signature_trust_root"
 )
 
 // Errors of the redirect policy; the proxy engine maps them to 502

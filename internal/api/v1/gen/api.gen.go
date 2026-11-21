@@ -3484,6 +3484,417 @@ func (e SessionAuthMethod) Valid() bool {
 	}
 }
 
+// Defines values for SignatureAnchorCaUse.
+const (
+	CodeSigning  SignatureAnchorCaUse = "codeSigning"
+	Timestamping SignatureAnchorCaUse = "timestamping"
+)
+
+// Valid indicates whether the value is a known member of the SignatureAnchorCaUse enum.
+func (e SignatureAnchorCaUse) Valid() bool {
+	switch e {
+	case CodeSigning:
+		return true
+	case Timestamping:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureAnchorKind.
+const (
+	SignatureAnchorKindCa        SignatureAnchorKind = "ca"
+	SignatureAnchorKindOpenpgp   SignatureAnchorKind = "openpgp"
+	SignatureAnchorKindPublicKey SignatureAnchorKind = "public-key"
+	SignatureAnchorKindSigstore  SignatureAnchorKind = "sigstore"
+)
+
+// Valid indicates whether the value is a known member of the SignatureAnchorKind enum.
+func (e SignatureAnchorKind) Valid() bool {
+	switch e {
+	case SignatureAnchorKindCa:
+		return true
+	case SignatureAnchorKindOpenpgp:
+		return true
+	case SignatureAnchorKindPublicKey:
+		return true
+	case SignatureAnchorKindSigstore:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureAnchorScope.
+const (
+	SignatureAnchorScopeConfiguration SignatureAnchorScope = "configuration"
+	SignatureAnchorScopeInstallation  SignatureAnchorScope = "installation"
+	SignatureAnchorScopeProject       SignatureAnchorScope = "project"
+	SignatureAnchorScopeShipped       SignatureAnchorScope = "shipped"
+)
+
+// Valid indicates whether the value is a known member of the SignatureAnchorScope enum.
+func (e SignatureAnchorScope) Valid() bool {
+	switch e {
+	case SignatureAnchorScopeConfiguration:
+		return true
+	case SignatureAnchorScopeInstallation:
+		return true
+	case SignatureAnchorScopeProject:
+		return true
+	case SignatureAnchorScopeShipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureAnchorSigstoreTrustRoot.
+const (
+	SignatureAnchorSigstoreTrustRootOwn    SignatureAnchorSigstoreTrustRoot = "own"
+	SignatureAnchorSigstoreTrustRootPublic SignatureAnchorSigstoreTrustRoot = "public"
+)
+
+// Valid indicates whether the value is a known member of the SignatureAnchorSigstoreTrustRoot enum.
+func (e SignatureAnchorSigstoreTrustRoot) Valid() bool {
+	switch e {
+	case SignatureAnchorSigstoreTrustRootOwn:
+		return true
+	case SignatureAnchorSigstoreTrustRootPublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureAttachmentSource.
+const (
+	SignatureAttachmentSourceCosignTag    SignatureAttachmentSource = "cosign_tag"
+	SignatureAttachmentSourceDocument     SignatureAttachmentSource = "document"
+	SignatureAttachmentSourceEmbedded     SignatureAttachmentSource = "embedded"
+	SignatureAttachmentSourceIndexEntry   SignatureAttachmentSource = "index_entry"
+	SignatureAttachmentSourceReferrer     SignatureAttachmentSource = "referrer"
+	SignatureAttachmentSourceReferrersTag SignatureAttachmentSource = "referrers_tag"
+	SignatureAttachmentSourceRelease      SignatureAttachmentSource = "release"
+	SignatureAttachmentSourceSibling      SignatureAttachmentSource = "sibling"
+	SignatureAttachmentSourceUpload       SignatureAttachmentSource = "upload"
+)
+
+// Valid indicates whether the value is a known member of the SignatureAttachmentSource enum.
+func (e SignatureAttachmentSource) Valid() bool {
+	switch e {
+	case SignatureAttachmentSourceCosignTag:
+		return true
+	case SignatureAttachmentSourceDocument:
+		return true
+	case SignatureAttachmentSourceEmbedded:
+		return true
+	case SignatureAttachmentSourceIndexEntry:
+		return true
+	case SignatureAttachmentSourceReferrer:
+		return true
+	case SignatureAttachmentSourceReferrersTag:
+		return true
+	case SignatureAttachmentSourceRelease:
+		return true
+	case SignatureAttachmentSourceSibling:
+		return true
+	case SignatureAttachmentSourceUpload:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureBadgeState.
+const (
+	SignatureBadgeStateInvalid          SignatureBadgeState = "invalid"
+	SignatureBadgeStateNone             SignatureBadgeState = "none"
+	SignatureBadgeStateNotChecked       SignatureBadgeState = "not_checked"
+	SignatureBadgeStateUnsupported      SignatureBadgeState = "unsupported"
+	SignatureBadgeStateUntrusted        SignatureBadgeState = "untrusted"
+	SignatureBadgeStateVerifiedInternal SignatureBadgeState = "verified_internal"
+	SignatureBadgeStateVerifiedPublic   SignatureBadgeState = "verified_public"
+)
+
+// Valid indicates whether the value is a known member of the SignatureBadgeState enum.
+func (e SignatureBadgeState) Valid() bool {
+	switch e {
+	case SignatureBadgeStateInvalid:
+		return true
+	case SignatureBadgeStateNone:
+		return true
+	case SignatureBadgeStateNotChecked:
+		return true
+	case SignatureBadgeStateUnsupported:
+		return true
+	case SignatureBadgeStateUntrusted:
+		return true
+	case SignatureBadgeStateVerifiedInternal:
+		return true
+	case SignatureBadgeStateVerifiedPublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureBlockKind.
+const (
+	Fingerprint SignatureBlockKind = "fingerprint"
+	Identity    SignatureBlockKind = "identity"
+	Keyid       SignatureBlockKind = "keyid"
+	Serial      SignatureBlockKind = "serial"
+)
+
+// Valid indicates whether the value is a known member of the SignatureBlockKind enum.
+func (e SignatureBlockKind) Valid() bool {
+	switch e {
+	case Fingerprint:
+		return true
+	case Identity:
+		return true
+	case Keyid:
+		return true
+	case Serial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureEntryCommitmentType.
+const (
+	SignatureEntryCommitmentTypeAuthor     SignatureEntryCommitmentType = "author"
+	SignatureEntryCommitmentTypeRepository SignatureEntryCommitmentType = "repository"
+)
+
+// Valid indicates whether the value is a known member of the SignatureEntryCommitmentType enum.
+func (e SignatureEntryCommitmentType) Valid() bool {
+	switch e {
+	case SignatureEntryCommitmentTypeAuthor:
+		return true
+	case SignatureEntryCommitmentTypeRepository:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureEntryTimeProof.
+const (
+	Log       SignatureEntryTimeProof = "log"
+	Timestamp SignatureEntryTimeProof = "timestamp"
+)
+
+// Valid indicates whether the value is a known member of the SignatureEntryTimeProof enum.
+func (e SignatureEntryTimeProof) Valid() bool {
+	switch e {
+	case Log:
+		return true
+	case Timestamp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureFindingKind.
+const (
+	SignatureFindingKindBlocked SignatureFindingKind = "blocked"
+	SignatureFindingKindInvalid SignatureFindingKind = "invalid"
+)
+
+// Valid indicates whether the value is a known member of the SignatureFindingKind enum.
+func (e SignatureFindingKind) Valid() bool {
+	switch e {
+	case SignatureFindingKindBlocked:
+		return true
+	case SignatureFindingKindInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureIntegrityState.
+const (
+	SignatureIntegrityStateFailed      SignatureIntegrityState = "failed"
+	SignatureIntegrityStateInvalid     SignatureIntegrityState = "invalid"
+	SignatureIntegrityStateMalformed   SignatureIntegrityState = "malformed"
+	SignatureIntegrityStateNoKey       SignatureIntegrityState = "no_key"
+	SignatureIntegrityStatePending     SignatureIntegrityState = "pending"
+	SignatureIntegrityStateUnsupported SignatureIntegrityState = "unsupported"
+	SignatureIntegrityStateValid       SignatureIntegrityState = "valid"
+)
+
+// Valid indicates whether the value is a known member of the SignatureIntegrityState enum.
+func (e SignatureIntegrityState) Valid() bool {
+	switch e {
+	case SignatureIntegrityStateFailed:
+		return true
+	case SignatureIntegrityStateInvalid:
+		return true
+	case SignatureIntegrityStateMalformed:
+		return true
+	case SignatureIntegrityStateNoKey:
+		return true
+	case SignatureIntegrityStatePending:
+		return true
+	case SignatureIntegrityStateUnsupported:
+		return true
+	case SignatureIntegrityStateValid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureOriginKind.
+const (
+	Fetched  SignatureOriginKind = "fetched"
+	Uploaded SignatureOriginKind = "uploaded"
+)
+
+// Valid indicates whether the value is a known member of the SignatureOriginKind enum.
+func (e SignatureOriginKind) Valid() bool {
+	switch e {
+	case Fetched:
+		return true
+	case Uploaded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureRepositoryReportClass.
+const (
+	SignatureRepositoryReportClassLocal   SignatureRepositoryReportClass = "local"
+	SignatureRepositoryReportClassRemote  SignatureRepositoryReportClass = "remote"
+	SignatureRepositoryReportClassVirtual SignatureRepositoryReportClass = "virtual"
+)
+
+// Valid indicates whether the value is a known member of the SignatureRepositoryReportClass enum.
+func (e SignatureRepositoryReportClass) Valid() bool {
+	switch e {
+	case SignatureRepositoryReportClassLocal:
+		return true
+	case SignatureRepositoryReportClassRemote:
+		return true
+	case SignatureRepositoryReportClassVirtual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureRole.
+const (
+	Attestation SignatureRole = "attestation"
+	Provenance  SignatureRole = "provenance"
+	Publisher   SignatureRole = "publisher"
+	Registry    SignatureRole = "registry"
+)
+
+// Valid indicates whether the value is a known member of the SignatureRole enum.
+func (e SignatureRole) Valid() bool {
+	switch e {
+	case Attestation:
+		return true
+	case Provenance:
+		return true
+	case Publisher:
+		return true
+	case Registry:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureScheme.
+const (
+	SignatureSchemeCosignLegacy   SignatureScheme = "cosign-legacy"
+	SignatureSchemeNotationCose   SignatureScheme = "notation-cose"
+	SignatureSchemeNotationJws    SignatureScheme = "notation-jws"
+	SignatureSchemeNpmRegistry    SignatureScheme = "npm-registry"
+	SignatureSchemeNugetCms       SignatureScheme = "nuget-cms"
+	SignatureSchemeOpenpgp        SignatureScheme = "openpgp"
+	SignatureSchemePublicKey      SignatureScheme = "public-key"
+	SignatureSchemeSigstoreBundle SignatureScheme = "sigstore-bundle"
+	SignatureSchemeUnknown        SignatureScheme = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the SignatureScheme enum.
+func (e SignatureScheme) Valid() bool {
+	switch e {
+	case SignatureSchemeCosignLegacy:
+		return true
+	case SignatureSchemeNotationCose:
+		return true
+	case SignatureSchemeNotationJws:
+		return true
+	case SignatureSchemeNpmRegistry:
+		return true
+	case SignatureSchemeNugetCms:
+		return true
+	case SignatureSchemeOpenpgp:
+		return true
+	case SignatureSchemePublicKey:
+		return true
+	case SignatureSchemeSigstoreBundle:
+		return true
+	case SignatureSchemeUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureTrustRootSource.
+const (
+	SignatureTrustRootSourceRefreshed SignatureTrustRootSource = "refreshed"
+	SignatureTrustRootSourceRelease   SignatureTrustRootSource = "release"
+)
+
+// Valid indicates whether the value is a known member of the SignatureTrustRootSource enum.
+func (e SignatureTrustRootSource) Valid() bool {
+	switch e {
+	case SignatureTrustRootSourceRefreshed:
+		return true
+	case SignatureTrustRootSourceRelease:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureTrustState.
+const (
+	SignatureTrustStateBlocked   SignatureTrustState = "blocked"
+	SignatureTrustStateInternal  SignatureTrustState = "internal"
+	SignatureTrustStatePublic    SignatureTrustState = "public"
+	SignatureTrustStateUntrusted SignatureTrustState = "untrusted"
+)
+
+// Valid indicates whether the value is a known member of the SignatureTrustState enum.
+func (e SignatureTrustState) Valid() bool {
+	switch e {
+	case SignatureTrustStateBlocked:
+		return true
+	case SignatureTrustStateInternal:
+		return true
+	case SignatureTrustStatePublic:
+		return true
+	case SignatureTrustStateUntrusted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SnippetMarkKind.
 const (
 	SnippetMarkKindToken SnippetMarkKind = "token"
@@ -8403,6 +8814,12 @@ type Item struct {
 	Path       string `json:"path"`
 	Repository string `json:"repository"`
 
+	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
+	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
+	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
+	// Absent for a folder and while `signatures.enabled` is false.
+	Signatures *SignatureStatus `json:"signatures,omitempty"`
+
 	// Size Files only.
 	Size      *int      `json:"size,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -9669,6 +10086,33 @@ type NewServiceAccount struct {
 	Name string `json:"name"`
 }
 
+// NewSignatureAnchor defines model for NewSignatureAnchor.
+type NewSignatureAnchor struct {
+	// Ca A CA anchor's material (R-SIG-015, Q-SIG-30).
+	Ca      *SignatureAnchorCa `json:"ca,omitempty"`
+	Enabled *bool              `json:"enabled,omitempty"`
+	Key     string             `json:"key"`
+
+	// Kind The kind of a trust anchor (R-SIG-015); the anchor carries the member of its kind (`ca`, `openpgp`, `publicKey`, `sigstore`).
+	Kind      SignatureAnchorKind       `json:"kind"`
+	Note      *string                   `json:"note,omitempty"`
+	Openpgp   *SignatureAnchorOpenpgp   `json:"openpgp,omitempty"`
+	PublicKey *SignatureAnchorPublicKey `json:"publicKey,omitempty"`
+
+	// Sigstore A Sigstore identity (R-SIG-015, Q-SIG-27); `identity` or `identityPattern`.
+	Sigstore *SignatureAnchorSigstore `json:"sigstore,omitempty"`
+	Title    string                   `json:"title"`
+}
+
+// NewSignatureBlock defines model for NewSignatureBlock.
+type NewSignatureBlock struct {
+	// Issuer The OIDC issuer of an identity block; no other kind names one.
+	Issuer *string            `json:"issuer,omitempty"`
+	Kind   SignatureBlockKind `json:"kind"`
+	Reason string             `json:"reason"`
+	Value  string             `json:"value"`
+}
+
 // NewTechnicalToken The technical token and the request of its first secret, with the rules of R-AUTH-026 and R-AUTH-027.
 type NewTechnicalToken struct {
 	Description *string    `json:"description,omitempty"`
@@ -10069,9 +10513,15 @@ type PackageFile struct {
 	Malware *MalwareStatus `json:"malware,omitempty"`
 
 	// Path The path of the file item in the repository that holds it.
-	Path      string `json:"path"`
-	Sha256    string `json:"sha256"`
-	SizeBytes int64  `json:"sizeBytes"`
+	Path   string `json:"path"`
+	Sha256 string `json:"sha256"`
+
+	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
+	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
+	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
+	// Absent for a folder and while `signatures.enabled` is false.
+	Signatures *SignatureStatus `json:"signatures,omitempty"`
+	SizeBytes  int64            `json:"sizeBytes"`
 }
 
 // PackageList defines model for PackageList.
@@ -10230,6 +10680,12 @@ type PackageVersion struct {
 	PublishedAt  time.Time                  `json:"publishedAt"`
 	Repositories []PackageVersionRepository `json:"repositories"`
 
+	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
+	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
+	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
+	// Absent for a folder and while `signatures.enabled` is false.
+	Signatures *SignatureStatus `json:"signatures,omitempty"`
+
 	// SizeBytes As in the version list (R-API-080) - the size of the version's files, summed; for an OCI tag the size of its image; `null` when it is not known.
 	SizeBytes *int64 `json:"sizeBytes"`
 
@@ -10306,6 +10762,12 @@ type PackageVersionSummary struct {
 
 	// Repositories The keys of the repositories that hold this version and that the caller may read.
 	Repositories []string `json:"repositories"`
+
+	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
+	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
+	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
+	// Absent for a folder and while `signatures.enabled` is false.
+	Signatures *SignatureStatus `json:"signatures,omitempty"`
 
 	// SizeBytes The size of the version's files, summed; for a format whose files are not its content, the size the format reports (an OCI
 	// tag - the size of its image, config and layers, not of the manifest document; of an index the sum over the platforms the
@@ -10682,6 +11144,18 @@ type ProjectPrincipalList struct {
 // their roles, repositories, permission policies, service accounts and settings. The administration needs a session or a token
 // with `admin: true`.
 type ProjectRole string
+
+// ProjectSignatureAnchorList defines model for ProjectSignatureAnchorList.
+type ProjectSignatureAnchorList struct {
+	// Installation The installation's anchors that apply in the project's scope ("Also trusted in this project"), without material, note and creator.
+	Installation []SignatureAnchor `json:"installation"`
+
+	// Items The project's own anchors.
+	Items []SignatureAnchor `json:"items"`
+
+	// ProjectAnchors The switch of R-SIG-019; the project's page shows its section while it is on, or while the project holds anchors.
+	ProjectAnchors bool `json:"projectAnchors"`
+}
 
 // ProjectSuggestion defines model for ProjectSuggestion.
 type ProjectSuggestion struct {
@@ -11079,9 +11553,16 @@ type Repository struct {
 	// Remote The `remote` section of a remote repository (R-REPO-024). Every member is returned, the
 	// defaults of the format applied. Omitted members of a request take their defaults. The password
 	// is a secret field: it is never returned (R-REPO-033).
-	Remote    *RemoteSettings         `json:"remote,omitempty"`
-	Storage   *map[string]interface{} `json:"storage,omitempty"`
-	UpdatedAt *time.Time              `json:"updatedAt,omitempty"`
+	Remote *RemoteSettings `json:"remote,omitempty"`
+
+	// Signatures The member `signatures` of a repository document (R-SIG-040, R-REPO-004). `fetch`, on a remote repository, lets the background
+	// fetch ask the upstream for the signatures of what the remote stored (R-SIG-026): `false` for an upstream whose rate limits are
+	// tight (Docker Hub without an account). On a local or a virtual repository it answers `422 not_applicable` at `/signatures/fetch`.
+	// An absent member, or one without `fetch`, is the default (on). It belongs in the closed section **Signatures** of a repository's
+	// settings, never in the form that creates one.
+	Signatures *RepositorySignatureSettings `json:"signatures,omitempty"`
+	Storage    *map[string]interface{}      `json:"storage,omitempty"`
+	UpdatedAt  *time.Time                   `json:"updatedAt,omitempty"`
 
 	// Virtual The `virtual` section of a virtual repository (R-REPO-017). The members, the deploy target and
 	// the pin rules are stored as rows, so that a repository which is a member or a target cannot be
@@ -11288,6 +11769,15 @@ type RepositoryServiceAccountPatch struct {
 
 // RepositoryServiceAccountPatchActions defines model for RepositoryServiceAccountPatch.Actions.
 type RepositoryServiceAccountPatchActions string
+
+// RepositorySignatureSettings The member `signatures` of a repository document (R-SIG-040, R-REPO-004). `fetch`, on a remote repository, lets the background
+// fetch ask the upstream for the signatures of what the remote stored (R-SIG-026): `false` for an upstream whose rate limits are
+// tight (Docker Hub without an account). On a local or a virtual repository it answers `422 not_applicable` at `/signatures/fetch`.
+// An absent member, or one without `fetch`, is the default (on). It belongs in the closed section **Signatures** of a repository's
+// settings, never in the form that creates one.
+type RepositorySignatureSettings struct {
+	Fetch *bool `json:"fetch,omitempty"`
+}
 
 // RepositorySuggestion defines model for RepositorySuggestion.
 type RepositorySuggestion struct {
@@ -11681,6 +12171,598 @@ type SessionList struct {
 
 	// NextCursor Always `null`: a user holds at most `auth.sessions.max_per_user` sessions.
 	NextCursor *string `json:"nextCursor"`
+}
+
+// SignatureAnchor A trust anchor (R-SIG-015). It carries the member of its kind; its material is public data. In the installation's anchors of
+// a project's list the material, the note and the creator are left out.
+type SignatureAnchor struct {
+	// Applied False for a switched-off anchor and for a project anchor while project anchors are switched off.
+	Applied bool `json:"applied"`
+
+	// Ca A CA anchor's material (R-SIG-015, Q-SIG-30).
+	Ca        *SignatureAnchorCa `json:"ca,omitempty"`
+	CreatedAt time.Time          `json:"createdAt"`
+
+	// CreatedBy The principal that created it; null for the release and the Helm values.
+	CreatedBy    *string                `json:"createdBy"`
+	Enabled      bool                   `json:"enabled"`
+	Fingerprints []SignatureFingerprint `json:"fingerprints"`
+	Id           int64                  `json:"id"`
+	Key          string                 `json:"key"`
+
+	// Kind The kind of a trust anchor (R-SIG-015); the anchor carries the member of its kind (`ca`, `openpgp`, `publicKey`, `sigstore`).
+	Kind    SignatureAnchorKind     `json:"kind"`
+	Note    *string                 `json:"note"`
+	Openpgp *SignatureAnchorOpenpgp `json:"openpgp,omitempty"`
+
+	// Project The project's key, for a project anchor.
+	Project   *string                   `json:"project"`
+	PublicKey *SignatureAnchorPublicKey `json:"publicKey,omitempty"`
+
+	// Scope Where an anchor comes from (R-SIG-016): shipped with Quader, declared in the Helm values, added by an administrator, or added by a project's Owner.
+	Scope SignatureAnchorScope `json:"scope"`
+
+	// Signatures The number of signatures it knows in the installation's scope.
+	Signatures int64 `json:"signatures"`
+
+	// Sigstore A Sigstore identity (R-SIG-015, Q-SIG-27); `identity` or `identityPattern`.
+	Sigstore  *SignatureAnchorSigstore `json:"sigstore,omitempty"`
+	Title     string                   `json:"title"`
+	UpdatedAt time.Time                `json:"updatedAt"`
+	Version   int64                    `json:"version"`
+}
+
+// SignatureAnchorCa A CA anchor's material (R-SIG-015, Q-SIG-30).
+type SignatureAnchorCa struct {
+	// Certificates 1 to 16 PEM certificates - CA certificates, or a pinned end-entity certificate that is the signer itself.
+	Certificates string `json:"certificates"`
+
+	// Subject Attributes of the leaf's subject that must match exactly.
+	Subject *struct {
+		C  *string `json:"C,omitempty"`
+		CN *string `json:"CN,omitempty"`
+		O  *string `json:"O,omitempty"`
+		OU *string `json:"OU,omitempty"`
+	} `json:"subject,omitempty"`
+
+	// SubjectAltNames RE2 patterns, anchored; one of the leaf's alternative names must match one.
+	SubjectAltNames *[]string             `json:"subjectAltNames,omitempty"`
+	Use             *SignatureAnchorCaUse `json:"use,omitempty"`
+}
+
+// SignatureAnchorCaUse defines model for SignatureAnchorCa.Use.
+type SignatureAnchorCaUse string
+
+// SignatureAnchorKind The kind of a trust anchor (R-SIG-015); the anchor carries the member of its kind (`ca`, `openpgp`, `publicKey`, `sigstore`).
+type SignatureAnchorKind string
+
+// SignatureAnchorList defines model for SignatureAnchorList.
+type SignatureAnchorList struct {
+	Items []SignatureAnchor `json:"items"`
+}
+
+// SignatureAnchorOpenpgp defines model for SignatureAnchorOpenpgp.
+type SignatureAnchorOpenpgp struct {
+	// Keys 1 to 32 armored public certificates.
+	Keys string `json:"keys"`
+}
+
+// SignatureAnchorPatch defines model for SignatureAnchorPatch.
+type SignatureAnchorPatch struct {
+	// Ca A CA anchor's material (R-SIG-015, Q-SIG-30).
+	Ca        *SignatureAnchorCa        `json:"ca,omitempty"`
+	Enabled   *bool                     `json:"enabled,omitempty"`
+	Note      *string                   `json:"note,omitempty"`
+	Openpgp   *SignatureAnchorOpenpgp   `json:"openpgp,omitempty"`
+	PublicKey *SignatureAnchorPublicKey `json:"publicKey,omitempty"`
+
+	// Sigstore A Sigstore identity (R-SIG-015, Q-SIG-27); `identity` or `identityPattern`.
+	Sigstore *SignatureAnchorSigstore `json:"sigstore,omitempty"`
+	Title    *string                  `json:"title,omitempty"`
+}
+
+// SignatureAnchorPublicKey defines model for SignatureAnchorPublicKey.
+type SignatureAnchorPublicKey struct {
+	Keys []SignatureAnchorPublicKeyEntry `json:"keys"`
+}
+
+// SignatureAnchorPublicKeyEntry defines model for SignatureAnchorPublicKeyEntry.
+type SignatureAnchorPublicKeyEntry struct {
+	Expires *time.Time `json:"expires,omitempty"`
+
+	// Keyid npm's keyid, `SHA256:<base64>`.
+	Keyid *string `json:"keyid,omitempty"`
+	Pem   string  `json:"pem"`
+}
+
+// SignatureAnchorRef An anchor that knows the signer of a signature, as a reader sees it.
+type SignatureAnchorRef struct {
+	Id int64 `json:"id"`
+
+	// Scope Where an anchor comes from (R-SIG-016): shipped with Quader, declared in the Helm values, added by an administrator, or added by a project's Owner.
+	Scope SignatureAnchorScope `json:"scope"`
+	Title string               `json:"title"`
+}
+
+// SignatureAnchorScope Where an anchor comes from (R-SIG-016): shipped with Quader, declared in the Helm values, added by an administrator, or added by a project's Owner.
+type SignatureAnchorScope string
+
+// SignatureAnchorSigstore A Sigstore identity (R-SIG-015, Q-SIG-27); `identity` or `identityPattern`.
+type SignatureAnchorSigstore struct {
+	Identity *string `json:"identity,omitempty"`
+
+	// IdentityPattern An RE2 pattern, anchored.
+	IdentityPattern *string `json:"identityPattern,omitempty"`
+
+	// Issuer The OIDC issuer, exact, an HTTPS URL.
+	Issuer    string                           `json:"issuer"`
+	TrustRoot SignatureAnchorSigstoreTrustRoot `json:"trustRoot"`
+
+	// TrustedRoot The company's `trusted_root.json` when `trustRoot` is `own`, at most 1 MiB.
+	TrustedRoot *map[string]interface{} `json:"trustedRoot,omitempty"`
+}
+
+// SignatureAnchorSigstoreTrustRoot defines model for SignatureAnchorSigstore.TrustRoot.
+type SignatureAnchorSigstoreTrustRoot string
+
+// SignatureAttachment Where the signature reaches its subject in a repository (R-SIG-004).
+type SignatureAttachment struct {
+	// Location The item path of the original, or `path#pointer` in a document.
+	Location string `json:"location"`
+
+	// Name The package or image name the attachment is under.
+	Name *string `json:"name,omitempty"`
+
+	// Repository The repository `<project>/<key>` that holds the attachment.
+	Repository string                    `json:"repository"`
+	Source     SignatureAttachmentSource `json:"source"`
+}
+
+// SignatureAttachmentSource defines model for SignatureAttachment.Source.
+type SignatureAttachmentSource string
+
+// SignatureBacklog defines model for SignatureBacklog.
+type SignatureBacklog struct {
+	// Pending Signatures due or waiting for their check.
+	Pending int64 `json:"pending"`
+
+	// Stale Trust rows computed under an older anchor epoch.
+	Stale int64 `json:"stale"`
+}
+
+// SignatureBadgeState The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
+// reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
+// signer not trusted** (no anchor knows the signer, no key of it is known, or it is blocked), `invalid` **Invalid signature**
+// (only invalid signatures); without a badge `not_checked` (pending or failed), `unsupported` (a scheme Quader does not read, or
+// an object that could not be read) and `none` (no signature).
+type SignatureBadgeState string
+
+// SignatureBlock A blocked signer (R-SIG-020).
+type SignatureBlock struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	CreatedBy *string            `json:"createdBy"`
+	Id        int64              `json:"id"`
+	Issuer    *string            `json:"issuer"`
+	Kind      SignatureBlockKind `json:"kind"`
+	Reason    string             `json:"reason"`
+
+	// Signatures The number of signatures it matches in the installation's scope.
+	Signatures int64  `json:"signatures"`
+	Value      string `json:"value"`
+}
+
+// SignatureBlockKind defines model for SignatureBlockKind.
+type SignatureBlockKind string
+
+// SignatureBlockList defines model for SignatureBlockList.
+type SignatureBlockList struct {
+	Items []SignatureBlock `json:"items"`
+}
+
+// SignatureBlockRef The block that matches the signer, shown as "Blocked by an administrator on <date>; <reason>" (R-SIG-020).
+type SignatureBlockRef struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        int64              `json:"id"`
+	Kind      SignatureBlockKind `json:"kind"`
+	Reason    string             `json:"reason"`
+}
+
+// SignatureCertificateCI The claims of a CI job a Sigstore certificate carries in Fulcio's extensions (R-SIG-005): what the certificate says, which
+// the integrity check and the trust step confirm or not.
+type SignatureCertificateCI struct {
+	BuildConfigUri         *string `json:"buildConfigUri,omitempty"`
+	BuildSignerDigest      *string `json:"buildSignerDigest,omitempty"`
+	BuildSignerUri         *string `json:"buildSignerUri,omitempty"`
+	BuildTrigger           *string `json:"buildTrigger,omitempty"`
+	Issuer                 *string `json:"issuer,omitempty"`
+	RunInvocationUri       *string `json:"runInvocationUri,omitempty"`
+	RunnerEnvironment      *string `json:"runnerEnvironment,omitempty"`
+	SourceRepositoryDigest *string `json:"sourceRepositoryDigest,omitempty"`
+	SourceRepositoryOwner  *string `json:"sourceRepositoryOwner,omitempty"`
+	SourceRepositoryRef    *string `json:"sourceRepositoryRef,omitempty"`
+	SourceRepositoryUri    *string `json:"sourceRepositoryUri,omitempty"`
+}
+
+// SignatureCovering A release whose signed index names a Debian package (R-SIG-030).
+type SignatureCovering struct {
+	Date *time.Time `json:"date,omitempty"`
+
+	// Release The path of the release document.
+	Release    string           `json:"release"`
+	Signatures []SignatureEntry `json:"signatures"`
+
+	// State The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
+	// reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
+	// signer not trusted** (no anchor knows the signer, no key of it is known, or it is blocked), `invalid` **Invalid signature**
+	// (only invalid signatures); without a badge `not_checked` (pending or failed), `unsupported` (a scheme Quader does not read, or
+	// an object that could not be read) and `none` (no signature).
+	State SignatureBadgeState `json:"state"`
+	Suite string              `json:"suite"`
+}
+
+// SignatureEntry One signature as the reader sees it (R-SIG-034, R-SIG-035). Every value but `state`, `reason` and `trust` is what the
+// signature claims (R-SIG-005); every text is text and is never rendered as markup. An absent member is one the scheme does not
+// carry.
+type SignatureEntry struct {
+	Algorithm        *string               `json:"algorithm,omitempty"`
+	AlternativeNames *[]string             `json:"alternativeNames,omitempty"`
+	Attachments      []SignatureAttachment `json:"attachments"`
+
+	// CertificateNotAfter The leaf's expiry; a certificate that expired since is a fact of the details, not a verdict (R-SIG-007).
+	CertificateNotAfter  *time.Time `json:"certificateNotAfter,omitempty"`
+	CertificateNotBefore *time.Time `json:"certificateNotBefore,omitempty"`
+
+	// Chain The subjects of the chain the signature carries, leaf first.
+	Chain     *[]string  `json:"chain,omitempty"`
+	CheckedAt *time.Time `json:"checkedAt,omitempty"`
+
+	// Ci The claims of a CI job a Sigstore certificate carries in Fulcio's extensions (R-SIG-005): what the certificate says, which
+	// the integrity check and the trust step confirm or not.
+	Ci *SignatureCertificateCI `json:"ci,omitempty"`
+
+	// ClaimedAt The signer's own claim of time; it proves nothing (R-SIG-007).
+	ClaimedAt      *time.Time                    `json:"claimedAt,omitempty"`
+	CommitmentType *SignatureEntryCommitmentType `json:"commitmentType,omitempty"`
+
+	// Cut What the read cut at the bounds of R-SIG-013.
+	Cut *string `json:"cut,omitempty"`
+
+	// Detail Why a state was reached, in plain words ("timestamp by an authority no trust anchor knows").
+	Detail *string `json:"detail,omitempty"`
+
+	// DockerReference The image reference an older cosign payload names; shown, judged by nothing (R-SIG-023).
+	DockerReference *string    `json:"dockerReference,omitempty"`
+	Expiry          *time.Time `json:"expiry,omitempty"`
+	Fingerprint     *string    `json:"fingerprint,omitempty"`
+	HashAlgorithm   *string    `json:"hashAlgorithm,omitempty"`
+	Id              int64      `json:"id"`
+
+	// Identity A Sigstore certificate's identity (a URI or an e-mail), or a certificate's first alternative name.
+	Identity *string `json:"identity,omitempty"`
+	Issuer   *string `json:"issuer,omitempty"`
+	KeyId    *string `json:"keyId,omitempty"`
+
+	// KeyIds Every identifier an anchor or a block can match (R-SIG-005).
+	KeyIds []string `json:"keyIds"`
+
+	// Location The location of the first attachment.
+	Location   string              `json:"location"`
+	Log        []SignatureLogEntry `json:"log"`
+	MediaType  *string             `json:"mediaType,omitempty"`
+	OidcIssuer *string             `json:"oidcIssuer,omitempty"`
+
+	// Original The relative URL of the original (`/api/v1/signatures/objects/{sha256}`).
+	Original string    `json:"original"`
+	Owners   *[]string `json:"owners,omitempty"`
+
+	// Path The file of the answer the signature covers, absent when its subject is no file of it (an OCI platform's manifest, npm's registry message).
+	Path *string `json:"path,omitempty"`
+
+	// Platform OCI: the platform whose manifest the signature covers, absent for the tag's own manifest.
+	Platform      *string `json:"platform,omitempty"`
+	PredicateType *string `json:"predicateType,omitempty"`
+
+	// ProvenAt The time a timestamp or a log entry proves.
+	ProvenAt *time.Time `json:"provenAt,omitempty"`
+
+	// Reason The closed reason of R-SIG-006 for an `invalid`, `unsupported`, `pending` or `failed` signature.
+	Reason *string `json:"reason"`
+
+	// ReceivedAt When Quader received the signature; the signature's time when nothing proves one.
+	ReceivedAt time.Time `json:"receivedAt"`
+
+	// Repository The repository of the first attachment; through a virtual repository the member that holds it.
+	Repository string `json:"repository"`
+
+	// Role The role of a signature (R-SIG-001); only `publisher` and `provenance` count for the badge (R-SIG-009).
+	Role   SignatureRole   `json:"role"`
+	Scheme SignatureScheme `json:"scheme"`
+
+	// SchemeName The name of a scheme Quader does not read, where it can tell it.
+	SchemeName   *string `json:"schemeName,omitempty"`
+	Serial       *string `json:"serial,omitempty"`
+	ServiceIndex *string `json:"serviceIndex,omitempty"`
+
+	// Signer The certificate's subject, or an OpenPGP key's user ID once the key is known.
+	Signer        *string `json:"signer,omitempty"`
+	SigningAgent  *string `json:"signingAgent,omitempty"`
+	SigningScheme *string `json:"signingScheme,omitempty"`
+
+	// Size The size of the signature object.
+	Size int64 `json:"size"`
+
+	// Source The source of the first attachment.
+	Source string `json:"source"`
+
+	// State The state of a signature's read and integrity check (R-SIG-003): `pending` not checked yet, `valid` the signature matches its
+	// subject (the trust decides the rest), `no_key` no key of the signer is known, `invalid` it does not match (`reason`),
+	// `unsupported` a scheme, algorithm or version Quader does not read, `malformed` the object does not parse, `failed` the check
+	// could not run.
+	State             SignatureIntegrityState `json:"state"`
+	StatementSubjects *[]string               `json:"statementSubjects,omitempty"`
+
+	// Subject The SHA-256 of what the signature covers.
+	Subject string `json:"subject"`
+
+	// SubjectName npm's registry signature: `<name>@<version>`, part of the signed message.
+	SubjectName *string                  `json:"subjectName,omitempty"`
+	TimeProof   *SignatureEntryTimeProof `json:"timeProof,omitempty"`
+	Timestamps  []SignatureTimestamp     `json:"timestamps"`
+	Trust       *SignatureTrust          `json:"trust"`
+
+	// Type What the screen names the entry by - the predicate type of an attestation, else the object's media type, else the scheme.
+	Type string `json:"type"`
+}
+
+// SignatureEntryCommitmentType defines model for SignatureEntry.CommitmentType.
+type SignatureEntryCommitmentType string
+
+// SignatureEntryTimeProof defines model for SignatureEntry.TimeProof.
+type SignatureEntryTimeProof string
+
+// SignatureFileReport What a stored file shows of its signatures (R-SIG-034).
+type SignatureFileReport struct {
+	Attestations []SignatureEntry `json:"attestations"`
+
+	// Covering As in the version's answer; empty until the format answers the coverage.
+	Covering   []SignatureCovering `json:"covering"`
+	Origin     *SignatureOrigin    `json:"origin"`
+	Path       string              `json:"path"`
+	Repository string              `json:"repository"`
+	Sha256     string              `json:"sha256"`
+	Signatures []SignatureEntry    `json:"signatures"`
+	Stale      bool                `json:"stale"`
+
+	// State The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
+	// reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
+	// signer not trusted** (no anchor knows the signer, no key of it is known, or it is blocked), `invalid` **Invalid signature**
+	// (only invalid signatures); without a badge `not_checked` (pending or failed), `unsupported` (a scheme Quader does not read, or
+	// an object that could not be read) and `none` (no signature).
+	State SignatureBadgeState `json:"state"`
+}
+
+// SignatureFinding One entry of the security dashboard's view of signatures (R-SIG-038). The signer's texts are claims and are text, never markup.
+type SignatureFinding struct {
+	Block           *SignatureBlockRef `json:"block"`
+	FirstRepository string             `json:"firstRepository"`
+	FoundAt         time.Time          `json:"foundAt"`
+
+	// Id The signature's ID.
+	Id              int64                  `json:"id"`
+	Identity        *string                `json:"identity,omitempty"`
+	Issuer          *string                `json:"issuer,omitempty"`
+	Items           []SignatureFindingItem `json:"items"`
+	ItemsTruncated  bool                   `json:"itemsTruncated"`
+	KeyId           *string                `json:"keyId,omitempty"`
+	Kind            SignatureFindingKind   `json:"kind"`
+	Reason          *string                `json:"reason"`
+	Repositories    []string               `json:"repositories"`
+	RepositoryCount int                    `json:"repositoryCount"`
+
+	// Role The role of a signature (R-SIG-001); only `publisher` and `provenance` count for the badge (R-SIG-009).
+	Role        SignatureRole   `json:"role"`
+	Scheme      SignatureScheme `json:"scheme"`
+	Signer      *string         `json:"signer,omitempty"`
+	Subject     string          `json:"subject"`
+	SubjectName *string         `json:"subjectName,omitempty"`
+}
+
+// SignatureFindingItem defines model for SignatureFindingItem.
+type SignatureFindingItem struct {
+	Format  string  `json:"format"`
+	Package *string `json:"package,omitempty"`
+
+	// Path The file whose content the signature covers; absent when the repository holds only the attachment (npm's registry signature).
+	Path       *string `json:"path,omitempty"`
+	Repository string  `json:"repository"`
+	Version    *string `json:"version,omitempty"`
+}
+
+// SignatureFindingKind defines model for SignatureFindingKind.
+type SignatureFindingKind string
+
+// SignatureFindingPage defines model for SignatureFindingPage.
+type SignatureFindingPage struct {
+	Items      []SignatureFinding `json:"items"`
+	NextCursor *string            `json:"nextCursor"`
+}
+
+// SignatureFingerprint defines model for SignatureFingerprint.
+type SignatureFingerprint struct {
+	// Kind `sha256` of a certificate or a key, `openpgp` of a key.
+	Kind     string     `json:"kind"`
+	NotAfter *time.Time `json:"notAfter,omitempty"`
+	Subject  *string    `json:"subject,omitempty"`
+	Value    string     `json:"value"`
+}
+
+// SignatureIntegrityState The state of a signature's read and integrity check (R-SIG-003): `pending` not checked yet, `valid` the signature matches its
+// subject (the trust decides the rest), `no_key` no key of the signer is known, `invalid` it does not match (`reason`),
+// `unsupported` a scheme, algorithm or version Quader does not read, `malformed` the object does not parse, `failed` the check
+// could not run.
+type SignatureIntegrityState string
+
+// SignatureLogEntry A transparency-log entry of a Sigstore signature; `proof` is `promise` (a signed entry timestamp) or `proof` (an inclusion proof).
+type SignatureLogEntry struct {
+	Index          int64      `json:"index"`
+	IntegratedTime *time.Time `json:"integratedTime,omitempty"`
+	LogId          *string    `json:"logId,omitempty"`
+	Proof          *string    `json:"proof,omitempty"`
+}
+
+// SignatureOrigin Where the artifact came from (R-SIG-010, R-SIG-035): `uploaded` by a principal (`principalKind` `user`, `service_account`,
+// `ci`, ...), with the CI job's claims for an upload from CI; or `fetched` from the remote's upstream at `at`.
+type SignatureOrigin struct {
+	At *time.Time `json:"at,omitempty"`
+
+	// Ci The verified claims of the CI job that uploaded, as the token's issuance recorded them (R-SIG-010); never an e-mail address.
+	Ci            *SignatureOriginCI  `json:"ci,omitempty"`
+	Kind          SignatureOriginKind `json:"kind"`
+	PrincipalKind *string             `json:"principalKind,omitempty"`
+	PrincipalName *string             `json:"principalName,omitempty"`
+	UpstreamUrl   *string             `json:"upstreamUrl,omitempty"`
+}
+
+// SignatureOriginKind defines model for SignatureOrigin.Kind.
+type SignatureOriginKind string
+
+// SignatureOriginCI The verified claims of the CI job that uploaded, as the token's issuance recorded them (R-SIG-010); never an e-mail address.
+type SignatureOriginCI struct {
+	Environment    *string `json:"environment,omitempty"`
+	Issuer         *string `json:"issuer,omitempty"`
+	JobId          *string `json:"jobId,omitempty"`
+	NamespacePath  *string `json:"namespacePath,omitempty"`
+	PipelineId     *string `json:"pipelineId,omitempty"`
+	PipelineSource *string `json:"pipelineSource,omitempty"`
+	ProjectId      *string `json:"projectId,omitempty"`
+	ProjectPath    *string `json:"projectPath,omitempty"`
+	Ref            *string `json:"ref,omitempty"`
+	RefProtected   *bool   `json:"refProtected,omitempty"`
+	RefType        *string `json:"refType,omitempty"`
+	Sha            *string `json:"sha,omitempty"`
+	UserLogin      *string `json:"userLogin,omitempty"`
+}
+
+// SignatureRepositoryReport What one repository shows of a version's signatures (R-SIG-034).
+type SignatureRepositoryReport struct {
+	// Attestations The attachments of the role attestation (OCI - attestations and SBOMs, R-SIG-024), with their type and size.
+	Attestations []SignatureEntry               `json:"attestations"`
+	Class        SignatureRepositoryReportClass `json:"class"`
+
+	// Covering Debian: the releases whose signed index names the package (R-SIG-030). Filled once the format answers the coverage
+	// through its data port; empty until then and for every other format.
+	Covering []SignatureCovering `json:"covering"`
+
+	// Members For a virtual repository, the members that hold the version and that the caller may read, whose attachments are listed; empty otherwise.
+	Members    []string         `json:"members"`
+	Origin     *SignatureOrigin `json:"origin"`
+	Repository string           `json:"repository"`
+
+	// Signatures The signatures of the roles publisher, provenance and registry, ordered by role, then by the time received.
+	Signatures []SignatureEntry `json:"signatures"`
+	Stale      bool             `json:"stale"`
+
+	// State The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
+	// reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
+	// signer not trusted** (no anchor knows the signer, no key of it is known, or it is blocked), `invalid` **Invalid signature**
+	// (only invalid signatures); without a badge `not_checked` (pending or failed), `unsupported` (a scheme Quader does not read, or
+	// an object that could not be read) and `none` (no signature).
+	State SignatureBadgeState `json:"state"`
+}
+
+// SignatureRepositoryReportClass defines model for SignatureRepositoryReport.Class.
+type SignatureRepositoryReportClass string
+
+// SignatureRole The role of a signature (R-SIG-001); only `publisher` and `provenance` count for the badge (R-SIG-009).
+type SignatureRole string
+
+// SignatureScheme defines model for SignatureScheme.
+type SignatureScheme string
+
+// SignatureSettings defines model for SignatureSettings.
+type SignatureSettings struct {
+	AnchorEpoch int64            `json:"anchorEpoch"`
+	Backlog     SignatureBacklog `json:"backlog"`
+
+	// Enabled `signatures.enabled` of the configuration (R-SIG-040).
+	Enabled bool `json:"enabled"`
+
+	// ProjectAnchors Project owners may add trust anchors for their project (R-SIG-019).
+	ProjectAnchors bool `json:"projectAnchors"`
+
+	// TrustRoot Where the public Sigstore root and npm's keys in use come from (R-SIG-017).
+	TrustRoot SignatureTrustRoot `json:"trustRoot"`
+	UpdatedAt time.Time          `json:"updatedAt"`
+	UpdatedBy *string            `json:"updatedBy"`
+	Version   int64              `json:"version"`
+}
+
+// SignatureSettingsPatch defines model for SignatureSettingsPatch.
+type SignatureSettingsPatch struct {
+	ProjectAnchors *bool `json:"projectAnchors,omitempty"`
+}
+
+// SignatureStatus The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
+// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
+// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
+// Absent for a folder and while `signatures.enabled` is false.
+type SignatureStatus struct {
+	// Stale A trust row that decides the badge was computed before the last change of anchors, blocks or the switch; the trust job has not reached it yet (R-SIG-012).
+	Stale bool `json:"stale"`
+
+	// State The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
+	// reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
+	// signer not trusted** (no anchor knows the signer, no key of it is known, or it is blocked), `invalid` **Invalid signature**
+	// (only invalid signatures); without a badge `not_checked` (pending or failed), `unsupported` (a scheme Quader does not read, or
+	// an object that could not be read) and `none` (no signature).
+	State SignatureBadgeState `json:"state"`
+}
+
+// SignatureTimestamp An RFC 3161 timestamp the signature carries (R-SIG-007).
+type SignatureTimestamp struct {
+	Authority *string   `json:"authority,omitempty"`
+	Time      time.Time `json:"time"`
+}
+
+// SignatureTrust The trust row of a signature in the scope of the answer (R-SIG-008); null for a signature whose integrity state is neither `valid` nor `no_key`.
+type SignatureTrust struct {
+	// Anchors Every anchor of the scope that knows the signer.
+	Anchors    []SignatureAnchorRef `json:"anchors"`
+	Block      *SignatureBlockRef   `json:"block"`
+	ComputedAt time.Time            `json:"computedAt"`
+
+	// Stale Computed under an older anchor epoch (R-SIG-012).
+	Stale bool `json:"stale"`
+
+	// State The trust of a valid signature in the reader's scope (R-SIG-008); `blocked` reads **Signed · signer not trusted** with the block's date and reason (Q-SIG-24).
+	State SignatureTrustState `json:"state"`
+}
+
+// SignatureTrustRoot Where the public Sigstore root and npm's keys in use come from (R-SIG-017).
+type SignatureTrustRoot struct {
+	// FetchedAt The refresh's time, or the snapshot's build time.
+	FetchedAt *time.Time `json:"fetchedAt"`
+
+	// LastError The last failure of the task since its last success.
+	LastError   *string    `json:"lastError"`
+	LastErrorAt *time.Time `json:"lastErrorAt"`
+
+	// Source `refreshed` the task stored a newer root; `release` the release's snapshot.
+	Source     SignatureTrustRootSource `json:"source"`
+	TufVersion int64                    `json:"tufVersion"`
+}
+
+// SignatureTrustRootSource `refreshed` the task stored a newer root; `release` the release's snapshot.
+type SignatureTrustRootSource string
+
+// SignatureTrustState The trust of a valid signature in the reader's scope (R-SIG-008); `blocked` reads **Signed · signer not trusted** with the block's date and reason (Q-SIG-24).
+type SignatureTrustState string
+
+// SignatureVersionReport defines model for SignatureVersionReport.
+type SignatureVersionReport struct {
+	PackageId    string                      `json:"packageId"`
+	Repositories []SignatureRepositoryReport `json:"repositories"`
+	Version      string                      `json:"version"`
 }
 
 // SnippetMark defines model for SnippetMark.
@@ -13512,6 +14594,9 @@ type ProjectKey = string
 // RepoKey defines model for RepoKey.
 type RepoKey = string
 
+// SignatureAnchorId defines model for SignatureAnchorId.
+type SignatureAnchorId = string
+
 // UpstreamRepositoryKey defines model for UpstreamRepositoryKey.
 type UpstreamRepositoryKey = string
 
@@ -14158,6 +15243,12 @@ type GetPackageVersionReadmeParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
+// GetPackageVersionSignaturesParams defines parameters for GetPackageVersionSignatures.
+type GetPackageVersionSignaturesParams struct {
+	// Repository One repository `<project>/<key>`, whose entry alone is answered, judged in its project's scope.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+}
+
 // GetPackageVulnerabilitiesParams defines parameters for GetPackageVulnerabilities.
 type GetPackageVulnerabilitiesParams struct {
 	// Repository Repeat the parameter for several repository names `<project>/<key>`.
@@ -14714,6 +15805,12 @@ type CreateRepositoryServiceAccountTechnicalTokenSecretParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// GetFileSignaturesParams defines parameters for GetFileSignatures.
+type GetFileSignaturesParams struct {
+	// Path The canonical path of a stored file, without a leading or trailing slash.
+	Path string `form:"path" json:"path"`
+}
+
 // GetItemStatsParams defines parameters for GetItemStats.
 type GetItemStatsParams struct {
 	Path string `form:"path" json:"path"`
@@ -14793,6 +15890,12 @@ type UpdateProjectServiceAccountTechnicalTokenParams struct {
 type CreateProjectServiceAccountTechnicalTokenSecretParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// UpdateProjectSignatureAnchorParams defines parameters for UpdateProjectSignatureAnchor.
+type UpdateProjectSignatureAnchorParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
 }
 
 // ListProjectUsageParams defines parameters for ListProjectUsage.
@@ -15054,6 +16157,42 @@ type GetVisibilitySettingsParams struct {
 
 // UpdateVisibilitySettingsParams defines parameters for UpdateVisibilitySettings.
 type UpdateVisibilitySettingsParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListSignatureAnchorsParams defines parameters for ListSignatureAnchors.
+type ListSignatureAnchorsParams struct {
+	// Scope One scope; without it every scope of the installation but `project`.
+	Scope *SignatureAnchorScope `form:"scope,omitempty" json:"scope,omitempty"`
+}
+
+// UpdateSignatureAnchorParams defines parameters for UpdateSignatureAnchor.
+type UpdateSignatureAnchorParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListSignatureFindingsParams defines parameters for ListSignatureFindings.
+type ListSignatureFindingsParams struct {
+	// Kind invalid or blocked. Repeat for both; without it both.
+	Kind *[]SignatureFindingKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// Repository A repository name `<project>/<key>`: only entries a file of it holds.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+
+	// Q A fragment of the signer's subject, identity or key ID, matched without regard to case.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// UpdateSignatureSettingsParams defines parameters for UpdateSignatureSettings.
+type UpdateSignatureSettingsParams struct {
 	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
 	IfMatch IfMatch `json:"If-Match"`
 }
@@ -15764,6 +16903,12 @@ type UpdateProjectServiceAccountTechnicalTokenApplicationMergePatchPlusJSONReque
 // CreateProjectServiceAccountTechnicalTokenSecretJSONRequestBody defines body for CreateProjectServiceAccountTechnicalTokenSecret for application/json ContentType.
 type CreateProjectServiceAccountTechnicalTokenSecretJSONRequestBody = NewTechnicalTokenSecret
 
+// CreateProjectSignatureAnchorJSONRequestBody defines body for CreateProjectSignatureAnchor for application/json ContentType.
+type CreateProjectSignatureAnchorJSONRequestBody = NewSignatureAnchor
+
+// UpdateProjectSignatureAnchorApplicationMergePatchPlusJSONRequestBody defines body for UpdateProjectSignatureAnchor for application/merge-patch+json ContentType.
+type UpdateProjectSignatureAnchorApplicationMergePatchPlusJSONRequestBody = SignatureAnchorPatch
+
 // TestUpstreamJSONRequestBody defines body for TestUpstream for application/json ContentType.
 type TestUpstreamJSONRequestBody = UpstreamTestRequest
 
@@ -15796,6 +16941,18 @@ type SetRegistryPresetsJSONRequestBody = RegistryPresets
 
 // UpdateVisibilitySettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateVisibilitySettings for application/merge-patch+json ContentType.
 type UpdateVisibilitySettingsApplicationMergePatchPlusJSONRequestBody = VisibilitySettingsPatch
+
+// CreateSignatureAnchorJSONRequestBody defines body for CreateSignatureAnchor for application/json ContentType.
+type CreateSignatureAnchorJSONRequestBody = NewSignatureAnchor
+
+// UpdateSignatureAnchorApplicationMergePatchPlusJSONRequestBody defines body for UpdateSignatureAnchor for application/merge-patch+json ContentType.
+type UpdateSignatureAnchorApplicationMergePatchPlusJSONRequestBody = SignatureAnchorPatch
+
+// CreateSignatureBlockJSONRequestBody defines body for CreateSignatureBlock for application/json ContentType.
+type CreateSignatureBlockJSONRequestBody = NewSignatureBlock
+
+// UpdateSignatureSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateSignatureSettings for application/merge-patch+json ContentType.
+type UpdateSignatureSettingsApplicationMergePatchPlusJSONRequestBody = SignatureSettingsPatch
 
 // PutSystemBannerJSONRequestBody defines body for PutSystemBanner for application/json ContentType.
 type PutSystemBannerJSONRequestBody = BannerInput
@@ -16886,6 +18043,9 @@ type ServerInterface interface {
 	// GetPackageVersionReadme Read the rendered README of a version
 	// (GET /api/v1/packages/{packageId}/versions/{version}/readme)
 	GetPackageVersionReadme(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionReadmeParams)
+	// GetPackageVersionSignatures The signatures of one version, per repository
+	// (GET /api/v1/packages/{packageId}/versions/{version}/signatures)
+	GetPackageVersionSignatures(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionSignaturesParams)
 	// GetPackageVersionVulnerabilities The vulnerabilities of one version, per repository
 	// (GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities)
 	GetPackageVersionVulnerabilities(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath)
@@ -17174,6 +18334,9 @@ type ServerInterface interface {
 	// CreateRepositoryServiceAccountTechnicalTokenSecret Issue a new secret of a technical token of a repository's service account
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets)
 	CreateRepositoryServiceAccountTechnicalTokenSecret(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, name string, tokenName string, params CreateRepositoryServiceAccountTechnicalTokenSecretParams)
+	// GetFileSignatures The signatures of one stored file
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures)
+	GetFileSignatures(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params GetFileSignaturesParams)
 	// GetItemStats Read the download statistics of a file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/stats)
 	GetItemStats(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetItemStatsParams)
@@ -17228,6 +18391,18 @@ type ServerInterface interface {
 	// RevokeProjectServiceAccountTokens Revoke all tokens of a project service account
 	// (DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/tokens)
 	RevokeProjectServiceAccountTokens(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string)
+	// ListProjectSignatureAnchors List the trust anchors of a project
+	// (GET /api/v1/projects/{projectKey}/signatures/anchors)
+	ListProjectSignatureAnchors(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
+	// CreateProjectSignatureAnchor Add a trust anchor of a project
+	// (POST /api/v1/projects/{projectKey}/signatures/anchors)
+	CreateProjectSignatureAnchor(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
+	// DeleteProjectSignatureAnchor Remove a trust anchor of a project
+	// (DELETE /api/v1/projects/{projectKey}/signatures/anchors/{id})
+	DeleteProjectSignatureAnchor(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, id SignatureAnchorId)
+	// UpdateProjectSignatureAnchor Change or switch a trust anchor of a project
+	// (PATCH /api/v1/projects/{projectKey}/signatures/anchors/{id})
+	UpdateProjectSignatureAnchor(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, id SignatureAnchorId, params UpdateProjectSignatureAnchorParams)
 	// TestUpstream Test an upstream configuration that is not saved
 	// (POST /api/v1/projects/{projectKey}/upstream-tests)
 	TestUpstream(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
@@ -17321,6 +18496,42 @@ type ServerInterface interface {
 	// UpdateVisibilitySettings Change the installation's default visibility level and its restricted levels
 	// (PATCH /api/v1/settings/visibility)
 	UpdateVisibilitySettings(w http.ResponseWriter, r *http.Request, params UpdateVisibilitySettingsParams)
+	// ListSignatureAnchors List the trust anchors
+	// (GET /api/v1/signatures/anchors)
+	ListSignatureAnchors(w http.ResponseWriter, r *http.Request, params ListSignatureAnchorsParams)
+	// CreateSignatureAnchor Add a trust anchor of the installation
+	// (POST /api/v1/signatures/anchors)
+	CreateSignatureAnchor(w http.ResponseWriter, r *http.Request)
+	// DeleteSignatureAnchor Remove a trust anchor
+	// (DELETE /api/v1/signatures/anchors/{id})
+	DeleteSignatureAnchor(w http.ResponseWriter, r *http.Request, id SignatureAnchorId)
+	// GetSignatureAnchor Read one trust anchor
+	// (GET /api/v1/signatures/anchors/{id})
+	GetSignatureAnchor(w http.ResponseWriter, r *http.Request, id SignatureAnchorId)
+	// UpdateSignatureAnchor Change or switch a trust anchor
+	// (PATCH /api/v1/signatures/anchors/{id})
+	UpdateSignatureAnchor(w http.ResponseWriter, r *http.Request, id SignatureAnchorId, params UpdateSignatureAnchorParams)
+	// ListSignatureBlocks List the blocked signers
+	// (GET /api/v1/signatures/blocks)
+	ListSignatureBlocks(w http.ResponseWriter, r *http.Request)
+	// CreateSignatureBlock Block a signer
+	// (POST /api/v1/signatures/blocks)
+	CreateSignatureBlock(w http.ResponseWriter, r *http.Request)
+	// DeleteSignatureBlock Lift a block
+	// (DELETE /api/v1/signatures/blocks/{id})
+	DeleteSignatureBlock(w http.ResponseWriter, r *http.Request, id string)
+	// ListSignatureFindings List invalid signatures and the signatures of blocked signers
+	// (GET /api/v1/signatures/findings)
+	ListSignatureFindings(w http.ResponseWriter, r *http.Request, params ListSignatureFindingsParams)
+	// GetSignatureObject Download the original of a signature
+	// (GET /api/v1/signatures/objects/{sha256})
+	GetSignatureObject(w http.ResponseWriter, r *http.Request, sha256 string)
+	// GetSignatureSettings Read the switch for project trust anchors and the state of the signatures
+	// (GET /api/v1/signatures/settings)
+	GetSignatureSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateSignatureSettings Allow or forbid project trust anchors
+	// (PATCH /api/v1/signatures/settings)
+	UpdateSignatureSettings(w http.ResponseWriter, r *http.Request, params UpdateSignatureSettingsParams)
 	// ListBackupRuns List backup runs
 	// (GET /api/v1/system/backups)
 	ListBackupRuns(w http.ResponseWriter, r *http.Request, params ListBackupRunsParams)
@@ -21984,6 +23195,57 @@ func (siw *ServerInterfaceWrapper) GetPackageVersionReadme(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPackageVersionReadme(w, r, packageId, version, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPackageVersionSignatures operation middleware
+func (siw *ServerInterfaceWrapper) GetPackageVersionSignatures(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "packageId" -------------
+	var packageId PackageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageId", r.PathValue("packageId"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version" -------------
+	var version PackageVersionPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPackageVersionSignaturesParams
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPackageVersionSignatures(w, r, packageId, version, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -27384,6 +28646,57 @@ func (siw *ServerInterfaceWrapper) CreateRepositoryServiceAccountTechnicalTokenS
 	handler.ServeHTTP(w, r)
 }
 
+// GetFileSignatures operation middleware
+func (siw *ServerInterfaceWrapper) GetFileSignatures(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetFileSignaturesParams
+
+	// ------------- Required query parameter "path" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "path", r.URL.Query(), &params.Path, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "path"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFileSignatures(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetItemStats operation middleware
 func (siw *ServerInterfaceWrapper) GetItemStats(w http.ResponseWriter, r *http.Request) {
 
@@ -28314,6 +29627,156 @@ func (siw *ServerInterfaceWrapper) RevokeProjectServiceAccountTokens(w http.Resp
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RevokeProjectServiceAccountTokens(w, r, projectKey, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectSignatureAnchors operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectSignatureAnchors(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectSignatureAnchors(w, r, projectKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectSignatureAnchor(w, r, projectKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProjectSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProjectSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id SignatureAnchorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProjectSignatureAnchor(w, r, projectKey, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id SignatureAnchorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProjectSignatureAnchorParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectSignatureAnchor(w, r, projectKey, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -29956,6 +31419,383 @@ func (siw *ServerInterfaceWrapper) UpdateVisibilitySettings(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateVisibilitySettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSignatureAnchors operation middleware
+func (siw *ServerInterfaceWrapper) ListSignatureAnchors(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSignatureAnchorsParams
+
+	// ------------- Optional query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignatureAnchors(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) CreateSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSignatureAnchor(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SignatureAnchorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSignatureAnchor(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) GetSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SignatureAnchorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignatureAnchor(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSignatureAnchor operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSignatureAnchor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SignatureAnchorId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateSignatureAnchorParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSignatureAnchor(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSignatureBlocks operation middleware
+func (siw *ServerInterfaceWrapper) ListSignatureBlocks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignatureBlocks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSignatureBlock operation middleware
+func (siw *ServerInterfaceWrapper) CreateSignatureBlock(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSignatureBlock(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSignatureBlock operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSignatureBlock(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSignatureBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSignatureFindings operation middleware
+func (siw *ServerInterfaceWrapper) ListSignatureFindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSignatureFindingsParams
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignatureFindings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignatureObject operation middleware
+func (siw *ServerInterfaceWrapper) GetSignatureObject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sha256" -------------
+	var sha256 string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sha256", r.PathValue("sha256"), &sha256, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignatureObject(w, r, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignatureSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetSignatureSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignatureSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSignatureSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSignatureSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateSignatureSettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSignatureSettings(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33690,6 +35530,24 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/releases", wrapper.CreateMalwareRelease)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/malware/releases/{sha256}", wrapper.DeleteMalwareRelease)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/rescan", wrapper.RescanMalware)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/signatures", wrapper.GetPackageVersionSignatures)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures", wrapper.GetFileSignatures)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/objects/{sha256}", wrapper.GetSignatureObject)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/settings", wrapper.GetSignatureSettings)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/signatures/settings", wrapper.UpdateSignatureSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/anchors", wrapper.ListSignatureAnchors)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signatures/anchors", wrapper.CreateSignatureAnchor)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signatures/anchors/{id}", wrapper.DeleteSignatureAnchor)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/anchors/{id}", wrapper.GetSignatureAnchor)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/signatures/anchors/{id}", wrapper.UpdateSignatureAnchor)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/signatures/anchors", wrapper.ListProjectSignatureAnchors)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/signatures/anchors", wrapper.CreateProjectSignatureAnchor)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/signatures/anchors/{id}", wrapper.DeleteProjectSignatureAnchor)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/projects/{projectKey}/signatures/anchors/{id}", wrapper.UpdateProjectSignatureAnchor)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/blocks", wrapper.ListSignatureBlocks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signatures/blocks", wrapper.CreateSignatureBlock)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signatures/blocks/{id}", wrapper.DeleteSignatureBlock)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/findings", wrapper.ListSignatureFindings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror", wrapper.GetRepositoryMirror)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run", wrapper.RunRepositoryMirror)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups", wrapper.ListBackupRuns)

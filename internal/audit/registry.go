@@ -100,6 +100,9 @@ var sharedTypes = map[string]bool{
 	"package.published": true, "package.deleted": true,
 	"vulnerability.finding.status_changed": true, "vulnerability.finding.reopened": true,
 	"malware.settings.changed": true,
+	// Of signatures on artifacts, a change of an anchor is journaled when it narrows (switched off, material removed) and the
+	// switch for project Owners when it is turned off (Q-SIG-42).
+	"signature.anchor.updated": true, "signature.settings.changed": true,
 }
 
 var namePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,2}$`)

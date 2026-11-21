@@ -133,6 +133,7 @@ func validateSections(v *validation, info catalog.Entry, d *Document) {
 	validateDeb(v, info, d)
 	validateAnsible(v, info, d)
 	validateVulnerabilities(v, info, d, na)
+	validateSignatures(d, na)
 	if len(d.Storage) > 0 {
 		trimmed := bytes.TrimSpace(d.Storage)
 		var probe map[string]json.RawMessage
@@ -255,6 +256,15 @@ func (v *validation) err() error {
 		}
 	}
 	return errs.E(errs.Invalid, code, detail, errs.WithFields(v.fields...))
+}
+
+// validateSignatures checks the member `signatures` (R-SIG-040): its one member, fetch, switches the background fetch of a remote's
+// signatures (R-SIG-026), so on a local or a virtual repository, which fetch nothing, it answers not_applicable at its pointer.
+func validateSignatures(d *Document, na func(pointer, why string)) {
+	if d.Signatures == nil || d.Signatures.Fetch == nil || d.Class == Remote {
+		return
+	}
+	na("/signatures/fetch", "the background fetch of signatures applies to remote repositories")
 }
 
 // validateVulnerabilities checks the member `vulnerabilities` (R-VULN-002, Q-VULN-26): it applies to local and remote
