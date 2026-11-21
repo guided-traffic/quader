@@ -1283,7 +1283,7 @@ runs are in `git log`; this section holds the current state.
   its amendment is on `main` since 11:40 (rebased, links and check exit 0, the count test at 1,107
   requirements; "With the owner" holds what it says), its worktree and branch are removed; its one package is
   built after the ClamAV change's packages 1 to 4.
-- **In work since 11:44: the presets of the installation's own registries** (decided by the owner on 2026-11-20,
+- **In work since 11:41: the presets of the installation's own registries** (decided by the owner on 2026-11-20,
   "With the owner"; taken up in the slot the chart's builder left, because it is decided, small and apart
   from the ClamAV change and the signatures): one builder writes its specification and builds it in one commit
   (an administrator's list per format with name, address and further hosts, no credential; buttons in the form
