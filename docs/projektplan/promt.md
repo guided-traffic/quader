@@ -1226,10 +1226,19 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **The builder of the scanner replicas on the screens reported at 09:49** with one commit on the tip of `main`,
-  its own gates each exit 0 (among them the integration areas under the lock and the end-to-end set `vuln` on a
-  cluster of its own); the landing is the development agent's next step (its gates, the renders looked at, the
-  owner's values against its chart). **What it built, by its report:** every scanner pod reports itself on the
+- **Landed on 2026-11-21 at 10:02: every scanner pod on the screens, with its tool, its version and its state**
+  (R-OPS-048, Q-OPS-223, Q-API-381, Q-UI-897, ADR-224, H-1161; the builder had reported at 09:49 with one commit and
+  its own gates each exit 0, among them the integration areas under the lock and the end-to-end set `vuln` on a
+  cluster of its own). On the commit as rebased onto `main`, each exit 0: build, the full unit run,
+  generate-check, links and check, the UI tests (1,824), the UI lint, the chart's lint; the renders looked at (the
+  System page with both kinds and a pod that is starting with its reason, the malware scanning settings with the
+  fold of the ClamAV pods, the advisory sources with the image scanners; light and dark, wide and narrow); the
+  owner's values rendered against its chart (35 objects; the one new key is set by the chart); the owner's UI
+  backend started with it from the main checkout before the push and answers ready (the schema step of the
+  scanner rows applied). Its worktree and branch are removed. **Its release was cut at 10:16, image and chart were published at 10:22, and the owner's installation runs it since 10:24** (read on the cluster: the release reports the new chart, five Deployments with two ready pods each on the new image, no restart, the ingress answers; every scanner pod's first report during the rollout was answered 404 by a `packages` pod of the release before, logged as a warning, and reached the listener ten seconds later, which is the upgrade case the builder had not tested). **The landing's pipeline (run 44887645066) ended green on every job at 10:45.** **Not verified, by the builder's
+  report:** the German screens in a browser; the mode without TLS beyond unit tests; an upgrade in which old
+  `packages` pods answer 404 to a scanner's report; H-1161 names what a taken-over scanner can make an
+  administrator read (rows of its own kind only, up to the cap, no markup, nothing decides on them). **What it built, by its report:** every scanner pod reports itself on the
   scan listener (its kind taken from the verified certificate, never from the body), the rows live in a table of
   their own beside the replica registry and follow its rule for lost rows, a read operation lists them, and the
   System page, the malware scanning settings and the advisory sources show each pod with its tool, version, state
@@ -1806,7 +1815,7 @@ runs are in `git log`; this section holds the current state.
 
 Everything that waits for the owner, one line each, with where the detail is. Put to him one at a time (standing rules).
 
-**A topic he opened on 2026-11-21, being prepared as a working paper**
+**A topic he opened on 2026-11-21, answered in its working paper the same morning; its first stage is being specified**
 
 - **Signatures on artifacts of every format** (his words): "Quader muss in Zukunft auch das feststellen, auslesen und
   verifizieren von Signaturen auf (wenn möglich) allen Artefaktarten unterstützen. Dabei muss es zwischen öffentlich
@@ -1853,6 +1862,38 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   verified, named in the paper:** a library for NuGet's signatures; the size the new libraries add to the binary;
   whether the claims of an uploading pipeline stay at a version; details of the older tag scheme; what the extra
   requests for signatures cost against a registry's rate limit.
+  **Answered by him on 2026-11-21 between 10:01 and 10:08, read at 10:09 on his word "bitte auslesen".** All
+  eight readings stand as written. **Thirteen of the fourteen decisions as the development agent's favourite:**
+  the icon stands for what proves the publisher's origin, a registry's signature is in the details (1); four kinds
+  of trust anchor under one setting: a CA certificate, an OpenPGP key, a public key, an identity of the signing
+  service against the public or an own root (2); anchors are kept in the UI and the API, and those declared in the
+  chart's values show read-only beside them (3); shipped as public are the signing service's public root and the
+  keys of the well-known upstreams with their preset, no general list of public code-signing CAs (4);
+  verification is a background job of the worker with libraries in process, and an anchor change recomputes the
+  trust step alone (5); for content of a remote repository Quader fetches the signatures itself (6); a signature
+  is valid if it was valid when made, the time proven by a timestamp or a log entry and otherwise by Quader's own
+  receipt, no revocation lists, an administrator can block a signer (7); in a generic repository a sibling file is
+  a signature by its name (8); Quader signs as a registry where a client checks it with one command, which is
+  Debian (built) and npm (10); Quader issues signed attestations of what it received and checked, for an image as
+  a referrer (11); Quader does not sign in a publisher's name and shows who uploaded, for a pipeline its verified
+  claims (12); one signing identity per installation from the company's CA, OpenPGP per repository where a format
+  needs it (13); three stages (14). **One against the favourite, decision 9: the gate.** He chose, besides display
+  and alarm, a detail setting per repository "only artifacts with a verified signature", optionally of chosen
+  anchors (the favourite had been no gate for now). Read together with his choice of the three stages, whose
+  third is that gate: the gate per repository is decided and is the third stage; this reading was told to him,
+  with the question whether he wants it earlier. **The question to him,** which way to a signature his CI has:
+  the signing service of its own, with the note "Alle 3 Wege sollen von dir gebaut und betrieben werden." (the
+  three ways of the paper: a signing service of its own that issues a certificate per job, a code-signing
+  certificate of the company's CA, an OpenPGP key). All three are therefore first-class in the first stage and
+  each is exercised by a real signature in the tests. What "betrieben" covers beyond Quader (the signing services
+  on his cluster and his CI, or the tests alone) is asked back to him; the specification does not wait for it.
+  **In work since 10:10:** a planner writes the specification of the first stage for all six formats (detect, read,
+  verify, show; the anchors with the switch for project Owners; the presentation and the lifecycle of OCI's
+  signatures; the gaps of passing signatures through), finds out what stayed unverified (the libraries and what
+  they add to the binary, the older tag scheme, whether a pipeline's claims stay at a version, what the extra
+  requests cost) and returns a build plan of at most four packages. The second and the third stage are specified
+  when their turn comes; the first stage's model carries what they need (a verdict a gate can read where the
+  malware gate sits, a store that can hold signatures Quader made itself).
 
 **Questions he has not answered**
 
@@ -1894,12 +1935,29 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   cleaned up automatically. **His three questions, open until answered with facts:** whether the source of the
   definitions should be configurable and whether there are alternatives at all; whether a ClamAV can
   authenticate against an endpoint, and whether a visibility other than public makes sense if it cannot; which
-  cleanup fits. **In work since 09:57:** two researches, one of the facts (how an update works on the wire, what a
-  private mirror must serve, every way the stock updater can or cannot authenticate and trust an internal CA,
-  the other sources of signatures and their terms, the metadata of the definition files, how long an old set is
-  of any use), one of what is built today (the updater's container, the import task, how the scanners get the
-  database, retention, the project `upstream`, what a format of its own takes, anonymous access). Then the
-  answers to him with a recommendation each, the specification, the builders. **The unit's name follows the
+  cleanup fits. **Both researches ended by 10:12** (the facts read in the updater's source of the pinned line and in the
+  project's documentation, nothing tested against a running updater; and what is built today, read in the code).
+  **Answered to him at 10:15.** *The source:* there is one origin of the official definitions; the sets of third
+  parties only add to it and carry terms of their own (accounts, payment, no commercial use for one of them); so
+  no choice of source in the plain path, and as a detail a chart value that points the updater at another mirror.
+  *Authentication:* a stock updater can present a client certificate since its version 1.2 (environment variables
+  only; Quader maps no client certificate to a principal on the package routes) and very likely sends Basic
+  credentials written into the URL (undocumented there, and the client logs the whole URL; Quader accepts a
+  token as the Basic password already); no token header. **A stock client goes silent for 24 hours after a 403
+  and for four hours after a 429, whatever the server, so the endpoint answers 401 or 404 only.** *Cleanup:* the
+  updater never downgrades and the project corrects a bad release with a newer one, so the current set and the
+  one before it stay (the previous one for scanner pods that still run it) and everything older goes as soon as
+  a newer one is in use; the history stays as metadata without files. Read on the way: a cleanup exists today
+  (sets older than 48 hours go, the one in use and its predecessor stay), and the header's fields are parsed and
+  thrown away today. **One decision is with him, the endpoint's visibility:** (a) public or off; (b) public by
+  default and the levels below it as a detail, with the token in the client's URL and a note that the client
+  logs it, proven once by a test with a real updater (the development agent's recommendation: the levels exist,
+  the server side costs next to nothing, and an installation that allows no anonymous access can still offer the
+  endpoint); (c) client certificates as well. **In work since 10:14:** a planner writes the specification (the
+  unit, proposed name `malware-updater-freshclam`, told to him; the format of its own; the endpoint, the switch,
+  the metadata, the cleanup; whole signed databases against patches for the updater; the findings of the import
+  task and of the updater's notify line along the way) with recommendation (b) and that paragraph marked as
+  waiting for him, and returns a build plan. Then the builders. **The unit's name follows the
   naming rule** (the tool in the name); it is fixed with the specification. **His installation:** the new kind of
   pod needs the way to the internet in his values, which the worker carries today for the updater; the
   development agent brings that with the landing (standing rules).

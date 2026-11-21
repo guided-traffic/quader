@@ -249,11 +249,14 @@ all four columns green.
 Selected from [beyond-baseline.md](../features/beyond-baseline.md):
 
 - ⚪ Minimum release age for remote repositories, per format after npm
-- ⚪ Referrers (signatures, SBOMs) through remote and virtual OCI repositories
+- ⚪ Referrers (signatures, SBOMs) through remote and virtual OCI repositories: what is left of it is part of the
+  first stage of signatures on artifacts ([promt.md](promt.md))
 - ⚪ Provider presets for more CI systems
 - ⚪ Per-tenant quotas
 - ⚪ Kubernetes service-account token trust
 - ⚪ Cache pre-warming from lockfiles and SBOMs
 - ⚪ SBOM attachment store
-- ⚪ Signature and provenance gates (Sigstore, Notary Project, SLSA)
+- ⚪ Signature and provenance gates (Sigstore, Notary Project, SLSA): a gate per repository on a verified signature is
+  decided by the owner (2026-11-21) as the third stage of signatures on artifacts ([promt.md](promt.md)); provenance
+  levels stay parked
 - ⚪ JSR through its npm compatibility layer
