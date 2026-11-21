@@ -1232,7 +1232,18 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (06:50): one builder, **the two scanner units take their tool's name** (since 06:48, the owner's
+- **In work** (07:55): two builders. **The system repositories of `upstream` stand apart on the project's page
+  Repositories** (since 07:53; the owner, 2026-11-21, with a picture of the page on his installation: "Bitte die
+  internen Repos wie: scanner-trivy und scanner-clamav unter die Liste packen, am besten als seperate Tabelle die
+  standardmäßig eingeklappt ist. Sowas wie system repositories, oder etwas besseres. Ohne den client einrichten
+  button. Einfach bewusst abgesetzt."): the main table without them; below it a section of its own, collapsed by
+  default, with their number, a sentence that says what they are and a table of the same columns; no **Set up
+  client** for a system repository there or anywhere else; the filter covers both tables and opens the section on a
+  match. Seen by the development agent in the same picture and given to the builder: the description under the
+  title is the stored description of the built-in project, English in a German UI, and comes from a localized text
+  instead. The builder reports every other place that lists a system repository among the repositories a user works
+  with, and renders the page in both schemes, wide and narrow, closed and opened. **And the two scanner units take
+  their tool's name** (since 06:48, the owner's
   decision of that morning, standing rules): the kinds `scanner` and `malware-scanner` become `vuln-scanner-trivy` and
   `malware-scanner-clamav` in the chart (every object, certificate and Secret named after a kind, the keys of
   `tls.existingSecrets`), the value blocks `scanner` and `malwareScanner` become `vulnScannerTrivy` and
