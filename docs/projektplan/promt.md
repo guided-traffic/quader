@@ -1333,7 +1333,9 @@ runs are in `git log`; this section holds the current state.
   at by the development agent:** the admin list at 1,280 px, as it opens and with the filters open. **On the
   two commits as rebased, each exit 0:** build, the full unit run, generate-check, the lint, the complexity
   check, links and check, the UI tests and the UI lint; by the builder the layout checks and under the lock
-  the area `packages`. **Its release was cut at 16:36**; the image, the chart, the owner's installation and the two jobs in this run are being followed. **Written down for the next formats** (the developer page): the one
+  the area `packages`. **Its release was cut at 16:36**, image and chart were published at 16:41, and the owner's installation runs it
+  since 16:43 (read on the cluster at 16:45: every Deployment ready). The two jobs of this run were still
+  running at 16:45; their end is recorded below when the run ends. **Written down for the next formats** (the developer page): the one
   list that fails for a missing format (this table), two that do not fail and must be kept by hand, and the
   hand-written lists that need a decision per format. **Not verified:** the pipeline's runner itself (the
   renders ran on the development machine, where the overflow was 10 px, not 7); the run of this push shows it.
