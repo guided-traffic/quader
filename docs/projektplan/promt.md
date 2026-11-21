@@ -1563,7 +1563,9 @@ runs are in `git log`; this section holds the current state.
   attestations, the admin page with every source of anchor (wide, light); the builder rendered every state at
   1,440, 1,024 and 390 px, light and dark, none failed, no layout finding. **On the commit as rebased onto
   `main` with the unit run's cure, each exit 0:** build, the full unit run, generate-check, the lint, the
-  complexity check, links and check, the UI tests and the UI lint. **Its release was cut at 20:00**; the image, the chart and the owner's installation are being followed. **Its tests cost** about 3 s of UI tests and eleven screens more in the layout job (about four to five
+  complexity check, links and check, the UI tests and the UI lint. **Its release was cut at 20:00,** image and chart were published at 20:05, and the owner's installation runs it
+  since 20:06 (read on the cluster at 20:15: every Deployment ready, no error line of `api`, `packages` or the
+  worker). **Its tests cost** about 3 s of UI tests and eleven screens more in the layout job (about four to five
   minutes on the development machine across kinds and widths, not measured in the pipeline); its one Go test
   cost 7.2 s in the job's mode with a validator of its own and costs 0.7 s without it, measured by its builder
   by the new rule. **Not verified:** the German texts in a browser; signatures as the worker records them
