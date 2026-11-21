@@ -641,10 +641,17 @@ records the recorder that tells such a stall apart).
   job idle and says so in a check that does not gate (Q-MAL-60); the database's task has no such state, so the
   UI stack and any start outside the chart that keeps the defaults (the scanning on, the task every 30 minutes)
   log an error at every tick and record a failed run. An installation of the chart has `freshclam` beside its
-  worker and is not touched. Not looked at: what **Settings › Malware scanning** shows for it on the UI stack.
+  worker and is touched once: on the owner's installation the task's first run came two seconds before `freshclam`
+  began its first update, failed with that error and an audit event `malware.database.failed`, and the next
+  run 16 s later imported the database. Not looked at: what **Settings › Malware scanning** shows for it on the UI stack.
   Not fixed: either the task is idle while its directory was never filled and no scanner is
   named, or the UI profile switches the scanning's database task off as it does for the image database
   (Q-VULN-195).
+- **`freshclam` logs an error at every update: "NotifyClamd: Can't find or parse configuration file no"** (read on
+  the owner's installation on 2026-11-21). The chart's configuration says `NotifyClamd no`
+  (`deploy/helm/quader/templates/_malware.tpl`, named so in R-HA-069), and the option takes the path of `clamd`'s
+  configuration, not a switch: `no` is read as a file name. The update itself succeeds. The line has to go from the
+  rendered configuration and from the requirement's list; not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -1173,10 +1180,18 @@ runs are in `git log`; this section holds the current state.
   **Its pipeline (run 44869974792):** the jobs that gate the release were green and the release was cut at 06:29; at
   that time the three integration shards, `UI layout checks` and the legs `npm`, `oci`, `ci`, `push`, `access-long`
   and `vuln` (the first run of the malware case and of the ClamAV image on a runner) were still running.
-  **Not verified at the landing:** the owner's installation with it (its upgrade is refused by the chart's schema
-  until the change of its values is committed, see above); whether his cluster's policy lets `freshclam` reach
-  ClamAV's servers; the loader's refusal path in a cluster; H-1141; arm64 against amd64 for `clamd`'s memory (the
-  sizing was measured on this machine).
+  **The owner's installation took the release by itself at 06:37**, three minutes after the chart was published
+  (read on the cluster, nothing changed there): the release reports the new chart, the fifth certificate is
+  ready, two pods each of `api`, `packages`, `worker`, `scanner` and `malware-scanner` are ready on the new image
+  without a restart, and the ingress answers. The chain of the signature database ran there for the first time
+  outside a test: `freshclam` beside the worker fetched `main`, `daily` and `bytecode` from ClamAV's servers (his
+  cluster's policy lets it), the task kept them in `upstream/scanner-clamav` 10 s later, and both malware scanners
+  loaded that version into `clamd` within 18 s after it. On amd64 `clamd` holds 958 MiB with the database loaded
+  (requested 1,280 MiB, limit 2 GiB), the `quader` container beside it 26 MiB, `freshclam` 10 MiB. **Two findings
+  from its logs, neither a blocker (section 8):** `freshclam` writes an error line at every update for the option
+  `NotifyClamd no`, and the database's task failed once at the first start, two seconds before `freshclam` began
+  its first update. **Not verified:** a scan of a real artifact there (the installation holds no content); the
+  loader's refusal path in a cluster; H-1141; the image database's fetch on that installation (not looked for).
 - **The stack's lock and the coordination tests (one commit of the type `test` on the branch `fix/it-lock`, mended
   at 04:44, see the malware scan's entry above for what it broke; its four areas are green, and it lands by itself
   after the malware scan's pipeline):**
