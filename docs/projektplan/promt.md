@@ -562,6 +562,14 @@ records the recorder that tells such a stall apart).
 - Three narrow lists of the signatures' screens (the security dashboard's view, the admin page's project section, a
   project's anchors) stand as blocks even at 1,440 px, as other narrow lists do; the layout checks accept it (found on
   2026-11-21 by the builder of the signatures' screens, left for the owner's look).
+- The script that picks the end-to-end legs of a change (`e2e-legs.sh`) starts the npm leg for a change of the analyser's or
+  ClamAV's image pin, which loads neither image, and not the leg `vuln`, which loads both. The restore drill's values
+  (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
+  updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
+  analyser's move, left.)
+- `make lint` states no time limit, so the linter stops at its own ten minutes on a loaded machine after it has printed its
+  result (seen twice on 2026-11-21 at host loads of about 70, by a builder and at a landing; both passed with
+  `--timeout 40m`). The cure is a stated limit in the target, as the unit run got one.
 - The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
@@ -1497,7 +1505,48 @@ runs are in `git log`; this section holds the current state.
   the integration tests build a validator per stack and could share the parse the same way (about an hour,
   the gain not measured). **On the pipeline's runner** (run 44937450926): the package took 76.6 s where it had
   taken 599.5 s, and the unit job 8.9 minutes where it had taken 14.4.
-- **In work since 19:45: package 3 of the image analyser's move** (on `main` with packages 1 and 2 released): the
+- **In work since 21:01, two builders on `main` with the signing identity** (with the gate's rebase and package 3
+  of the analyser's move that makes four): **package 2 of the signatures' second stage, npm's registry
+  signatures and the local keys endpoint** (R-SIG-050 and the npm half of R-SIG-048 and R-SIG-049: a signature
+  on every version of a local npm repository, the keys endpoint with the announced, the current and the
+  previous keys, the kind of the job `signing` that signs at a publish and finds what was stored before an
+  identity existed, a virtual repository's keys with its signed local members, and the end-to-end case with
+  the real `npm audit signatures` on a cluster of its own); **the first half of package 4, the section
+  "Signing identity" of the signatures' settings page** (every state of R-SIG-056's first point: none, a key
+  request, uploaded, from the Helm values, a refused pair of files, previous identities; rendered at every
+  width of the job, light and dark, with six pictures named for the development agent to look at). **Cut by
+  the development agent:** the screens' package is built in two halves, because its section needs the
+  identity's API alone and gives an administrator the upload way now (until then that way exists in the API
+  only), while Quader's own signature and attestation in the details of a version need packages 2 and 3; the
+  second half follows them. **Not started and why:** package 3, the attestations, changes the format
+  contract, which the gate changes too; it starts when the gate is on `main`. Each was told the numbers
+  reserved for it (decisions, gaps, an ADR), that a migration is numbered behind the gate's at the landing,
+  and a stated time limit for the lint.
+- **Landed on 2026-11-21 at 20:58: package 1 of the signatures' second stage, the signing identity** (R-SIG-045
+  to R-SIG-049, R-SIG-055, R-SIG-057 to R-SIG-059, R-HA-071; decisions Q-SIG-145 to Q-SIG-155; what it built is
+  in the entry of the three builders below, as reported at 19:58; its builder brought it onto `main` from
+  19:58 to 20:38). Nothing is signed with it yet. **The order of the two waiting packages was turned:** the
+  gate still had its integration areas to run at 20:38, so the identity landed first with migration 00101
+  and the gate takes 00102; the development agent renamed the file and its references (the migration's
+  header, two comments in Go, the developer pages, the commit message; no logic), and the gate's builder was
+  told at 20:39 and again at the push. **By its builder on the rebased commit, each exit 0:** build, the full
+  unit run, generate-check, the lint, the complexity check, links and check, the chart's lint and tests (428
+  s under load), the UI tests (1,909) and the UI lint; under the lock the areas `postgres` (179 s; the third
+  unregistered column of its first report is the one that area's own test adds, no finding), `signing` (11.3
+  s), `signatures` (110.6 s) and `backup` whole (438 s). **Its unit tests cost,** in the job's mode: about 5.4
+  s in the three packages of `internal/signing`, and under a second for its two tests of the API's package on
+  the shared parse (that package as a whole 73 s). **By the development agent on the commit as it landed,
+  each exit 0:** build, the full unit run, generate-check, the evidence regenerated without a difference,
+  links and check, the complexity check, the chart's lint and tests, the UI tests and the UI lint. **The lint
+  passed the tool's default time limit under a host load of about 70** (it had printed no issue) and exited
+  0 with a stated limit of 40 minutes, which every builder's brief now names. The diff holds no name the
+  white-label rule forbids. **The owner's values** render against its chart with no difference in any object
+  (39 objects): nothing of the identity renders unless a value names one. The owner's UI backend started
+  with it before the push (the schema step applied). **Its release was cut at 21:10.** **Not verified:** a real cert-manager, a real
+  company CA, a rotation on a cluster, a whole backup restored into a fresh installation. Its worktree and
+  branch are removed.
+- **Reported at 21:04 and waiting for its landing (in work since 19:45): package 3 of the image analyser's move**
+  (on `main` with packages 1 and 2 released): the
   analyser comes from its own image through an init container that copies the binary into a volume the scanner
   mounts read-only, and leaves the release image; one pin by digest in place of the version and the four
   archive digests, the chart's value held equal by a chart test, one Renovate group, the build and release
@@ -1506,7 +1555,49 @@ runs are in `git log`; this section holds the current state.
   of the workflow files, the image built and looked into, no second pin anywhere), the copy measured in a real
   pod, the end-to-end set `vuln` on a cluster of its own with a kubeconfig file of its own (so that the
   machine's default kubeconfig is not touched again), and a unit test's cost measured in the job's mode. With
-  the signing identity and the gate that makes three builders.
+  the signing identity and the gate that made three builders; four since 21:01 (the entry above).
+  **Its builder reported at 21:04** with one commit; the development agent brought it onto `main` with the
+  signing identity (no conflict) and runs its gates there. **What it built:** the release image holds the
+  Quader binary alone (246,494,610 bytes before, 83,309,810 after on arm64, the difference the analyser's
+  163,184,800 bytes; read from the image's file list); each pod of `vuln-scanner-trivy` gets an init
+  container `trivy` from the pinned image that copies the binary into a volume of 256 Mi, which the scanner
+  mounts read-only at `/opt/trivy`; one pin `TRIVY_IMAGE` (tag and index digest) in place of the version and
+  the four archive digests, held equal to the chart's value by a chart test; the Containerfile, the build
+  workflow and the job that scans the release image without the analyser's stage (that job takes the binary
+  out of the pinned image); one Renovate group (a new digest merges by itself, a new version does not); the
+  development profiles start image scanning in the profile `vuln` alone, which loads the analyser's image.
+  New values: `trivy.image`, `trivy.pullPolicy`, `trivy.resources`; the scanner's requested ephemeral storage
+  is 1,280 Mi. **Decided by its builder (Q-HA-386 to Q-HA-388):** the platform matrix starts no pod and reads
+  the init container back from the API server; the restore drill's installation switches image scanning off;
+  `make trivy` keeps the binary under a name with tag and digest, and the versions check refuses a `trivy` of
+  another version on the path. **Measured by it on a cluster of its own** (arm64, two scanner pods on nodes
+  that had never held the image, host load 30 to 80): the pull 15.6 and 13.5 s, the copy 0.33 and 0.95 s,
+  scheduled to ready 21 and 19 s; the init container ran as the unprivileged user on a read-only root file
+  system without capabilities; in the end-to-end case the analysis ran 1.45 s after the task with the copied
+  binary. Loading the release image into four kind nodes took 41 s where it took 85.7 s. **Its gates:**
+  build, the full unit run, generate-check, the complexity check, links and check, the chart's lint and tests,
+  the check of the workflow files, `make image`, the area `vulnimage` under the lock each exit 0; the lint
+  passed its ten minutes under load and exited 0 with a longer limit; **the end-to-end set `vuln` exit 2:** 91
+  cases passed, among them the scanner's and the malware's, and three of six browser journeys timed out at
+  the sign-in page under a load of 47 to 87 (no code of the UI or the API changed; not repeated, the
+  pipeline's leg shows them); **`make versions-check` exit 2 on two things of the development machine** ("On
+  machines and in repositories outside this one" below). **Its tests cost** about 0.2 s more of the chart's
+  job and about 10 s more of the leg `vuln` for loading the analyser's image; every other kind leg loads an
+  image 163 MB smaller. **Checked by the development agent, which the builder had named as not verified:**
+  the pinned digest is an index with amd64 and arm64; the copy as the pod does it (the unprivileged user, a
+  read-only root, no capabilities) runs on the amd64 image and yields the pinned version (under emulation on
+  the development machine, not on an amd64 node); the analyser accepts the ignore file with an empty list
+  (exit 0; a broken file is fatal, so the file is read); the runners' image installs no `trivy`, so the
+  versions check's new refusal finds nothing on the runner's path. **The owner's values** render against its
+  chart (39 objects; the scanner pods gain the init container and the volume); his five nodes are amd64
+  with CRI-O and already pull from Docker Hub, and none of his cluster's admission policies restricts
+  registries (read on the cluster). **Not verified before the pipeline runs it:** the multi-architecture
+  build and the job that scans the release image on the amd64 runner, both of which hold a release back;
+  Renovate's real behaviour; the platform matrix's two read-backs. **Found by it and left (section 8):** the
+  script that picks the end-to-end legs, the restore drill's values, and that nothing in the pipeline scans
+  the analyser's image any more (H-1003 says so). **The push waits for the run of the signing identity to
+  end** (about 21:40): the layout job ended last at 18:27, was stopped four times since by the next push and
+  failed once at the seed, and the identity's run is the first with the seed's repair that can end.
 - **Landed on 2026-11-21 at 19:27: package 2 of the image analyser's move, the screens** (R-UI-038, R-OPS-048,
   R-VULN-022 as amended; its builder worked from 18:11 to 19:11; no change of Go or of the API). Each pod of
   `vuln-scanner-trivy` says which database it holds, as a badge of icon and word: **Database in use** in green
@@ -1530,7 +1621,7 @@ runs are in `git log`; this section holds the current state.
   machine (seen three times on 2026-11-21 by three builders); a comment of the UI development profile still
   says the role `all` calls its own scanner. Its worktree and branch are removed.
 - **The run of the 19:47 push (44937450926) went red at 19:56 on the job `UI layout checks`, which holds no
-  release back; its repair is in work since 19:58.** Two changes met on `main`: the repair of the revision
+  release back; its repair landed at 20:35.** Two changes met on `main`: the repair of the revision
   columns renamed the trust row's epoch, and the screens of the signatures came with a render seed that writes
   rows by SQL under the old name, so the job stops at its seed. The rebase of the screens onto the repair had
   no conflict of text, the renders were not run again after it, and the landing's gates hold no render run.
@@ -1538,6 +1629,23 @@ runs are in `git log`; this section holds the current state.
   of its own and writes the rule onto the UI's developer page. **For the landing from now on:** when a rename
   of the schema lands, the commits that still wait are searched for the old names; and a UI commit that is
   rebased onto a change of the schema has its render seed run again before the push.
+  **The repair** (reported ready at 20:09, landed at 20:35, a commit of the type `test` that releases nothing):
+  the seed writes the column's new name; no other seed, fixture, query or page still held the old names. Proven
+  by its builder with the render setup and seed on a stack of its own: the signatures' and every package and
+  version screen, 68 passed, no failure, no layout finding. The UI's developer page says that the seed writes
+  rows by SQL, which no compiler checks against the schema. The push waited for the run before it to end,
+  because that run was the first to carry the end-to-end leg `vuln` of the analyser's move and all three
+  shards with the revision columns' repair. **That run (44937450926) ended at 20:34, green on every job but
+  the layout job:** the leg `vuln` green, so the analyser's move is confirmed end to end on the pipeline's
+  runner; the three integration shards green in 38.9, 42.1 and 40.9 minutes of their 45 (shard b, which had
+  been red three times that day for three different lists, at 42.1). **The repair's own run (44941727841)**
+  cut no release, as a commit of the type `test` does not (its release job ended at 20:46); it was stopped at
+  20:58 by the push of the signing identity, with the layout job 23 minutes into its render step, past the
+  seed at which the run before had stopped after 7 minutes. The job's whole result comes with the
+  identity's run. **The builder's full run of every screen on its own stack** (ended at 21:00): 434 passed in
+  49 minutes, none failed, no layout finding; eleven pictures listed as sideways are regions that scroll
+  inside the page (code blocks and a table of the manual), which the check allows. Its worktree and branch
+  are removed.
 - **Landed on 2026-11-21 at 19:47: package 4 of the signatures' first stage, the screens** (R-SIG-035 to
   R-SIG-038; its builder worked from 17:37 to 19:22 and brought the commit onto `main` from 19:23 to 19:35).
   With it the first stage is whole: detect, read, verify, show. **What a reader sees:** a shield with one of
@@ -1587,7 +1695,9 @@ runs are in `git log`; this section holds the current state.
   repositories, the copy of the values file equal to the chart's values, a new format method joins the developer
   page's list, UI changes rendered at every width of the job. (The screens landed at 19:47, the entry above.)
   **Package 1 of the third stage, the gate, reported at 19:52** with one commit on the base of 17:37; since
-  19:52 its builder brings it onto today's `main`. **What it built:** the repository member `signatures` with
+  19:52 its builder brings it onto today's `main`, and since 20:58 onto the signing identity, which landed
+  before it: its migration becomes 00102, and it builds what its report had named as owed, the exclusion of
+  Quader's own signatures from the gate by the column the identity brought. **What it built:** the repository member `signatures` with
   `onlyVerified` and `anchors` (422 for Debian only where the value would do something; a project Owner
   narrows, weakening needs the right the malware gate's weakening needs and is audited as a lifted block; a
   narrowing is journaled and a restore applies the narrower of the two values); the decision state by state
@@ -1620,7 +1730,7 @@ runs are in `git log`; this section holds the current state.
   stage's column exists. **Not verified by its report:** the view through a virtual repository and a remote's
   fetch state against the database (unit tier only).
   **Package 1 of the second stage, the signing identity, reported at 19:58** with one commit on the base of
-  17:37; since 19:58 its builder brings it onto today's `main`. Nothing is signed with it yet; npm's
+  17:37 and landed at 20:58 (the entry of its landing above). Nothing is signed with it yet; npm's
   signatures, the attestations and the screens are the stage's next packages. **By the chart:** an existing
   Secret or a Certificate the chart asks cert-manager for (ECDSA P-256, the usages digital signature and code
   signing, the base URL as the first URI), mounted into the worker's pods alone, read at the start and every
@@ -2782,7 +2892,9 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   (the planner's recommendation, H-1176); (b) no keys; (c) signing of local npm packages pulled into the first
   stage. Built as (a) meanwhile; it concerns package 3.
   **The second stage, Quader signs, is specified on `main` since 2026-11-21, 13:10** (R-SIG-044 to R-SIG-060,
-  Q-SIG-53 to Q-SIG-74, R-HA-071, Q-HA-385, ADR-230, H-1183 to H-1193; nothing of it is built). **One signing
+  Q-SIG-53 to Q-SIG-74, R-HA-071, Q-HA-385, ADR-230, H-1183 to H-1193; **package 1, the signing identity, is
+  landed since 20:58 the same day and nothing signs with it yet; npm's signatures and the identity's section
+  of the settings page are in work since 21:01 (run record)**). **One signing
   identity per installation:** an ECDSA P-256 key with a code-signing certificate of the company's CA. By the
   chart it is an existing Secret or a certificate the chart asks cert-manager for, mounted into the worker pods
   alone and read again without a restart, never in the database; by the admin area Quader makes the key, seals
@@ -3378,6 +3490,16 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   (v0.28.0-desktop.1, pin v0.38.1), so `make versions-check` fails locally on that line; the Homebrew copy is in place
   (`ln -sf /opt/homebrew/bin/docker-buildx ~/.docker/cli-plugins/docker-buildx`, no admin password; Docker Desktop may relink it on
   its next update unless its CLI plugin management is turned off). Checked on 2026-11-08: unchanged.
+- **A `trivy` of Homebrew (0.69.3) is on the development machine's path, the pin is 0.76.2.** With package 3 of the
+  analyser's move `make versions-check` refuses a `trivy` of another version on the path (one version of every tool), so
+  it fails locally on that line beside the buildx line of F-17 until the machine's copy is the pinned version or gone:
+  `brew upgrade trivy`, or `brew uninstall trivy`. Not changed by the development agent, because it is the owner's tool on
+  the owner's machine; told to him in the chat on 2026-11-21. The pipeline's runners carry no `trivy` of their own.
+- **The development machine's default kubeconfig has no current context since 2026-11-21, 17:41.** A builder's removal of its
+  kind cluster took the current context with it; the file (`~/.kube/config`) still holds its one context
+  `kubernetes-admin@wds18-k8s-runner` and was not changed by the development agent, because it is the owner's. To set it
+  again: `kubectl config use-context kubernetes-admin@wds18-k8s-runner`. Told to him in the chat the same day. Since then
+  every builder's brief demands a kubeconfig file of its own for a kind cluster.
 - The runners: `zstd` in the runners' image would make the CI cache entries smaller and faster (every entry exists twice today);
   a registry or a mirror inside the runners' cluster would remove the downloads of the kind node image, the dev profile's images and
   k6 from every leg.
