@@ -96,6 +96,8 @@ behind the Service `<fullname>` that served every path; no Quader release has th
      ┌──────▼──────┐         ┌─────────────┐
      │ scanner pod │   ...   │ scanner pod │  Deployment <fullname>-vuln-scanner-trivy (R-HA-065): the analysis of images,
      └──────┬──────┘         └─────────────┘  no secret of PostgreSQL, the object store or Valkey; :8080, :8081
+                                              (specified, R-HA-070: the detection too, the database read-only in the pod,
+                                              the analyser copied from its own image by an init container)
             │ HTTPS :8082, mutual TLS and a scan token: the pull of that image (R-VULN-042)
             ▼ Service <fullname>-packages-scan ──▶ the scan listener of every packages pod of the main Deployment
      ┌─────────────┐
@@ -229,8 +231,10 @@ from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/
   and no family loses its last replica in a drain.
 - The roles' pods run the same image and the same configuration file; only the `--role` argument, the per-Deployment
   environment of R-HA-062 (`QUADER_POOL_NAME`, `QUADER_JOBS_QUEUES`, `QUADER_JOBS_EXCLUDE_QUEUES`) and the scan listener of the main
-  `packages` Deployment (`QUADER_SERVER_SCAN_LISTEN`, R-HA-066) differ, and the scanners mount less (R-HA-065, R-HA-068). No component runs in a
-  separate image or as a sidecar.
+  `packages` Deployment (`QUADER_SERVER_SCAN_LISTEN`, R-HA-066) differ, and the scanners mount less (R-HA-065, R-HA-068). No component of
+  Quader runs in a separate image. A third-party tool runs from its own image beside the Quader container of its unit: `clamd` and
+  `freshclam` (R-HA-068, R-HA-069), and, specified, the image scanning's analyser, which an init container copies into the scanner pod,
+  with a second Quader container `database` beside the scanner that keeps the analyser's database (R-HA-070).
 - Why: background work (GC, retention runs, reindexing, the mirror's passes, the advisory sync, webhook delivery) never
   competes with request latency for CPU and memory; a surge of package traffic cannot starve the UI and the management API;
   `packages` scales on package load, `api` on UI and API load and `worker` on job load; a drain or rollout of one role does
@@ -463,6 +467,10 @@ database, the object store or Valkey. What it serves and holds is [architecture.
 - **Chart checks** (R-HA-029): the scanner's spool budget (`vulnScannerTrivy.spool.sizeLimit` minus `spool.headroom`) at least
   `slots × (max_image_size + 64 MiB)`, the failure naming the three values (Q-HA-318); `vulnScannerTrivy.replicaCount` at least 1, and at least 2 with
   `highAvailability.enforce`; with `tls.existingSecrets`, a Secret for the scanner that no other kind names (R-HA-063).
+- **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21; specified, not built): the pod gains an
+  init container `trivy`, a container `database`, and two volumes, `trivy-bin` and `trivy-db`, both read-only in the container `quader`; its
+  analyser is `/opt/trivy/trivy` instead of the release image's `/usr/local/bin/trivy`. Everything else of this requirement stands; what
+  changes is [R-HA-070](#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod).
 
 Acceptance criteria:
 
@@ -510,6 +518,10 @@ Priority: **P1** · Covers: HA-018
   [H-1043](../security/image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)).
 - **Ingress rules** (R-HA-042, ADR-154): the scanner's `8080` from the pods of the worker Deployment that claims `vuln`; the scan
   listener's `8082` from the scanner's pods. No egress rule.
+- **The database routes** (specified, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049): the scan listener admits the
+  image scanner's name, `vulnerabilities.images.registry.client_name`, on `GET /scan/v1/trivy-database[/<digest>]` too, without a token. The
+  loader that reads them is the container `database` of the same pod, so the rule of `8082` admits it already, and its pair is the
+  scanner's: no key, rule or name more.
 
 Acceptance criteria:
 
@@ -545,11 +557,19 @@ Priority: **P1** · Covers: quader-only
   seam in the scanner replica and the worker replica, as they do today, so the stack needs no analyser binary and no database download
   (R-VULN-046).
 - **CI**: no new leg. The unit, chart and integration legs run what R-VULN-046 lists; the leg `e2e (vuln)` adds one case.
+- **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21; specified, not built): the role `all`
+  builds no image scanner, and its worker part calls `vulnerabilities.images.scanner.url` when one is set; without one the image scanning's
+  job ends at once and touches no row ([architecture.md](architecture.md) Q-ARCH-563), so the UI development profile shows images
+  `pending_scan` and the API `replicas: "none"`; the renders keep seeding the scanners' rows by SQL. The local profile on kind runs the
+  image scanning only in the profile `vuln` (and the profiles layered on it) and in the platform matrix, and loads the analyser's image into
+  the kind cluster there as it loads ClamAV's ([Q-HA-382](#q-ha-382--the-image-scanning-is-on-in-the-charts-defaults-and-off-in-every-test-profile-but-vuln-and-the-platform-matrix)).
+  The integration stack starts the loader of the kind `trivy-db` in process beside the scanner replica, with a directory of the test as its
+  volume, and the fake analyser runs both steps in the scanner replica.
 
 Acceptance criteria:
 
 - `make ui-dev-backend` with a pushed image of kilobytes shows the image's analysis stored without a scanner Deployment (a manual check of
-  the profile, recorded once).
+  the profile, recorded once). This criterion goes with Q-ARCH-563.
 - The integration set `vulnimage` passes with the scanner replica in process (R-VULN-041).
 
 ### R-HA-068 · The malware scanner Deployment
@@ -705,6 +725,84 @@ Acceptance criteria:
   container, a volume or a mount of `freshclam`; `highAvailability.enforce: true` with one replica renders, `replicaCount: 0` fails and names
   the key; `privateMirror: https://database.clamav.net` fails; `config.malware.database.source: repository` and `config.malware.enabled:
   false` render nothing of the updater; a `<fullname>` of 38 characters fails and names the Service.
+
+### R-HA-070 · The analyser from its own image, and the database in the scanner pod
+Priority: **P1** · Covers: HA-015
+
+The owner's decisions of 2026-11-21 ([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)):
+"Option B, nach der umbenennung. Trivy dann aus den anderen Images entfernen.", and, for where the scanner's analyser comes from, "Option
+b": the analyser's own image as an init container that copies the binary into a volume of the scanner pod, not a second image built with
+every release, in the pattern of the ClamAV image. Specified, not built; it changes the pod of R-HA-065 and the release image of R-HA-033.
+
+- **When.** Everything below renders with `<fullname>-vuln-scanner-trivy`, while the image scanning is on, and nothing of it otherwise.
+- **The init container `trivy`** ([Q-HA-378](#q-ha-378--the-analysers-binary-is-copied-by-an-init-container-of-its-own-image-into-a-volume-the-scanner-mounts-read-only)):
+  the image `trivy.image` (default `docker.io/aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb`,
+  the pin `TRIVY_IMAGE`), `imagePullPolicy` `trivy.pullPolicy` (`IfNotPresent`), the command `["cp", "/usr/local/bin/trivy",
+  "/opt/trivy/trivy"]` in place of the image's entry point `trivy`; the security context of R-HA-033 (the pod's user 65532, which the
+  image does not set itself, a read-only root file system, no privilege escalation, every capability dropped, seccomp `RuntimeDefault`);
+  one volume, `trivy-bin`, read-write at `/opt/trivy`, and no Secret, configuration or token. Resources `trivy.resources`: requests 10m CPU
+  and 32 MiB, memory limit 128 MiB (not measured). Measured with Docker on 2026-11-21, not in a pod: the copy runs as user 65532 under these
+  restrictions in 0.35 s with the container's start, and the copy is owned by 65532 with mode 0755.
+- **The volume `trivy-bin`**: an `emptyDir` on the node's disk, `sizeLimit` 256 MiB (the binary is 163,184,800 bytes), read-only in the
+  container `quader` at `/opt/trivy`, where `vulnerabilities.images.binary` points by default (`/opt/trivy/trivy`). The copy belongs to the
+  pod's user, so only the read-only mount keeps an analyser from replacing the binary that the pod's later analyses and detections run.
+- **The container `database`** (the loader of [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049; [architecture.md](architecture.md)
+  [Q-ARCH-564](architecture.md#q-arch-564--the-loader-of-the-analysers-database-is-a-kind-of-the-role-scanner-trivy-db)): the Quader image of
+  the release, `quader serve --role scanner` with `QUADER_PROCESS_SCANNER_KIND=trivy-db` and `QUADER_SERVER_OPS_LISTEN=:8083` (the scanner
+  holds `:8081` of the pod's network); its budget from `vulnScannerTrivy.database.sizeLimit`; the security context of R-HA-033; volumes: the
+  configuration file, the scanner's own TLS Secret (the same Secret, R-HA-063: it reads the scan listener as the scanner does), `trivy-db`
+  read-write at `/var/lib/quader/trivy-db`, and a `/tmp` of its own; no listener but the operations listener; liveness `/healthz` on `:8083`
+  (R-HA-034) and no readiness probe, because the scanner's readiness and report carry what matters of it. Resources
+  `vulnScannerTrivy.database.resources`: requests 50m CPU, 64 MiB and 2 GiB of ephemeral storage (one database), memory limit 256 MiB (not
+  measured). No writable volume is shared between `quader` and `database` but `trivy-db`, which is read-only in `quader`. The scanner's
+  NetworkPolicy gains no rule for `:8083`: only the kubelet's probe reaches it, and traffic from the pod's own node is not restricted by a
+  NetworkPolicy.
+- **The volume `trivy-db`** ([Q-HA-380](#q-ha-380--the-database-volume-follows-spooltype-5-gi-by-default-and-the-chart-refuses-less-than-4-gi)):
+  follows `spool.type` as the spool does (an `emptyDir` with `sizeLimit` `vulnScannerTrivy.database.sizeLimit`, default 5 Gi, or a generic
+  ephemeral volume of that size), read-write in `database`, read-only in `quader`. The chart refuses a `sizeLimit` below 4 GiB, two databases
+  at the allowance of 2 GiB each (H-872's constant, which moves here from the worker's spool), and names the key.
+- **The container `quader`** gains the two read-only mounts and 256 MiB on its ephemeral-storage request (1 GiB to 1,280 MiB) for the
+  copy; `shareProcessNamespace` stays unset, so no container of the pod sees another's processes.
+- **The pin** ([Q-HA-381](#q-ha-381--one-pin-by-digest-the-charts-value-held-equal-by-a-chart-test-and-one-renovate-group-that-reviews-a-new-version)):
+  `TRIVY_IMAGE` in `tools/versions.env`, by its index digest, replaces `TRIVY_VERSION` and the four `TRIVY_SHA256_*` digests of the release
+  archive; `trivy.image` holds the same value and a chart test holds them equal, as `clamav.image` and `CLAMAV_IMAGE`; Renovate updates both
+  in one group (`trivy`), merges a new digest of the same version by itself and opens a new version as a pull request to review. The
+  Containerfile loses its stage `trivy` and its three build arguments, and `make image` and `build.yml` pass none; the release image holds
+  the binary of Quader and nothing else on its base. `make trivy` takes the binary out of `TRIVY_IMAGE` for the host's architecture on
+  Linux (`docker create` and `docker cp`) and refuses elsewhere with a message that names the image; the job `container-scan` uses it, so
+  the scan of the release image runs the scanner's own analyser, one version in the repository. `.trivyignore.yaml` loses its entry at
+  `usr/local/bin/trivy`, a path the release image no longer has.
+- **An installation that mirrors images** ([Q-HA-383](#q-ha-383--a-private-mirror-changes-one-value-per-image-and-nodes-without-a-registry-load-the-images-beforehand)):
+  mirrors, by their index digests, the Quader image, `TRIVY_IMAGE` while the image scanning is on and `CLAMAV_IMAGE` while the malware
+  scanning is on (a copy of the whole index, for example `skopeo copy --all` or `crane copy`, keeps the digest), and sets
+  `image.registry` and `image.repository`, `trivy.image` and `clamav.image` to the mirror's names with the same digests;
+  `global.imagePullSecrets` reaches the init container like every container of the pod. The analyser's database does not come from an
+  image of a node: it stays the repository's (R-VULN-044), whose address an administrator points at the mirror, or a local repository.
+- **An installation whose nodes reach no registry** loads the three images into each node's container runtime beforehand and keeps
+  `pullPolicy: IfNotPresent`; or it switches the image scanning off (`config.vulnerabilities.images.enabled: false`) and pulls nothing of the
+  analyser. Nodes that reach Quader's own registry can pull the analyser's image through a remote OCI repository of Quader that fronts Docker
+  Hub (`trivy.image` set to that address, a level the node can read or a pull secret): the scanner is not needed for Quader to start, so this
+  needs no order of its own, but a scanner pod cannot start while Quader's registry is down.
+- **What a pod start costs**: the pull of `TRIVY_IMAGE` once per node and pin (58,549,893 bytes compressed for arm64, 63,436,811 for amd64;
+  3.3 s on the measuring machine's network, an estimate for a node), the copy (0.35 s measured in Docker, not in a pod), then the scanner's
+  start as before; the database's load follows beside it (R-VULN-049). The price, named to the owner: a node pulls a third party's image when
+  a scanner pod starts ([H-1182](../security/image-scanning.md#h-1182--a-node-pulls-the-analysers-image-from-a-third-partys-registry-when-a-scanner-pod-starts)).
+- **Values** (R-HA-031, whose copy of the values file gains them with the change that builds them): `trivy.image`, `trivy.pullPolicy`,
+  `trivy.resources`, `vulnScannerTrivy.database.sizeLimit`, `vulnScannerTrivy.database.resources`.
+
+Acceptance criteria:
+
+- Chart test (`test/chart`, about 2 s): with default values the scanner pod has the init container `trivy` with `trivy.image`, the copy's
+  command, the security context and the one volume `trivy-bin`; the container `quader` mounts `trivy-bin` and `trivy-db` read-only; the
+  container `database` runs the kind `trivy-db` with `:8083`, mounts `trivy-db` read-write, the scanner's Secret and a `/tmp` of its own, and
+  has a liveness probe and no readiness probe; `trivy.image` equals `TRIVY_IMAGE` of `tools/versions.env`; `vulnScannerTrivy.database.sizeLimit:
+  3Gi` fails and names the key; with `config.vulnerabilities.images.enabled: false` nothing of it renders; no other Deployment has an init
+  container, `trivy-bin` or `trivy-db`; `global.imagePullSecrets` is on the pod.
+- Check (`make versions-check`, seconds): `TRIVY_IMAGE` carries a digest; no `TRIVY_SHA256_*` line and no `trivy` stage in the
+  Containerfile remain; `make trivy` puts the binary of `TRIVY_IMAGE`'s tag on the path.
+- End to end (set `vuln`, R-VULN-046): the analysis runs the copied binary, and the live pod's spec lists the three containers and their
+  mounts as above (Q-HA-342).
+- Recorded once after the first release that carries it, on the owner's installation: the pull and the copy from the pod's events.
 
 ### R-HA-003 · Replica registry as the coordination view
 Priority: **MVP** · Covers: HA-006, HA-009
@@ -11250,6 +11348,10 @@ this when the analyser's own writing is bounded at the operating system (H-871),
 
 **Applied in the spec:** R-HA-031, R-HA-035, R-HA-065; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-036, Q-VULN-145, Q-VULN-148.
 
+**Revisited 2026-11-21** ([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)):
+the worker's check goes with the detection, because no worker holds the database or a detection's files any more; the scanner's check stays
+and covers a detection too (64 MiB, less than an analysis). The database has a volume and a check of its own (R-HA-070, Q-HA-380).
+
 ### Q-HA-319 · The two links get ClusterIP Services of their own, never the client Services
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11295,6 +11397,9 @@ operator puts credentials into them (a Secret as `extraEnvFrom`, a token file as
 agent would revisit this if operators need a shared value in the scanner that `scanner.extraEnv` cannot carry.
 
 **Applied in the spec:** R-HA-065.
+
+**Revisited 2026-11-21** (R-HA-070): unchanged, and it covers the two containers the pod gains: neither the init container `trivy` nor the
+container `database` takes a shared extra; `vulnScannerTrivy.extraEnv` stays the `quader` container's alone.
 
 ### Q-HA-322 · With `tls.enabled: false` the scanner's links are plain, as every link of such an installation
 
@@ -11516,6 +11621,10 @@ what the kubelet mounts is what the pod spec projects; reading the spec after ad
 The development agent would revisit this if the image gains a shell for another reason.
 
 **Applied in the spec:** R-HA-065.
+
+**Revisited 2026-11-21** (R-HA-070): the same read covers the init container `trivy` (one volume, no Secret) and the container `database`
+(the scanner's Secret, `trivy-db` read-write, a `/tmp` of its own), and that `quader` mounts `trivy-bin` and `trivy-db` read-only. The
+analyser's image has a shell; the check does not use it.
 
 ### Q-HA-343 · The scanner pod names no service account of the chart
 
@@ -12037,6 +12146,107 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) A free text `extraConfig` for `freshclam.conf` | Any option | Flexible | An operator could turn on what the design rules out (patches, `NotifyClamd`, another database directory) |
 
 **Choice:** (a). **Applied in the spec:** R-HA-069; [malware-scanning.md](malware-scanning.md) R-MAL-010, R-MAL-012, R-MAL-027.
+
+### Q-HA-378 · The analyser's binary is copied by an init container of its own image into a volume the scanner mounts read-only
+
+Status: **Decided by the owner** (2026-11-21, "Option b", [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image))
+for the init container of the analyser's own image; the read-only mount and the copy's details are the development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An init container of `trivy.image` copies the binary with the image's `cp` into `trivy-bin`, which `quader` mounts read-only (chosen) | One image of the publisher's, pinned by digest | The release stays one image; the binary is the publisher's build, byte for byte the archive's (checked by the owner's measurement on arm64); a taken-over analyser cannot replace it, because the mount is read-only and the copy belongs to the pod's user | A node pulls a third party's image at a scanner pod's start (H-1182) |
+| (b) The same, with `trivy-bin` read-write in `quader` | Fewer mount options | — | Measured: the copy belongs to user 65532, the user of every analyser, so one taken-over analysis could replace the binary for every later analysis and detection of the pod |
+| (c) An image volume (`volumes[].image`) instead of the init container | No copy | No extra disk | Not on by default in every Kubernetes the chart supports (R-HA-049, 1.34 to 1.37); which release turns it on was not verified |
+| (d) A second Quader image with the analyser, built with every release | The owner's option (a) | No third-party pull | Two images per release, which the owner did not choose |
+
+**Choice:** (a). The image's `cp` is BusyBox's, which runs as the pod's user on the read-only root file system (measured with Docker on
+2026-11-21, not in a pod). **Rationale:** the owner's pattern, with the one mount option that keeps the binary out of the analyser's hands.
+The development agent would revisit this when image volumes are on by default in the oldest Kubernetes the chart supports.
+
+**Applied in the spec:** R-HA-065, R-HA-070; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-033, R-VULN-036.
+
+### Q-HA-379 · The loader is a regular container with a liveness probe on a port of its own and no readiness probe
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A container `database` beside `quader`, operations listener on `:8083`, liveness only (chosen) | The pod's readiness stays the scanner's | Analyses go on while a database loads; a hung loader is restarted; no port collides | Its metrics are not scraped (the ServiceMonitor reads `8081`); its state shows through the scanner's report |
+| (b) A native sidecar (an init container with `restartPolicy: Always`) | Started before the scanner | Ordered start | The scanner needs no order: it is ready without a database |
+| (c) A readiness probe on the loader | The pod waits for the database | No detection on a pod without one | A pod start and every new database would take the pod out of the Service, analyses included |
+
+**Choice:** (a). **Rationale:** the database is the detection's need, not the pod's; the call answers `database_loading` where it is
+missing. The development agent would revisit this if an operator needs the loader's own metrics.
+
+**Applied in the spec:** R-HA-070; [architecture.md](architecture.md) Q-ARCH-564.
+
+### Q-HA-380 · The database volume follows `spool.type`, 5 Gi by default, and the chart refuses less than 4 Gi
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the database unpacks to 1,807,314,944 bytes (measured on 2026-11-21) and grows; the loader keeps two while the next unpacks.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A volume `trivy-db` of its own, an `emptyDir` or an ephemeral claim as `spool.type` says, 5 Gi, checked against 2 × 2 GiB (chosen) | Room for two databases with room to grow | The scanner's spool budget stays the analyses'; a node with small disks gets a claim as the spool does | One volume more per pod |
+| (b) Below the scanner's spool | One volume | Less YAML | The loader is another container, which would need the spool read-write, and the analyses' check (Q-HA-318) would compete with 1.7 to 3.4 GiB |
+| (c) `medium: Memory` | Fast | — | 1.7 GiB of memory per pod for data the page cache keeps anyway |
+
+**Choice:** (a). A database that outgrows the room for two still loads: it replaces the newest (R-VULN-049). **Rationale:** the volume that
+holds the bytes carries the check (Q-HA-318's rule). The development agent would revisit this when the database passes about 2 GiB (H-872).
+
+**Applied in the spec:** R-HA-070; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049.
+
+### Q-HA-381 · One pin by digest, the chart's value held equal by a chart test, and one Renovate group that reviews a new version
+
+Status: **Decided by the owner** (2026-11-21) for the pattern: one pin by digest in `tools/versions.env`, the same value in the chart, a chart
+test that holds them equal, one Renovate group, and the digests of the release archive kept by hand go. Which updates merge by themselves is
+the development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A new digest of the same version merges by itself; a new version is a pull request to review (chosen) | Group `trivy` over `TRIVY_IMAGE` and `trivy.image` | A rebuilt image of the same release reaches the installations; a new version, which makes the scanners analyse every stored image again (its analyses are of another version, Q-VULN-199) and may read another database schema than the release's `2`, is read first | Fixes of a new release wait for a review |
+| (b) Every update merges by itself, as ClamAV's patch releases | Fastest fixes | Fewest hands | A version that needs a new database schema would stop every detection, and every release re-analyses every image unasked |
+| (c) By hand only | No Renovate | — | The pin falls behind the publisher's fixes (H-1003) |
+
+**Choice:** (a). **Rationale:** a new analyser version is a change of what Quader reports and of its cost, so it is read; a new digest of
+the same version is not. The development agent would revisit this if the publisher moves to releases that never change the database schema
+within a minor line.
+
+**Applied in the spec:** R-HA-070.
+
+### Q-HA-382 · The image scanning is on in the chart's defaults and off in every test profile but `vuln` and the platform matrix
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the
+development profile starts the scanner units only in the legs whose tests need them, so that every other leg loads the small image alone,
+was told to the owner with his decision.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `values-dev.yaml` switches it off; `values-vuln.yaml` and the platform matrix switch it on and load `TRIVY_IMAGE` into the kind cluster as `CLAMAV_IMAGE` is loaded (chosen) | Only the legs that read a scanner run one | Every other leg starts no scanner pod and pulls nothing of the analyser; the chart's real wiring still runs on a cluster in `vuln` and on the oldest and newest Kubernetes | Two profiles to keep in step |
+| (b) On everywhere | As today | One profile | Each kind leg pulls about 60 MB from Docker Hub and runs two scanner pods no test reads |
+| (c) Off everywhere | No pull | Cheapest | The init container, the read-only mounts and the loader never run on a cluster |
+
+**Choice:** (a). The selectors of `drain.sh` and the Valkey policy's test do not depend on the scanner Deployment; the platform matrix keeps
+`vuln-scanner-trivy` among the kinds it waits for. **Rationale:** the owner's rule that a test moves no more than its assertion needs.
+
+**Applied in the spec:** R-HA-067; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-046.
+
+### Q-HA-383 · A private mirror changes one value per image, and nodes without a registry load the images beforehand
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Mirror each image by its index digest and set `image.*`, `trivy.image` and `clamav.image`; nodes without a registry get the images loaded and keep `IfNotPresent`; the manual says both (chosen) | Values only | No code; the digests stay the pins | The operator mirrors three images instead of one |
+| (b) A value that bundles the analyser into the Quader image again | `image.withAnalyser` | One image to mirror | A second image per release, which the owner did not choose |
+| (c) Quader serves the analyser's image to its nodes by default | A remote repository of Docker Hub as the default of `trivy.image` | No third-party pull by the nodes | The nodes would need the edge's name and a level or a pull secret before the first install; the default must work without Quader |
+
+**Choice:** (a), and (c) is named as a way an operator may take by configuration (R-HA-070). **Rationale:** the pin is the same everywhere;
+only the registry's name differs. The development agent would revisit this if an operator's registry rewrites digests on copy.
+
+**Applied in the spec:** R-HA-070.
+
 ## What this does not cover
 
 ### H-37 · A database restore revives revoked credentials and removed grants

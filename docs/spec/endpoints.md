@@ -780,7 +780,9 @@ lookup that a rule makes unnecessary:
   `/scan/v1/malware-database…`, which take no token and admit a client whose certificate carries the malware scanner's name
   ([ha-and-helm.md](ha-and-helm.md) R-HA-063 to R-HA-066; the name is `malware.scan_listener.client_name`,
   [malware-scanning.md](malware-scanning.md) Q-MAL-61); every other request on them, a token on the database routes included, is refused
-  like any other credential here.
+  like any other credential here. The image scanning adds, specified, the database routes `/scan/v1/trivy-database…` in the same way: no
+  token, the image scanner's name (`vulnerabilities.images.registry.client_name`), and every other request refused
+  ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049, Q-VULN-206).
 
 Acceptance criteria:
 

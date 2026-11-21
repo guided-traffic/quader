@@ -711,6 +711,17 @@ and [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 (Q-UI-897)
 - With 64 live rows of a kind, the report of a 65th UID is refused and a stale row does not count; a row that went stale while draining is
   not listed and the prune deletes it at once, a lost one after 24 h (integration, `test/integration/coordination`).
 
+**With the detection in the scanner** (owner, 2026-11-21, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-048, R-VULN-049;
+specified, not built; [Q-OPS-225](#q-ops-225--an-image-scanner-reports-the-database-it-detects-with)): a scanner of the kind `trivy` reports
+the newest database its pod holds, `database.version` the 64 hexadecimal digits of its layer's digest and `database.builtAt` the build time of
+its `metadata.json`, or no database before its first load; the route accepts a database from `trivy`, and the third criterion above loses
+"a database from `trivy`". The answer's `database.builtAt` follows the rule above: the build time while the row names the database in use (the
+source state's digest), `null` for another. The screens show it on the trivy rows as they show ClamAV's database (R-UI-038,
+[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022): "Database of 2026-11-21 07:02" for the one in use, "an older database"
+for another, "no database yet" before the first. The loader of the kind `trivy-db` does not report itself; it is part of the scanner's pod.
+The value `inProcess` of `replicas` goes: the role `all` builds no image scanner
+([architecture.md](architecture.md) Q-ARCH-563), so the UI development profile answers `none`.
+
 ### R-OPS-004 · System information
 Priority: **MVP** · Covers: ADMAPI-070, OPS-007
 
@@ -6526,6 +6537,24 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) `freshclam`'s own outcome through `OnErrorExecute` and `OnUpdateExecute` | Hooks of `freshclam.conf` | `freshclam`'s own verdict | Runs a shell line at each update, whose exact behaviour was not checked |
 
 **Choice:** (a). **Applied in the spec:** R-OPS-048; [malware-scanning.md](malware-scanning.md) R-MAL-010, R-MAL-032.
+
+### Q-OPS-225 · An image scanner reports the database it detects with
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner asked
+that the screens name every scanner pod and its tool (2026-11-21); with the detection in the scanner each pod holds a database of its own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The trivy scanner's report carries the newest database of its pod, its digest's hex and its build time, as ClamAV's does (chosen) | One member already in the table and the screens | An administrator sees a pod that has not loaded the database in use, with no new route, column or screen | A self-report: a taken-over pod can name any database (H-1161) |
+| (b) The loader reports itself as a row of its own | A fourth kind in the table | The loader's state apart | Two rows per pod; the loader is no unit of its own |
+| (c) Nothing; the worker's `database_loading` and the alert show it | No change | — | Which pod lags is not visible |
+
+**Choice:** (a). The report's charset for a database's version admits the 64 hexadecimal digits as they are. **Rationale:** the natural
+place is the row that already carries the tool's version and, for ClamAV, its database. The development agent would revisit this if an
+administrator needs the loader's failure reason on the screen, which its log carries today.
+
+**Applied in the spec:** R-OPS-048; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049; [api-and-ui.md](api-and-ui.md) R-UI-038.
+
 ## What this does not cover
 
 ### H-53 · Span export bypasses the egress address policy

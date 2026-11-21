@@ -141,6 +141,12 @@ images, the parser of the most hostile input Quader reads, has the smallest foot
 What an analyser that an image took over can do with this footprint is on [image-scanning.md](image-scanning.md). What it does not bound is
 the network: [H-1036](image-scanning.md#h-1036--the-chart-restricts-no-egress-of-the-scanner).
 
+With the detection in the scanner and the analyser from its own image (specified, not built;
+[R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)) the pod keeps this
+footprint and gains three things, none of them a credential: an init container of the analyser's own image that mounts one volume and
+copies the binary; a container `database` of the Quader image with the scanner's own pair, which reads the database routes of the scan
+listener and writes the database volume; and two volumes, the binary and the database, both read-only in the scanner's container.
+
 The malware scanner (specified, not built; [R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) has the same
 footprint, with a read of one blob instead of one image, and a second container `clamd` of ClamAV's official image that mounts no TLS
 pair and no configuration of Quader and opens no network listener. `freshclam` runs in the updater, a Deployment of its own

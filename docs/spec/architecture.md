@@ -608,6 +608,15 @@ nothing worth taking.
 - **Configuration that names the role's peers** is chart-managed ([ha-and-helm.md](ha-and-helm.md) R-HA-066): the worker's
   `vulnerabilities.images.scanner.url` and the scanner's `vulnerabilities.images.registry.url`. In the role `all` both are empty and mean the
   process's own listeners over loopback (Q-ARCH-531).
+- **With the detection in the scanner** (owner, 2026-11-21, [ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image);
+  specified, not built). A scanner of the kind `trivy` serves `POST /scan/v1/detections` beside `POST /scan/v1/analyses`
+  ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-048), runs its analyser from `/opt/trivy/trivy`, which an init container
+  copied from the analyser's own image ([ha-and-helm.md](ha-and-helm.md) R-HA-070), and holds, read-only, the database it detects with
+  (R-VULN-049); it sets itself not dumpable at its start (Q-VULN-203). A fourth kind, `trivy-db`, is that database's loader, a second
+  container of the same pod ([Q-ARCH-564](#q-arch-564--the-loader-of-the-analysers-database-is-a-kind-of-the-role-scanner-trivy-db)): it
+  builds the area with the loader alone, opens no listener but the operations listener, reads `vulnerabilities.images.registry` and
+  `vulnerabilities.images.database`, holds the pod's pair, the CA and the database's directory, and reports nothing itself. The role `all`
+  builds no image scanner any more ([Q-ARCH-563](#q-arch-563--the-role-all-builds-no-image-scanner)), so Q-ARCH-531 and Q-ARCH-551 go.
 
 Acceptance criteria:
 
@@ -647,6 +656,13 @@ scanner's pull, and no client can use a scan token.
   scan token of an image is refused on these routes, a blob token below `/v2/`. The paths below `/scan/` belong to the family `packages`,
   the listener's surface, and no other endpoint registers them ([internal/auth/scan.go](../../internal/auth/scan.go),
   [internal/api/scanlisten](../../internal/api/scanlisten/scanlisten.go)).
+- **The image scanning's database routes** (specified, not built; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049,
+  Q-VULN-206). `GET /scan/v1/trivy-database` (the database in use: its digest, size and build time) and
+  `GET /scan/v1/trivy-database/sha256:<hex>` (its layer, while it is the one in use, read from the database's repository through the item
+  store) take no token and admit a client whose certificate lists `vulnerabilities.images.registry.client_name`, as the principal
+  `system:vuln-scanner-trivy`; a token, another kind's certificate and a request without TLS are `401`. They count no download and write
+  nothing to the usage store. The path names the tool, because the database is Trivy's own format and a second tool for images would
+  bring a database of its own.
 - **The route of the scanner replicas** ([operations-and-observability.md](operations-and-observability.md) R-OPS-048, Q-OPS-223).
   `PUT` and `DELETE /scan/v1/replicas/{instanceUid}` take no token and admit a client whose certificate lists the name of a kind of scanner,
   `vulnerabilities.images.registry.client_name` (`trivy`) or `malware.scan_listener.client_name` (`clamav`), as the principal
@@ -11178,6 +11194,9 @@ the ports a developer uses.
 
 **Applied in the spec:** R-ARCH-001, R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067.
 
+**Superseded 2026-11-21** by [Q-ARCH-563](#q-arch-563--the-role-all-builds-no-image-scanner): once the analyser leaves the common image and
+the detection needs a database in the scanner's pod, the role `all` builds no image scanner. It stays in force until that change is built.
+
 ### Q-ARCH-540 · A format's e2e leg runs on a push only when that format's own code changed
 
 Status: **Decided by the owner** (2026-11-20): a format's e2e leg runs on a push only when that format's own code changed. A change of
@@ -11373,6 +11392,9 @@ scanner's. The development agent would revisit this if the role `all` were ever 
 
 **Applied in the spec:** R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067.
 
+**Superseded 2026-11-21** with Q-ARCH-531 by [Q-ARCH-563](#q-arch-563--the-role-all-builds-no-image-scanner): a role `all` without a scanner
+has no scanner's check to report, and the test named above goes with it.
+
 ### Q-ARCH-552 · Each end of a link requires one name, listed exactly in the other end's certificate
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11455,6 +11477,9 @@ malware scanner with `clamd` beside it (ClamAV). After Q-HA-372 the Deployments 
 the default when a second tool for images is built. **Applied in the spec:** R-ARCH-036 (Kinds); [ha-and-helm.md](ha-and-helm.md) R-HA-030,
 R-HA-068; [malware-scanning.md](malware-scanning.md)'s configuration. Code: [process.go](../../internal/config/process.go).
 
+**Revisited 2026-11-21:** the key gains `freshclam` (Q-ARCH-562) and, specified, `trivy-db`, the loader of the image scanner's database
+([Q-ARCH-564](#q-arch-564--the-loader-of-the-analysers-database-is-a-kind-of-the-role-scanner-trivy-db)); the default stays `trivy`.
+
 
 ### Q-ARCH-562 · The updater is a kind of the role `scanner`
 
@@ -11474,6 +11499,54 @@ TLS; ClamAV's image has no HTTP server, and `freshclam` cannot seed itself from 
 secret, a certificate of its kind, reached only over links) is exactly the updater's. The development agent would revisit this when a third
 unit that is no scanner needs the role, and then rename the role. **Applied in the spec:** R-ARCH-036; [README.md](README.md) INV-2;
 [malware-scanning.md](malware-scanning.md) R-MAL-032.
+
+### Q-ARCH-563 · The role `all` builds no image scanner
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
+owner's decision of 2026-11-21 that the analyser leaves every image but the scanner unit's
+([ADR-229](../decisions.md#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image)).
+
+Context: the role `all` is a binary started outside the chart, on a developer's machine (the UI development profile) and in tests. It
+built the image scanner in process and called it over loopback (Q-ARCH-531); a developer's machine had no Linux analyser at the configured
+path, so its scanner reported a failing check (Q-ARCH-551) and every image of that profile failed its attempts with `analyser_failed`. With
+the detection in the scanner, an in-process scanner would also need its own database loader, and the pinned way to a local analyser (the
+release archive of `make trivy`) goes with the archive's digests.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `all` builds no scanner; its worker part calls `vulnerabilities.images.scanner.url` when one is set, and without one the image scanning's job ends at once, touching no row (chosen) | The UI profile shows images `pending_scan` and `replicas: "none"`; image scanning is tried on the kind profile `vuln` | No loopback listeners, no loader in process, no check that cannot pass; the profile tells the truth about what runs | The role `all` no longer runs the chart's path of the image scanning; the kind profile and the integration stack's scanner replica do |
+| (b) Keep the in-process scanner and add the loader in process | As today, one part more | The UI profile scans where an analyser is installed | Nothing installs one any more; the profile's images keep failing their attempts; two more parts that only a development process builds |
+| (c) `all` builds the scanner only when the analyser answers at start | Conditional | Scans where it can | An area set that depends on the machine, which Q-ARCH-209 rules out |
+
+**Choice:** (a). The role `all` builds no malware scanner either (Q-ARCH-560), so neither scanning runs in process; the screens keep their
+seeded rows. **Rationale:** a development process should not pretend to scan. The development agent would revisit this if a developer's
+work needs scanning without a cluster, which the integration stack's scanner replica serves today.
+
+**Applied in the spec:** R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-025;
+[operations-and-observability.md](operations-and-observability.md) R-OPS-048 (`inProcess` goes); [api-and-ui.md](api-and-ui.md) R-UI-038.
+
+### Q-ARCH-564 · The loader of the analyser's database is a kind of the role `scanner`, `trivy-db`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the database must be written by a process outside the scanner's container, so that the scanner's analysers can only read it
+([vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-196). The process needs the pod's pair to read the scan listener, a TLS
+reloader, an operations listener for its liveness, structured logs, and the unpack code of today's worker.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `process.scanner_kind: trivy-db`: the role `scanner` with the loader alone, no client listener, its operations listener where the chart puts it (chosen) | One value more of a key the role reads | The role's rules hold unchanged (no secret, no database, no Valkey, its kind's certificate); the start, the reloader, the logs and the drain are the role's | A kind that names no tool of its own but its tool's database |
+| (b) A subcommand `quader scanner-database` | Another entry point | Honest name | A start path, a configuration schema and checks of its own for one loop |
+| (c) A tool image that fetches and unpacks | No Quader code | — | It would have to verify the digest, bound the archive and speak mutual TLS with the scanner's name, which Quader's code does already |
+
+**Choice:** (a). The configuration load of the kind reads `process`, `server`, `log`, `metrics`, `runtime`, `vulnerabilities.images.registry`
+and `vulnerabilities.images.database`; it reports nothing to R-OPS-048 (the scanner of the pod reports the database), and it logs with the
+component `vuln-scanner-trivy`, the unit's name (Q-HA-373). The reaper of Q-ARCH-530 does not reach it: it is another container.
+**Rationale:** the role is the wrapper of a third-party tool without secrets (Q-ARCH-562); the loader is part of one such unit. The
+development agent would revisit this together with Q-ARCH-562's condition, when the role is renamed.
+
+**Applied in the spec:** R-ARCH-036; Q-ARCH-561 gains the value; [ha-and-helm.md](ha-and-helm.md) R-HA-070, Q-HA-379;
+[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049.
 ## What this does not cover
 
 

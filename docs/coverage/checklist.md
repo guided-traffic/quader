@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,107 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,110 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 793 specified (509 of them implemented), 1,446 open.
-1,107 spec requirements: 725 cover catalog features, 382 cover none (`quader-only`, [listed at the
+1,110 spec requirements: 728 cover catalog features, 382 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -895,7 +895,7 @@ Catalog page: [ha-and-deployment.md](../features/ha-and-deployment.md) · specif
 | HA-012 | Single client entry point with path-based routing | MVP | implemented | [R-ARCH-005](../spec/architecture.md) (implemented), [R-HA-037](../spec/ha-and-helm.md) (implemented) |
 | HA-013 | Internal service registry and health-gated routing | Later | open | – |
 | HA-014 | Availability-zone affinity for internal routing | P2 | open | – |
-| HA-015 | Components deployed as separately scaled workloads | P1 | specified | [R-ARCH-001](../spec/architecture.md) (implemented), [R-ARCH-036](../spec/architecture.md), [R-HA-002](../spec/ha-and-helm.md) (implemented), [R-HA-062](../spec/ha-and-helm.md) (implemented), [R-HA-065](../spec/ha-and-helm.md), [R-HA-068](../spec/ha-and-helm.md) (implemented) |
+| HA-015 | Components deployed as separately scaled workloads | P1 | specified | [R-ARCH-001](../spec/architecture.md) (implemented), [R-ARCH-036](../spec/architecture.md), [R-HA-002](../spec/ha-and-helm.md) (implemented), [R-HA-062](../spec/ha-and-helm.md) (implemented), [R-HA-065](../spec/ha-and-helm.md), [R-HA-068](../spec/ha-and-helm.md) (implemented), [R-HA-070](../spec/ha-and-helm.md) |
 | HA-016 | Cluster encryption key | MVP | implemented | [R-API-049](../spec/api-and-ui.md) (implemented), [R-ARCH-021](../spec/architecture.md) (implemented), [R-HA-027](../spec/ha-and-helm.md) (implemented) |
 | HA-017 | Service trust key provisioning and rotation | Out of scope | open | – |
 | HA-018 | Internal TLS with a built-in certificate authority | P2 | specified | [R-ARCH-035](../spec/architecture.md) (implemented), [R-ARCH-038](../spec/architecture.md), [R-HA-063](../spec/ha-and-helm.md) (implemented), [R-HA-066](../spec/ha-and-helm.md) |
@@ -1260,9 +1260,9 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
-| SEC-001 | Package risk data source | MVP | specified | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented), [R-VULN-007](../spec/vulnerability-scanning.md) (implemented), [R-VULN-008](../spec/vulnerability-scanning.md) (implemented), [R-VULN-010](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) (implemented), [R-VULN-030](../spec/vulnerability-scanning.md) |
+| SEC-001 | Package risk data source | MVP | specified | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented), [R-VULN-007](../spec/vulnerability-scanning.md) (implemented), [R-VULN-008](../spec/vulnerability-scanning.md) (implemented), [R-VULN-010](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-049](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) (implemented), [R-VULN-030](../spec/vulnerability-scanning.md) |
 | SEC-002 | Online synchronization of the vulnerability database | MVP | specified | [R-VULN-004](../spec/vulnerability-scanning.md) (implemented), [R-VULN-021](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-045](../spec/vulnerability-scanning.md) (implemented) |
-| SEC-003 | Offline synchronization of the vulnerability database | MVP | specified | [R-VULN-005](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) (implemented) |
+| SEC-003 | Offline synchronization of the vulnerability database | MVP | specified | [R-VULN-005](../spec/vulnerability-scanning.md) (implemented), [R-VULN-035](../spec/vulnerability-scanning.md), [R-VULN-049](../spec/vulnerability-scanning.md), [R-VULN-044](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-004 | Malicious package intelligence | MVP | implemented | [R-VULN-003](../spec/vulnerability-scanning.md) (implemented), [R-VULN-006](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-005 | Package labels | P2 | open | – |
 | SEC-006 | Custom licenses | P2 | open | – |
@@ -1302,8 +1302,8 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-039 | On-demand evaluation of uncovered packages | Later | open | – |
 | SEC-040 | Curation policy sharing across sites | Later | open | – |
 | SEC-041 | Redirect endpoint for intercepted public registry traffic | P2 | open | – |
-| SEC-042 | Indexing scope | MVP | specified | [R-MAL-001](../spec/malware-scanning.md) (implemented), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-002](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md) |
-| SEC-043 | Scanning on upload and on cache | MVP | specified | [R-MAL-001](../spec/malware-scanning.md) (implemented), [R-MAL-004](../spec/malware-scanning.md) (implemented), [R-MAL-015](../spec/malware-scanning.md) (implemented), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-009](../spec/vulnerability-scanning.md) (implemented), [R-VULN-011](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md) |
+| SEC-042 | Indexing scope | MVP | specified | [R-MAL-001](../spec/malware-scanning.md) (implemented), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-002](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md), [R-VULN-048](../spec/vulnerability-scanning.md) |
+| SEC-043 | Scanning on upload and on cache | MVP | specified | [R-MAL-001](../spec/malware-scanning.md) (implemented), [R-MAL-004](../spec/malware-scanning.md) (implemented), [R-MAL-015](../spec/malware-scanning.md) (implemented), [R-VULN-001](../spec/vulnerability-scanning.md) (implemented), [R-VULN-009](../spec/vulnerability-scanning.md) (implemented), [R-VULN-011](../spec/vulnerability-scanning.md) (implemented), [R-VULN-033](../spec/vulnerability-scanning.md), [R-VULN-048](../spec/vulnerability-scanning.md) |
 | SEC-044 | On-demand indexing and reindexing | MVP | implemented | [R-VULN-011](../spec/vulnerability-scanning.md) (implemented) |
 | SEC-045 | Scan data retention | Later | open | – |
 | SEC-046 | File-name exclusion from indexing | Later | open | – |

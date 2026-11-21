@@ -5101,7 +5101,11 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   (`reporting`, a warning), the scan listener cannot tell the kind (`unverified`), the development role `all` analyses images in its own
   process (`inProcess`), or no scanner of the kind is configured (`none`, naming the setting). A failure of the read stands in the group's
   place and leaves the roles. The rows are the scanners' own statements, bound as text (H-1161 in
-  [security/scanner-replicas.md](../security/scanner-replicas.md)).
+  [security/scanner-replicas.md](../security/scanner-replicas.md)). With the detection in the scanner (specified,
+  [operations-and-observability.md](operations-and-observability.md) Q-OPS-225) the trivy rows show the database the pod detects with, in
+  the words ClamAV's rows use for theirs ("Database of 2026-11-21 07:02", "an older database", "no database yet"), on the System page and in
+  the fold of **Advisory sources**; the sentence of `inProcess` goes, because the role `all` builds no image scanner
+  ([architecture.md](architecture.md) Q-ARCH-563).
 - Readiness checks per replica, from the `checks` of `/system/replicas` (R-OPS-001, R-OPS-003; Q-OPS-2
   in [operations-and-observability.md](operations-and-observability.md)), in two kinds that the
   screen never merges:

@@ -219,6 +219,7 @@ checked every earlier decision against them:
 | [ADR-223](#adr-223--a-unit-that-runs-a-tool-carries-the-tools-name) | A unit that runs a tool carries the tool's name | Accepted (owner decisions of 2026-11-21, the second moving the boundary); the forms decided by the development agent — owner review at the walkthrough |
 | [ADR-224](#adr-224--a-scanner-reports-itself-through-the-scan-listener-and-packages-keeps-its-row) | A scanner reports itself through the scan listener, and `packages` keeps its row | Accepted (owner decision of 2026-11-21); the mechanism decided by the development agent — owner review at the walkthrough |
 | [ADR-225](#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format) | The ClamAV updater is a Deployment of its own, and ClamAV's definitions are a repository format | Accepted (owner decision of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough; the level of the endpoint put to the owner |
+| [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) | The scanner unit detects as well, and the analyser comes from its own image | Accepted (owner decisions of 2026-11-21); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1829,6 +1830,50 @@ image scanning see an image without its attachments.
 
 **Spec:** [signatures.md](spec/signatures.md) R-SIG-022 to R-SIG-025, Q-SIG-32, Q-SIG-43; [formats/oci.md](spec/formats/oci.md) R-OCI-016,
 R-OCI-018, R-OCI-026; [architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-010.
+
+### ADR-229 · The scanner unit detects as well, and the analyser comes from its own image
+
+**Status:** Accepted (owner decisions of 2026-11-21, after he saw no Trivy container in the scanner pod and asked why the worker runs the
+analyser too and why the scanner's answer counts as untrusted: "Option B, nach der umbenennung. Trivy dann aus den anderen Images
+entfernen.", and for where the scanner's analyser comes from: "Option b"); the mechanisms decided by the development agent — owner review at
+the walkthrough. Supersedes the detection in the worker of [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret),
+whose frame stands: the analysis runs in a role without secrets, called by the worker job.
+
+**Context.** The unit `vuln-scanner-trivy` analysed an image; the worker ran the same analyser a second time for the detection, against the
+database it kept, after writing the scanner's answer anew under limits because the answer counts as untrusted. The analyser, a static binary
+of 163 MB, lay in the one image that `api`, `packages`, `worker` and both scanner units run (239 MB in all).
+
+**Decision.**
+- The scanner unit does both steps: `POST /scan/v1/detections` carries the stored analysis, names the database and the analyser version, and
+  answers the analyser's report; the analysis stays once per manifest digest and analyser version, so a new database reads no layer
+  ([vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-048). The worker runs no tool, keeps the analysis as answered after a
+  bounded check (R-VULN-043), and reads the report in Go under limits. The rewrite and its fidelity test go.
+- Each scanner pod keeps the database read-only: a second container of the Quader image, of the kind `trivy-db`, reads it through a route of
+  the scan listener with the pod's certificate, as the malware scanner reads its signatures, and writes it into a volume that the scanner's
+  container mounts read-only (R-VULN-049, [architecture.md](spec/architecture.md) Q-ARCH-564). No scanner fetches it from the internet.
+- The analyser comes from its own official image, pinned by digest (`TRIVY_IMAGE`), which an init container copies into a volume the scanner
+  mounts read-only; the chart's `trivy.image` holds the same value under a chart test, one Renovate group moves both, and the digests of the
+  release archive go ([ha-and-helm.md](spec/ha-and-helm.md) R-HA-070). The release image carries no analyser.
+- The scanner's process is not dumpable; detections share the analyses' slots; after a new database the images without a detection go first.
+- The role `all` builds no image scanner; the test profiles run the image scanning only where a test reads it.
+
+**Consequences.** H-1038 closes: no analyser parses an image's values in a pod with secrets. A second tool with a database of its own would
+be a unit beside the first and nothing in the worker. The release image shrinks by 163 MB, and every kind leg that does not scan images
+loads that much less. A node pulls a third party's image when a scanner pod starts (H-1182), each scanner pod holds about 1.7 GiB of database
+and reads 142.6 MB per new one, and a scanner pod whose own process is taken over answers the detections it serves (H-1181).
+
+**Alternatives considered.** The detection in the worker with the analyser in the common image (option A put to the owner); a second image
+with the analyser built per release; the database in the scanner's own spool; a hash of the database per detection; Landlock; an image
+volume; the analyser version as a release constant; the version from the scanners' reports.
+
+**Revisit condition:** Trivy gains a way to read its database from a process of another user; image volumes are on by default in the oldest
+Kubernetes the chart supports; detections wait visibly behind analyses.
+
+**Spec:** [vulnerability-scanning.md](spec/vulnerability-scanning.md) R-VULN-033 to R-VULN-036, R-VULN-041, R-VULN-043, R-VULN-044,
+R-VULN-046, R-VULN-048, R-VULN-049, Q-VULN-196 to Q-VULN-206; [ha-and-helm.md](spec/ha-and-helm.md) R-HA-002, R-HA-065 to R-HA-067,
+R-HA-070, Q-HA-378 to Q-HA-383; [architecture.md](spec/architecture.md) R-ARCH-036, R-ARCH-037, Q-ARCH-563, Q-ARCH-564;
+[operations-and-observability.md](spec/operations-and-observability.md) R-OPS-048, Q-OPS-225; [security/image-scanning.md](security/image-scanning.md)
+H-1181, H-1182.
 
 ## Design invariants
 
