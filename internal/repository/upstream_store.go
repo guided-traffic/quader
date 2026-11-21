@@ -389,7 +389,7 @@ type UpstreamPurgeArgs struct {
 }
 
 // RunUpstreamPurgeJob is the handler of [UpstreamPurgeJobKind]: the items in batches as the deletion job removes them, then in one
-// transaction what the row's removal would have taken with it, by upstream_repository_purge of migration 00086. A repository the
+// transaction what the row's removal would have taken with it, by upstream_repository_purge of migration 00093. A repository the
 // catalog declared again before the end keeps what is left.
 func (s *Service) RunUpstreamPurgeJob(ctx context.Context, run *jobs.Run) error {
 	var a UpstreamPurgeArgs

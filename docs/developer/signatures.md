@@ -91,6 +91,10 @@ row there and its cases here, a constant cost of milliseconds.
 `Options` takes `MaxObjectSize` and `MaxPerSubject` (0: the defaults of R-SIG-013) and `Wake`; package 2 sets them from
 `signatures.max_object_size`, `signatures.max_per_subject` and the job's wake when it adds the configuration of R-SIG-040.
 
+The purge of a retired well-known repository (R-REPO-067 step 5) deletes the repository's `signature_attachments` as content
+(migration 00093, [database.md](database.md#the-purge-of-a-retired-repositorys-signature-attachments-00093)) and leaves the signatures
+and objects to `RemoveOrphans`; `artifact_origins` goes with the items it removes first.
+
 ### What each format's detector hands over
 
 | Format | Event | Candidates |

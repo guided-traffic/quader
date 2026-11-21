@@ -49,7 +49,7 @@ UPDATE upstream_repository SET account_removed_at = NULL WHERE repository_id = s
 
 -- name: PurgeUpstreamRepository :exec
 -- The last transaction of the purge of a retired repository (R-REPO-067 step 5): what the removal of its row would have taken with
--- it, while the row stays (upstream_repository_purge of 00086).
+-- it, while the row stays (upstream_repository_purge of 00093).
 SELECT upstream_repository_purge(sqlc.arg(repository_id)::bigint);
 
 -- name: CountUpstreamListedBy :many

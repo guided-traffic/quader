@@ -1871,7 +1871,9 @@ management API above). For each declaration of `wellknown.Declared(catalog)`, an
    `upstream-purge` enqueued that removes its items in batches and then the content rows of every other table
    ([Q-REPO-391](#q-repo-391--the-purge-of-a-retired-repository-is-a-function-of-the-schema-held-to-its-foreign-keys-by-a-test)): its
    cache entries, URL mappings and invalidations, the format's rows, as the deletion job of R-REPO-013 does without removing the
-   row. The repository row and its `upstream_repository` row stay as a tombstone: the virtual repositories that list it keep a
+   row. Its signature attachments are content and go too ([signatures.md](signatures.md) R-SIG-004); the signatures and signature
+   objects they leave without an attachment belong to the installation and are the store's orphans, which the job of R-SIG-011 removes
+   (R-SIG-003). The repository row and its `upstream_repository` row stay as a tombstone: the virtual repositories that list it keep a
    placeholder (R-REPO-072), its key is never given to another repository, and its usage and findings rows go with the purge.
 6. **A declared key that a repository of another format or class holds in `upstream`**: nothing is written and `quader migrate`
    exits 1 naming the key; a catalog in which that can happen does not pass its tests (R-REPO-062, Q-REPO-387).
@@ -10035,7 +10037,8 @@ what is left.
 needs no list because its last step removes the row. The development agent would revisit this if retirements became frequent.
 
 **Applied in the spec:** R-REPO-067 step 5. Code: `RunUpstreamPurgeJob` ([upstream_store.go](../../internal/repository/upstream_store.go)),
-`upstream_repository_purge` ([00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql)),
+`upstream_repository_purge` ([00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql), replaced by
+[00093_upstream_purge_signatures.sql](../../internal/meta/postgres/migrations/00093_upstream_purge_signatures.sql)),
 `TestR_REPO_067_ThePurgeOfARetiredRepository`.
 
 ### Q-REPO-392 · `scanner-trivy` stores its cache period before the cleanup that applies it exists

@@ -171,7 +171,7 @@ SELECT upstream_repository_purge($1::bigint)
 `
 
 // The last transaction of the purge of a retired repository (R-REPO-067 step 5): what the removal of its row would have taken with
-// it, while the row stays (upstream_repository_purge of 00086).
+// it, while the row stays (upstream_repository_purge of 00093).
 func (q *Queries) PurgeUpstreamRepository(ctx context.Context, repositoryID int64) error {
 	_, err := q.db.Exec(ctx, purgeUpstreamRepository, repositoryID)
 	return err

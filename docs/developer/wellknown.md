@@ -80,8 +80,9 @@ the refusals of R-REPO-069. A run against the catalog it wrote writes nothing an
 own: `app.UpstreamStep(cfg, cat, …)` is the step with the writers `DeclaredState` builds.
 
 **The purge** (`RunUpstreamPurgeJob`, Q-REPO-376, Q-REPO-391): the items in batches as the deletion job removes them, then
-`upstream_repository_purge(id)` of migration 00086 removes, in one transaction, the rows of every table whose foreign key to `repositories` cascades
-and that holds content (the format's rows, the cache's entries and mappings, the usage, the findings); configuration stays (secrets, grants, rules,
+`upstream_repository_purge(id)` of migration 00086 (replaced by 00093) removes, in one transaction, the rows of every table whose foreign key to
+`repositories` cascades and that holds content (the format's rows, the cache's entries and mappings, the usage, the findings, the signature
+attachments); configuration stays (secrets, grants, rules,
 limits, claims, the member rows of the virtual repositories that keep it as a placeholder), and so do the repository row and its
 `upstream_repository` row. `TestR_REPO_067_ThePurgeOfARetiredRepository` holds the function's list to the schema's foreign keys: a migration that
 adds such a table fails it until the table is purged or kept by a decision.

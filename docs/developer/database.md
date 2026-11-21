@@ -168,7 +168,9 @@ live replica runs a release below its `requires-app` (the contract guard), and o
    sets `search_path`.
 2. New table: register its export class in the owning package (`tables.Register`); a `bigint` revision column
    (`rev_seq`, `revision`, `epoch`, `*_version`) needs `meta.RegisterRevisionColumn`. The integration tests
-   `TestTableRegistry` and `TestRevisionColumns` fail otherwise.
+   `TestTableRegistry` and `TestRevisionColumns` fail otherwise. A table with an `ON DELETE CASCADE` key to `repositories`
+   also runs the integration area `upstream`: its `TestR_REPO_067_ThePurgeOfARetiredRepository` holds every such table as content
+   (deleted by `upstream_repository_purge`, which the migration then replaces with the added delete) or as configuration (kept).
 3. A table with a blob reference: column `blob_sha256`, FK to `blobs`, index, both triggers
    (`TestBlobReferenceRules`).
 4. Backfills are background data migrations (R-HA-022), not migration steps; the first is `data_migration_nuget_semver2`
@@ -630,6 +632,13 @@ item, and a CI job's claims). No foreign key to `blobs`. The statements are in
 [signatures.sql](../../internal/meta/postgres/queries/signatures.sql), batches as parallel arrays; every table is `data`
 ([tables_signatures.go](../../internal/meta/postgres/tables_signatures.go)). The number is 00092 because 00091 belongs to a change
 that lands beside it; the runner needs numbers without a gap, so the two land together or the later one is renumbered.
+
+## The purge of a retired repository's signature attachments (00093)
+
+[00093_upstream_purge_signatures](../../internal/meta/postgres/migrations/00093_upstream_purge_signatures.sql) replaces
+`upstream_repository_purge` of 00086 with one delete added: the purge of a retired well-known repository (R-REPO-067 step 5,
+[wellknown.md](wellknown.md)) removes its `signature_attachments`, which are content; the signatures and objects they leave are the
+store's orphans for the job of R-SIG-011, and `artifact_origins` goes with the items.
 
 ## Debian tables (00060 to 00065)
 
