@@ -30,9 +30,14 @@ func perDownload(t *testing.T, e *env, r *testenv.Replica, path string) map[stri
 	return perRequestAs(t, e, r, path, e.tokReader)
 }
 
-// perRequestAs is perDownload for the caller of a token.
+// perRequestAs is perDownload for the caller of a token. The budget is the default installation's: the malware scanning is on
+// (malware.enabled, its default) and nothing is strict, which the window checks before it starts (R-MAL-013, Q-MAL-92).
 func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string) map[string]int {
 	t.Helper()
+	if a := e.st.Do(r, "GET", "/api/v1/malware/switch", token, nil); a.Status != 200 ||
+		!strings.Contains(string(a.Body), `"enabled":true`) || !strings.Contains(string(a.Body), `"onlyChecked":false`) {
+		t.Fatalf("the malware scanning is not on and lax as in a default installation: %d %s", a.Status, a.Body)
+	}
 	if a := e.st.Do(r, "GET", path, token, nil); a.Status != 200 {
 		t.Fatalf("warm-up %s: %d %.200s", path, a.Status, a.Body)
 	}
@@ -43,21 +48,17 @@ func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string) 
 			t.Fatalf("%s: %d", path, a.Status)
 		}
 	}
+	loop := time.Since(start)
 	time.Sleep(300 * time.Millisecond)
-	counts := map[string]int{}
-	for _, s := range testenv.StatementsSince(t, start.Add(-100*time.Millisecond)) {
-		counts[testenv.StatementName(s)]++
-	}
-	// A statement of the request runs once per download. The log is read from a container that other writers share, so a line
-	// can be lost where two writers meet: a statement counts as the request's when it ran for nine downloads in ten, and its
-	// number per download is the nearest whole one.
-	out := map[string]int{}
-	for k, v := range counts {
-		if !background[k] && v*10 >= requests*9 {
-			out[k] = (v + requests/2) / requests
-		}
-	}
+	// A statement of the request runs once per download and across the downloads; the scheduler's tick, which offers every
+	// task's slot at once, does not count however many tasks there are (testenv.PerRequest, Q-MAL-92).
+	stmts := testenv.StatementLogSince(t, start.Add(-100*time.Millisecond))
+	out := testenv.PerRequest(stmts, requests, loop, background)
 	if len(out) == 0 {
+		counts := map[string]int{}
+		for _, s := range stmts {
+			counts[testenv.StatementName(s.Text)]++
+		}
 		t.Fatalf("no statement ran per request; the log is not read: %v", counts)
 	}
 	return out

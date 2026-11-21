@@ -5091,8 +5091,14 @@ Latencies are measured at the replica.
 
 Database budget per request, used to size P-1 to P-8:
 - local download: 1 query, the item lookup, which also reads the rows the format's serve-time check decides on (the
-  tombstone of npm and NuGet, the NuGet version row, Q-ARCH-291) and the verdict of the vulnerability scanning
-  ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015);
+  tombstone of npm and NuGet, the NuGet version row, Q-ARCH-291), the verdict of the vulnerability scanning
+  ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015) and the verdict of the malware scanning
+  ([malware-scanning.md](malware-scanning.md) R-MAL-013); in a default installation (the malware scanning on, nothing strict) it is
+  measured with the scanning on;
+- a download that waits for its malware verdict, only where only checked artifacts are served (R-MAL-014): besides the lookup one
+  transaction that asks for the scan (its row and the job's wake) and one read of the verdict per wake-up; it is the wait's cost, not
+  a served download's. A route that is no download (an index by its suite's path, a manifest by tag) and a generated item never
+  reach the malware gate (Q-MAL-22, Q-MAL-51);
 - remote hit: 1 query, the same lookup, which also reads whether the artifact's cache entry exists and, for npm, the facts
   of the remote version (Q-ARCH-291) that the artifact gate (R-NPM-025, R-NPM-026, Q-NPM-13) and the serve check decide on; a hit
   of a package whose document is expired or was validated before a restore revalidates the document first and costs the
@@ -5121,6 +5127,10 @@ answer (the failure count or the marker refresh;
 the replica's cache answers costs none.
 
 Measurement:
+- The budget tests of `test/integration/querybudget` and `test/integration/vulnblock` count a statement as a request's when it ran for nine requests in ten of a window
+  and its runs spread over at least half of it (`testenv.PerRequest`): the scheduler's tick offers every task's slot at once, one
+  `InsertJob` per task, and is no statement of a download however many tasks there are
+  ([malware-scanning.md](malware-scanning.md) Q-MAL-92).
 - `perf/` holds k6 scripts and a Go driver for P-12. The full run of Test and Release on the commit that closes the phase runs them on a staging cluster
   sized like the reference, and runs P-16 with the `web` Deployment scaled from 3 to 6 replicas.
 - Pull requests run Go micro-benchmarks for `Match`, `Rewrite`, `Merge` and `authz.Decide`. A

@@ -12,8 +12,10 @@ import (
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// downloadStatements runs n downloads of a path against a replica and returns the statements the window logged, by name.
-func downloadStatements(t *testing.T, e *env, r *testenv.Replica, path string, n int) map[string]int {
+// downloadStatements runs n downloads of a path against a replica and returns the statements the window logged, by name, and
+// those of the downloads, per download: the statements that ran for nearly every download and across them (testenv.PerRequest, so
+// a run of the job scheduler that falls into the window is not taken for one, Q-MAL-92).
+func downloadStatements(t *testing.T, e *env, r *testenv.Replica, path string, n int) (counts, perDownload map[string]int) {
 	t.Helper()
 	if a := e.do(r, "GET", path, e.tokReader); a.Status != 200 {
 		t.Fatalf("warm-up %s: %d %s", path, a.Status, a.Body)
@@ -25,16 +27,18 @@ func downloadStatements(t *testing.T, e *env, r *testenv.Replica, path string, n
 			t.Fatalf("%s: %d", path, a.Status)
 		}
 	}
+	loop := time.Since(start)
 	time.Sleep(300 * time.Millisecond)
-	counts := map[string]int{}
-	for _, s := range testenv.StatementsSince(t, start.Add(-100*time.Millisecond)) {
-		name := testenv.StatementName(s)
+	stmts := testenv.StatementLogSince(t, start.Add(-100*time.Millisecond))
+	counts = map[string]int{}
+	for _, s := range stmts {
+		name := testenv.StatementName(s.Text)
 		counts[name]++
-		if strings.Contains(s, "vuln_") && name != "GetLiveItem" {
+		if strings.Contains(s.Text, "vuln_") && name != "GetLiveItem" {
 			t.Errorf("a statement of the scanning's tables runs on a download: %s", name)
 		}
 	}
-	return counts
+	return counts, testenv.PerRequest(stmts, n, loop, background)
 }
 
 func describe(c map[string]int) string {
@@ -64,19 +68,9 @@ var background = map[string]bool{
 func statementsPerDownload(t *testing.T, e *env, on, off *testenv.Replica, path string) {
 	t.Helper()
 	const n = 30
-	withScan := downloadStatements(t, e, on, path, n)
-	without := downloadStatements(t, e, off, path, n)
-	perRequest := func(c map[string]int) map[string]int {
-		out := map[string]int{}
-		for k, v := range c {
-			if !background[k] && v >= n {
-				out[k] = v
-			}
-		}
-		return out
-	}
-	pw, po := perRequest(withScan), perRequest(without)
-	if fmt.Sprint(pw) != fmt.Sprint(po) || pw["GetLiveItem"] != n {
+	withScan, pw := downloadStatements(t, e, on, path, n)
+	without, po := downloadStatements(t, e, off, path, n)
+	if fmt.Sprint(pw) != fmt.Sprint(po) || pw["GetLiveItem"] != 1 {
 		t.Errorf("per download with scanning %v, without %v; want the same statements, one GetLiveItem per download\nwith:\n%swithout:\n%s",
 			pw, po, describe(withScan), describe(without))
 	}
