@@ -1043,15 +1043,16 @@ jobs:
           retention-days: 30
 
   integration:
-    # Valkey 9.1 only: quader is in development and guarantees no older line (owner, 2026-10-29). The packages run in three
-    # shards with a stack each (make test-integration SHARD=a|b|c, the rule in the Makefile, Q-ARCH-544).
+    # Valkey 9.1 only: quader is in development and guarantees no older line (owner, 2026-10-29). The packages run in four
+    # shards with a stack each (make test-integration SHARD=a|b|c|d, the rule in the Makefile, Q-ARCH-544, Q-ARCH-565). A shard
+    # that is stopped by its limit or passes 43.5 minutes is cut again by that rule; the limit is not raised.
     name: integration (shard ${{ matrix.shard }})
     runs-on: self-hosted
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        shard: [a, b, c]
+        shard: [a, b, c, d]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -3200,7 +3201,7 @@ jobs:
         run: |
           set -euo pipefail
           # A missing report would drop the requirements only that report proves, so it is an error.
-          for dir in test-unit test-chart test-integration-a test-integration-b test-integration-c; do
+          for dir in test-unit test-chart test-integration-a test-integration-b test-integration-c test-integration-d; do
             if ! compgen -G ".out/reports/$dir/*.json" >/dev/null; then
               echo "::error::report artifact $dir is missing"
               exit 1

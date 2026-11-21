@@ -11547,7 +11547,7 @@ no e2e leg and not `e2e-scope`.
 
 ### Q-ARCH-544 · The integration shards are cut by a rule that spreads a format's areas over all three
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Superseded in part by [Q-ARCH-565](#q-arch-565--the-integration-tests-run-in-four-shards-the-fourth-takes-the-virtual-areas-and-the-security-checks): four shards; the rule on the area's name stays, the suffix decides first.
 
 Context: in Test and Release 44693590111 shard b ran 40.9 of its 45 minutes, a 34.8 and c 37.6 ([test-cost.md](../developer/test-cost.md#32-integration-shards-run-2-job-ids-package-level-the-1645-top-level-tests-are-in-dataintegration_tests_run2csv)),
 every new package landed in b, and an average format adds 6.0 minutes. A model from the package times (each job: about 205 s of stack and
@@ -11787,6 +11787,45 @@ development agent would revisit this together with Q-ARCH-562's condition, when 
 
 **Applied in the spec:** R-ARCH-036; Q-ARCH-561 gains the value; [ha-and-helm.md](ha-and-helm.md) R-HA-070, Q-HA-379;
 [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049.
+
+### Q-ARCH-565 · The integration tests run in four shards, the fourth takes the virtual areas and the security checks
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in Test and Release 44948103795 (2026-11-21, the day's last whole run) the shards of [Q-ARCH-544](#q-arch-544--the-integration-shards-are-cut-by-a-rule-that-spreads-a-formats-areas-over-all-three)
+ran 38.2, 43.4 and 42.1 of their 45 minutes (a, b, c; [test-cost.md](../developer/test-cost.md#8-integration-shards-on-2026-11-21-run-44948103795)).
+b, which every new platform area joins, had taken those of that day (`signatures`, `signing`, `malware` with the ClamAV tests) and
+stood six seconds under the 43.5 minutes at which the plan cuts a shard (section 12 A of [promt.md](../projektplan/promt.md)); c had
+grown from 39.3 minutes in the first run of the rule (44735324156) to 42.1. The packages took 2064, 2206 and 2219 s; the rest of a job is about 210 s that do not depend on its packages
+(job set-up, checkout, Go and the module download 80 to 112 s, the stack's start 41 to 53 s, the test binaries' build about 30 s,
+uploads, teardown) and about 3.7 s per package (its share of the build and its start). That model gives each measured job within 26 s.
+The three shards hold 123.6 runner minutes, 41.2 per shard: no rule over three shards leaves room.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fourth shard by the rule on the name, the suffix first: every `<format>local` to a, `<format>remote` to c, `<format>virtual` to d; a keeps `coordination`, `mirror`, `proxy`, `npm`, `nuget`; c `api`, the stores and their recovery (`backup*`, `restore*`, `storage*`, `postgres`, `blob`, `valkey`) and `bastion*`; d the security checks (`ci`, `vuln*`, `malware*`, `sign*`); b every other area (chosen) | One shard more, the same kind of rule | No edit for a new package; a format's three areas on three shards even when its name begins like a platform area; every shard at 33 minutes or less | About 3.5 runner minutes more per push; a format that names its areas otherwise lands whole in b |
+| (b) A fourth shard of every `<format>virtual` and `signatures`, `signing`, `malware`, the other shards unchanged | The smallest move | b falls to about 34 minutes | d about 12, a 38 and c 42 minutes: c reaches the mark with its next areas |
+| (c) The limit raised above 45 minutes | No shard more | No runner minute more | Hides the growth the mark is there to show (section 12 A); the push's coverage jobs wait on b's 43 and more minutes |
+| (d) A hash of the area's name over four shards | No names | No edit | 34.3, 29.5, 42.6 and 20.7 minutes by `cksum`, and `debremote` beside `debvirtual` |
+| (e) The formats' repeated integration tests move to the format contract's kit, the cheaper tier | Fewer minutes in every shard | What the working rule "Tests stay runnable" asks first ("once, at the cheapest tier") | The owner's open lever (section 12 A): which tests move is his decision, and it is not a change of the pipeline |
+
+**Choice:** (a). Expected from the model with the package times of that run: a 32.2, b 30.8, c 32.7 and d 31.3 minutes (c with the
+OCI conformance suite, 27 s); each shard has 12 to 14 minutes of room below 45 and 11 to 13 below the mark. The four shards hold about
+127.0 runner minutes against 123.6: the fourth shard costs its fixed part, about 3.5 minutes per push on the `self-hosted` class
+(wds18-small runners); since the shards run side by side, the tier's wall time falls from 43.4 to about 33 minutes. A new format adds its local area to a, its
+remote area to c and its virtual area to d; a new security check adds to d, every other new platform area to b. The suffixes
+`local`, `remote` and `virtual` decide before a name of another shard, so `bastionvirtual` would land in d and `cilocal` in a. A test of
+`internal/tools/ciworkflows` asks the Makefile for every shard of the matrix and fails when a package runs in none or in two, a shard
+is empty, or the coverage evidence does not require a shard's report (about 3 s in the unit job, no data). No limit was raised. Option (e) stays open: it is the owner's lever and would shrink all four shards; this choice does not decide it.
+**Rationale:** the rule of Q-ARCH-544 had one shard with every new area in it; with the suffix first and a shard for the security
+checks, the growth of a day like 2026-11-21 spreads over b and d instead of filling b. The development agent would cut a fifth shard by
+the same rule when one of the four is stopped by its limit or passes 43.5 minutes, unless option (e) has been taken by then.
+
+**Applied:** [Makefile](../../Makefile) (`INTEGRATION_SHARD_A` to `INTEGRATION_SHARD_D`); [release.yml](../../.github/workflows/release.yml)
+(the matrix of the job `integration`, the reports the coverage evidence requires);
+[integrationshards_test.go](../../internal/tools/ciworkflows/integrationshards_test.go); [releasing.md](../developer/releasing.md#ci),
+[build-and-test.md](../developer/build-and-test.md), [test-cost.md](../developer/test-cost.md#8-integration-shards-on-2026-11-21-run-44948103795).
+
 ## What this does not cover
 
 

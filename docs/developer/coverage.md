@@ -128,7 +128,7 @@ What CI produces, by tier:
 | Angular unit (Vitest) | JUnit, `.out/test-web.xml` | `ng test` through the reporters in [angular.json](../../web/angular.json) | `test-web` |
 | Angular lint rules (R-UI-046) | JUnit, `.out/test-web-lint.xml` | `npm run test:lint` ([lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), `node --test`) | `test-web` |
 | Chart and promtool | `go test -json` | `make chart-test` | `test-chart` |
-| Integration | `go test -json` | `make test-integration` | `test-integration-a`, `-b`, `-c` |
+| Integration | `go test -json` | `make test-integration` | `test-integration-a`, `-b`, `-c`, `-d` |
 | Kind legs (Go e2e sets, with the Playwright journeys as subtests named by their titles) | `go test -json`, `.out/test-e2e.json` | `make e2e SET=…` ([e2e.sh](../../deploy/dev/e2e.sh)) | `e2e-report-<set>`, `e2e-<group>-report-<set>`, `e2e-backup-report` |
 | Nightly latency gates | `go test -json` | `make test-performance` | `test-performance` |
 

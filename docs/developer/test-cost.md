@@ -12,7 +12,7 @@ All figures are runner minutes (the wall clock of each job, summed) unless state
 * **Nightly (44625277245, dispatch of all legs):** 682.9 runner min in 299.2 min wall [V]; 25 e2e legs 658.1 [V], plus the four platform-matrix jobs 4.9, the image job 4.0, Latency 9.1 and the vulnerability perf job 6.8 (section 2.2).
 * **55 % of every push's e2e minutes are not test bodies** [I]: of the 172.6 e2e min in run 2, 65.9 are set-up steps, 26.6 are `make e2e` outside the listed tests (cluster profile switch, client pods, test upstreams; inferred as step time minus the sum of the top-level tests), 2.7 are teardown and uploads = 95.1 min (unrounded). In the nightly it is 240.6 of 658.1 min (36.6 %). Bringing up the kind cluster and the dev profile alone (`make dev-up`) is 154 to 186 s per leg: 25.8 min per push in 9 legs, 67.5 min per nightly in 25 legs [V].
 * **A format costs, per push, 21.2 to 38.0 runner min today** (run 2; mean of the five with a client 28.6, of all six 23.9), and, per nightly, 0 to 99.1 min (mean of six 24.6). Of the 28.6 push minutes of the mean format, 12.6 are infra, 8.7 repeated and only 7.2 client (tables in section 4).
-* **The cost does not stay constant:** with the five-format mean a push at 25 formats is about 939 runner min (now 396.0) and the nightly about 1244 (now 682.9); integration shard b, where a new package lands, passes its 45-minute job timeout with the first additional average format (40.9 min now, +6.0 min per format) [I].
+* **The cost does not stay constant:** with the five-format mean a push at 25 formats is about 939 runner min (now 396.0) and the nightly about 1244 (now 682.9); integration shard b, where a new package lands, passes its 45-minute job timeout with the first additional average format (40.9 min now, +6.0 min per format) [I]. Since then the shards are cut by a rule on the area's name, three by Q-ARCH-544 and four by Q-ARCH-565, from the package times of [section 8](#8-integration-shards-on-2026-11-21-run-44948103795).
 
 ## 1. Method (repeatable)
 
@@ -979,3 +979,119 @@ Ranked by the larger of the push and nightly minutes at stake: the measured minu
 * **Per-format cost of the carrier legs** is not charged to a format (section 4.1); if one charges drain, failure and pod-crash legs to the client that loads them, npm would carry 99.1 + (ha-suite, ha-faults, ha-pooler, drain-roles) 113.1 = 212.2 min and NuGet would add half of four drain-load legs; I did not compute that variant as a table.
 * **Playwright and other artifacts not opened:** the `e2e-ansible-artifacts-ansible`, `e2e-*-artifacts-*` and `profile-*` artifacts (logs, cluster evidence, coverage profiles); the job logs were read only to confirm the path-filter decision of eight legs.
 * **Wall-clock projections** rest on three assumptions I could not check: the large pool grows with the number of legs, the per-format test time of a new format equals the mean, and a new format's integration package lands in shard b (Makefile comment, not a test).
+
+## 8. Integration shards on 2026-11-21 (run 44948103795)
+
+Measured once on 2026-11-21 for [Q-ARCH-565](../spec/architecture.md#q-arch-565--the-integration-tests-run-in-four-shards-the-fourth-takes-the-virtual-areas-and-the-security-checks), the cut of the fourth shard, from Test and Release 44948103795 (push of `452cd31f`, the day's last whole run, green). Sources: the job and step records (`gh api repos/guided-traffic/quader/actions/runs/44948103795/jobs --paginate`, `.../actions/jobs/<id>`) and the `go test -json` streams of the artifacts `test-integration-a`, `-b` and `-c`; a package's seconds are the `Elapsed` of its package-level `pass` event, its tests the top-level tests with an end event [V]. The three shards ran by the rule of Q-ARCH-544; "shard now" is where the rule of Q-ARCH-565 puts the area. Nothing was re-run for it.
+
+### 8.1 The jobs, and the part of a shard that does not depend on its packages (seconds)
+
+| shard | job id | runner class | job | job set-up | checkout | Go | Go modules | tools, Compose, Docker login | `make integration-up` | test step | of it: build of the test binaries to the first event | packages | between packages | OCI conformance with its upload | uploads | `make integration-down` | post steps and gaps |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| a | 136979786150 | self-hosted | 2291 | 2 | 7 | 21 | 59 | 1 | 48 | 2129 | 43.4 | 2064.3 | 21.3 | 0 | 7 | 11 | 6 |
+| b | 136979786248 | self-hosted | 2601 | 3 | 2 | 31 | 81 | 2 | 53 | 2403 | 97.5 | 2205.7 | 99.8 | 0 | 10 | 11 | 5 |
+| c | 136979786105 | self-hosted | 2525 | 3 | 8 | 26 | 78 | 2 | 41 | 2314 | 46.3 | 2218.5 | 49.2 | 29 | 8 | 10 | 6 |
+
+* **The jobs [V]:** a 38.2, b 43.4 and c 42.1 minutes of their 45, 123.6 runner minutes; b stood six seconds under the 43.5 minutes at which the plan cuts a shard (section 12 A of [promt.md](../projektplan/promt.md)). All three ran on the `self-hosted` class (`wds18-small-runner-*`) and started 15 s after the run.
+* **The steps outside `make test-integration` [V]:** 162, 198 and 182 s (a, b, c; c without the 29 s of the OCI conformance suite and its upload): checkout and Go with its modules 87 to 114 s, the stack's start 41 to 53 s, uploads 7 to 10 s (b's coverage profile is the largest, 32 MB), teardown 10 to 11 s.
+* **Inside the test step [I]:** from the step's start to the first event of the JSON stream is the build of the test binaries with `-coverpkg=./...` and the start of the first package (43 to 98 s, larger with more packages); between the end of one package and the start of the next are 21 to 100 s, about 2.4 s per package.
+* **A model [I]:** job ≈ 210 s + 3.7 s per package + the packages' seconds (+ 27 s for the OCI conformance suite on c). It gives 2308, 2575 and 2530 s against the measured 2291, 2601 and 2525 (within 26 s). The 210 s are the steps outside the test step (about 180 s) and the part of the build that does not grow with the packages (about 30 s, fitted from a and b); the 3.7 s per package are its share of the build and its start.
+* **What a fourth shard costs per push [I]:** its fixed part, about 210 s = 3.5 runner minutes on the `self-hosted` class; the packages' seconds and the 3.7 s per package do not change with the number of shards. The four shards below hold about 127.0 runner minutes against the model's 123.5 for three. The shards run side by side, so the wall time of the integration tier falls from b's 43.4 to the longest of the four, about 33 minutes; in that run `UI layout checks` ended at 42.2 minutes, so the push's wall time would fall by about a minute and the coverage jobs, which need the shards, could start about ten minutes earlier.
+
+### 8.2 The four shards of Q-ARCH-565, from these package times [I]
+
+| shard | what the rule gives it | packages | packages' seconds | expected job (min) |
+|---|---|---:|---:|---:|
+| a | every `<format>local`; `coordination`, `mirror`, `npm`, `nuget`, `proxy` | 8 | 1694 | 32.2 |
+| b | every other area, every new platform area among them | 32 | 1518 | 30.8 |
+| c | every `<format>remote`; `api`, `backup*`, `restore*`, `storage*`, `postgres`, `blob`, `valkey`, `bastion*`; the OCI conformance suite | 16 | 1666 | 32.7 |
+| d | every `<format>virtual` (the platform area `virtual` among them); `ci`, `vuln*`, `malware*`, `sign*` | 16 | 1611 | 31.3 |
+
+Every shard keeps 12 to 14 minutes below its limit of 45 and about 11 to 13 below the mark of 43.5. A new format adds one area to each of a, c and d; a new security check adds to d; every other new platform area adds to b.
+
+### 8.3 Every package (seconds of the package-level event)
+
+<details>
+<summary>The 72 integration packages of run 44948103795 by their shard then, with their shard now</summary>
+
+| area (test/integration/...) | shard then | s | top-level tests | shard now |
+|---|---|---:|---:|---|
+| npm | a | 415.4 | 107 | a |
+| ci | a | 370.7 | 95 | d |
+| mirror | a | 268.5 | 58 | a |
+| nuget | a | 255.7 | 93 | a |
+| coordination | a | 243.1 | 29 | a |
+| deblocal | a | 211.2 | 26 | a |
+| proxy | a | 190.3 | 70 | a |
+| ansiblelocal | a | 57.1 | 22 | a |
+| ocilocal | a | 52.4 | 18 | a |
+| **sum of shard a** | | **2064.3** | **518** | |
+| debvirtual | b | 271.3 | 14 | d |
+| repository | b | 176.2 | 38 | b |
+| limits | b | 126.2 | 18 | b |
+| files | b | 115.8 | 57 | b |
+| postgres | b | 102.6 | 51 | c |
+| identity | b | 101.8 | 64 | b |
+| querybudget | b | 85.7 | 7 | b |
+| malware | b | 80.9 | 19 | d |
+| authz | b | 80.1 | 50 | b |
+| uploads | b | 78.0 | 18 | b |
+| blob | b | 72.8 | 18 | c |
+| packages | b | 71.2 | 18 | b |
+| transfer | b | 65.6 | 14 | b |
+| projects | b | 64.8 | 26 | b |
+| login | b | 55.7 | 23 | b |
+| server | b | 53.0 | 4 | b |
+| ansiblevirtual | b | 46.5 | 14 | d |
+| importer | b | 46.0 | 17 | b |
+| registry | b | 44.7 | 17 | b |
+| ocivirtual | b | 44.5 | 16 | d |
+| oci | b | 39.2 | 13 | b |
+| audit | b | 38.6 | 22 | b |
+| debkeys | b | 38.0 | 14 | b |
+| smoke | b | 35.0 | 11 | b |
+| signatures | b | 29.3 | 7 | d |
+| uiassets | b | 28.7 | 2 | b |
+| endpoints | b | 28.0 | 5 | b |
+| overload | b | 26.6 | 3 | b |
+| itempublish | b | 24.0 | 9 | b |
+| roles | b | 21.8 | 6 | b |
+| mirrorapi | b | 21.0 | 8 | b |
+| restoreversions | b | 17.7 | 4 | c |
+| upstream | b | 15.1 | 6 | b |
+| tls | b | 13.2 | 4 | b |
+| search | b | 12.5 | 5 | b |
+| signing | b | 11.8 | 2 | d |
+| apikey | b | 9.5 | 3 | b |
+| virtual | b | 5.7 | 6 | d |
+| storageverify | b | 4.4 | 2 | c |
+| testenv | b | 2.2 | 7 | b |
+| cmd/seed | b | 0.2 | 0 | b |
+| idapi | b | 0.1 | 0 | b |
+| stack | b | 0.1 | 0 | b |
+| **sum of shard b** | | **2205.7** | **642** | |
+| backup | c | 540.6 | 116 | c |
+| vulnsync | c | 249.8 | 62 | d |
+| ociremote | c | 157.3 | 40 | c |
+| debremote | c | 156.3 | 27 | c |
+| bastion | c | 154.1 | 28 | c |
+| vulnfindings | c | 149.7 | 47 | d |
+| api | c | 141.0 | 32 | c |
+| valkey | c | 135.0 | 15 | c |
+| vulnapi | c | 123.2 | 29 | d |
+| vulnimage | c | 82.9 | 20 | d |
+| vulnblock | c | 78.9 | 17 | d |
+| ansibleremote | c | 61.8 | 24 | c |
+| bastioniface | c | 48.2 | 35 | c |
+| bastionreg | c | 46.4 | 14 | c |
+| vulnrestore | c | 35.4 | 8 | d |
+| vulnaudit | c | 25.6 | 10 | d |
+| bastioncache | c | 17.6 | 10 | c |
+| bastionshared | c | 6.4 | 13 | c |
+| vulnflow | c | 4.9 | 1 | d |
+| bastionsetup | c | 3.5 | 1 | c |
+| **sum of shard c** | | **2218.5** | **549** | |
+
+</details>
+
+Not measured here: the real minutes of the four shards (the pipeline's first run with them shows them); whether the `self-hosted` pool starts a fourth integration job at once beside the other jobs of a push (in this run every job started within 15 s of the run's start); a second sample of the package times (one run, so a package's spread between runs is not known here; the two runs of section 3.2 differ per package by up to about 15 %, more where tests changed between them).

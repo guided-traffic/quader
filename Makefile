@@ -343,18 +343,27 @@ integration-up: ## Start PostgreSQL, PgBouncer, Valkey with Sentinel (TLS) and S
 integration-down: ## Stop the integration stack and remove its volumes
 	test/integration/down.sh
 
-# SHARD=a|b|c splits the packages over the three CI jobs, each with its own stack, by a rule that places a new package without
-# anyone editing it (Q-ARCH-544): a holds the slow platform areas ci, coordination, mirror and proxy, the single packages of npm and
-# NuGet, and every area named <format>local; c holds the platform areas api, backup and valkey, the areas of the vulnerability
-# scanning and of the Bastion, and every area named <format>remote; b everything else, among them every <format>virtual and every
-# new platform area. A format's areas are <format>local, <format>remote and <format>virtual (as Ansible's, Debian's and OCI's), so a
-# new format spreads over the three shards instead of filling one. From the package times of Test and Release 44693590111
-# (docs/developer/test-cost.md, section 3.2) the shards take about 37, 38 and 39 minutes of their 45 (a, b, c; c runs the OCI
-# conformance suite as well), and an average format adds about 2 minutes to each, so each has room for about three more. Before,
-# b took 41 of 45 and every new package landed in it. Unset runs all.
+# SHARD=a|b|c|d splits the packages over the four CI jobs, each with its own stack, by a rule on the area's name that places a new
+# package without anyone editing it (Q-ARCH-544, Q-ARCH-565). A format's areas are <format>local, <format>remote and
+# <format>virtual (as Ansible's, Debian's and OCI's), and the suffix decides first: every area that ends in local goes to a, in
+# remote to c, in virtual to d (the platform area virtual among them), so a new format spreads over three shards instead of filling
+# one. The other areas by name: a takes coordination, mirror, proxy and the single packages of npm and NuGet; c the area api, the
+# stores and their recovery (backup*, restore*, storage*, postgres, blob, valkey) and the Bastion's areas (bastion*); d the security
+# checks (ci, the exchange of CI tokens, and vuln*, malware*, sign*); b every other area, every new platform area among them. From
+# the package times of Test and Release 44948103795 (docs/developer/test-cost.md, section 8) the jobs take about 32, 31, 33 and 31
+# minutes of their 45 (a, b, c, d; c runs the OCI conformance suite as well); with three shards they took 38, 43 and 42 (a, b, c),
+# and b, which every new area joined, stood six seconds under the 43.5 minutes at which a shard is cut. internal/tools/ciworkflows
+# checks that every package runs in exactly one shard of the workflow's matrix. Unset runs all.
 INTEGRATION_ALL := $(shell go list -tags integration ./test/integration/...)
-INTEGRATION_SHARD_A := $(filter $(addprefix $(MODULE)/test/integration/,ci coordination mirror npm nuget proxy %local),$(INTEGRATION_ALL))
-INTEGRATION_SHARD_C := $(filter-out $(INTEGRATION_SHARD_A),$(filter $(addprefix $(MODULE)/test/integration/,api backup valkey vuln% bastion% %remote),$(INTEGRATION_ALL)))
+INTEGRATION_DIR := $(MODULE)/test/integration/
+INTEGRATION_PLATFORM := $(filter-out $(addprefix $(INTEGRATION_DIR),%local %remote %virtual),$(INTEGRATION_ALL))
+INTEGRATION_SHARD_A := $(filter $(INTEGRATION_DIR)%local,$(INTEGRATION_ALL)) \
+  $(filter $(addprefix $(INTEGRATION_DIR),coordination mirror npm nuget proxy),$(INTEGRATION_PLATFORM))
+INTEGRATION_SHARD_C := $(filter $(INTEGRATION_DIR)%remote,$(INTEGRATION_ALL)) \
+  $(filter-out $(INTEGRATION_SHARD_A),$(filter $(addprefix $(INTEGRATION_DIR),api backup% restore% storage% postgres blob valkey bastion%),$(INTEGRATION_PLATFORM)))
+INTEGRATION_SHARD_D := $(filter $(INTEGRATION_DIR)%virtual,$(INTEGRATION_ALL)) \
+  $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C),$(filter $(addprefix $(INTEGRATION_DIR),ci vuln% malware% sign%),$(INTEGRATION_PLATFORM)))
+INTEGRATION_SHARD_B := $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C) $(INTEGRATION_SHARD_D),$(INTEGRATION_ALL))
 # The time one integration package may take. The default of 10 minutes is the sum of the area `backup` alone: about 235 tests that run one
 # after the other in one process (8 minutes on an idle host, none of them longer than 45 s and none waiting on a fixed sleep a load could
 # stretch), and coverage instrumentation and a loaded host add to it. A package that hangs is still ended, by this bound.
@@ -367,16 +376,18 @@ INTEGRATION_PKGS = $(INTEGRATION_SHARD_A)
 else ifeq ($(SHARD),c)
 INTEGRATION_PKGS = $(INTEGRATION_SHARD_C)
 else ifeq ($(SHARD),b)
-INTEGRATION_PKGS = $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C),$(INTEGRATION_ALL))
+INTEGRATION_PKGS = $(INTEGRATION_SHARD_B)
+else ifeq ($(SHARD),d)
+INTEGRATION_PKGS = $(INTEGRATION_SHARD_D)
 else
-$(error SHARD must be a, b, c or unset, not $(SHARD))
+$(error SHARD must be a, b, c, d or unset, not $(SHARD))
 endif
 
 # The coverage profile of the line is named by the Valkey line it ran against (and the shard), so the
 # profiles of the matrix merge into one report. -p 1 serialises the build too, so the test binaries are
 # compiled in parallel first and the run takes them from the build cache.
 .PHONY: test-integration
-test-integration: ## Integration tests against the running stack (make integration-up), SHARD=a|b|c for one third; .out/test-integration[-<shard>].json and .out/coverage/integration-<line>[-<shard>].out
+test-integration: ## Integration tests against the running stack (make integration-up), SHARD=a|b|c|d for one quarter; .out/test-integration[-<shard>].json and .out/coverage/integration-<line>[-<shard>].out
 	@test -f $(INTEGRATION_ENV) || { echo "$(INTEGRATION_ENV) is missing: run 'make integration-up' first"; exit 1; }
 	@mkdir -p .out $(COVERAGE_DIR)
 	go test -c -o .out/integration-bin/ -tags integration -covermode=atomic -coverpkg=./... $(INTEGRATION_PKGS) >/dev/null

@@ -215,7 +215,7 @@ quader/
 │   ├── mirror/               # the mirror mode of remote repositories (mirror.md): the engine (dispatch, pass, fence, window, bounds, store, metrics) beside the names of its job kinds and queue; discover/ is the leaf contract a format's remote adapter implements
 │   ├── importer/             # the import tooling (import.md): the runner, the clients of the source and of the target, the state file, the npm and NuGet formats of the importer
 │   ├── tools/coverage/       # the requirement coverage generator (docs/coverage)
-│   ├── tools/ciworkflows/    # tests of .github: no bare apt-get, step timeouts of the gating jobs, apt-install.sh against stubs
+│   ├── tools/ciworkflows/    # tests of .github: no bare apt-get, step timeouts of the gating jobs, apt-install.sh against stubs, every integration package in one shard
 │   ├── tools/e2eevidence/    # tests of the stall recorder's cgroup readers (deploy/dev/e2e-evidence.sh) against fabricated cgroup trees of both runner classes
 │   └── webui/                # go:embed of the Angular build; dist/index.html is the committed placeholder
 ├── web/                      # Angular workspace: angular.json, src/, scripts/ (build-embed, check-budget), .nvmrc

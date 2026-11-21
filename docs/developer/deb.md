@@ -508,7 +508,7 @@ local part of the port ([twin_test.go](../../internal/formats/deb/twin_test.go))
 ([validate_deb_test.go](../../internal/repository/validate_deb_test.go)).
 
 **Integration** (run each area through the slot wrapper, `go test -tags integration ./test/integration/<area>/`; `deblocal` runs in shard `a`, `debremote` in
-shard `c`, `debkeys` and `debvirtual` in shard `b` of `make test-integration`, [build-and-test.md](build-and-test.md#the-in-process-harness)):
+shard `c`, `debkeys` in shard `b` and `debvirtual` in shard `d` of `make test-integration`, [build-and-test.md](build-and-test.md#the-in-process-harness)):
 
 | Area | What it proves |
 |---|---|

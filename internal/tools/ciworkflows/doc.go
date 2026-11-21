@@ -12,4 +12,8 @@
 // the Go tools come from .github/actions/go-tool, the client images of the acceptance suites come from
 // .github/actions/client-images in every leg whose sets start client pods (read from deploy/dev/e2e.sh), and the kind legs load the
 // Quader image of their run. The scripts behind them, client-images.sh and go-mod-download.sh, run here with go and docker stubbed.
+//
+// The integration packages run in the shards of the job integration (Q-ARCH-544, Q-ARCH-565): the Makefile is asked for the packages
+// of every shard of the matrix, each package runs in exactly one, no shard is empty, a letter past the matrix is refused, and the
+// coverage evidence requires the report of every shard (docs/developer/build-and-test.md).
 package ciworkflows
