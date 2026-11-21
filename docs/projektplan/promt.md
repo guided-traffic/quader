@@ -1226,7 +1226,21 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (09:22): two builders: the scanner replicas on the screens (since 08:08), and **a system repository
+- **The builder of the scanner replicas on the screens reported at 09:49** with one commit on the tip of `main`,
+  its own gates each exit 0 (among them the integration areas under the lock and the end-to-end set `vuln` on a
+  cluster of its own); the landing is the development agent's next step (its gates, the renders looked at, the
+  owner's values against its chart). **What it built, by its report:** every scanner pod reports itself on the
+  scan listener (its kind taken from the verified certificate, never from the body), the rows live in a table of
+  their own beside the replica registry and follow its rule for lost rows, a read operation lists them, and the
+  System page, the malware scanning settings and the advisory sources show each pod with its tool, version, state
+  and the reason it is not ready. **An incident of its work, 09:44:58:** it stopped its own render stack with a
+  process pattern that was a part of the owner's UI backend's path too, so the owner's backend and its sign-in
+  provider stopped; the development agent found it by the backend's exit, started both again from the main
+  checkout (at 09:47, answering ready) and told the builder, which has since stopped its processes by their IDs. **For
+  every builder's brief from now on:** a builder stops its own processes by process ID or by a pattern that
+  holds its worktree's path, never by a pattern that can match the main checkout. **The pipeline of the 09:05
+  landing (run 44883240572) ended green on every job at 09:55.**
+- **In work** (09:22): two builders: the scanner replicas on the screens (since 08:08; reported, entry above), and **a system repository
   set apart everywhere** (since 09:20; what the builder of the project page's section had reported and left, taken up
   at once by the owner's word of that morning to such reports): no action that leads to a 404 (the admin list's
   **Copy client address**, **Download** and the curl command on a system repository's file page, install commands
@@ -1810,16 +1824,35 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   erhält sie die signierungen wie ihr Interface es erwartet. Quader ist ebenso in der Lage Artefakte zu signieren,
   dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden. Hier müssen wir uns aber
   noch über den Umfang und Ziele unterhalten, ich erwarte, dass du mich hier proaktiv berätst." **Nothing is
-  decided or specified.** In work since 09:25: two researches, one of what Quader does today with signatures and
-  signed metadata per format (the specification already holds pieces: the referrers of OCI, the upstream keys of
-  Debian, Q-ANS-14 "signatures pass through; Quader signs nothing and verifies nothing"), one of the signing schemes
-  of the six formats and of the formats likely to follow, with sources; from them the development agent writes a
-  working paper with his words as read, the facts per format and the decisions one by one with options and a
-  recommendation, as an interactive page he answers in (standing rules). The development agent's first reading, told
-  to him and not verified yet: there is no one standard but three families of trust (a certificate chain, an
-  OpenPGP key, an identity of a signing service with a log), so "company CAs" covers a part and the setting has to
-  be "trust anchors" of more than one kind; a publisher's signature, a repository's signature and an attestation
-  are three different things, and what Quader can sign itself is the second and the third, never the first.
+  decided or specified.** Both researches ended on 2026-11-21 (what Quader does today with signatures per format,
+  read in the code; the signing schemes of the six formats and of the formats likely to follow, with sources), and
+  **the working paper is with him since 09:57** as an interactive page he answers in (standing rules): his words as
+  read in eight readings and one question to him (which way to a signature his CI has or shall have: a signing
+  service of its own that issues a certificate per job, a code-signing certificate of the company's CA, an OpenPGP
+  key, or nothing yet), the facts per format, and fourteen decisions with options and the development agent's
+  favourite each. **What the researches found:** there is no one standard but four families of trust (a
+  certificate chain, an OpenPGP key, a single public key, an identity of a signing service with a log) and a group
+  of formats with no scheme at all, so "company CAs" covers two of the four and the setting has to be "trust
+  anchors" of more than one kind; the artifact itself is not signed everywhere (Debian signs the index only, npm's
+  registry signs name, version and integrity); a publisher's signature, a repository's signature and an attestation
+  are three different things, and what Quader can sign itself is the second and the third, never the first; GitLab
+  runs no CA, and a self-managed instance cannot use the public signing service. **In Quader today (read):**
+  Debian is the only format that verifies and signs; OCI stores `subject` and serves the referrers for every
+  class, verifies nothing, shows a signature's tag as a version and a referrer nowhere, and a mirror run copies no
+  referrer; npm's local publish strips the registry signature and the attestations and the two endpoints a client
+  asks answer 404, a remote passes both fields through; NuGet keeps the signature inside the package unread;
+  Ansible passes the upstream's signatures through; a generic repository knows a signature file as a file. There
+  is no table for "signed by" at an artifact, no hook in the format contract, and no trust anchor but Debian's
+  upstream keys. **The development agent's advice in the paper:** three stages (detect, read, verify and show for
+  all six formats with four kinds of anchors and his switch for project Owners; then Quader signs, as a registry
+  where a client checks one and as a witness by attestations of what it received and checked, not in a
+  publisher's name; then a gate per repository). **Two corrections of the first reading told to him in the chat,**
+  both in the paper: rewriting npm's package documents breaks no upstream signature (the signed string holds no
+  URL; what is missing is the keys endpoint), and a signature bundle of the signing service is verifiable without
+  the internet (the network is needed for the trust root's upkeep and for revocation lists only). **Not
+  verified, named in the paper:** a library for NuGet's signatures; the size the new libraries add to the binary;
+  whether the claims of an uploading pipeline stay at a version; details of the older tag scheme; what the extra
+  requests for signatures cost against a registry's rate limit.
 
 **Questions he has not answered**
 
@@ -1837,6 +1870,39 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 **Decided by the owner on 2026-11-21, waiting to be built**
 
+- **The signature updater leaves the worker and becomes a Deployment of its own, and ClamAV's definitions become a
+  repository kind of their own with an endpoint for every ClamAV of the company** (2026-11-21, 09:56, on seeing
+  the two sets in `upstream/scanner-clamav`): "Ich sehe gerade du hast freshcalm an die worker gehängt, das ist
+  natürlich falsch. Gliedere Freshclam aus, es wird als seperates deployment ins helm integriert. Default reicht uns
+  1 replica. Diese Instanz fetched die online-ressource, und wir kommen regelmäßig bei unserer freshclam vorbei und
+  besorgen und ggf. das aktuelle update. Außerdem möchte ich, dass wir das freshclam artefakt als spezifisches
+  ClamAV-Repo in Upstream einbindbar machen. ClamAV wird also ein eigenständiges Artefakt-Repo, wir ziehen alle
+  verfügbaren Metadaten aus dem ClamAV-Definitionen. Ein Admin kann in den Upstream-Repos
+  ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für alle ClamAV Instanzen bereitgestellt
+  wird, dieser Endpunkt bedient sich automatisch aus dem internen Freshclam und erhält aktualisierungen. Hier weiß
+  ich nicht, ob eine Konfigurierbarkeit der Virenquelle einen Sinn macht? Gibt es überhaupt alternativen? Kann ein
+  ClamAV sich gegenüber einem Endpunkt authentifizieren? Falls nein, macht eine Visibility außerhalb von public
+  dann überhaupt einen Sinn? Automatisches Cleanup: ClamAV Artefakte sind stark zeitbezogen, eine neuere Version
+  ist wohl immer besser als eine ältere, wir müssen hier hinter uns sauber machen um nicht über Monate alte
+  Definitionen aufzubewahren. Hier bitte einen für ClamAV passenden Weg finden." **This replaces** the answer to
+  decision 8 of the malware scan's working paper (the updater as a container beside the worker, the development
+  agent's favourite, which he had taken on 2026-11-20). **Fixed by his words:** a Deployment of its own in the
+  chart, one replica by default; it alone fetches from the internet; Quader takes the update from it by asking
+  regularly; the definitions are a repository kind of their own in `upstream` that shows every piece of metadata
+  the definition files hold; an administrator switches the definition updates on among the upstream repositories,
+  which offers one endpoint for the company's ClamAV installations, fed from the internal updater; old sets are
+  cleaned up automatically. **His three questions, open until answered with facts:** whether the source of the
+  definitions should be configurable and whether there are alternatives at all; whether a ClamAV can
+  authenticate against an endpoint, and whether a visibility other than public makes sense if it cannot; which
+  cleanup fits. **In work since 09:57:** two researches, one of the facts (how an update works on the wire, what a
+  private mirror must serve, every way the stock updater can or cannot authenticate and trust an internal CA,
+  the other sources of signatures and their terms, the metadata of the definition files, how long an old set is
+  of any use), one of what is built today (the updater's container, the import task, how the scanners get the
+  database, retention, the project `upstream`, what a format of its own takes, anonymous access). Then the
+  answers to him with a recommendation each, the specification, the builders. **The unit's name follows the
+  naming rule** (the tool in the name); it is fixed with the specification. **His installation:** the new kind of
+  pod needs the way to the internet in his values, which the worker carries today for the updater; the
+  development agent brings that with the landing (standing rules).
 - **The detection moves into the scanner unit, and the analyser leaves every other image** (2026-11-21, after he saw
   no Trivy container in the scanner pod and asked why the worker runs the analyser too and why the scanner's answer
   counts as untrusted): "Option B, nach der umbenennung. Trivy dann aus den anderen Images entfernen." Option B as put
