@@ -1083,8 +1083,13 @@ runs are in `git log`; this section holds the current state.
   `upstream/scanner-trivy`, with the removal of older layers), the fix of the limits' slots, the fix of the poolers'
   connect timeout, and the three commits of the type `test`. Before the push the owner's UI backend was started
   with them from the main checkout (ready, migration 00089 applied, the scheduled fetch of the image database off in
-  the UI profile). Its pipeline (run 44858533514) also starts the Ansible leg; the legs the fixes are for are
-  dispatched alone when it has ended.
+  the UI profile). **Its pipeline (run 44858533514) ended green on every job at 04:39:** the three integration
+  shards, `UI layout checks`, the source tree's malware scan, and the legs `e2e (ansible)` (the changed limits case's
+  first run on a cluster), `oci`, `vuln`, `npm`, `push`, `ci` and `access-long`. **The legs the fixes are for were
+  dispatched alone at 04:39** (run 44862237399: the platform matrix, `drain-roles`, `drain-load-e`, `ha-faults`,
+  `ha-pooler`). **The owner's installation** shows the upgrade to the new chart refused by the chart's schema, as
+  foreseen, and keeps serving the release before the scanner role; it waits for the change of its values that was
+  given to the owner.
 - **The malware scan on its landing branch, 04:17:** `feat/malware` is `main` with the stack's lock fix and the eleven
   commits of the feature on top (rebased by package 3's builder onto what landed, each conflict settled in the commit
   it arose in; one break without a textual conflict found by the area `malware` and fixed: a test set a configuration
