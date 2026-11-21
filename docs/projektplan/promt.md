@@ -1519,6 +1519,40 @@ runs are in `git log`; this section holds the current state.
   the integration tests build a validator per stack and could share the parse the same way (about an hour,
   the gain not measured). **On the pipeline's runner** (run 44937450926): the package took 76.6 s where it had
   taken 599.5 s, and the unit job 8.9 minutes where it had taken 14.4.
+- **The measurement with real clients ended at 22:42 and landed at 22:43** (one commit of documentation; its
+  builder worked from 21:48 to 22:42 with a Quader and a compose project of its own, the clients from the
+  end-to-end sets' images, and a kind cluster of one node for the kubelet's lines; nothing of it is left
+  running). The commands, the outputs and the exit codes are on the developer page of the signatures
+  ("Measured with real clients"); the specification's requirements carry what was measured, and the manual
+  is corrected where a real output differed (among them: `--required-valid-signature-count 1` of
+  `ansible-galaxy` installs an unsigned collection without a word, `+1` does not). **What works with the real
+  tools:** cosign 3.1.4 with a key pair, an attestation and the older tag scheme, Notation 1.3.2, GnuPG and
+  `cosign sign-blob` siblings, npm's public registry signatures and provenance: read, verified, trusted once
+  the anchor is added, and each client verifies through Quader; Docker pulls a multi-platform image on its
+  index's signature through a gated repository; the kubelet shows `denied:` with the gate's text, Docker and
+  npm show the text. A certificate chain given to the current cosign makes it write a bundle that cosign
+  itself cannot verify (the tool's fault, noted in the admin manual with the flag that avoids it). **Seven
+  findings, each reproduced (section 8, Product, and the developer page with the place in the code):** (1) no
+  real NuGet signature is readable, neither `dotnet nuget sign`'s nor nuget.org's (they name the signer in a
+  way the parser does not take; the unit tests signed the other way); (2) an image pushed into a gated OCI
+  repository cannot be signed there, because the signing tools read the manifest first and are refused; (3) a
+  signature posted for a new Ansible collection is deleted from the store by the worker's discovery while the
+  version's document keeps serving it; (4) a remote image's version view lists none of the signatures its
+  fetch stored; (5) `dotnet restore` and `ansible-galaxy` never show the gate's text, and Docker shows none
+  for a pending image; (6) the text of the reason `missing` says "no signature" beside a registry's
+  signature; (7) the texts name storage paths. **Not measured:** keyless signing (it needs a sign-in or a
+  signing service of its own), so npm's pass through the gate rests on public provenance alone; chosen
+  anchors and blocked signers, a virtual repository's gate, symbol packages, Notation's second envelope
+  format, Podman. **What happens with the findings:** (1), (3) and (4) are defects of the released first
+  stage, (3) loses what a user uploaded: **one builder repairs them since 22:44** (the reading of the
+  signer for the author's signature, the countersignature and the timestamps, proven with a signature the
+  real tool made; a batch replaces the attachments of its own source only, for every format; the version
+  view for remote repositories of every format). (2), (6) and (7) went at 22:45 to the builder of the gate's
+  second package, who is inside that code, as a second commit. (5) is the clients' behaviour; one untried
+  way for NuGet (a header its client prints) is tried by that builder and otherwise left. **Decided by the
+  development agent for (2), put to the owner ("With the owner"):** who may write to the repository reads
+  through the signature gate where a format's signing tools read the artifact from the repository, which is
+  OCI (Q-SIG-211). Its worktree and branch are removed.
 - **In work since 21:40 and 21:48, three builders on the stack of 21:47** (with npm's signatures that makes four):
   **package 3 of the signatures' second stage, the receipt attestations** (R-SIG-051 to R-SIG-054: the statement
   and its predicate, the bundle with the trusted root and the chain, the kind of the job `signing` that makes,
@@ -3166,6 +3200,17 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   NuGet signature is readable; no client can sign an image in a gated repository; a posted Ansible signature leaves the store at the next
   discovery; a remote image's version lists no signature; `missing` says "no signature" beside a registry signature. Not measured: keyless
   signing (it needs a sign-in or a signing service of its own).
+  **A fourth question, from that measurement, built with the development agent's choice meanwhile (Q-SIG-211):** an
+  image pushed into a gated repository has no signature yet, and `cosign sign` and `notation sign` read its manifest
+  from the repository before they sign, so the gate refused the very read that would make the image pass. What may
+  read through the gate: (a) who may write to that repository (chosen: who may put content there may read it back to
+  sign it, and a consumer with the read right alone stays gated; the price is that a token with the write right
+  pulls unverified images); (b) every read by digest (rejected: a kubelet pulls by digest, so the commonest pull
+  would pass); (c) nothing, and an image is signed in an ungated repository and copied over with its signatures
+  (strictest; Quader has no promotion yet, and the flow would have to be built and documented first); (d) the
+  uploader for some minutes after the push (a hole that depends on time). It holds for OCI alone, because the other
+  formats' signatures are made on local files or arrive with the upload; the malware gate and the vulnerability
+  block are not opened by it.
 
 **Questions he has not answered**
 
