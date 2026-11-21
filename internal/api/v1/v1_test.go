@@ -8,11 +8,14 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"go.yaml.in/yaml/v3"
 
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -68,12 +71,49 @@ type setup struct {
 	ready   *bool
 }
 
-func newSetup(t *testing.T, opts func(*Options), authn func(*http.Request) (httpserver.Principal, error)) setup {
+// sharedDocument is the embedded document, parsed once per test binary: a parse took about 0.85 s in the unit job (race
+// detector and coverage), and the server and the tests only read the parsed document. A test that changes the table of
+// operations, or loads a changed document, calls LoadDocument itself.
+var sharedDocument = sync.OnceValues(func() (*Document, error) { return LoadDocument(EmbeddedYAML()) })
+
+// testDocument returns the shared parse of the embedded document.
+func testDocument(t testing.TB) *Document {
 	t.Helper()
-	doc, err := LoadDocument(EmbeddedYAML())
+	doc, err := sharedDocument()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return doc
+}
+
+// sharedSpec is the embedded document as the response validator reads it, parsed and validated once per test binary: a
+// parse took about 8 s in the unit job, and a validator only reads it. A test of a changed document calls
+// apitest.LoadDocument.
+var sharedSpec = sync.OnceValues(func() (*apitest.Spec, error) { return apitest.Parse(EmbeddedYAML()) })
+
+// newValidator returns a response validator of the test's own on the shared spec: what it saw is the test's alone.
+func newValidator(t testing.TB) *apitest.Validator {
+	t.Helper()
+	s, err := sharedSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s.Validator()
+}
+
+// specDocument returns the shared spec's parsed document, for a test that reads the document as the validator sees it.
+func specDocument(t testing.TB) *openapi3.T {
+	t.Helper()
+	s, err := sharedSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s.Document()
+}
+
+func newSetup(t *testing.T, opts func(*Options), authn func(*http.Request) (httpserver.Principal, error)) setup {
+	t.Helper()
+	doc := testDocument(t)
 	ready := true
 	o := Options{
 		Document: doc, Identity: Identity{Replica: "quader-web-1", Role: "web"}, Ready: func() bool { return ready },
@@ -385,7 +425,7 @@ func TestDocument(t *testing.T) {
 	})
 
 	t.Run("R-API-002 a documented operation without a route stops start-up", func(t *testing.T) {
-		doc, _ := LoadDocument(EmbeddedYAML())
+		doc := testDocument(t)
 		r := httpserver.NewClientRouter() // nothing registered
 		err := doc.CheckRoutes(r.Patterns())
 		if err == nil || !strings.Contains(err.Error(), "GET /api/v1/system/ping") {
@@ -523,10 +563,7 @@ func pathOf(pattern string) (method, path string) {
 }
 
 func TestAuthorizationStep(t *testing.T) {
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 
 	t.Run("R-API-008 an anonymous caller gets 401 on every operation that is not public, before the handler runs", func(t *testing.T) {
 		// bootstrapLike answers as the M0 access of the composition root does

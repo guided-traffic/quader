@@ -57,10 +57,7 @@ var recentAuthOperations = []string{
 
 func TestR_API_007_DocumentDeclaresRecentAuth(t *testing.T) {
 	sort.Strings(recentAuthOperations)
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	t.Run("R-API-007 exactly the operations of the table declare x-quader-recent-auth", func(t *testing.T) {
 		var got []string
 		for _, op := range doc.Operations() {

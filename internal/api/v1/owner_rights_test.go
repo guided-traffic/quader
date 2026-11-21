@@ -98,15 +98,6 @@ var ownerRightsReads = map[string]string{
 		"security-settings:write through the decision point, scope included (R-API-076); nothing of the owner's account",
 }
 
-func loadDoc(t *testing.T) *Document {
-	t.Helper()
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
-	return doc
-}
-
 // opByID returns the operation of the management API with the operationId.
 func opByID(t *testing.T, doc *Document, id string) Operation {
 	t.Helper()
@@ -120,7 +111,7 @@ func opByID(t *testing.T, doc *Document, id string) Operation {
 }
 
 func TestR_API_021_DocumentDeclaresOwnerRights(t *testing.T) {
-	doc := loadDoc(t)
+	doc := testDocument(t)
 	t.Run("R-API-021 exactly the operations on the caller's own account declare x-quader-owner-rights", func(t *testing.T) {
 		var got []string
 		for _, op := range doc.Operations() {
@@ -154,7 +145,7 @@ func TestR_API_021_DocumentDeclaresOwnerRights(t *testing.T) {
 }
 
 func TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule(t *testing.T) {
-	doc := loadDoc(t)
+	doc := testDocument(t)
 	ids := map[string]Operation{}
 	for pattern, op := range doc.Operations() {
 		ids[op.ID] = op
@@ -189,7 +180,7 @@ func TestR_API_021_EveryAuthenticatedWriteDeclaresItsTokenRule(t *testing.T) {
 }
 
 func TestR_API_021_EveryAuthenticatedReadIsClassified(t *testing.T) {
-	doc := loadDoc(t)
+	doc := testDocument(t)
 	ids := map[string]Operation{}
 	for pattern, op := range doc.Operations() {
 		ids[op.ID] = op
@@ -307,7 +298,7 @@ func gateProblem(t *testing.T, w *httptest.ResponseRecorder) problemBody {
 }
 
 func TestR_API_021_ANarrowedTokenIsRefusedOnTheOperationsOfTheOwnAccount(t *testing.T) {
-	doc := loadDoc(t)
+	doc := testDocument(t)
 	for _, id := range ownerRightsOperations {
 		op := opByID(t, doc, id)
 		t.Run("R-API-021 "+id, func(t *testing.T) {
@@ -378,7 +369,7 @@ func TestR_API_021_TheRegisteredRoutesCarryTheGate(t *testing.T) {
 }
 
 func TestR_API_021_TheReadsOfTheOwnProfileAdmitANarrowedToken(t *testing.T) {
-	doc := loadDoc(t)
+	doc := testDocument(t)
 	for _, id := range []string{"getCurrentUser", "getPreferences", "getWhoami", "getAuthzMe"} {
 		op := opByID(t, doc, id)
 		t.Run("R-API-021 "+id, func(t *testing.T) {

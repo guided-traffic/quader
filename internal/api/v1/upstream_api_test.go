@@ -171,10 +171,7 @@ func TestUpstreamTestOperation(t *testing.T) {
 }
 
 func TestUpstreamTestDeclaration(t *testing.T) {
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	t.Run("R-REPO-024 both operations need repositories:write-config", func(t *testing.T) {
 		found := 0
 		for pattern, op := range doc.Operations() {

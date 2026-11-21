@@ -19,10 +19,7 @@ import (
 // anonymous), with public content or without.
 func manualServer(t *testing.T, m *manual.Manual, authn func(*http.Request) (httpserver.Principal, error), anonymous bool) http.Handler {
 	t.Helper()
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	router := httpserver.NewClientRouter()
 	New(Options{
 		Document: doc, Identity: Identity{Replica: "r", Role: "web"}, Ready: func() bool { return true },
@@ -104,10 +101,7 @@ func TestR_API_054_AnonymousReadersFollowPublicContent(t *testing.T) {
 // and a loader that fails answers 503.
 func TestR_API_054_TheManualIsLoadedByTheFirstRequestThatNeedsIt(t *testing.T) {
 	build := func(load func() (*manual.Manual, error)) http.Handler {
-		doc, err := LoadDocument(EmbeddedYAML())
-		if err != nil {
-			t.Fatal(err)
-		}
+		doc := testDocument(t)
 		router := httpserver.NewClientRouter()
 		New(Options{
 			Document: doc, Identity: Identity{Replica: "r", Role: "web"}, Ready: func() bool { return true },

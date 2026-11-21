@@ -4,8 +4,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 )
 
 func TestRingsCompatible(t *testing.T) {
@@ -155,10 +153,7 @@ func TestTaskParameters(t *testing.T) {
 }
 
 func TestEveryOperationCanBeRateLimited(t *testing.T) {
-	doc, err := apitest.LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := specDocument(t)
 	t.Run("R-API-016 every operation under /api/v1/ documents the 429 the rate-limit stage can answer", func(t *testing.T) {
 		for path, item := range doc.Paths.Map() {
 			for method, op := range item.Operations() {

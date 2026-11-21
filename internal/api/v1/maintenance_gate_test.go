@@ -22,10 +22,7 @@ var maintenanceAllowed = []string{
 }
 
 func TestR_OPS_024_OperationsAllowedInMaintenanceMode(t *testing.T) {
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	var got []string
 	writes := 0
 	for pattern, op := range doc.ops {

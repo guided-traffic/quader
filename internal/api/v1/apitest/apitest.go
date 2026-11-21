@@ -51,6 +51,35 @@ func LoadDocument(spec []byte) (*openapi3.T, error) {
 	return doc, nil
 }
 
+// Spec is a document parsed and validated by [LoadDocument], with its router. Building it is the expensive part of a
+// validator (about 8 s for api/openapi.yaml in the unit job, under the race detector and coverage), and the validators
+// only read it, so a test binary can build one Spec and hand every test a [Spec.Validator] of its own.
+type Spec struct {
+	doc    *openapi3.T
+	router routers.Router
+}
+
+// Parse builds the Spec of spec.
+func Parse(spec []byte) (*Spec, error) {
+	doc, err := LoadDocument(spec)
+	if err != nil {
+		return nil, err
+	}
+	router, err := legacy.NewRouter(doc)
+	if err != nil {
+		return nil, fmt.Errorf("building the OpenAPI router: %w", err)
+	}
+	return &Spec{doc: doc, router: router}, nil
+}
+
+// Document is the parsed document; the caller only reads it.
+func (s *Spec) Document() *openapi3.T { return s.doc }
+
+// Validator returns a new validator on the Spec: what it saw ([Validator.Operations], [Validator.Uncovered]) is its own.
+func (s *Spec) Validator() *Validator {
+	return &Validator{doc: s.doc, router: s.router, seen: map[string]map[int]bool{}}
+}
+
 // Validator checks responses against one document.
 type Validator struct {
 	doc    *openapi3.T
@@ -62,18 +91,15 @@ type Validator struct {
 
 // New builds a validator for spec (the bytes of api/openapi.yaml, for example
 // v1.EmbeddedYAML()); the test fails when the document is not a valid 3.1
-// document.
+// document. A test binary that builds many validators of one document parses
+// it once with [Parse] and takes them from [Spec.Validator].
 func New(t testing.TB, spec []byte) *Validator {
 	t.Helper()
-	doc, err := LoadDocument(spec)
+	s, err := Parse(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	router, err := legacy.NewRouter(doc)
-	if err != nil {
-		t.Fatalf("building the OpenAPI router: %v", err)
-	}
-	return &Validator{doc: doc, router: router, seen: map[string]map[int]bool{}}
+	return s.Validator()
 }
 
 // Check validates one answer: req is the request that was sent (method and URL

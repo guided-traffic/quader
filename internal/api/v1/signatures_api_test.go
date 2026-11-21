@@ -19,8 +19,8 @@ import (
 // Unit tests of the management operations of signatures (R-SIG-034) with the permissions of R-SIG-021, through the shared step and
 // the response validator, against a store in memory. The integration test TestR_SIG_034 covers the store behind them.
 
-// sigEnv is the document and the response validator, loaded once per test function: parsing the document costs about half a
-// second, a setup per caller and operation would make the table of R-SIG-021 cost a minute.
+// sigEnv is the shared document and a response validator of the test function: the validator records what the function's
+// requests reached, the parsed documents behind both are built once per test binary (testDocument, newValidator).
 type sigEnv struct {
 	doc *Document
 	val *apitest.Validator
@@ -28,11 +28,7 @@ type sigEnv struct {
 
 func newSigEnv(t *testing.T) sigEnv {
 	t.Helper()
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
-	return sigEnv{doc: doc, val: apitest.New(t, EmbeddedYAML())}
+	return sigEnv{doc: testDocument(t), val: newValidator(t)}
 }
 
 // setup builds the server of one caller on the environment's document, as newSetup does, behind the response validator.
@@ -237,7 +233,7 @@ func TestR_SIG_034_TheSwitch(t *testing.T) {
 	})
 	t.Run("R-SIG-019 R-API-007 a session without a recent sign-in is refused the switch", func(t *testing.T) {
 		st := newFakeSigStore()
-		val := apitest.New(t, EmbeddedYAML())
+		val := newValidator(t)
 		s := newSetup(t, func(o *Options) {
 			o.Access, o.Auth.Sessions = sigAccess{admin}, staleSessions{}
 			o.API.Config = apiConfigForTest()

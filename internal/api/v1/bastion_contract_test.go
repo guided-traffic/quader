@@ -18,10 +18,7 @@ import (
 // TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned: exactly the four interface routes carry the
 // permission form {bastion: true} and x-quader-bastion-interface equal to the interface version of this build.
 func TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned(t *testing.T) {
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	want := map[string]string{
 		"GET " + iface.PathHandshake:  "bastionHandshake",
 		"POST " + iface.PathCheck:     "bastionCheck",

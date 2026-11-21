@@ -104,7 +104,7 @@ const retained = `{"retention":{"keepLast":7,"keepWithinSeconds":0},"retained":[
  {"backupId":"20261027T020000Z-1c9e","snapshotAt":"2026-10-27T02:00:08.913Z","quaderVersion":"0.4.0","schemaStep":42,"databaseBytes":183500800,"blobCount":51234,"blobBytes":412316860416,"damaged":false}]}`
 
 func TestR_API_050_BackupRuns(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 
 	t.Run("R-API-050 a caller without settings:read gets 403 on all three operations", func(t *testing.T) {
 		e := newBakEnv(t, val, denyAccess{}, nil, bakFinished(1, backup.OpCreate, backup.StateCompleted, time.Hour, time.Hour, "", ""))
@@ -309,7 +309,7 @@ func TestR_API_050_BackupRuns(t *testing.T) {
 }
 
 func TestR_API_050_BackupSummary(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	summary := func(t *testing.T, e bakEnv) gen.BackupSummary {
 		t.Helper()
 		var s gen.BackupSummary
@@ -446,7 +446,7 @@ func TestR_API_050_BackupSummary(t *testing.T) {
 }
 
 func TestR_OPS_004_BackupInfo(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	info := func(t *testing.T, e bakEnv) gen.SystemInfo {
 		t.Helper()
 		var i gen.SystemInfo

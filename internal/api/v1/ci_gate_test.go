@@ -53,10 +53,7 @@ func TestACITokenIsRefusedOnTheManagementAPIByDefault(t *testing.T) {
 // GET and DELETE /tokens/current declare x-quader-ci: admitted (R-CI-013, R-CI-017).
 // Contract of R-CI-017 (phase 5); the requirement's evidence comes from the tests of its work package.
 func TestOnlyTheCurrentTokenOperationsAdmitACIToken(t *testing.T) {
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	var got []string
 	for _, op := range doc.Operations() {
 		if op.CIAdmitted {

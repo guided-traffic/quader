@@ -40,7 +40,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `versions-check` (continued) | also compares the Node.js of `PATH` with `web/.nvmrc` and `docker buildx` with `BUILDX_VERSION` |
 | `fmt` | the formatters of `.golangci.yml` (gofumpt, goimports) over `./...`; this rewrites files, so run it on your own working tree |
 | `versions-check` | the E0.2 checks listed above |
-| `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
+| `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`) and a limit of `UNIT_TIMEOUT` per test binary (default 20 minutes, below the unit job's own 30; see [The unit run's time](#the-unit-runs-time)); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
 | `integration-up`, `integration-down` | start and stop the integration stack, see below |
 | `test-integration` | `go test -tags integration ./test/integration/...` with the environment of the main checkout's `.dev/integration/env` (a worktree uses the stack the main checkout started; run it as `test/integration/locked.sh make test-integration`, see [Integration stack](#integration-stack)); the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c` runs one third of the packages (the three CI legs, by a rule that places a new package without a list being edited, Q-ARCH-544: `a` the areas `ci`, `coordination`, `mirror`, `npm`, `nuget` and `proxy` and every `<format>local`, `c` the areas `api`, `backup` and `valkey`, the vulnerability and Bastion areas and every `<format>remote`, `b` everything else, every `<format>virtual` and every new platform area among them) and adds `-<shard>` to both names |
 | `test-performance` | the P-13 and P-14 latency tests of the integration tier, the Debian delay bound `TestR_DEB_010_DelayBound` (R-DEB-010, Q-DEB-59) and `TestR_EP_013_CeilingPerformance` of `internal/authz` and the takeover bound of `TestFlightLockWait` (R-ARCH-033) of `internal/cluster` and the decode time of the slowest accepted avatars (`TestR_API_055_TheWorstCaseInputsAreAccepted` and `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` of `internal/avatar`, Q-UI-173; both skip under `-race`, so only this target runs them) with `QUADER_PERF_GATE=1`, which enforces their p99 bounds (for the avatar tests only the least CPU time of seven decodes: the wall time of a decode on a shared runner is the runner's load, so it is logged and not judged) (with Valkey for the first; `test-integration` and `make test` log them only); the JSON stream goes to `.out/test-performance.json`. Run by the nightly workflow "HA and Performance (nightly)" ([releasing.md](releasing.md#ha-and-performance-nightly)) |
@@ -101,6 +101,49 @@ because a CI runner with a CPU limit and the race detector took tens of times as
 (poll it) and does not sleep for a fixed time and count what happened in it. A fake clock that a test advances is advanced inside the
 wait, because the code under test reads it at a moment the test does not see. The evidence: the start-up tests of `internal/app` failed in
 50 of 300 processes run at once on 20 CPUs before this rule and in none after it.
+
+### The unit run's time
+
+`make test` runs every package under the race detector with the coverage of the whole module (`-coverpkg=./...`), eight
+packages at a time on the CI runner (`GOMAXPROCS: 8`). Go ends a test binary after `-timeout`, 10 minutes by default; the
+Makefile sets `UNIT_TIMEOUT` to 20 minutes. A package's time in that mode is what counts. The slowest packages in the unit job
+of Test and Release 44926599027 (2026-11-21), in seconds:
+
+| Package | Seconds | Note |
+|---|---|---|
+| `internal/api/v1` | 585 | 476 in the morning of the same day; one feature added 98 s, and the next commit took it past the default limit of 600 |
+| `internal/formats/formattest` | 156 | |
+| `internal/archtest` | 107 | loads every package of the module with types |
+| `internal/app` | 105 | |
+| `internal/formats/formattest/testformat` | 101 | |
+| `internal/authz` | 87 | |
+
+Why `internal/api/v1` cost ten minutes (from the `go test -json` report of that run): its 236 tests ran one after the other,
+and 47 of them, each 2 s or more, took 517 of the 582 s. They waited on parsing the OpenAPI document (1.1 MB of YAML), not on
+what they checked. A test that built a response validator (`apitest.New`: kin-openapi loads and validates the document) paid
+about 8 s for it, and about 25 tests did. Every `newSetup` parsed the document again for the server (`LoadDocument`, about
+0.85 s): `TestR_API_021_TheRegisteredRoutesCarryTheGate` built 56 servers and took 49 s. Each of the six signature tests that
+came with the feature paid a validator and a parse (about 9 s), which is most of the 98 s the feature added; the other 41 s
+were the existing tests' parses of a larger document. With both parses shared per test binary, the package took 56 to 58 s
+in three runs in the job's mode on a 20-core workstation (`GOMAXPROCS=8`, load 7 to 9), against 560 s before on the same
+machine; its slowest tests are now the ones that load a changed document on purpose and the ones that render the document.
+
+What a test in `internal/api/v1` uses, so a new one costs milliseconds and not seconds:
+
+| For | Use | Not |
+|---|---|---|
+| The embedded document as the server reads it | `testDocument(t)`: parsed once per test binary, read-only | `LoadDocument(EmbeddedYAML())` |
+| A server with its chain | `newSetup(t, opts, authn)`: it takes the shared document | a router and `New` of its own, unless the test needs a different document |
+| A response validator | `newValidator(t)`: a validator of the test's own (what it saw, `Uncovered`, is the test's) on a spec parsed once per test binary | `apitest.New(t, EmbeddedYAML())` |
+| The document as kin-openapi reads it | `specDocument(t)` | `apitest.LoadDocument(EmbeddedYAML())` |
+| A changed document (a load that must fail, an operation removed from the table) | `LoadDocument` or `apitest.LoadDocument` of the changed bytes: it pays a parse, so one per case that needs it | changing the shared document, which every later test reads |
+
+The helpers live in [v1_test.go](../../internal/api/v1/v1_test.go) and [apitest.Spec](../../internal/api/v1/apitest/apitest.go);
+the variables that hold the shared parses are in a `_test.go` file, so they are test state and not package state of a replica
+([R-ARCH-032](../spec/architecture.md#r-arch-032--no-state-between-requests-on-one-replica-inv-18)). A test still builds a server per
+caller where the caller is part of the setup (`authn`). A table of cases runs against one server where no case changes what
+the server holds. The package's tests do not run in parallel (`t.Parallel`), because many share fakes and counters by design:
+running them in parallel is a change of its own, test by test.
 
 ### Architecture test
 

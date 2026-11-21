@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the formats whose descriptors are served
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
@@ -30,7 +29,7 @@ func TestR_UI_021_FormatDescriptorMirrorFact(t *testing.T) {
 		}
 	}
 	t.Run("R-UI-021 every served descriptor carries the boolean, validated against the document", func(t *testing.T) {
-		val := apitest.New(t, EmbeddedYAML())
+		val := newValidator(t)
 		s := newSetup(t, func(o *Options) { o.Access = allowAll{} }, authed)
 		s.handler = val.Handler(t, s.handler)
 		w := s.get("/api/v1/formats")

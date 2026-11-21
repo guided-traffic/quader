@@ -37,7 +37,7 @@ func migrationsSetup(t *testing.T, val *apitest.Validator, acc Access, src Migra
 }
 
 func TestGetMigrationStatus(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	applied := time.Date(2026, 10, 28, 12, 0, 3, 114e6, time.UTC)
 	started := time.Date(2026, 10, 28, 12, 5, 0, 0, time.UTC)
 	total := int64(480000)

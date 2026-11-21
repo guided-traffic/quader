@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 )
 
@@ -35,7 +34,7 @@ func TestR_OPS_048_TheScannerReplicasMatchTheDocument(t *testing.T) {
 		Items: []gen.ScannerReplica{ready, waiting},
 	}
 	s := newSetup(t, func(o *Options) { o.Scanners = fakeScanners{list: list} }, authed)
-	h := apitest.New(t, EmbeddedYAML()).Handler(t, s.handler)
+	h := newValidator(t).Handler(t, s.handler)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/system/scanners", nil))
 	if w.Code != http.StatusOK {

@@ -15,7 +15,8 @@ import (
 
 func TestOpenAPIDocument(t *testing.T) {
 	t.Run("R-API-002 E1.6 the document validates as OpenAPI 3.1", func(t *testing.T) {
-		if _, err := apitest.LoadDocument(EmbeddedYAML()); err != nil {
+		// The shared spec is the document loaded and validated by apitest.LoadDocument, once per test binary.
+		if _, err := sharedSpec(); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -56,10 +57,7 @@ paths:
 		}
 	})
 	t.Run("R-API-002 every non-public operation declares the problem responses it can produce", func(t *testing.T) {
-		doc, err := apitest.LoadDocument(EmbeddedYAML())
-		if err != nil {
-			t.Fatal(err)
-		}
+		doc := specDocument(t)
 		for path, item := range doc.Paths.Map() {
 			for method, op := range item.Operations() {
 				has4xx5xx := false
@@ -90,7 +88,7 @@ func samplePath(template string) string {
 }
 
 func TestResponsesMatchTheDocument(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	for _, tc := range []struct {
 		name  string
 		authn func(*http.Request) (httpserver.Principal, error)
@@ -101,7 +99,7 @@ func TestResponsesMatchTheDocument(t *testing.T) {
 		}
 		s := newSetup(t, func(o *Options) { o.Facts = fakeFacts{facts} }, tc.authn)
 		h := val.Handler(t, s.handler)
-		doc, _ := LoadDocument(EmbeddedYAML())
+		doc := testDocument(t)
 		ops := doc.Operations()
 		patterns := make([]string, 0, len(ops))
 		for p := range ops {

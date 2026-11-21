@@ -18,7 +18,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -192,7 +191,7 @@ func TestR_OPS_004_SystemOverview(t *testing.T) {
 	})
 
 	t.Run("the answers match the document", func(t *testing.T) {
-		val := apitest.New(t, EmbeddedYAML())
+		val := newValidator(t)
 		for _, store := range []*overviewStore{newOverviewStore(), nil} {
 			s := overviewSetup(t, store, nil)
 			h := val.Handler(t, s.handler)
@@ -266,7 +265,7 @@ func TestR_OPS_003_ReplicaRuntimeMatchesTheDocument(t *testing.T) {
 	idle.Runtime = &gen.ReplicaRuntime{SampledAt: time.Date(2026, 11, 6, 9, 0, 10, 0, time.UTC), WindowSeconds: 10, CpuLimitCores: &limit}
 	old := replica("quader-api-3", "web", "n2", gen.Ready, false)
 	s := newSetup(t, func(o *Options) { o.Replicas = fakeReplicas{withRuntime, idle, old} }, authed)
-	h := apitest.New(t, EmbeddedYAML()).Handler(t, s.handler)
+	h := newValidator(t).Handler(t, s.handler)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/system/replicas", nil))
 	if w.Code != 200 {
@@ -289,10 +288,7 @@ func TestR_OPS_003_ReplicaRuntimeMatchesTheDocument(t *testing.T) {
 // requirementOf is the authorization step's form of an operation's x-quader-permission.
 func requirementOf(t *testing.T, operationID string) Requirement {
 	t.Helper()
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	for _, op := range doc.Operations() {
 		if op.ID == operationID {
 			return op.Requirement

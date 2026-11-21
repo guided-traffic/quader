@@ -388,7 +388,7 @@ func testListCacheEntries(t *testing.T, val *apitest.Validator) {
 // TestCacheAPI runs the cache operations through the router of the shared step with
 // every answer validated against the document (R-API-002).
 func TestCacheAPI(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	t.Run("invalidate", func(t *testing.T) { testInvalidateRepositoryCache(t, val) })
 	t.Run("entries", func(t *testing.T) { testListCacheEntries(t, val) })
 	t.Run("R-API-002 R-API-024 the answers of both cache operations were validated against the document", func(t *testing.T) {

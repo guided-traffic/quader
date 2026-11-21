@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
@@ -51,7 +50,7 @@ type listedFormat struct {
 // listedFormats reads GET /api/v1/formats through the document's response validation.
 func listedFormats(t *testing.T) []listedFormat {
 	t.Helper()
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	s := newSetup(t, func(o *Options) { o.Access = allowAll{} }, authed)
 	s.handler = val.Handler(t, s.handler)
 	w := s.get("/api/v1/formats")
@@ -120,7 +119,7 @@ func TestImagePrefixIsTheHostAndTheRepositoryOfARegistryRootFormat(t *testing.T)
 // TestR_UI_052_TheFormatListSaysWhichFormatsAreScanned: the screens show a column of vulnerabilities only for a format whose versions
 // are matched against advisories.
 func TestR_UI_052_TheFormatListSaysWhichFormatsAreScanned(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	s := newSetup(t, func(o *Options) { o.Access = allowAll{} }, authed)
 	s.handler = val.Handler(t, s.handler)
 	w := s.get("/api/v1/formats")

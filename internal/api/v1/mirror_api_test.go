@@ -196,7 +196,7 @@ var (
 )
 
 func TestR_REPO_056_MirrorStatusPermissions(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	get := func(access Access, dec authz.Decider) *mirrorEnv {
 		e := newMirrorEnv(t, val, access, dec, nil)
 		return &e
@@ -274,7 +274,7 @@ func at(s string) *time.Time {
 }
 
 func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	max := int64(107374182400)
 	status := func(t *testing.T, key string, mutate func(*fakeMirror)) map[string]any {
 		t.Helper()
@@ -434,7 +434,7 @@ func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
 }
 
 func TestR_REPO_056_MirrorRun(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	run := func(t *testing.T, access Access, dec authz.Decider, path, body string, mutate func(*fakeMirror)) (mirrorEnv, *httptest.ResponseRecorder) {
 		t.Helper()
 		e := newMirrorEnv(t, val, access, dec, mutate)

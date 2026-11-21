@@ -79,7 +79,7 @@ func resolutionURL(key, path string) string {
 }
 
 func TestResolutionAPI(t *testing.T) {
-	val := apitest.New(t, EmbeddedYAML())
+	val := newValidator(t)
 	virtualRepo := repository.Repository{ID: "4", Name: qr("all"), Class: repository.Virtual, Format: "generic", Lifecycle: repository.Active}
 
 	t.Run("R-REPO-019 the operation declares read on the virtual repository of the path", func(t *testing.T) {

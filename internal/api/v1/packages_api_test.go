@@ -110,10 +110,7 @@ func setupServerWith(t *testing.T, baseURL string, deploy bool, authn func(*http
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	local := repository.Repository{Name: qr("npm-local"), Class: repository.Local, Format: "npm"}
 	remote := repository.Repository{Name: qr("npm-remote"), Class: repository.Remote, Format: "npm"}
 	repos := packagesReader{repos: map[string]repository.Repository{

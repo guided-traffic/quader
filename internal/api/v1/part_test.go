@@ -27,10 +27,7 @@ func TestR_ANS_037_ThePartMarkerIsValidated(t *testing.T) {
 // TestR_ANS_037_TheDocumentListsTheWikiOperations: the three documentation operations and the README operation are declared wiki content, and no other operation is,
 // so a test and the check that runs before a handler can list the wiki surface from the document (Q-API-260).
 func TestR_ANS_037_TheDocumentListsTheWikiOperations(t *testing.T) {
-	doc, err := LoadDocument(EmbeddedYAML())
-	if err != nil {
-		t.Fatal(err)
-	}
+	doc := testDocument(t)
 	var got []string
 	for _, op := range doc.Operations() {
 		if op.Part == PartWiki {
