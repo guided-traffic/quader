@@ -40556,6 +40556,15 @@
         <target>Sichtbarkeit von <ph id="0" equiv="name" disp="r.displayName"/></target>
       </segment>
     </unit>
+    <unit id="wellknown.badge.local">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:12,14</note>
+      </notes>
+      <segment>
+        <source>Local repository</source>
+        <target>Lokales Repository</target>
+      </segment>
+    </unit>
     <unit id="wellknown.badge">
       <notes>
         <note category="location">src/app/features/upstream/upstream-registry.html:11,13</note>
@@ -40752,6 +40761,24 @@
       <segment>
         <source>Save account</source>
         <target>Konto speichern</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.hint-local">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:298,300</note>
+      </notes>
+      <segment>
+        <source>Its settings page and its dates.</source>
+        <target>Seine Einstellungsseite und seine Daten.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.details.settings-link">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:304,306</note>
+      </notes>
+      <segment>
+        <source>The repository&apos;s settings page</source>
+        <target>Die Einstellungsseite des Repositorys</target>
       </segment>
     </unit>
     <unit id="wellknown.details.hint">

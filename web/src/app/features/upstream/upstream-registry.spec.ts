@@ -98,6 +98,12 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(root.querySelector('[role="switch"]')).toBeNull();
     expect(root.querySelector('#wk-address, #wk-account')).toBeNull();
     expect(text(root)).not.toContain('aquasec/trivy-db');
+    // A local repository listed by nobody and downloaded by no client: its badge and its Details say so (Q-UI-883).
+    expect(text(root.querySelector('.subject')!)).toContain('Local repository');
+    expect(text(root.querySelector('.subject')!)).not.toContain('Upstream registry');
+    expect(text(root)).toContain('Its settings page and its dates.');
+    expect(text(root)).not.toContain('Who lists the registry');
+    expect(text(root)).not.toContain('Listed by');
     const unused = await render('scanner-clamav', { setup: (a) => a.set('scanner-clamav', { inUse: false }) });
     expect(text(unused.root)).toContain('Not in use by the malware scan. Its visibility is always Private.');
   });

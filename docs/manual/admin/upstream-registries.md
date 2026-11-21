@@ -143,7 +143,8 @@ signature database. `freshclam` beside the worker fetches the database from Clam
 the malware scanners load, and it removes versions older than two days that are neither in use nor the one before. An unchanged
 `main.cvd` is one stored file for every version. It has no switch, no address and no account, and its level is always Private: it is
 **In use by the malware scan** while the scanning is on and `malware.database.repository` names it (the default), else **Not in use**.
-It answers no client, administrators included, and nobody deploys to it. Its files are listed on the repository's page; removing one
+It answers no client, administrators included, and nobody deploys to it, so its page carries the badge **Local repository** and
+its **Details** hold only the link to its settings page and its dates. Its files are listed on the repository's page; removing one
 makes the next run store its version again. An installation without internet names a repository of its own instead
 ([Monitoring and operations](operations.md#malware-scanning)).
 

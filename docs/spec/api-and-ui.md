@@ -8229,7 +8229,9 @@ Priority: **MVP** · Covers: quader-only
   1. **State and visibility**, open: the switch and the level of R-UI-187, with the same dialogs; for a system repository the use and
      the fixed level as text ("In use by the image scanning. Its visibility is always Private.", for `scanner-clamav` "In use by the
      malware scan. Its visibility is always Private."). A repository whose item names `address` as fixed (`scanner-clamav`, a local
-     repository) has neither **Address** nor **Account** (Q-UI-883).
+     repository) has neither **Address** nor **Account**, its header's badge is **Local repository**, and its **Details** ("Its settings
+     page and its dates.") hold the link to its settings page and its dates only: no virtual repository lists it and no client
+     downloads from it (Q-UI-883, Q-UI-884).
   2. **Address**, open ([Q-UI-831](#q-ui-831--the-address-the-archive-keys-and-the-account-are-on-the-registrys-own-page)):
      **Upstream URL** (a URL field), **Further hosts** (the editor of R-UI-082) and, for a Debian or Ubuntu archive, **Archive keys**
      (the fingerprints of the keys and a text area for an armored block, behind the fold **Replace the keys**). While the address is
@@ -20609,13 +20611,29 @@ page's level, the client setup's note), and the registry's page offered **Addres
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The UI knows each system repository's work by its key (`systemWork` beside `isSystemRepository`, as it knows the project) and picks the sentence by it; the registry's page leaves out **Address** and **Account** where the item's `fixed` names `address` (chosen) | One table of keys and works, words per work | The texts are right also for a reader who cannot read the admin item; a later system repository is one line and one set of sentences; the page shows no section no write could store | The sentences are chosen in the UI, not sent by the server |
+| (a) The UI knows each system repository's work by its key (`systemWork` beside `isSystemRepository`, as it knows the project) and picks the sentence by it; the registry's page leaves out **Address** and **Account** where the item's `fixed` names `address`, and gives such a local repository the badge **Local repository** and a **Details** of its settings page and its dates (chosen) | One table of keys and works, words per work | The texts are right also for a reader who cannot read the admin item; a later system repository is one line and one set of sentences; the page shows no section no write could store | The sentences are chosen in the UI, not sent by the server |
 | (b) A member of the item that names the work | The server says it | One source | The settings page and the client setup are read by callers who do not read the admin item |
 | (c) Neutral sentences ("Quader's own work reads it") | One sentence for all | No table | Says less than the page knows |
 
 **Choice:** (a). **Applied in the spec:** R-UI-187, R-UI-188, R-UI-190. Code:
 [upstream-project.ts](../../web/src/app/core/upstream-project.ts), [upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts),
 [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html).
+
+### Q-UI-884 · The page of a local system repository names it a local repository and holds no listing and no limits
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the page of `scanner-clamav` carried the badge **Upstream registry** and a **Details** of "Who lists the registry, its settings for
+teams, its limits and its dates." It is a local repository, no virtual repository lists it and no client downloads from it (R-REPO-075).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Where the item's `fixed` names `address`, the badge is **Local repository** and **Details** ("Its settings page and its dates.") holds the link to the settings page and the dates (chosen) | Words that are true for it | The page says what the repository is; nothing invites a look for listings or limits that cannot exist | One more pair of sentences in the catalogue |
+| (b) No badge for it | Silence | Nothing false | The header loses the fact that Quader keeps it |
+| (c) Keep the words of a registry | No change | — | False for this repository |
+
+**Choice:** (a). **Applied in the spec:** R-UI-188. Code: [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html),
+[messages.de.xlf](../../web/src/locale/messages.de.xlf) ("Lokales Repository", "Seine Einstellungsseite und seine Daten.").
 
 ## What this does not cover
 

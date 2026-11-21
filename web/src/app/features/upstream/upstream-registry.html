@@ -8,7 +8,11 @@
     <p meta class="subject">
       <quader-format-icon [format]="r.format" /><span class="format-label" translate="no">{{ formatLabel() }}</span>
       <span class="dot-before" translate="no">{{ r.name }}</span>
-      <span class="badge" i18n="@@wellknown.badge">Upstream registry</span>
+      @if (noAddress()) {
+        <span class="badge" i18n="@@wellknown.badge.local">Local repository</span>
+      } @else {
+        <span class="badge" i18n="@@wellknown.badge">Upstream registry</span>
+      }
     </p>
     <a actions class="btn btn-default" [routerLink]="projectLink()" i18n="@@wellknown.open">Open repository</a>
   </quader-page-header>
@@ -283,8 +287,27 @@
       }
     }
 
-    <!-- 4 · Details, closed: who lists it, where its narrowing settings and limits are, and its dates. -->
-    @if (!retired()) {
+    <!-- 4 · Details, closed: who lists it, where its narrowing settings and limits are, and its dates. A local system repository
+         (scanner-clamav) is listed by no virtual repository and downloaded by no client: its settings page and its dates only. -->
+    @if (!retired() && noAddress()) {
+      <div class="details">
+        <quader-disclosure
+          i18n-heading="@@repo.settings.details"
+          heading="Details"
+          i18n-hint="@@wellknown.details.hint-local"
+          hint="Its settings page and its dates."
+          [(expanded)]="detailsOpen"
+        >
+          <dl class="facts">
+            <dt i18n="@@wellknown.details.narrowing">Settings</dt>
+            <dd>
+              <a [routerLink]="settingsLink()" i18n="@@wellknown.details.settings-link">The repository's settings page</a>
+            </dd>
+            <ng-container *ngTemplateOutlet="dates" />
+          </dl>
+        </quader-disclosure>
+      </div>
+    } @else if (!retired()) {
       <div class="details">
         <quader-disclosure
           i18n-heading="@@repo.settings.details"
@@ -304,16 +327,7 @@
             <dd>
               <a [routerLink]="settingsLink()" i18n="@@wellknown.details.limits-link">The repository's limits, on its settings page</a>
             </dd>
-            @if (documentValue(); as doc) {
-              @if (doc.createdAt; as at) {
-                <dt i18n="@@repo.detail.created">Created</dt>
-                <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
-              }
-              @if (doc.updatedAt; as at) {
-                <dt i18n="@@repo.detail.updated">Last changed</dt>
-                <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
-              }
-            }
+            <ng-container *ngTemplateOutlet="dates" />
           </dl>
         </quader-disclosure>
       </div>
@@ -322,6 +336,20 @@
 } @else {
   <p role="status" i18n="@@repo.loading">Loading.</p>
 }
+
+<!-- The repository's dates, the last facts of Details. -->
+<ng-template #dates>
+  @if (documentValue(); as doc) {
+    @if (doc.createdAt; as at) {
+      <dt i18n="@@repo.detail.created">Created</dt>
+      <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+    }
+    @if (doc.updatedAt; as at) {
+      <dt i18n="@@repo.detail.updated">Last changed</dt>
+      <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+    }
+  }
+</ng-template>
 
 <!-- Listed by (R-UI-188, Q-API-363): how many virtual repositories in how many projects, each named one as a link to its settings,
      where its members are, and the number of the others the answer does not name. -->
