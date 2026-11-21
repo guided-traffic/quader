@@ -970,7 +970,37 @@ runs are in `git log`; this section holds the current state.
   circuit opened), how many round trips to Valkey a download makes for limits and usage since the download limits
   landed, whether those go through the circuit, and what the leg did in the last real run. The builder of the
   drain leg's diagnosis reads it (since 01:30); a decided defect is fixed, an undecided case (may a download wait
-  on a slot's bookkeeping in Valkey at all) comes back as a decision, and no limit is raised for a test.
+  on a slot's bookkeeping in Valkey at all) comes back as a decision, and no limit is raised for a test. **Cause
+  found (01:52): a defect of the product in the download limits, latent since they landed on 2026-11-19, and the
+  specification decides the answer.** A download holds a slot against the limit of parallel downloads; while Valkey
+  cannot be used a replica counts the slots in its own memory against its share. The code gave a slot back only in
+  the place the next flush happened to reach. With Valkey slow, a replica's calls go to Valkey in one second and to
+  its own count in the next, so a slot was taken in one place and given back in the other, and a finished download
+  stayed counted for the slot's full minute; a call that timed out was decided locally while a Valkey that only held
+  the command ran it afterwards, so that slot lived in both. Callers far below their limit were refused, which
+  R-LIM-019 and R-HA-057 forbid (a figure falls back to the replica's share and never refuses because Valkey
+  failed). **Evidence:** all 176 refusals came from one replica in one minute, each after the 10 s of the limit's
+  wait; of the 35 whose log line survived, 34 name the limiter of parallel downloads in the mode `fallback`; that
+  replica's share is 17 slots a token while only a few downloads a token were in progress; the bad window lasted 56
+  s, the slot's lifetime; without that replica's minute the p99 is 554 ms, inside the bound. A download makes two
+  round trips to Valkey for the limits (three at a cache miss), the second since the download limits; the usage
+  rows and the second dimension of `upstream` cost none. The limits go through the same circuit as every other use
+  of Valkey. Ruled out: a starved runner (12.5 of 32 CPUs in use, no kill). The last real run of the leg before
+  tonight passed with the limit enforced. **The fix, one commit of the type `fix`, held for the end of the
+  nightly:** a slot is given back in both places, locally at once and in Valkey by the flush, retried until it
+  arrives or has expired there; renewals too; no round trip more. Five unit cases against a store that is down or
+  that runs a batch and then answers with a timeout; four of them fail on the old code. The decision is Q-LIM-95,
+  the development agent's. Gates: build, the full unit run, lint, generate-check, links; the area `limits` passed,
+  `coordination` and `npm` were running. **Not known:** why that one replica and that one minute (the circuit's state
+  over time and the other replicas' logs before the fault are not kept); whether the leg passes with the fix, which
+  the next nightly shows. **The fifth red leg, at 01:51, a return of F-165:** `e2e (ha-pooler)`,
+  `TestHAPooler_Switchover`: after a switchover of PostgreSQL one instance of the control pooler logged refused
+  clients (`server_login_retry`) for 69.4 s, against the bound of 20 s; its sibling was back after 7.6 s, the two of
+  the request pooler after 8 and 9.1 s; the load held (16,733 requests, no failure, every npm command exit 0). The
+  first time, on 2026-11-20, it was one instance of the request pooler for 33.7 s. The builder of the Ansible leg's
+  diagnosis reads that instance's log and the profile's pooler configuration (since 01:52): whether it had no
+  server for 69 s or was only asked rarely, with a last failure line that is late (60 refused clients in 69 s is
+  sparse), which would make the test's reading of the log the defect.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -991,7 +1021,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (01:33), three builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's slow-Valkey leg); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case):
+- **In work** (01:52), four builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the fix of the limits' slots finishing its integration areas, the reading of F-165); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and the fix of the limits' slots:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
