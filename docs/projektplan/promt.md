@@ -1236,8 +1236,9 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (08:13): three builders; the rename is landed and its release is awaited, with the look at the owner's
-  installation after it. **What the rename's builder reported and left is
+- **In work** (08:37): two builders (the names an operator reads, the scanner replicas on the screens); the system
+  repositories' commit passes the full unit run since its builder corrected the count (08:27) and lands when the
+  rename's pipeline has ended. **What the rename's builder reported and left is
   built at once** (the owner, 2026-11-21, to that report: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten.
   Das ist alles wichtig und muss umgesetzt werden"), in two packages on top of the rename's commit, both since
   08:08. (1) **No name of a scanner unit that an operator reads is left without its tool:** the label `listener` of
@@ -1282,8 +1283,8 @@ runs are in `git log`; this section holds the current state.
   **Seen in them and left, named to the owner:** the section's columns Format and Class stand about 120 px right of
   the list's, because its table is indented and its action column holds the menu alone. **The development agent's
   full unit run on the commit failed in one test**, the count of requirements in the coverage tool's test (1,048
-  against the expected 1,047: the builder had run the manual's Go packages only); back with the builder since
-  08:26. **What it costs:** four component tests (0.3 s), two render cases with 24 pictures, about 19 s of the job
+  against the expected 1,047: the builder had run the manual's Go packages only); corrected by the builder at 08:27,
+  the full unit run of 176 packages then exit 0. **What it costs:** four component tests (0.3 s), two render cases with 24 pictures, about 19 s of the job
   `UI layout checks`. **A change of shared state, by the documented way of rendering from a worktree:** the render
   seed switched four registries on (`ghcr`, `quay`, `ubuntu`, `debian-security`) in the database of the owner's UI
   stack. **Where a system repository still stands among the repositories a user works with, reported and unchanged,
@@ -1325,7 +1326,16 @@ runs are in `git log`; this section holds the current state.
   name of 40 characters, and nothing checks the sum. **What an installation sees at the upgrade:** both Deployments
   and their Services, budgets, policies and Certificates are removed and created under the new names, every pod
   rolls, scanning pauses until the new scanners are ready, and the two certificate Secrets of the old names stay
-  behind. The owner's values name none of the renamed keys.
+  behind. The owner's values name none of the renamed keys. **Released at 08:26, and the owner's installation took
+  it by itself at 08:34** (read on the cluster): the five Deployments ready on the new image, the two scanners as
+  `vuln-scanner-trivy` and `malware-scanner-clamav` with their Services, budgets, policies and certificates, nothing
+  of the old names left but Secrets, no restart; both malware scanners loaded the signature database into `clamd`
+  again, the image scanners answer ready, the worker logged no error, the ingress answers. **Left behind there, three
+  Secrets nothing uses any more:** the two of the old kinds' certificates and the one of the certificate that was
+  written by hand before the chart issued one per kind; named to the owner with the command, because his cluster is
+  changed through his deployment repository only and no object of it owns them. The comment and the README of the
+  installation's directory in his deployment repository name the new kinds (committed there by the development
+  agent).
   **Housekeeping at 07:02:** the worktrees and branches of the malware scan's landing, of its third package and of
   the lock script are removed, every commit of them being on `main` (the third package's as the commits of the
   landing: no difference between its tip and the landed tree but this plan); nine worktrees of another session
