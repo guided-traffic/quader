@@ -1632,6 +1632,40 @@ runs are in `git log`; this section holds the current state.
   contract, which the gate changes too; it starts when the gate is on `main`. Each was told the numbers
   reserved for it (decisions, gaps, an ADR), that a migration is numbered behind the gate's at the landing,
   and a stated time limit for the lint.
+  **Package 2, npm's signatures, reported at 22:11** with one commit on the base of 21:01; since 22:11 its
+  builder brings it onto today's `main` (the gate, whose migration number it had taken locally, the
+  analyser's move, the identity's section). **What it built:** every version of a local npm repository gets
+  a registry signature (ECDSA P-256 over name, version and integrity) in the package documents, stored as a
+  signature row that is marked as Quader's own, attached with a source of its own and never queued for a
+  check; a local repository's keys endpoint serves the identity's keys, and a virtual one adds them once for
+  its first enabled local member, which closes H-1176 for an installation with an identity; a publish writes
+  its work in the commit's transaction, and a pass signs what was published before an identity existed; on
+  a change of the identities in use every affected package's revision is raised, 1,000 per transaction, and
+  a retired identity's versions are signed again; the signatures' answers of the API name the source and
+  the identity; the set in use goes through backup and restore. **The real client:** `npm audit signatures`
+  of npm 12 on a cluster of the builder's own, through a virtual repository with a signed local package and
+  an upstream one: "2 packages have verified registry signatures" (its case alone, run twice; the client
+  first tried the public signing service's key distribution and then fetched the keys from Quader).
+  **Decided by its builder (Q-SIG-156 to Q-SIG-163):** the npm format reads keys and signatures through its
+  own data port and the format contract stays as it is; one operation signs every due version of a package
+  and raises its revision once; a publish writes work only while signing is on and an identity is current;
+  a document serves signatures by the identity's state, read in the document's own statement; every run of
+  the job compares the served set and raises the affected revisions; npm's signing writes through its own
+  store whatever the switch of the first stage says; a signature made again after a retirement removes the
+  retired one; the client setup's line for npm comes with the attestations' tab. **Two gaps it names:** a
+  cache outside Quader can hold a document with a retired key's signature after the keys endpoint dropped
+  the key, and npm then aborts (H-1204); until the job's next run two replicas can serve different
+  signature sets under one validator (H-1205). **Its gates:** build, the full unit run, generate-check, the
+  evidence, the complexity check and the lint each exit 0; under the lock the areas `signing`, `signatures`,
+  `postgres` (310 s), `upstream`, `backup` (442 s), `npm` (364 s) and `packages` green. **Its tests cost**
+  under 0.1 s of unit tests, about 5 s in the integration shard b, about 5 s in the leg `npm`; no new leg, no
+  client image. **Sent back at 22:11 with:** the rebase (its migration becomes 00103, behind the gate's), a
+  check that its own rows never pass the gate, what the screens show today for a signature of Quader's own
+  (it must not read as a publisher's or carry the badge before the screens' second half gives it its line),
+  the search under `test/integration` for what its change made longer, and the area `repository` with the
+  others. **Not verified by its report:** whether `npm audit signatures` works without reaching the
+  internet (H-1184 stays open); a rotation seen by a real client; the two new gaps, which are reasoned and
+  not reproduced; the raise of revisions beyond one batch of 1,000 packages.
 - **Landed on 2026-11-21 at 20:58: package 1 of the signatures' second stage, the signing identity** (R-SIG-045
   to R-SIG-049, R-SIG-055, R-SIG-057 to R-SIG-059, R-HA-071; decisions Q-SIG-145 to Q-SIG-155; what it built is
   in the entry of the three builders below, as reported at 19:58; its builder brought it onto `main` from
