@@ -147,7 +147,8 @@ func apply(ctx context.Context, s Store, st Step) error {
 }
 
 // Plan decides the steps of R-REPO-067 for the declarations against the stored repositories, in the order of the declarations and
-// then the retirements by key. A declaration whose key the project holds as a repository of another format, class or kind is step 6:
+// then the retirements by key. A declaration whose key the project holds as a repository of another format, class or kind (the class
+// the declaration names, Q-REPO-411) is step 6:
 // an error that names the key, and no step. A second plan against the state the first one left is empty.
 func Plan(decls []Declaration, stored []Stored) ([]Step, error) {
 	byKey := make(map[string]Stored, len(stored))
@@ -163,10 +164,10 @@ func Plan(decls []Declaration, stored []Stored) ([]Step, error) {
 			steps = append(steps, Step{Op: OpCreate, Key: d.Key, Decl: d})
 			continue
 		}
-		if s.Format != d.Format || s.Class != catalog.Remote || s.Kind != d.Kind {
-			return nil, fmt.Errorf("wellknown: the catalog declares upstream/%s as a %s repository of the format %s, and the project "+
+		if s.Format != d.Format || s.Class != d.Class || s.Kind != d.Kind {
+			return nil, fmt.Errorf("wellknown: the catalog declares upstream/%s as a %s %s repository of the format %s, and the project "+
 				"upstream holds it as a %s %s repository of the format %s; fix the catalog (R-REPO-067 step 6, Q-REPO-387)",
-				d.Key, d.Kind, d.Format, s.Kind, s.Class, s.Format)
+				d.Key, d.Kind, d.Class, d.Format, s.Kind, s.Class, s.Format)
 		}
 		if s.Retired {
 			steps = append(steps, Step{Op: OpUnretire, Key: d.Key, Decl: d})

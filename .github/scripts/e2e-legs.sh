@@ -207,6 +207,8 @@ EOF
 # (queries/vuln_ was anchored at the root; internal/api/v1/vuln_api names no file); they stand here as the paths they meant.
 # The role scanner's paths outside internal/vuln/ follow it, each the scanner's alone, so that no shared path starts the leg
 # (R-VULN-046): the wiring of the role and of the scanning, the scan token's file, the scanner's chart templates and its chart test.
+# The malware scanning's own paths follow, each its alone (R-MAL-030): its packages, its wiring, the malware scanner's templates and
+# their chart test; its end-to-end case is in the set vuln.
 vuln_paths() {
   cat <<'EOF'
 ^internal/vuln/
@@ -214,6 +216,10 @@ vuln_paths() {
 ^internal/auth/registrytoken/scan
 ^deploy/helm/quader/templates/(scanner|_scanner)
 ^test/chart/scanner_
+^internal/malware/
+^internal/app/wire_malware
+^deploy/helm/quader/templates/(malware-scanner|_malware)
+^test/chart/malware_
 ^internal/formats/(npm|nuget)/(vuln|handlers_audit|errors)
 ^internal/formathost/
 ^internal/items/

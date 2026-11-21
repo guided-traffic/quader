@@ -488,4 +488,25 @@ describe('Set up client of a system repository (R-UI-190)', () => {
     expect(r.guides.calls).toEqual([]);
     await expectAccessible(r.root);
   });
+
+  it('R-UI-190 R-REPO-075 the page of upstream/scanner-clamav says that the malware scan keeps its signature database there', async () => {
+    const r = await open(
+      { project: 'upstream', key: 'scanner-clamav' },
+      {
+        setup: (get) =>
+          (get(RepositoriesApi) as FakeRepositoriesApi).repositories.push({
+            key: 'scanner-clamav',
+            project: 'upstream',
+            class: 'local',
+            format: 'generic',
+            description: 'Malware scan database',
+          } as never),
+      },
+    );
+    expect(text(r.root.querySelector('[data-testid="setup-system"]')!)).toBe(
+      "Quader's malware scan keeps its signature database in this repository. Clients cannot use it.",
+    );
+    expect(r.root.querySelector('quader-setup-snippet, quader-code-window')).toBeNull();
+    expect(r.setup.calls).toEqual([]);
+  });
 });

@@ -20,8 +20,8 @@ import (
 // with repositories:write-config (R-AUTHZ-041, Q-AUTHZ-303); the address and the account need a recent sign-in and If-Match, a raised
 // level asks for a recent sign-in inside the write. The rules are the repository service's (internal/repository/upstream_ops.go).
 
-// ScannerInUse reports whether the image scanning reads its database through upstream/scanner-trivy, from the configuration of the
-// replica that answers (R-REPO-070, Q-REPO-380): the item of scanner-trivy shows it as inUse.
+// ScannerInUse reports whether the work a system repository serves reads through it, from the configuration of the replica that
+// answers (R-REPO-070, R-REPO-075, Q-REPO-380): the item of the system repository shows it as inUse.
 type ScannerInUse func() bool
 
 // UpstreamServices are what the operations of the well-known repositories need beyond Options.Repositories.
@@ -29,6 +29,21 @@ type UpstreamServices struct {
 	// ScannerTrivyInUse is the image scanning's answer for scanner-trivy; nil reads as not in use. The scanning's package of the
 	// analyser's database supplies it (vulnerability-scanning.md R-VULN-044).
 	ScannerTrivyInUse ScannerInUse
+	// ScannerClamavInUse is the malware scanning's answer for scanner-clamav: the scanning is on and malware.database.repository
+	// names it (malware-scanning.md R-MAL-011); nil reads as not in use.
+	ScannerClamavInUse ScannerInUse
+}
+
+// inUse answers the use of a system repository by its key.
+func (u UpstreamServices) inUse(key string) bool {
+	var f ScannerInUse
+	switch key {
+	case wellknown.ScannerTrivyKey:
+		f = u.ScannerTrivyInUse
+	case wellknown.ScannerClamavKey:
+		f = u.ScannerClamavInUse
+	}
+	return f != nil && f()
 }
 
 // upstreamServes reports whether a repository serves in the sense of Q-AUTHZ-305: a repository of the built-in project upstream that
@@ -77,7 +92,7 @@ func (s *Server) toUpstream(it repository.UpstreamItem) gen.UpstreamRepository {
 		out.ListedByNames = &names
 	}
 	if it.Kind == wellknown.KindSystem {
-		inUse := s.o.Upstream.ScannerTrivyInUse != nil && it.Key == wellknown.ScannerTrivyKey && s.o.Upstream.ScannerTrivyInUse()
+		inUse := s.o.Upstream.inUse(it.Key)
 		out.InUse = &inUse
 	} else {
 		st := gen.UpstreamRepositoryState(it.State)

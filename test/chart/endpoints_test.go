@@ -445,8 +445,9 @@ func TestEndpoints(t *testing.T) {
 		if n := len(ofKind(docs, "Ingress")); n != 0 {
 			t.Errorf("%d Ingresses rendered without ingress.enabled", n)
 		}
-		// The three Services of every render, the two of the image scanning's links (R-HA-066) and one per endpoint.
-		if n := len(ofKind(docs, "Service")); n != 3+2+16 {
+		// The three Services of every render, the two of the image scanning's links (R-HA-066), the malware scanner's (R-HA-068) and
+		// one per endpoint.
+		if n := len(ofKind(docs, "Service")); n != 3+2+1+16 {
 			t.Errorf("%d Services", n)
 		}
 	})

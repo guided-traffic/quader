@@ -393,7 +393,8 @@ func ReservedPresetIDs() []string {
 	return []string{
 		"batch-create", "batch-update", "batch-get", "batch-delete", "quick-setup", // R-REPO-002
 		"switch-on-all", "set-visibility", // R-REPO-073
-		"scanner-trivy", // R-REPO-070
+		"scanner-trivy",  // R-REPO-070
+		"scanner-clamav", // R-REPO-075
 	}
 }
 

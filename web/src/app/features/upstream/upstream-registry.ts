@@ -13,7 +13,7 @@ import {
 } from '../../api/upstream-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
-import { UPSTREAM_PROJECT } from '../../core/upstream-project';
+import { UPSTREAM_PROJECT, systemWork } from '../../core/upstream-project';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -28,7 +28,7 @@ import { groupedFingerprint } from '../repositories/deb-signing-keys';
 import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './account-again-dialog';
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
-import { levelOptions, onOffWord, privateRowNote, rowBadge, switchLabel } from './upstream-words';
+import { levelOptions, onOffWord, privateRowNote, rowBadge, switchLabel, systemUseSentence } from './upstream-words';
 
 /** The answer carries the problem of a stored account whose hosts the write would move (R-REPO-069). */
 function needsAccount(e: ApiError): boolean {
@@ -73,6 +73,11 @@ export class UpstreamRegistry {
 
   protected readonly canWrite = computed(() => this.session.has('repositories:write-config'));
   protected readonly system = computed(() => this.item()?.kind === 'system');
+  /** scanner-trivy, whose registry must serve the image scanning's database image (R-UI-188). */
+  protected readonly imageScanning = computed(() => this.system() && systemWork(this.item()?.key) === 'image-scanning');
+  /** A repository with no address and no account an administrator sets: scanner-clamav, a local repository (R-REPO-075, Q-REPO-412). */
+  protected readonly noAddress = computed(() => this.item()?.fixed.includes('address') ?? false);
+  protected readonly systemUse = systemUseSentence;
   protected readonly retired = computed(() => this.item()?.state === 'retired');
   protected readonly projectLink = computed(() => ['/projects', UPSTREAM_PROJECT, 'repositories', this.key()]);
   protected readonly settingsLink = computed(() => [...this.projectLink(), 'settings']);

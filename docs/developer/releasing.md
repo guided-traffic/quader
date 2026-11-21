@@ -101,7 +101,7 @@ which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-
 | unit tests | `make test` | the race detector; uploads `.out/test-unit.json` (`test-unit`) and `.out/coverage/unit.out` (`profile-unit`) |
 | web (Angular) | `make web-ci`, `make web-lint`, `make web-test`, `make web-embed` | `npm ci` (fails when `package.json` and the lockfile disagree), ESLint and the R-UI-046 rules, the Angular unit tests, the production build embedded into `internal/webui/dist`, then `QUADER_UI_BUILT=1 go test -run TestR_UI_001_ThirdPartyNotices ./internal/webui/` on that build (the notices of the bundled software, Q-UI-144) |
 | UI layout checks (`ui-layout`) | `make web-ci`, `make ui-layout-test`, `make ui-renders`, `make ui-dev-down PURGE=1` | the layout checks of the UI ([web-ui.md](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-176): first on their fixture pages, then every screen of the render set as every kind of user, light and dark, at 1,440, 1,024 and 390 px, against the job's own UI development profile (three service containers in the runner's Docker, Quader with the sign-in provider, the Angular dev server); a layout finding, an error notice, a failed call of the app's API or a console error fails it. One leg on `self-hosted`, 75 minutes ([Q-ARCH-511](../spec/architecture.md#q-arch-511--the-layout-checks-run-in-one-leg-on-the-standard-runners); a full run took 22 minutes on the development machine, not measured on a runner yet). Every push and pull request, gates nothing until the first stable release (Q-ARCH-510); on failure uploads `ui-layout-findings` (`failures.txt`, `report.json`, the pictures of the failed screens), on success `ui-layout-report` (`report.json`), 7 days ([Q-ARCH-512](../spec/architecture.md#q-arch-512--a-red-run-of-the-layout-checks-keeps-its-findings-and-the-pictures-of-its-failed-screens-for-a-week)) |
-| Malware Scan (source code) | `make malware-scan` | ClamAV (`clamscan --recursive --infected`) over the tree, without `.git`, `node_modules` and the build outputs; any infected file fails; uploads `clamav-report` |
+| Malware Scan (source code) | `make malware-scan-db`, `make malware-scan` | `freshclam` and `clamscan --recursive --infected` of `CLAMAV_IMAGE` over the tree, without `.git`, `node_modules` and the build outputs, the database from a cache of the day; any infected file fails; uploads `clamav-report` |
 | chart | `make chart-lint`, `make chart-test` | `helm lint` and `helm template` over every value set of both charts (`deploy/helm/quader/ci`, `deploy/helm/quader-bastion/ci`, the dev profile), the render assertions of [test/chart](../../test/chart) for both charts, and the `promtool check rules` / `promtool test rules` run over the Bastion's PrometheusRule ([rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml)); `make chart-test` fetches promtool into `.bin` at `PROMTOOL_VERSION` of [tools/versions.env](../../tools/versions.env), checked against the SHA-256 of the platform; uploads `.out/test-chart.json` (`test-chart`) |
 | image | `make image IMAGE=guidedtraffic/quader:dev VERSION=dev` | the [Containerfile](../../Containerfile) for the runner's architecture, loaded into Docker; the image must run as `65532:65532` (R-HA-033); then `docker save` and the artifact `quader-image` (one day), which every kind leg of the run loads instead of building the image itself ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)) |
 | SBOM generator (pinned syft, test image) | `make sbom-generator-check` | builds the SBOM generator of the release image and a two-platform test image with it, and asserts that both attestations name the pinned syft; needed by Semantic Release ([below](#sbom-generator)) |
@@ -520,16 +520,18 @@ simplifies the most complex function lowers the threshold to the new maximum in 
 
 ### Malware scan
 
-ClamAV scans the source tree (`make malware-scan`). The job installs the `clamav` package and updates
-the database with `freshclam` first. The scan excludes `.git`, `node_modules` and the build outputs
-`.out`, `.bin`, `.dev` and `bin`. The report is `.out/clamav-report.txt`; the job fails when it does
-not end with `Infected files: 0`, so a scan that did not finish is a failure too.
+ClamAV scans the source tree with the product's ClamAV, `CLAMAV_IMAGE` of `tools/versions.env`
+([R-MAL-031](../spec/malware-scanning.md#r-mal-031--the-source-trees-malware-scan-runs-the-products-clamav)): `make malware-scan-db` runs
+`freshclam` of that image into `.out/clamav-db`, then `make malware-scan` runs its `clamscan` over the tree mounted read-only. The job keeps
+`.out/clamav-db` in a cache whose key is the UTC day (`clamav-db-<day>`, the older days as restore keys), so a run fetches the day's
+differences and ClamAV's network sees one whole download per eviction of the cache
+([Q-MAL-86](../spec/malware-scanning.md#q-mal-86--the-source-trees-scan-keeps-the-real-database-in-a-cache-of-the-day)); the job logs in
+to Docker Hub for the pull. The scan excludes `.git`, `node_modules` and the build outputs `.out`, `.bin`, `.dev` and `bin`. The report is
+`.out/clamav-report.txt`; the job fails when it does not end with `Infected files: 0`, so a scan that did not finish is a failure too.
+Measured on the development machine on 2026-11-20: 64 s over 5,598 files, 11 s for a first `freshclam` download.
 
 This job checks Quader's own source and is not the malware scanning of stored artifacts
-([malware-scanning.md](../spec/malware-scanning.md)). Its ClamAV comes from the runner's package manager without a pin; once the
-product pins ClamAV (`CLAMAV_IMAGE` in `tools/versions.env`), the job runs `clamscan` from that image instead, so that one version of
-ClamAV is in use ([R-MAL-031](../spec/malware-scanning.md#r-mal-031--the-source-trees-malware-scan-runs-the-products-clamav); specified,
-not built).
+([malware-scanning.md](../spec/malware-scanning.md)).
 
 ### SBOM generator
 
@@ -621,7 +623,7 @@ make versions-check                     # the tools on PATH against the pins
 make lint gosec vuln cyclo generate-check build
 make test                               # unit tests, race detector, .out/coverage/unit.out
 make web-ci web-lint web-test web-embed # Node.js from web/.nvmrc
-make malware-scan                       # needs clamscan on PATH
+make malware-scan                       # needs docker: freshclam and clamscan of CLAMAV_IMAGE
 make chart-lint chart-test              # both charts; chart-test fetches promtool at its pin into .bin
 make image IMAGE=quader:ci               # the Containerfile, host architecture
 make integration-up test-integration integration-down

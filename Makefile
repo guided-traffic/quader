@@ -210,14 +210,24 @@ cyclo: $(GOCYCLO_BIN) ## gocyclo (pinned): fails on any function above CYCLO_THR
 cyclo-report: $(GOCYCLO_BIN) ## The 20 most complex functions, tests included
 	@$(GOCYCLO_BIN) -top 20 .
 
-# ClamAV over the source tree, as valkey-operator's malware-scan job runs it. The build outputs
-# (.out, .bin, .dev, bin) and node_modules are not source. The report is kept in .out.
+# ClamAV over the source tree with the product's ClamAV (R-MAL-031): freshclam and clamscan of CLAMAV_IMAGE, one version of the tool
+# for the product and this scan. freshclam keeps the database in .out/clamav-db, so a second run fetches the day's differences only
+# (CI keeps that directory in a cache whose key changes once a day; ClamAV's network limits whole downloads per address). The tree
+# is mounted read-only; the build outputs (.out, .bin, .dev, bin) and node_modules are not source. The report is kept in .out.
+CLAMAV_DB_DIR := .out/clamav-db
+
+.PHONY: malware-scan-db
+malware-scan-db: ## freshclam of CLAMAV_IMAGE into .out/clamav-db: the whole database once, then the day's differences (CI: malware-scan; needs docker)
+	@mkdir -p $(CLAMAV_DB_DIR)
+	docker run --rm --user "$$(id -u):$$(id -g)" --entrypoint /bin/sh -v "$(CURDIR)/$(CLAMAV_DB_DIR):/var/lib/clamav" $(CLAMAV_IMAGE) -c \
+	  'printf "DatabaseDirectory /var/lib/clamav\nDatabaseMirror database.clamav.net\nScriptedUpdates yes\n" > /tmp/freshclam.conf && freshclam --config-file=/tmp/freshclam.conf --stdout'
+
 .PHONY: malware-scan
-malware-scan: ## ClamAV over the source tree; fails on any infected file or when the scan does not finish (CI: malware-scan; needs clamscan)
-	@command -v clamscan >/dev/null || { echo "clamscan is not on PATH: install ClamAV (CI installs the clamav package)"; exit 1; }
+malware-scan: malware-scan-db ## clamscan of CLAMAV_IMAGE over the source tree; fails on any infected file or when the scan does not finish (CI: malware-scan; needs docker)
 	@mkdir -p .out
-	@set -o pipefail; clamscan --recursive --infected \
-	  --exclude-dir='(^|/)(\.git|node_modules|\.out|\.bin|\.dev|bin)$$' . | tee .out/clamav-report.txt
+	@set -o pipefail; docker run --rm --user "$$(id -u):$$(id -g)" --entrypoint clamscan -v "$(CURDIR):/src:ro" \
+	  -v "$(CURDIR)/$(CLAMAV_DB_DIR):/var/lib/clamav:ro" -w /src $(CLAMAV_IMAGE) --database=/var/lib/clamav --recursive --infected \
+	  --exclude-dir='(^|/)(\.git|node_modules|\.out|\.bin|\.dev|bin)$$' /src | tee .out/clamav-report.txt
 	@grep -q 'Infected files: 0' .out/clamav-report.txt || { echo "malware scan found files or did not finish: see .out/clamav-report.txt"; exit 1; }
 	@echo "no malware in the source tree"
 

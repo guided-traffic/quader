@@ -7,7 +7,7 @@ volume), and nothing else; none of the shared extras
 may carry a cloud identity of the object store, and the scanner calls no API (automountServiceAccountToken false, no RBAC).
 
 Beside the Deployment: its PodDisruptionBudget and autoscaler, the two ClusterIP Services of the links (<fullname>-scanner on 8080,
-<fullname>-packages-scan on 8082 of the main packages pods, Q-HA-319), and its NetworkPolicy of ingress rules only (ADR-154): the
+<fullname>-packages-scan on 8082 of the main packages pods, Q-HA-319, rendered while either scanning is on), and its NetworkPolicy of ingress rules only (ADR-154): the
 scanner admits 8080 from the worker Deployment that claims the queue vuln (Q-HA-320) and 8081 from the ops peers. The rule of the
 main packages pods that admits 8082 from the scanner's pods is one rule more of their own policy (templates/networkpolicy.yaml,
 quader.scanListenRule). Nothing is rendered while the image scanning is off.
@@ -265,30 +265,6 @@ spec:
       {{- end }}
   selector:
     {{- include "quader.selectorLabels" (dict "root" $ "component" "scanner") | nindent 4 }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ $fullname }}-packages-scan
-  labels:
-    {{- include "quader.labels" (dict "root" $ "component" "packages" "pool" "") | nindent 4 }}
-  {{- with (include "quader.commonAnnotations" $) }}
-  annotations:
-    {{- . | nindent 4 }}
-  {{- end }}
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-  ports:
-    - name: scan
-      port: 8082
-      targetPort: scan
-      protocol: TCP
-      {{- if $.Values.tls.enabled }}
-      appProtocol: https
-      {{- end }}
-  selector:
-    {{- include "quader.selectorLabels" (dict "root" $ "component" "packages" "pool" "") | nindent 4 }}
 {{- if .Values.networkPolicy.enabled }}
 {{- $np := .Values.networkPolicy }}
 {{- $ops := list }}
@@ -323,4 +299,31 @@ spec:
         {{- toYaml $ops | nindent 8 }}
     {{- end }}
 {{- end }}
+{{- end }}
+{{- /* The scan listener of the main packages pods (R-HA-066, R-HA-068): its Service while either scanning reads through it. */}}
+{{- if include "quader.scanListenOn" . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "quader.fullname" . }}-packages-scan
+  labels:
+    {{- include "quader.labels" (dict "root" . "component" "packages" "pool" "") | nindent 4 }}
+  {{- with (include "quader.commonAnnotations" .) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: scan
+      port: 8082
+      targetPort: scan
+      protocol: TCP
+      {{- if .Values.tls.enabled }}
+      appProtocol: https
+      {{- end }}
+  selector:
+    {{- include "quader.selectorLabels" (dict "root" . "component" "packages" "pool" "") | nindent 4 }}
 {{- end }}

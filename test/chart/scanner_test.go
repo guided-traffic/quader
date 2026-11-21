@@ -106,7 +106,7 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 	}
 	// With named Secrets the scanner mounts its own and no other kind's (Q-HA-347).
 	_, docs = render(t, required(), "tls.certManager.issuerRef.name=", "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p",
-		"tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s")
+		"tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s", "tls.existingSecrets.malware-scanner=m")
 	if got := secretVolumes(scannerPod(t, docs)); got["secret-tls"] != "s" || len(got) != 1 {
 		t.Fatalf("with tls.existingSecrets the scanner's secret volumes are %v", got)
 	}
@@ -120,7 +120,8 @@ func TestR_HA_065_TheScannerHoldsNoSecretOfTheInstallation(t *testing.T) {
 }
 
 func TestR_HA_065_TheImageScanningOffRendersNoScanner(t *testing.T) {
-	_, docs := render(t, required(), "config.vulnerabilities.images.enabled=false")
+	// Both scannings off: the malware scanning reads through the scan listener too (R-HA-068), its own off case is in malware_test.go.
+	_, docs := render(t, required(), "config.vulnerabilities.images.enabled=false", "config.malware.enabled=false")
 	for _, d := range docs {
 		if name := str(d, "metadata", "name"); strings.Contains(name, "scanner") || strings.HasSuffix(name, "packages-scan") {
 			t.Errorf("%s %s rendered", str(d, "kind"), name)
@@ -207,7 +208,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 				t.Errorf("%s: QUADER_SERVER_SCAN_LISTEN %v", name, scan)
 			}
 			ca := slices.Contains(tlsItems(pod), "ca.crt")
-			wantCA := name == "quader-packages" || name == "quader-scanner" || strings.HasPrefix(name, "quader-worker")
+			wantCA := name == "quader-packages" || name == "quader-scanner" || name == "quader-malware-scanner" || strings.HasPrefix(name, "quader-worker")
 			if ca != wantCA {
 				t.Errorf("%s: internal CA mounted %v", name, ca)
 			}
@@ -234,8 +235,8 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		renderFails(t, required(), []string{"config.server.scan_listen=:9999"}, "config.server.scan_listen is managed by the chart")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.client_name=x"}, "config.vulnerabilities.images.scanner.client_name is managed by the chart")
 		// The scan listener admits every kind of scanner the release renders, one entry each (quader.tlsKindTable).
-		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-scanner.default.svc\n" {
-			t.Errorf("server.scan_clients = %q, want the scanner's name", got)
+		if got := toStr(at(cfg, "server", "scan_clients")); got != "- quader-scanner.default.svc\n- quader-malware-scanner.default.svc\n" {
+			t.Errorf("server.scan_clients = %q, want the names of the two scanners", got)
 		}
 		renderFails(t, required(), []string{"config.server.scan_clients[0]=x"}, "config.server.scan_clients is managed by the chart")
 	})
@@ -286,7 +287,7 @@ func TestR_HA_042_TheLinksAdmitTheirOneSender(t *testing.T) {
 		t.Fatalf("%s has no rule of one peer for %d", policy, port)
 		return nil
 	}
-	_, docs := render(t, required())
+	_, docs := render(t, required(), "config.malware.enabled=false")
 	if m := from(t, docs, "quader-scanner", 8080); m["app.kubernetes.io/component"] != "worker" || m["quader/pool"] != "" {
 		t.Fatalf("the scanner admits %v", m)
 	}
@@ -298,9 +299,9 @@ func TestR_HA_042_TheLinksAdmitTheirOneSender(t *testing.T) {
 	if m := from(t, docs, "quader-scanner", 8080); m["quader/pool"] != "vuln" {
 		t.Fatalf("with a pool of the queue vuln the scanner admits %v", m)
 	}
-	// The scan listener opens on the main packages Deployment only: neither a pool's policy nor the policy of a render with the
-	// image scanning off admits 8082.
-	_, off := render(t, required(), "config.vulnerabilities.images.enabled=false")
+	// The scan listener opens on the main packages Deployment only: neither a pool's policy nor the policy of a render with both
+	// scannings off admits 8082.
+	_, off := render(t, required(), "config.vulnerabilities.images.enabled=false", "config.malware.enabled=false")
 	for _, p := range []doc{find(docs, "NetworkPolicy", "quader-packages-npm"), find(off, "NetworkPolicy", "quader-packages")} {
 		for _, rule := range list(p, "spec", "ingress") {
 			if ports, _, _ := portsOf(rule); slices.Contains(ports, 8082) {

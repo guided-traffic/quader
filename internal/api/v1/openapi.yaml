@@ -20857,8 +20857,10 @@ components:
       enum: [preset, system]
     UpstreamRepositoryFixed:
       type: string
-      description: What the product holds of a repository beyond the table of R-REPO-069.
-      enum: [state, visibility]
+      description: |
+        What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository, and
+        `address` and `account` of a local one (`scanner-clamav`), which has neither (Q-REPO-412).
+      enum: [state, visibility, address, account]
     UpstreamArchiveKey:
       type: object
       required: [fingerprint, userId]
@@ -20937,7 +20939,8 @@ components:
       description: |
         A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
         repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
-        (`[state, visibility]` for `scanner-trivy`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+        (`[state, visibility]` for `scanner-trivy`, `[state, visibility, address, account]` for `scanner-clamav`, whose address is
+        empty and whose account is `none`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
         repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
         `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
         answered.
@@ -20951,7 +20954,7 @@ components:
           description: The qualified name, `upstream/<key>`.
         format:
           type: string
-          description: The repository's format (a name of `GET /api/v1/formats`); the class is always `remote`.
+          description: The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `scanner-clamav` (Q-REPO-411).
         kind:
           $ref: "#/components/schemas/UpstreamRepositoryKind"
         displayName:

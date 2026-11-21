@@ -11,6 +11,7 @@ import { CreateTokenRequest, TokensApi } from '../../api/tokens-api';
 import { repositoryCommands } from '../../core/project-links';
 import { SessionStore } from '../../core/session-store';
 import { isSystemRepository } from '../../core/upstream-project';
+import { systemSetupSentence } from '../upstream/upstream-words';
 import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -131,6 +132,8 @@ export class ClientSetupPage {
    * is answered as for a repository that does not exist (R-REPO-070), so the page says so and asks for no snippet (R-UI-190).
    */
   protected readonly systemRepository = computed(() => isSystemRepository(this.project(), this.key()));
+  /** What Quader's own work does with the system repository, the note that stands in place of the setup (R-UI-190). */
+  protected readonly systemNote = computed(() => systemSetupSentence(this.key()));
 
   protected readonly formats = resource({ loader: () => this.repositories.formats() });
   protected readonly loaded = resource({

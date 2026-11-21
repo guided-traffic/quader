@@ -45,7 +45,7 @@ func TestR_REPO_069_TheProductKeepsTheProjectUpstream(t *testing.T) {
 		wantStatus(t, f.do(f.admin, "POST", repo+"/move", map[string]any{"project": "web"}), 409, "managed_by_product")
 		wantStatus(t, f.do(f.admin, "POST", "/api/v1/projects/upstream/repositories",
 			map[string]any{"key": "mine", "class": "remote", "format": "npm"}, "Idempotency-Key", "c1"), 409, "managed_by_product")
-		if f.id("npmjs") == 0 || f.e.Number("SELECT count(*) FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = 'upstream'") != 13 {
+		if f.id("npmjs") == 0 || f.e.Number("SELECT count(*) FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = 'upstream'") != 14 {
 			t.Fatal("a refused write changed the project")
 		}
 		f.e.RepoIn("web", "npm-local", "local", "npm")

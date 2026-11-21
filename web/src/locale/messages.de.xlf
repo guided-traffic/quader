@@ -41054,6 +41054,51 @@
         <target>Von der Image-Analyse genutzt</target>
       </segment>
     </unit>
+    <unit id="wellknown.system.in-use-malware">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:93</note>
+      </notes>
+      <segment>
+        <source>In use by the malware scan</source>
+        <target>Von der Malware-Prüfung genutzt</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.in-use-text-malware">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:101</note>
+      </notes>
+      <segment>
+        <source>In use by the malware scan. Its visibility is always Private.</source>
+        <target>Von der Malware-Prüfung genutzt. Die Sichtbarkeit ist immer Privat.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.not-in-use-text-malware">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:102</note>
+      </notes>
+      <segment>
+        <source>Not in use by the malware scan. Its visibility is always Private.</source>
+        <target>Nicht von der Malware-Prüfung genutzt. Die Sichtbarkeit ist immer Privat.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.level-malware">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:112</note>
+      </notes>
+      <segment>
+        <source>Its visibility is always Private: only Quader&apos;s malware scan reads it.</source>
+        <target>Die Sichtbarkeit ist immer Privat: Nur die Malware-Prüfung von Quader liest es.</target>
+      </segment>
+    </unit>
+    <unit id="setup.system-malware">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:119</note>
+      </notes>
+      <segment>
+        <source>Quader&apos;s malware scan keeps its signature database in this repository. Clients cannot use it.</source>
+        <target>Die Malware-Prüfung von Quader bewahrt ihre Signaturdatenbank in diesem Repository auf. Clients können es nicht nutzen.</target>
+      </segment>
+    </unit>
     <unit id="wellknown.system.not-in-use">
       <notes>
         <note category="location">src/app/features/upstream/upstream-words.ts:90</note>
@@ -41149,8 +41194,8 @@
         <note category="location">src/app/features/setup/client-setup.html:38,41</note>
       </notes>
       <segment>
-        <source> Quader&apos;s image scanning reads its database through this repository. Clients cannot use it. </source>
-        <target> Die Image-Analyse von Quader liest ihre Datenbank über dieses Repository. Clients können es nicht nutzen. </target>
+        <source>Quader&apos;s image scanning reads its database through this repository. Clients cannot use it.</source>
+        <target>Die Image-Analyse von Quader liest ihre Datenbank über dieses Repository. Clients können es nicht nutzen.</target>
       </segment>
     </unit>
     <unit id="projects.level.built-in">

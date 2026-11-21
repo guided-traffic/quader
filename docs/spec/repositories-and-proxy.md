@@ -2066,13 +2066,18 @@ Priority: **P1** · Covers: quader-only
 
 The owner's decision of 2026-11-20 ([malware-scanning.md](malware-scanning.md) Q-MAL-8): `freshclam` fetches ClamAV's signature database
 beside the worker, and Quader keeps each version in a system repository of `upstream`, `scanner-clamav`, generic, local and private, from
-which the malware scanners load it. Specified, not built.
+which the malware scanners load it. Built ([wellknown.go](../../internal/wellknown/wellknown.go) `scannerClamav`, the repository
+service's [upstream_store.go](../../internal/repository/upstream_store.go) and [upstream_ops.go](../../internal/repository/upstream_ops.go),
+the task of [internal/malware/database](../../internal/malware/database/task.go)).
 
 - **Declaration** (`wellknown.Declared`, kind `system`, [Q-REPO-410](#q-repo-410--scanner-clamav-is-a-local-generic-system-repository)):
   the key `scanner-clamav`, the format `generic`, the class `local`, no upstream, both levels `private`, the member `malware` at its
   default (it is never scanned, [malware-scanning.md](malware-scanning.md) R-MAL-001), `disabled: false`. Its levels and its `malware`
   member are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. It has no
-  address and no account, so `setUpstreamRepositoryAddress` and `setUpstreamRepositoryAccount` answer 409 `managed_by_product`.
+  address and no account, so `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress`, `setUpstreamRepositoryAccount` and
+  `removeUpstreamRepositoryAccount` answer 409 `managed_by_product`, and its item carries `fixed: [state, visibility, address, account]`
+  with an empty address and the account `none`
+  ([Q-REPO-412](#q-repo-412--a-local-system-repository-names-its-address-and-account-as-fixed-and-refuses-their-operations)).
 - **No client.** Every protocol request addressed to it (`/files/upstream/scanner-clamav/…`, a host bound to it) answers 404 as for a
   repository that does not exist, for every caller, administrators included; it is never a member of a virtual repository (422
   `invalid_member`, R-REPO-071), and no deploy reaches it. The management API reads its document and lists its items as for any
@@ -10060,6 +10065,22 @@ Context: `wellknown.Declaration` carries no class: every repository of `upstream
 | (b) A second list for local system repositories | Two lists | The remote declarations stay as they are | Two reconciles of one project |
 
 **Choice:** (a). **Applied in the spec:** R-REPO-066, R-REPO-067, R-REPO-075.
+
+### Q-REPO-412 · A local system repository names its address and account as fixed and refuses their operations
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the item of the admin page (`UpstreamRepository`, R-REPO-073) carries an address and an account for every repository and `fixed`
+for what the product holds beyond R-REPO-069; the UI hides a control the item names as fixed. `scanner-clamav` is the first local repository
+of the project and has neither.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `fixed` gains `address` and `account` for a local system repository; its address is empty and its account `none`; the four operations of the address and the account answer 409 `managed_by_product` (chosen) | Two values more of an enum | The admin page shows no section to edit for it, from the item alone; the operations refuse as for the other fixed members | — |
+| (b) A member `class` on the item | The UI derives from the class | Exact | Every reader of the item must know that a local repository has no address, which `fixed` already says for the members the product holds |
+| (c) Leave the item as it is | No change | — | The page would offer an address and an account no write can store |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-075; [api-and-ui.md](api-and-ui.md) R-UI-188 (Q-UI-883).
 
 ## What this does not cover
 

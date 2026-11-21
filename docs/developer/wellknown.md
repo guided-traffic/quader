@@ -1,7 +1,8 @@
 # The built-in project `upstream`
 
 Every installation has the project `upstream`, which holds the product's well-known repositories: one remote repository per upstream
-preset of the format catalog and the system repositories of Quader's own work, today `scanner-trivy`
+preset of the format catalog and the system repositories of Quader's own work, today `scanner-trivy` (a remote) and `scanner-clamav` (a
+local generic repository, [R-REPO-075](../spec/repositories-and-proxy.md#r-repo-075--scanner-clamav-the-database-of-the-malware-scanning))
 ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-074, [authorization.md](../spec/authorization.md)
 R-AUTHZ-041, [ADR-209](../decisions.md#adr-209--the-built-in-project-upstream-holds-the-products-well-known-repositories-and-a-virtual-repository-may-list-them),
 [ADR-211](../decisions.md#adr-211--scanner-trivy-is-a-system-repository-of-upstream-that-only-the-image-scanning-reads)). The security
@@ -24,6 +25,7 @@ administrator's view in the manual's [Upstream registries](../manual/admin/upstr
 | The project's visibility and its place first in the list of projects: listed for `projects:read` and for a caller that reads one of its serving repositories (Q-AUTHZ-301, Q-AUTHZ-305, Q-UI-837; `projectSight`, `projectOrder` in [projects_api.go](../../internal/api/v1/projects_api.go)); not in `publicObjects` | built |
 | Its repositories in the list of repositories and the search's suggestions: to a caller without `repositories:read-config` only while they serve (Q-AUTHZ-306; `upstreamServes` in [upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go), used by `readsUpstream`, `visibleRepositories` and `servingUpstream` of the suggestions) | built |
 | `scanner-trivy`: its declaration, the 404 of every client request, its fixed members | built |
+| `scanner-clamav`: its declaration with the class `local`, the reconcile of a local repository, its item (`fixed` with `address` and `account`), the refusals of its address and account, its "in use" (`Options.Upstream.ScannerClamavInUse`, from `malware.enabled` and `malware.database.repository`) | built (Q-REPO-411, Q-REPO-412) |
 | `scanner-trivy` "in use" (`Options.Upstream.ScannerTrivyInUse`) | the seam is built and reads "not in use": the image scanning's package of the analyser's database supplies the function ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-044), with the system caller's resolution through the repository and the cleanup's exemption of the layer in use |
 | The cleanup of R-REPO-046 that applies `scanner-trivy`'s `unusedRetentionHours: 48` | not built: the value is stored and has no effect (Q-REPO-392) |
 | The warning `member_inactive` (`repository.WarningMemberInactive`) | raised by a write of a virtual repository that lists a member that is not active ([virtual.md](virtual.md#members-of-the-project-upstream-and-placeholders)) |
@@ -42,7 +44,8 @@ service, the authorization engine and the edge read one set of names from it.
 | `ScannerTrivy`, `ScannerTrivyKey`, `ScannerTrivyImage`, `ScannerTrivyURL`, `ScannerTrivyRetentionHours` | `upstream/scanner-trivy`, the image `aquasec/trivy-db` it admits, its upstream `https://mirror.gcr.io/`, its cache period of 48 hours |
 | `PathSwitchOnAll`, `PathSetVisibility`, `ReservedKeys()` | the keys of the project no preset takes |
 | `Kind` (`preset`, `system`), `State` (`active`, `switched-off`, `not-switched-on`, `retired`), `StateOf` | the column `upstream_repository.kind` and the state derived from it, `disabled`, `first_switched_on_at` and `retired_at` (Q-REPO-375); a system repository has no state |
-| `Declaration`, `Declared(*catalog.Registry)`, `Lookup` | the repositories the product declares: one per preset, in catalog order (formats by ID, presets in the format's order), then `scanner-trivy` while `oci` is registered; `Address()` and `Fixed()` are what the product holds of each |
+| `ScannerClamav`, `ScannerClamavKey`, `ScannerClamavDisplayName` | `upstream/scanner-clamav`, the malware scanning's signature database, "Malware scan database" |
+| `Declaration`, `Declared(*catalog.Registry)`, `Lookup` | the repositories the product declares: one per preset, in catalog order (formats by ID, presets in the format's order), then `scanner-trivy` while `oci` is registered and `scanner-clamav` while `generic` is; `Class` is `remote` for a preset and the system repository's own otherwise (`Local()`); `Address()` and `Fixed()` are what the product holds of each; the plan refuses a stored repository of another class (step 6) |
 | `Store`, `Stored`, `Plan`, `Reconcile`, `Result` ([reconcile.go](../../internal/wellknown/reconcile.go)) | the reconcile of R-REPO-067: `Plan` decides the steps without a database, `Reconcile` applies them through a `Store` |
 
 `catalog.ReservedPresetIDs()` repeats the reserved repository keys of R-REPO-002 and `wellknown.ReservedKeys()`, because the catalog is a

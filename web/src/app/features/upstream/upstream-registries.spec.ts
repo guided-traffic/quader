@@ -42,6 +42,13 @@ describe('Upstream registries (R-UI-187)', () => {
     expect(text(system)).toBe('Used by Quader');
     expect(text(row(root, 'Image scanning database'))).toContain('In use by the image scanning');
     expect(row(root, 'Image scanning database').querySelector('[role="switch"], select')).toBeNull();
+    // R-REPO-075: scanner-clamav stands below it the same way, with the malware scan's words.
+    const systemRows = [...root.querySelectorAll('tbody tr')].map((tr) => text(tr.querySelector('th a') ?? tr));
+    expect(systemRows.slice(-2)).toEqual(['Image scanning database', 'Malware scan database']);
+    expect(text(row(root, 'Malware scan database'))).toContain('upstream/scanner-clamav');
+    expect(text(row(root, 'Malware scan database'))).toContain('In use by the malware scan');
+    expect(text(row(root, 'Malware scan database'))).toContain('Private');
+    expect(row(root, 'Malware scan database').querySelector('[role="switch"], select')).toBeNull();
     await expectAccessible(root);
   });
 

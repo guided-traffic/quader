@@ -465,6 +465,30 @@
         "major"
       ],
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "ClamAV (CLAMAV_IMAGE of tools/versions.env and clamav.image of the chart, R-MAL-027, Q-MAL-80): only the tags with the suffix _base, which carry no database; a patch release and a new digest merge by themselves (ClamAV's releases fix its parsers, H-1109), a new feature line (1.6) is a pull request to review, because it can change what ClamAV reads and the unpacking table of R-MAL-007",
+      "matchDepNames": [
+        "docker.io/clamav/clamav-debian"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_base$",
+      "groupName": "clamav",
+      "groupSlug": "clamav"
+    },
+    {
+      "description": "ClamAV: a new feature line is reviewed by hand (Q-MAL-80)",
+      "matchDepNames": [
+        "docker.io/clamav/clamav-debian"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "clamav-feature-line"
+      ]
     }
   ],
   "customManagers": [
@@ -487,6 +511,18 @@
       ],
       "matchStrings": [
         "[A-Z0-9_]+_IMAGE=(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "description": "The ClamAV image of the chart (deploy/helm/quader/values.yaml clamav.image), which a chart test holds to CLAMAV_IMAGE of tools/versions.env: both lines move in one pull request (the group clamav below)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^deploy/helm/quader/values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "\\n  image: (?<depName>docker\\.io/clamav/clamav-debian):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"

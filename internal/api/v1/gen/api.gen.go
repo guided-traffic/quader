@@ -3660,16 +3660,22 @@ func (e UpstreamRepositoryAccountInfoAuthMode) Valid() bool {
 
 // Defines values for UpstreamRepositoryFixed.
 const (
-	State      UpstreamRepositoryFixed = "state"
-	Visibility UpstreamRepositoryFixed = "visibility"
+	UpstreamRepositoryFixedAccount    UpstreamRepositoryFixed = "account"
+	UpstreamRepositoryFixedAddress    UpstreamRepositoryFixed = "address"
+	UpstreamRepositoryFixedState      UpstreamRepositoryFixed = "state"
+	UpstreamRepositoryFixedVisibility UpstreamRepositoryFixed = "visibility"
 )
 
 // Valid indicates whether the value is a known member of the UpstreamRepositoryFixed enum.
 func (e UpstreamRepositoryFixed) Valid() bool {
 	switch e {
-	case State:
+	case UpstreamRepositoryFixedAccount:
 		return true
-	case Visibility:
+	case UpstreamRepositoryFixedAddress:
+		return true
+	case UpstreamRepositoryFixedState:
+		return true
+	case UpstreamRepositoryFixedVisibility:
 		return true
 	default:
 		return false
@@ -11826,7 +11832,8 @@ type UpstreamProductAddress struct {
 
 // UpstreamRepository A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
 // repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
-// (`[state, visibility]` for `scanner-trivy`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+// (`[state, visibility]` for `scanner-trivy`, `[state, visibility, address, account]` for `scanner-clamav`, whose address is
+// empty and whose account is `none`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
 // repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
 // `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
 // answered.
@@ -11845,7 +11852,7 @@ type UpstreamRepository struct {
 	DisplayName string                    `json:"displayName"`
 	Fixed       []UpstreamRepositoryFixed `json:"fixed"`
 
-	// Format The repository's format (a name of `GET /api/v1/formats`); the class is always `remote`.
+	// Format The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `scanner-clamav` (Q-REPO-411).
 	Format string `json:"format"`
 
 	// InUse For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070).
@@ -11952,7 +11959,8 @@ type UpstreamRepositoryBulkResult struct {
 	Items  []UpstreamRepository `json:"items"`
 }
 
-// UpstreamRepositoryFixed What the product holds of a repository beyond the table of R-REPO-069.
+// UpstreamRepositoryFixed What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository, and
+// `address` and `account` of a local one (`scanner-clamav`), which has neither (Q-REPO-412).
 type UpstreamRepositoryFixed string
 
 // UpstreamRepositoryKind `preset`: a repository of an upstream preset of the format catalog; `system`: a repository of Quader's own work (R-REPO-066).

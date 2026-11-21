@@ -322,7 +322,13 @@ there for whoever may open it. With `malware.enabled: false` the side bar has no
 **Without internet.** With `malware.database.freshclam: false` and `malware.database.repository` naming a local generic repository of
 your own, the page shows the commands that fill it, with this installation's address and the repository filled in: ClamAV's mirror tool
 `cvdupdate` fetches the files on a machine that reaches the network, and the three whole files are uploaded to the root of the repository.
-Whoever may deploy to that repository decides what the scanners compare content with.
+Whoever may deploy to that repository decides what the scanners compare content with: besides the publisher's signed files it also
+takes ClamAV's unsigned `.cud` containers, which ClamAV loads without a publisher's signature.
+
+**`freshclam` and your network.** `freshclam` runs beside every worker that claims the queue `malware` and needs DNS and HTTPS to
+`database.clamav.net`. The chart restricts no egress; if a policy of your cluster does, admit the worker pods by the labels you give them
+in `worker.podLabels` (or a pool's `podLabels`), or name an HTTP proxy in `malware.database.proxy`. Until the first version is stored no
+alert fires, only the page's failure `database_missing`.
 
 **A repository's own setting.** A repository's settings have a closed section **Malware scan** with **Only checked artifacts can be
 downloaded from this repository**: a team that wants checked content without the installation's switch sets it. It only makes a

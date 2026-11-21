@@ -1,6 +1,7 @@
 // Package wellknown names the built-in project upstream and the repositories the product declares in it (repositories-and-proxy.md
-// R-REPO-066 to R-REPO-070, authorization.md R-AUTHZ-041, ADR-209, ADR-211): one remote repository per upstream preset of the format
-// catalog, and the system repositories of the product's own work, today scanner-trivy.
+// R-REPO-066 to R-REPO-070, R-REPO-075, authorization.md R-AUTHZ-041, ADR-209, ADR-211, ADR-222): one remote repository per upstream
+// preset of the format catalog, and the system repositories of the product's own work, today scanner-trivy (a remote) and
+// scanner-clamav (a local repository).
 //
 // It is a leaf (the format catalog, qname and the standard library), so the repository model, the project service, the
 // authorization engine and the edge read one set of names, states and declarations. The reconcile of `quader migrate` brings the
@@ -44,6 +45,18 @@ const (
 // ScannerTrivy is the qualified name of the image scanning's database repository: upstream/scanner-trivy.
 var ScannerTrivy = qname.Repo{Project: ProjectKey, Key: ScannerTrivyKey}
 
+// The system repository of the malware scanning's signature database (R-REPO-075, Q-REPO-410, ADR-222): a local generic repository
+// that the database task writes in process and that answers no client.
+const (
+	// ScannerClamavKey is the key of the repository in the project upstream.
+	ScannerClamavKey = "scanner-clamav"
+	// ScannerClamavDisplayName names the repository on the admin page and is its description (R-UI-187).
+	ScannerClamavDisplayName = "Malware scan database"
+)
+
+// ScannerClamav is the qualified name of the malware scanning's database repository: upstream/scanner-clamav.
+var ScannerClamav = qname.Repo{Project: ProjectKey, Key: ScannerClamavKey}
+
 // The literal sub-paths of /api/v1/upstream-repositories (R-REPO-073, R-API-083): siblings of {key}, so no preset takes them.
 const (
 	PathSwitchOnAll   = "switch-on-all"
@@ -53,7 +66,9 @@ const (
 // ReservedKeys are the keys of the project upstream no preset of the catalog may take beyond the reserved repository keys of
 // R-REPO-002: the literal sub-paths of R-REPO-073 and the keys of the system repositories (R-REPO-062, Q-REPO-387). The catalog
 // refuses them at registration (catalog.ReservedPresetIDs); TestReservedKeysAreTheCatalogs holds the two lists together.
-func ReservedKeys() []string { return []string{PathSwitchOnAll, PathSetVisibility, ScannerTrivyKey} }
+func ReservedKeys() []string {
+	return []string{PathSwitchOnAll, PathSetVisibility, ScannerTrivyKey, ScannerClamavKey}
+}
 
 // IsProject reports whether a project key names the built-in project.
 func IsProject(key string) bool { return key == ProjectKey }
@@ -113,9 +128,12 @@ func StateOf(kind Kind, disabled, switchedOnBefore, retired bool) State {
 type Declaration struct {
 	// Key is the repository key: the preset's id, or the system repository's key.
 	Key string
-	// Format is the repository's format; the class is always remote.
+	// Format is the repository's format.
 	Format catalog.ID
-	Kind   Kind
+	// Class is the repository's class (Q-REPO-411): remote for a preset repository, the system repository's own otherwise
+	// (scanner-trivy remote, scanner-clamav local). A local repository has no address and no account.
+	Class catalog.Class
+	Kind  Kind
 	// DisplayName is the preset's display name, stored as the repository's description ("Docker Hub").
 	DisplayName string
 	// Default marks the format's default preset (the repository quick setup lists, Q-REPO-385).
@@ -159,19 +177,22 @@ func (d Declaration) Name() qname.Repo { return qname.Repo{Project: ProjectKey, 
 // Declared lists the repositories the product declares for the formats of the catalog (nil is catalog.Default): one preset
 // repository per upstream preset of every registered format, in catalog order (formats by ID, presets in the format's order),
 // then the system repositories. A format the catalog does not register declares nothing, so scanner-trivy is declared only while
-// the format oci is registered.
+// the format oci is registered and scanner-clamav only while the format generic is.
 func Declared(cat *catalog.Registry) []Declaration {
 	var out []Declaration
 	for _, e := range catalog.Or(cat).List() {
 		for _, p := range e.UpstreamPresets {
 			out = append(out, Declaration{
-				Key: p.ID, Format: e.ID, Kind: KindPreset, DisplayName: p.DisplayName, Default: p.Default,
+				Key: p.ID, Format: e.ID, Class: catalog.Remote, Kind: KindPreset, DisplayName: p.DisplayName, Default: p.Default,
 				URL: p.URL, ExtraHosts: slices.Clone(p.ExtraHosts), Settings: cloneRaw(p.Settings), Level: PresetLevel,
 			})
 		}
 	}
 	if _, ok := catalog.Or(cat).Lookup(string(scannerTrivyFormat)); ok {
 		out = append(out, scannerTrivy())
+	}
+	if _, ok := catalog.Or(cat).Lookup(string(scannerClamavFormat)); ok {
+		out = append(out, scannerClamav())
 	}
 	return out
 }
@@ -182,11 +203,27 @@ const scannerTrivyFormat catalog.ID = "oci"
 // scannerTrivy is the declaration of R-REPO-070.
 func scannerTrivy() Declaration {
 	return Declaration{
-		Key: ScannerTrivyKey, Format: scannerTrivyFormat, Kind: KindSystem, DisplayName: ScannerTrivyDisplayName,
+		Key: ScannerTrivyKey, Format: scannerTrivyFormat, Class: catalog.Remote, Kind: KindSystem, DisplayName: ScannerTrivyDisplayName,
 		URL: ScannerTrivyURL, ExtraHosts: []catalog.PresetHost{}, IncludePatterns: []string{ScannerTrivyImage},
 		Private: true, Level: systemLevel, ScanningOff: true, UnusedRetentionHours: ScannerTrivyRetentionHours,
 	}
 }
+
+// scannerClamavFormat is the format of scanner-clamav: the database is plain files (Q-REPO-410).
+const scannerClamavFormat catalog.ID = "generic"
+
+// scannerClamav is the declaration of R-REPO-075: a local generic repository, both levels private, no address and no account; the
+// member malware stays at its default, which the refusals of R-REPO-069 keep (its content is never scanned, R-MAL-001), and the format
+// has no member vulnerabilities.
+func scannerClamav() Declaration {
+	return Declaration{
+		Key: ScannerClamavKey, Format: scannerClamavFormat, Class: catalog.Local, Kind: KindSystem, DisplayName: ScannerClamavDisplayName,
+		Private: true, Level: systemLevel,
+	}
+}
+
+// Local reports whether the declared repository is a local one: it has no address and no account (R-REPO-075).
+func (d Declaration) Local() bool { return d.Class == catalog.Local }
 
 // Fixed returns what the product fixes on the repository beyond its address: empty for a preset repository.
 func (d Declaration) Fixed() Fixed {

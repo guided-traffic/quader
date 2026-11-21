@@ -19,7 +19,7 @@ import (
 var retiredPresetIDs = []string{}
 
 // TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemRepositories: Declared over the registered catalog lists one
-// preset repository per upstream preset of every format, in catalog order, and scanner-trivy last; every key is a repository key
+// preset repository per upstream preset of every format, in catalog order, and then scanner-trivy and scanner-clamav; every key is a repository key
 // of the project upstream, unique, not reserved and not retired.
 func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemRepositories(t *testing.T) {
 	got := wellknown.Declared(nil)
@@ -34,6 +34,7 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 		"nuget:nuget-org",
 		"oci:docker-hub", "oci:quay", "oci:ghcr", "oci:gitlab",
 		"oci:scanner-trivy",
+		"generic:scanner-clamav",
 	}
 	if !slices.Equal(keys, want) {
 		t.Fatalf("declared %v\nwant     %v", keys, want)
@@ -69,19 +70,31 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 			}
 			p := e.UpstreamPresets[i]
 			if d.URL != p.URL || d.DisplayName != p.DisplayName || d.Default != p.Default || !slices.Equal(d.ExtraHosts, p.ExtraHosts) ||
-				string(d.Settings) != string(p.Settings) || d.IncludePatterns != nil || d.Private || d.ScanningOff || d.UnusedRetentionHours != 0 {
+				string(d.Settings) != string(p.Settings) || d.IncludePatterns != nil || d.Private || d.ScanningOff || d.UnusedRetentionHours != 0 ||
+				d.Class != catalog.Remote {
 				t.Errorf("%s = %+v, preset %+v", d.Key, d, p)
 			}
 		}
 	})
 	t.Run("R-REPO-070 scanner-trivy is the image scanning's database repository", func(t *testing.T) {
-		d := got[len(got)-1]
-		if d.Name() != wellknown.ScannerTrivy || d.Kind != wellknown.KindSystem || d.Format != "oci" || d.URL != "https://mirror.gcr.io/" ||
+		d, _ := wellknown.Lookup(got, wellknown.ScannerTrivyKey)
+		if d.Name() != wellknown.ScannerTrivy || d.Kind != wellknown.KindSystem || d.Format != "oci" || d.Class != catalog.Remote || d.URL != "https://mirror.gcr.io/" ||
 			len(d.ExtraHosts) != 0 || !slices.Equal(d.IncludePatterns, []string{wellknown.ScannerTrivyImage}) || !d.Private || !d.ScanningOff || d.UnusedRetentionHours != 48 {
 			t.Fatalf("scanner-trivy = %+v", d)
 		}
 		if wellknown.ScannerTrivy != (qname.Repo{Project: "upstream", Key: "scanner-trivy"}) || wellknown.ScannerTrivyImage != "aquasec/trivy-db" {
 			t.Fatalf("names: %v %q", wellknown.ScannerTrivy, wellknown.ScannerTrivyImage)
+		}
+	})
+	t.Run("R-REPO-075 Q-REPO-410 Q-REPO-411 scanner-clamav is the malware scanning's local generic database repository", func(t *testing.T) {
+		d := got[len(got)-1]
+		if d.Name() != wellknown.ScannerClamav || d.Kind != wellknown.KindSystem || d.Format != "generic" || d.Class != catalog.Local || !d.Local() ||
+			d.URL != "" || d.ExtraHosts != nil || d.Settings != nil || d.IncludePatterns != nil || !d.Private || d.Level != "private" ||
+			d.ScanningOff || d.UnusedRetentionHours != 0 || d.DisplayName != "Malware scan database" {
+			t.Fatalf("scanner-clamav = %+v", d)
+		}
+		if wellknown.ScannerClamav != (qname.Repo{Project: "upstream", Key: "scanner-clamav"}) {
+			t.Fatalf("name: %v", wellknown.ScannerClamav)
 		}
 	})
 	t.Run("R-REPO-066 a catalog without a format declares nothing of it", func(t *testing.T) {

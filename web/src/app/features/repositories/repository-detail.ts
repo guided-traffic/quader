@@ -62,7 +62,7 @@ import { MemberChange, VirtualMembers } from './virtual-members';
 import { RepositoryServiceAccounts } from '../service-accounts/repository-service-accounts';
 import { RepositoryLimitsSection } from '../limits/repository-limits-section';
 import { UpstreamApi, UpstreamRepository } from '../../api/upstream-api';
-import { MemberState, stateBadge } from '../upstream/upstream-words';
+import { MemberState, stateBadge, systemLevelSentence } from '../upstream/upstream-words';
 import { memberInactiveText } from './well-known-members';
 import { MalwareSwitchStore } from '../../core/malware-switch';
 import { RepositoryMalwareSection } from './repository-malware';
@@ -191,6 +191,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly wellKnown = computed(() => valueOf(this.wellKnownRead) ?? null);
   /** `scanner-trivy`, a system repository: everything is the product's (R-REPO-070). Known by its key, for every caller. */
   protected readonly systemRepository = computed(() => isSystemRepository(this.project(), this.key()));
+  /** The statement of a system repository's fixed level, naming the work that reads it (R-UI-190). */
+  protected readonly systemLevel = computed(() => systemLevelSentence(this.key()));
   /** What an administrator narrows on a well-known repository: patterns, offline, notes (R-REPO-069); nothing on a system one. */
   protected readonly canNarrow = computed(() => this.canChange() && !this.systemRepository());
   /** The page of the repository in the admin area, where its state, level, address and account are set (R-UI-188). */

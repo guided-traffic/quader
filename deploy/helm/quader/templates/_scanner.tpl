@@ -10,6 +10,11 @@ spread, security context) but none of the secrets, the shared extras or the serv
 {{- if and (dig "enabled" true $vuln) (dig "enabled" true (dig "images" (dict) $vuln)) -}}true{{- end -}}
 {{- end -}}
 
+{{/* "true" while the main packages pods open the scan listener: either scanning reads through it (R-HA-066, R-HA-068). */}}
+{{- define "quader.scanListenOn" -}}
+{{- if or (include "quader.scannerOn" .) (include "quader.malwareOn" .) -}}true{{- end -}}
+{{- end -}}
+
 {{/* The path of the internal CA in the pods of the links (R-ARCH-038): the ca.crt of the pod's own Secret, beside its pair (R-HA-063). */}}
 {{- define "quader.internalCAPath" -}}/var/run/secrets/quader/tls/ca.crt{{- end -}}
 
@@ -33,8 +38,15 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 */}}
 {{- define "quader.scannerManagedConfig" -}}
 {{- $ := .root -}}
-{{- if include "quader.scannerOn" $ -}}
 {{- $m := .managed -}}
+{{- if and (include "quader.scanListenOn" $) $.Values.tls.enabled -}}
+{{- $srv := get $m "server" | default (dict) -}}
+{{- $_ := set $srv "internal_tls" (dict "ca_file" (include "quader.internalCAPath" $)) -}}
+{{- /* The scan listener admits every kind of scanner the release renders (quader.tlsKindTable). */ -}}
+{{- $_ := set $srv "scan_clients" (include "quader.scanClients" $ | fromYamlArray) -}}
+{{- $_ := set $m "server" $srv -}}
+{{- end -}}
+{{- if include "quader.scannerOn" $ -}}
 {{- $fullname := include "quader.fullname" $ -}}
 {{- $scheme := ternary "https" "http" $.Values.tls.enabled -}}
 {{- $links := dict "url" (printf "%s://%s-scanner.%s.svc:8080" $scheme $fullname $.Release.Namespace) -}}
@@ -44,57 +56,61 @@ quader.config. Argument: dict "root" . "managed" <the managed dict>.
 {{- $_ := set $links "server_name" (include "quader.tlsName" (dict "root" $ "kind" "scanner")) -}}
 {{- $_ := set $links "client_name" (include "quader.tlsName" (dict "root" $ "kind" "worker")) -}}
 {{- $_ := set $pull "server_name" (include "quader.tlsName" (dict "root" $ "kind" "packages")) -}}
-{{- $srv := get $m "server" | default (dict) -}}
-{{- $_ := set $srv "internal_tls" (dict "ca_file" (include "quader.internalCAPath" $)) -}}
-{{- /* The scan listener admits every kind of scanner the release renders (quader.tlsKindTable). */ -}}
-{{- $_ := set $srv "scan_clients" (include "quader.scanClients" $ | fromYamlArray) -}}
-{{- $_ := set $m "server" $srv -}}
 {{- end -}}
 {{- $_ := set $m "vulnerabilities" (dict "images" (dict "scanner" $links "registry" $pull)) -}}
 {{- end -}}
+{{- include "quader.malwareManagedConfig" (dict "root" $ "managed" $m) -}}
 {{- end -}}
 
-{{/* The configuration keys the chart manages for the links, refused when set in config (R-HA-029). Returns a YAML list. */}}
+{{/* The configuration keys the chart manages for the links of both scannings, refused when set in config (R-HA-029). Returns a YAML list. */}}
 {{- define "quader.scannerManagedPaths" -}}
-{{- toYaml (list "vulnerabilities.images.scanner.url" "vulnerabilities.images.scanner.server_name" "vulnerabilities.images.scanner.client_name" "vulnerabilities.images.registry.url" "vulnerabilities.images.registry.server_name" "server.internal_tls" "server.scan_listen" "server.scan_clients") -}}
+{{- toYaml (concat (list "vulnerabilities.images.scanner.url" "vulnerabilities.images.scanner.server_name" "vulnerabilities.images.scanner.client_name" "vulnerabilities.images.registry.url" "vulnerabilities.images.registry.server_name" "server.internal_tls" "server.scan_listen" "server.scan_clients") (include "quader.malwareManagedPaths" . | fromYamlArray)) -}}
 {{- end -}}
 
 {{/*
-"true" when the pods of a role verify a link with the internal CA (R-HA-066), so their Secret's ca.crt joins their pair: the main
-packages pods, which serve the scan listener, and every worker pod, which calls the scanner. The scanner's own mount is in
-templates/scanner.yaml. Argument: dict "root" . "role" "pool".
+"true" when the pods of a role verify a link with the internal CA (R-HA-066, R-HA-068), so their Secret's ca.crt joins their pair: the
+main packages pods, which serve the scan listener, and every worker pod, which calls a scanner, while either scanning is on. The
+scanners' own mounts are in templates/scanner.yaml and templates/malware-scanner.yaml. Argument: dict "root" . "role" "pool".
 */}}
 {{- define "quader.linkNeedsCA" -}}
-{{- if and .root.Values.tls.enabled (include "quader.scannerOn" .root) (or (eq .role "worker") (and (eq .role "packages") (not .pool))) -}}true{{- end -}}
+{{- if and .root.Values.tls.enabled (include "quader.scanListenOn" .root) (or (eq .role "worker") (and (eq .role "packages") (not .pool))) -}}true{{- end -}}
 {{- end -}}
 
 {{/* The environment of the main packages Deployment for the scan listener (R-HA-066, R-ARCH-037). Argument: dict "root" . "role" "pool". */}}
 {{- define "quader.scanListenEnv" -}}
-{{- if and (include "quader.scannerOn" .root) (eq .role "packages") (not .pool) -}}
+{{- if and (include "quader.scanListenOn" .root) (eq .role "packages") (not .pool) -}}
 - name: QUADER_SERVER_SCAN_LISTEN
   value: ":8082"
 {{- end -}}
 {{- end -}}
 
 {{/*
-The ingress rule of the scan listener in the policy of the main packages Deployment (R-HA-042, R-HA-066): port 8082 from the scanner's
-pods only, never from anywhere. Argument: as quader.scanListenEnv. Returns one YAML list item, or nothing.
+The ingress rule of the scan listener in the policy of the main packages Deployment (R-HA-042, R-HA-066, R-HA-068): port 8082 from the
+pods of the scanners the release renders (the image scanner, the malware scanner), never from anywhere. Argument: as
+quader.scanListenEnv. Returns one YAML list item, or nothing.
 */}}
 {{- define "quader.scanListenRule" -}}
-{{- if and (include "quader.scannerOn" .root) (eq .role "packages") (not .pool) -}}
+{{- if and (include "quader.scanListenOn" .root) (eq .role "packages") (not .pool) -}}
 - ports:
     - protocol: TCP
       port: 8082
   from:
+    {{- if include "quader.scannerOn" .root }}
     - podSelector:
         matchLabels:
           {{- include "quader.selectorLabels" (dict "root" .root "component" "scanner") | nindent 10 }}
+    {{- end }}
+    {{- if include "quader.malwareOn" .root }}
+    - podSelector:
+        matchLabels:
+          {{- include "quader.selectorLabels" (dict "root" .root "component" "malware-scanner") | nindent 10 }}
+    {{- end }}
 {{- end -}}
 {{- end -}}
 
 {{/* The container port of the scan listener on the main packages Deployment. Argument: as quader.scanListenEnv. */}}
 {{- define "quader.scanListenPort" -}}
-{{- if and (include "quader.scannerOn" .root) (eq .role "packages") (not .pool) -}}
+{{- if and (include "quader.scanListenOn" .root) (eq .role "packages") (not .pool) -}}
 - name: scan
   containerPort: 8082
   protocol: TCP

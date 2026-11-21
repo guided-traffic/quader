@@ -1,4 +1,5 @@
 import { UpstreamRepository, UpstreamRepositoryState } from '../../api/upstream-api';
+import { systemWork } from '../../core/upstream-project';
 import { VisibilityLevel, levelName } from '../../shared/ui/visibility-level';
 
 /**
@@ -83,11 +84,41 @@ export function rowNotes(r: UpstreamRepository): string[] {
   return out;
 }
 
-/** The sentence of a system repository's use (R-REPO-070): the image scanning reads its database through `scanner-trivy`. */
-export function inUseBadge(r: Pick<UpstreamRepository, 'inUse'>): string {
+/**
+ * The word of a system repository's use in its row (R-UI-187): the image scanning reads its database through `scanner-trivy`, the
+ * malware scan keeps its signature database in `scanner-clamav` (R-REPO-070, R-REPO-075).
+ */
+export function inUseBadge(r: Pick<UpstreamRepository, 'inUse' | 'key'>): string {
+  if (!r.inUse) return $localize`:@@wellknown.system.not-in-use:Not in use`;
+  return systemWork(r.key) === 'malware-scan'
+    ? $localize`:@@wellknown.system.in-use-malware:In use by the malware scan`
+    : $localize`:@@wellknown.system.in-use:In use by the image scanning`;
+}
+
+/** The sentence of a system repository's use and its fixed level on its page (R-UI-188). */
+export function systemUseSentence(r: Pick<UpstreamRepository, 'inUse' | 'key'>): string {
+  if (systemWork(r.key) === 'malware-scan') {
+    return r.inUse
+      ? $localize`:@@wellknown.system.in-use-text-malware:In use by the malware scan. Its visibility is always Private.`
+      : $localize`:@@wellknown.system.not-in-use-text-malware:Not in use by the malware scan. Its visibility is always Private.`;
+  }
   return r.inUse
-    ? $localize`:@@wellknown.system.in-use:In use by the image scanning`
-    : $localize`:@@wellknown.system.not-in-use:Not in use`;
+    ? $localize`:@@wellknown.system.in-use-text:In use by the image scanning. Its visibility is always Private.`
+    : $localize`:@@wellknown.system.not-in-use-text:Not in use by the image scanning. Its visibility is always Private.`;
+}
+
+/** The statement of a system repository's fixed level on the repository's own settings page (R-UI-190). */
+export function systemLevelSentence(key: string | null | undefined): string {
+  return systemWork(key) === 'malware-scan'
+    ? $localize`:@@wellknown.system.level-malware:Its visibility is always Private: only Quader's malware scan reads it.`
+    : $localize`:@@wellknown.system.level:Its visibility is always Private: only Quader's image scanning reads it.`;
+}
+
+/** The note of the client setup of a system repository (R-UI-190): Quader's own work reads it, no client can. */
+export function systemSetupSentence(key: string | null | undefined): string {
+  return systemWork(key) === 'malware-scan'
+    ? $localize`:@@setup.system-malware:Quader's malware scan keeps its signature database in this repository. Clients cannot use it.`
+    : $localize`:@@setup.system:Quader's image scanning reads its database through this repository. Clients cannot use it.`;
 }
 
 /** The levels of the select of a row, each by its name. */

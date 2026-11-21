@@ -100,11 +100,11 @@
       </form>
 
       @if (systemRepository()) {
-        <!-- scanner-trivy's level is the product's and its project has no members: one statement, not a group of levels (R-UI-190). -->
+        <!-- A system repository's level is the product's and its project has no members: one statement, not a group of levels (R-UI-190). -->
         <section class="open-section managed" aria-labelledby="repo-visibility-fixed">
           <h2 id="repo-visibility-fixed" i18n="@@repo.visibility.heading">Visibility</h2>
           <p class="fixed-level">
-            <quader-visibility-icon level="private" /><span i18n="@@wellknown.system.level">Its visibility is always Private: only Quader's image scanning reads it.</span>
+            <quader-visibility-icon level="private" /><span>{{ systemLevel() }}</span>
           </p>
         </section>
       } @else if (repo.visibility; as levels) {

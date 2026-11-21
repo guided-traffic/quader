@@ -8873,10 +8873,11 @@ export interface components {
          */
         UpstreamRepositoryKind: "preset" | "system";
         /**
-         * @description What the product holds of a repository beyond the table of R-REPO-069.
+         * @description What the product holds of a repository beyond the table of R-REPO-069: `state` and `visibility` of a system repository, and
+         *     `address` and `account` of a local one (`scanner-clamav`), which has neither (Q-REPO-412).
          * @enum {string}
          */
-        UpstreamRepositoryFixed: "state" | "visibility";
+        UpstreamRepositoryFixed: "state" | "visibility" | "address" | "account";
         UpstreamArchiveKey: {
             /** @description The fingerprint of an OpenPGP key of `deb.upstreamKeys`, upper-case hexadecimal. */
             fingerprint: string;
@@ -8920,7 +8921,8 @@ export interface components {
         /**
          * @description A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
          *     repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
-         *     (`[state, visibility]` for `scanner-trivy`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
+         *     (`[state, visibility]` for `scanner-trivy`, `[state, visibility, address, account]` for `scanner-clamav`, whose address is
+         *     empty and whose account is `none`). `visibility` is the one level of both parts. `listedBy` is the number of virtual
          *     repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
          *     `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
          *     answered.
@@ -8930,7 +8932,7 @@ export interface components {
             key: string;
             /** @description The qualified name, `upstream/<key>`. */
             name: string;
-            /** @description The repository's format (a name of `GET /api/v1/formats`); the class is always `remote`. */
+            /** @description The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `scanner-clamav` (Q-REPO-411). */
             format: string;
             kind: components["schemas"]["UpstreamRepositoryKind"];
             /** @description The preset's display name, a product name the UI does not translate; the system repository's name. */

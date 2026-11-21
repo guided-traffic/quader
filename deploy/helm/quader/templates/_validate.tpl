@@ -124,7 +124,7 @@ fixes the form, so every term is a number and a unit.
 {{- end -}}
 {{- if not $t.certManager.issuerRef.name -}}
 {{- if not $named -}}
-{{- fail "quader: tls.certManager.issuerRef.name or tls.existingSecrets is required while tls.enabled is true (default): every kind of pod has a pair of its own (R-HA-063). Name a cert-manager issuer (example: tls.certManager.issuerRef.name: cluster-ca, tls.certManager.issuerRef.kind: ClusterIssuer) and the chart issues them, or name an existing Secret per kind in tls.existingSecrets (api, packages, worker, scanner), or opt out with tls.enabled: false (plain HTTP inside the cluster)" -}}
+{{- fail "quader: tls.certManager.issuerRef.name or tls.existingSecrets is required while tls.enabled is true (default): every kind of pod has a pair of its own (R-HA-063). Name a cert-manager issuer (example: tls.certManager.issuerRef.name: cluster-ca, tls.certManager.issuerRef.kind: ClusterIssuer) and the chart issues them, or name an existing Secret per kind in tls.existingSecrets (api, packages, worker, scanner, malware-scanner), or opt out with tls.enabled: false (plain HTTP inside the cluster)" -}}
 {{- end -}}
 {{- $seen := dict -}}
 {{- range $k := $kinds -}}
@@ -219,6 +219,7 @@ fixes the form, so every term is a number and a unit.
 
 {{- include "quader.validateRoles" . -}}
 {{- include "quader.validateScanner" . -}}
+{{- include "quader.validateMalware" . -}}
 
 {{- /* The PrometheusRule (R-HA-045): a name in disabledAlerts that is no alert is a typo. */ -}}
 {{- $alertNames := include "quader.rules.names" . | fromJsonArray -}}

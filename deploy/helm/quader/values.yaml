@@ -268,6 +268,93 @@ scanner:
   podLabels: {}
   extraEnv: []                          # the scanner's own; the shared extraEnv does not reach it (Q-HA-321)
 
+# ── ClamAV: the clamd container of the malware scanner and the freshclam container of the worker ────
+clamav:
+  image: docker.io/clamav/clamav-debian:1.5.5_base@sha256:739c5ec70212e2d3e0c7719af2fba8776fb435f9932d7d3a3de2a95fcd6adde7  # the CLAMAV_IMAGE of tools/versions.env, which a chart test holds it to: ClamAV's own multi-arch image without a database
+  pullPolicy: IfNotPresent
+
+# ── malware scanner Deployment: quader serve --role scanner of the kind malware, clamd beside it (R-HA-068) ────
+# Rendered while config.malware.enabled is true. The quader container reads one blob through the scan listener of packages and
+# hands it to clamd over a Unix socket of the pod; clamd holds the signature database the quader container loaded. No secret of
+# PostgreSQL, the object store or Valkey and no key ring mounts here, and none of the shared extras reaches it (Q-HA-321).
+malwareScanner:
+  replicaCount: 2                       # ignored when autoscaling.enabled; the capacity is replicas × config.malware.scanner.slots
+  minReadySeconds: 10
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  terminationGracePeriodSeconds: 60     # a scan still running at the shutdown timeout is answered scanner_draining and put off by the worker without an attempt
+  spool:
+    sizeLimit: 3Gi                      # the quader container's spool; the unpacking reads streams and writes nothing to it
+  resources:                            # the quader container
+    requests:
+      cpu: 250m
+      memory: 256Mi
+      ephemeral-storage: 256Mi
+    limits:
+      memory: 512Mi
+  clamd:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1536Mi                  # ClamAV's documented figure for a loaded database is upwards of 1.2 GiB (Q-HA-361)
+        ephemeral-storage: 1Gi
+      limits:
+        memory: 2Gi                     # at least 1.5Gi, checked: ConcurrentDatabaseReload is off, so a reload does not hold two databases
+  database:
+    sizeLimit: 1Gi                      # clamd-db: the version the quader container loaded and the next one while it loads
+  clamdTmp:
+    sizeLimit: 8Gi                      # clamd's temporary files; at least slots × (max_file_size + max_scan_size), checked
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 0
+    metrics: []
+    behavior: {}                        # Kubernetes defaults
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 1
+    minAvailable: null
+    unhealthyPodEvictionPolicy: AlwaysAllow
+  topologySpread:
+    enabled: true
+    nodeTaintsPolicy: Honor
+    zone:
+      maxSkew: 1
+      whenUnsatisfiable: ScheduleAnyway
+    host:
+      maxSkew: 1
+      whenUnsatisfiable: DoNotSchedule
+  topologySpreadConstraints: []
+  nodeFailureTolerationSeconds: 60
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  priorityClassName: ""
+  schedulerName: ""
+  podAnnotations: {}
+  podLabels: {}
+  extraEnv: []                          # the quader container's own; the shared extraEnv does not reach it
+
+# ── freshclam container of every worker Deployment that claims the queue malware (R-HA-069) ────
+# Rendered while config.malware.enabled and config.malware.database.freshclam are true. It fetches ClamAV's database from ClamAV's
+# network into a directory it shares with the worker container, which stores each version in upstream/scanner-clamav. It holds no
+# credential and mounts no Secret; it needs DNS and HTTPS to database.clamav.net, which an egress policy of the cluster must admit.
+freshclam:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi                     # TestDatabases no: freshclam does not load the database it fetched
+  database:
+    sizeLimit: 1Gi                      # freshclam-db: the database (about 110 MiB) and freshclam's temporary copies
+
 # ── Quader configuration (rendered to /etc/quader/quader.yaml) ─────────────────
 # Chart-managed keys (secret file paths, storage.spool.dir) must not be set here.
 # One file serves every Deployment and Job; the role is the container argument --role.
@@ -407,6 +494,7 @@ tls:
     packages: ""                        # example: quader-tls-packages (<fullname>-packages.<namespace>.svc and the ops name, server auth)
     worker: ""                          # example: quader-tls-worker (<fullname>-worker.<namespace>.svc and the ops name, server auth and client auth)
     scanner: ""                         # example: quader-tls-scanner (<fullname>-scanner.<namespace>.svc and the ops name, server auth and client auth); needed while the scanner is rendered
+    malware-scanner: ""                 # example: quader-tls-malware-scanner (<fullname>-malware-scanner.<namespace>.svc and the ops name, server auth and client auth); needed while the malware scanner is rendered
   certManager:                          # the Certificate per kind the chart renders while existingSecrets is empty: <fullname>-tls-<kind>
     issuerRef:
       kind: ClusterIssuer               # ClusterIssuer | Issuer (an Issuer of the release namespace)

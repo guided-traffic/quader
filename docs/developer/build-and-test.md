@@ -36,7 +36,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `gosec` | the same golangci-lint with only gosec enabled (CI: GoSec Security Scan) |
 | `vuln` | pinned govulncheck over `./...` |
 | `cyclo`, `cyclo-report` | pinned gocyclo: fails above `CYCLO_THRESHOLD`; the report lists the most complex functions, tests included |
-| `malware-scan` | ClamAV (`clamscan`) over the source tree; needs `clamscan` on `PATH` (CI installs ClamAV) |
+| `malware-scan-db`, `malware-scan` | `freshclam` of `CLAMAV_IMAGE` into `.out/clamav-db` (the day's differences after the first run), then its `clamscan` over the source tree mounted read-only; needs Docker (R-MAL-031) |
 | `versions-check` (continued) | also compares the Node.js of `PATH` with `web/.nvmrc` and `docker buildx` with `BUILDX_VERSION` |
 | `fmt` | the formatters of `.golangci.yml` (gofumpt, goimports) over `./...`; this rewrites files, so run it on your own working tree |
 | `versions-check` | the E0.2 checks listed above |

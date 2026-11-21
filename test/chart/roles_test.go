@@ -72,7 +72,7 @@ func TestRolesDeployments(t *testing.T) {
 	t.Run("R-HA-002 R-HA-062 a Deployment, PodDisruptionBudget and NetworkPolicy per role, pool and endpoint pool, named alike", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := []string{
-			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-packages", "quader-packages-ep-customers",
+			"quader-api", "quader-api-admin", "quader-api-ep-customers", "quader-malware-scanner", "quader-packages", "quader-packages-ep-customers",
 			"quader-packages-npm", "quader-scanner", "quader-worker", "quader-worker-bulk", "quader-worker-vuln",
 		}
 		if got := deploymentNames(docs); !equalStrings(got, want) {
@@ -114,11 +114,14 @@ func TestRolesDeployments(t *testing.T) {
 		for _, d := range ofKind(docs, "Deployment") {
 			name := str(d, "metadata", "name")
 			role, _, _ := strings.Cut(strings.TrimPrefix(name, "quader-"), "-")
+			if name == "quader-malware-scanner" { // the role scanner of the kind malware, a component of its own (R-HA-068)
+				role = "malware-scanner"
+			}
 			labels := at(d, "spec", "template", "metadata", "labels")
 			if got := str(labels, "app.kubernetes.io/component"); got != role {
 				t.Errorf("%s component = %q, want %q", name, got, role)
 			}
-			if role == "scanner" {
+			if role == "scanner" || role == "malware-scanner" {
 				// The scanner has no pools; quader/pool belongs to the serving roles only (R-HA-028, R-HA-065).
 				if at(labels, "quader/pool") != nil {
 					t.Errorf("%s carries quader/pool = %v, which only the pods of api, packages and worker do", name, at(labels, "quader/pool"))
@@ -147,6 +150,9 @@ func TestRolesDeployments(t *testing.T) {
 		for _, d := range ofKind(docs, "Deployment") {
 			name := str(d, "metadata", "name")
 			role, _, _ := strings.Cut(strings.TrimPrefix(name, "quader-"), "-")
+			if name == "quader-malware-scanner" {
+				role = "scanner"
+			}
 			pod := at(d, "spec", "template", "spec")
 			if got := strings.Join(containerArgs(pod), " "); got != "serve --role "+role {
 				t.Errorf("%s args = %q, want serve --role %s", name, got, role)
@@ -235,6 +241,7 @@ func TestRolesServices(t *testing.T) {
 			"quader-ep-customers":     {"quader-packages-ep-customers"},
 			"quader-api-ep-customers": {"quader-api-ep-customers"},
 			"quader-scanner":          {"quader-scanner"},
+			"quader-malware-scanner":  {"quader-malware-scanner"},
 			"quader-packages-scan":    {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
 			"quader-ops":              deploymentNames(docs),
 		}
@@ -512,8 +519,9 @@ func TestRolesNetworkPolicy(t *testing.T) {
 						t.Errorf("%s: 8080 has a from, want from anywhere by default", n)
 					}
 				case len(p) == 1 && p[0] == 8082:
-					if !has || len(from) != 1 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "scanner" {
-						t.Errorf("%s: 8082 from %v, want the scanner's pods only", n, from)
+					if !has || len(from) != 2 || str(from[0], "podSelector", "matchLabels", "app.kubernetes.io/component") != "scanner" ||
+						str(from[1], "podSelector", "matchLabels", "app.kubernetes.io/component") != "malware-scanner" {
+						t.Errorf("%s: 8082 from %v, want the pods of the two scanners only", n, from)
 					}
 				}
 			}
@@ -536,7 +544,7 @@ func TestRolesNetworkPolicy(t *testing.T) {
 			got = append(got, str(np, "metadata", "name"))
 		}
 		sort.Strings(got)
-		if want := []string{"quader-api", "quader-migrate", "quader-packages", "quader-scanner", "quader-worker"}; !equalStrings(got, want) {
+		if want := []string{"quader-api", "quader-malware-scanner", "quader-migrate", "quader-packages", "quader-scanner", "quader-worker"}; !equalStrings(got, want) {
 			t.Errorf("policies = %v, want %v", got, want)
 		}
 		if _, d := render(t, required(), backupSets()...); find(d, "NetworkPolicy", "quader-backup") == nil {
@@ -580,7 +588,7 @@ func TestRolesValidation(t *testing.T) {
 		{"the upload of the UI larger than the api spool", pools("config.ui.deploy.max_upload_bytes=9663676416"), []string{"config.ui.deploy.max_upload_bytes", "api.spool.sizeLimit"}},
 		{"a UI upload limit of 0 falls back to the upload limit, larger than the api spool", pools("config.ui.deploy.max_upload_bytes=0", "spool.sizeLimit=20Gi", "api.spool.sizeLimit=5Gi"), []string{"config.storage.upload.max_size", "api.spool.sizeLimit"}},
 		{"networkPolicy egress", pools("networkPolicy.egress.enabled=true"), []string{"egress"}},
-		{"worker pools that claim every queue", pools("worker.pools[0].name=a", "worker.pools[0].queues={default,maintenance,index}", "worker.pools[1].name=b", "worker.pools[1].queues={delivery,mirror,vuln}"), []string{"worker.pools", "every queue", "main worker"}},
+		{"worker pools that claim every queue", pools("worker.pools[0].name=a", "worker.pools[0].queues={default,maintenance,index}", "worker.pools[1].name=b", "worker.pools[1].queues={delivery,mirror,vuln,malware}"), []string{"worker.pools", "every queue", "main worker"}},
 		{"a worker pool with no replica", pools("highAvailability.enforce=false", "worker.pools[0].name=a", "worker.pools[0].queues={vuln}", "worker.pools[0].replicaCount=0"), []string{"worker.pools[a].replicaCount", "claimed by nobody"}},
 		{"a default surface without a family of the role packages and no endpoint served by it", pools("endpoints.default.surface={api,ui}"), []string{"endpoints.default.surface", "role packages"}},
 		{"a default surface without a family of the role api and no endpoint served by it", pools("endpoints.default.surface={packages}"), []string{"endpoints.default.surface", "role api"}},

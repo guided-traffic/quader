@@ -81,14 +81,16 @@ func (u *upstreamStore) Stored(ctx context.Context) ([]wellknown.Stored, error) 
 		st := wellknown.Stored{
 			Key: row.Key, Format: catalog.ID(row.Format), Class: Class(row.Class), Kind: wellknown.Kind(f.Kind),
 			Retired: f.RetiredAt.Valid, Overridden: f.AddressOverridden,
+			Fixed: wellknown.Fixed{
+				IncludePatterns: d.IncludePatterns, Private: d.Visibility.Artifacts == LevelPrivate && d.Visibility.Wiki == LevelPrivate,
+				ScanningOff: d.Vulnerabilities != nil && !d.Vulnerabilities.Enabled,
+			},
 		}
-		if rs, err := parseStoredRemote(d.Remote); err == nil {
+		// A local repository (scanner-clamav, R-REPO-075) has no remote section: no address, no account, no cache period.
+		if rs, err := parseStoredRemote(d.Remote); d.Class == Remote && err == nil {
 			st.HasAccount = rs.AuthMode != AuthNone || rs.Password != nil
 			st.Address = storedAddress(rs, d)
-			st.Fixed = wellknown.Fixed{
-				IncludePatterns: d.IncludePatterns, Private: d.Visibility.Artifacts == LevelPrivate && d.Visibility.Wiki == LevelPrivate,
-				ScanningOff: d.Vulnerabilities != nil && !d.Vulnerabilities.Enabled, UnusedRetentionHours: rs.Cache.UnusedRetentionHours,
-			}
+			st.Fixed.UnusedRetentionHours = rs.Cache.UnusedRetentionHours
 		}
 		out = append(out, st)
 	}
@@ -114,12 +116,14 @@ func presetHosts(in []ExtraHost) []catalog.PresetHost {
 
 // Create implements wellknown.Store: the document a create of only key, class and format would store, with the declaration's
 // address, its display name as the description, switched off for a preset (R-REPO-066), and the fixed members of a system
-// repository (R-REPO-070).
+// repository (R-REPO-070). A local system repository (scanner-clamav, R-REPO-075, Q-REPO-411) has no address.
 func (u *upstreamStore) Create(ctx context.Context, decl wellknown.Declaration) error {
 	d := Document{Key: decl.Key, Class: Remote, Format: string(decl.Format)}
 	d.Description = decl.DisplayName
 	d.Disabled = decl.Kind == wellknown.KindPreset
-	if err := setAddress(&d, decl.Address(), true); err != nil {
+	if decl.Local() {
+		d.Class = Local
+	} else if err := setAddress(&d, decl.Address(), true); err != nil {
 		return err
 	}
 	if decl.Kind == wellknown.KindSystem {
@@ -342,8 +346,8 @@ func setRemote(d *Document, set map[string]any) error {
 	return nil
 }
 
-// setFixed writes the members the product fixes on a system repository (R-REPO-070): the include patterns, both levels private,
-// the scanning off where the format has it, and the cache period.
+// setFixed writes the members the product fixes on a system repository (R-REPO-070, R-REPO-075): the include patterns, both levels
+// private, the scanning off where the format has it, and the cache period of a remote one.
 func (s *Service) setFixed(d *Document, f wellknown.Fixed) error {
 	d.IncludePatterns = append([]string(nil), f.IncludePatterns...)
 	if f.Private {
@@ -353,6 +357,9 @@ func (s *Service) setFixed(d *Document, f wellknown.Fixed) error {
 		off := vuln.DefaultSettings()
 		off.Enabled = false
 		d.Vulnerabilities = &off
+	}
+	if d.Class != Remote {
+		return nil
 	}
 	cache := objectMembers(objectMembers(d.Remote)["cache"])
 	if cache == nil {

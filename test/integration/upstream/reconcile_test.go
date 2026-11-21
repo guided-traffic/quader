@@ -10,15 +10,15 @@ import (
 )
 
 // TestR_REPO_067_Reconcile runs the reconcile of `quader migrate` against the migration session of a test database (R-REPO-066,
-// R-REPO-067, Q-REPO-374 to Q-REPO-377): a fresh database ends with the 13 repositories of the catalog, a second run writes nothing,
+// R-REPO-067, Q-REPO-374 to Q-REPO-377): a fresh database ends with the 14 repositories of the catalog, a second run writes nothing,
 // and a changed, overridden, dropped and redeclared preset each get their step. No upstream is contacted; the data are rows.
 func TestR_REPO_067_Reconcile(t *testing.T) {
 	f := newFixture(t)
 
-	t.Run("R-REPO-066 a fresh database ends with the twelve presets off and internal (Q-REPO-388) and scanner-trivy", func(t *testing.T) {
+	t.Run("R-REPO-066 a fresh database ends with the twelve presets off and internal (Q-REPO-388) and the two system repositories", func(t *testing.T) {
 		n := f.e.Number(`SELECT count(*) FROM repositories r JOIN project p ON p.id = r.project_id JOIN upstream_repository u ON u.repository_id = r.id
 		                 WHERE p.key = 'upstream'`)
-		if n != 13 {
+		if n != 14 {
 			t.Fatalf("%d repositories", n)
 		}
 		if off := f.e.Number(`SELECT count(*) FROM repositories r JOIN upstream_repository u ON u.repository_id = r.id
@@ -47,6 +47,17 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 		}
 		if lv := f.e.Text("SELECT visibility_artifacts || '/' || visibility_wiki FROM repositories WHERE id = $1", f.id("scanner-trivy")); lv != "private/private" {
 			t.Errorf("levels %s", lv)
+		}
+	})
+	t.Run("R-REPO-075 Q-REPO-410 Q-REPO-411 scanner-clamav is a local generic repository, private, with nothing of a remote", func(t *testing.T) {
+		row := f.e.Text(`SELECT r.class || '/' || r.format || '/' || r.visibility_artifacts || '/' || r.visibility_wiki || '/' || u.kind
+		                 FROM repositories r JOIN upstream_repository u ON u.repository_id = r.id WHERE r.id = $1`, f.id("scanner-clamav"))
+		if row != "local/generic/private/private/system" {
+			t.Fatalf("scanner-clamav %s", row)
+		}
+		if f.config("scanner-clamav", "{disabled}") != "false" || f.config("scanner-clamav", "{remote}") != "<none>" ||
+			f.config("scanner-clamav", "{malware}") != "<none>" || f.config("scanner-clamav", "{description}") != "Malware scan database" {
+			t.Fatalf("scanner-clamav: %s", f.e.Text("SELECT config::text FROM repositories WHERE id = $1", f.id("scanner-clamav")))
 		}
 	})
 	t.Run("Q-REPO-379 the Debian and Ubuntu presets carry their archive keys", func(t *testing.T) {

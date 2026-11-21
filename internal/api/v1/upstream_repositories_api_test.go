@@ -35,3 +35,26 @@ func TestR_REPO_070_ScannerTrivyIsInUseWhileTheImageScanningReadsThroughIt(t *te
 		})
 	}
 }
+
+// TestR_MAL_011_ScannerClamavIsInUseWhileTheMalwareScanKeepsItsDatabaseThere: the item of scanner-clamav answers inUse from the malware
+// scanning's function, never from the image scanning's, and names its address and account as fixed (R-REPO-075, Q-REPO-412).
+func TestR_MAL_011_ScannerClamavIsInUseWhileTheMalwareScanKeepsItsDatabaseThere(t *testing.T) {
+	clam := repository.UpstreamItem{Key: wellknown.ScannerClamavKey, Kind: wellknown.KindSystem, Fixed: []string{"state", "visibility", "address", "account"}}
+	yes, no := func() bool { return true }, func() bool { return false }
+	for _, tc := range []struct {
+		name string
+		u    UpstreamServices
+		want bool
+	}{
+		{"without the scanning's function", UpstreamServices{ScannerTrivyInUse: yes}, false},
+		{"while the malware scan keeps its database there", UpstreamServices{ScannerTrivyInUse: no, ScannerClamavInUse: yes}, true},
+		{"while it does not", UpstreamServices{ScannerTrivyInUse: yes, ScannerClamavInUse: no}, false},
+	} {
+		t.Run("R-REPO-075 "+tc.name, func(t *testing.T) {
+			got := (&Server{o: Options{Upstream: tc.u}}).toUpstream(clam)
+			if got.InUse == nil || *got.InUse != tc.want || got.State != nil || len(got.Fixed) != 4 || got.Fixed[2] != "address" {
+				t.Fatalf("inUse %v, state %v, fixed %v", got.InUse, got.State, got.Fixed)
+			}
+		})
+	}
+}

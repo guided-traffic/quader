@@ -9,7 +9,7 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 645 of 1,047 spec requirements are implemented: a passing test names them and no
+**Status.** 654 of 1,047 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
@@ -895,7 +895,7 @@ Catalog page: [ha-and-deployment.md](../features/ha-and-deployment.md) · specif
 | HA-012 | Single client entry point with path-based routing | MVP | implemented | [R-ARCH-005](../spec/architecture.md) (implemented), [R-HA-037](../spec/ha-and-helm.md) (implemented) |
 | HA-013 | Internal service registry and health-gated routing | Later | open | – |
 | HA-014 | Availability-zone affinity for internal routing | P2 | open | – |
-| HA-015 | Components deployed as separately scaled workloads | P1 | specified | [R-ARCH-001](../spec/architecture.md) (implemented), [R-ARCH-036](../spec/architecture.md), [R-HA-002](../spec/ha-and-helm.md) (implemented), [R-HA-062](../spec/ha-and-helm.md) (implemented), [R-HA-065](../spec/ha-and-helm.md), [R-HA-068](../spec/ha-and-helm.md) |
+| HA-015 | Components deployed as separately scaled workloads | P1 | specified | [R-ARCH-001](../spec/architecture.md) (implemented), [R-ARCH-036](../spec/architecture.md), [R-HA-002](../spec/ha-and-helm.md) (implemented), [R-HA-062](../spec/ha-and-helm.md) (implemented), [R-HA-065](../spec/ha-and-helm.md), [R-HA-068](../spec/ha-and-helm.md) (implemented) |
 | HA-016 | Cluster encryption key | MVP | implemented | [R-API-049](../spec/api-and-ui.md) (implemented), [R-ARCH-021](../spec/architecture.md) (implemented), [R-HA-027](../spec/ha-and-helm.md) (implemented) |
 | HA-017 | Service trust key provisioning and rotation | Out of scope | open | – |
 | HA-018 | Internal TLS with a built-in certificate authority | P2 | specified | [R-ARCH-035](../spec/architecture.md) (implemented), [R-ARCH-038](../spec/architecture.md), [R-HA-063](../spec/ha-and-helm.md) (implemented), [R-HA-066](../spec/ha-and-helm.md) |
@@ -3204,7 +3204,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-CI-029 (implemented) | CI state across replicas, Valkey outages and restores | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-CI-030 (implemented) | Background tasks of the CI exchange | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
-| R-HA-069 | The `freshclam` container of the worker | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
+| R-HA-069 (implemented) | The `freshclam` container of the worker | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-056 | Valkey with Sentinel: connection and supported topologies | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-057 | Valkey failover, outage and degraded mode | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-054 (implemented) | Revocation journal in object storage | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3229,9 +3229,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-006 (implemented) | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-007 (implemented) | The malware scanner: what it unpacks and what it hands to `clamd` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-008 (implemented) | Limits | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-010 | `freshclam` beside the worker, and the task `malware-sync-db` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-011 | `upstream/scanner-clamav` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-012 | An installation without internet | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-010 (implemented) | `freshclam` beside the worker, and the task `malware-sync-db` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-011 (implemented) | `upstream/scanner-clamav` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-012 (implemented) | An installation without internet | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-016 (implemented) | The answer each format's client gets | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-018 (implemented) | Virtual repositories, the cache view and the Bastion | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-020 (implemented) | The repository's stricter-only setting | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
@@ -3242,7 +3242,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-028 (implemented) | Backups, restores and replicas | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-029 (implemented) | What a format brings | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-030 | The tests and what they cost | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
-| R-MAL-031 | The source tree's malware scan runs the product's ClamAV | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-031 (implemented) | The source tree's malware scan runs the product's ClamAV | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-OPS-045 (implemented) | Valkey and coordination observability | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-046 | Operational signals for availability, horizontal scale and backup | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-013 (implemented) | Secret redaction | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
@@ -3257,7 +3257,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-REPO-068 | Switching a well-known repository on and off | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-069 | What the product manages and what an administrator changes | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-070 | `scanner-trivy`: the database of the image scanning | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
-| R-REPO-075 | `scanner-clamav`: the database of the malware scanning | P1 | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
+| R-REPO-075 (implemented) | `scanner-clamav`: the database of the malware scanning | P1 | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-071 | Members of `upstream` in a virtual repository | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-072 | A placeholder member: resolution, the explanation and the 404 | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-073 | The operations of the well-known repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

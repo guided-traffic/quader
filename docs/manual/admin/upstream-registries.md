@@ -23,6 +23,7 @@ and the project has no members, policies, service accounts or settings. In the l
 | NuGet | nuget.org (`upstream/nuget-org`) | `https://api.nuget.org/v3/index.json` |
 | OCI (Docker) | Docker Hub (`upstream/docker-hub`), Quay (`upstream/quay`), GitHub (ghcr.io) (`upstream/ghcr`), GitLab (`upstream/gitlab`) | Docker Hub, Quay, GitHub (ghcr.io), GitLab |
 | OCI (Docker) | Image scanning database (`upstream/scanner-trivy`) | `https://mirror.gcr.io/`, the image `aquasec/trivy-db` only |
+| Generic | Malware scan database (`upstream/scanner-clamav`) | none: a local repository that Quader fills with ClamAV's signature database |
 
 The Debian and Ubuntu repositories come with the archive keys of their distribution, so they verify what they fetch from the start.
 Every repository is addressed like any other: `https://quader.example.com/api/npm/upstream/npmjs/`,
@@ -69,7 +70,8 @@ Through the API: one registry with `PUT /api/v1/upstream-repositories/<key>/stat
 once with `POST /api/v1/upstream-repositories/switch-on-all`. The list counts the listing virtual repositories and their projects
 (`listedBy`, `listedByProjects`), and `GET /api/v1/upstream-repositories/<key>` names them (`listedByNames`, up to 100).
 
-`scanner-trivy` has no switch: it is in use exactly while the image scanning reads its database through it.
+`scanner-trivy` has no switch: it is in use exactly while the image scanning reads its database through it. Nor has `scanner-clamav`:
+it is in use exactly while the malware scan keeps its signature database in it.
 
 ## Who reads a registry
 
@@ -132,6 +134,18 @@ reads the vulnerability database of its analyser, the image `aquasec/trivy-db`. 
 administrators included, which its **Set up client** says instead of showing snippets. Its page lets you change the address and store
 an account like any registry; the address must serve the image `aquasec/trivy-db`. For a registry that publishes the database under
 another name, set the image scanning's database setting instead ([Advisory sources](vulnerability-sources.md#container-images)).
+
+## The malware scan's database
+
+Below it stands `scanner-clamav`, **Malware scan database**: the repository in which the malware scan keeps every version of ClamAV's
+signature database. `freshclam` beside the worker fetches the database from ClamAV's network; every 30 minutes the task
+`malware-sync-db` stores a new version at `<version>/<file>` (`main-63.daily-28189.bytecode-339/main.cvd`, …) and makes it the version
+the malware scanners load, and it removes versions older than two days that are neither in use nor the one before. An unchanged
+`main.cvd` is one stored file for every version. It has no switch, no address and no account, and its level is always Private: it is
+**In use by the malware scan** while the scanning is on and `malware.database.repository` names it (the default), else **Not in use**.
+It answers no client, administrators included, and nobody deploys to it. Its files are listed on the repository's page; removing one
+makes the next run store its version again. An installation without internet names a repository of its own instead
+([Monitoring and operations](operations.md#malware-scanning)).
 
 ## Permissions
 

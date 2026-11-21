@@ -183,9 +183,16 @@ spec:
             - name: tmp
               mountPath: /tmp
             {{- include "quader.secretVolumeMounts" (dict "root" $ "scope" "runtime" "role" $role "pool" $pool) | nindent 12 }}
+            {{- /* freshclam's directory, which the worker seeds and reads (R-HA-069, R-MAL-010). */}}
+            {{- with (include "quader.freshclamMount" (dict "root" $ "unit" $unit)) }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- with $.Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+        {{- with (include "quader.freshclamContainer" (dict "root" $ "unit" $unit)) }}
+        {{- . | nindent 8 }}
+        {{- end }}
       volumes:
         - name: config
           configMap:
@@ -218,6 +225,9 @@ spec:
           emptyDir:
             sizeLimit: {{ $.Values.tmp.sizeLimit }}
         {{- include "quader.secretVolumes" (dict "root" $ "scope" "runtime" "role" $role "pool" $pool) | nindent 8 }}
+        {{- with (include "quader.freshclamVolumes" (dict "root" $ "unit" $unit)) }}
+        {{- . | nindent 8 }}
+        {{- end }}
         {{- with $.Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

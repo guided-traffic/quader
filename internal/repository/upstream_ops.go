@@ -258,9 +258,14 @@ func (s *Service) upstreamItem(row q.Repository, facts map[int64]q.UpstreamRepos
 	if it.Kind == wellknown.KindSystem {
 		it.Fixed = []string{"state", "visibility"}
 	}
-	rs, err := parseStoredRemote(d.Remote)
-	if err != nil {
-		return UpstreamItem{}, fmt.Errorf("repository: stored remote section of upstream/%s: %w", row.Key, err)
+	rs := &RemoteSettings{AuthMode: AuthNone}
+	if d.Class == Remote {
+		if rs, err = parseStoredRemote(d.Remote); err != nil {
+			return UpstreamItem{}, fmt.Errorf("repository: stored remote section of upstream/%s: %w", row.Key, err)
+		}
+	} else {
+		// A local system repository (scanner-clamav, R-REPO-075) has no address and no account to set (Q-REPO-412).
+		it.Fixed = append(it.Fixed, "address", "account")
 	}
 	stored := storedAddress(rs, d)
 	product := stored
@@ -587,6 +592,9 @@ func (s *Service) writeAddress(ctx context.Context, tx meta.Tx, c Caller, key st
 	want wellknown.Address, accountSet bool, account *UpstreamAccountInput,
 ) (UpstreamItem, error) {
 	return s.upstreamWrite(ctx, tx, c, key, pre, "", func(cur Document) (Document, error) {
+		if err := remoteOnly(cur); err != nil {
+			return Document{}, err
+		}
 		rs, err := parseStoredRemote(cur.Remote)
 		if err != nil {
 			return Document{}, err
@@ -639,6 +647,9 @@ func (s *Service) SetUpstreamAccount(ctx context.Context, c Caller, key string, 
 	err := s.run.InTx(ctx, func(tx meta.Tx) error {
 		var err error
 		out, err = s.upstreamWrite(ctx, tx, c, key, pre, "", func(cur Document) (Document, error) {
+			if err := remoteOnly(cur); err != nil {
+				return Document{}, err
+			}
 			nd := cur
 			return nd, setAccount(&nd, &in)
 		}, func(qs *q.Queries, id int64) error { return qs.ClearUpstreamAccountRemoved(ctx, id) })
@@ -653,12 +664,24 @@ func (s *Service) RemoveUpstreamAccount(ctx context.Context, c Caller, key strin
 	err := s.run.InTx(ctx, func(tx meta.Tx) error {
 		var err error
 		out, err = s.upstreamWrite(ctx, tx, c, key, pre, "", func(cur Document) (Document, error) {
+			if err := remoteOnly(cur); err != nil {
+				return Document{}, err
+			}
 			nd := cur
 			return nd, setAccount(&nd, nil)
 		}, nil)
 		return err
 	})
 	return out, err
+}
+
+// remoteOnly refuses the address and the account of a local system repository (scanner-clamav, R-REPO-075): it has neither, and
+// the operations answer 409 managed_by_product.
+func remoteOnly(cur Document) error {
+	if cur.Class == Remote {
+		return nil
+	}
+	return managedByProduct("upstream/" + cur.Key + " is a local repository of Quader's own work: it has no address and no account.")
 }
 
 // setAccount writes an account into the remote section; nil removes it.

@@ -92,6 +92,16 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(text(root)).toContain('The registry must serve the image aquasec/trivy-db.');
   });
 
+  it('R-UI-188 R-REPO-075 scanner-clamav says the malware scan uses it, and has no address and no account to set', async () => {
+    const { root } = await render('scanner-clamav');
+    expect(text(root)).toContain('In use by the malware scan. Its visibility is always Private.');
+    expect(root.querySelector('[role="switch"]')).toBeNull();
+    expect(root.querySelector('#wk-address, #wk-account')).toBeNull();
+    expect(text(root)).not.toContain('aquasec/trivy-db');
+    const unused = await render('scanner-clamav', { setup: (a) => a.set('scanner-clamav', { inUse: false }) });
+    expect(text(unused.root)).toContain('Not in use by the malware scan. Its visibility is always Private.');
+  });
+
   it('R-UI-188 a retired registry says so and shows only who lists it; a reader changes nothing', async () => {
     const retired = await render('galaxy', {
       setup: (a) => {

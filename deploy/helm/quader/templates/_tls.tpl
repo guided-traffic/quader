@@ -13,10 +13,12 @@ the root context. Returns a YAML list.
 */}}
 {{- define "quader.tlsKindTable" -}}
 {{- $scanner := include "quader.scannerOn" . | eq "true" -}}
+{{- $malware := include "quader.malwareOn" . | eq "true" -}}
 {{- $t := list (dict "kind" "api" "client" false "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "packages" "client" false "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "worker" "client" true "scanClient" false "on" true) -}}
 {{- $t = append $t (dict "kind" "scanner" "client" true "scanClient" true "on" $scanner) -}}
+{{- $t = append $t (dict "kind" "malware-scanner" "client" true "scanClient" true "on" $malware) -}}
 {{- toYaml $t -}}
 {{- end -}}
 

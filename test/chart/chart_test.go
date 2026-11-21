@@ -371,6 +371,9 @@ func TestChart(t *testing.T) {
 			for _, d := range ofKind(docs, "Deployment") {
 				name := strings.TrimPrefix(str(d, "metadata", "name"), "quader-")
 				role, _, _ := strings.Cut(name, "-")
+				if name == "malware-scanner" { // the role scanner of the kind malware (R-HA-068)
+					role = "scanner"
+				}
 				if role != "api" && role != "packages" && role != "worker" && role != "scanner" {
 					t.Errorf("Deployment quader-%s runs the role %q, want api, packages, worker or scanner", name, role)
 				}
@@ -516,6 +519,12 @@ func TestChart(t *testing.T) {
 			if strings.HasSuffix(name, "-api") || strings.HasSuffix(name, "-packages") || strings.HasSuffix(name, "-worker") ||
 				strings.HasSuffix(name, "-scanner") {
 				want["/var/lib/quader/spool"] = true
+			}
+			switch {
+			case strings.HasSuffix(name, "-malware-scanner"): // clamd's socket and the database it loads (R-HA-068)
+				want["/run/clamd"], want["/var/lib/clamav"] = true, true
+			case strings.HasSuffix(name, "-worker"): // freshclam's directory, which the worker seeds and reads (R-HA-069)
+				want["/var/lib/quader/freshclam"] = true
 			}
 			for p := range mounts {
 				if !want[p] {
@@ -844,6 +853,10 @@ func TestChart(t *testing.T) {
 						case "QUADER_SERVER_SCAN_LISTEN": // the scan listener of the main packages Deployment (R-HA-066)
 							if name != "quader-packages" {
 								t.Errorf("%s sets QUADER_SERVER_SCAN_LISTEN, which only the main packages Deployment does", name)
+							}
+						case "QUADER_PROCESS_SCANNER_KIND": // the malware scanner's kind (R-HA-068)
+							if name != "quader-malware-scanner" {
+								t.Errorf("%s sets QUADER_PROCESS_SCANNER_KIND, which only the malware scanner does", name)
 							}
 						default:
 							t.Errorf("%s sets %s, which the spec does not list (R-HA-030)", name, v)

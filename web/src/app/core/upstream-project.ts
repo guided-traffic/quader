@@ -24,16 +24,25 @@ export function upstreamName(key: string): string {
   return `${UPSTREAM_PROJECT}/${key}`;
 }
 
+/** The work of Quader a system repository of the project `upstream` serves (R-REPO-070, R-REPO-075). */
+export type SystemWork = 'image-scanning' | 'malware-scan';
+
 /**
- * The system repositories of the project `upstream` (R-REPO-066, R-REPO-070): the repositories Quader reads for its own work, today
- * `scanner-trivy`. The product declares their keys (`wellknown.ScannerTrivyKey`), so the UI knows them by key as it knows the project,
- * also for a caller who cannot read the admin area's item and its `kind`.
+ * The system repositories of the project `upstream` (R-REPO-066, R-REPO-070, R-REPO-075): the repositories Quader reads for its own
+ * work, `scanner-trivy` (the image scanning's database) and `scanner-clamav` (the malware scan's signature database), with the work
+ * each serves. The product declares their keys (`wellknown.ScannerTrivyKey`, `wellknown.ScannerClamavKey`), so the UI knows them by key
+ * as it knows the project, also for a caller who cannot read the admin area's item and its `kind`.
  */
-const SYSTEM_REPOSITORIES: readonly string[] = ['scanner-trivy'];
+const SYSTEM_REPOSITORIES: Readonly<Record<string, SystemWork>> = { 'scanner-trivy': 'image-scanning', 'scanner-clamav': 'malware-scan' };
 
 /** Whether `<project>/<key>` is a system repository of the project `upstream`, which no client uses (R-UI-190). */
 export function isSystemRepository(project: string | null | undefined, key: string | null | undefined): boolean {
-  return isUpstreamProject(project) && !!key && SYSTEM_REPOSITORIES.includes(key);
+  return isUpstreamProject(project) && !!key && Object.hasOwn(SYSTEM_REPOSITORIES, key);
+}
+
+/** The work a system repository of the project `upstream` serves, by its key; `null` for any other key. */
+export function systemWork(key: string | null | undefined): SystemWork | null {
+  return (key && Object.hasOwn(SYSTEM_REPOSITORIES, key) && SYSTEM_REPOSITORIES[key]) || null;
 }
 
 /**

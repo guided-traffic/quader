@@ -25,16 +25,23 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 	f.e.Member("web", dave, "reader")
 	f.start()
 
-	t.Run("R-REPO-073 the list holds the presets in catalog order and scanner-trivy last", func(t *testing.T) {
+	t.Run("R-REPO-073 the list holds the presets in catalog order and the system repositories last", func(t *testing.T) {
 		r := f.do(f.admin, "GET", items, nil)
 		wantStatus(t, r, 200, "")
 		list := r.Items(t)
-		if len(list) != 13 || list[0]["key"] != "galaxy" || list[12]["key"] != "scanner-trivy" {
-			t.Fatalf("%d items, first %v, last %v", len(list), list[0]["key"], list[12]["key"])
+		if len(list) != 14 || list[0]["key"] != "galaxy" || list[12]["key"] != "scanner-trivy" || list[13]["key"] != "scanner-clamav" {
+			t.Fatalf("%d items, first %v, last %v", len(list), list[0]["key"], list[len(list)-1]["key"])
 		}
 		sys := list[12]
 		if sys["state"] != nil || sys["inUse"] != false || fmt.Sprint(sys["fixed"]) != "[state visibility]" || sys["kind"] != "system" {
 			t.Errorf("scanner-trivy %v", sys)
+		}
+		// R-REPO-075, Q-REPO-412: the local system repository has no address and no account an administrator could set.
+		clam := list[13]
+		addr, _ := clam["address"].(map[string]any)
+		if clam["state"] != nil || clam["kind"] != "system" || clam["format"] != "generic" || clam["visibility"] != "private" ||
+			clam["displayName"] != "Malware scan database" || fmt.Sprint(clam["fixed"]) != "[state visibility address account]" || addr["url"] != "" {
+			t.Errorf("scanner-clamav %v", clam)
 		}
 		for _, it := range list[:12] {
 			if it["state"] != "not-switched-on" || it["inUse"] != nil {
@@ -151,6 +158,7 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 	})
 	t.Run("R-REPO-073 the level of one and of all; scanner-trivy's is fixed", func(t *testing.T) {
 		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-trivy/visibility", map[string]any{"level": "internal"}), 409, "managed_by_product")
+		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-clamav/visibility", map[string]any{"level": "internal"}), 409, "managed_by_product")
 		r := f.do(f.admin, "PUT", items+"/npmjs/visibility", map[string]any{"level": "public"})
 		wantStatus(t, r, 200, "")
 		if r.JSON(t)["visibility"] != "public" {
@@ -203,6 +211,15 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 		wantStatus(t, gone, 200, "")
 		if gone.JSON(t)["account"].(map[string]any)["authMode"] != "none" {
 			t.Fatalf("%v", gone.JSON(t)["account"])
+		}
+	})
+	t.Run("R-REPO-075 scanner-clamav has no state, no address and no account", func(t *testing.T) {
+		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-clamav/state", map[string]any{"state": "on"}), 409, "managed_by_product")
+		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-clamav/address", map[string]any{"url": "https://db.example.org/"}, "If-Match", "*"), 409, "managed_by_product")
+		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-clamav/account", map[string]any{"authMode": "basic", "username": "u", "password": map[string]any{"secretRef": map[string]any{"env": "QUADER_CAC_QUAY"}}}, "If-Match", "*"), 409, "managed_by_product")
+		wantStatus(t, f.do(f.admin, "DELETE", items+"/scanner-clamav/account", nil, "If-Match", "*"), 409, "managed_by_product")
+		if f.config("scanner-clamav", "{remote}") != "<none>" || f.config("scanner-clamav", "{disabled}") != "false" {
+			t.Fatalf("scanner-clamav: remote %q, disabled %q", f.config("scanner-clamav", "{remote}"), f.config("scanner-clamav", "{disabled}"))
 		}
 	})
 	t.Run("R-REPO-070 scanner-trivy takes an administrator's address", func(t *testing.T) {

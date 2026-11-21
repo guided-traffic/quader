@@ -129,10 +129,10 @@ func TestTLS(t *testing.T) {
 	t.Run("R-HA-063 Q-HA-346 the chart issues a Certificate per kind with its name, the ops name and the usages of the kind", func(t *testing.T) {
 		_, docs := render(t, required())
 		certs := ofKind(docs, "Certificate")
-		if len(certs) != 4 {
-			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, scanner)", len(certs))
+		if len(certs) != 5 {
+			t.Fatalf("%d Certificates, want one per kind (api, packages, worker, scanner, malware-scanner)", len(certs))
 		}
-		for i, kind := range []string{"api", "packages", "worker", "scanner"} {
+		for i, kind := range []string{"api", "packages", "worker", "scanner", "malware-scanner"} {
 			c := certs[i]
 			name := "quader-tls-" + kind
 			if str(c, "metadata", "name") != name || str(c, "spec", "secretName") != name {
@@ -150,7 +150,7 @@ func TestTLS(t *testing.T) {
 				usages = append(usages, u.(string))
 			}
 			want := "digital signature,server auth"
-			if kind == "worker" || kind == "scanner" {
+			if kind == "worker" || kind == "scanner" || kind == "malware-scanner" {
 				want += ",client auth"
 			}
 			if strings.Join(usages, ",") != want {
@@ -166,10 +166,11 @@ func TestTLS(t *testing.T) {
 			}
 		}
 		_, rsa := render(t, required(), "tls.certManager.privateKey.algorithm=RSA", "tls.certManager.privateKey.size=3072",
-			"tls.certManager.extraDnsNames[0]=localhost", "tls.certManager.extraIpAddresses[0]=127.0.0.1", "config.vulnerabilities.images.enabled=false")
+			"tls.certManager.extraDnsNames[0]=localhost", "tls.certManager.extraIpAddresses[0]=127.0.0.1", "config.vulnerabilities.images.enabled=false",
+			"config.malware.enabled=false")
 		c := ofKind(rsa, "Certificate")
 		if len(c) != 3 {
-			t.Fatalf("%d Certificates with the image scanning off, want three: no scanner", len(c))
+			t.Fatalf("%d Certificates with both scannings off, want three: no scanner", len(c))
 		}
 		if toStr(at(c[0], "spec", "usages")) != "- digital signature\n- key encipherment\n- server auth\n" ||
 			toStr(at(c[0], "spec", "dnsNames")) != "- quader-api.default.svc\n- quader-ops.default.svc\n- localhost\n" ||
@@ -181,7 +182,10 @@ func TestTLS(t *testing.T) {
 
 	t.Run("R-HA-063 Q-HA-347 without an issuer every kind names a Secret of its own; neither, both or one Secret for two kinds fail", func(t *testing.T) {
 		renderFails(t, required(), []string{noIssuer}, "tls.certManager.issuerRef.name", "tls.existingSecrets", "tls.enabled: false")
-		named := []string{noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s"}
+		named := []string{
+			noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.scanner=s",
+			"tls.existingSecrets.malware-scanner=m",
+		}
 		_, docs := render(t, required(), named...)
 		if n := len(ofKind(docs, "Certificate")); n != 0 {
 			t.Errorf("%d Certificates rendered while tls.existingSecrets names the pairs", n)
@@ -191,11 +195,11 @@ func TestTLS(t *testing.T) {
 				t.Errorf("quader-%s does not mount %s", role, secret)
 			}
 		}
-		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner="), "tls.existingSecrets.scanner")
-		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner=w"), "tls.existingSecrets.worker", "tls.existingSecrets.scanner", "the same Secret w")
+		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner=", "tls.existingSecrets.malware-scanner=m"), "tls.existingSecrets.scanner")
+		renderFails(t, required(), append(named[:4:4], "tls.existingSecrets.scanner=w", "tls.existingSecrets.malware-scanner=m"), "tls.existingSecrets.worker", "tls.existingSecrets.scanner", "the same Secret w")
 		renderFails(t, required(), []string{"tls.existingSecrets.api=a"}, "tls.certManager.issuerRef.name", "tls.existingSecrets.api")
-		// Without the scanner, three Secrets are enough.
-		render(t, required(), append(named[:4:4], "config.vulnerabilities.images.enabled=false")...)
+		// Without the scanners, three Secrets are enough.
+		render(t, required(), append(named[:4:4], "config.vulnerabilities.images.enabled=false", "config.malware.enabled=false")...)
 	})
 
 	t.Run("R-HA-063 tls.enabled=false renders HTTP probes, plain Service ports and no TLS wiring", func(t *testing.T) {
@@ -481,8 +485,8 @@ func toStr(v any) string {
 }
 
 func TestTLSMountsFollowTheListeners(t *testing.T) {
-	t.Run("R-HA-030 R-HA-063 every runtime pod mounts its own kind's pair and no other, also with the image scanning off", func(t *testing.T) {
-		for _, sets := range [][]string{nil, {"config.vulnerabilities.images.enabled=false"}} {
+	t.Run("R-HA-030 R-HA-063 every runtime pod mounts its own kind's pair and no other, also with the scannings off", func(t *testing.T) {
+		for _, sets := range [][]string{nil, {"config.vulnerabilities.images.enabled=false", "config.malware.enabled=false"}} {
 			_, docs := render(t, required(), sets...)
 			for _, role := range []string{"api", "packages", "worker"} {
 				if got := kindSecrets(at(find(docs, "Deployment", "quader-"+role), "spec", "template", "spec")); len(got) != 1 || got[0] != "quader-tls-"+role {
@@ -490,10 +494,10 @@ func TestTLSMountsFollowTheListeners(t *testing.T) {
 				}
 			}
 		}
-		_, off := render(t, required(), "config.vulnerabilities.images.enabled=false")
+		_, off := render(t, required(), "config.vulnerabilities.images.enabled=false", "config.malware.enabled=false")
 		for _, it := range list(secretVolume(at(find(off, "Deployment", "quader-worker"), "spec", "template", "spec"), "quader-tls-worker"), "secret", "items") {
 			if str(it, "key") == "ca.crt" {
-				t.Error("quader-worker projects ca.crt with the image scanning off, although no link verifies with it")
+				t.Error("quader-worker projects ca.crt with both scannings off, although no link verifies with it")
 			}
 		}
 	})

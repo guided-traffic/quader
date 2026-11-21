@@ -136,6 +136,27 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-190 R-REPO-075 the settings of upstream/scanner-clamav name the malware scan in the statement of its fixed level', async () => {
+    const { root } = await renderScreen(RepositoryDetail, {
+      inputs: { project: 'upstream', key: 'scanner-clamav' },
+      setup: (get) => {
+        const fake = get(RepositoriesApi) as FakeRepositoriesApi;
+        fake.repositories.push({
+          key: 'scanner-clamav',
+          project: 'upstream',
+          class: 'local',
+          format: 'generic',
+          description: 'Malware scan database',
+          visibility: { artifacts: 'private', wiki: 'private' },
+        } as never);
+      },
+    });
+    const level = root.querySelector('[aria-labelledby="repo-visibility-fixed"]')!;
+    expect(text(level)).toContain("Its visibility is always Private: only Quader's malware scan reads it.");
+    expect(root.querySelector('quader-repository-visibility, quader-visibility-level')).toBeNull();
+    await expectAccessible(root);
+  });
+
   it('R-UI-190 the settings of upstream/npmjs show the upstream read-only with the link, the include patterns editable, no Wiki visibility and no Delete repository', async () => {
     const { root } = await renderScreen(RepositoryDetail, {
       inputs: { project: 'upstream', key: 'npmjs' },

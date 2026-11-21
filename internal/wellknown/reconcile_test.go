@@ -14,7 +14,7 @@ import (
 
 // storedAs is the stored repository a reconcile of d leaves.
 func storedAs(d wellknown.Declaration) wellknown.Stored {
-	return wellknown.Stored{Key: d.Key, Format: d.Format, Class: catalog.Remote, Kind: d.Kind, Address: d.Address(), Fixed: d.Fixed()}
+	return wellknown.Stored{Key: d.Key, Format: d.Format, Class: d.Class, Kind: d.Kind, Address: d.Address(), Fixed: d.Fixed()}
 }
 
 func stepsOf(steps []wellknown.Step) []string {
@@ -52,9 +52,9 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 		return steps
 	}
 
-	t.Run("R-REPO-067 step 1 an empty project gets one create per declaration, in catalog order: a preset internal, scanner-trivy private (Q-REPO-388)", func(t *testing.T) {
+	t.Run("R-REPO-067 step 1 an empty project gets one create per declaration, in catalog order: a preset internal, the system repositories private (Q-REPO-388)", func(t *testing.T) {
 		steps := plan(t, decls, nil)
-		if len(steps) != 13 || steps[0].Op != wellknown.OpCreate || steps[len(steps)-1].Key != "scanner-trivy" {
+		if len(steps) != 14 || steps[0].Op != wellknown.OpCreate || steps[len(steps)-1].Key != "scanner-clamav" {
 			t.Fatalf("steps = %v", stepsOf(steps))
 		}
 		for _, s := range steps {
@@ -153,6 +153,19 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 		rec := &recordingStore{stored: stored}
 		if _, err := wellknown.Reconcile(context.Background(), rec, decls); err == nil || len(rec.calls) != 0 {
 			t.Fatalf("err %v, calls %v", err, rec.calls)
+		}
+	})
+	t.Run("Q-REPO-411 step 6 scanner-clamav stored as a remote repository writes nothing and names its class", func(t *testing.T) {
+		stored := with("scanner-clamav", func(s *wellknown.Stored) { s.Class = catalog.Remote })
+		_, err := wellknown.Plan(decls, stored)
+		if err == nil || !strings.Contains(err.Error(), "upstream/scanner-clamav as a system local repository") {
+			t.Fatalf("err = %v", err)
+		}
+	})
+	t.Run("R-REPO-075 scanner-clamav has no address to write back: the stored one is empty as the declaration's", func(t *testing.T) {
+		stored := with("scanner-clamav", func(s *wellknown.Stored) { s.Address = wellknown.Address{} })
+		if steps := plan(t, decls, stored); len(steps) != 0 {
+			t.Fatalf("steps = %v", stepsOf(steps))
 		}
 	})
 	t.Run("R-REPO-067 Reconcile applies the plan through the store and stops at its first error", func(t *testing.T) {

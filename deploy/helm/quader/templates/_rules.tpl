@@ -25,7 +25,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 */}}
 {{- define "quader.rules.all" -}}
 {{- $ns := printf "namespace=%q" .Release.Namespace -}}
-{{- $roles := printf "%s-(api|packages|worker|scanner)(-.*)?" (include "quader.fullname" .) -}}
+{{- $roles := printf "%s-(api|packages|worker|scanner|malware-scanner)(-.*)?" (include "quader.fullname" .) -}}
 {{- $stale := include "quader.seconds" (dig "vulnerabilities" "stale_after" "24h" .Values.config) -}}
 {{- $interval := include "quader.seconds" (dig "backup" "expected_interval" "24h" .Values.config) -}}
 - alert: QuaderReplicasNotReady

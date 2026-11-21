@@ -140,7 +140,7 @@ role, queues. Runs before the Deployments are listed. Argument: the root context
 {{- define "quader.validatePools" -}}
 {{- $v := .Values -}}
 {{- $fullname := include "quader.fullname" . -}}
-{{- $queues := list "default" "maintenance" "index" "delivery" "mirror" "vuln" -}}
+{{- $queues := list "default" "maintenance" "index" "delivery" "mirror" "vuln" "malware" -}}
 {{- $seenPath := dict -}}
 {{- $seenQueue := dict -}}
 {{- range $role := list "api" "packages" "worker" -}}

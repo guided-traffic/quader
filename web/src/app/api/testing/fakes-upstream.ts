@@ -77,9 +77,31 @@ export function scannerTrivy(over: Partial<UpstreamRepository> = {}): UpstreamRe
   };
 }
 
-/** The twelve preset repositories of the fake catalog and `scanner-trivy`, every one as a fresh installation has it. */
+/** `scanner-clamav`, the local system repository of the malware scan's signature database (R-REPO-075): no address, no account. */
+export function scannerClamav(over: Partial<UpstreamRepository> = {}): UpstreamRepository {
+  const product = { url: '', extraHosts: [], upstreamKeys: null };
+  return {
+    key: 'scanner-clamav',
+    name: 'upstream/scanner-clamav',
+    format: 'generic',
+    kind: 'system',
+    displayName: 'Malware scan database',
+    state: null,
+    inUse: true,
+    visibility: 'private',
+    fixed: ['state', 'visibility', 'address', 'account'],
+    address: { ...product, overridden: false, product },
+    account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+    listedBy: 0,
+    listedByProjects: 0,
+    configVersion: 1,
+    ...over,
+  };
+}
+
+/** The twelve preset repositories of the fake catalog, `scanner-trivy` and `scanner-clamav`, every one as a fresh installation has it. */
 export function upstreamFixture(): UpstreamRepository[] {
-  return [...CATALOG.flatMap(([format, presets]) => presets.map((p) => presetRepository(format, p))), scannerTrivy()];
+  return [...CATALOG.flatMap(([format, presets]) => presets.map((p) => presetRepository(format, p))), scannerTrivy(), scannerClamav()];
 }
 
 function notFound(key: string): ApiError {

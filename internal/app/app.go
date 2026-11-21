@@ -599,9 +599,12 @@ func (a *App) startClient() error {
 			Limits: a.limitsAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).
 			Malware: a.malwareAPI(),
-			// The well-known repositories' "in use" line: upstream/scanner-trivy while the image scanning reads its database through it,
-			// from this replica's configuration (R-REPO-070, R-VULN-044).
-			Upstream: v1.UpstreamServices{ScannerTrivyInUse: cfg.Vulnerabilities.ReadsThroughScannerTrivy},
+			// The system repositories' "in use" line, from this replica's configuration: upstream/scanner-trivy while the image
+			// scanning reads its database through it (R-REPO-070, R-VULN-044), upstream/scanner-clamav while the malware scanning
+			// keeps its database there (R-REPO-075, wire_malware_database.go).
+			Upstream: v1.UpstreamServices{
+				ScannerTrivyInUse: cfg.Vulnerabilities.ReadsThroughScannerTrivy, ScannerClamavInUse: a.malwareDatabaseInUse,
+			},
 		})
 		// The router drops the routes of a family the endpoint's surface does not hold.
 		api.Register(router)

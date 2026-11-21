@@ -8195,9 +8195,9 @@ action that switches all on and one that sets the visibility of all
 - **Used by Quader.** Below the table a second table, **Used by Quader**, holds the system repositories: `scanner-trivy` with the
   display name "Image scanning database", the state as a badge, **In use** (`ok`) "In use by the image scanning" or **Not in use**,
   the level as text (Private, with the lock icon) and **Details**; no switch and no select
-  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `scanner-clamav` (specified, not
-  built; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075) stands below it the same way, with the display name "Malware
-  scan database" and "In use by the malware scan".
+  ([Q-UI-834](#q-ui-834--the-system-repositories-stand-in-a-table-of-their-own-without-a-switch)). `scanner-clamav`
+  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-075) stands below it the same way, with the display name "Malware
+  scan database" and "In use by the malware scan" ([Q-UI-883](#q-ui-883--a-system-repository-names-the-work-it-serves-and-a-local-one-has-no-address-and-no-account)).
 - **Switching** sends `setUpstreamRepositoryState` at once, without a dialog; the switch shows the server's answer and a `role="status"`
   line "Docker Hub is on." Switching off a repository that virtual repositories list asks first: "Switch off Docker Hub? 3 virtual
   repositories in 2 projects list it. They skip it until it is on again; nothing of theirs changes." with **Switch off** (`listedBy`
@@ -8227,7 +8227,9 @@ Priority: **MVP** · Covers: quader-only
   as a name, the format's icon), with **Open repository** (`btn btn-default`, to `/projects/upstream/repositories/docker-hub`). No tabs.
 - Sections, one column (the style guide's settings pages, Q-UI-351):
   1. **State and visibility**, open: the switch and the level of R-UI-187, with the same dialogs; for a system repository the use and
-     the fixed level as text ("In use by the image scanning. Its visibility is always Private.").
+     the fixed level as text ("In use by the image scanning. Its visibility is always Private.", for `scanner-clamav` "In use by the
+     malware scan. Its visibility is always Private."). A repository whose item names `address` as fixed (`scanner-clamav`, a local
+     repository) has neither **Address** nor **Account** (Q-UI-883).
   2. **Address**, open ([Q-UI-831](#q-ui-831--the-address-the-archive-keys-and-the-account-are-on-the-registrys-own-page)):
      **Upstream URL** (a URL field), **Further hosts** (the editor of R-UI-082) and, for a Debian or Ubuntu archive, **Archive keys**
      (the fingerprints of the keys and a text area for an armored block, behind the fold **Replace the keys**). While the address is
@@ -8312,11 +8314,13 @@ Priority: **MVP** · Covers: quader-only
   patterns), the vulnerability settings, **Offline** and the cache-fill action editable for `repositories:write-config`; no
   **Mirror**, no **Disable repository**, no **Move to another project**, no **Delete repository**. `scanner-trivy` shows everything
   read-only, its level as one statement in place of the group of levels, "Its visibility is always Private: only Quader's image
-  scanning reads it.", without the line "Managed in …", which stays under **Upstream**, where its address is managed. The format's settings are read-only, **Hide existence** and **Service accounts** are absent, **Administrator notes**
+  scanning reads it.", without the line "Managed in …", which stays under **Upstream**, where its address is managed; `scanner-clamav`
+  the same with "Its visibility is always Private: only Quader's malware scan reads it." (Q-UI-883). The format's settings are read-only, **Hide existence** and **Service accounts** are absent, **Administrator notes**
   stays editable; the vulnerability settings and the cache-fill action have no field on the settings page of any repository and
   are set through the API ([Q-UI-842](#q-ui-842--the-settings-page-of-a-well-known-repository-reads-what-the-product-holds-and-edits-what-an-administrator-narrows)).
 - **Set up client** of a well-known repository is the page of R-UI-120, as for any remote; for `scanner-trivy` the page says "Quader's
-  image scanning reads its database through this repository. Clients cannot use it." and shows no snippet.
+  image scanning reads its database through this repository. Clients cannot use it." and shows no snippet; for `scanner-clamav` "Quader's
+  malware scan keeps its signature database in this repository. Clients cannot use it." (Q-UI-883).
 - **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
   mark (R-UI-095, R-UI-167, R-UI-124).
 - **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them.
@@ -20594,6 +20598,24 @@ rows carry no verdict (`Child`). The install command of a version stays, as it d
 **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024. Code:
 [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
 [package-version.html](../../web/src/app/features/packages/package-version.html).
+
+### Q-UI-883 · A system repository names the work it serves, and a local one has no address and no account
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the screens of `scanner-trivy` named the image scanning in fixed sentences (the row's use, the registry's page, the settings
+page's level, the client setup's note), and the registry's page offered **Address** and **Account** for every repository. `scanner-clamav`
+(R-REPO-075) serves the malware scan and is local: it has neither ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-412).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The UI knows each system repository's work by its key (`systemWork` beside `isSystemRepository`, as it knows the project) and picks the sentence by it; the registry's page leaves out **Address** and **Account** where the item's `fixed` names `address` (chosen) | One table of keys and works, words per work | The texts are right also for a reader who cannot read the admin item; a later system repository is one line and one set of sentences; the page shows no section no write could store | The sentences are chosen in the UI, not sent by the server |
+| (b) A member of the item that names the work | The server says it | One source | The settings page and the client setup are read by callers who do not read the admin item |
+| (c) Neutral sentences ("Quader's own work reads it") | One sentence for all | No table | Says less than the page knows |
+
+**Choice:** (a). **Applied in the spec:** R-UI-187, R-UI-188, R-UI-190. Code:
+[upstream-project.ts](../../web/src/app/core/upstream-project.ts), [upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts),
+[upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html).
 
 ## What this does not cover
 
