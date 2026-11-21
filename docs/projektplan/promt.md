@@ -561,6 +561,9 @@ records the recorder that tells such a stall apart).
 - The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
   connection or each pool's size, so a growth of the database's memory between two runs cannot be assigned
   (2026-11-20).
+- `TestJobs`, the case of 100 coalesced enqueues (integration, area `coordination`), made three executions where
+  one or two are allowed, on a loaded machine where enqueues 8 ms apart took 2.6 s; alone it passes (2026-11-21).
+  A test whose bound depends on the machine's speed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
 - **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
@@ -957,7 +960,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (01:19), four builders (packages 2 and 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's Ansible leg); held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
+- **In work** (01:23), three builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's Ansible leg); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1026,8 +1029,31 @@ runs are in `git log`; this section holds the current state.
     bytes. **Not verified:** the route's answer for a version that a vulnerability finding blocks (the route never
     reaches a format's serve path). **Seen beside it:** the registry routes of the scan listener are not narrowed to
     the image scanner's name as the malware routes are; a route outside the format host must charge the usage itself
-    or its row names no repository; the area `vulnimage` sleeps two seconds for a flush. **Second stage since 22:34**
-    on the branch's tip, with every integration area, the UI profile's configuration and the bare starts as gates.
+    or its row names no repository; the area `vulnimage` sleeps two seconds for a flush. **Second stage reported at 01:25 and put on `feat/malware` by the development agent**
+    (two commits, a fast-forward; on the tip build, the full unit run of 175 packages, links and check are green): the
+    commit hook inserts a row for every committed file in the commit's transaction and wakes the job (R-MAL-001); the
+    job `malware-scan` takes asked rows first, then new, recent and the cycle's, keeps one slot free for a download
+    that waits (Q-MAL-64), and many waiters make one call; retries from one minute doubling to six hours, then
+    `failed`; the scanner kind `malware` reads the blob with its token, checks digest and size, unpacks `ar`, zstd
+    always, gzip and xz above the size ClamAV takes, a decompressed tar entry by entry (Q-MAL-63), and answers
+    `unscannable` at a bound; the `clamd` client over a session with an in-process fake of `clamd`; the cycle's marks
+    every 30 days and what was downloaded lately after a new database; an infected OCI layer is refused while the image
+    scanning runs beside it (R-MAL-017); the metrics of the worker, the scanner and the gate. A worker without a
+    scanner's address runs discovery only and reports the check `malware_scanner` with a sentence, in English and
+    German, which is what the System page shows on a stack without ClamAV. The interface the loader of package 3
+    implements is `scanner.Database`. **Its decisions:** Q-MAL-63 to 65 (the tests flag a marker of their own, not
+    the EICAR string, because CI scans the source tree with ClamAV), the gap H-1130 (a worker without a scanner's
+    address leaves every artifact unchecked). No migration. **Its run of every integration area** (it held the lock
+    when the gates changed, so it finished): 70 areas, 66 passing at once; three failed on its own commit hook, because
+    tests of package 1 wrote a verdict with a plain insert and the hook's row was there first: those writes update on
+    conflict now, and the three areas pass; one failed under load and passed alone (`coordination`, 100 coalesced
+    enqueues made three executions where one or two are allowed; section 8). Gates with exit 0: build, the full unit
+    run, generate-check, lint, cyclo, gosec, links and check, the UI tests and lint, the UI profile's configuration,
+    the bare starts. **What it cost:** unit tests of under a second a package, about 16 s more in the area `malware`
+    (46 s in all), payloads of 68 bytes to 2 KiB, nothing end to end. **Not verified:** the scanner against a real
+    ClamAV (package 3's), the check's sentence in a render, what the commit hook adds to a commit. **Seen beside
+    it:** the sweep of orphans reads every verdict row at each run; the rescan's answer counts the rows it looked at,
+    pending ones it did not mark among them; the leg `e2e (vuln)` has no malware paths in its list yet.
   - **Package 3 of the malware scan, the database and the chart** (since 22:34, on the branch's tip), in two
     stages: first the task `malware-sync-db`, `freshclam` beside the worker and its seed, the declaration of
     `upstream/scanner-clamav` with a class of its own, the chart (the malware scanner's Deployment with `clamd`, its
