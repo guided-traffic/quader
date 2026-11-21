@@ -19,7 +19,7 @@ import {
 import { Notifier } from '../../core/notifier';
 import { ServerAddress } from '../../core/server-address';
 import { SessionStore } from '../../core/session-store';
-import { isSystemRepository, isUpstreamProject } from '../../core/upstream-project';
+import { isSystemRepository, isUpstreamProject, mayServeClients } from '../../core/upstream-project';
 import { SelectField, SelectOption } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ConflictResolver } from '../../shared/conflict-dialog';
@@ -191,8 +191,19 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly wellKnown = computed(() => valueOf(this.wellKnownRead) ?? null);
   /** `scanner-trivy`, a system repository: everything is the product's (R-REPO-070). Known by its key, for every caller. */
   protected readonly systemRepository = computed(() => isSystemRepository(this.project(), this.key()));
-  /** The statement of a system repository's fixed level, naming the work that reads it (R-UI-190). */
-  protected readonly systemLevel = computed(() => systemLevelSentence(this.key()));
+  /**
+   * The level of a system repository: Private, but for `clamav` the repository's own while ClamAV definition updates is on
+   * (R-REPO-075, R-UI-190).
+   */
+  protected readonly systemLevelValue = computed<VisibilityLevel>(() => {
+    const v = valueOf(this.loaded)?.value;
+    const level = v && 'visibility' in v ? v.visibility?.artifacts : undefined;
+    return this.clientsCapable() && level ? level : 'private';
+  });
+  /** `clamav`, whose level follows its switch, set on its page in the admin area (R-UI-188). */
+  protected readonly clientsCapable = computed(() => this.systemRepository() && mayServeClients(this.key()));
+  /** The statement of a system repository's level, naming the work that reads it (R-UI-190). */
+  protected readonly systemLevel = computed(() => systemLevelSentence(this.key(), this.systemLevelValue()));
   /** What an administrator narrows on a well-known repository: patterns, offline, notes (R-REPO-069); nothing on a system one. */
   protected readonly canNarrow = computed(() => this.canChange() && !this.systemRepository());
   /** The page of the repository in the admin area, where its state, level, address and account are set (R-UI-188). */

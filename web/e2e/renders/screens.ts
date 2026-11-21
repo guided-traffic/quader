@@ -29,6 +29,7 @@ import {
 import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
 import { routeTooMany } from './suggestions';
+import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -232,20 +233,26 @@ async function* fileView(page: Page): AsyncGenerator<string> {
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
 }
 
-/** The file of `upstream/scanner-clamav` the file page of a system repository shows: a signature database as the task stores it. */
-const systemFile = 'main-63.daily-28189.bytecode-339/main.cvd';
+/** A version's details of the ClamAV definitions with the fold of the archive's checksums open (R-UI-194). */
+async function openChecksums(page: Page): Promise<void> {
+  await page.getByRole('button', { name: /^Checksums of the archive/ }).click();
+  await expect(page.getByText('MD5 computed by Quader')).toBeVisible();
+}
+
+/** The file of `upstream/clamav` the file page of a system repository shows: a signature database as the task stores it. */
+const systemFile = 'main/63/main.cvd';
 
 /**
  * The page of a file of a system repository (R-UI-193, Q-UI-898, Q-UI-899): no Download, no download address and no download with
  * curl, one sentence in the address's place; as it opens and with Details open. The profile runs no malware scanning, so
- * `scanner-clamav` holds nothing: the item and its statistics are the answers the server gives for a stored version, routed in the
+ * `clamav` holds nothing: the item and its statistics are the answers the server gives for a stored version, routed in the
  * browser; the repository, the session's checks and everything else are the server's.
  */
 async function* systemFileView(page: Page): AsyncGenerator<string> {
-  const base = '**/api/v1/projects/upstream/repositories/scanner-clamav';
+  const base = '**/api/v1/projects/upstream/repositories/clamav';
   const at = '2026-11-21T06:30:12Z';
   const item = {
-    repository: 'upstream/scanner-clamav',
+    repository: 'upstream/clamav',
     path: systemFile,
     kind: 'file',
     size: 170_479_789,
@@ -263,15 +270,16 @@ async function* systemFileView(page: Page): AsyncGenerator<string> {
     contentStatus: 'ok',
     package: null,
     upstreamUrl: null,
-    downloadUrl: `https://localhost:4200/files/upstream/scanner-clamav/${systemFile}`,
-    contentUrl: `/api/v1/projects/upstream/repositories/scanner-clamav/content/${systemFile}`,
-    itemUrl: `https://localhost:4200/api/v1/projects/upstream/repositories/scanner-clamav/items?path=${encodeURIComponent(systemFile)}`,
+    downloadUrl: `https://localhost:4200/files/upstream/clamav/${systemFile}`,
+    contentUrl: `/api/v1/projects/upstream/repositories/clamav/content/${systemFile}`,
+    itemUrl: `https://localhost:4200/api/v1/projects/upstream/repositories/clamav/items?path=${encodeURIComponent(systemFile)}`,
   };
   await page.route(`${base}/items?**`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(item) }));
   await page.route(`${base}/stats?**`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ downloads: 0, lastDownloadAt: null, lastDownloader: null }) }),
   );
-  await page.reload();
+  // The seed leaves ClamAV definition updates on; this page is the one of a repository that answers no client (Q-UI-908).
+  await switchState(page, 'off');
   await expect(page.locator('[data-testid="file-system"]')).toBeVisible();
   yield '';
   await page.getByRole('button', { name: /^Details/ }).click();
@@ -368,7 +376,8 @@ async function* databaseCommandsOpen(page: Page): AsyncGenerator<string> {
  * answer without rows: its role all runs no scanner pod and says so.
  */
 async function* systemScanners(page: Page): AsyncGenerator<string> {
-  await expect(page.locator('main [data-testid="scanner-replicas"] table')).toHaveCount(2);
+  // The image scanners, the malware scanners and the malware scanning's updater (Q-UI-913).
+  await expect(page.locator('main [data-testid="scanner-replicas"] table')).toHaveCount(3);
   yield '';
   const url = '**/api/v1/system/scanners';
   await answerWith(page, url, (b) => ({
@@ -707,10 +716,13 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
   const settings = '**/api/v1/malware/settings';
   await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
   yield '';
-  // The replicas of malware-scanner-clamav under the summary, the fold opened (R-OPS-048, Q-UI-897).
-  const fold = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle');
-  await fold.click();
-  await expect(fold).toHaveAttribute('aria-expanded', 'true');
+  // The replicas of malware-scanner-clamav under the summary, and those of the updater malware-updater-freshclam, the folds opened
+  // (R-OPS-048, Q-UI-897, Q-UI-913).
+  const folds = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle');
+  for (const fold of await folds.all()) {
+    await fold.click();
+    await expect(fold).toHaveAttribute('aria-expanded', 'true');
+  }
   yield 'scanners';
   await page.getByRole('checkbox', { name: 'Only checked artifacts can be downloaded' }).check();
   await page.getByRole('button', { name: /^Save changes/ }).click();
@@ -1414,12 +1426,12 @@ export const screens: readonly Screen[] = [
   // A file of a system repository (R-UI-193): what only an administrator reaches.
   {
     id: 'files-system',
-    path: `/ui/projects/upstream/repositories/scanner-clamav/files/${systemFile}`,
+    path: `/ui/projects/upstream/repositories/clamav/files/${systemFile}`,
     kinds: admins,
     walk: systemFileView,
     expected: [
       {
-        match: /^GET \/api\/v1\/projects\/upstream\/repositories\/scanner-clamav\/items\?path=\S+ answered 404$/,
+        match: /^GET \/api\/v1\/projects\/upstream\/repositories\/clamav\/items\?path=\S+ answered 404$/,
         why: 'the profile stores no signature database: the first load reads the file before the walk routes its answer',
       },
     ],
@@ -1539,9 +1551,22 @@ export const screens: readonly Screen[] = [
   { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins, walk: registryPresetsWalk },
   // The section of the installation's registries without any (R-UI-195): the list answered empty by the route.
   { id: 'admin-upstream-presets-empty', path: '/ui/admin/upstream', kinds: ['admin'], walk: registryPresetsEmpty },
+  // The row of clamav in System repositories with its switch ClamAV definition updates (R-UI-187, Q-UI-903): on as the seed left it,
+  // the question before switching off, and off.
+  { id: 'admin-upstream-clamav-row', path: '/ui/admin/upstream', kinds: admins, walk: clamavRow },
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
   // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).
   { id: 'admin-upstream-scanner-trivy', path: '/ui/admin/upstream/scanner-trivy', kinds: admins },
+  // ClamAV definition updates on the page of clamav (R-UI-188, Q-UI-903): off, the question, on at Public with its fold and the token's
+  // disclosure open, and on at Internal where the installation allows no public level.
+  { id: 'admin-upstream-clamav', path: '/ui/admin/upstream/clamav', kinds: admins, walk: clamavRegistry },
+  // The ClamAV definitions as their reader sees them while the switch is on (R-UI-194, R-CLAMAV-006): the databases with the version in
+  // use, a database's versions with their states, a version's files with its members and its details, and the client setup.
+  { id: 'clamav-databases', path: '/ui/projects/upstream/repositories/clamav', kinds: ['plain', 'admin'], walk: clamavDatabases, expected: definitionsExpected },
+  { id: 'clamav-database', path: '/ui/projects/upstream/packages/clamav/daily', kinds: ['plain', 'admin'], walk: definitionsWith('on'), expected: definitionsExpected },
+  { id: 'clamav-version-files', path: '/ui/projects/upstream/packages/clamav/daily@28190?tab=files', kinds: ['plain', 'admin'], walk: definitionsWith('on'), expected: definitionsExpected },
+  { id: 'clamav-version-details', path: '/ui/projects/upstream/packages/clamav/daily@28190?tab=details', kinds: ['plain', 'admin'], walk: definitionsWith('on', openChecksums), expected: definitionsExpected },
+  { id: 'clamav-setup', path: '/ui/projects/upstream/repositories/clamav/setup', kinds: ['plain', 'admin'] },
   { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
   { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },

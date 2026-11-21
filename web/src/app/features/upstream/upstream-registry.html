@@ -27,6 +27,107 @@
         <h2 id="wk-listed" i18n="@@wellknown.col.listed">Listed by</h2>
         <ng-container *ngTemplateOutlet="listed; context: { $implicit: r }" />
       </section>
+    } @else if (clamav()) {
+      <!-- 1 · ClamAV definition updates, open (R-UI-188, Q-UI-903): the switch, and while it is on the endpoint, its level and the one
+           line a ClamAV installation needs. The certificate lines of R-CLAMAV-010 join the fold Visibility once an endpoint admits
+           them. -->
+      <section class="open-section first clients-section" aria-labelledby="wk-clients">
+        <h2 id="wk-clients">{{ clientsLabel }}</h2>
+        @if (stateError(); as e) {
+          <quader-error-notice [error]="e" />
+        }
+        <div class="state-row">
+          <span class="field-label" i18n="@@wellknown.state.label">State</span>
+          <div class="state-value">
+            @if (canWrite()) {
+              <quader-switch [checked]="clientsOn()" [label]="clientsLabel" [busy]="busy() === 'clients'" (checkedChange)="toggleClients($event)" />
+            } @else {
+              <span class="word">{{ clientsWord(r) }}</span>
+            }
+          </div>
+        </div>
+        <p class="hint">{{ clientsText }}</p>
+        <p class="hint system-use">{{ systemUse(r) }}</p>
+
+        @if (clientsOn() && r.clients; as c) {
+          <div class="field">
+            <span class="field-label" id="wk-endpoint-label">{{ addressLabel }}</span>
+            <quader-address-field [value]="c.address" [label]="addressLabel" [copyLabel]="copyAddressLabel" />
+          </div>
+          <div class="field">
+            <span class="field-label" i18n="@@repo.visibility.level">Visibility level</span>
+            <p class="level-now"><quader-visibility-icon [level]="r.visibility" /><span>{{ levelText(r.visibility) }}</span></p>
+            @if (lowered()) {
+              <p class="banner-warning" role="note">
+                <span class="material-icons inline warn" aria-hidden="true">warning</span>
+                <span>{{ loweredText }}</span>
+              </p>
+            }
+            <quader-disclosure class="level-fold" [inline]="true" [heading]="levelHeading" [(expanded)]="levelFoldOpen">
+              <quader-visibility-level
+                i18n-label="@@repo.visibility.level"
+                label="Visibility level"
+                [labelHidden]="true"
+                subject="artifacts"
+                [(value)]="clientsLevel"
+                [reasons]="reasons()"
+                [notes]="clientsNotes"
+                [error]="levelError()"
+                [disabled]="!canWrite()"
+              />
+              @if (canWrite()) {
+                <div class="actions">
+                  <button
+                    class="btn btn-confirm"
+                    type="button"
+                    [disabled]="clientsLevel() === r.visibility || busy() !== null"
+                    (click)="saveClientsLevel()"
+                    i18n="@@wellknown.set-all.confirm"
+                  >Set visibility</button>
+                </div>
+              }
+            </quader-disclosure>
+          </div>
+
+          <!-- The client setup (R-CLAMAV-006): the one line of freshclam.conf, the certificate's note; the token behind Authenticate.
+               The guide with every way is the repository's Set up client. -->
+          <div class="field clamav-setup">
+            <span class="field-label" i18n="@@clamav.setup.heading">Set up a ClamAV installation</span>
+            <p class="hint" i18n="@@clamav.setup.line">Put this line into freshclam.conf of each ClamAV installation; freshclam then updates from Quader.</p>
+            @if (r.visibility === 'public') {
+              <quader-code-window [content]="freshclam().plain" language="ini" fileName="/etc/clamav/freshclam.conf" [copyLabel]="copyLineLabel" [downloadable]="false" />
+            } @else {
+              <quader-code-window [content]="freshclam().token" language="ini" fileName="/etc/clamav/freshclam.conf" [copyLabel]="copyLineLabel" [downloadable]="false" />
+            }
+            <p class="hint" i18n="@@clamav.setup.ca">Where Quader's certificate is issued by an internal certificate authority, freshclam must trust it: set CURL_CA_BUNDLE to the authority's file in freshclam's environment, or add the authority to the system store.</p>
+            @if (r.visibility === 'public') {
+              <quader-disclosure [inline]="true" [heading]="authHeading">
+                <p class="hint" i18n="@@clamav.setup.token">Only where you lower the level below Public: a token of a service account made for this purpose, with no grant beyond reading this repository, as the password of the address. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</p>
+                <quader-code-window [content]="freshclam().token" language="ini" fileName="/etc/clamav/freshclam.conf" [copyLabel]="copyLineLabel" [downloadable]="false" />
+              </quader-disclosure>
+            } @else {
+              <p class="hint" i18n="@@clamav.setup.token-below">QUADER_TOKEN is a token of a service account made for this purpose, with no grant beyond reading this repository. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</p>
+            }
+            <p class="links">
+              <a [routerLink]="setupLink()" i18n="@@clamav.setup.guide">The full guide on Set up client</a>
+            </p>
+          </div>
+        }
+      </section>
+
+      <!-- 2 · Updater, open (R-UI-188, Q-UI-913): the replicas of malware-updater-freshclam in the shared table of the scanners, or why
+           there are none; the link to the definitions it fills. -->
+      <section class="open-section updater-section" aria-labelledby="wk-updater">
+        <h2 id="wk-updater" i18n="@@clamav.updater.heading">Updater</h2>
+        @if (updaterRows(); as list) {
+          <quader-scanner-replicas [list]="list" kind="freshclam" view="open" />
+        } @else if (updaterNote(); as note) {
+          <p class="hint" data-testid="updater-none">{{ note }}</p>
+        }
+        <p class="links">
+          <a [routerLink]="versionsLink()" i18n="@@clamav.versions">Versions</a>
+        </p>
+      </section>
     } @else {
       <!-- 1 · State and visibility, open. -->
       <section class="open-section first" aria-labelledby="wk-state">
@@ -90,7 +191,7 @@
         }
       </section>
 
-      <!-- scanner-clamav is a local repository: no address and no account to set (R-REPO-075, Q-REPO-412). -->
+      <!-- clamav is a local repository: no address and no account to set (R-REPO-075, Q-REPO-412). -->
       @if (!noAddress()) {
         <!-- 2 · Address, open (Q-UI-831): the product's unless an administrator set another. -->
         <form class="open-section" aria-labelledby="wk-address" (submit)="saveAddress($event)" novalidate>
@@ -288,7 +389,7 @@
     }
 
     <!-- 4 · Details, closed: who lists it, where its narrowing settings and limits are, and its dates. A local system repository
-         (scanner-clamav) is listed by no virtual repository and downloaded by no client: its settings page and its dates only. -->
+         (clamav) is listed by no virtual repository and downloaded by no client: its settings page and its dates only. -->
     @if (!retired() && noAddress()) {
       <div class="details">
         <quader-disclosure

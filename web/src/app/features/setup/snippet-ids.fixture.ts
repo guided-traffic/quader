@@ -12,6 +12,10 @@ export const RENDERED_SNIPPET_IDS: Readonly<Record<string, readonly string[]>> =
     'ansible-galaxy.install.requirements',
     'ansible-galaxy.publish.collection',
   ],
+  'clamav:freshclam': [
+    'freshclam.configure.conf',
+    'freshclam.install',
+  ],
   'deb:apt': [
     'apt.configure.list',
     'apt.configure.list-scoped',

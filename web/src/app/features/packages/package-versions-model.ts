@@ -27,6 +27,8 @@ export interface VersionRow {
   readonly grade: VulnerabilityGrade | null;
   /** Its place in the format's version order, 0 the highest: the sort by version without the format's rules in the browser. */
   readonly order: number;
+  /** Its state from the format's metadata (`include=state`: the ClamAV definitions, R-UI-194); null for a format without one. */
+  readonly state: string | null;
 }
 
 /** The sortable columns, by the name the address carries (`?sort=-published`). */
@@ -59,6 +61,7 @@ export function versionRows(
     tags: distTags.filter(([, target]) => target === v.version).map(([tag]) => tag),
     grade: grades.get(v.version) ?? null,
     order,
+    state: v.state ?? null,
   }));
 }
 

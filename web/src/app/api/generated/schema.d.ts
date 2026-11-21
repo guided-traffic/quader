@@ -3662,7 +3662,9 @@ export interface paths {
          *     expands to its members. `sort=-version` orders by the format's version precedence, newest
          *     first; the default is `-publishedAt`. `include=digest` also reads each version's `digest` from
          *     the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
-         *     has no `digest`. `downloadCount` and `lastDownloadedAt` count the fetches of the version by clients
+         *     has no `digest`. `include=state` reads each version's `state` from the format's metadata the same way (the ClamAV
+         *     definitions: `in_use`, `previous`, `superseded`, `files_removed`, R-UI-194); a format without one has no `state`.
+         *     `downloadCount` and `lastDownloadedAt` count the fetches of the version by clients
          *     through any of the listed repositories, by the format's rule, read with the rows in the same statement (R-API-065,
          *     R-API-079); `sizeBytes` is `null` when the size is not known (R-API-080).
          */
@@ -9948,6 +9950,12 @@ export interface components {
             sizePartial: boolean;
             /** @description With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one. */
             digest?: string;
+            /**
+             * @description With `include=state` only, the version's state from the format's metadata (the member `state` of its details): for the
+             *     ClamAV definitions `in_use`, `previous`, `superseded` or `files_removed` (R-CLAMAV-003, R-UI-194); absent for a format
+             *     without one.
+             */
+            state?: string;
             /** @description The keys of the repositories that hold this version and that the caller may read. */
             repositories: string[];
             /**
@@ -21485,8 +21493,8 @@ export interface operations {
                 prerelease?: boolean;
                 /** @description Repeat the parameter for several repository keys. */
                 repository?: string[];
-                /** @description `digest`: also read each version's content digest from the format (`digest`). */
-                include?: "digest"[];
+                /** @description `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`). */
+                include?: ("digest" | "state")[];
                 sort?: "-publishedAt" | "publishedAt" | "-version" | "version";
                 /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
                 limit?: components["parameters"]["Limit"];

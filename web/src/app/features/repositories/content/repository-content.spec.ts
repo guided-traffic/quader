@@ -233,21 +233,24 @@ describe('Repository content page', () => {
     expect(text(trivy.root)).not.toContain('clients have pulled');
     expect(text(trivy.root.querySelector('quader-page-header .page-header-actions')!)).toContain('Settings');
 
-    // The local one: the server refuses every deploy to it (R-REPO-075), so neither the toolbar nor the empty state offers one.
+    // The local one: the server refuses every deploy to it (R-REPO-075), so neither the toolbar nor the empty state offers one; it
+    // lists its databases (R-UI-194), none yet, and while ClamAV definition updates is off it has no Set up client.
     const clamav = await renderScreen(RepositoryContent, {
-      inputs: { project: 'upstream', key: 'scanner-clamav' },
+      inputs: { project: 'upstream', key: 'clamav' },
       setup: (get) => {
         const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
         catalog.repositories = [
           ...catalog.repositories,
-          { key: 'scanner-clamav', project: 'upstream', class: 'local', format: 'generic', description: 'Malware scan database' } as never,
+          { key: 'clamav', project: 'upstream', class: 'local', format: 'clamav', description: 'ClamAV definitions' } as never,
         ];
-        (get(FilesApi) as FakeFilesApi).tree.set('upstream/scanner-clamav', []);
+        (get(FilesApi) as FakeFilesApi).tree.set('upstream/clamav', []);
       },
     });
     await settle(clamav.fixture);
     expect(clamav.root.querySelector('.files-actions')?.textContent ?? '').not.toMatch(/Upload files|New folder/);
-    expect(text(clamav.root.querySelector('quader-data-table quader-empty-state')!)).toBe('This repository holds no files yet.');
+    expect(text(clamav.root.querySelector('quader-clamav-databases quader-empty-state')!)).toBe(
+      "Quader has stored no ClamAV definitions yet. The malware scan's updater fills this repository.",
+    );
     expect([...clamav.root.querySelectorAll('a, button')].some((b) => text(b) === 'Set up client')).toBe(false);
   });
 
@@ -279,29 +282,31 @@ describe('Repository content page', () => {
   it('R-UI-193 Q-UI-898 Q-UI-899 a file of a system repository offers no Download, no download address and no download with curl, and says why in one sentence; its folder copies no address', async () => {
     const at = async (filePath: string) => {
       const r = await renderScreen(RepositoryContent, {
-        inputs: { project: 'upstream', key: 'scanner-clamav', filePath },
+        inputs: { project: 'upstream', key: 'clamav', filePath },
         setup: (get) => {
           const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
           catalog.formatsResult = [GENERIC_FORMAT];
           catalog.repositories = [
             ...catalog.repositories,
-            { key: 'scanner-clamav', project: 'upstream', class: 'local', format: 'generic', description: 'Malware scan database' } as never,
+            { key: 'clamav', project: 'upstream', class: 'local', format: 'generic', description: 'ClamAV definitions' } as never,
           ];
-          (get(FilesApi) as FakeFilesApi).tree.set('upstream/scanner-clamav', [
-            { path: 'main-63', kind: 'folder' },
-            { path: 'main-63/main.cvd', kind: 'file', size: 4096 },
+          (get(FilesApi) as FakeFilesApi).tree.set('upstream/clamav', [
+            { path: 'main', kind: 'folder' },
+            { path: 'main/main.cvd', kind: 'file', size: 4096 },
           ]);
         },
       });
       await settle(r.fixture);
       return r;
     };
-    const file = await at('main-63/main.cvd');
-    // The management API deletes its items (R-REPO-075): Delete stays for its holder, Download goes.
-    expect(text(file.root.querySelector('.file-actions')!)).toContain('Delete');
+    const file = await at('main/main.cvd');
+    // No one deletes a definition file by hand (Q-REPO-416), and while the switch is off no client downloads it.
+    expect(text(file.root.querySelector('.file-actions')!)).not.toContain('Delete');
     expect(text(file.root.querySelector('.file-actions')!)).not.toContain('Download');
     expect(file.root.querySelector('quader-address-field')).toBeNull();
-    expect(text(file.root.querySelector('[data-testid="file-system"]')!)).toBe("Only Quader's malware scan reads this file; clients cannot download it.");
+    expect(text(file.root.querySelector('[data-testid="file-system"]')!)).toBe(
+      "Only Quader's malware scan reads this file while ClamAV definition updates is off; clients cannot download it.",
+    );
     const details = file.root.querySelector<HTMLElement>('quader-disclosure.details')!;
     details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
     await settle(file.fixture);
@@ -312,7 +317,7 @@ describe('Repository content page', () => {
     expect(text(details)).not.toContain('Download with curl');
     await expectAccessible(file.root);
 
-    const folder = await at('main-63');
+    const folder = await at('main');
     expect(folder.root.querySelectorAll('quader-data-table tbody tr')).toHaveLength(1);
     expect(folder.root.querySelector('quader-data-table quader-copy-button')).toBeNull();
     expect([...folder.root.querySelectorAll('quader-data-table thead th')].map((th) => text(th))).toEqual(['Name', 'Size', 'Last change']);

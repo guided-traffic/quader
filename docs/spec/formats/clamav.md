@@ -2,9 +2,11 @@
 
 Status: the format, its data port, the endpoint, the switch and the API are built (2026-11-21, [developer/clamav.md](../../developer/clamav.md)),
 and so are the updater and the database task that fills the repository with verified containers, marks the set in use and cleans up
-(R-MAL-010, R-MAL-032 to R-MAL-034); the screens (R-UI-194), the client certificates (R-CLAMAV-010) and the setup of the certificate and of
-the plain download (R-CLAMAV-006) are not built yet. The measurement of R-CLAMAV-009 against the owner's installation is not made yet; one
-on a kind cluster of the development agent is recorded in [developer/clamav.md](../../developer/clamav.md#measured-on-a-kind-cluster). The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
+(R-MAL-010, R-MAL-032 to R-MAL-034), and the screens: the switch in the admin area, the registry's section with the one line of the public
+and the token variant and its section **Updater**, the databases, their versions and what each holds (R-UI-187, R-UI-188, R-UI-194). The
+client certificates (R-CLAMAV-010) and the setup of the certificate and of the plain download (R-CLAMAV-006) are not built yet. The
+measurement of R-CLAMAV-009 against the owner's installation is not made yet; one on a kind cluster of the development agent is recorded in
+[developer/clamav.md](../../developer/clamav.md#measured-on-a-kind-cluster). The owner's words of 2026-11-21: "Außerdem möchte ich, dass wir das freshclam artefakt als
 spezifisches ClamAV-Repo in Upstream einbindbar machen. ClamAV wird also ein eigenständiges Artefakt-Repo, wir ziehen alle verfügbaren
 Metadaten aus dem ClamAV-Definitionen. Ein Admin kann in den Upstream-Repos ClamAV-Definition-Updates einschalten, wodurch ein
 unternehmens-Endpunkt für alle ClamAV Instanzen bereitgestellt wird, dieser Endpunkt bedient sich automatisch aus dem internen Freshclam
@@ -112,7 +114,7 @@ Everything the container and its signature file hold, stored per version in `cla
 | Field | From | Shown as |
 |---|---|---|
 | database and version | the container's file name and its header's field 3 | `daily` · `28190` |
-| build time | the header's field 9 (seconds; field 2, the text, kept as written) | the date and time, and the age: now minus the build time, marked **Outdated** from 7 days on, the age at which ClamAV's engine warns "The virus database is older than 7 days!" |
+| build time | the header's field 9 (seconds; field 2, the text, kept as written) | the date and time, and the age: now minus the build time; a `daily` built more than 7 days ago is marked **Outdated**, the age past which ClamAV's engine warns "The virus database is older than 7 days!", which it checks for `daily` alone ([api-and-ui.md](../api-and-ui.md#q-ui-912--only-daily-is-outdated-by-its-age-as-clamav-warns-only-about-daily) Q-UI-912) |
 | signatures | the header's field 4 | the number |
 | functionality level | the header's field 5 | the level and the first ClamAV release whose engine meets it, from the table of ClamAV's page "Versions and Functionality Levels" that the format keeps in its code ("ClamAV 0.103 or later"); a level above the table's newest entry reads "Newer than ClamAV <newest>" |
 | builder | the header's field 8 | the name |
@@ -130,7 +132,7 @@ Everything the container and its signature file hold, stored per version in `cla
 
 Acceptance criteria: unit (`internal/formats/clamav`, under a second, containers of hundreds of bytes written by the test): the header's
 fields, the level table's boundary and its "newer than" case, a member list from a test container's index with line counts, the cut list
-past the bounds; web unit (R-UI-194's spec): **Outdated** at 7 days and not at 6.
+past the bounds; web unit (R-UI-194's spec): **Outdated** on a `daily` past 7 days and not at 7, never on `main` or `bytecode`.
 
 ## The endpoint
 

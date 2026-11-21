@@ -369,6 +369,7 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 			f.Repositories, f.HasRepositories = repoFilter(splitValues(reps)), true
 		}
 		f.WithDigest = includes(lq, "digest")
+		f.WithState = includes(lq, "state")
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -399,6 +400,10 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 		if v.Digest != "" {
 			digest := v.Digest
 			summary.Digest = &digest
+		}
+		if v.State != "" {
+			state := v.State
+			summary.State = &state
 		}
 		return summary
 	}))

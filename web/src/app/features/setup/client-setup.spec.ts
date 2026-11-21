@@ -1,3 +1,5 @@
+import { UpstreamApi } from '../../api/upstream-api';
+import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { GuidesApi } from '../../api/guides-api';
 import { ClientSetupApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
@@ -489,24 +491,44 @@ describe('Set up client of a system repository (R-UI-190)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-190 R-REPO-075 the page of upstream/scanner-clamav says that the malware scan keeps its signature database there', async () => {
+  it('R-UI-190 R-REPO-075 the page of upstream/clamav says that the malware scan keeps its signature database there while ClamAV definition updates is off', async () => {
     const r = await open(
-      { project: 'upstream', key: 'scanner-clamav' },
+      { project: 'upstream', key: 'clamav' },
       {
         setup: (get) =>
           (get(RepositoriesApi) as FakeRepositoriesApi).repositories.push({
-            key: 'scanner-clamav',
+            key: 'clamav',
             project: 'upstream',
             class: 'local',
             format: 'generic',
-            description: 'Malware scan database',
+            description: 'ClamAV definitions',
           } as never),
       },
     );
     expect(text(r.root.querySelector('[data-testid="setup-system"]')!)).toBe(
-      "Quader's malware scan keeps its signature database in this repository. Clients cannot use it.",
+      "Quader's malware scan keeps its signature database in this repository. An administrator can offer it to your ClamAV installations.",
     );
     expect(r.root.querySelector('quader-setup-snippet, quader-code-window')).toBeNull();
     expect(r.setup.calls).toEqual([]);
+  });
+
+  it('R-UI-190 Q-UI-908 while ClamAV definition updates is on, the page of upstream/clamav is its client setup', async () => {
+    const r = await open(
+      { project: 'upstream', key: 'clamav' },
+      {
+        setup: (get) => {
+          (get(RepositoriesApi) as FakeRepositoriesApi).repositories.push({
+            key: 'clamav',
+            project: 'upstream',
+            class: 'local',
+            format: 'generic',
+            description: 'ClamAV definitions',
+          } as never);
+          (get(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' });
+        },
+      },
+    );
+    expect(r.root.querySelector('[data-testid="setup-system"]')).toBeNull();
+    expect(r.setup.calls.map((c) => c.repository)).toContain('upstream/clamav');
   });
 });

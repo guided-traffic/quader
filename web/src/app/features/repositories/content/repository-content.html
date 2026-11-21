@@ -46,13 +46,17 @@
   @if (view() === 'items') {
     <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). A system repository is fetched into by Quader's
          own work, not by clients, so the note about what clients fetched is not its (Q-UI-896). -->
-    @if (r.class === 'remote' && !system()) {
+    @if (r.class === 'remote' && !systemRepo()) {
       @if (r.format === 'oci') {
         <p class="content-note" i18n="@@repo.content.oci-remote-note3">Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</p>
       } @else {
         <p class="content-note" i18n="@@repo.content.remote-note3">Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.</p>
       }
     }
+    @if (clamav()) {
+      <!-- The ClamAV definitions: a row per database with the version in use, its build time and its age (R-UI-194). -->
+      <quader-clamav-databases [repository]="ref()" />
+    } @else {
     @if (!scanned()) {
       <p class="content-note">{{ shape().notScannedText }}</p>
     }
@@ -67,6 +71,7 @@
       (filterChange)="setFilter($event)"
       (sortParamChange)="setSort($event)"
     />
+    }
   } @else {
     @if (!isGeneric()) {
       <!-- A package format's raw files are a detail on demand (Q-UI-511): the packages stay its main view. -->

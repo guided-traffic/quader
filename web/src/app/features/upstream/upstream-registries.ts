@@ -15,7 +15,7 @@ import { Switch } from '../../shared/ui/switch';
 import { VisibilityIcon, installationReasons, levelName } from '../../shared/ui/visibility-level';
 import { RegistryPresets } from './registry-presets';
 import { UpstreamActions } from './upstream-actions';
-import { inUseBadge, levelOptions, onOffWord, privateRowNote, rowBadge, rowNotes, switchLabel } from './upstream-words';
+import { clientsSwitchLabel, clientsWord, inUseBadge, levelOptions, onOffWord, privateRowNote, rowBadge, rowNotes, switchLabel } from './upstream-words';
 
 /** One group of the list: a format and its well-known repositories, in catalog order. */
 interface FormatGroup {
@@ -171,7 +171,7 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
     @if (system().length > 0) {
       <!-- The name of the project's page for the same two, one unit of the catalogue for both (R-UI-193, Q-UI-900). -->
       <h2 class="system-heading" id="upstream-system">{{ systemCaption }}</h2>
-      <p class="hint system-hint" i18n="@@wellknown.system.hint">Repositories Quader reads for its own work. They have no switch: the work that uses them decides.</p>
+      <p class="hint system-hint" i18n="@@wellknown.system.hint-clamav">Repositories Quader reads for its own work, which decides their state. You can offer the ClamAV definitions to your ClamAV installations.</p>
       <quader-data-table [caption]="systemCaption" [columns]="systemColumns">
         @for (r of system(); track r.key) {
           <tr>
@@ -189,6 +189,18 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
                 <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span>{{ inUse(r) }}</span>
               } @else {
                 <span class="badge">{{ inUse(r) }}</span>
+              }
+            </td>
+            <!-- The one switch of the table: ClamAV definition updates of clamav (R-UI-187, Q-UI-903); the other rows serve no client. -->
+            <td class="state-cell">
+              @if (r.clients; as c) {
+                @if (canWrite()) {
+                  <quader-switch [checked]="c.enabled" [label]="clientsLabel" [busy]="busy().has(r.key)" (checkedChange)="toggleClients(r, $event)" />
+                } @else {
+                  <span class="word">{{ clientsWord(r) }}</span>
+                }
+              } @else {
+                <quader-no-value />
               }
             </td>
             <td class="level-cell"><quader-visibility-icon [level]="r.visibility" />{{ levelText(r.visibility) }}</td>
@@ -230,6 +242,8 @@ export class UpstreamRegistries {
   protected readonly notes = rowNotes;
   protected readonly switchName = switchLabel;
   protected readonly inUse = inUseBadge;
+  protected readonly clientsLabel = clientsSwitchLabel();
+  protected readonly clientsWord = clientsWord;
 
   protected readonly canWrite = computed(() => this.session.has('repositories:write-config'));
   protected readonly items = signal<readonly UpstreamRepository[] | null>(null);
@@ -289,6 +303,11 @@ export class UpstreamRegistries {
   protected readonly systemColumns: readonly TableColumn[] = [
     { id: 'repository', label: $localize`:@@wellknown.col.repository:Repository`, width: '14rem' },
     { id: 'use', label: $localize`:@@wellknown.col.use:Use` },
+    {
+      id: 'clients',
+      label: $localize`:@@wellknown.col.clients:Clients`,
+      help: $localize`:@@wellknown.help.clients:Whether the repository answers clients. Only the ClamAV definitions can be offered, to your ClamAV installations.`,
+    },
     { id: 'visibility', label: $localize`:@@projects.col.visibility:Visibility` },
     { id: 'actions', label: $localize`:@@projects.col.actions:Actions`, hideLabel: true },
   ];
@@ -324,6 +343,15 @@ export class UpstreamRegistries {
     this.actionError.set(null);
     await this.hold(r.key, async () => {
       const saved = await this.actions.toggle(r, on);
+      if (saved) this.take([saved]);
+    });
+  }
+
+  /** **ClamAV definition updates** of `clamav` (R-UI-187, Q-UI-903): saved at once, after the question of `UpstreamActions`. */
+  protected async toggleClients(r: UpstreamRepository, on: boolean): Promise<void> {
+    this.actionError.set(null);
+    await this.hold(r.key, async () => {
+      const saved = await this.actions.toggleClients(r, on, valueOf(this.choices)?.publicAvailable !== false);
       if (saved) this.take([saved]);
     });
   }

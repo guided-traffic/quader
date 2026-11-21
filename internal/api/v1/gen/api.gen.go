@@ -5040,13 +5040,16 @@ func (e ListPackagesParamsSort) Valid() bool {
 
 // Defines values for ListPackageVersionsParamsInclude.
 const (
-	Digest ListPackageVersionsParamsInclude = "digest"
+	ListPackageVersionsParamsIncludeDigest ListPackageVersionsParamsInclude = "digest"
+	ListPackageVersionsParamsIncludeState  ListPackageVersionsParamsInclude = "state"
 )
 
 // Valid indicates whether the value is a known member of the ListPackageVersionsParamsInclude enum.
 func (e ListPackageVersionsParamsInclude) Valid() bool {
 	switch e {
-	case Digest:
+	case ListPackageVersionsParamsIncludeDigest:
+		return true
+	case ListPackageVersionsParamsIncludeState:
 		return true
 	default:
 		return false
@@ -10267,8 +10270,13 @@ type PackageVersionSummary struct {
 
 	// SizePartial `sizeBytes` counts only the parts of the version the repository holds: an image index of which a remote repository holds some
 	// platforms and not others (R-API-080, Q-OCI-221). `false` when `sizeBytes` is the whole version's or `null`.
-	SizePartial bool   `json:"sizePartial"`
-	Version     string `json:"version"`
+	SizePartial bool `json:"sizePartial"`
+
+	// State With `include=state` only, the version's state from the format's metadata (the member `state` of its details): for the
+	// ClamAV definitions `in_use`, `previous`, `superseded` or `files_removed` (R-CLAMAV-003, R-UI-194); absent for a format
+	// without one.
+	State   *string `json:"state,omitempty"`
+	Version string  `json:"version"`
 }
 
 // PatternLists The include and exclude globs of one dimension of a resource set (R-AUTHZ-005). An empty include list is unrestricted.
@@ -14025,7 +14033,7 @@ type ListPackageVersionsParams struct {
 	// Repository Repeat the parameter for several repository keys.
 	Repository *[]string `form:"repository,omitempty" json:"repository,omitempty"`
 
-	// Include `digest`: also read each version's content digest from the format (`digest`).
+	// Include `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`).
 	Include *[]ListPackageVersionsParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 	Sort    *ListPackageVersionsParamsSort      `form:"sort,omitempty" json:"sort,omitempty"`
 

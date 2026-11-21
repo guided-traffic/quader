@@ -32,7 +32,8 @@
     <quader-error-notice [error]="f" (retry)="setupAnswer.reload(); guideAnswer.reload()" />
   }
 
-  <!-- scanner-trivy and scanner-clamav: Quader's own work reads them, no client does (R-UI-190, R-REPO-070, R-REPO-075). -->
+  <!-- scanner-trivy, and clamav while ClamAV definition updates is off: Quader's own work reads them, no client does (R-UI-190,
+       R-REPO-070, R-REPO-075). -->
   @if (systemRepository()) {
     <p class="system-note" data-testid="setup-system">{{ systemNote() }}</p>
   } @else {

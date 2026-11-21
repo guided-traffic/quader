@@ -269,6 +269,28 @@ export function sampleScannerReplica(over: Partial<ScannerReplica> = {}): Scanne
   };
 }
 
+/**
+ * The updater of the malware scanning (R-MAL-032, Q-OPS-224) as `GET /api/v1/system/scanners` lists it: its kind, and one ready replica
+ * with freshclam's version, the set its directory holds and the build time of its newest daily, and no slots.
+ */
+export function withUpdater(list: ScannerList, over: Partial<ScannerReplica> = {}): ScannerList {
+  return {
+    kinds: [...list.kinds, { kind: 'freshclam', deployment: 'malware-updater-freshclam', purpose: 'malware', tool: 'freshclam', replicas: 'reporting' }],
+    items: [
+      ...list.items,
+      sampleScannerReplica({
+        kind: 'freshclam',
+        instanceUid: 'updater-uid-1',
+        name: 'quader-malware-updater-freshclam-7c9f5d6b8-m4k2t',
+        toolVersion: '1.5.5',
+        slots: { inUse: 0, total: 0 },
+        database: { version: 'main-63.daily-28190.bytecode-339', builtAt: '2026-11-21T07:00:00Z' },
+        ...over,
+      }),
+    ],
+  };
+}
+
 /** The kinds of an installation of the chart and one ready replica of each (R-OPS-048). */
 export function sampleScanners(over: Partial<ScannerList> = {}): ScannerList {
   return {

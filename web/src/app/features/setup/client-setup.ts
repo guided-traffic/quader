@@ -10,7 +10,7 @@ import { RepositoriesApi, isConsumerView, repoRef } from '../../api/repositories
 import { CreateTokenRequest, TokensApi } from '../../api/tokens-api';
 import { repositoryCommands } from '../../core/project-links';
 import { SessionStore } from '../../core/session-store';
-import { isSystemRepository } from '../../core/upstream-project';
+import { systemClosed } from '../../core/system-clients';
 import { systemSetupSentence } from '../upstream/upstream-words';
 import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
@@ -128,10 +128,12 @@ export class ClientSetupPage {
   });
   protected readonly anonymous = computed(() => this.session.state() === 'anonymous');
   /**
-   * A system repository of the project `upstream` (`scanner-trivy`): Quader's own work reads through it and every client's request
-   * is answered as for a repository that does not exist (R-REPO-070), so the page says so and asks for no snippet (R-UI-190).
+   * A system repository of the project `upstream` that answers no client now (`scanner-trivy`; `clamav` while ClamAV definition
+   * updates is off): Quader's own work reads through it and every client's request is answered as for a repository that does not
+   * exist (R-REPO-070, R-REPO-075), so the page says so and asks for no snippet (R-UI-190). `clamav` while it is on has the client
+   * setup of R-CLAMAV-006 (Q-UI-908).
    */
-  protected readonly systemRepository = computed(() => isSystemRepository(this.project(), this.key()));
+  protected readonly systemRepository = systemClosed(() => this.ref());
   /** What Quader's own work does with the system repository, the note that stands in place of the setup (R-UI-190). */
   protected readonly systemNote = computed(() => systemSetupSentence(this.key()));
 

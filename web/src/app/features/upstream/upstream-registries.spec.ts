@@ -42,14 +42,34 @@ describe('Upstream registries (R-UI-187)', () => {
     expect(text(system)).toBe('System repositories');
     expect(text(row(root, 'Image scanning database'))).toContain('In use by the image scanning');
     expect(row(root, 'Image scanning database').querySelector('[role="switch"], select')).toBeNull();
-    // R-REPO-075: scanner-clamav stands below it the same way, with the malware scan's words.
+    // R-REPO-075: clamav stands below it the same way, with the malware scan's words, and the table's one switch (Q-UI-903).
     const systemRows = [...root.querySelectorAll('tbody tr')].map((tr) => text(tr.querySelector('th a') ?? tr));
-    expect(systemRows.slice(-2)).toEqual(['Image scanning database', 'Malware scan database']);
-    expect(text(row(root, 'Malware scan database'))).toContain('upstream/scanner-clamav');
-    expect(text(row(root, 'Malware scan database'))).toContain('In use by the malware scan');
-    expect(text(row(root, 'Malware scan database'))).toContain('Private');
-    expect(row(root, 'Malware scan database').querySelector('[role="switch"], select')).toBeNull();
+    expect(systemRows.slice(-2)).toEqual(['Image scanning database', 'ClamAV definitions']);
+    expect(text(row(root, 'ClamAV definitions'))).toContain('upstream/clamav');
+    expect(text(row(root, 'ClamAV definitions'))).toContain('In use by the malware scan');
+    expect(text(row(root, 'ClamAV definitions'))).toContain('Private');
+    expect(row(root, 'ClamAV definitions').querySelector('select')).toBeNull();
+    expect(row(root, 'ClamAV definitions').querySelector('[role="switch"]')!.getAttribute('aria-label')).toBe('ClamAV definition updates');
     await expectAccessible(root);
+  });
+
+  it('R-UI-187 Q-UI-903 switching ClamAV definition updates on asks with the address and Public, sends PUT …/clamav/clients, and shows the level', async () => {
+    const { fixture, root, api } = await render();
+    const toggle = row(root, 'ClamAV definitions').querySelector<HTMLButtonElement>('[role="switch"]')!;
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    toggle.click();
+    await settle(fixture);
+    expect(text(dialog()!)).toContain('Offer the ClamAV definitions to your ClamAV installations?');
+    expect(text(dialog()!)).toContain('They update from https://quader.example.com/api/clamav/upstream/clamav.');
+    buttonByText(dialog()!, 'Switch on').click();
+    await settle(fixture);
+    expect(api.calls).toContainEqual({ op: 'clients', key: 'clamav', body: { enabled: true, level: 'public' } });
+    expect(row(root, 'ClamAV definitions').querySelector('[role="switch"]')!.getAttribute('aria-checked')).toBe('true');
+    expect(text(row(root, 'ClamAV definitions'))).toContain('Public');
+    // An auditor reads the word, no switch.
+    const auditor = await render({ capabilities: ['repositories:read-config'] });
+    expect(row(auditor.root, 'ClamAV definitions').querySelector('[role="switch"]')).toBeNull();
+    expect(text(row(auditor.root, 'ClamAV definitions'))).toContain('Off');
   });
 
   it('R-UI-187 an auditor sees the words, no switch, no select and no header actions', async () => {

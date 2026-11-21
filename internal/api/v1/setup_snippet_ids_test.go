@@ -10,6 +10,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/clamav"
 	"github.com/guided-traffic/quader/internal/formats/deb"
 	"github.com/guided-traffic/quader/internal/formats/generic"
 	"github.com/guided-traffic/quader/internal/formats/npm"
@@ -70,7 +71,7 @@ func renderIDsFixture(t *testing.T) string {
 		f           interface {
 			SetupTemplates() []formats.SetupTemplate
 		}
-	}{{"ansible", "acme", ansible.New()}, {"deb", "acme", deb.New()}, {"generic", "acme", generic.Format{}}, {"npm", "acme", &npm.Format{}}, {"nuget", "acme", &nuget.Format{}}, {"oci", "acme", &oci.Format{}}} {
+	}{{"ansible", "acme", ansible.New()}, {"clamav", "", clamav.Format{}}, {"deb", "acme", deb.New()}, {"generic", "acme", generic.Format{}}, {"npm", "acme", &npm.Format{}}, {"nuget", "acme", &nuget.Format{}}, {"oci", "acme", &oci.Format{}}} {
 		ids := renderedSnippetIDs(t, fm.scope, fm.f)
 		clients := make([]string, 0, len(ids))
 		for c := range ids {

@@ -49,6 +49,12 @@ export abstract class UpstreamApi {
   abstract setState(key: string, state: 'on' | 'off'): Promise<LoadedUpstreamRepository>;
   /** `POST …/switch-on-all`: every preset repository that is off, switched on and made internal. */
   abstract switchOnAll(idempotencyKey: string): Promise<UpstreamRepositoryBulkResult>;
+  /**
+   * `PUT …/{key}/clients`: the switch **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382). On opens it at `level`
+   * (`public` when omitted; the highest level the installation allows, with the warning `public_not_allowed_lowered`); off closes it
+   * with both levels back at `private`.
+   */
+  abstract setClients(key: string, enabled: boolean, level?: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository>;
   /** `PUT …/{key}/visibility`: both levels of the repository. */
   abstract setVisibility(key: string, level: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository>;
   /** `POST …/set-visibility`: the level of every preset repository that is not retired. */
@@ -100,6 +106,11 @@ export class HttpUpstreamApi extends UpstreamApi {
 
   override async switchOnAll(idempotencyKey: string): Promise<UpstreamRepositoryBulkResult> {
     return (await this.client.post<UpstreamRepositoryBulkResult>(`${BASE}/switch-on-all`, undefined, { idempotencyKey })).body;
+  }
+
+  override async setClients(key: string, enabled: boolean, level?: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {
+    const r = await this.client.putJson<UpstreamRepository>(`${item(key)}/clients`, enabled && level ? { enabled, level } : { enabled });
+    return { value: r.body, etag: r.etag ?? '' };
   }
 
   override async setVisibility(key: string, level: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {

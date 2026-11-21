@@ -27,6 +27,7 @@ import {
 } from './package-versions-model';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import { VersionSize } from './version-size';
+import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
@@ -77,8 +78,11 @@ export class PackageDetail {
   /** Every version in the format's order, the highest first: the table sorts, searches and pages it in the browser (Q-UI-452). */
   protected readonly versions = resource({
     params: () => this.pkg()?.id,
-    loader: ({ params }) => collectAll(this.api.versions(params, { sort: '-version' })),
+    loader: ({ params }) =>
+      collectAll(this.api.versions(params, { sort: '-version', ...(this.clamav() ? { include: ['state'] } : {}) })),
   });
+  /** A database of the ClamAV definitions: its versions show their state, the version in use first (R-UI-194, Q-UI-904). */
+  protected readonly clamav = computed(() => this.format() === CLAMAV_FORMAT);
   /** The latest version's details: its distribution tags, which are the package's, and whether it has a README. */
   protected readonly latest = resource({
     params: () => {
@@ -124,7 +128,20 @@ export class PackageDetail {
   protected readonly sortState = computed<TableSort>(() => parseVersionSort(this.sort()));
   /** The text as typed: the table follows at once, the address with it (no request is made). */
   protected readonly draft = linkedSignal(() => this.q() ?? '');
-  protected readonly matching = computed(() => sortVersions(filterVersions(this.rows(), this.draft()), this.sortState()));
+  protected readonly matching = computed(() => {
+    const sorted = sortVersions(filterVersions(this.rows(), this.draft()), this.sortState());
+    // The version in use first, then the one before it, in the table's default order (R-UI-194): the history follows.
+    const byDefault = this.sort() === undefined || this.sort() === null;
+    return this.clamav() && byDefault
+      ? [...sorted].sort((a, b) => stateRank(clamavState(a.state)) - stateRank(clamavState(b.state)))
+      : sorted;
+  });
+  /** The badge of a version's state; null where the version has none. */
+  protected stateBadge(state: string | null): { readonly text: string; readonly cls: string } | null {
+    const s = clamavState(state);
+    if (!s) return null;
+    return { text: stateText(s), cls: s === 'in_use' ? 'ok' : s === 'files_removed' ? 'badge muted' : 'badge' };
+  }
   /** How many rows are shown; a new search or sort starts again at one page. */
   protected readonly shownCount = linkedSignal({
     source: () => [this.draft(), this.sortState()] as const,

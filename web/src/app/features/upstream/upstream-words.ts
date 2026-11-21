@@ -86,7 +86,7 @@ export function rowNotes(r: UpstreamRepository): string[] {
 
 /**
  * The word of a system repository's use in its row (R-UI-187): the image scanning reads its database through `scanner-trivy`, the
- * malware scan keeps its signature database in `scanner-clamav` (R-REPO-070, R-REPO-075).
+ * malware scan keeps its signature databases in `clamav` (R-REPO-070, R-REPO-075).
  */
 export function inUseBadge(r: Pick<UpstreamRepository, 'inUse' | 'key'>): string {
   if (!r.inUse) return $localize`:@@wellknown.system.not-in-use:Not in use`;
@@ -99,26 +99,79 @@ export function inUseBadge(r: Pick<UpstreamRepository, 'inUse' | 'key'>): string
 export function systemUseSentence(r: Pick<UpstreamRepository, 'inUse' | 'key'>): string {
   if (systemWork(r.key) === 'malware-scan') {
     return r.inUse
-      ? $localize`:@@wellknown.system.in-use-text-malware:In use by the malware scan. Its visibility is always Private.`
-      : $localize`:@@wellknown.system.not-in-use-text-malware:Not in use by the malware scan. Its visibility is always Private.`;
+      ? $localize`:@@wellknown.system.in-use-text-clamav:In use by the malware scan.`
+      : $localize`:@@wellknown.system.not-in-use-text-clamav:Not in use by the malware scan.`;
   }
   return r.inUse
     ? $localize`:@@wellknown.system.in-use-text:In use by the image scanning. Its visibility is always Private.`
     : $localize`:@@wellknown.system.not-in-use-text:Not in use by the image scanning. Its visibility is always Private.`;
 }
 
-/** The statement of a system repository's fixed level on the repository's own settings page (R-UI-190). */
-export function systemLevelSentence(key: string | null | undefined): string {
-  return systemWork(key) === 'malware-scan'
-    ? $localize`:@@wellknown.system.level-malware:Its visibility is always Private: only Quader's malware scan reads it.`
-    : $localize`:@@wellknown.system.level:Its visibility is always Private: only Quader's image scanning reads it.`;
+/**
+ * The statement of a system repository's level on the repository's own settings page (R-UI-190): fixed at Private for
+ * `scanner-trivy`; for `clamav` Private while **ClamAV definition updates** is off, and the level it serves at while it is on
+ * (`level` is the repository's, which is above Private only while the switch is on, R-REPO-075).
+ */
+export function systemLevelSentence(key: string | null | undefined, level: VisibilityLevel | null = null): string {
+  if (systemWork(key) === 'malware-scan') {
+    if (level && level !== 'private') {
+      const name = levelName(level);
+      return $localize`:@@wellknown.system.level-clamav-on:Its visibility is ${name}:level: while ClamAV definition updates is on.`;
+    }
+    return $localize`:@@wellknown.system.level-clamav:Its visibility is Private while ClamAV definition updates is off.`;
+  }
+  return $localize`:@@wellknown.system.level:Its visibility is always Private: only Quader's image scanning reads it.`;
 }
 
-/** The note of the client setup of a system repository (R-UI-190): Quader's own work reads it, no client can. */
+/** The note of the client setup of a system repository that answers no client (R-UI-190): Quader's own work reads it. */
 export function systemSetupSentence(key: string | null | undefined): string {
   return systemWork(key) === 'malware-scan'
-    ? $localize`:@@setup.system-malware:Quader's malware scan keeps its signature database in this repository. Clients cannot use it.`
+    ? $localize`:@@setup.system-clamav:Quader's malware scan keeps its signature database in this repository. An administrator can offer it to your ClamAV installations.`
     : $localize`:@@setup.system:Quader's image scanning reads its database through this repository. Clients cannot use it.`;
+}
+
+// ---- ClamAV definition updates (R-REPO-075, R-UI-187, R-UI-188, Q-UI-903) ----
+
+/** The switch's accessible name and the section's heading: **ClamAV definition updates**. */
+export function clientsSwitchLabel(): string {
+  return $localize`:@@clamav.switch:ClamAV definition updates`;
+}
+
+/** The word after the switch of `clamav`, or in its place for a reader: **On** or **Off**. */
+export function clientsWord(r: Pick<UpstreamRepository, 'clients'>): string {
+  return r.clients?.enabled ? $localize`:@@switch.on:On` : $localize`:@@switch.off:Off`;
+}
+
+/** The status line after the switch of `clamav` was written. */
+export function clientsSwitchedText(r: Pick<UpstreamRepository, 'clients'>): string {
+  return r.clients?.enabled
+    ? $localize`:@@clamav.switched.on:ClamAV definition updates is on.`
+    : $localize`:@@clamav.switched.off:ClamAV definition updates is off.`;
+}
+
+/** The sentence under the switch on the registry's page (R-UI-188). */
+export function clientsSentence(): string {
+  return $localize`:@@clamav.section.text:Serves these definitions to the ClamAV installations of your company. Quader's own malware scan uses them either way.`;
+}
+
+/**
+ * What a ClamAV needs at each level, one muted line under each choice of the fold **Visibility** (R-UI-188, Q-REPO-415). The lines of
+ * the client certificates (R-CLAMAV-010) join these once an endpoint can admit them.
+ */
+export function clientsLevelNotes(): Readonly<Record<VisibilityLevel, string>> {
+  return {
+    public: $localize`:@@clamav.level.public:Every ClamAV that reaches this address updates, without credentials.`,
+    internal: $localize`:@@clamav.level.internal:A ClamAV authenticates with a token in its address, which freshclam writes into its log.`,
+    private: $localize`:@@clamav.level.private:Only tokens of members.`,
+  };
+}
+
+/**
+ * The warning of an installation that allows no public level (R-REPO-075, `public_not_allowed_lowered`): the switch turned the
+ * definitions on at Internal, so every ClamAV needs a token. Shown while the switch is on below Public and Public cannot be chosen.
+ */
+export function clientsLoweredWarning(): string {
+  return $localize`:@@clamav.level.lowered:This installation allows no public level, so the definitions are served at Internal: every ClamAV needs a token in its address.`;
 }
 
 /** The levels of the select of a row, each by its name. */

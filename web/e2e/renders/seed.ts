@@ -363,6 +363,10 @@ export async function seedUpstreamRegistries(admin: Api): Promise<void> {
     const res = await admin.put(`/api/v1/upstream-repositories/${key}/state`, { state: 'on' });
     await expectStatus(res, [200], `switch on upstream/${key}`);
   }
+  // ClamAV definition updates on at Public (R-REPO-075): the client setup of upstream/clamav is the server's for that level, and the
+  // plain user reads the repository in the section of the project's page (R-UI-192). The off states are the walks' (clamav.ts).
+  const clamav = await admin.put('/api/v1/upstream-repositories/clamav/clients', { enabled: true, level: 'public' });
+  await expectStatus(clamav, [200], 'switch on ClamAV definition updates');
 }
 
 /**

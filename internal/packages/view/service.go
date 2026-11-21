@@ -656,6 +656,8 @@ type VersionFilter struct {
 	HasRepositories bool
 	// WithDigest asks for the digest of each listed version from the format's metadata (R-UI-052).
 	WithDigest bool
+	// WithState asks for the state of each listed version from the format's metadata (R-UI-194).
+	WithState bool
 }
 
 // VersionOrder is the sort of the version list: publishedAt or version.
@@ -741,8 +743,8 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
 		return nil, true, err
 	}
-	if f.WithDigest {
-		if err := s.fillDigests(ctx, sc, a, format, groupOf, out); err != nil {
+	if f.WithDigest || f.WithState {
+		if err := s.fillFromMetadata(ctx, sc, a, format, groupOf, out, f); err != nil {
 			return nil, true, err
 		}
 	}
@@ -785,10 +787,11 @@ func sizeOf(n Size) (*int64, bool) {
 	return &b, n.Partial
 }
 
-// fillDigests sets the digest of the listed versions from the format's metadata (the member `digest` of Describe's details, R-UI-052):
-// the adapter is asked once for the page, after the cut; a version absent from the answer, or a format whose metadata has no
-// `digest`, has none. Only a caller that asks pays for the read (VersionFilter.WithDigest).
-func (s *Service) fillDigests(ctx context.Context, sc Scope, a Adapter, format string, groupOf map[string]versionGroup, page []VersionSummary) error {
+// fillFromMetadata sets the digest and the state of the listed versions from the format's metadata (the members `digest` and `state` of
+// Describe's details, R-UI-052, R-UI-194): the adapter is asked once for the page, after the cut; a version absent from the answer, or
+// a format whose metadata has no such member, has none. Only a caller that asks pays for the read (VersionFilter.WithDigest,
+// VersionFilter.WithState).
+func (s *Service) fillFromMetadata(ctx context.Context, sc Scope, a Adapter, format string, groupOf map[string]versionGroup, page []VersionSummary, f VersionFilter) error {
 	if len(page) == 0 {
 		return nil
 	}
@@ -802,8 +805,12 @@ func (s *Service) fillDigests(ctx context.Context, sc Scope, a Adapter, format s
 		return err
 	}
 	for i, v := range vs {
-		if digest, ok := got[v.ID].Metadata["digest"].(string); ok {
+		md := got[v.ID].Metadata
+		if digest, ok := md["digest"].(string); ok && f.WithDigest {
 			page[i].Digest = digest
+		}
+		if state, ok := md["state"].(string); ok && f.WithState {
+			page[i].State = state
 		}
 	}
 	return nil

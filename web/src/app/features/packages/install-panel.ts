@@ -1,12 +1,17 @@
 import { Component, computed, effect, input, signal, untracked } from '@angular/core';
 import { setupCommands } from '../../core/project-links';
-import { isSystemRepositoryName, systemClientSentence, upstreamKeyOf } from '../../core/upstream-project';
+import { CLAMAV_KEY, isSystemRepositoryName, systemClientSentence, upstreamKeyOf, upstreamName } from '../../core/upstream-project';
+import { systemClosed } from '../../core/system-clients';
+import { CLAMAV_FORMAT } from './clamav-definitions';
 import { RouterLink } from '@angular/router';
 import { PackageVersion } from '../../api/packages-api';
 import { ClientChoice, clientsOf } from '../setup/clients';
 import { InstallCommand } from './install-command';
 
 export { COLLAPSE_AFTER_LINES } from './install-command';
+
+/** The qualified name of the repository of ClamAV's definitions (R-REPO-075). */
+const CLAMAV_REF = upstreamName(CLAMAV_KEY);
 
 /**
  * The install panel of a package version (R-UI-009): the command (see {@link InstallCommand}) for the chosen client and
@@ -34,7 +39,16 @@ export class InstallPanel {
    * The repositories a client can install the version through: every one that holds it but a system repository of the project
    * `upstream`, which answers every client 404 (R-UI-193, Q-UI-898). The picker offers these, and the command uses one of them.
    */
-  protected readonly repositories = computed(() => this.version().repositories.filter((r) => !isSystemRepositoryName(r.key)));
+  protected readonly repositories = computed(() =>
+    this.version().repositories.filter((r) => !isSystemRepositoryName(r.key) || (r.key === CLAMAV_REF && !this.clamavClosed())),
+  );
+  /** `upstream/clamav` answers no client now (Q-UI-908): asked only on a version of the ClamAV definitions. */
+  private readonly clamavClosed = systemClosed(() => (this.format() === CLAMAV_FORMAT ? CLAMAV_REF : null));
+  /**
+   * A version of the ClamAV definitions while ClamAV definition updates is on (R-UI-194): no command per version, since a ClamAV
+   * installation always takes the version in use; the panel leads to the client setup of R-CLAMAV-006.
+   */
+  protected readonly clamavServed = computed(() => this.format() === CLAMAV_FORMAT && this.repositories().length > 0);
   /**
    * A version held by system repositories alone has no command: one sentence says which of Quader's work reads it (Q-UI-899).
    */
@@ -54,7 +68,7 @@ export class InstallPanel {
   /** Set up client of the chosen repository (R-UI-126); the client goes with it. None for a system repository (Q-UI-896). */
   protected readonly setupLink = computed(() => {
     const ref = this.repository();
-    return ref ? setupCommands(ref) : null;
+    return ref ? setupCommands(ref, ref === CLAMAV_REF && !this.clamavClosed()) : null;
   });
 
   constructor() {

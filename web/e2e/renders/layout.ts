@@ -687,6 +687,13 @@ export const allowed: readonly {
     why: "a system repository of upstream has no address to copy, so its row keeps the menu alone beside the copy button and menu of every other row (Q-UI-898)",
   },
   {
+    check: 'row-actions',
+    screen: /^repositories-upstream/,
+    what: /td\.actions/,
+    detail: /^the action cells of one table are built 2 ways: (menu\+word \(1\), menu \(1\)|menu \(1\), menu\+word \(1\))$/,
+    why: 'in the section of the system repositories, upstream/clamav has Set up client while ClamAV definition updates is on, and scanner-trivy, which answers no client, has the menu alone (Q-UI-908)',
+  },
+  {
     check: 'broken',
     screen: /policy-new$/,
     what: /div\.selector-buttons > button/,

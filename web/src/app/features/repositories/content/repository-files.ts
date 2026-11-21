@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { Child, FilesApi } from '../../../api/files-api';
 import { Notifier } from '../../../core/notifier';
 import { filesCommands } from '../../../core/project-links';
-import { isSystemRepositoryName } from '../../../core/upstream-project';
+import { systemClosed } from '../../../core/system-clients';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
@@ -191,7 +191,7 @@ export class RepositoryFiles {
    * A system repository of the project `upstream` (R-UI-193): every download by path answers 404 to every caller (R-REPO-070,
    * R-REPO-075), so no file's row offers its download address (Q-UI-898).
    */
-  protected readonly system = computed(() => isSystemRepositoryName(this.repository()));
+  protected readonly system = systemClosed(() => this.repository());
 
   constructor() {
     effect(() => {

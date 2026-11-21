@@ -58,6 +58,9 @@ before using a new term in a German text.
 | client setup, snippet | Client-Einrichtung, Snippet |
 | deployment target | Veröffentlichungsziel |
 | README | README |
+| ClamAV definition updates (the switch of upstream/clamav) | ClamAV-Definitions-Updates |
+| set (of ClamAV databases), in use, outdated | Satz, in Verwendung, veraltet |
+| detached signature (of a ClamAV container) | abgetrennte Signatur |
 | recently viewed, saved view | Zuletzt angesehen, gespeicherte Ansicht |
 | class (of a repository), format settings | Klasse, Formateinstellungen (`npm-Einstellungen`) |
 | default (value of a setting) | Standard |

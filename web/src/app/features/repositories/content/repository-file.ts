@@ -9,7 +9,8 @@ import { TimeAgo } from '../../../shared/ui/time-ago';
 import { MalwareStatusView } from '../../../shared/malware/malware-status';
 import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
-import { isSystemRepositoryName, systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
+import { systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
+import { systemClosed } from '../../../core/system-clients';
 
 /** A POSIX shell word for `value`: single quotes, with an embedded single quote closed and escaped. */
 const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
@@ -176,7 +177,7 @@ export class RepositoryFile {
    * address for downloads by path and through the content route of the UI alike, answers 404 (R-REPO-070, R-REPO-075). The item's
    * request with curl stays: the management API reads it (Q-UI-898).
    */
-  protected readonly system = computed(() => isSystemRepositoryName(this.item().repository));
+  protected readonly system = systemClosed(() => this.item().repository);
   protected readonly systemNote = computed(() => systemClientSentence(upstreamKeyOf(this.item().repository), 'file'));
 
   protected readonly addressLabel = $localize`:@@files.download-address:Download address`;

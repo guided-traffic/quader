@@ -1,3 +1,5 @@
+import { UpstreamApi } from '../../api/upstream-api';
+import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -27,7 +29,7 @@ function seed(fake: FakeRepositoriesApi, system = true): void {
     { key: 'npmjs', project: 'upstream', class: 'remote', format: 'npm', description: 'npm public registry', disabled: false, visibility: internal },
     ...(system
       ? [
-          { key: 'scanner-clamav', project: 'upstream', class: 'local' as const, format: 'generic', description: 'Malware scan database', visibility: fixed },
+          { key: 'clamav', project: 'upstream', class: 'local' as const, format: 'clamav', description: 'ClamAV definitions', visibility: fixed },
           { key: 'scanner-trivy', project: 'upstream', class: 'remote' as const, format: 'oci', description: 'Image scanning database', visibility: fixed },
         ]
       : []),
@@ -36,7 +38,7 @@ function seed(fake: FakeRepositoriesApi, system = true): void {
 }
 
 /** The page Repositories of the project upstream as the router builds it, with its query bound to the list's inputs. */
-async function open(url: string, options: { system?: boolean; capabilities?: string[] } = {}) {
+async function open(url: string, options: { system?: boolean; capabilities?: string[]; clamavOn?: boolean } = {}) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -57,6 +59,9 @@ async function open(url: string, options: { system?: boolean; capabilities?: str
   (TestBed.inject(ProjectsApi) as FakeProjectsApi).projects = [
     sampleProject({ key: 'upstream', displayName: 'Upstream', description: 'Stored by the product', owners: [], members: 0 }),
   ];
+  if (options.clamavOn) {
+    (TestBed.inject(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' });
+  }
   if (options.capabilities) (TestBed.inject(SessionApi) as FakeSessionApi).meResult = { capabilities: options.capabilities };
   await TestBed.inject(SessionStore).load();
   const harness = await RouterTestingHarness.create();
@@ -87,7 +92,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(spokenText(toggle(root))).toBe('System repositories 2');
     expect(s.querySelector('h2 .heading-count')?.textContent?.trim()).toBe('2');
     expect(text(s.querySelector('.hint')!)).toBe(
-      'Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them.',
+      'Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations.',
     );
     // Closed at the visit, so nothing in it can be focused (the style guide's collapse region).
     expect(toggle(root).getAttribute('aria-expanded')).toBe('false');
@@ -96,7 +101,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     // The same columns as the list above, and the rows' facts; no Set up client, no Delete.
     const heads = (t: Element) => [...t.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').trim());
     expect(heads(sectionTable(root)!)).toEqual(heads(mainTable(root)!));
-    expect(keys(sectionTable(root))).toEqual(['scanner-clamav', 'scanner-trivy']);
+    expect(keys(sectionTable(root))).toEqual(['clamav', 'scanner-trivy']);
     const trivy = [...sectionTable(root)!.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('scanner-trivy'))!;
     expect(text(trivy.querySelector('td.format-cell')!)).toContain('OCI (Docker)');
     expect(text(trivy.querySelector('td.class-cell')!)).toContain('Remote');
@@ -126,7 +131,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
       return items;
     };
     expect(await menuOf('scanner-trivy')).toEqual(['Settings', 'Files', 'Vulnerabilities']);
-    expect(await menuOf('scanner-clamav')).toEqual(['Settings', 'Files']);
+    expect(await menuOf('clamav')).toEqual(['Settings', 'Files', 'Versions']);
   });
 
   it('R-UI-192 Q-UI-894 the filter covers both tables: a match there opens the section and is counted; no match there leaves it closed at 0', async () => {
@@ -149,7 +154,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(text(sectionTable(docker.root)!)).toContain('No system repository matches.');
     // The section's rows are read once per visit, by name, and filtered here.
     expect(docker.fake.listFilters.filter((f) => f.name?.length)).toEqual([
-      { project: 'upstream', name: ['upstream/scanner-trivy', 'upstream/scanner-clamav'] },
+      { project: 'upstream', name: ['upstream/scanner-trivy', 'upstream/clamav'] },
     ]);
   });
 
@@ -158,7 +163,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     const row = (key: string) => [...root.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;
     const badges = (key: string) => [...row(key).querySelectorAll('th .badge')].map((b) => text(b));
     expect(badges('scanner-trivy')).toEqual(['System']);
-    expect(badges('scanner-clamav')).toEqual(['System']);
+    expect(badges('clamav')).toEqual(['System']);
     expect(badges('npmjs')).toEqual([]);
     expect(row('scanner-trivy').querySelector('quader-copy-button')).toBeNull();
     expect(row('npmjs').querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe(
@@ -185,5 +190,11 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     const { root } = await open('/projects/upstream/repositories', { system: false, capabilities: [] });
     expect(keys(mainTable(root))).toEqual(['debian', 'docker-hub', 'npmjs']);
     expect(section(root)).toBeNull();
+  });
+
+  it('R-UI-192 Q-UI-908 with ClamAV definition updates on, the row of clamav has Set up client, and scanner-trivy still none', async () => {
+    const { root } = await open('/projects/upstream/repositories', { clamavOn: true });
+    const setups = [...sectionTable(root)!.querySelectorAll<HTMLAnchorElement>('a.row-setup')].map((a) => a.getAttribute('href'));
+    expect(setups).toEqual(['/projects/upstream/repositories/clamav/setup']);
   });
 });

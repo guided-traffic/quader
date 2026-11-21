@@ -136,25 +136,30 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-190 R-REPO-075 the settings of upstream/scanner-clamav name the malware scan in the statement of its fixed level', async () => {
-    const { root } = await renderScreen(RepositoryDetail, {
-      inputs: { project: 'upstream', key: 'scanner-clamav' },
-      setup: (get) => {
-        const fake = get(RepositoriesApi) as FakeRepositoriesApi;
-        fake.repositories.push({
-          key: 'scanner-clamav',
-          project: 'upstream',
-          class: 'local',
-          format: 'generic',
-          description: 'Malware scan database',
-          visibility: { artifacts: 'private', wiki: 'private' },
-        } as never);
-      },
-    });
-    const level = root.querySelector('[aria-labelledby="repo-visibility-fixed"]')!;
-    expect(text(level)).toContain("Its visibility is always Private: only Quader's malware scan reads it.");
-    expect(root.querySelector('quader-repository-visibility, quader-visibility-level')).toBeNull();
-    await expectAccessible(root);
+  it('R-UI-190 R-REPO-075 the settings of upstream/clamav state its level by its switch, with the line where it is managed', async () => {
+    const settings = (artifacts: 'private' | 'public') =>
+      renderScreen(RepositoryDetail, {
+        inputs: { project: 'upstream', key: 'clamav' },
+        setup: (get) => {
+          const fake = get(RepositoriesApi) as FakeRepositoriesApi;
+          fake.repositories.push({
+            key: 'clamav',
+            project: 'upstream',
+            class: 'local',
+            format: 'generic',
+            description: 'ClamAV definitions',
+            visibility: { artifacts, wiki: artifacts },
+          } as never);
+        },
+      });
+    const off = await settings('private');
+    const level = off.root.querySelector('[aria-labelledby="repo-visibility-fixed"]')!;
+    expect(text(level)).toContain('Its visibility is Private while ClamAV definition updates is off.');
+    expect(text(level)).toContain('Managed in Admin area › Upstream registries.');
+    expect(off.root.querySelector('quader-repository-visibility, quader-visibility-level')).toBeNull();
+    await expectAccessible(off.root);
+    const on = await settings('public');
+    expect(text(on.root.querySelector('[aria-labelledby="repo-visibility-fixed"]')!)).toContain('Its visibility is Public while ClamAV definition updates is on.');
   });
 
   it('R-UI-190 the settings of upstream/npmjs show the upstream read-only with the link, the include patterns editable, no Wiki visibility and no Delete repository', async () => {

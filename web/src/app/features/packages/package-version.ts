@@ -1,5 +1,5 @@
 import { DownloadLink } from '../../shared/download-link';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackageDocTree, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
@@ -40,12 +40,27 @@ import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
 import { contentPath } from '../../api/files-api';
-import { systemRepositoryNames } from '../../core/upstream-project';
+import { systemRepositoryNames, upstreamName, CLAMAV_KEY } from '../../core/upstream-project';
+import { systemClosed } from '../../core/system-clients';
+import { Disclosure } from '../../shared/ui/disclosure';
+import {
+  ClamavState,
+  ageDays,
+  ageOldText,
+  clamavFacts,
+  isOutdated,
+  outdatedBadge,
+  outdatedNote,
+  stateText,
+  verificationText,
+} from './clamav-definitions';
 
 export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'details' | 'import-log';
 
 /** The content routes of the system repositories, `/api/v1/projects/upstream/repositories/<key>/content/` (R-API-025, Q-UI-898). */
 const SYSTEM_CONTENT = systemRepositoryNames().map((name) => contentPath(name, ''));
+/** The content route of `upstream/clamav`, whose files are downloaded while ClamAV definition updates is on (R-UI-194). */
+const CLAMAV_CONTENT = contentPath(upstreamName(CLAMAV_KEY), '');
 
 interface TabEntry {
   readonly id: VersionTab;
@@ -88,6 +103,8 @@ interface TabEntry {
     NoValue,
     DownloadLink,
     MalwareStatusView,
+    Disclosure,
+    DatePipe,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',
@@ -279,6 +296,46 @@ export class PackageVersionPage {
   /** The digest, media type, artifact type and size of an OCI tag, and the platforms of an index (R-OCI-031). */
   protected readonly image = computed(() => imageFacts(this.metadata()));
 
+  // ---- The ClamAV definitions (R-UI-194, R-CLAMAV-003) ----
+
+  /** Every piece of a definition container's metadata: the header, the verification, the signature file, the members. */
+  protected readonly clamav = computed(() => (this.format() === 'clamav' ? clamavFacts(this.metadata()) : null));
+  /** `upstream/clamav` answers no client now: its files offer no download (R-UI-193 while closed, Q-UI-908). */
+  private readonly clamavClosed = systemClosed(() => (this.format() === 'clamav' ? upstreamName(CLAMAV_KEY) : null));
+  protected readonly clamavAge = computed(() => {
+    const days = ageDays(this.clamav()?.builtAt ?? null, Date.now());
+    return days === null ? null : ageOldText(days);
+  });
+  /** Only `daily` is outdated by its age (Q-UI-912). */
+  protected readonly clamavOutdated = computed(() => {
+    const c = this.clamav();
+    return c ? isOutdated(c.database, c.builtAt, Date.now()) : false;
+  });
+  protected readonly outdatedWord = outdatedBadge();
+  protected readonly outdatedText = outdatedNote();
+  protected readonly stateText = stateText;
+  protected readonly verification = computed(() => {
+    const c = this.clamav();
+    return c ? verificationText(c) : '';
+  });
+  protected readonly membersColumns: readonly TableColumn[] = [
+    { id: 'name', label: $localize`:@@clamav.member.name:Name` },
+    { id: 'size', label: $localize`:@@pkg.file.size:Size`, numeric: true },
+    {
+      id: 'lines',
+      label: $localize`:@@clamav.member.lines:Lines`,
+      numeric: true,
+      help: $localize`:@@clamav.member.lines-help:The member's lines that are neither empty nor a comment.`,
+    },
+  ];
+  protected readonly membersCaption = $localize`:@@clamav.members:Members`;
+  protected readonly checksumsHeading = $localize`:@@clamav.checksums:Checksums of the archive`;
+  protected readonly memberDigestsHeading = $localize`:@@clamav.member.digests:SHA-256 of each member`;
+  /** The badge class of a version's state: the one in use is the positive one (R-UI-194). */
+  protected stateClass(state: ClamavState): string {
+    return state === 'in_use' ? 'ok' : state === 'files_removed' ? 'badge muted' : 'badge';
+  }
+
   /**
    * The collections a collection version depends on that this installation holds (Q-UI-245): each of them is a link to its page, the
    * others stay muted text. One lookup per dependency, which rejects for a package that no visible repository holds.
@@ -349,6 +406,7 @@ export class PackageVersionPage {
    * (Q-UI-898). The API names the holding repository in that route only.
    */
   protected inSystemRepository(f: { readonly contentUrl: string }): boolean {
+    if (f.contentUrl.startsWith(CLAMAV_CONTENT)) return this.clamavClosed();
     return SYSTEM_CONTENT.some((prefix) => f.contentUrl.startsWith(prefix));
   }
   /** Some file of the version can be downloaded: the column of the downloads stands (Q-UI-898). */

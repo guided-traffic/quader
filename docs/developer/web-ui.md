@@ -175,7 +175,8 @@ through the dev server works only against a Quader whose base URL is `https://lo
   replaced in `quader.yaml`), the worktree's `quader` and `devidp` on ports of their own, its dev server with `--port` and
   `QUADER_UI_DEV_BACKEND`, and the renders with `UI_RENDERS_EDGE` set to that dev server and `UI_RENDERS_POSTGRES` to the copy's
   PostgreSQL container, so that the seed's SQL writes the worktree's database and not the running profile's (the scanner replicas of
-  2026-11-21 rendered this way).
+  2026-11-21 rendered this way), and the screens of the ClamAV definitions the same day, whose
+  backend needed the migration of the format).
 
 The browser warns about the dev server's certificate until the CA is trusted. Trusting it system-wide is your choice,
 not something the scripts do (macOS: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain .dev/ui-dev/certs/ca.crt`).
@@ -248,7 +249,12 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    R-OPS-048): the profile runs no scanner pod, so the seed writes by SQL two ready image scanners (one busy), two ready malware scanners
    with the database in use and one malware scanner of a release with a long name that waits for its first database, with their
    heartbeat a day ahead (a run outlasts `system.heartbeat_stale_after`); "no scanner reported" and the profile's own answer (the role
-   `all` runs no scanner pod) are the walks of the System page, the malware settings and the advisory sources.
+   `all` runs no scanner pod) are the walks of the System page, the malware settings and the advisory sources. **ClamAV definitions**
+   ([renders/clamav.ts](../../web/e2e/renders/clamav.ts), R-UI-187, R-UI-188, R-UI-194): the seed switches **ClamAV definition updates**
+   of `upstream/clamav` on at Public, so that its client setup is the server's and the plain user reads it; only the database task writes
+   the repository, so the walks answer its packages, versions and a version's details in the browser (three databases, a daily in use with
+   the one before it and a history row, a bytecode 8 days old) and change the switch's state (off, on, on at Internal where Public is not
+   allowed) in the answers of the upstream list and item.
 2. **The three kinds of user** of [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator)
    and the auditor of the security dashboard (R-UI-158) sign in through the provider; their sessions are kept in
    `.out/ui-renders/.auth/` for the run:

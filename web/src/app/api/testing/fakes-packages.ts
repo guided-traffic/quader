@@ -562,7 +562,11 @@ export class FakePackagesApi extends PackagesApi {
     return found;
   }
 
+  /** The filters of every read of a version list, in order. */
+  readonly versionFilters: VersionFilters[] = [];
+
   override versions(packageId: string, filters: VersionFilters = {}): PageFetcher<PackageVersionSummary> {
+    this.versionFilters.push(filters);
     const order = (a: PackageVersionSummary, b: PackageVersionSummary): number => {
       switch (filters.sort ?? '-publishedAt') {
         case 'publishedAt':
@@ -589,6 +593,7 @@ export class FakePackagesApi extends PackagesApi {
           downloadCount: v.downloadCount,
           lastDownloadedAt: v.lastDownloadedAt,
           ...(filters.include?.includes('digest') && typeof v.metadata['digest'] === 'string' ? { digest: v.metadata['digest'] } : {}),
+          ...(filters.include?.includes('state') && typeof v.metadata['state'] === 'string' ? { state: v.metadata['state'] } : {}),
         }),
       )
       .sort(order);

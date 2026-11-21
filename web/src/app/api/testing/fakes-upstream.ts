@@ -81,18 +81,24 @@ export function scannerTrivy(over: Partial<UpstreamRepository> = {}): UpstreamRe
   };
 }
 
-/** `scanner-clamav`, the local system repository of the malware scan's signature database (R-REPO-075): no address, no account. */
-export function scannerClamav(over: Partial<UpstreamRepository> = {}): UpstreamRepository {
+/** The address of the endpoint of the fake `clamav` (R-CLAMAV-004). */
+export const CLAMAV_ENDPOINT = 'https://quader.example.com/api/clamav/upstream/clamav';
+
+/**
+ * `clamav`, the local system repository of ClamAV's definitions (R-REPO-075): no address, no account, and the switch **ClamAV
+ * definition updates** off, as a fresh installation has it.
+ */
+export function clamavRepository(over: Partial<UpstreamRepository> = {}): UpstreamRepository {
   const product = { url: '', extraHosts: [], upstreamKeys: null };
   return {
-    key: 'scanner-clamav',
-    name: 'upstream/scanner-clamav',
-    format: 'generic',
+    key: 'clamav',
+    name: 'upstream/clamav',
+    format: 'clamav',
     kind: 'system',
-    displayName: 'Malware scan database',
+    displayName: 'ClamAV definitions',
     state: null,
     inUse: true,
-    clients: null,
+    clients: { enabled: false, address: CLAMAV_ENDPOINT },
     visibility: 'private',
     fixed: ['state', 'visibility', 'address', 'account'],
     address: { ...product, overridden: false, product },
@@ -104,9 +110,9 @@ export function scannerClamav(over: Partial<UpstreamRepository> = {}): UpstreamR
   };
 }
 
-/** The twelve preset repositories of the fake catalog, `scanner-trivy` and `scanner-clamav`, every one as a fresh installation has it. */
+/** The twelve preset repositories of the fake catalog, `scanner-trivy` and `clamav`, every one as a fresh installation has it. */
 export function upstreamFixture(): UpstreamRepository[] {
-  return [...CATALOG.flatMap(([format, presets]) => presets.map((p) => presetRepository(format, p))), scannerTrivy(), scannerClamav()];
+  return [...CATALOG.flatMap(([format, presets]) => presets.map((p) => presetRepository(format, p))), scannerTrivy(), clamavRepository()];
 }
 
 function notFound(key: string): ApiError {
@@ -149,6 +155,12 @@ export class FakeUpstreamApi extends UpstreamApi {
   presetsVersion = 1;
   presetsFailure: ApiError | null = null;
 
+  /**
+   * The installation allows no public level (the default endpoint admits no request without a credential): switching the clients on at
+   * `public` lowers them to `internal` with the warning `public_not_allowed_lowered` (R-REPO-075).
+   */
+  publicAllowed = true;
+
   /** Replaces one repository of the fixture by its key. */
   set(key: string, over: Partial<UpstreamRepository>): void {
     this.items = this.items.map((r) => (r.key === key ? { ...r, ...over } : r));
@@ -190,6 +202,35 @@ export class FakeUpstreamApi extends UpstreamApi {
       return next;
     });
     return { items: changed.map((r) => this.loaded(r).value), bulkId: '6f1c2e8a-1d6b-4d3f-9c43-2f9b4f1c0a77' };
+  }
+
+  override async setClients(key: string, enabled: boolean, level?: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {
+    this.calls.push({ op: 'clients', key, body: level ? { enabled, level } : { enabled } });
+    this.fail();
+    const r = this.find(key);
+    if (!r.clients) {
+      throw new ApiError(409, { code: 'managed_by_product', detail: `${r.name} has no clients to switch.`, requestId: 'rid-409' }, 'rid-409');
+    }
+    const asked = level ?? 'public';
+    const lowered = enabled && asked === 'public' && !this.publicAllowed;
+    const visibility: UpstreamVisibilityLevel = !enabled ? 'private' : lowered ? 'internal' : asked;
+    const next: UpstreamRepository = {
+      ...r,
+      clients: { ...r.clients, enabled },
+      visibility,
+      fixed: enabled ? ['state', 'address', 'account'] : ['state', 'visibility', 'address', 'account'],
+      configVersion: r.configVersion + 1,
+    };
+    const stored = this.store(next);
+    return lowered
+      ? {
+          ...stored,
+          value: {
+            ...stored.value,
+            warnings: [{ code: 'public_not_allowed_lowered', detail: 'This installation allows no public level: ClamAV definition updates is on at Internal.' }],
+          },
+        }
+      : stored;
   }
 
   override async setVisibility(key: string, level: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {

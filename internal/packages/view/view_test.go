@@ -176,7 +176,7 @@ func (d digestAdapter) Describe(_ context.Context, vs []Version, want Fields, _ 
 	out := map[int64]Data{}
 	for _, v := range vs {
 		if v.Version != "none" {
-			out[v.ID] = Data{Metadata: map[string]any{"digest": "sha256:" + v.Version}}
+			out[v.ID] = Data{Metadata: map[string]any{"digest": "sha256:" + v.Version, "state": "in_use"}}
 		}
 	}
 	return out, nil
@@ -196,14 +196,39 @@ func TestR_UI_052_DigestsComeFromTheFormatsMetadataInOneRead(t *testing.T) {
 		"none":  {version: "none", rows: rows[1:2]},
 	}
 	page := []VersionSummary{{Version: "1.0.0"}, {Version: "none"}}
-	if err := s.fillDigests(context.Background(), sc, a, "oci", groupOf, page); err != nil {
+	if err := s.fillFromMetadata(context.Background(), sc, a, "oci", groupOf, page, VersionFilter{WithDigest: true}); err != nil {
 		t.Fatal(err)
 	}
-	if page[0].Digest != "sha256:1.0.0" || page[1].Digest != "" {
+	if page[0].Digest != "sha256:1.0.0" || page[1].Digest != "" || page[0].State != "" {
 		t.Errorf("digests = %+v", page)
 	}
 	if len(asked) != 1 || asked[0] != FieldDetails {
 		t.Errorf("the adapter was asked %v, want the details once", asked)
+	}
+}
+
+// TestR_UI_194_StatesComeFromTheFormatsMetadataInOneRead: include=state reads the member `state` of the format's metadata (the ClamAV
+// definitions' in_use, previous, superseded, files_removed) in the same one read as the digest; a version without it has none.
+func TestR_UI_194_StatesComeFromTheFormatsMetadataInOneRead(t *testing.T) {
+	var asked []Fields
+	a := digestAdapter{asked: &asked}
+	repo := repoOf("clamav", repository.Local)
+	s := &Service{}
+	sc := Scope{topo: NewTopology([]repository.Repository{repo})}
+	rows := rowsOf("28190", "none")
+	groupOf := map[string]versionGroup{
+		"28190": {version: "28190", rows: rows[:1]},
+		"none":  {version: "none", rows: rows[1:2]},
+	}
+	page := []VersionSummary{{Version: "28190"}, {Version: "none"}}
+	if err := s.fillFromMetadata(context.Background(), sc, a, "clamav", groupOf, page, VersionFilter{WithState: true}); err != nil {
+		t.Fatal(err)
+	}
+	if page[0].State != "in_use" || page[1].State != "" || page[0].Digest != "" {
+		t.Errorf("states = %+v", page)
+	}
+	if len(asked) != 1 {
+		t.Errorf("the adapter was asked %v, want one read", asked)
 	}
 }
 

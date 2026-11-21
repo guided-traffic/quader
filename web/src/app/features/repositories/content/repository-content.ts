@@ -20,6 +20,9 @@ import { filesCommands, setupCommands } from '../../../core/project-links';
 import { ServerAddress } from '../../../core/server-address';
 import { SessionStore } from '../../../core/session-store';
 import { isSystemRepository } from '../../../core/upstream-project';
+import { systemClosed } from '../../../core/system-clients';
+import { CLAMAV_FORMAT } from '../../packages/clamav-definitions';
+import { ClamavDatabases } from './clamav-databases';
 import { Confirm } from '../../../shared/confirm-dialog';
 import { CopyButton } from '../../../shared/copy-button';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -70,6 +73,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     RepositoryFile,
     RepositoryFiles,
     RepositoryItems,
+    ClamavDatabases,
     DownloadLink,
   ],
   templateUrl: './repository-content.html',
@@ -96,15 +100,25 @@ export class RepositoryContent {
   readonly sort = input<string | undefined>();
 
   protected readonly ref = computed(() => repoRef(this.project(), this.key()));
-  /** Set up client of this repository (R-UI-126); none for a system repository of `upstream`, which answers no client (Q-UI-896). */
-  protected readonly setupLink = computed(() => setupCommands(this.ref()));
   /**
-   * A system repository of the project `upstream` (R-REPO-070, R-REPO-075): Quader's own work fills and reads it, every client's
-   * request and every deploy answers 404, and the management API lists and deletes its items. The page offers it no client
-   * action: no **Set up client**, no upload or new folder, no sentence about what clients fetch or publish (Q-UI-896); no download of
-   * a file, no address for downloads by path, no address of a file to copy and no install command (Q-UI-898).
+   * Set up client of this repository (R-UI-126); none for a system repository of `upstream` while it answers no client (Q-UI-896),
+   * and for `upstream/clamav` while ClamAV definition updates is on (Q-UI-908).
    */
-  protected readonly system = computed(() => isSystemRepository(this.project(), this.key()));
+  protected readonly setupLink = computed(() => setupCommands(this.ref(), !this.system()));
+  /**
+   * A system repository of the project `upstream` (R-REPO-070, R-REPO-075): Quader's own work fills it, no client deploys into it, and
+   * no upload, new folder or sentence about what clients fetch or publish is offered (Q-UI-896). A local one (`clamav`) refuses every
+   * hand delete (Q-REPO-416).
+   */
+  protected readonly systemRepo = computed(() => isSystemRepository(this.project(), this.key()));
+  /**
+   * A system repository that answers no client now (R-UI-193, Q-UI-908): every client's request answers 404, so the page offers no
+   * **Set up client**, no download of a file, no address for downloads by path, no address of a file to copy and no install command
+   * (Q-UI-898). `upstream/clamav` while ClamAV definition updates is on is none: it answers its clients.
+   */
+  protected readonly system = systemClosed(() => this.ref());
+  /** The ClamAV definitions show their databases with the version in use (R-UI-194). */
+  protected readonly clamav = computed(() => this.repository()?.format === CLAMAV_FORMAT);
   protected readonly loaded = resource({
     params: () => this.ref(),
     loader: ({ params }) => this.api.get(params),
@@ -276,11 +290,11 @@ export class RepositoryContent {
     const r = this.repository();
     const can = valueOf(this.allowed) ?? NO_FILE_PERMISSIONS;
     if (!r || this.disabled()) return NO_FILE_PERMISSIONS;
-    const uploads = r.class === 'local' && isFilesAddress(this.descriptor()?.protocolBasePath ?? '') && !this.system();
+    const uploads = r.class === 'local' && isFilesAddress(this.descriptor()?.protocolBasePath ?? '') && !this.systemRepo();
     return {
       deploy: can.deploy && uploads,
       overwrite: can.overwrite && uploads,
-      delete: can.delete && r.class !== 'virtual' && this.path() !== '',
+      delete: can.delete && r.class !== 'virtual' && this.path() !== '' && !(this.systemRepo() && r.class === 'local'),
     };
   });
 
@@ -291,7 +305,7 @@ export class RepositoryContent {
    */
   protected readonly fill = computed<'publisher' | 'other' | 'none'>(() => {
     // A system repository is filled by Quader's own work, not by a client the header could set up (Q-UI-896).
-    if (this.disabled() || this.system()) return 'none';
+    if (this.disabled() || this.systemRepo()) return 'none';
     return valueOf(this.allowed)?.deploy ? 'publisher' : 'other';
   });
 

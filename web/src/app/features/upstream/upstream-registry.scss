@@ -218,3 +218,42 @@
 .details {
   border-block-start: 1px solid var(--quader-border);
 }
+
+/* ClamAV definition updates (R-UI-188, Q-UI-903): the switch, its sentences, and while it is on the endpoint, the level and the setup,
+   each a field of the one section. */
+.clients-section {
+  > .hint {
+    margin: 0 0 var(--quader-space-2);
+  }
+
+  .field {
+    margin-block-start: var(--quader-space-4);
+  }
+
+  .level-now {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--quader-space-2);
+    margin: 0 0 var(--quader-space-2);
+  }
+
+  .clamav-setup > .hint {
+    margin: 0 0 var(--quader-space-2);
+  }
+
+  quader-code-window {
+    display: block;
+    margin-block-end: var(--quader-space-2);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--quader-space-1) var(--quader-space-4);
+    margin: var(--quader-space-3) 0 0;
+  }
+
+  .actions {
+    margin-block-start: var(--quader-space-2);
+  }
+}

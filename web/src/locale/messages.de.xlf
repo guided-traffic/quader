@@ -1143,6 +1143,51 @@
         <target>Größe</target>
       </segment>
     </unit>
+    <unit id="clamav.member.lines">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:322</note>
+      </notes>
+      <segment>
+        <source>Lines</source>
+        <target>Zeilen</target>
+      </segment>
+    </unit>
+    <unit id="clamav.member.lines-help">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:324</note>
+      </notes>
+      <segment>
+        <source>The member&apos;s lines that are neither empty nor a comment.</source>
+        <target>Die Zeilen der Datei, die weder leer noch ein Kommentar sind.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.members">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:327</note>
+      </notes>
+      <segment>
+        <source>Members</source>
+        <target>Dateien im Container</target>
+      </segment>
+    </unit>
+    <unit id="clamav.checksums">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:328</note>
+      </notes>
+      <segment>
+        <source>Checksums of the archive</source>
+        <target>Prüfsummen des Archivs</target>
+      </segment>
+    </unit>
+    <unit id="clamav.member.digests">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:329</note>
+      </notes>
+      <segment>
+        <source>SHA-256 of each member</source>
+        <target>SHA-256 jeder Datei</target>
+      </segment>
+    </unit>
     <unit id="user.source.auto">
       <notes>
         <note category="location">src/app/features/users/user-detail.ts:310</note>
@@ -4418,6 +4463,78 @@
         <target>Der Grabstein wurde entfernt.</target>
       </segment>
     </unit>
+    <unit id="clamav.set.in-use">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:45</note>
+      </notes>
+      <segment>
+        <source>Set in use:</source>
+        <target>Satz in Verwendung:</target>
+      </segment>
+    </unit>
+    <unit id="clamav.set.before">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:47</note>
+      </notes>
+      <segment>
+        <source>The set before it:</source>
+        <target>Der Satz davor:</target>
+      </segment>
+    </unit>
+    <unit id="clamav.databases">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:122</note>
+      </notes>
+      <segment>
+        <source>Databases</source>
+        <target>Datenbanken</target>
+      </segment>
+    </unit>
+    <unit id="clamav.databases.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:123</note>
+      </notes>
+      <segment>
+        <source>Quader has stored no ClamAV definitions yet. The malware scan&apos;s updater fills this repository.</source>
+        <target>Quader hat noch keine ClamAV-Definitionen gespeichert. Der Updater der Malware-Prüfung füllt dieses Repository.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.database">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:127</note>
+      </notes>
+      <segment>
+        <source>Database</source>
+        <target>Datenbank</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.in-use">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:128</note>
+      </notes>
+      <segment>
+        <source>In use</source>
+        <target>In Verwendung</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.built">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:129</note>
+      </notes>
+      <segment>
+        <source>Built</source>
+        <target>Gebaut</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.age">
+      <notes>
+        <note category="location">src/app/features/repositories/content/clamav-databases.ts:130</note>
+      </notes>
+      <segment>
+        <source>Age</source>
+        <target>Alter</target>
+      </segment>
+    </unit>
     <unit id="pkg.meta.license-url">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:514</note>
@@ -5090,6 +5207,15 @@
       <segment>
         <source>Install</source>
         <target>Installieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.install.note">
+      <notes>
+        <note category="location">src/app/features/packages/install-panel.html:13,14</note>
+      </notes>
+      <segment>
+        <source>A ClamAV installation always takes the version in use: point freshclam at Quader once, and it updates by itself.</source>
+        <target>Eine ClamAV-Installation nimmt immer die Version, die in Verwendung ist: Richten Sie freshclam einmal auf Quader aus, dann aktualisiert es sich selbst.</target>
       </segment>
     </unit>
     <unit id="job.state.succeeded">
@@ -7472,6 +7598,150 @@
       <segment>
         <source>Download</source>
         <target>Herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="clamav.signature">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:187,189</note>
+      </notes>
+      <segment>
+        <source>Detached signature</source>
+        <target>Abgetrennte Signatur</target>
+      </segment>
+    </unit>
+    <unit id="clamav.signature.present">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:190,191</note>
+      </notes>
+      <segment>
+        <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
+        <target>Vorhanden, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> Signaturen. Quader reicht sie weiter; ClamAV prüft sie.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.signature.none">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:192,194</note>
+      </notes>
+      <segment>
+        <source>None</source>
+        <target>Keine</target>
+      </segment>
+    </unit>
+    <unit id="clamav.members.hint">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:198,199</note>
+      </notes>
+      <segment>
+        <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
+        <target>Die Signaturzahl des Headers ist die Summe; die Zeilen einer Datei sind nicht immer Signaturen.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.members.removed">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:219,221</note>
+      </notes>
+      <segment>
+        <source>The files of this version were removed; its metadata stays as history.</source>
+        <target>Die Dateien dieser Version wurden entfernt; ihre Metadaten bleiben als Verlauf.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.members.not-read">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:221,223</note>
+      </notes>
+      <segment>
+        <source>Members not read: the container holds more than the bounds allow.</source>
+        <target>Dateien nicht gelesen: Der Container enthält mehr, als die Grenzen erlauben.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.details.heading">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:228,229</note>
+      </notes>
+      <segment>
+        <source>Definitions</source>
+        <target>Definitionen</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.built">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:230,232</note>
+      </notes>
+      <segment>
+        <source>Built</source>
+        <target>Gebaut</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.build-text">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:242,243</note>
+      </notes>
+      <segment>
+        <source>Build time as written</source>
+        <target>Bauzeit wie geschrieben</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.signatures">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:245,246</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.level">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:247,249</note>
+      </notes>
+      <segment>
+        <source>Functionality level</source>
+        <target>Funktionsstufe</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.builder">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:255,256</note>
+      </notes>
+      <segment>
+        <source>Builder</source>
+        <target>Ersteller</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.verification">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:257,258</note>
+      </notes>
+      <segment>
+        <source>Verification</source>
+        <target>Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.files-removed">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:260,261</note>
+      </notes>
+      <segment>
+        <source>Files removed</source>
+        <target>Dateien entfernt</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.header-md5">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:267,268</note>
+      </notes>
+      <segment>
+        <source>MD5 in the header</source>
+        <target>MD5 im Header</target>
+      </segment>
+    </unit>
+    <unit id="clamav.fact.computed-md5">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:269,270</note>
+      </notes>
+      <segment>
+        <source>MD5 computed by Quader</source>
+        <target>Von Quader berechnetes MD5</target>
       </segment>
     </unit>
     <unit id="jobs.col.kind">
@@ -15668,13 +15938,13 @@
         <target>System-Repositories</target>
       </segment>
     </unit>
-    <unit id="repo.system.hint">
+    <unit id="repo.system.hint-clamav">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:253</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:251</note>
       </notes>
       <segment>
-        <source>Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them.</source>
-        <target>Diese Repositories nutzt Quader selbst: Nur seine Scanner lesen sie, und für sie wird kein Client eingerichtet.</target>
+        <source>Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations.</source>
+        <target>Quader schreibt diese Repositories selbst. Seine Scanner lesen sie, und ein Administrator kann die ClamAV-Definitionen Ihren ClamAV-Installationen anbieten.</target>
       </segment>
     </unit>
     <unit id="repo.system.empty-filtered">
@@ -15695,22 +15965,22 @@
         <target>System</target>
       </segment>
     </unit>
-    <unit id="repo.system.no-download-malware">
+    <unit id="repo.system.no-download-clamav">
       <notes>
-        <note category="location">src/app/core/upstream-project.ts:80</note>
+        <note category="location">src/app/core/upstream-project.ts:97</note>
       </notes>
       <segment>
-        <source>Only Quader&apos;s malware scan reads this file; clients cannot download it.</source>
-        <target>Nur die Malware-Prüfung von Quader liest diese Datei; Clients können sie nicht herunterladen.</target>
+        <source>Only Quader&apos;s malware scan reads this file while ClamAV definition updates is off; clients cannot download it.</source>
+        <target>Nur die Malware-Prüfung von Quader liest diese Datei, solange ClamAV-Definitions-Updates aus ist; Clients können sie nicht herunterladen.</target>
       </segment>
     </unit>
-    <unit id="repo.system.no-install-malware">
+    <unit id="repo.system.no-install-clamav">
       <notes>
-        <note category="location">src/app/core/upstream-project.ts:81</note>
+        <note category="location">src/app/core/upstream-project.ts:98</note>
       </notes>
       <segment>
-        <source>Only Quader&apos;s malware scan reads this version; clients cannot install it.</source>
-        <target>Nur die Malware-Prüfung von Quader liest diese Version; Clients können sie nicht installieren.</target>
+        <source>Only Quader&apos;s malware scan reads this version while ClamAV definition updates is off; clients cannot install it.</source>
+        <target>Nur die Malware-Prüfung von Quader liest diese Version, solange ClamAV-Definitions-Updates aus ist; Clients können sie nicht installieren.</target>
       </segment>
     </unit>
     <unit id="repo.system.no-download">
@@ -16818,6 +17088,15 @@
       <segment>
         <source>Import log</source>
         <target>Import-Protokoll</target>
+      </segment>
+    </unit>
+    <unit id="clamav.member.name">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:318</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
       </segment>
     </unit>
     <unit id="deb.index.started">
@@ -18988,6 +19267,150 @@
         <target>Import von <ph id="0" equiv="collection" disp="collection"/> <ph id="1" equiv="version" disp="task.version"/></target>
       </segment>
     </unit>
+    <unit id="clamav.outdated">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:123</note>
+      </notes>
+      <segment>
+        <source>Outdated</source>
+        <target>Veraltet</target>
+      </segment>
+    </unit>
+    <unit id="clamav.outdated.note">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:126</note>
+      </notes>
+      <segment>
+        <source>ClamAV warns about a database older than 7 days.</source>
+        <target>ClamAV warnt vor einer Datenbank, die älter als 7 Tage ist.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.age.col.under-day">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:142</note>
+      </notes>
+      <segment>
+        <source>under a day</source>
+        <target>unter einem Tag</target>
+      </segment>
+    </unit>
+    <unit id="clamav.age.col.one">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:143</note>
+      </notes>
+      <segment>
+        <source>1 day</source>
+        <target>1 Tag</target>
+      </segment>
+    </unit>
+    <unit id="clamav.age.col.many">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:143</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="days" disp="days"/> days</source>
+        <target><ph id="0" equiv="days" disp="days"/> Tage</target>
+      </segment>
+    </unit>
+    <unit id="clamav.age.under-day">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:148</note>
+      </notes>
+      <segment>
+        <source>under a day old</source>
+        <target>weniger als einen Tag alt</target>
+      </segment>
+    </unit>
+    <unit id="clamav.age.one">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:132</note>
+      </notes>
+      <segment>
+        <source>1 day old</source>
+        <target>1 Tag alt</target>
+      </segment>
+    </unit>
+    <unit id="clamav.age.many">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:132</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="days" disp="days"/> days old</source>
+        <target><ph id="0" equiv="days" disp="days"/> Tage alt</target>
+      </segment>
+    </unit>
+    <unit id="clamav.state.in-use">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:139</note>
+      </notes>
+      <segment>
+        <source>In use</source>
+        <target>In Verwendung</target>
+      </segment>
+    </unit>
+    <unit id="clamav.state.previous">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:141</note>
+      </notes>
+      <segment>
+        <source>Previous</source>
+        <target>Vorherige</target>
+      </segment>
+    </unit>
+    <unit id="clamav.state.superseded">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:143</note>
+      </notes>
+      <segment>
+        <source>Superseded</source>
+        <target>Abgelöst</target>
+      </segment>
+    </unit>
+    <unit id="clamav.state.files-removed">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:145</note>
+      </notes>
+      <segment>
+        <source>Files removed</source>
+        <target>Dateien entfernt</target>
+      </segment>
+    </unit>
+    <unit id="clamav.verification.signature">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:165</note>
+      </notes>
+      <segment>
+        <source>ClamAV&apos;s signature verified</source>
+        <target>Signatur von ClamAV geprüft</target>
+      </segment>
+    </unit>
+    <unit id="clamav.verification.repository">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:168</note>
+      </notes>
+      <segment>
+        <source>Not verified: from the repository <ph id="0" equiv="repository" disp="source"/></source>
+        <target>Nicht geprüft: aus dem Repository <ph id="0" equiv="repository" disp="source"/></target>
+      </segment>
+    </unit>
+    <unit id="clamav.verification.unsigned">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:171</note>
+      </notes>
+      <segment>
+        <source>Unsigned container</source>
+        <target>Unsignierter Container</target>
+      </segment>
+    </unit>
+    <unit id="clamav.verification.unknown">
+      <notes>
+        <note category="location">src/app/features/packages/clamav-definitions.ts:173</note>
+      </notes>
+      <segment>
+        <source>Not recorded</source>
+        <target>Nicht festgehalten</target>
+      </segment>
+    </unit>
     <unit id="vuln.grade.rule.na-not-covered">
       <notes>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:137</note>
@@ -20111,6 +20534,17 @@
       <segment>
         <source>Settings</source>
         <target>Einstellungen</target>
+      </segment>
+    </unit>
+    <unit id="clamav.versions">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-list.html:247,250</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:113,115</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:118,121</note>
+      </notes>
+      <segment>
+        <source>Versions</source>
+        <target>Versionen</target>
       </segment>
     </unit>
     <unit id="token-form.life.d365">
@@ -40068,6 +40502,24 @@
         <target>Mit einer requirements.yml</target>
       </segment>
     </unit>
+    <unit id="setup.caption.freshclam-conf">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:189</note>
+      </notes>
+      <segment>
+        <source>Put this line into `freshclam.conf` of each ClamAV installation. `PrivateMirror` replaces ClamAV&apos;s own network.</source>
+        <target>Tragen Sie diese Zeile in `freshclam.conf` jeder ClamAV-Installation ein. `PrivateMirror` ersetzt das eigene Netz von ClamAV.</target>
+      </segment>
+    </unit>
+    <unit id="setup.caption.freshclam-run">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:191</note>
+      </notes>
+      <segment>
+        <source>Run it once: it fetches each database whole, then reports each as up to date.</source>
+        <target>Einmal ausführen: Es holt jede Datenbank vollständig und meldet danach jede als aktuell.</target>
+      </segment>
+    </unit>
     <unit id="setup.caption.ansible-publish">
       <notes>
         <note category="location">src/app/features/setup/clients.ts:188</note>
@@ -40388,6 +40840,60 @@
         <target>Ausschalten</target>
       </segment>
     </unit>
+    <unit id="clamav.on.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:109</note>
+      </notes>
+      <segment>
+        <source>Offer the ClamAV definitions to your ClamAV installations?</source>
+        <target>Die ClamAV-Definitionen Ihren ClamAV-Installationen anbieten?</target>
+      </segment>
+    </unit>
+    <unit id="clamav.on.address">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:111</note>
+      </notes>
+      <segment>
+        <source>They update from <ph id="0" equiv="address" disp="address"/>.</source>
+        <target>Sie aktualisieren sich von <ph id="0" equiv="address" disp="address"/>.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.on.public">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:113</note>
+      </notes>
+      <segment>
+        <source>Public: anyone who reaches this address can download them, without a credential.</source>
+        <target>Öffentlich: Wer diese Adresse erreicht, kann sie ohne Anmeldedaten herunterladen.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.on.confirm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:116</note>
+      </notes>
+      <segment>
+        <source>Switch on</source>
+        <target>Einschalten</target>
+      </segment>
+    </unit>
+    <unit id="clamav.off.title">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:119</note>
+      </notes>
+      <segment>
+        <source>Stop serving the ClamAV definitions?</source>
+        <target>Die ClamAV-Definitionen nicht mehr ausliefern?</target>
+      </segment>
+    </unit>
+    <unit id="clamav.off.text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:121</note>
+      </notes>
+      <segment>
+        <source>ClamAV installations that update from Quader get 404 until they are on again. Quader&apos;s own malware scan is not affected.</source>
+        <target>ClamAV-Installationen, die sich von Quader aktualisieren, erhalten 404, bis sie wieder eingeschaltet sind. Die eigene Malware-Prüfung von Quader ist nicht betroffen.</target>
+      </segment>
+    </unit>
     <unit id="wellknown.public.title">
       <notes>
         <note category="location">src/app/features/upstream/upstream-actions.ts:97</note>
@@ -40516,13 +41022,13 @@
         <target>Details</target>
       </segment>
     </unit>
-    <unit id="wellknown.system.hint">
+    <unit id="wellknown.system.hint-clamav">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registries.ts:163,164</note>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:170,171</note>
       </notes>
       <segment>
-        <source>Repositories Quader reads for its own work. They have no switch: the work that uses them decides.</source>
-        <target>Repositories, die Quader für die eigene Arbeit liest. Sie haben keinen Schalter: Die Arbeit, die sie nutzt, entscheidet.</target>
+        <source>Repositories Quader reads for its own work, which decides their state. You can offer the ClamAV definitions to your ClamAV installations.</source>
+        <target>Repositories, die Quader für die eigene Arbeit liest; diese Arbeit entscheidet über ihren Zustand. Die ClamAV-Definitionen können Sie Ihren ClamAV-Installationen anbieten.</target>
       </segment>
     </unit>
     <unit id="wellknown.description">
@@ -40627,6 +41133,24 @@
         <target>Nutzung</target>
       </segment>
     </unit>
+    <unit id="wellknown.col.clients">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:302</note>
+      </notes>
+      <segment>
+        <source>Clients</source>
+        <target>Clients</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.help.clients">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registries.ts:303</note>
+      </notes>
+      <segment>
+        <source>Whether the repository answers clients. Only the ClamAV definitions can be offered, to your ClamAV installations.</source>
+        <target>Ob das Repository Clients antwortet. Nur die ClamAV-Definitionen lassen sich anbieten, und zwar Ihren ClamAV-Installationen.</target>
+      </segment>
+    </unit>
     <unit id="wellknown.level.label">
       <notes>
         <note category="location">src/app/features/upstream/upstream-registries.ts:299</note>
@@ -40697,6 +41221,24 @@
       <segment>
         <source>Not in use by the image scanning. Its visibility is always Private.</source>
         <target>Nicht von der Image-Analyse genutzt. Die Sichtbarkeit ist immer Privat.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.level-clamav-on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:119</note>
+      </notes>
+      <segment>
+        <source>Its visibility is <ph id="0" equiv="level" disp="name"/> while ClamAV definition updates is on.</source>
+        <target>Seine Sichtbarkeit ist <ph id="0" equiv="level" disp="name"/>, solange ClamAV-Definitions-Updates an ist.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.level-clamav">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:121</note>
+      </notes>
+      <segment>
+        <source>Its visibility is Private while ClamAV definition updates is off.</source>
+        <target>Seine Sichtbarkeit ist Privat, solange ClamAV-Definitions-Updates aus ist.</target>
       </segment>
     </unit>
     <unit id="wellknown.address.heading">
@@ -40904,6 +41446,69 @@
       <segment>
         <source>The repository&apos;s limits, on its settings page</source>
         <target>Die Limits des Repositorys, auf seiner Einstellungsseite</target>
+      </segment>
+    </unit>
+    <unit id="clamav.address">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:149</note>
+      </notes>
+      <segment>
+        <source>Address of the endpoint</source>
+        <target>Adresse des Endpunkts</target>
+      </segment>
+    </unit>
+    <unit id="clamav.address.copy">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:150</note>
+      </notes>
+      <segment>
+        <source>Copy the address of the endpoint</source>
+        <target>Adresse des Endpunkts kopieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.copy">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:151</note>
+      </notes>
+      <segment>
+        <source>Copy the line</source>
+        <target>Zeile kopieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.authenticate">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:152</note>
+      </notes>
+      <segment>
+        <source>Authenticate</source>
+        <target>Authentifizieren</target>
+      </segment>
+    </unit>
+    <unit id="clamav.updater.repository">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:196</note>
+      </notes>
+      <segment>
+        <source>No updater runs: this installation takes its definitions from <ph id="0" equiv="repository" disp="repo"/>.</source>
+        <target>Kein Updater läuft: Diese Installation nimmt ihre Definitionen aus <ph id="0" equiv="repository" disp="repo"/>.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.updater.off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:198</note>
+      </notes>
+      <segment>
+        <source>The malware scan is off, so the definitions are not updated.</source>
+        <target>Die Malware-Prüfung ist aus, daher werden die Definitionen nicht aktualisiert.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.updater.none">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:199</note>
+      </notes>
+      <segment>
+        <source>No updater reports: the definitions are not updated.</source>
+        <target>Kein Updater meldet sich: Die Definitionen werden nicht aktualisiert.</target>
       </segment>
     </unit>
     <unit id="wellknown.address.saved">
@@ -41161,6 +41766,24 @@
         <target>Von der Image-Analyse genutzt</target>
       </segment>
     </unit>
+    <unit id="wellknown.system.in-use-text-clamav">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:102</note>
+      </notes>
+      <segment>
+        <source>In use by the malware scan.</source>
+        <target>Von der Malware-Prüfung verwendet.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.system.not-in-use-text-clamav">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:103</note>
+      </notes>
+      <segment>
+        <source>Not in use by the malware scan.</source>
+        <target>Nicht von der Malware-Prüfung verwendet.</target>
+      </segment>
+    </unit>
     <unit id="wellknown.system.in-use-malware">
       <notes>
         <note category="location">src/app/features/upstream/upstream-words.ts:93</note>
@@ -41168,42 +41791,6 @@
       <segment>
         <source>In use by the malware scan</source>
         <target>Von der Malware-Prüfung genutzt</target>
-      </segment>
-    </unit>
-    <unit id="wellknown.system.in-use-text-malware">
-      <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:101</note>
-      </notes>
-      <segment>
-        <source>In use by the malware scan. Its visibility is always Private.</source>
-        <target>Von der Malware-Prüfung genutzt. Die Sichtbarkeit ist immer Privat.</target>
-      </segment>
-    </unit>
-    <unit id="wellknown.system.not-in-use-text-malware">
-      <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:102</note>
-      </notes>
-      <segment>
-        <source>Not in use by the malware scan. Its visibility is always Private.</source>
-        <target>Nicht von der Malware-Prüfung genutzt. Die Sichtbarkeit ist immer Privat.</target>
-      </segment>
-    </unit>
-    <unit id="wellknown.system.level-malware">
-      <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:112</note>
-      </notes>
-      <segment>
-        <source>Its visibility is always Private: only Quader&apos;s malware scan reads it.</source>
-        <target>Die Sichtbarkeit ist immer Privat: Nur die Malware-Prüfung von Quader liest es.</target>
-      </segment>
-    </unit>
-    <unit id="setup.system-malware">
-      <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:119</note>
-      </notes>
-      <segment>
-        <source>Quader&apos;s malware scan keeps its signature database in this repository. Clients cannot use it.</source>
-        <target>Die Malware-Prüfung von Quader bewahrt ihre Signaturdatenbank in diesem Repository auf. Clients können es nicht nutzen.</target>
       </segment>
     </unit>
     <unit id="wellknown.system.not-in-use">
@@ -41278,6 +41865,69 @@
         <target>Zustand</target>
       </segment>
     </unit>
+    <unit id="clamav.setup.heading">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:95,96</note>
+      </notes>
+      <segment>
+        <source>Set up a ClamAV installation</source>
+        <target>Eine ClamAV-Installation einrichten</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.line">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:96,97</note>
+      </notes>
+      <segment>
+        <source>Put this line into freshclam.conf of each ClamAV installation; freshclam then updates from Quader.</source>
+        <target>Tragen Sie diese Zeile in freshclam.conf jeder ClamAV-Installation ein; freshclam aktualisiert sich dann von Quader.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.ca">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:102,103</note>
+      </notes>
+      <segment>
+        <source>Where Quader&apos;s certificate is issued by an internal certificate authority, freshclam must trust it: set CURL_CA_BUNDLE to the authority&apos;s file in freshclam&apos;s environment, or add the authority to the system store.</source>
+        <target>Wenn das Zertifikat von Quader von einer internen Zertifizierungsstelle ausgestellt ist, muss freshclam ihr vertrauen: Setzen Sie CURL_CA_BUNDLE in der Umgebung von freshclam auf die Datei der Zertifizierungsstelle, oder nehmen Sie die Zertifizierungsstelle in den Systemspeicher auf.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.token">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:105,106</note>
+      </notes>
+      <segment>
+        <source>Only where you lower the level below Public: a token of a service account made for this purpose, with no grant beyond reading this repository, as the password of the address. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</source>
+        <target>Nur wenn Sie die Sichtbarkeit unter Öffentlich senken: ein Token eines eigens dafür angelegten Servicekontos, das nur dieses Repository lesen darf, als Passwort der Adresse. freshclam schreibt die ganze Adresse samt Token in sein Protokoll, und ClamAV dokumentiert diesen Weg nicht.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.token-below">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:109,111</note>
+      </notes>
+      <segment>
+        <source>QUADER_TOKEN is a token of a service account made for this purpose, with no grant beyond reading this repository. freshclam writes the whole address, the token with it, into its log, and ClamAV does not document this way.</source>
+        <target>QUADER_TOKEN ist ein Token eines eigens dafür angelegten Servicekontos, das nur dieses Repository lesen darf. freshclam schreibt die ganze Adresse samt Token in sein Protokoll, und ClamAV dokumentiert diesen Weg nicht.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.setup.guide">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:112,113</note>
+      </notes>
+      <segment>
+        <source>The full guide on Set up client</source>
+        <target>Die vollständige Anleitung unter Client einrichten</target>
+      </segment>
+    </unit>
+    <unit id="clamav.updater.heading">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:121,122</note>
+      </notes>
+      <segment>
+        <source>Updater</source>
+        <target>Updater</target>
+      </segment>
+    </unit>
     <unit id="wellknown.scanner.hint">
       <notes>
         <note category="location">src/app/features/upstream/upstream-registry.html:120,122</note>
@@ -41296,6 +41946,15 @@
         <target>Die Sichtbarkeit ist immer Privat: Nur die Image-Analyse von Quader liest es.</target>
       </segment>
     </unit>
+    <unit id="setup.system-clamav">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:129</note>
+      </notes>
+      <segment>
+        <source>Quader&apos;s malware scan keeps its signature database in this repository. An administrator can offer it to your ClamAV installations.</source>
+        <target>Die Malware-Prüfung von Quader hält ihre Signaturdatenbank in diesem Repository. Ein Administrator kann sie Ihren ClamAV-Installationen anbieten.</target>
+      </segment>
+    </unit>
     <unit id="setup.system">
       <notes>
         <note category="location">src/app/features/setup/client-setup.html:38,41</note>
@@ -41303,6 +41962,78 @@
       <segment>
         <source>Quader&apos;s image scanning reads its database through this repository. Clients cannot use it.</source>
         <target>Die Image-Analyse von Quader liest ihre Datenbank über dieses Repository. Clients können es nicht nutzen.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.switch">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:137</note>
+      </notes>
+      <segment>
+        <source>ClamAV definition updates</source>
+        <target>ClamAV-Definitions-Updates</target>
+      </segment>
+    </unit>
+    <unit id="clamav.switched.on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:148</note>
+      </notes>
+      <segment>
+        <source>ClamAV definition updates is on.</source>
+        <target>ClamAV-Definitions-Updates ist an.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.switched.off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:149</note>
+      </notes>
+      <segment>
+        <source>ClamAV definition updates is off.</source>
+        <target>ClamAV-Definitions-Updates ist aus.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.section.text">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:154</note>
+      </notes>
+      <segment>
+        <source>Serves these definitions to the ClamAV installations of your company. Quader&apos;s own malware scan uses them either way.</source>
+        <target>Liefert diese Definitionen an die ClamAV-Installationen Ihres Unternehmens. Die eigene Malware-Prüfung von Quader nutzt sie in jedem Fall.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.level.public">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:163</note>
+      </notes>
+      <segment>
+        <source>Every ClamAV that reaches this address updates, without credentials.</source>
+        <target>Jedes ClamAV, das diese Adresse erreicht, aktualisiert sich ohne Anmeldedaten.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.level.internal">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:164</note>
+      </notes>
+      <segment>
+        <source>A ClamAV authenticates with a token in its address, which freshclam writes into its log.</source>
+        <target>Ein ClamAV authentifiziert sich mit einem Token in seiner Adresse, das freshclam in sein Protokoll schreibt.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.level.private">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:165</note>
+      </notes>
+      <segment>
+        <source>Only tokens of members.</source>
+        <target>Nur Token von Mitgliedern.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.level.lowered">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:174</note>
+      </notes>
+      <segment>
+        <source>This installation allows no public level, so the definitions are served at Internal: every ClamAV needs a token in its address.</source>
+        <target>Diese Installation erlaubt keine öffentliche Sichtbarkeit, deshalb werden die Definitionen als Intern ausgeliefert: Jedes ClamAV braucht ein Token in seiner Adresse.</target>
       </segment>
     </unit>
     <unit id="projects.level.built-in">
@@ -41635,6 +42366,15 @@
         <target>Werkzeug</target>
       </segment>
     </unit>
+    <unit id="scanners.col.updater-database">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:284</note>
+      </notes>
+      <segment>
+        <source>Definitions it holds</source>
+        <target>Gehaltene Definitionen</target>
+      </segment>
+    </unit>
     <unit id="scanners.col.version">
       <notes>
         <note category="location">src/app/shared/scanner/scanner-replicas.ts:242</note>
@@ -41678,6 +42418,15 @@
       <segment>
         <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> is listed.</source>
         <target>Kein Replikat von <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> ist aufgeführt.</target>
+      </segment>
+    </unit>
+    <unit id="scanners.updater.daily">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:138</note>
+      </notes>
+      <segment>
+        <source>daily built</source>
+        <target>daily gebaut</target>
       </segment>
     </unit>
     <unit id="scanners.none.reporting">
@@ -41750,6 +42499,15 @@
       <segment>
         <source>Still starting</source>
         <target>Startet noch</target>
+      </segment>
+    </unit>
+    <unit id="scanners.reason.seed">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:26</note>
+      </notes>
+      <segment>
+        <source>Seed not finished yet</source>
+        <target>Seed noch nicht fertig</target>
       </segment>
     </unit>
     <unit id="scanners.slots-value">

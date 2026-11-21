@@ -10,6 +10,15 @@
     @if (detail()?.prerelease) {
       <span class="badge" i18n="@@pkg.badge.prerelease">pre-release</span>
     }
+    <!-- A version of the ClamAV definitions says its state (R-UI-194): In use, Previous, Superseded, Files removed. -->
+    @if (clamav()?.state; as st) {
+      <span [class]="stateClass(st)">
+        @if (st === 'in_use') {
+          <span class="material-icons" aria-hidden="true">check_circle</span>
+        }
+        {{ stateText(st) }}
+      </span>
+    }
   </span>
 </quader-page-header>
 
@@ -172,8 +181,97 @@
                   </tr>
                 }
               </quader-data-table>
+              <!-- A definition container's detached signature and its member files (R-UI-194, R-CLAMAV-003). -->
+              @if (clamav(); as c) {
+                <dl class="facts clamav-files">
+                  <dt i18n="@@clamav.signature">Detached signature</dt>
+                  <dd>
+                    @if (c.detachedSignature.present) {
+                      <span i18n="@@clamav.signature.present">Present, {{ c.detachedSignature.signatures ?? 0 }} signatures. Quader passes it on; ClamAV checks it.</span>
+                    } @else {
+                      <span i18n="@@clamav.signature.none">None</span>
+                    }
+                  </dd>
+                </dl>
+                <h2 class="clamav-members-heading">{{ membersCaption }}</h2>
+                @if (c.membersRead) {
+                  <p class="hint" i18n="@@clamav.members.hint">The signature count of the header is the total; lines of a member are not always signatures.</p>
+                  <quader-data-table class="clamav-members" [caption]="membersCaption" [columns]="membersColumns" [empty]="c.members.length === 0">
+                    @for (m of c.members; track m.name) {
+                      <tr>
+                        <th scope="row" class="wrap-name" translate="no">{{ m.name }}</th>
+                        <td class="num nowrap">@if (m.size !== null) {{{ size(m.size) }}} @else {<quader-no-value />}</td>
+                        <td class="num">@if (m.lines !== null) {{{ m.lines | number }}} @else {<quader-no-value />}</td>
+                      </tr>
+                    }
+                  </quader-data-table>
+                  @if (c.members.length > 0) {
+                    <quader-disclosure class="clamav-fold" [inline]="true" [heading]="memberDigestsHeading">
+                      <dl class="digests" translate="no">
+                        @for (m of c.members; track m.name) {
+                          <dt>{{ m.name }}</dt>
+                          <dd><code>{{ m.sha256 }}</code></dd>
+                        }
+                      </dl>
+                    </quader-disclosure>
+                  }
+                } @else if (c.state === 'files_removed') {
+                  <p class="hint" i18n="@@clamav.members.removed">The files of this version were removed; its metadata stays as history.</p>
+                } @else {
+                  <p class="hint" i18n="@@clamav.members.not-read">Members not read: the container holds more than the bounds allow.</p>
+                }
+              }
             }
             @case ('details') {
+              <!-- Every field of a definition container's header (R-UI-194, R-CLAMAV-003), as text, never as markup. -->
+              @if (clamav(); as c) {
+                <h2 i18n="@@clamav.details.heading">Definitions</h2>
+                <dl class="facts clamav-facts">
+                  <dt i18n="@@clamav.fact.built">Built</dt>
+                  <dd>
+                    @if (c.builtAt; as at) {
+                      <span class="built"><time [attr.datetime]="at">{{ at | date: 'medium' }}</time>@if (clamavAge(); as a) {<span class="muted">&ngsp;· {{ a }}</span>}</span>
+                      @if (clamavOutdated()) {
+                        <span class="badge warn" [attr.title]="outdatedText"><span class="material-icons" aria-hidden="true">warning</span>{{ outdatedWord }}</span>
+                      }
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  @if (c.buildTimeText) {
+                    <dt i18n="@@clamav.fact.build-text">Build time as written</dt>
+                    <dd translate="no">{{ c.buildTimeText }}</dd>
+                  }
+                  <dt i18n="@@clamav.fact.signatures">Signatures</dt>
+                  <dd>@if (c.signatures !== null) {{{ c.signatures | number }}} @else {<quader-no-value />}</dd>
+                  <dt i18n="@@clamav.fact.level">Functionality level</dt>
+                  <dd>
+                    @if (c.functionalityLevel !== null) {
+                      {{ c.functionalityLevel }}@if (c.functionalityLevelText) {<span class="muted">&ngsp;· {{ c.functionalityLevelText }}</span>}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  <dt i18n="@@clamav.fact.builder">Builder</dt>
+                  <dd translate="no">@if (c.builder) {{{ c.builder }}} @else {<quader-no-value />}</dd>
+                  <dt i18n="@@clamav.fact.verification">Verification</dt>
+                  <dd>{{ verification() }}</dd>
+                  @if (c.filesRemovedAt; as at) {
+                    <dt i18n="@@clamav.fact.files-removed">Files removed</dt>
+                    <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+                  }
+                </dl>
+                @if (c.headerMd5 || c.computedMd5) {
+                  <quader-disclosure class="clamav-fold" [inline]="true" [heading]="checksumsHeading">
+                    <dl class="digests">
+                      <dt i18n="@@clamav.fact.header-md5">MD5 in the header</dt>
+                      <dd><code translate="no">{{ c.headerMd5 || '–' }}</code></dd>
+                      <dt i18n="@@clamav.fact.computed-md5">MD5 computed by Quader</dt>
+                      <dd><code translate="no">{{ c.computedMd5 || '–' }}</code></dd>
+                    </dl>
+                  </quader-disclosure>
+                }
+              }
               @if (image(); as img) {
                 <h2 i18n="@@pkg.image.heading">Image</h2>
                 <dl class="facts">

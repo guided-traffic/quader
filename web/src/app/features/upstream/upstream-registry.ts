@@ -23,12 +23,32 @@ import { QuaderDialog } from '../../shared/ui/dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Switch } from '../../shared/ui/switch';
-import { VisibilityIcon, installationReasons, levelName } from '../../shared/ui/visibility-level';
+import { VisibilityIcon, VisibilityLevel, VisibilityLevelControl, installationReasons, levelName } from '../../shared/ui/visibility-level';
+import { AddressField } from '../../shared/address-field';
+import { CodeWindow } from '../../shared/code/code-window';
+import { freshclamLines } from './clamav-setup';
+import { MalwareApi } from '../../api/malware-api';
+import { ScannerList, SystemApi } from '../../api/system-api';
+import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
+import { scannerGroup } from '../../shared/scanner/scanner-model';
 import { groupedFingerprint } from '../repositories/deb-signing-keys';
 import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './account-again-dialog';
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
-import { levelOptions, onOffWord, privateRowNote, rowBadge, switchLabel, systemUseSentence } from './upstream-words';
+import {
+  clientsLevelNotes,
+  clientsLoweredWarning,
+  clientsSentence,
+  clientsSwitchLabel,
+  clientsWord,
+  levelOptions,
+  onOffWord,
+  privateRowNote,
+  levelSetText as levelSetTextOf,
+  rowBadge,
+  switchLabel,
+  systemUseSentence,
+} from './upstream-words';
 
 /** The answer carries the problem of a stored account whose hosts the write would move (R-REPO-069). */
 function needsAccount(e: ApiError): boolean {
@@ -45,7 +65,23 @@ function needsAccount(e: ApiError): boolean {
  */
 @Component({
   selector: 'quader-upstream-registry',
-  imports: [DatePipe, Disclosure, ErrorNotice, FormatIconView, NgTemplateOutlet, PageHeader, RouterLink, SelectField, Switch, TextField, VisibilityIcon],
+  imports: [
+    AddressField,
+    CodeWindow,
+    DatePipe,
+    Disclosure,
+    ErrorNotice,
+    FormatIconView,
+    NgTemplateOutlet,
+    PageHeader,
+    RouterLink,
+    ScannerReplicas,
+    SelectField,
+    Switch,
+    TextField,
+    VisibilityIcon,
+    VisibilityLevelControl,
+  ],
   templateUrl: './upstream-registry.html',
   styleUrls: ['./upstream.scss', './upstream-registry.scss'],
 })
@@ -58,6 +94,8 @@ export class UpstreamRegistry {
   private readonly confirm = inject(Confirm);
   private readonly dialog = inject(QuaderDialog);
   private readonly locale = inject(LOCALE_ID);
+  private readonly systemApi = inject(SystemApi);
+  private readonly malwareApi = inject(MalwareApi);
 
   /** The route parameter `:key`, the repository's key in the project `upstream`. */
   readonly key = input.required<string>();
@@ -68,14 +106,14 @@ export class UpstreamRegistry {
   protected readonly stateError = signal<ApiError | null>(null);
   protected readonly addressError = signal<ApiError | null>(null);
   protected readonly accountError = signal<ApiError | null>(null);
-  protected readonly busy = signal<'state' | 'level' | 'address' | 'reset' | 'account' | 'remove' | null>(null);
+  protected readonly busy = signal<'state' | 'level' | 'address' | 'reset' | 'account' | 'remove' | 'clients' | null>(null);
   protected readonly levelError = signal<string | null>(null);
 
   protected readonly canWrite = computed(() => this.session.has('repositories:write-config'));
   protected readonly system = computed(() => this.item()?.kind === 'system');
   /** scanner-trivy, whose registry must serve the image scanning's database image (R-UI-188). */
   protected readonly imageScanning = computed(() => this.system() && systemWork(this.item()?.key) === 'image-scanning');
-  /** A repository with no address and no account an administrator sets: scanner-clamav, a local repository (R-REPO-075, Q-REPO-412). */
+  /** A repository with no address and no account an administrator sets: clamav, a local repository (R-REPO-075, Q-REPO-412). */
   protected readonly noAddress = computed(() => this.item()?.fixed.includes('address') ?? false);
   protected readonly systemUse = systemUseSentence;
   protected readonly retired = computed(() => this.item()?.state === 'retired');
@@ -95,6 +133,75 @@ export class UpstreamRegistry {
     const f = this.item()?.format ?? '';
     return (valueOf(this.formats) ?? []).find((x) => x.name === f)?.displayName ?? f;
   });
+
+  // ---- ClamAV definition updates (R-UI-188 for clamav, Q-UI-903) ----
+
+  /** `clamav`, the one repository with the switch **ClamAV definition updates** (R-REPO-075): its first section is the switch's. */
+  protected readonly clamav = computed(() => this.item()?.clients != null);
+  protected readonly clientsOn = computed(() => this.item()?.clients?.enabled === true);
+  protected readonly clientsLabel = clientsSwitchLabel();
+  protected readonly clientsText = clientsSentence();
+  protected readonly clientsWord = clientsWord;
+  protected readonly clientsNotes = clientsLevelNotes();
+  protected readonly loweredText = clientsLoweredWarning();
+  /** The installation allows the level Public (R-API-076); unknown counts as allowed, the server decides. */
+  protected readonly publicAllowed = computed(() => valueOf(this.choices)?.publicAvailable !== false);
+  /** On below Public where Public cannot be chosen: the switch lowered it (`public_not_allowed_lowered`, R-REPO-075). */
+  protected readonly lowered = computed(() => this.clientsOn() && this.item()?.visibility !== 'public' && !this.publicAllowed());
+  /** The level chosen in the fold **Visibility**, saved by its button. */
+  protected readonly clientsLevel = signal<VisibilityLevel>('public');
+  protected readonly levelFoldOpen = signal(false);
+  /** The one line of freshclam.conf, without and with a token (R-CLAMAV-006), from the address the item names. */
+  protected readonly freshclam = computed(() => freshclamLines(this.item()?.clients?.address ?? ''));
+  protected readonly addressLabel = $localize`:@@clamav.address:Address of the endpoint`;
+  protected readonly copyAddressLabel = $localize`:@@clamav.address.copy:Copy the address of the endpoint`;
+  protected readonly copyLineLabel = $localize`:@@clamav.setup.copy:Copy the line`;
+  protected readonly authHeading = $localize`:@@clamav.setup.authenticate:Authenticate`;
+  protected readonly levelHeading = $localize`:@@repo.visibility.heading:Visibility`;
+  // ---- Updater (R-UI-188 section 2 for clamav, Q-UI-913) ----
+
+  /** The scanner replicas, read for the updater's rows on the page of `clamav` only; a failure leaves the sentence why there are none. */
+  private readonly scanners = resource({
+    params: () => (this.clamav() ? true : undefined),
+    loader: async (): Promise<ScannerList | null> => {
+      try {
+        return await this.systemApi.scanners();
+      } catch {
+        return null;
+      }
+    },
+  });
+  /** The malware scanning's switch and source, for the sentence of a page without an updater's row. */
+  private readonly malware = resource({
+    params: () => (this.clamav() ? true : undefined),
+    loader: async () => {
+      try {
+        return (await this.malwareApi.settings()).settings;
+      } catch {
+        return null;
+      }
+    },
+  });
+  /** The list, where the updater has rows: the section shows them in the shared table of the scanners. */
+  protected readonly updaterRows = computed(() => {
+    const list = valueOf(this.scanners);
+    return list && (scannerGroup(list, 'freshclam')?.rows.length ?? 0) > 0 ? list : null;
+  });
+  /** Why no updater's row stands (R-UI-188): the definitions come from a repository, the scanning is off, or no updater reports. */
+  protected readonly updaterNote = computed((): string | null => {
+    if (!this.scanners.hasValue() || !this.malware.hasValue()) return null;
+    const m = valueOf(this.malware);
+    if (m && m.database.source === 'repository') {
+      const repo = m.database.sourceRepository ?? '';
+      return $localize`:@@clamav.updater.repository:No updater runs: this installation takes its definitions from ${repo}:repository:.`;
+    }
+    if (m && !m.enabled) return $localize`:@@clamav.updater.off:The malware scan is off, so the definitions are not updated.`;
+    return $localize`:@@clamav.updater.none:No updater reports: the definitions are not updated.`;
+  });
+
+  /** The repository's page, which lists its databases and their versions (R-UI-194). */
+  protected readonly versionsLink = computed(() => this.projectLink());
+  protected readonly setupLink = computed(() => [...this.projectLink(), 'setup']);
 
   // ---- Address (R-UI-188 section 2) ----
 
@@ -185,6 +292,7 @@ export class UpstreamRegistry {
     const r = loaded.value;
     this.etag = loaded.etag;
     this.item.set(r);
+    this.clientsLevel.set(r.clients?.enabled ? r.visibility : 'public');
     this.url.set(r.address.url);
     this.hosts.set(r.address.extraHosts.map(row));
     this.keys.set('');
@@ -237,6 +345,48 @@ export class UpstreamRegistry {
       await this.refreshAfter(saved);
     } catch (e) {
       select.value = r.visibility;
+      const error = asApiError(e);
+      if (error.code === 'public_not_allowed' || error.code === 'visibility_level_restricted') {
+        this.levelError.set(error.problem?.detail ?? error.message);
+      } else {
+        this.stateError.set(error);
+      }
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  /** **ClamAV definition updates**: on or off after the question of `UpstreamActions`; the answer is the page's new baseline. */
+  protected async toggleClients(on: boolean): Promise<void> {
+    const r = this.item();
+    if (!r || this.busy()) return;
+    this.busy.set('clients');
+    this.stateError.set(null);
+    try {
+      await this.refreshAfter(await this.actions.toggleClients(r, on, this.publicAllowed()));
+    } catch (e) {
+      this.stateError.set(asApiError(e));
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  /**
+   * **Set visibility** of the fold **Visibility** (Q-REPO-415): the level the definitions are served at while on. No question before
+   * Public: the switch's own question named it, and the definitions are ClamAV's public databases.
+   */
+  protected async saveClientsLevel(): Promise<void> {
+    const r = this.item();
+    const level = this.clientsLevel();
+    if (!r || this.busy() || level === r.visibility) return;
+    this.busy.set('level');
+    this.stateError.set(null);
+    this.levelError.set(null);
+    try {
+      const saved = (await this.api.setVisibility(r.key, level)).value;
+      this.notifier.status(levelSetTextOf(saved));
+      await this.refreshAfter(saved);
+    } catch (e) {
       const error = asApiError(e);
       if (error.code === 'public_not_allowed' || error.code === 'visibility_level_restricted') {
         this.levelError.set(error.problem?.detail ?? error.message);

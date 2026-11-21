@@ -19,13 +19,17 @@ import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { ProjectContext } from '../../core/project-context';
 import {
+  CLAMAV_KEY,
   UPSTREAM_PROJECT,
   isSystemRepository,
   isUpstreamProject,
+  mayServeClients,
   projectDescription,
   systemBadge,
   systemRepositoryNames,
+  upstreamName,
 } from '../../core/upstream-project';
+import { SystemClients } from '../../core/system-clients';
 import { UpstreamApi } from '../../api/upstream-api';
 import { stateBadge } from '../upstream/upstream-words';
 import { Confirm } from '../../shared/confirm-dialog';
@@ -154,6 +158,7 @@ export class RepositoryList {
   }
 
   private readonly upstreamApi = inject(UpstreamApi);
+  private readonly systemClients = inject(SystemClients);
   /**
    * The retired well-known repositories, by key, for a caller who reads the admin list (R-UI-190): their rows say **No longer
    * offered**, every other one that is off **Off**. Read only once the list shows one of them that is off.
@@ -243,7 +248,7 @@ export class RepositoryList {
   /** Closed at every visit; a filter opens it where it matches one of them and closes it where it matches none (Q-UI-894). */
   protected readonly systemOpen = signal(false);
   protected readonly systemHeading = $localize`:@@repo.system.heading:System repositories`;
-  protected readonly systemHint = $localize`:@@repo.system.hint:Quader keeps these repositories for itself: only its scanners read them, and no client is set up for them.`;
+  protected readonly systemHint = $localize`:@@repo.system.hint-clamav:Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations.`;
   protected readonly systemEmptyText = $localize`:@@repo.system.empty-filtered:No system repository matches.`;
   /** The filters of the drawer that are set, as the head's chips (Q-UI-422); the search text is the field's. */
   protected readonly chips = computed<readonly ListChip[]>(() => {
@@ -341,9 +346,29 @@ export class RepositoryList {
   protected readonly levelText = levelName;
 
   protected readonly classIcon = classIcon;
-  /** Set up client of a row's repository (R-UI-126); none for a system repository, which answers no client (Q-UI-896). */
+  /**
+   * Set up client of a row's repository (R-UI-126); none for a system repository while it answers no client (Q-UI-896), and for
+   * `upstream/clamav` while ClamAV definition updates is on (R-UI-192, Q-UI-908).
+   */
   protected setupLink(row: RepositorySummary): string[] | null {
-    return setupCommands(refOf(row));
+    return setupCommands(refOf(row), !this.closed(row));
+  }
+
+  /** The list holds `upstream/clamav`: its switch is asked once, so that its row offers what it answers (Q-UI-908). */
+  private readonly listsClamav = computed(() =>
+    [...this.list.items(), ...(valueOf(this.systemLoad) ?? [])].some((r) => isUpstreamProject(r.project) && r.key === CLAMAV_KEY),
+  );
+  private readonly clamavServed = resource({
+    params: () => (this.listsClamav() ? upstreamName(CLAMAV_KEY) : undefined),
+    loader: ({ params }) => this.systemClients.served(params),
+  });
+  /** A system repository that answers no client now (R-UI-193): `scanner-trivy` always, `clamav` while its switch is off. */
+  protected closed(row: RepositorySummary): boolean {
+    return this.system(row) && !(mayServeClients(row.key) && valueOf(this.clamavServed) === true);
+  }
+  /** The repository of the ClamAV definitions, whose menu leads to its databases and their versions (R-UI-192, R-UI-194). */
+  protected isClamav(row: RepositorySummary): boolean {
+    return isUpstreamProject(row.project) && row.key === CLAMAV_KEY;
   }
   /** The admin area's copy button: its name and its tooltip carry the address itself (Q-UI-330). */
   protected copyValueLabel(address: string): string {
@@ -365,7 +390,7 @@ export class RepositoryList {
    * (public base URL plus path): copied as they are. None for a system repository, whose address answers every client 404 (Q-UI-898).
    */
   protected address(row: RepositorySummary): string {
-    return this.system(row) ? '' : (row.addresses[0] ?? '');
+    return this.closed(row) ? '' : (row.addresses[0] ?? '');
   }
 
   /** A system repository of the project `upstream` (R-UI-192, R-UI-193). */

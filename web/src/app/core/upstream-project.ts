@@ -29,11 +29,28 @@ export type SystemWork = 'image-scanning' | 'malware-scan';
 
 /**
  * The system repositories of the project `upstream` (R-REPO-066, R-REPO-070, R-REPO-075): the repositories Quader reads for its own
- * work, `scanner-trivy` (the image scanning's database) and `scanner-clamav` (the malware scan's signature database), with the work
- * each serves. The product declares their keys (`wellknown.ScannerTrivyKey`, `wellknown.ScannerClamavKey`), so the UI knows them by key
- * as it knows the project, also for a caller who cannot read the admin area's item and its `kind`.
+ * work, `scanner-trivy` (the image scanning's database) and `clamav` (ClamAV's definitions, the malware scan's signature databases),
+ * with the work each serves. The product declares their keys (`wellknown.ScannerTrivyKey`, `wellknown.ClamavKey`), so the UI knows them
+ * by key as it knows the project, also for a caller who cannot read the admin area's item and its `kind`.
  */
-const SYSTEM_REPOSITORIES: Readonly<Record<string, SystemWork>> = { 'scanner-trivy': 'image-scanning', 'scanner-clamav': 'malware-scan' };
+const SYSTEM_REPOSITORIES: Readonly<Record<string, SystemWork>> = { 'scanner-trivy': 'image-scanning', clamav: 'malware-scan' };
+
+/**
+ * The system repositories an administrator can open to clients (R-REPO-075, the declaration's flag `Clients`): `clamav`, whose switch
+ * **ClamAV definition updates** serves the definitions to the company's ClamAV installations. No other declaration has the flag.
+ */
+const CLIENT_SYSTEM_REPOSITORIES: ReadonlySet<string> = new Set(['clamav']);
+
+/** The key of the repository of ClamAV's definitions in the project `upstream` (R-REPO-075). */
+export const CLAMAV_KEY = 'clamav';
+
+/**
+ * Whether `upstream/<key>` is a system repository whose clients an administrator can switch on (R-REPO-075, the development agent's
+ * Q-UI-908): the one kind of system repository that may answer clients, and then only while its switch is on.
+ */
+export function mayServeClients(key: string | null | undefined): boolean {
+  return !!key && CLIENT_SYSTEM_REPOSITORIES.has(key);
+}
 
 /**
  * Whether `<project>/<key>` is a system repository of the project `upstream`, which no client uses (R-UI-190): the one test of every
@@ -77,8 +94,8 @@ export function systemBadge(): string {
 export function systemClientSentence(key: string | null | undefined, what: 'file' | 'version'): string {
   if (systemWork(key) === 'malware-scan') {
     return what === 'file'
-      ? $localize`:@@repo.system.no-download-malware:Only Quader's malware scan reads this file; clients cannot download it.`
-      : $localize`:@@repo.system.no-install-malware:Only Quader's malware scan reads this version; clients cannot install it.`;
+      ? $localize`:@@repo.system.no-download-clamav:Only Quader's malware scan reads this file while ClamAV definition updates is off; clients cannot download it.`
+      : $localize`:@@repo.system.no-install-clamav:Only Quader's malware scan reads this version while ClamAV definition updates is off; clients cannot install it.`;
   }
   return what === 'file'
     ? $localize`:@@repo.system.no-download:Only Quader's image scanning reads this file; clients cannot download it.`
@@ -86,7 +103,7 @@ export function systemClientSentence(key: string | null | undefined, what: 'file
 }
 
 /**
- * The qualified names of the system repositories, `upstream/scanner-trivy` and `upstream/scanner-clamav`: the project's page asks
+ * The qualified names of the system repositories, `upstream/scanner-trivy` and `upstream/clamav`: the project's page asks
  * for them by name (`name` of the list, R-API-063), so its section holds them whatever page of the list they would fall on (R-UI-192).
  */
 export function systemRepositoryNames(): string[] {

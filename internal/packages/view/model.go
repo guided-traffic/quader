@@ -130,7 +130,10 @@ type VersionSummary struct {
 	SizePartial bool
 	// Digest is the version's content digest (an OCI tag: `sha256:…` of its manifest), read from the format's metadata when the caller
 	// asks (VersionFilter.WithDigest); "" for none.
-	Digest        string
+	Digest string
+	// State is the version's state from the format's metadata (the ClamAV definitions: in_use, previous, superseded, files_removed,
+	// R-UI-194), read when the caller asks (VersionFilter.WithState); "" for none.
+	State         string
 	Repositories  []qname.Repo
 	DownloadCount int64
 	// LastDownloadedAt is the latest fetch of the version by a client, by its format's rule, in any repository that holds it (R-API-065,

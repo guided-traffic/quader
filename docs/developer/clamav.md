@@ -150,6 +150,25 @@ both levels back at `private`. Every write records `repository.updated` with `cl
 on. `Repository.RefusesHandDelete()` refuses every hand delete of a local system repository in `files.Service.Delete` (Q-REPO-416). The
 malware gate passes every item of a system repository (`gate.Download.System`, Q-MAL-100).
 
+## The screens
+
+The UI of the definitions ([api-and-ui.md](../spec/api-and-ui.md) R-UI-187, R-UI-188, R-UI-193, R-UI-194; Q-UI-903 to Q-UI-905, Q-UI-908 to Q-UI-913):
+
+| File | Responsibility |
+|---|---|
+| [system-clients.ts](../../web/src/app/core/system-clients.ts) | `SystemClients.served` and `systemClosed`: whether `upstream/clamav` answers its clients now, asked once per screen (Q-UI-908); every screen that leaves out an address, a download or **Set up client** of a system repository asks it |
+| [upstream-project.ts](../../web/src/app/core/upstream-project.ts) | `mayServeClients`, `CLAMAV_KEY`: the one system repository that may serve clients |
+| [upstream-registries.ts](../../web/src/app/features/upstream/upstream-registries.ts), [upstream-actions.ts](../../web/src/app/features/upstream/upstream-actions.ts) | The row's switch **ClamAV definition updates** and its two questions (`toggleClients`) |
+| [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html), [clamav-setup.ts](../../web/src/app/features/upstream/clamav-setup.ts) | The section of the page: the switch, the endpoint's address, the level with the fold **Visibility** and the warning where Public is not allowed, the one line of `freshclam.conf` (`freshclamLines`, Q-UI-909) |
+| [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts) | The updater's replicas (kind `freshclam`): in the section **Updater** open (`view="open"`), on the malware settings in a fold, on the System page; no slots, the definitions it holds (Q-UI-913) |
+| [clamav-definitions.ts](../../web/src/app/features/packages/clamav-definitions.ts) | Reading a version's metadata (`clamavFacts`), the age and **Outdated** on a `daily` past 7 days (Q-UI-912), the states and their order, the name of a set |
+| [clamav-databases.ts](../../web/src/app/features/repositories/content/clamav-databases.ts) | The repository's page: a row per database with the version in use, its build time and age, and the sets above it (Q-UI-910) |
+| [package-detail.ts](../../web/src/app/features/packages/package-detail.ts), [package-version.html](../../web/src/app/features/packages/package-version.html), [install-panel.html](../../web/src/app/features/packages/install-panel.html) | A database's versions with their state (`include=state`, Q-API-384); a version's header fields, its detached signature and members; the install panel's way to the setup (Q-UI-911) |
+
+The renders answer the definitions' calls in the browser ([clamav.ts](../../web/e2e/renders/clamav.ts)): the profile runs no updater, and
+only the database task writes the repository. The seed switches **ClamAV definition updates** on at Public; the walks change the switch's
+state in the answers of the list and the item.
+
 ## Tests
 
 | Test | Tier | Time | Data |
@@ -157,6 +176,8 @@ malware gate passes every item of a system repository (`gate.Download.System`, Q
 | [cvd_test.go](../../internal/formats/clamav/cvd/cvd_test.go): the header, the level table, the members, the bounds, the detached signature | unit | milliseconds | containers of hundreds of bytes |
 | [conformance_test.go](../../internal/formats/clamav/conformance_test.go): the kit with exactly six skips | unit | milliseconds | the same |
 | [format_test.go](../../internal/formats/clamav/format_test.go): the descriptor, the refusals of a system-only format, the routes, the version in use, `WriteError`'s table, the snippet, the view, the refused commits | unit | milliseconds | the same |
+| `TestR_UI_194_StatesComeFromTheFormatsMetadataInOneRead` ([view_test.go](../../internal/packages/view/view_test.go)): `include=state` | unit | milliseconds | none |
+| The web specs of the screens: [clamav-definitions.spec.ts](../../web/src/app/features/packages/clamav-definitions.spec.ts), [clamav-setup.spec.ts](../../web/src/app/features/upstream/clamav-setup.spec.ts), [clamav-databases.spec.ts](../../web/src/app/features/repositories/content/clamav-databases.spec.ts) and the R-UI-187, R-UI-188, R-UI-192 to R-UI-194 cases of the neighbouring specs | web unit | about 3 s together | the fixture of [fakes-clamav.ts](../../web/src/app/api/testing/fakes-clamav.ts) |
 | `TestR_REPO_075_TheSwitchOfClamAVDefinitionUpdates` ([clamav_test.go](../../test/integration/upstream/clamav_test.go)) | integration, area `upstream` | about 2 s | rows |
 | `TestR_CLAMAV_009_AStockFreshclamUpdatesFromTheEndpoint` ([clamav_test.go](../../test/integration/malware/clamav_test.go)) | integration, area `malware` | about 7 s (two waits of 2.5 s for the replicas to read a switch) | three containers of a few hundred bytes |
 | [updater_test.go](../../internal/malware/updater/updater_test.go): the listing, the files, the drain, the status and the gauge, the seed | unit | 0.5 s | containers of hundreds of bytes in a temporary directory |

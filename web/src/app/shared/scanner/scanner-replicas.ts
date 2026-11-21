@@ -22,16 +22,20 @@ export function scannerReasonText(reason: string): string | null {
       return $localize`:@@scanners.reason.spool:Spool not writable`;
     case 'starting':
       return $localize`:@@scanners.reason.starting:Still starting`;
+    case 'seed':
+      return $localize`:@@scanners.reason.seed:Seed not finished yet`;
     default:
       return null;
   }
 }
 
 /**
- * The replicas of one kind of scanner (R-OPS-048, Q-UI-897), the one table of the three screens that show them: the System page
+ * The replicas of one kind of scanner (R-OPS-048, Q-UI-897), the one table of the screens that show them: the System page
  * (`view="system"`, the columns of every replica there: name, node, version, state, since when, heartbeat, and the tool in place of
  * Valkey), and the settings of the malware scanning and the advisory sources (`view="settings"`, closed in a fold under the page's own
- * summary: name, state, the tool's version, ClamAV's signature database, the slots). A kind without a replica says why in a sentence:
+ * summary: name, state, the tool's version, ClamAV's signature database, the slots), and the section **Updater** of `upstream/clamav`'s
+ * page (`view="open"`, the settings' columns without the fold, R-UI-188). The updater (`freshclam`) runs no calls: its rows have no
+ * slots, and its database is the set its directory holds with the age of its newest `daily` (Q-UI-913). A kind without a replica says why in a sentence:
  * none reported, the scan listener cannot tell the kind, the role `all` scans in its own process, or no scanner is configured. Every
  * value is the scanner's own statement, bounded by the server (H-1161), and is bound as text.
  */
@@ -71,41 +75,11 @@ export function scannerReasonText(reason: string): string | null {
               </tr>
             }
           </quader-data-table>
+        } @else if (view() === 'open') {
+          <ng-container *ngTemplateOutlet="settingsTable; context: { $implicit: g }" />
         } @else {
           <quader-disclosure [inline]="true" [heading]="foldHeading()">
-            <quader-data-table [caption]="caption()" [columns]="settingsColumns()">
-              @for (r of g.rows; track r.instanceUid) {
-                <tr>
-                  <th scope="row" class="wrap-name" translate="no">{{ r.name }}</th>
-                  <td class="state-cell">
-                    <ng-container *ngTemplateOutlet="state; context: { $implicit: r }" />
-                  </td>
-                  <td translate="no">
-                    @if (r.toolVersion; as v) {
-                      {{ g.tool }} {{ v }}
-                    } @else {
-                      <quader-no-value />
-                    }
-                  </td>
-                  @if (hasDatabase()) {
-                    <td>
-                      @if (r.database; as db) {
-                        <!-- One box, so that the date stands under the version also where the row stands as a block. -->
-                        <span class="database">
-                          <code class="version" translate="no">{{ db.version }}</code>
-                          @if (db.builtAt; as built) {
-                            <span class="secondary"><time [attr.datetime]="built" [attr.title]="built | date: 'medium'">{{ built | date: 'mediumDate' }}</time></span>
-                          }
-                        </span>
-                      } @else {
-                        <quader-no-value />
-                      }
-                    </td>
-                  }
-                  <td class="num" i18n="@@scanners.slots-value">{{ r.slots.inUse }} of {{ r.slots.total }}</td>
-                </tr>
-              }
-            </quader-data-table>
+            <ng-container *ngTemplateOutlet="settingsTable; context: { $implicit: g }" />
           </quader-disclosure>
         }
       } @else {
@@ -135,6 +109,51 @@ export function scannerReasonText(reason: string): string | null {
         </p>
       }
     }
+
+    <ng-template #settingsTable let-g>
+      <quader-data-table [caption]="caption()" [columns]="settingsColumns()">
+        @for (r of g.rows; track r.instanceUid) {
+          <tr>
+            <th scope="row" class="wrap-name" translate="no">{{ r.name }}</th>
+            <td class="state-cell">
+              <ng-container *ngTemplateOutlet="state; context: { $implicit: r }" />
+            </td>
+            <td translate="no">
+              @if (r.toolVersion; as v) {
+                {{ g.tool }} {{ v }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
+            @if (hasDatabase()) {
+              <td>
+                @if (r.database; as db) {
+                  <!-- One box, so that the date stands under the version also where the row stands as a block. -->
+                  <span class="database">
+                    <code class="version" translate="no">{{ db.version }}</code>
+                    @if (db.builtAt; as built) {
+                      @if (updater()) {
+                        <!-- The updater's newest daily with its age: how current the definitions it offers are (R-UI-188). -->
+                        <span class="secondary"
+                          ><ng-container i18n="@@scanners.updater.daily">daily built</ng-container>&ngsp;<quader-time-ago [at]="built" absolute="title"
+                        /></span>
+                      } @else {
+                        <span class="secondary"><time [attr.datetime]="built" [attr.title]="built | date: 'medium'">{{ built | date: 'mediumDate' }}</time></span>
+                      }
+                    }
+                  </span>
+                } @else {
+                  <quader-no-value />
+                }
+              </td>
+            }
+            @if (hasSlots()) {
+              <td class="num" i18n="@@scanners.slots-value">{{ r.slots.inUse }} of {{ r.slots.total }}</td>
+            }
+          </tr>
+        }
+      </quader-data-table>
+    </ng-template>
 
     <ng-template #state let-r>
       <div class="state">
@@ -210,11 +229,15 @@ export class ScannerReplicas {
   readonly list = input.required<ScannerList>();
   /** The kind of scanner whose replicas are shown: `trivy`, `clamav`. */
   readonly kind = input.required<string>();
-  /** The System page's columns, or the settings pages' in a fold. */
-  readonly view = input<'system' | 'settings'>('settings');
+  /** The System page's columns, the settings pages' in a fold, or the settings' columns open (the section **Updater**, R-UI-188). */
+  readonly view = input<'system' | 'settings' | 'open'>('settings');
 
   protected readonly group = computed(() => scannerGroup(this.list(), this.kind()));
   protected readonly reasonText = scannerReasonText;
+  /** The malware scanning's updater (`freshclam`, R-MAL-032): no calls, so no slots; its database is the set its directory holds. */
+  protected readonly updater = computed(() => this.kind() === 'freshclam');
+  /** A kind that runs calls has the column of its slots; the updater has none (Q-UI-913). */
+  protected readonly hasSlots = computed(() => !this.updater());
   /** Only the kinds of scanner that keep a signature database of their own have its column (ClamAV). */
   protected readonly hasDatabase = computed(() => {
     const g = this.group();
@@ -256,13 +279,21 @@ export class ScannerReplicas {
     { id: 'state', label: $localize`:@@scanners.col.state:State`, width: '12rem' },
     { id: 'tool', label: $localize`:@@scanners.col.tool:Tool` },
     ...(this.hasDatabase()
-      ? [{ id: 'database', label: $localize`:@@scanners.col.database:Signature database` } satisfies TableColumn]
+      ? [
+          (this.updater()
+            ? { id: 'database', label: $localize`:@@scanners.col.updater-database:Definitions it holds` }
+            : { id: 'database', label: $localize`:@@scanners.col.database:Signature database` }) satisfies TableColumn,
+        ]
       : []),
-    {
-      id: 'slots',
-      label: $localize`:@@scanners.col.slots:Slots`,
-      numeric: true,
-      help: $localize`:@@scanners.col.slots-help:The scans the replica runs now, of the scans it runs at a time.`,
-    },
+    ...(this.hasSlots()
+      ? [
+          {
+            id: 'slots',
+            label: $localize`:@@scanners.col.slots:Slots`,
+            numeric: true,
+            help: $localize`:@@scanners.col.slots-help:The scans the replica runs now, of the scans it runs at a time.`,
+          } satisfies TableColumn,
+        ]
+      : []),
   ]);
 }

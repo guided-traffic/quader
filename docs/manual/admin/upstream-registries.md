@@ -151,18 +151,33 @@ its detached signature `daily-28190.cvd.sign` beside it). Only Quader writes it;
 while the scanning is on and `malware.database.repository` names it (the default), else **Not in use**. No repository of the format is
 created in a project.
 
-**ClamAV definition updates** is its switch, off by default. While it is off, the repository answers no client, administrators included,
-and its level is Private. Switched on (`PUT /api/v1/upstream-repositories/clamav/clients` with `{"enabled": true}`, which asks for a
-recent sign-in), it serves the set of definitions Quader's own scanners use to every ClamAV of the company at
+**ClamAV definition updates** is its switch, off by default: in its row of **System repositories** (column **Clients**) and as the first
+section of its page. While it is off, the repository answers no client, administrators included, and its level is Private. Switched on
+(the switch asks first and names the address; through the API `PUT /api/v1/upstream-repositories/clamav/clients` with `{"enabled": true}`,
+which asks for a recent sign-in), it serves the set of definitions Quader's own scanners use to every ClamAV of the company at
 `https://<your installation>/api/clamav/upstream/clamav`, at the level Public unless you name a lower one, or Internal where the
-installation allows no Public level; the level can then be changed like any registry's. A ClamAV installation names the address in one
-line of `freshclam.conf` (`PrivateMirror`); the repository's **Set up client** page shows it. Switched off again, the level is Private and
-every request answers `404`. An installation without internet names a repository of its own as the source instead
+installation allows no Public level, which the section then says in a warning. While it is on, the section shows the address of the
+endpoint with its copy button, the level and, in the fold **Visibility**, what a ClamAV needs at each level, and the one line a ClamAV
+installation puts into `freshclam.conf` (`PrivateMirror`): the plain one at Public, the one with a token below it, and the token's form
+behind **Authenticate**; **The full guide on Set up client** leads to the repository's setup page. The section **Updater** below it
+lists the pods of `malware-updater-freshclam` with their state, freshclam's version and the definitions each holds with the age of its
+newest `daily`, or says why there is none; **Versions** leads to the repository's databases. Switched
+off again, the level is Private and every request answers `404`.
+
+The repository's own page lists its databases, each with the version in use, its build time and its age; a `daily` older than 7 days
+carries **Outdated**, because ClamAV warns about it. `main` and `bytecode` are rebuilt rarely and ClamAV does not warn about their age,
+so they carry no badge. Above them stand the set in use and, where it differs, the set before it. A
+database's page lists its versions with their state (**In use**, **Previous**, **Superseded**, **Files removed**), and a version's page
+shows every field of its header (build time, signatures, functionality level, builder, how it was verified, with the two MD5 sums in a
+fold), its detached signature and the files of its container. An installation without internet names a repository of its own as the source instead
 ([Monitoring and operations](operations.md#malware-scanning)).
 
 ## Where the system repositories show
 
-Both system repositories answer `404` to every client, administrators included, so no screen offers what would fail:
+Both system repositories answer `404` to every client, administrators included, while they answer no client (`scanner-trivy` always,
+`clamav` while ClamAV definition updates is off), so no screen offers what would fail. While the switch is on, `clamav` is offered like
+any repository you read: **Set up client**, its address and **Download**; it keeps the badge **System** and nobody deletes its files.
+While closed:
 
 - **Admin area › Repositories** lists them with their project and the badge **System** after the key, without the copy button of the
   address and without **Copy client address** in the row's menu; the menu keeps **Settings**, **Files** and, for `scanner-trivy`,

@@ -7,7 +7,8 @@ import { Notifier } from '../../core/notifier';
 import { Confirm } from '../../shared/confirm-dialog';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { VisibilityLevel, VisibilityLevelControl, installationReasons, levelName, restrictedNotes } from '../../shared/ui/visibility-level';
-import { levelSetText, publicSentence, switchedText } from './upstream-words';
+import { SystemClients } from '../../core/system-clients';
+import { clientsLoweredWarning, clientsSwitchedText, levelSetText, publicSentence, switchedText } from './upstream-words';
 
 interface SetAllData {
   readonly choices: VisibilityChoices | null;
@@ -60,6 +61,7 @@ export class UpstreamActions {
   private readonly confirm = inject(Confirm);
   private readonly dialog = inject(QuaderDialog);
   private readonly notifier = inject(Notifier);
+  private readonly systemClients = inject(SystemClients);
 
   /** The levels the caller may choose (R-API-076), for the reasons of a row's select and of the dialog; null when unknown. */
   async choices(): Promise<VisibilityChoices | null> {
@@ -90,6 +92,42 @@ export class UpstreamActions {
     }
     const saved = (await this.api.setState(r.key, on ? 'on' : 'off')).value;
     this.notifier.status(switchedText(saved));
+    return saved;
+  }
+
+  /**
+   * Switches **ClamAV definition updates** of `clamav` on or off (R-UI-187, R-UI-188, Q-UI-903), each after its question: on names
+   * the address the installations update from and who can read it (Public, or Internal where the installation allows no public
+   * level); off says that the installations get 404 and that Quader's own scan goes on. On asks for Public; the server lowers it
+   * where it must and says so in a warning, which the status line repeats.
+   */
+  async toggleClients(r: UpstreamRepository, on: boolean, publicAllowed: boolean): Promise<UpstreamRepository | null> {
+    const address = r.clients?.address ?? '';
+    const answer = await this.confirm.ask(
+      on
+        ? {
+            title: $localize`:@@clamav.on.title:Offer the ClamAV definitions to your ClamAV installations?`,
+            lines: [
+              $localize`:@@clamav.on.address:They update from ${address}:address:.`,
+              publicAllowed
+                ? $localize`:@@clamav.on.public:Public: anyone who reaches this address can download them, without a credential.`
+                : clientsLoweredWarning(),
+            ],
+            confirmLabel: $localize`:@@clamav.on.confirm:Switch on`,
+          }
+        : {
+            title: $localize`:@@clamav.off.title:Stop serving the ClamAV definitions?`,
+            lines: [
+              $localize`:@@clamav.off.text:ClamAV installations that update from Quader get 404 until they are on again. Quader's own malware scan is not affected.`,
+            ],
+            confirmLabel: $localize`:@@wellknown.off.confirm:Switch off`,
+          },
+    );
+    if (answer === null) return null;
+    const saved = (await this.api.setClients(r.key, on, on ? 'public' : undefined)).value;
+    this.systemClients.forget();
+    this.notifier.status(clientsSwitchedText(saved));
+    for (const w of saved.warnings ?? []) this.notifier.status(w.detail);
     return saved;
   }
 

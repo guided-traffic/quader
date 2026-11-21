@@ -5,7 +5,7 @@ import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api
 import { splitRef } from '../../../api/repositories-api';
 import { VulnerabilitiesApi, VulnerabilityGrade } from '../../../api/vulnerabilities-api';
 import { SessionStore } from '../../../core/session-store';
-import { isSystemRepositoryName } from '../../../core/upstream-project';
+import { systemClosed } from '../../../core/system-clients';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
@@ -192,7 +192,7 @@ export class RepositoryItemVersions {
     return columns;
   });
   /** A system repository of the project `upstream` (R-UI-193): no command for any of its versions (Q-UI-898). */
-  protected readonly system = computed(() => isSystemRepositoryName(this.repository()));
+  protected readonly system = systemClosed(() => this.repository());
 
   constructor() {
     effect(() => {

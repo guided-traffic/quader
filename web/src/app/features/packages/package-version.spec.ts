@@ -2,6 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PackagesApi } from '../../api/packages-api';
 import { FakePackagesApi, ansibleFixture, debFixture, ociFixture } from '../../api/testing/fakes-packages';
+import { clamavFixture } from '../../api/testing/fakes-clamav';
+import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
+import { UpstreamApi } from '../../api/upstream-api';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vulnerabilities';
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
 import { spokenText } from '../../testing/axe';
@@ -388,6 +391,58 @@ describe('The page of a version (R-UI-111)', () => {
       expect(text(r.root)).toContain('community.general');
       expect(r.root.querySelector<HTMLAnchorElement>('a[href="https://example.com/acme/tools/issues"]')).not.toBeNull();
       await expectAccessible(r.root);
+    });
+  });
+
+  describe('a version of the ClamAV definitions (R-UI-194)', () => {
+    async function definition(tab: string, on = false) {
+      const r = await renderScreen(
+        PackageVersionPage,
+        inProject(
+          {
+            inputs: { format: 'clamav', name: 'daily', version: '28190', tab },
+            setup: (get) => {
+              clamavFixture(get(PackagesApi) as FakePackagesApi);
+              if (on) (get(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' });
+            },
+          },
+          '/projects/upstream/packages',
+        ),
+      );
+      return r;
+    }
+
+    it('R-UI-194 R-CLAMAV-003 Files lists the members by name with the sentence, the detached signature, and no Download or Delete while the switch is off', async () => {
+      const { root } = await definition('files');
+      expect(text(root.querySelector('.pkg-meta')!)).toContain('In use');
+      const members = [...root.querySelectorAll('.clamav-members tbody th')].map((th) => text(th));
+      expect(members).toEqual(['daily.info', 'daily.ndb']);
+      expect(text(root)).toContain('The signature count of the header is the total; lines of a member are not always signatures.');
+      expect(text(root.querySelector('.clamav-files')!)).toContain('Present, 2 signatures. Quader passes it on; ClamAV checks it.');
+      expect(root.querySelector('a[download]')).toBeNull();
+      expect([...root.querySelectorAll('button')].some((b) => text(b) === 'Delete')).toBe(false);
+      expect(text(root.querySelector('[data-testid="install-system"]')!)).toContain('ClamAV definition updates is off');
+      await expectAccessible(root);
+    });
+
+    it('R-UI-194 while ClamAV definition updates is on, a stored container downloads and the install panel leads to the client setup', async () => {
+      const { root } = await definition('files', true);
+      expect(root.querySelector('a[download]')!.getAttribute('href')).toBe('/api/v1/projects/upstream/repositories/clamav/content/daily/28190/daily.cvd');
+      expect(text(root.querySelector('[data-testid="install-clamav"]')!)).toContain('A ClamAV installation always takes the version in use');
+      expect(root.querySelector('.setup-link a')!.getAttribute('href')).toBe('/projects/upstream/repositories/clamav/setup?client=freshclam');
+    });
+
+    it('R-UI-194 R-CLAMAV-003 Details shows every field of the header as text and the two MD5 in a closed fold', async () => {
+      const { root } = await definition('details');
+      const dl = root.querySelector('.clamav-facts')!;
+      const facts = Object.fromEntries([...dl.querySelectorAll('dt')].map((dt) => [text(dt), text(dt.nextElementSibling!)]));
+      expect(facts['Signatures']).toBe('2,076,903');
+      expect(facts['Functionality level']).toBe('210 · ClamAV 1.5 or later');
+      expect(facts['Builder']).toBe('raynman');
+      expect(facts['Verification']).toBe("ClamAV's signature verified");
+      expect(facts['Build time as written']).toBe('21 Nov 2026 07-00 +0000');
+      expect(root.querySelector('.clamav-fold button')!.getAttribute('aria-expanded')).toBe('false');
+      await expectAccessible(root);
     });
   });
 });

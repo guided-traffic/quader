@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PackagesApi } from '../../api/packages-api';
 import { FakePackagesApi, ansibleDocsFixture, ansibleFixture, debFixture, ociFixture } from '../../api/testing/fakes-packages';
+import { clamavFixture } from '../../api/testing/fakes-clamav';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vulnerabilities';
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
 import { buttonByText, expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
@@ -237,5 +238,17 @@ describe('The package page: its versions (R-UI-110)', () => {
     const docs = collection.root.querySelector('.pkg-docs-link a')!;
     expect(text(docs)).toBe('Documentation of 1.2.0');
     expect(docs.getAttribute('href')).toBe('/projects/web/packages/ansible/acme.tools@1.2.0?tab=documentation');
+  });
+
+  it('R-UI-194 Q-UI-904 a database of the ClamAV definitions shows its versions with their state, the version in use first', async () => {
+    const r = await open({ format: 'clamav' }, (fake) => clamavFixture(fake), 'daily');
+    expect(versions(r)).toEqual(['28190', '28189', '28188']);
+    expect(rows(r).map((tr) => text(tr.querySelector('th .version-cell')!).replace('check_circle', '').trim())).toEqual([
+      '28190 In use',
+      '28189 Previous',
+      '28188 Files removed',
+    ]);
+    expect(r.fake.versionFilters.at(-1)).toMatchObject({ include: ['state'] });
+    await expectAccessible(r.root);
   });
 });

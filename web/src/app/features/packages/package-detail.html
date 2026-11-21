@@ -67,6 +67,14 @@
               @if (v.prerelease) {
                 <span class="badge" i18n="@@pkg.badge.prerelease">pre-release</span>
               }
+              @if (stateBadge(v.state); as b) {
+                <span [class]="b.cls">
+                  @if (b.cls === 'ok') {
+                    <span class="material-icons" aria-hidden="true">check_circle</span>
+                  }
+                  {{ b.text }}
+                </span>
+              }
             </span>
           </th>
           <td class="num size"><quader-version-size [bytes]="v.sizeBytes" [partial]="v.sizePartial" /></td>

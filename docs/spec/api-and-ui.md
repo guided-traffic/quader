@@ -1583,7 +1583,7 @@ remain as their owners define them.)
 | GET | `/api/v1/packages` | Packages; filters `format`, `repository` (both repeatable; the qualified name `<projectKey>/<repoKey>`), `project`, `q` (name and description), `namePrefix`, `keyword`, `createdFrom` / `createdTo` (first visible version); `sort` `name`, `createdAt`, `updatedAt` and their descending forms (default `name`); `include=vulnerabilities` (R-UI-052) | visible versions (below); anonymous where allowed |
 | GET | `/api/v1/packages/lookup?format=npm&name=@team-a/ui` | Resolve a name to the package | as list |
 | GET | `/api/v1/packages/{packageId}` | Package summary | as list |
-| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-publishedAt` (default), `publishedAt`, `-version`, `version` (the format's version precedence); `include=digest` (R-UI-052) | as list |
+| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-publishedAt` (default), `publishedAt`, `-version`, `version` (the format's version precedence); `include=digest` (R-UI-052), `include=state` (R-UI-194) | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}` | Version details | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/readme` | Sanitized README HTML; wiki content (`x-quader-part: wiki`, R-API-058) | as list, then the wiki check ([authorization.md](authorization.md) R-AUTHZ-034) |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/docs`, `…/docs/entries/{type}/{name}`, `…/docs/files/{file}` | The documentation of a version of a format that has one (Ansible Galaxy: the tree with search, one plugin's page, a Markdown file): `getPackageVersionDocs`, `getPackageVersionDocEntry`, `getPackageVersionDocFile`, [formats/ansible.md](formats/ansible.md) R-ANS-036; wiki content (Q-API-260, Q-API-261); 404 for a format without documentation | as list, then the wiki check of R-AUTHZ-034 ([formats/ansible.md](formats/ansible.md) R-ANS-037) |
@@ -1619,7 +1619,10 @@ remain as their owners define them.)
 - The `versions` list entries hold `version`, `prerelease`, `publishedAt`, `sizeBytes`, `sizePartial` (R-API-080), `repositories`
   (the qualified names `<projectKey>/<repoKey>` of the repositories the caller may read), `downloadCount` and `lastDownloadedAt`
   (R-API-065); with `include=digest` also
-  `digest`, the content digest the format's version metadata names (an OCI tag: `sha256:…` of its manifest, R-UI-052), absent for a format without one.
+  `digest`, the content digest the format's version metadata names (an OCI tag: `sha256:…` of its manifest, R-UI-052), absent for a format without one;
+  with `include=state` also `state`, the member `state` of the format's version metadata (the ClamAV definitions: `in_use`, `previous`,
+  `superseded`, `files_removed`, R-UI-194), read in the same one read of the page as the digest and absent for a format without one
+  ([Q-API-384](#q-api-384--the-version-list-reads-a-versions-state-from-the-formats-metadata-behind-includestate)).
   With `include=vulnerabilities`, `GET /api/v1/packages` adds `vulnerabilityGrade` to each entry for a signed-in caller of an installation
   that scans: the grade of the entry's `latestVersion` over the repositories the filter names ([vulnerability-scanning.md](vulnerability-scanning.md)
   R-VULN-038, R-VULN-039), in a fixed number of statements per page; a caller who is anonymous or a failure to read the grades leaves the
@@ -8320,7 +8323,13 @@ Priority: **MVP** · Covers: quader-only
      shared table of the scanner replicas (Q-UI-897), each with its state, freshclam's version and the newest daily it holds with its age;
      without a row the sentence says why: "No updater runs: this installation takes its definitions from ops/clamav-db." for the source
      `repository`, "The malware scan is off, so the definitions are not updated." while it is off, and "No updater reports: the
-     definitions are not updated." otherwise; the link **Versions** leads to the repository's page of R-UI-194.
+     definitions are not updated." otherwise; the link **Versions** leads to the repository's page of R-UI-194. The updater's rows are the
+     replicas of the kind `freshclam` of `GET /api/v1/system/scanners` in the settings' columns without a fold and without slots, the
+     set its directory holds with "daily built" and the age of its newest `daily`
+     ([Q-UI-913](#q-ui-913--the-updater-is-one-more-kind-of-scanner-row-without-slots-with-the-definitions-it-holds)). The one line of the
+     first section, without and with a token, is built from the item's `clients.address` as the format's snippet writes it, with the link to
+     the full client setup
+     ([Q-UI-909](#q-ui-909--the-admin-page-shows-the-one-line-of-freshclam-from-the-items-address-and-links-the-full-guide)).
   2. **Address**, open ([Q-UI-831](#q-ui-831--the-address-the-archive-keys-and-the-account-are-on-the-registrys-own-page)):
      **Upstream URL** (a URL field), **Further hosts** (the editor of R-UI-082) and, for a Debian or Ubuntu archive, **Archive keys**
      (the fingerprints of the keys and a text area for an armored block, behind the fold **Replace the keys**). While the address is
@@ -8499,12 +8508,17 @@ The owner's words of 2026-11-21: "wir ziehen alle verfügbaren Metadaten aus dem
 ([formats/clamav.md](formats/clamav.md) R-CLAMAV-003, R-CLAMAV-007;
 [Q-UI-904](#q-ui-904--the-definitions-show-as-the-repositorys-packages-the-version-in-use-first)).
 
-- **Where.** The repository's **Packages** of `upstream/clamav` (`/projects/upstream/repositories/clamav/packages`, R-UI-111's screens), opened
+- **Where.** The repository's page of `upstream/clamav` (`/projects/upstream/repositories/clamav`, where every repository lists its packages,
+  R-UI-052; R-UI-111's screens for a database and a version), opened
   from **Versions** of R-UI-188 and R-UI-192, for whoever reads the repository: an auditor and an administrator always, every reader of its
   level while ClamAV definition updates is on.
-- **The list**: three rows, `bytecode`, `daily`, `main`, each with the version in use, its build time and its age; an age of 7 days or more
-  carries the `warn` badge **Outdated** with "ClamAV warns about a database older than 7 days." in its tooltip and as the row's note. Above
-  the list one muted line names the set in use (`main-63.daily-28190.bytecode-339`) and, where it differs, the set before it.
+- **The list**: three rows, `bytecode`, `daily`, `main`, each with the version in use, its build time and its age ("under a day", "1 day",
+  "8 days"); a `daily` built more than 7 days ago carries the `warn` badge **Outdated** with "ClamAV warns about a database older than 7
+  days." in its tooltip and as the row's note, and `main` and `bytecode`, which ClamAV rebuilds rarely, show their age without a badge
+  and without the sentence ([Q-UI-912](#q-ui-912--only-daily-is-outdated-by-its-age-as-clamav-warns-only-about-daily)). Above
+  the list one muted line names the set in use (`main-63.daily-28190.bytecode-339`) and, where it differs, the set before it. The rows are
+  read with the versions' state (`include=state`) and the details of the one version in use of each database
+  ([Q-UI-910](#q-ui-910--the-databases-and-their-versions-read-the-state-from-the-version-list-and-the-build-time-from-the-version-in-use)).
 - **A database's page**: its versions newest first, the version in use first with the badge **In use** (`ok`), then **Previous**,
   **Superseded** and, muted, **Files removed** for the history (R-MAL-034); per version the build time and age, the signatures, the
   functionality level with "ClamAV 0.103 or later" *(example)*, the builder, and **Verification** ("ClamAV's signature verified", "Not
@@ -8514,20 +8528,25 @@ The owner's words of 2026-11-21: "wir ziehen alle verfügbaren Metadaten aus dem
   (present, its number of signatures, "Quader passes it on; ClamAV checks it"); and **Members**: a table of the container's member files
   (name, size, lines, SHA-256 in a closed fold), sorted by name, with the sentence "The signature count of the header is the total; lines
   of a member are not always signatures." A version whose members were not read says so.
-- **No install panel** while the switch is off; while it is on, the panel shows the client setup of R-CLAMAV-006 instead of a command per
-  version: a ClamAV installation always takes the version in use.
+- **No install panel** while the switch is off (the sentence of R-UI-193 says why); while it is on, the panel shows, instead of a command per
+  version, the sentence "A ClamAV installation always takes the version in use: point freshclam at Quader once, and it updates by itself."
+  and **Set up client**, which leads to the client setup of R-CLAMAV-006
+  ([Q-UI-911](#q-ui-911--the-install-panel-of-a-definitions-version-leads-to-the-client-setup)). A database's page shows its versions'
+  state as the badge after the version, the version in use first while the table keeps its default order; the build time and the other
+  facts of a version are on the version's page.
 - The texts of a header (the builder, the build time's text) are shown as text, never as markup.
 
 Acceptance criteria (Vitest, the package screens' specs with a fixture of the three databases, about 1 s; rendered under rule 11, light and
-dark, wide and narrow, with a daily in use, a previous one, a history row and a version 8 days old): the list's rows and the **Outdated**
-badge at 7 days and not at 6; the page's badges in order; the members table and the sentence; no **Delete** on a file.
+dark, wide and narrow, with a daily in use, a previous one, a history row, a main 9 days old, a bytecode 8 days old, and the list once
+more with a daily 8 days old): the list's rows, the **Outdated** badge on a daily past 7 days and not at 7 days or less, never on main or
+bytecode; the page's badges in order; the members table and the sentence; no **Delete** on a file.
 
 ### R-UI-193 · A system repository is set apart wherever it is shown, and nothing offers what it refuses
 Priority: **MVP** · Covers: quader-only
 
 The owner's word of 2026-11-21 to what the builder of R-UI-192 had reported and left: "Vom Builder gemeldet, nicht geändert: direkt
 nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system repository of the project `upstream` (`scanner-trivy`,
-`scanner-clamav`; R-REPO-066) answers every client's request, every download by path and every deploy with 404, for every caller
+`clamav`; R-REPO-066) answers every client's request, every download by path and every deploy with 404, for every caller
 (R-REPO-070, R-REPO-075); the management API reads it. The UI knows the two by their qualified names (`isSystemRepository`,
 `isSystemRepositoryName` of `upstream-project.ts`, Q-UI-893).
 
@@ -8539,7 +8558,8 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
   never offers it, and a version's **Files** tab offers no **Download** for a file it holds.
 - **Why, once** ([Q-UI-899](#q-ui-899--where-a-download-or-a-command-is-left-out-one-sentence-names-the-work-that-reads-it)): where the
   download address of a file stood, and in the install panel of a version that only system repositories hold, one muted sentence:
-  "Only Quader's malware scan reads this file; clients cannot download it." (`scanner-clamav`), "Only Quader's image scanning reads this
+  "Only Quader's malware scan reads this file while ClamAV definition updates is off; clients cannot download it." (`clamav`), "Only
+  Quader's image scanning reads this
   version; clients cannot install it." (`scanner-trivy`), and the other two of the same form.
 - **One name** ([Q-UI-900](#q-ui-900--the-admin-page-of-the-upstream-registries-names-the-same-two-system-repositories)): the admin
   area's page **Upstream registries** heads its second table **System repositories**, as the project's page heads its section, in
@@ -8552,6 +8572,13 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
   admin area's list of repositories, the top bar's suggestions (also its frequently visited repositories) and the tab **Repositories** of
   the search's results show them with the neutral badge **System** after the key, part of a suggestion's spoken name ("scanner-trivy ·
   upstream, System"). The project's own section has its heading and no badge in its rows.
+- **While ClamAV definition updates is on** ([Q-UI-908](#q-ui-908--upstreamclamav-answers-its-clients-while-its-switch-is-on-and-every-screen-treats-it-so)):
+  `upstream/clamav` answers its clients (R-REPO-075), and every screen treats it as a repository the reader reads: its row and its page offer
+  **Set up client**, its page and its files their addresses and **Download**, the install panel the sentence of R-UI-194, and its setup page
+  the client setup of R-CLAMAV-006. What stays: the badge **System**, its section of the project's page, no upload, no new folder and no
+  **Delete** of a file (Q-REPO-416). The UI asks the switch of `upstream/clamav` only (`SystemClients`): a caller with
+  `repositories:read-config` from the admin area's item, anyone else by reading the repository at all, which is private and fixed while
+  the switch is off. `scanner-trivy` answers no client in any state.
 - **Left as they are**: **Recently opened** in the side bar lists a system repository like any other repository the reader opened (a
   visit is a visit); the row menus and the content page keep **Files**, **Settings** and, for `scanner-trivy`, **Vulnerabilities**
   (R-UI-192); a project's package list lists what a system repository holds.
@@ -8562,10 +8589,13 @@ Acceptance criteria (Vitest, about 1 s together: the R-UI-193 cases of `core/ups
 Q-UI-900 case of `upstream-registries.spec.ts`; rendered under rule 11: `admin-repositories-upstream`, `files-system`, `admin-upstream`,
 `search-system`, `search-field-system`):
 
-- The admin list of `upstream` shows `scanner-trivy` and `scanner-clamav` with **System**, no copy button, and the menu of
+- The admin list of `upstream` shows `scanner-trivy` and `clamav` with **System**, no copy button, and the menu of
   `scanner-trivy` **Settings**, **Files**, **Vulnerabilities**; `npmjs` keeps its copy button and **Copy client address**.
-- The page of `upstream/scanner-clamav/main-63/main.cvd` has **Delete** and no **Download**, no address field, the sentence, and in
+- The page of `upstream/clamav/main/63/main.cvd` while ClamAV definition updates is off has no **Delete** (Q-REPO-416) and no **Download**,
+  no address field, the sentence, and in
   **Details** one curl command, the item's; its folder's table has the columns Name, Size and Last change.
+- With ClamAV definition updates on (Q-UI-908), the row of `clamav` in the project's section has **Set up client**, its setup page is the
+  client setup of R-CLAMAV-006, and a stored container of one of its versions has **Download**; `scanner-trivy` still has none of them.
 - The opened row of an image of `scanner-trivy` has its tags and no command, and the client setup is never asked; its **Details** has no
   address field.
 - A version that only `upstream/scanner-trivy` holds: the install panel says the sentence and asks for no snippet, **Files** has no
@@ -21186,6 +21216,20 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) A member of the repository document | A merge patch | No operation | A member the product refuses for every other repository, and a widening in a general patch |
 
 **Choice:** (a). **Applied in the spec:** R-API-083; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073, R-REPO-075.
+
+### Q-API-384 · The version list reads a version's state from the format's metadata behind `include=state`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It is the
+smallest addition the screens of R-UI-194 needed: the state of each version of a ClamAV database.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `include=state` on `GET …/versions`: the member `state` of the format's version metadata, in the same one read of the page as `include=digest` (chosen) | A generic member | No format contract change; a format without the member answers none; only a caller that asks pays | The core names a member of a format's metadata, as it does for `digest` |
+| (b) The version details per version | No change | — | One read per version |
+| (c) A view adapter member `State` | A contract change | Typed | Every format would declare it for one format's need |
+
+**Choice:** (a). **Applied in the spec:** R-API-029. Code: [service.go](../../internal/packages/view/service.go) `fillFromMetadata`,
+[packages_api.go](../../internal/api/v1/packages_api.go).
 ### Q-UI-897 · A scanner replica is one more kind of row: one table for the System page and the settings of both scannings
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's
@@ -21296,6 +21340,104 @@ Status: **Decided by the development agent** — selected from the options below
 agent would revisit (c) if teams move their remotes between company registries.
 
 **Applied in the spec:** R-UI-082.
+
+### Q-UI-908 · `upstream/clamav` answers its clients while its switch is on, and every screen treats it so
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-193 says
+what a system repository offers while it answers no client; R-REPO-075 opens `upstream/clamav` to its clients while **ClamAV definition
+updates** is on, and the specification did not say which of R-UI-193's rules then still hold.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While on, `upstream/clamav` offers what any repository the reader reads offers: **Set up client**, its addresses, **Download** of a stored file, the install panel's way to the setup; it keeps the badge **System**, its section and no upload, folder or delete (chosen) | One rule: a screen offers what the server answers | The company's administrator copies the address where every repository has it; a reader downloads a container the endpoint serves anyway | Every screen that leaves out an address asks the switch: one read of the admin item per screen for an administrator, kept 5 s |
+| (b) Only **Set up client** and the admin page while on; the addresses and downloads stay out | Least change | Fewer reads | The page hides an address and a download the server answers, the opposite of R-UI-193's reason |
+| (c) A flag on the repository list's items that says the repository answers clients | The server says it | No second read | An API member for one repository, and the list's item is every reader's |
+
+**Choice:** (a). The UI knows the one repository that may serve clients by its key (`mayServeClients`, the declaration's flag `Clients`),
+and asks its switch once per screen (`SystemClients`, `systemClosed`): a caller with `repositories:read-config` reads the admin area's
+item; anyone else reads the repository only while the switch is on, because it is private and fixed while off. A principal a global
+policy names reads a private repository too and is then offered a setup that answers 404 while the switch is off; that is accepted.
+Revisit when a second system repository may serve clients, or when the list's item carries the fact. **Applied in the spec:** R-UI-190,
+R-UI-192, R-UI-193. Code: [system-clients.ts](../../web/src/app/core/system-clients.ts),
+[project-links.ts](../../web/src/app/core/project-links.ts) `setupCommands`.
+
+### Q-UI-909 · The admin page shows the one line of freshclam from the item's address and links the full guide
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The section builds `PrivateMirror <address>` and its token form from `clients.address` as the format's snippet writes them, with the note on the CA, the token behind **Authenticate**, and links to **Set up client** and **Versions** (chosen) | No read of the client setup | The plain path is one line on the page where the switch is; the full guide is one click away | The rule of the line is written twice, in the format's template and in the UI (`freshclamLines`), each with its test |
+| (b) The section reads the client setup of the repository | One source | The server's words | The answer follows the repository's level, so at Public it has no token form to show behind **Authenticate** |
+| (c) Only a link to **Set up client** | Least | One place | The owner's plain path asks for the line where the switch is |
+
+**Choice:** (a). **Versions** stands in the section **Updater** (Q-UI-913). **Applied in the spec:** R-UI-188. Code:
+[clamav-setup.ts](../../web/src/app/features/upstream/clamav-setup.ts), [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html).
+
+### Q-UI-910 · The databases and their versions read the state from the version list and the build time from the version in use
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version list carries a version's `state` behind `include=state`, read from the format's metadata in the one read of the page that `include=digest` makes (Q-API-384); the list of databases reads the details of each database's version in use for its build time (chosen) | A generic member, as `digest` is | Three databases cost one list, three version lists and three details; the badges of a database's page come with its list | The build time of every version is on the version's page, not in the database's table |
+| (b) The details of every listed version | No API change | Every fact in the table | One read per version: a database keeps its history rows for a rescan cycle |
+| (c) A screen of its own with an API of its own | — | Exact | Against Q-UI-904's choice of the package screens |
+
+**Choice:** (a). **Applied in the spec:** R-API-029, R-UI-194. Code:
+[clamav-databases.ts](../../web/src/app/features/repositories/content/clamav-databases.ts),
+[clamav-definitions.ts](../../web/src/app/features/packages/clamav-definitions.ts).
+
+### Q-UI-911 · The install panel of a definitions' version leads to the client setup
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While the switch is on: one sentence that a ClamAV installation always takes the version in use, and **Set up client** with the client `freshclam`; while off, the sentence of R-UI-193 (chosen) | No command per version | Nothing on the page suggests a version can be picked | The line itself is one click away |
+| (b) The snippet of `freshclam.conf` in the panel | The line on the page | One click less | The same line on every version's page, which reads as if it were that version's |
+
+**Choice:** (a). **Applied in the spec:** R-UI-194. Code: [install-panel.html](../../web/src/app/features/packages/install-panel.html).
+
+
+### Q-UI-912 · Only `daily` is outdated by its age, as ClamAV warns only about `daily`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-194 marked
+every database **Outdated** from 7 days on; the renders showed `main` and `bytecode` flagged on the first day, because ClamAV rebuilds them
+rarely, a false alarm an administrator would see at once.
+
+What ClamAV does, read in its source at the tag `clamav-1.5.5`, `libclamav/cvd.c`, function `cli_cvdload` (lines 559 to 576): only when
+the loaded file's name contains `daily.` (`strstr(filename, "daily.")`) does the engine compare the container's build time with the clock,
+warn "The virus database is older than 7 days!" when the difference is more than 604,800 seconds, and take that container's version and
+build time as the engine's database version. No other database's age is checked.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Outdated** and its sentence on `daily` alone, past 604,800 seconds as the engine counts; `main` and `bytecode` show their age only (chosen) | The rule of ClamAV's engine | The badge says what the administrator's ClamAV would say, and nothing it would not | A `main` that the network stopped publishing would not be marked; ClamAV does not mark it either |
+| (b) Every database from 7 days on, as before | One rule for three rows | — | Two false alarms in normal operation |
+| (c) The set's newest build time, once above the list | One badge | — | The newest is `daily`'s anyway, and the row that is old would not carry it |
+
+**Choice:** (a). The version's page follows the same rule. **Applied in the spec:** R-UI-194; [formats/clamav.md](formats/clamav.md)
+R-CLAMAV-003. Code: [clamav-definitions.ts](../../web/src/app/features/packages/clamav-definitions.ts) `isOutdated`.
+
+### Q-UI-913 · The updater is one more kind of scanner row, without slots, with the definitions it holds
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The API reports
+the updater `malware-updater-freshclam` as a scanner replica of the kind `freshclam` (R-OPS-048, Q-OPS-224, Q-OPS-226): its state, the
+reason `seed` until its seed ended, freshclam's version, the set its directory holds with the build time of its newest `daily`, and no
+slots (`slots.total` is 0: it runs no calls).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The shared table of the scanners (Q-UI-897) shows the kind as every other: on the System page in the group `scanner`, on the malware scanning's settings in a fold of its own under the scanners', and open in the section **Updater** of `upstream/clamav`'s page; for this kind no column **Slots**, and the column **Definitions it holds** with the set and "daily built" and the age of its `daily` (chosen) | One table, one kind more | Three screens, one look; a row without slots is no defect, because the column is not there | The settings page gains a second fold |
+| (b) A table of its own for the updater | — | Its own words | A second table of replicas, against Q-UI-897 |
+| (c) The section **Updater** only | — | Least | The System page lists it anyway, and the malware settings, where its definitions are used, would not |
+
+**Choice:** (a). The reason `seed` reads "Seed not finished yet". Without a row the section says why (R-UI-188's three sentences), from
+the malware scanning's settings (`source`, `enabled`); a reader who may not read them gets "No updater reports …". **Applied in the
+spec:** R-UI-188. Code: [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
+[upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html),
+[malware-settings.html](../../web/src/app/features/settings/malware-settings.html).
 ## What this does not cover
 
 

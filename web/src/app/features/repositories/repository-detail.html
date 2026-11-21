@@ -104,8 +104,12 @@
         <section class="open-section managed" aria-labelledby="repo-visibility-fixed">
           <h2 id="repo-visibility-fixed" i18n="@@repo.visibility.heading">Visibility</h2>
           <p class="fixed-level">
-            <quader-visibility-icon level="private" /><span>{{ systemLevel() }}</span>
+            <quader-visibility-icon [level]="systemLevelValue()" /><span>{{ systemLevel() }}</span>
           </p>
+          <!-- clamav's level is set with its switch in the admin area (R-UI-190, Q-UI-903). -->
+          @if (clientsCapable()) {
+            <ng-container *ngTemplateOutlet="managedLine" />
+          }
         </section>
       } @else if (repo.visibility; as levels) {
         <div class="open-section">

@@ -33,6 +33,7 @@ export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> =
   ],
   deb: [{ id: 'apt', label: 'APT (apt, apt-get)' }],
   ansible: [{ id: 'ansible-galaxy', label: 'Ansible Galaxy (ansible-galaxy)' }],
+  clamav: [{ id: 'freshclam', label: 'freshclam' }],
 };
 
 export function clientsOf(format: string): readonly ClientChoice[] {
@@ -184,6 +185,10 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
         $localize`:@@setup.caption.ansible-requirements:Install it with \`ansible-galaxy collection install -r requirements.yml\`.`,
         $localize`:@@setup.fold.requirements:With a requirements.yml`,
       );
+    case 'freshclam.configure.conf':
+      return text($localize`:@@setup.caption.freshclam-conf:Put this line into \`freshclam.conf\` of each ClamAV installation. \`PrivateMirror\` replaces ClamAV's own network.`);
+    case 'freshclam.install':
+      return text($localize`:@@setup.caption.freshclam-run:Run it once: it fetches each database whole, then reports each as up to date.`);
     case 'ansible-galaxy.publish.collection':
       return text($localize`:@@setup.caption.ansible-publish:Publishes an archive built with \`ansible-galaxy collection build\`.`);
     default:

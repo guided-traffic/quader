@@ -1,5 +1,5 @@
 import { ScannerList } from '../../api/system-api';
-import { sampleScannerReplica, sampleScanners } from '../../api/testing/fakes';
+import { sampleScannerReplica, sampleScanners, withUpdater } from '../../api/testing/fakes';
 import { expectAccessible, renderScreen, text } from '../../testing/screen';
 import { scannerGroups, waitingScanners } from './scanner-model';
 import { ScannerReplicas } from './scanner-replicas';
@@ -107,5 +107,19 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     const orphan = scannerGroups({ kinds: [], items: [sampleScannerReplica()] });
     expect(orphan.map((g) => [g.deployment, g.replicas])).toEqual([['vuln-scanner-trivy', null]]);
     expect(waitingScanners(orphan)).toEqual([]);
+  });
+
+  it('R-UI-188 Q-UI-913 the updater has no slots: its rows show its state, freshclam\'s version and the set it holds with the age of its daily', async () => {
+    const { root } = await render({ list: withUpdater(sampleScanners(), { state: 'starting', reason: 'seed' }), kind: 'freshclam', view: 'open' });
+    expect(root.querySelector('quader-disclosure')).toBeNull();
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').trim());
+    expect(heads).toEqual(['Name', 'State', 'Tool', 'Definitions it holds']);
+    const row = text(root.querySelector('tbody tr')!);
+    expect(row).toContain('freshclam 1.5.5');
+    expect(row).toContain('main-63.daily-28190.bytecode-339');
+    expect(row).toContain('daily built');
+    expect(row).toContain('Seed not finished yet');
+    expect(row).not.toContain('of 0');
+    await expectAccessible(root);
   });
 });

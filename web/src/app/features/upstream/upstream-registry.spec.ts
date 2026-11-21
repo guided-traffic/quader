@@ -1,15 +1,30 @@
 import { UpstreamApi } from '../../api/upstream-api';
-import { FakeUpstreamApi } from '../../api/testing/fakes-upstream';
+import { VisibilityApi } from '../../api/visibility-api';
+import { SystemApi } from '../../api/system-api';
+import { FakeSystemApi, sampleScanners, withUpdater } from '../../api/testing/fakes';
+import { MalwareApi } from '../../api/malware-api';
+import { FakeMalwareApi, malwareSettings } from '../../api/testing/fakes-malware';
+import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
+import { FakeVisibilityApi } from '../../api/testing/fakes-projects';
 import { button, buttonByText, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { UpstreamRegistry } from './upstream-registry';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 
-async function render(key: string, options: { capabilities?: readonly string[]; setup?: (api: FakeUpstreamApi) => void } = {}) {
+async function render(
+  key: string,
+  options: { capabilities?: readonly string[]; setup?: (api: FakeUpstreamApi) => void; publicAvailable?: boolean } = {},
+) {
   const r = await renderScreen(UpstreamRegistry, {
     inputs: { key },
     ...(options.capabilities ? { capabilities: options.capabilities } : {}),
-    setup: (get) => options.setup?.(get(UpstreamApi) as FakeUpstreamApi),
+    setup: (get) => {
+      options.setup?.(get(UpstreamApi) as FakeUpstreamApi);
+      if (options.publicAvailable === false) {
+        const v = get(VisibilityApi) as FakeVisibilityApi;
+        v.stored = { ...v.stored, settings: { ...v.stored.settings, publicAvailable: false } };
+      }
+    },
   });
   return { ...r, api: r.get(UpstreamApi) as FakeUpstreamApi };
 }
@@ -92,10 +107,9 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(text(root)).toContain('The registry must serve the image aquasec/trivy-db.');
   });
 
-  it('R-UI-188 R-REPO-075 scanner-clamav says the malware scan uses it, and has no address and no account to set', async () => {
-    const { root } = await render('scanner-clamav');
-    expect(text(root)).toContain('In use by the malware scan. Its visibility is always Private.');
-    expect(root.querySelector('[role="switch"]')).toBeNull();
+  it('R-UI-188 R-REPO-075 clamav says the malware scan uses it, and has no address and no account to set', async () => {
+    const { root } = await render('clamav');
+    expect(text(root)).toContain('In use by the malware scan.');
     expect(root.querySelector('#wk-address, #wk-account')).toBeNull();
     expect(text(root)).not.toContain('aquasec/trivy-db');
     // A local repository listed by nobody and downloaded by no client: its badge and its Details say so (Q-UI-883).
@@ -104,8 +118,81 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(text(root)).toContain('Its settings page and its dates.');
     expect(text(root)).not.toContain('Who lists the registry');
     expect(text(root)).not.toContain('Listed by');
-    const unused = await render('scanner-clamav', { setup: (a) => a.set('scanner-clamav', { inUse: false }) });
-    expect(text(unused.root)).toContain('Not in use by the malware scan. Its visibility is always Private.');
+    const unused = await render('clamav', { setup: (a) => a.set('clamav', { inUse: false }) });
+    expect(text(unused.root)).toContain('Not in use by the malware scan.');
+  });
+
+  it('R-UI-188 Q-UI-903 R-CLAMAV-006 the section ClamAV definition updates: off shows the switch alone; on shows the address, the level and the one line', async () => {
+    const { fixture, root, api } = await render('clamav');
+    expect(text(root.querySelector('h2')!)).toBe('ClamAV definition updates');
+    const toggle = root.querySelector<HTMLButtonElement>('[role="switch"]')!;
+    expect(toggle.getAttribute('aria-label')).toBe('ClamAV definition updates');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    expect(text(root)).toContain("Serves these definitions to the ClamAV installations of your company. Quader's own malware scan uses them either way.");
+    expect(root.querySelector('quader-address-field')).toBeNull();
+    expect(text(root)).not.toContain('PrivateMirror');
+
+    toggle.click();
+    await settle(fixture);
+    expect(text(overlay())).toContain('Offer the ClamAV definitions to your ClamAV installations?');
+    expect(text(overlay())).toContain(`They update from ${CLAMAV_ENDPOINT}.`);
+    expect(text(overlay())).toContain('Public: anyone who reaches this address can download them, without a credential.');
+    buttonByText(overlay(), 'Switch on').click();
+    await settle(fixture);
+    expect(api.calls).toContainEqual({ op: 'clients', key: 'clamav', body: { enabled: true, level: 'public' } });
+    expect(root.querySelector('[role="switch"]')!.getAttribute('aria-checked')).toBe('true');
+    expect(root.querySelector<HTMLInputElement>('quader-address-field input')!.value).toBe(CLAMAV_ENDPOINT);
+    expect(text(root.querySelector('.level-now')!)).toContain('Public');
+    expect(text(root.querySelector('.clamav-setup')!)).toContain(`PrivateMirror ${CLAMAV_ENDPOINT}`);
+    expect(text(root)).not.toContain('This installation allows no public level');
+    await expectAccessible(root);
+  });
+
+  it('R-UI-188 Q-REPO-415 the fold Visibility says what a ClamAV needs at each level and sets the level; below Public the line carries the token', async () => {
+    const { fixture, root, api } = await render('clamav', {
+      setup: (a) => a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public', fixed: ['state', 'address', 'account'] }),
+    });
+    const fold = root.querySelector('.level-fold')!;
+    expect(text(fold)).toContain('Every ClamAV that reaches this address updates, without credentials.');
+    expect(text(fold)).toContain('A ClamAV authenticates with a token in its address, which freshclam writes into its log.');
+    expect(text(fold)).toContain('Only tokens of members.');
+    root.querySelector<HTMLInputElement>('.level-fold input[type="radio"][value="internal"]')!.click();
+    await settle(fixture);
+    button(root, 'Set visibility').click();
+    await settle(fixture);
+    expect(api.calls).toContainEqual({ op: 'visibility', key: 'clamav', body: { level: 'internal' } });
+    expect(text(root.querySelector('.clamav-setup')!)).toContain('PrivateMirror https://clamav:${QUADER_TOKEN}@quader.example.com/api/clamav/upstream/clamav');
+  });
+
+  it('R-REPO-075 Q-UI-903 where the installation allows no public level, switching on says Internal, and the section warns', async () => {
+    const { fixture, root, api } = await render('clamav', {
+      publicAvailable: false,
+      setup: (a) => (a.publicAllowed = false),
+    });
+    root.querySelector<HTMLButtonElement>('[role="switch"]')!.click();
+    await settle(fixture);
+    expect(text(overlay())).toContain('This installation allows no public level, so the definitions are served at Internal');
+    buttonByText(overlay(), 'Switch on').click();
+    await settle(fixture);
+    expect(api.calls.at(-1)).toEqual({ op: 'clients', key: 'clamav', body: { enabled: true, level: 'public' } });
+    expect(text(root.querySelector('.level-now')!)).toContain('Internal');
+    expect(text(root.querySelector('.clients-section .banner-warning')!)).toContain('every ClamAV needs a token in its address');
+  });
+
+  it('R-UI-188 switching ClamAV definition updates off asks first, and a reader sees the word and no switch', async () => {
+    const on = { clients: { enabled: true, address: CLAMAV_ENDPOINT }, visibility: 'public' as const, fixed: ['state' as const, 'address' as const, 'account' as const] };
+    const { fixture, root, api } = await render('clamav', { setup: (a) => a.set('clamav', on) });
+    root.querySelector<HTMLButtonElement>('[role="switch"]')!.click();
+    await settle(fixture);
+    expect(text(overlay())).toContain("ClamAV installations that update from Quader get 404 until they are on again. Quader's own malware scan is not affected.");
+    buttonByText(overlay(), 'Switch off').click();
+    await settle(fixture);
+    expect(api.calls).toContainEqual({ op: 'clients', key: 'clamav', body: { enabled: false } });
+    expect(root.querySelector('quader-address-field')).toBeNull();
+    const reader = await render('clamav', { capabilities: ['repositories:read-config'], setup: (a) => a.set('clamav', on) });
+    expect(reader.root.querySelector('[role="switch"]')).toBeNull();
+    expect(text(reader.root.querySelector('.clients-section .word')!)).toBe('On');
+    expect(reader.root.querySelector('.level-fold button.btn-confirm')).toBeNull();
   });
 
   it('R-UI-188 a retired registry says so and shows only who lists it; a reader changes nothing', async () => {
@@ -144,5 +231,30 @@ describe("A well-known repository's page (R-UI-188)", () => {
     ]);
     expect(text(details)).toContain('And 1 more virtual repository.');
     await expectAccessible(root);
+  });
+
+  it('R-UI-188 Q-UI-913 the section Updater lists the updater\'s replicas, or says why there is none, and leads to the versions', async () => {
+    const withRow = await renderScreen(UpstreamRegistry, {
+      inputs: { key: 'clamav' },
+      setup: (get) => ((get(SystemApi) as FakeSystemApi).scannersResult = withUpdater(sampleScanners())),
+    });
+    const section = withRow.root.querySelector('.updater-section')!;
+    expect(text(section.querySelector('h2')!)).toBe('Updater');
+    expect(text(section.querySelector('tbody tr')!)).toContain('quader-malware-updater-freshclam-7c9f5d6b8-m4k2t');
+    expect(section.querySelector('a')!.getAttribute('href')).toBe('/projects/upstream/repositories/clamav');
+    await expectAccessible(withRow.root);
+
+    const note = async (setup: (m: FakeMalwareApi) => void) => {
+      const r = await renderScreen(UpstreamRegistry, { inputs: { key: 'clamav' }, setup: (get) => setup(get(MalwareApi) as FakeMalwareApi) });
+      return text(r.root.querySelector('[data-testid="updater-none"]')!);
+    };
+    expect(await note(() => undefined)).toBe('No updater reports: the definitions are not updated.');
+    expect(await note((m) => (m.current = malwareSettings({ enabled: false })))).toBe('The malware scan is off, so the definitions are not updated.');
+    expect(
+      await note((m) => {
+        const s = malwareSettings();
+        m.current = { ...s, database: { ...s.database, source: 'repository', sourceRepository: 'ops/clamav-db' } };
+      }),
+    ).toBe('No updater runs: this installation takes its definitions from ops/clamav-db.');
   });
 });

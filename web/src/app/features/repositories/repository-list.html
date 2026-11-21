@@ -241,7 +241,13 @@
             >Files</a
           >
           <!-- >>> M4b vulnerabilities -->
-          @if (row.format !== 'generic' && row.class !== 'virtual') {
+          <!-- The ClamAV definitions: their databases with the version in use (R-UI-192, R-UI-194). -->
+          @if (isClamav(row)) {
+            <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'repositories', row.key]" i18n="@@clamav.versions"
+              >Versions</a
+            >
+          }
+          @if (row.format !== 'generic' && row.format !== 'clamav' && row.class !== 'virtual') {
             <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'vulnerabilities']" [queryParams]="{ repository: refOf(row) }" i18n="@@repo.action.vulnerabilities"
               >Vulnerabilities</a
             >

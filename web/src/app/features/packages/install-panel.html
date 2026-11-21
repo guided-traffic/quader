@@ -7,6 +7,15 @@
     <!-- Held by system repositories of upstream alone, which answer every client 404: no command that would fail (Q-UI-898,
          Q-UI-899). -->
     <p class="system-note" data-testid="install-system">{{ note }}</p>
+  } @else if (clamavServed()) {
+    <!-- The ClamAV definitions: a ClamAV installation always takes the version in use, so the panel leads to the client setup
+         instead of a command per version (R-UI-194, R-CLAMAV-006). -->
+    <p class="system-note" data-testid="install-clamav" i18n="@@clamav.install.note">A ClamAV installation always takes the version in use: point freshclam at Quader once, and it updates by itself.</p>
+    @if (setupLink(); as setup) {
+      <p class="setup-link">
+        <a class="btn btn-default" [routerLink]="setup" [queryParams]="{ client: 'freshclam' }" i18n="@@repo.content.tab.setup">Set up client</a>
+      </p>
+    }
   } @else {
     <quader-install-command
       [format]="format()"
