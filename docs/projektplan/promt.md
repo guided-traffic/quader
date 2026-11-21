@@ -1188,7 +1188,9 @@ runs are in `git log`; this section holds the current state.
   with an error line, because the scanning is on by default and that stack has no `freshclam`.
   **Its pipeline (run 44869974792):** the jobs that gate the release were green and the release was cut at 06:29; at
   that time the three integration shards, `UI layout checks` and the legs `npm`, `oci`, `ci`, `push`, `access-long`
-  and `vuln` (the first run of the malware case and of the ClamAV image on a runner) were still running.
+  and `vuln` (the first run of the malware case and of the ClamAV image on a runner) were still running. **It ended
+  green on every job at 06:58**, those ten among them; `UI layout checks` ran the malware screens' render cases for
+  the first time on a runner.
   **The owner's installation took the release by itself at 06:37**, three minutes after the chart was published
   (read on the cluster, nothing changed there): the release reports the new chart, the fifth certificate is
   ready, two pods each of `api`, `packages`, `worker`, `scanner` and `malware-scanner` are ready on the new image
@@ -1202,8 +1204,7 @@ runs are in `git log`; this section holds the current state.
   its first update. **Not verified:** a scan of a real artifact there (the installation holds no content); the
   loader's refusal path in a cluster; H-1141; the image database's fetch on that installation (not looked for).
 - **The stack's lock and the coordination tests (one commit of the type `test` on the branch `fix/it-lock`, mended
-  at 04:44, see the malware scan's entry above for what it broke; its four areas are green, and it lands by itself
-  after the malware scan's pipeline):**
+  at 04:44, see the malware scan's entry above for what it broke; its four areas are green, landed at 07:00):**
   `test/integration/locked.sh` runs a command under the stack's lock from the main checkout or a worktree, loads the
   stack's environment, never removes the lock file, waits without a timeout and holds the lock as long as the test
   binaries live; the developer page names the commands. **What `lockf` had really done, shown on scratch files, and it
@@ -1224,9 +1225,9 @@ runs are in `git log`; this section holds the current state.
   (316.6 s), `bastion` (120.5 s) and `coordination` (238.8 s), the first three being the ones the first script
   broke. A call of the script inside the script passed too (`coordination`, 238.5 s): the inner call found the lock
   it already held and did not wait for itself. Rebased onto the malware scan's landing without a conflict; on that
-  commit build, vet with the integration and the end-to-end build tags, `shellcheck` and links are green. **It
-  lands as a commit of its own when the malware scan's pipeline has ended**, because a push before that would
-  cancel the legs still running. Still not verified: the `flock` path on Linux; two runs competing for the lock on
+  commit build, vet with the integration and the end-to-end build tags, `shellcheck` and links are green. **Landed on 2026-11-21 at 07:00 as a commit of its own**, after the malware scan's pipeline had ended (a push
+  before that would have cancelled the legs still running), with the full unit run before the push; no restart of
+  the owner's UI backend, because the commit holds no product code. Its pipeline is run 44873483199. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
 - **In work** (06:50): one builder, **the two scanner units take their tool's name** (since 06:48, the owner's
   decision of that morning, standing rules): the kinds `scanner` and `malware-scanner` become `vuln-scanner-trivy` and
@@ -1236,9 +1237,10 @@ runs are in `git log`; this section holds the current state.
   specification and the documentation in the same commit, and the rule goes into the repository's `CLAUDE.md`. No
   screen changes; the builder reports what the System page and the malware settings show for a scanner replica. The
   owner's values name none of the renamed keys (read); they are rendered against the new chart before it lands, and the
-  installation's upgrade replaces both Deployments and leaves the two old certificate Secrets behind. **Waiting to
-  land:** the lock script's commit, rebased and green, after the malware scan's pipeline. No builder of the malware
-  scan is at work; their records, kept until the walkthrough:
+  installation's upgrade replaces both Deployments and leaves the two old certificate Secrets behind. **Housekeeping at 07:02:** the worktrees and branches of the malware scan's landing, of its third package and of
+  the lock script are removed, every commit of them being on `main` (the third package's as the commits of the
+  landing: no difference between its tip and the landed tree but this plan); nine worktrees of another session
+  stay. No builder of the malware scan is at work; their records, kept until the walkthrough:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
