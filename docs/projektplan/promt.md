@@ -1317,15 +1317,35 @@ runs are in `git log`; this section holds the current state.
   npm's keys and attestations endpoints with Q-SIG-34 as option (a), NuGet, Debian, Ansible's upload of
   signatures, generic, the Bastion). Each names the files it touched outside its area, so that the landing
   orders the two commits; package 4 (the screens) follows package 2's operations.
+  **Asked back by package 2 at 14:17 and decided by the development agent:** the store's interface carried a
+  project's ID as a number, and the specification named a column of that type on a table that does not
+  exist; a project's ID is a uuid (read in the schema and the code), so the fields and columns carry the uuid
+  and the specification is corrected in the package's commit. **A deviation, seen at 14:17:** package 2's
+  builder had started three helpers of its own, so six agents ran where the owner's rule says four; it was
+  told to keep it at those three and to report how the work was split; they were not stopped, because two
+  other builders were about to finish. **For every builder's brief from now on:** a builder starts no agents
+  of its own.
 - **The pipeline of the correcting push (run 44902596352) ended at 13:52 with one red job, `integration (shard
-  b)`, which holds no release back; its repair is in work since 13:53.** One test of the area `upstream` holds
+  b)`, which holds no release back; its repair landed at 14:10.** One test of the area `upstream` holds
   every table that references a repository by a cascading key in one of two lists, purged with a retired
   repository of the upstream registries or kept; the signatures' first package added such a table (the
   attachments) and its builder had run seventeen areas, not that one. One builder writes the migration that
   lets the purge take the attachments, puts the table into the test's list and writes down the rule on the
   database's developer page; the two builders of the signatures' packages 2 and 3 were told the rule for
-  their own tables. It lands with the next push, renumbered into the order of landing. Every other job of the
-  run was green, the layout checks with the presets' new states among them.
+  their own tables. Every other job of the run was green, the layout checks with the presets' new states among
+  them. **The repair** (its builder worked from 13:53 to 14:08): a migration replaces the purge's function with
+  one delete added, for the attachments that hang on no item (a remote's document); those of an item already
+  went with the item; signatures and their objects exist once per installation and are left to the cleanup of
+  orphans, the origin of an upload goes with its item. The test's list and its purge case hold the table now,
+  and the database's developer page tells the next builder to run the area `upstream` for a table with such a
+  key. On the commit as rebased, each exit 0: build, the full unit run, generate-check, the lint, the complexity
+  check, links and check; by its builder under the lock the areas `upstream` and `signatures`. The owner's UI
+  backend started with it before the push (the schema step applied). **Its release was cut at 14:25**; the image, the chart and the owner's installation are being followed. **Left by it:** nothing calls
+  the cleanup of orphaned signatures before the signatures' package 2 is built, so signatures and objects that
+  a purge or a deletion leaves without an attachment stay in the database until then; only the function was
+  tested, not the whole purge job with attachments that the real hooks recorded. **Caught beside it:** the
+  builder that assembles the ClamAV change had met the same red test and begun a repair of its own; it was
+  told to drop it, and its two migrations follow this one in number.
 - **The pipeline of the 12:55 push went red on the job `chart` at 13:02, which holds the release back; corrected
   and pushed at 13:10.** Cause: a specification commit of the morning (the ClamAV change's) had written values
   that are specified and not built into the copy of the values file under R-HA-031, which a chart test holds
