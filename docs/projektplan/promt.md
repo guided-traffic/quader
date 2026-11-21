@@ -939,7 +939,18 @@ runs are in `git log`; this section holds the current state.
   client asks for the archive, or the second usage dimension of `upstream` counts a row twice. A builder reads the
   leg's artifacts and the two specifications for it (since 01:19). If the two features meet in a case neither page
   decides (who pays for the bytes of a background download a probe started), that goes to the owner as a decision
-  with what every format does today, and is not picked in code.
+  with what every format does today, and is not picked in code. **The fourth red leg, at 01:28, cause not known
+  yet:** `e2e (ha-faults)`, `TestHAFaults_ValkeySlow` (Valkey answers every command up to 2 s late for three minutes
+  under the npm load). Every npm command exited 0 and `/readyz` stayed 200; but 176 of 37,217 requests of the load,
+  all tarballs, were answered 429 after almost exactly 10 s, and the p99 while Valkey was slow was 4.07 s against the
+  bound of R-HA-057 (the baseline of 235 ms plus twice `valkey.command_timeout`, 1.235 s). Ten seconds is the wait
+  of the limit of parallel downloads, the limiter of the drain leg's refusals; the hold here is Valkey and not
+  PostgreSQL. The case failed in the nightlies of 2026-11-11 and 2026-11-18 on the runners' starvation, without a
+  429. Not known: which mode answered (the cluster's counter on a slow Valkey or a replica's share after the
+  circuit opened), how many round trips to Valkey a download makes for limits and usage since the download limits
+  landed, whether those go through the circuit, and what the leg did in the last real run. The builder of the
+  drain leg's diagnosis reads it (since 01:30); a decided defect is fixed, an undecided case (may a download wait
+  on a slot's bookkeeping in Valkey at all) comes back as a decision, and no limit is raised for a test.
 - **The state cell of a replica on Admin area › System and the names of the malware events in the audit log, landed
   on 2026-11-20 in the evening's fourth code push**, held until the legs of the run before it had ended: the fix's run showed, with the backend
     starting again, one layout finding of 381 cases: a replica that is ready with a failing check that does not gate
@@ -960,7 +971,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (01:23), three builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnosis of the nightly's Ansible leg); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
+- **In work** (01:30), four builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once, the diagnoses of the nightly's Ansible leg and of its slow-Valkey leg); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly: the fixes of the platform matrix and of the development profile's PostgreSQL:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1029,7 +1040,7 @@ runs are in `git log`; this section holds the current state.
     bytes. **Not verified:** the route's answer for a version that a vulnerability finding blocks (the route never
     reaches a format's serve path). **Seen beside it:** the registry routes of the scan listener are not narrowed to
     the image scanner's name as the malware routes are; a route outside the format host must charge the usage itself
-    or its row names no repository; the area `vulnimage` sleeps two seconds for a flush. **Second stage reported at 01:25 and put on `feat/malware` by the development agent**
+    or its row names no repository; the area `vulnimage` sleeps two seconds for a flush. **Second stage reported at 01:21 and put on `feat/malware` by the development agent**
     (two commits, a fast-forward; on the tip build, the full unit run of 175 packages, links and check are green): the
     commit hook inserts a row for every committed file in the commit's transaction and wakes the job (R-MAL-001); the
     job `malware-scan` takes asked rows first, then new, recent and the cycle's, keeps one slot free for a download
