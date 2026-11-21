@@ -1052,7 +1052,7 @@ runs are in `git log`; this section holds the current state.
     of the builder's own without a finding. The longest English name measures 340 px against the 342 px an action
     has at 390 px (computed from the gutter and the cell's padding, not measured on a rendered page); the German
     names wrap to two lines without breaking a word.
-- **In work** (02:16), two builders (package 3 of the malware scan on the branch `feat/malware`, package B of the scanner sent back once); the builders of the malware scan's packages 1, 2 and 4 have finished; held for the end of the nightly, each on a branch of its own: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165):
+- **In work** (03:04), one builder (package B of the scanner, sent back once); every package of the malware scan is built and its branch waits for the development agent's gates; collected on the branch `fixes/nightly` and held for the end of the nightly: three commits of the type `test` (the platform matrix, the development profile's PostgreSQL, the Ansible limits case) and two of the type `fix` (the limits' slots, the poolers' connect timeout with the test's reading of F-165):
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
@@ -1185,8 +1185,48 @@ runs are in `git log`; this section holds the current state.
     about a second each, two integration tests of about 4 s; nothing end to end yet. **Not verified:** the changed
     CI job on CI; `clamd` in a pod, its memory, its file system, the time to ready. **Seen beside it:** the batched
     marking of what was downloaded lately reads the verdicts' table from its start at each batch; the settings page
-    of a system repository offers access details, download limits and notes. **Second stage since 01:49**: the
-    loader, a kind cluster with the real image, the measurements, the one end-to-end case in the set `vuln`.
+    of a system repository offers access details, download limits and notes. **Second stage reported at 03:04**
+    (on its branch; the landing branch moves to it when the development agent's integration run on the earlier tip
+    has ended, because that run reads the same worktree): the first stage's two commits are squashed, the tree
+    byte-identical. **The loader** of the scanner's database behind package 2's interface: it reads the database
+    route with the scanner's own certificate every 5 s until a version is loaded and every minute after, checks each
+    file against the listing's size and SHA-256, moves the files `clamd` reads aside, renames the new ones in and
+    tells `clamd` to load; a version `clamd` refuses is put back and reported, so that the worker's task puts the
+    previous version in use again. **The end-to-end case, one, in the set `vuln`:** with the real `clamd` and a
+    database of a few signatures that flag the tests' marker, deployed to a repository of the installation's own as an
+    installation without internet does, a file with the marker is refused 403 through `/files/`, a clean one served,
+    npm installs nothing of a package whose archive holds the marker, and with the switch on a download not checked
+    yet is answered after its scan; 3.1 s in the set once the database is loaded. `make e2e SET=vuln` and `SET=push`
+    passed on a kind cluster of its own. **A defect the cluster showed before it could reach `main`:** with the
+    scanning on by default the development profile rendered the malware scanner in every profile, and with only the
+    earlier packages on the branch that scanner never became ready, so every kind leg's start would have waited ten
+    minutes and failed, and `freshclam` would have fetched the real database in every leg; the malware scanning is
+    now off in every profile but `vuln`, and there it runs without internet (Q-MAL-90). **Measured once on the
+    cluster with the pinned image (arm64), written into the specification:** `clamd` runs as an unprivileged user on
+    a read-only root file system with every capability dropped and writes two directories; with ClamAV's whole
+    database (113 MB on disk, the copy of the source scan, no new fetch) it holds 994 to 1,000 MiB resident and does
+    not double at a reload (1,929 MiB with the concurrent reload on, which is why it stays off, Q-MAL-89); a pod is
+    ready 21 s after its start, 9 s with the tests' database; a new version is loaded within a minute in about 9 s,
+    the pod briefly unready; a warm scan takes 3 ms for 1 KiB, 5 ms for 1 MiB and 250 ms for 100 MiB (the first of
+    each 12 ms, 78 ms and 4.3 s). The real `clamd` answers an encrypted archive and a crossed size bound with the
+    names the scanner's table expects. From it: `clamd`'s request goes from 1,536 to 1,280 MiB with the limit at 2
+    GiB, and the sizing profiles size the malware scanner (Q-HA-364). **After a refused reload `clamd` holds no
+    database at all** and a second reload does not mend it, so the loader puts the files back and restarts `clamd`
+    (Q-MAL-89). Also: the four alerts with their rule tests; the page of `scanner-clamav` says "Local repository".
+    **Its decisions:** Q-MAL-89 to 91, Q-HA-364, Q-UI-884, the gap H-1141 (a version `clamd` refuses at a pod's
+    start leaves the pod unready, and if every scanner starts at once nothing puts it back). Gates with exit 0:
+    build, the full unit run, generate-check, lint, cyclo, gosec, chart lint and tests, links and check, the UI
+    tests, the UI profile's configuration, the three bare starts, the areas `malware`, `upstream`, `vulnimage` and
+    `coordination`. **What it cost:** the loader's unit test 0.03 s; nothing in integration; the end-to-end case 3.1
+    s, 15 s on a fresh cluster, and 14 s for the leg `vuln` to load the ClamAV image into its nodes beside the pull of
+    74 MiB; no other leg runs a malware scanner. **Not verified:** anything on CI (the image's pull on a runner);
+    amd64; the refusal path in the cluster (a fake and by hand in Docker); H-1141. **For the owner's installation**
+    (read from its values): the worker's label for the way to the internet is there, so `freshclam` reaches ClamAV's
+    servers on 443 (that the cluster's policy admits their network is not verified); the malware scanner needs no
+    label; the two pods ask for 1.5 CPU and 3 GiB with limits of 5 GiB, `freshclam` 50 m and 128 MiB beside each
+    worker; the values' TLS keys are the change it waits for anyway. **Seen beside it:** the suite builds its test
+    upstream's and its clients' images under shared tags on the machine's Docker, which parallel builders can
+    overwrite.
   **The run of every integration area on the landing branch** (the development agent's, since 01:49, once the three
   packages were on it): every area once under the stack's lock, on the tip with the screens, the gate, the scanning
   side and the first stage of the database and the chart. On that tip build is green; the unit run and the UI tests
