@@ -1425,7 +1425,12 @@ runs are in `git log`; this section holds the current state.
   lock the areas `signatures`, `upstream`, `npm`, `ociremote`, `ansiblelocal`, `debremote`, `packages`,
   `backup` and `malware`, three of them again after the last rebase that changed code. The owner's values
   render against its chart unchanged (39 objects). The owner's UI backend started with it before the push
-  (the schema step applied). **Its release was cut at 18:04**; the image, the chart and the owner's installation are being followed, and its run is left to end before the next code push. **Not verified:** signatures made by real clients; a live
+  (the schema step applied). **Its release was cut at 18:04**, image and chart were published at 18:10, and the owner's installation runs it
+  since 18:13 (read on the cluster at 18:15: every Deployment ready, no error line of `api`, `packages` or the
+  worker). **Seen there, which the builder could not verify:** the worker's first refresh of the shipped trust
+  root reached the signing service's update repository from his cluster (eight answers 200 and one 404, the
+  probe for a newer root, which is the protocol's way of finding none) and logged no failure. Its run is left
+  to end before the next code push. **Not verified:** signatures made by real clients; a live
   refresh of the shipped root; real timestamp authorities beyond the chains read from twelve nuget.org
   packages; the heap bound of the read is asserted by no test; the wiring of the requests' counter has no
   test; a whole backup and restore of the signatures' tables; the recomputation with the object store stopped.
