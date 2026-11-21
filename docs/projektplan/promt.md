@@ -1310,7 +1310,7 @@ runs are in `git log`; this section holds the current state.
   touch the chart's page); its worktree and branch are removed. Its three packages follow the first stage's.
   **Found by it and left (section 8):** the decisions' index has no rows for the second stage's decisions.
 - **The pipeline of the ClamAV change's push (run 44910514928) ended at 15:29 with two red jobs, neither of
-  which holds a release back; their repair is in work since 15:30.** `integration (shard b)`: the area
+  which holds a release back; their repair landed at 16:20.** `integration (shard b)`: the area
   `packages` holds the clients the formats list names per format, and the new format `clamav` with its client
   `freshclam` was not in what the test expects (the ClamAV builders had run the areas `malware` and
   `upstream`). `UI layout checks`: the admin area's list of repositories scrolls 7 px sideways at 1,280 px in
@@ -1318,9 +1318,25 @@ runs are in `git log`; this section holds the current state.
   was green there. The purge test of the run before is green in this run (the repair of 14:10 holds). One
   builder repairs both in two commits, looks for further lists of formats that a new format must join, and
   writes both lessons onto the developer pages (the area to run for a new format; a screen is rendered at
-  every width of the pipeline's job). It lands with or before the signatures' third package. **For every
-  builder's brief from now on:** a UI change is rendered at every width the pipeline's job renders, and a new
-  format runs the integration area `packages`.
+  every width of the pipeline's job). **For every builder's brief from now on:** a UI change is rendered at
+  every width the pipeline's job renders, and a new format runs the integration area `packages`.
+  **The repair, two commits** (its builder worked from 15:30 to 16:16; the signatures' third package had
+  landed before it, so its tree carried the two faults as well). The integration test: the formats list is
+  right, the test's table of clients per format lacked the new format; it has it now, and the developer page
+  for a new format names the table and the area. The layout: the cause was neither the new column nor the
+  badge but the format's name, 153 px wide where the widest before was 126 px, so that the list needed ten
+  pixels more than its place at 1,280 px; and a fault of the shared data table, which did not measure again
+  when only the room inside its scroll region changed. Repaired: the repository column of the admin list
+  gives one rem to the columns that never break, and the shared table measures again on that change (a test
+  that fails without it). Because the table is every list's, the builder rendered every screen at every
+  width of the job on a stack of its own: 421 passed, none failed, no layout finding (30 minutes). **Looked
+  at by the development agent:** the admin list at 1,280 px, as it opens and with the filters open. **On the
+  two commits as rebased, each exit 0:** build, the full unit run, generate-check, the lint, the complexity
+  check, links and check, the UI tests and the UI lint; by the builder the layout checks and under the lock
+  the area `packages`. **Its release was cut at 16:36**; the image, the chart, the owner's installation and the two jobs in this run are being followed. **Written down for the next formats** (the developer page): the one
+  list that fails for a missing format (this table), two that do not fail and must be kept by hand, and the
+  hand-written lists that need a decision per format. **Not verified:** the pipeline's runner itself (the
+  renders ran on the development machine, where the overflow was 10 px, not 7); the run of this push shows it.
 - **Landed on 2026-11-21 at 15:45: package 3 of the signatures' first stage, the formats' wire behaviour**
   (R-SIG-023 to R-SIG-033; its builder worked from 12:56 to 14:43 and brought the commit onto `main` from 14:47
   to 15:40). **OCI:** deleting an image's manifest removes its referrers, its signature tags and the manifests
