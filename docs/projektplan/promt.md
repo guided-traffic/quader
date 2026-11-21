@@ -1421,13 +1421,15 @@ runs are in `git log`; this section holds the current state.
   objects): each scanner pod gains the container `database` and the volume of the database (5 Gi). **Read on
   his cluster before the landing** (what the specification had left open): the three nodes that carry
   workloads have about 222 GiB of allocatable ephemeral storage each, so two scanner pods with up to 3.4 GiB
-  of database each fit. The owner's UI backend started with it before the push (the schema step applied). **Not released yet:** the job `unit tests` of its run went red at 18:48 (the entry above), and that job holds the release back; the run of the repair releases it. **Not verified:** a detection against the real database in a pod; the worker's transaction that applies a
+  of database each fit. The owner's UI backend started with it before the push (the schema step applied). **Released at 19:13** by the run of the unit job's repair (the entry above; the job `unit tests` of its own run had
+  gone red at 18:48 and held the release back); the image, the chart and the owner's installation are being
+  followed. **Not verified:** a detection against the real database in a pod; the worker's transaction that applies a
   detection; amd64; the migration's removal on a table that holds rows (the integration stack's are empty).
   **Left for package 3 of the move:** the analyser from its own image through an init container and out of
   the release image, the pin, the workflows, the development profiles; **package 2,** the database per
   scanner pod on the screens, builds on its report. Its worktree and branch are removed.
 - **The pipeline of the analyser's move (run 44930739304) went red at 18:48 on the job `unit tests`, which holds
-  the release back; its repair is in work since 18:51.** No test hangs: the unit run of the API's package as a
+  the release back; the first part of its repair landed at 18:55 and its run is green there.** No test hangs: the unit run of the API's package as a
   whole passed the limit of ten minutes per test binary that the tool sets when none is given. Its time in
   that job (race detector and coverage over every package), read from the day's runs: 476 s in the morning,
   487 s at 17:06, 585 s with the signatures' second package (98 s more for tests its builder had measured at
@@ -1440,6 +1442,15 @@ runs are in `git log`; this section holds the current state.
   them. **For every builder's brief from now on:** the cost of a unit test is measured in the job's mode
   (race detector, coverage over every package) for the package it joins, and the API's package gets no test
   that builds a server of its own where a shared one serves.
+  **The first commit landed at 18:55** (the Makefile alone: a stated limit of 20 minutes per test binary for the
+  unit run, twice the package's time of the morning and below the job's own limit of 30; checked by the
+  target's expansion, not measured locally, because the machine stood at a load of 123 on 20 cores with six
+  agents at work, two of them the repairs of red jobs beside four builders: over the owner's limit of four,
+  not stopped because each was in the middle of its work; nothing further was started until the count was
+  down). **Its run (44932718779): the unit job is green,** the API's package took 599.5 s in it, the job 14.4
+  minutes; **the release was cut at 19:13,** and with it the analyser's move is released. The second commit
+  (where the package's time goes and the cheap part of the cure) is in work and is measured only at a lower
+  load.
 - **In work since 18:11: package 2 of the image analyser's move, the screens** (on `main` with package 1): what
   each pod of `vuln-scanner-trivy` holds of the analyser's database (the one in use with its build time, an
   older one, none yet) on the System page and the advisory sources, beside the rows of the ClamAV updater and
