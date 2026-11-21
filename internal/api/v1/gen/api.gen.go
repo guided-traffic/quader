@@ -3718,6 +3718,147 @@ func (e SignatureFindingKind) Valid() bool {
 	}
 }
 
+// Defines values for SignatureGatePassedByKind.
+const (
+	SignatureGatePassedByKindRelease   SignatureGatePassedByKind = "release"
+	SignatureGatePassedByKindSignature SignatureGatePassedByKind = "signature"
+)
+
+// Valid indicates whether the value is a known member of the SignatureGatePassedByKind enum.
+func (e SignatureGatePassedByKind) Valid() bool {
+	switch e {
+	case SignatureGatePassedByKindRelease:
+		return true
+	case SignatureGatePassedByKindSignature:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureGateReason.
+const (
+	SignatureGateReasonBlocked    SignatureGateReason = "blocked"
+	SignatureGateReasonInvalid    SignatureGateReason = "invalid"
+	SignatureGateReasonMissing    SignatureGateReason = "missing"
+	SignatureGateReasonNotChecked SignatureGateReason = "not_checked"
+	SignatureGateReasonNotChosen  SignatureGateReason = "not_chosen"
+	SignatureGateReasonUntrusted  SignatureGateReason = "untrusted"
+)
+
+// Valid indicates whether the value is a known member of the SignatureGateReason enum.
+func (e SignatureGateReason) Valid() bool {
+	switch e {
+	case SignatureGateReasonBlocked:
+		return true
+	case SignatureGateReasonInvalid:
+		return true
+	case SignatureGateReasonMissing:
+		return true
+	case SignatureGateReasonNotChecked:
+		return true
+	case SignatureGateReasonNotChosen:
+		return true
+	case SignatureGateReasonUntrusted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureGateRefusedReason.
+const (
+	SignatureGateRefusedReasonBlocked    SignatureGateRefusedReason = "blocked"
+	SignatureGateRefusedReasonInvalid    SignatureGateRefusedReason = "invalid"
+	SignatureGateRefusedReasonMissing    SignatureGateRefusedReason = "missing"
+	SignatureGateRefusedReasonNotChecked SignatureGateRefusedReason = "not_checked"
+	SignatureGateRefusedReasonNotChosen  SignatureGateRefusedReason = "not_chosen"
+	SignatureGateRefusedReasonPending    SignatureGateRefusedReason = "pending"
+	SignatureGateRefusedReasonUntrusted  SignatureGateRefusedReason = "untrusted"
+)
+
+// Valid indicates whether the value is a known member of the SignatureGateRefusedReason enum.
+func (e SignatureGateRefusedReason) Valid() bool {
+	switch e {
+	case SignatureGateRefusedReasonBlocked:
+		return true
+	case SignatureGateRefusedReasonInvalid:
+		return true
+	case SignatureGateRefusedReasonMissing:
+		return true
+	case SignatureGateRefusedReasonNotChecked:
+		return true
+	case SignatureGateRefusedReasonNotChosen:
+		return true
+	case SignatureGateRefusedReasonPending:
+		return true
+	case SignatureGateRefusedReasonUntrusted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureGateViewDecision.
+const (
+	SignatureGateViewDecisionPass    SignatureGateViewDecision = "pass"
+	SignatureGateViewDecisionPending SignatureGateViewDecision = "pending"
+	SignatureGateViewDecisionRefused SignatureGateViewDecision = "refused"
+)
+
+// Valid indicates whether the value is a known member of the SignatureGateViewDecision enum.
+func (e SignatureGateViewDecision) Valid() bool {
+	switch e {
+	case SignatureGateViewDecisionPass:
+		return true
+	case SignatureGateViewDecisionPending:
+		return true
+	case SignatureGateViewDecisionRefused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureImpactBound.
+const (
+	Exact SignatureImpactBound = "exact"
+	Upper SignatureImpactBound = "upper"
+)
+
+// Valid indicates whether the value is a known member of the SignatureImpactBound enum.
+func (e SignatureImpactBound) Valid() bool {
+	switch e {
+	case Exact:
+		return true
+	case Upper:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureImpactRequestChange.
+const (
+	Disable SignatureImpactRequestChange = "disable"
+	Narrow  SignatureImpactRequestChange = "narrow"
+	Remove  SignatureImpactRequestChange = "remove"
+)
+
+// Valid indicates whether the value is a known member of the SignatureImpactRequestChange enum.
+func (e SignatureImpactRequestChange) Valid() bool {
+	switch e {
+	case Disable:
+		return true
+	case Narrow:
+		return true
+	case Remove:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SignatureIntegrityState.
 const (
 	SignatureIntegrityStateFailed      SignatureIntegrityState = "failed"
@@ -8939,7 +9080,10 @@ type Item struct {
 	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
 	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
 	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-	// Absent for a folder and while `signatures.enabled` is false.
+	// Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+	// the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+	// is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+	// refuses it there (Q-SIG-203).
 	Signatures *SignatureStatus `json:"signatures,omitempty"`
 
 	// Size Files only.
@@ -10641,7 +10785,10 @@ type PackageFile struct {
 	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
 	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
 	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-	// Absent for a folder and while `signatures.enabled` is false.
+	// Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+	// the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+	// is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+	// refuses it there (Q-SIG-203).
 	Signatures *SignatureStatus `json:"signatures,omitempty"`
 	SizeBytes  int64            `json:"sizeBytes"`
 }
@@ -10805,7 +10952,10 @@ type PackageVersion struct {
 	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
 	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
 	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-	// Absent for a folder and while `signatures.enabled` is false.
+	// Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+	// the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+	// is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+	// refuses it there (Q-SIG-203).
 	Signatures *SignatureStatus `json:"signatures,omitempty"`
 
 	// SizeBytes As in the version list (R-API-080) - the size of the version's files, summed; for an OCI tag the size of its image; `null` when it is not known.
@@ -10888,7 +11038,10 @@ type PackageVersionSummary struct {
 	// Signatures The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
 	// signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
 	// read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-	// Absent for a folder and while `signatures.enabled` is false.
+	// Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+	// the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+	// is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+	// refuses it there (Q-SIG-203).
 	Signatures *SignatureStatus `json:"signatures,omitempty"`
 
 	// SizeBytes The size of the version's files, summed; for a format whose files are not its content, the size the format reports (an OCI
@@ -12678,13 +12831,20 @@ type SignatureFileReport struct {
 	Attestations []SignatureEntry `json:"attestations"`
 
 	// Covering As in the version's answer; empty until the format answers the coverage.
-	Covering   []SignatureCovering `json:"covering"`
-	Origin     *SignatureOrigin    `json:"origin"`
-	Path       string              `json:"path"`
-	Repository string              `json:"repository"`
-	Sha256     string              `json:"sha256"`
-	Signatures []SignatureEntry    `json:"signatures"`
-	Stale      bool                `json:"stale"`
+	Covering []SignatureCovering `json:"covering"`
+
+	// Gate The gate of the repository of an entry, while it is on (R-SIG-073): the accepted anchors (empty for any anchor) and what it
+	// decides now of the entry's artifacts in this repository, with the settings and anchors as they are. A version is `refused`
+	// when one of its artifacts is (the first one's reason), else `pending` when one is, else `pass`. `passedBy` says what passed:
+	// a release of the repository, or the counting signature of the id (the first artifact's); null when nothing of the entry is an
+	// artifact or nothing passed. Absent while the repository's gate is off.
+	Gate       *SignatureGateView `json:"gate,omitempty"`
+	Origin     *SignatureOrigin   `json:"origin"`
+	Path       string             `json:"path"`
+	Repository string             `json:"repository"`
+	Sha256     string             `json:"sha256"`
+	Signatures []SignatureEntry   `json:"signatures"`
+	Stale      bool               `json:"stale"`
 
 	// State The state of an artifact (R-SIG-009, Q-SIG-25), the best of its signatures of the roles `publisher` and `provenance` in the
 	// reader's scope: `verified_internal` **Verified · internal**, `verified_public` **Verified · public**, `untrusted` **Signed ·
@@ -12748,6 +12908,129 @@ type SignatureFingerprint struct {
 	Subject  *string    `json:"subject,omitempty"`
 	Value    string     `json:"value"`
 }
+
+// SignatureGateAnchor An anchor a repository's gate accepts, by its reference; `removed` for a reference that names no anchor any more, shown as **Removed trust anchor** (R-SIG-061).
+type SignatureGateAnchor struct {
+	Kind *SignatureAnchorKind `json:"kind"`
+
+	// Ref `<scope>/<key>`.
+	Ref     string `json:"ref"`
+	Removed bool   `json:"removed"`
+
+	// Scope Where an anchor comes from (R-SIG-016): shipped with Quader, declared in the Helm values, added by an administrator, or added by a project's Owner.
+	Scope SignatureAnchorScope `json:"scope"`
+	Title *string              `json:"title"`
+}
+
+// SignatureGateExample defines model for SignatureGateExample.
+type SignatureGateExample struct {
+	Package *string `json:"package"`
+	Path    string  `json:"path"`
+
+	// Reason Why a repository's gate refuses an artifact (R-SIG-062, R-SIG-068).
+	Reason SignatureGateReason `json:"reason"`
+
+	// Repository The repository that holds the item (a member, for a virtual repository).
+	Repository string  `json:"repository"`
+	Version    *string `json:"version"`
+}
+
+// SignatureGatePassedBy defines model for SignatureGatePassedBy.
+type SignatureGatePassedBy struct {
+	Kind SignatureGatePassedByKind `json:"kind"`
+
+	// Signature The id of the counting signature that passed, for `signature`.
+	Signature *int64 `json:"signature"`
+}
+
+// SignatureGatePassedByKind defines model for SignatureGatePassedBy.Kind.
+type SignatureGatePassedByKind string
+
+// SignatureGatePreview What a repository's gate would decide of its stored items (R-SIG-072).
+type SignatureGatePreview struct {
+	// Artifacts Of the items, those the format names artifacts; the others (attachments, layers, signature files) pass as they are.
+	Artifacts int `json:"artifacts"`
+
+	// Complete False when the bound of items or the time ended the reading; the counts are then lower bounds.
+	Complete bool `json:"complete"`
+
+	// Examined The stored items read.
+	Examined int                        `json:"examined"`
+	Examples []SignatureGateExample     `json:"examples"`
+	Pass     int                        `json:"pass"`
+	Pending  int                        `json:"pending"`
+	Refused  SignatureGateRefusedCounts `json:"refused"`
+}
+
+// SignatureGateReason Why a repository's gate refuses an artifact (R-SIG-062, R-SIG-068).
+type SignatureGateReason string
+
+// SignatureGateRefusedCounts defines model for SignatureGateRefusedCounts.
+type SignatureGateRefusedCounts struct {
+	Blocked    int `json:"blocked"`
+	Invalid    int `json:"invalid"`
+	Missing    int `json:"missing"`
+	NotChecked int `json:"notChecked"`
+	NotChosen  int `json:"notChosen"`
+	Untrusted  int `json:"untrusted"`
+}
+
+// SignatureGateRefusedReason A reason of the gate (R-SIG-068), or `pending` while a check or a fetch of the artifact's signatures is due.
+type SignatureGateRefusedReason string
+
+// SignatureGateView The gate of the repository of an entry, while it is on (R-SIG-073): the accepted anchors (empty for any anchor) and what it
+// decides now of the entry's artifacts in this repository, with the settings and anchors as they are. A version is `refused`
+// when one of its artifacts is (the first one's reason), else `pending` when one is, else `pass`. `passedBy` says what passed:
+// a release of the repository, or the counting signature of the id (the first artifact's); null when nothing of the entry is an
+// artifact or nothing passed. Absent while the repository's gate is off.
+type SignatureGateView struct {
+	Anchors      []SignatureGateAnchor     `json:"anchors"`
+	Decision     SignatureGateViewDecision `json:"decision"`
+	OnlyVerified bool                      `json:"onlyVerified"`
+	PassedBy     *SignatureGatePassedBy    `json:"passedBy"`
+	Reason       *SignatureGateReason      `json:"reason"`
+}
+
+// SignatureGateViewDecision defines model for SignatureGateView.Decision.
+type SignatureGateViewDecision string
+
+// SignatureImpact What a change makes the gates refuse (R-SIG-071).
+type SignatureImpact struct {
+	Artifacts int `json:"artifacts"`
+
+	// Bound `upper` for a change of material, counted as a removal.
+	Bound        SignatureImpactBound `json:"bound"`
+	ByRepository []struct {
+		Artifacts  int    `json:"artifacts"`
+		Repository string `json:"repository"`
+	} `json:"byRepository"`
+
+	// Complete False when the candidates were cut at `signatures.gate.preview_limit`; the counts are then lower bounds.
+	Complete     bool `json:"complete"`
+	Repositories int  `json:"repositories"`
+}
+
+// SignatureImpactBound `upper` for a change of material, counted as a removal.
+type SignatureImpactBound string
+
+// SignatureImpactRequest One change: `anchor` with `change`, `block`, or `projectAnchors: false`.
+type SignatureImpactRequest struct {
+	Anchor *int64 `json:"anchor,omitempty"`
+	Block  *struct {
+		Issuer *string            `json:"issuer,omitempty"`
+		Kind   SignatureBlockKind `json:"kind"`
+		Value  string             `json:"value"`
+	} `json:"block,omitempty"`
+
+	// Change With `anchor`: removed, switched off, or its material changed (counted as a removal).
+	Change *SignatureImpactRequestChange `json:"change,omitempty"`
+
+	// ProjectAnchors Only false, the switch for project Owners turned off.
+	ProjectAnchors *bool `json:"projectAnchors,omitempty"`
+}
+
+// SignatureImpactRequestChange With `anchor`: removed, switched off, or its material changed (counted as a removal).
+type SignatureImpactRequestChange string
 
 // SignatureIntegrityState The state of a signature's read and integrity check (R-SIG-003): `pending` not checked yet, `valid` the signature matches its
 // subject (the trust decides the rest), `no_key` no key of the signer is known, `invalid` it does not match (`reason`),
@@ -12816,7 +13099,62 @@ type SignatureOriginCI struct {
 	UserLogin      *string `json:"userLogin,omitempty"`
 }
 
-// SignatureRepositoryReport What one repository shows of a version's signatures (R-SIG-034).
+// SignatureRefusal A download a repository's gate refused (R-SIG-073), one entry per repository and artifact.
+type SignatureRefusal struct {
+	Count   int64     `json:"count"`
+	FirstAt time.Time `json:"firstAt"`
+	Format  string    `json:"format"`
+	LastAt  time.Time `json:"lastAt"`
+	Package *string   `json:"package"`
+	Path    string    `json:"path"`
+
+	// Reason Why a repository's gate refuses an artifact (R-SIG-062, R-SIG-068).
+	Reason     SignatureGateReason      `json:"reason"`
+	Release    *SignatureRefusalRelease `json:"release"`
+	Repository string                   `json:"repository"`
+	Sha256     string                   `json:"sha256"`
+	Version    *string                  `json:"version"`
+}
+
+// SignatureRefusalPage defines model for SignatureRefusalPage.
+type SignatureRefusalPage struct {
+	Items      []SignatureRefusal `json:"items"`
+	NextCursor *string            `json:"nextCursor"`
+}
+
+// SignatureRefusalRelease The release that passes the artifact in the repository since.
+type SignatureRefusalRelease struct {
+	Reason     string    `json:"reason"`
+	ReleasedAt time.Time `json:"releasedAt"`
+	ReleasedBy *string   `json:"releasedBy"`
+}
+
+// SignatureRelease A release of one artifact for one repository's gate (R-SIG-070).
+type SignatureRelease struct {
+	Reason string `json:"reason"`
+
+	// RefusedReason A reason of the gate (R-SIG-068), or `pending` while a check or a fetch of the artifact's signatures is due.
+	RefusedReason SignatureGateRefusedReason `json:"refusedReason"`
+	ReleasedAt    time.Time                  `json:"releasedAt"`
+
+	// ReleasedBy `<kind>:<name>` of the principal that granted it; null when it is gone.
+	ReleasedBy *string `json:"releasedBy"`
+	Repository string  `json:"repository"`
+	Sha256     string  `json:"sha256"`
+}
+
+// SignatureReleaseList defines model for SignatureReleaseList.
+type SignatureReleaseList struct {
+	Items []SignatureRelease `json:"items"`
+}
+
+// SignatureReleaseRequest defines model for SignatureReleaseRequest.
+type SignatureReleaseRequest struct {
+	Reason string `json:"reason"`
+	Sha256 string `json:"sha256"`
+}
+
+// SignatureRepositoryReport What one repository shows of a version's signatures (R-SIG-034), and its gate while it is on (R-SIG-073).
 type SignatureRepositoryReport struct {
 	// Attestations The attachments of the role attestation (OCI - attestations and SBOMs, R-SIG-024), with their type and size.
 	Attestations []SignatureEntry               `json:"attestations"`
@@ -12825,6 +13163,13 @@ type SignatureRepositoryReport struct {
 	// Covering Debian: the releases whose signed index names the package (R-SIG-030). Filled once the format answers the coverage
 	// through its data port; empty until then and for every other format.
 	Covering []SignatureCovering `json:"covering"`
+
+	// Gate The gate of the repository of an entry, while it is on (R-SIG-073): the accepted anchors (empty for any anchor) and what it
+	// decides now of the entry's artifacts in this repository, with the settings and anchors as they are. A version is `refused`
+	// when one of its artifacts is (the first one's reason), else `pending` when one is, else `pass`. `passedBy` says what passed:
+	// a release of the repository, or the counting signature of the id (the first artifact's); null when nothing of the entry is an
+	// artifact or nothing passed. Absent while the repository's gate is off.
+	Gate *SignatureGateView `json:"gate,omitempty"`
 
 	// Members For a virtual repository, the members that hold the version and that the caller may read, whose attachments are listed; empty otherwise.
 	Members    []string         `json:"members"`
@@ -12878,8 +13223,17 @@ type SignatureSettingsPatch struct {
 // SignatureStatus The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
 // signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
 // read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-// Absent for a folder and while `signatures.enabled` is false.
+// Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+// the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+// is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+// refuses it there (Q-SIG-203).
 type SignatureStatus struct {
+	// Refused The repository's gate refuses it now (R-SIG-073); false while it passes or is pending.
+	Refused *bool `json:"refused,omitempty"`
+
+	// RefusedReason The reason of the refusal, `pending` while it waits for a check; absent while it passes.
+	RefusedReason *SignatureGateRefusedReason `json:"refusedReason,omitempty"`
+
 	// Stale A trust row that decides the badge was computed before the last change of anchors, blocks or the switch; the trust job has not reached it yet (R-SIG-012).
 	Stale bool `json:"stale"`
 
@@ -16122,6 +16476,12 @@ type GetFileSignaturesParams struct {
 	Path string `form:"path" json:"path"`
 }
 
+// PreviewRepositorySignatureGateParams defines parameters for PreviewRepositorySignatureGate.
+type PreviewRepositorySignatureGateParams struct {
+	// Anchors Comma-separated references `<scope>/<key>` of the anchors to accept; empty for any anchor; absent for the stored ones.
+	Anchors *string `form:"anchors,omitempty" json:"anchors,omitempty"`
+}
+
 // GetItemStatsParams defines parameters for GetItemStats.
 type GetItemStatsParams struct {
 	Path string `form:"path" json:"path"`
@@ -16494,6 +16854,21 @@ type ListSignatureFindingsParams struct {
 
 	// Q A fragment of the signer's subject, identity or key ID, matched without regard to case.
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListSignatureRefusalsParams defines parameters for ListSignatureRefusals.
+type ListSignatureRefusalsParams struct {
+	// Repository A repository name `<project>/<key>`.
+	Repository *string `form:"repository,omitempty" json:"repository,omitempty"`
+
+	// Reason One reason of the gate.
+	Reason *SignatureGateReason `form:"reason,omitempty" json:"reason,omitempty"`
 
 	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
@@ -17196,6 +17571,9 @@ type UpdateRepositoryServiceAccountTechnicalTokenApplicationMergePatchPlusJSONRe
 // CreateRepositoryServiceAccountTechnicalTokenSecretJSONRequestBody defines body for CreateRepositoryServiceAccountTechnicalTokenSecret for application/json ContentType.
 type CreateRepositoryServiceAccountTechnicalTokenSecretJSONRequestBody = NewTechnicalTokenSecret
 
+// CreateSignatureReleaseJSONRequestBody defines body for CreateSignatureRelease for application/json ContentType.
+type CreateSignatureReleaseJSONRequestBody = SignatureReleaseRequest
+
 // CreateProjectServiceAccountJSONRequestBody defines body for CreateProjectServiceAccount for application/json ContentType.
 type CreateProjectServiceAccountJSONRequestBody = NewServiceAccount
 
@@ -17261,6 +17639,9 @@ type UpdateSignatureAnchorApplicationMergePatchPlusJSONRequestBody = SignatureAn
 
 // CreateSignatureBlockJSONRequestBody defines body for CreateSignatureBlock for application/json ContentType.
 type CreateSignatureBlockJSONRequestBody = NewSignatureBlock
+
+// CountSignatureImpactJSONRequestBody defines body for CountSignatureImpact for application/json ContentType.
+type CountSignatureImpactJSONRequestBody = SignatureImpactRequest
 
 // UpdateSignatureSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateSignatureSettings for application/merge-patch+json ContentType.
 type UpdateSignatureSettingsApplicationMergePatchPlusJSONRequestBody = SignatureSettingsPatch
@@ -18657,6 +19038,18 @@ type ServerInterface interface {
 	// GetFileSignatures The signatures of one stored file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures)
 	GetFileSignatures(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params GetFileSignaturesParams)
+	// PreviewRepositorySignatureGate What the repository's signature gate would refuse
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview)
+	PreviewRepositorySignatureGate(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params PreviewRepositorySignatureGateParams)
+	// ListSignatureReleases The releases of the repository's signature gate
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases)
+	ListSignatureReleases(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
+	// CreateSignatureRelease Release an artifact the repository's signature gate does not pass
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases)
+	CreateSignatureRelease(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
+	// DeleteSignatureRelease Withdraw a release of the repository's signature gate
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases/{sha256})
+	DeleteSignatureRelease(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, sha256 string)
 	// GetItemStats Read the download statistics of a file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/stats)
 	GetItemStats(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetItemStatsParams)
@@ -18843,9 +19236,15 @@ type ServerInterface interface {
 	// ListSignatureFindings List invalid signatures and the signatures of blocked signers
 	// (GET /api/v1/signatures/findings)
 	ListSignatureFindings(w http.ResponseWriter, r *http.Request, params ListSignatureFindingsParams)
+	// CountSignatureImpact Count what a change of anchors, blocks or the switch makes the signature gates refuse
+	// (POST /api/v1/signatures/impact)
+	CountSignatureImpact(w http.ResponseWriter, r *http.Request)
 	// GetSignatureObject Download the original of a signature
 	// (GET /api/v1/signatures/objects/{sha256})
 	GetSignatureObject(w http.ResponseWriter, r *http.Request, sha256 string)
+	// ListSignatureRefusals List the downloads the repositories' signature gates refused
+	// (GET /api/v1/signatures/refusals)
+	ListSignatureRefusals(w http.ResponseWriter, r *http.Request, params ListSignatureRefusalsParams)
 	// GetSignatureSettings Read the switch for project trust anchors and the state of the signatures
 	// (GET /api/v1/signatures/settings)
 	GetSignatureSettings(w http.ResponseWriter, r *http.Request)
@@ -29044,6 +29443,171 @@ func (siw *ServerInterfaceWrapper) GetFileSignatures(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// PreviewRepositorySignatureGate operation middleware
+func (siw *ServerInterfaceWrapper) PreviewRepositorySignatureGate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PreviewRepositorySignatureGateParams
+
+	// ------------- Optional query parameter "anchors" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "anchors", r.URL.Query(), &params.Anchors, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "anchors"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "anchors", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewRepositorySignatureGate(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSignatureReleases operation middleware
+func (siw *ServerInterfaceWrapper) ListSignatureReleases(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignatureReleases(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSignatureRelease operation middleware
+func (siw *ServerInterfaceWrapper) CreateSignatureRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSignatureRelease(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSignatureRelease operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSignatureRelease(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sha256" -------------
+	var sha256 string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sha256", r.PathValue("sha256"), &sha256, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSignatureRelease(w, r, projectKey, repoKey, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetItemStats operation middleware
 func (siw *ServerInterfaceWrapper) GetItemStats(w http.ResponseWriter, r *http.Request) {
 
@@ -32067,6 +32631,20 @@ func (siw *ServerInterfaceWrapper) ListSignatureFindings(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// CountSignatureImpact operation middleware
+func (siw *ServerInterfaceWrapper) CountSignatureImpact(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CountSignatureImpact(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSignatureObject operation middleware
 func (siw *ServerInterfaceWrapper) GetSignatureObject(w http.ResponseWriter, r *http.Request) {
 
@@ -32084,6 +32662,78 @@ func (siw *ServerInterfaceWrapper) GetSignatureObject(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetSignatureObject(w, r, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSignatureRefusals operation middleware
+func (siw *ServerInterfaceWrapper) ListSignatureRefusals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSignatureRefusalsParams
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "reason" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "reason", r.URL.Query(), &params.Reason, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "reason"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reason", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignatureRefusals(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -36033,6 +36683,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signatures/blocks", wrapper.CreateSignatureBlock)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signatures/blocks/{id}", wrapper.DeleteSignatureBlock)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/findings", wrapper.ListSignatureFindings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview", wrapper.PreviewRepositorySignatureGate)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases", wrapper.ListSignatureReleases)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases", wrapper.CreateSignatureRelease)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases/{sha256}", wrapper.DeleteSignatureRelease)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/refusals", wrapper.ListSignatureRefusals)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signatures/impact", wrapper.CountSignatureImpact)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/signing/identity", wrapper.RemoveSigningIdentity)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signing/identity", wrapper.GetSigningIdentity)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signing/identity/key", wrapper.CreateSigningKey)

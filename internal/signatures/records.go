@@ -238,4 +238,56 @@ type VersionBlob struct {
 	Version string
 	RepoID  int64
 	Blob    [32]byte
+	// Path is the file's item path, which the gate of the repository classifies (R-SIG-073).
+	Path string
+}
+
+// GateRelease is a release of one artifact for one repository's gate (stage 3, R-SIG-070): the repository, the artifact's blob, the reason
+// it was granted with, the gate's reason at the release, who granted it ("<kind>:<name>", "" when the principal is gone) and when.
+type GateRelease struct {
+	RepoID         int64
+	Subject        [32]byte
+	Reason         string
+	RefusedReason  string
+	ReleasedBy     string
+	ReleasedByName string
+	ReleasedAt     time.Time
+}
+
+// GateReleaseInput is a release to grant: the repository by id and by name (the name for the audit event), the artifact, the reason and
+// the gate's reason now.
+type GateReleaseInput struct {
+	RepoID        int64
+	Repository    string
+	Subject       [32]byte
+	Reason        string
+	RefusedReason string
+}
+
+// MaxReleaseReason is the longest reason of a release (R-SIG-070), as the malware gate's.
+const MaxReleaseReason = 1000
+
+// RefusalsQuery selects the refused downloads of the gates (R-SIG-073), the latest refusal first, within the repositories of the scope.
+type RefusalsQuery struct {
+	RepoIDs []int64
+	// RepoID filters one repository, 0 none; Reason one reason, "" every one.
+	RepoID int64
+	Reason string
+	// AfterAt, AfterRepo and AfterSubject are the cursor: the last refusal, the repository and the artifact of the last row read.
+	AfterAt      time.Time
+	AfterRepo    int64
+	AfterSubject [32]byte
+	Limit        int
+}
+
+// Refusal is one refused download: the repository and the path, the artifact, the reason of the last refusal, the first and the last
+// refusal and their count, and the release that passes the artifact since, nil for none.
+type Refusal struct {
+	Holder
+	Subject [32]byte
+	Reason  string
+	FirstAt time.Time
+	LastAt  time.Time
+	Count   int64
+	Release *GateRelease
 }

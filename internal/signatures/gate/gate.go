@@ -46,8 +46,16 @@ type Subject struct {
 	Covering [][32]byte
 }
 
-// Classifier asks the item's format what the gate judges of it (formats.SignatureAdapter.Gate, through the format host).
-type Classifier func(ctx context.Context, repo Repo, path string, blob [32]byte) (Subject, error)
+// Item is a stored item the gate asks the format about: its canonical path and its blob.
+type Item struct {
+	Path string
+	Blob [32]byte
+}
+
+// Classifier asks the items' format what the gate judges of each, in one call for the items of one repository
+// (formats.SignatureAdapter.Gate, through the format host): a serve asks for one item, a preview for a batch (R-SIG-072). An answer of
+// another length than the items is read as every item an artifact (fail closed).
+type Classifier func(ctx context.Context, repo Repo, items []Item) ([]Subject, error)
 
 // Repo is a repository as the serve point hands it to the gate, from the replica's snapshot of the repositories.
 type Repo struct {
@@ -82,6 +90,14 @@ type Store interface {
 	GatePrioritize(ctx context.Context, subjects [][32]byte, fetches []Fetch) error
 	// RecordRefusal writes the refused download (R-SIG-073).
 	RecordRefusal(ctx context.Context, repoID int64, subject [32]byte, path string, reason Reason) error
+	// GateReleased answers those of the subjects a release passes in the repository (R-SIG-070).
+	GateReleased(ctx context.Context, repoID int64, subjects [][32]byte) (map[[32]byte]bool, error)
+	// GateItems reads one batch of the stored files of the repositories after the position, in the order of repository and path, for a
+	// preview (R-SIG-072); generated items are not read.
+	GateItems(ctx context.Context, repoIDs []int64, after ItemCursor, limit int) ([]StoredItem, error)
+	// GateImpact reads the candidates of an impact count (R-SIG-071): the artifacts attached in the repositories whose counting
+	// signatures the change can take the state from, at most limit.
+	GateImpact(ctx context.Context, q ImpactQuery, repoIDs []int64, limit int) ([]Candidate, error)
 }
 
 // Options configure [New].
@@ -234,19 +250,22 @@ type view struct {
 	any     bool
 }
 
-// Verdict is the gate's decision of a download from what the store holds now; Begin waits for a pending one.
+// Verdict is the gate's decision of a download from what the store holds now; Begin waits for a pending one. Released and Signature
+// say what passed it in the addressed repository's gate: a release of that repository, or the counting signature of that id.
 type Verdict struct {
-	Outcome Outcome
-	Reason  Reason
-	d       Download
-	digests [][32]byte
-	views   []view
-	fetches []Fetch
+	Outcome   Outcome
+	Reason    Reason
+	Released  bool
+	Signature int64
+	d         Download
+	digests   [][32]byte
+	views     []view
+	fetches   []Fetch
 }
 
 // Decide decides a download (R-SIG-062 to R-SIG-066): nil Verdict.Outcome Pass serves it. It classifies the item by its format, passes
 // what is no artifact, and judges each gate that applies (the addressed repository's in its view and scope, the holder's in its own),
-// the first refusal or pending first; a release of package 2 passes in its repository.
+// the first refusal or pending first; a release of a repository passes the artifact in that repository's gate (R-SIG-070).
 func (g *Gate) Decide(ctx context.Context, d Download) (*Verdict, error) {
 	v := &Verdict{d: d}
 	if d.Generated || !g.Applies(d.Addressed, d.Holder) {
@@ -265,8 +284,12 @@ func (g *Gate) Decide(ctx context.Context, d Download) (*Verdict, error) {
 func (g *Gate) subject(ctx context.Context, d Download) (digests [][32]byte, judge bool, err error) {
 	s := Subject{Kind: KindArtifact}
 	if g.o.Classify != nil {
-		if s, err = g.o.Classify(ctx, d.Holder, d.Path, d.Blob); err != nil {
+		subs, err := g.o.Classify(ctx, d.Holder, []Item{{Path: d.Path, Blob: d.Blob}})
+		if err != nil {
 			return nil, false, err
+		}
+		if len(subs) == 1 {
+			s = subs[0]
 		}
 	}
 	switch s.Kind {
@@ -311,14 +334,15 @@ func views(d Download) []view {
 	return out
 }
 
-// judge reads the rows of every view and decides; the first gate that refuses names the reason, else any pending one waits.
+// judge reads the rows of every view and decides; the first gate that refuses names the reason, else any pending one waits. A release
+// is read only for a gate whose signatures do not pass, so a passing download reads no more than without releases (R-SIG-070).
 func (g *Gate) judge(ctx context.Context, v *Verdict) error {
 	snap, err := g.snapshot(ctx)
 	if err != nil {
 		return err
 	}
-	v.Outcome, v.Reason, v.fetches = Pass, "", nil
-	for _, vw := range v.views {
+	v.Outcome, v.Reason, v.Released, v.Signature, v.fetches = Pass, "", false, 0, nil
+	for i, vw := range v.views {
 		rows, err := g.o.Store.GateRows(ctx, vw.repo.ProjectID, vw.repoIDs, v.digests)
 		if err != nil {
 			return err
@@ -334,7 +358,20 @@ func (g *Gate) judge(ctx context.Context, v *Verdict) error {
 		if !vw.any {
 			chosen = snap.Chosen(vw.chosen, vw.repo.ProjectID)
 		}
-		switch j := Judge(snap, chosen, v.digests, rows, fetches, false); j.Outcome {
+		j := Judge(snap, chosen, v.digests, rows, fetches, false)
+		if j.Outcome != Pass {
+			released, err := g.o.Store.GateReleased(ctx, vw.repo.ID, v.digests)
+			if err != nil {
+				return err
+			}
+			if len(released) > 0 {
+				j = Judgement{Outcome: Pass, Released: true}
+			}
+		}
+		if i == 0 {
+			v.Released, v.Signature = j.Released, j.Signature
+		}
+		switch j.Outcome {
 		case Refused:
 			v.Outcome, v.Reason = Refused, j.Reason
 			return nil

@@ -174,37 +174,47 @@ func (h *Host) signatureGateHolds(ctx context.Context, rq *formats.Request) (boo
 	return g.Applies(files.GateRepo(addressed), files.GateRepo(held)), nil
 }
 
-// GateClassify is the signature gate's classifier (sgate.Classifier): the item's format names what the gate judges of it
-// (formats.SignatureAdapter.Gate, R-SIG-063). A format that is not registered, or an answer of the wrong length, is an artifact (fail
-// closed).
-func (h *Host) GateClassify(ctx context.Context, repo sgate.Repo, path string, blob [32]byte) (sgate.Subject, error) {
-	artifact := sgate.Subject{Kind: sgate.KindArtifact}
+// GateClassify is the signature gate's classifier (sgate.Classifier): the items' format names what the gate judges of each
+// (formats.SignatureAdapter.Gate, R-SIG-063), in one call for a serve's item or a preview's batch (R-SIG-072). A format that is not
+// registered, or an answer of the wrong length, makes every item an artifact (fail closed).
+func (h *Host) GateClassify(ctx context.Context, repo sgate.Repo, items []sgate.Item) ([]sgate.Subject, error) {
+	artifacts := make([]sgate.Subject, len(items))
+	for i := range artifacts {
+		artifacts[i] = sgate.Subject{Kind: sgate.KindArtifact}
+	}
 	f, ok := h.o.Formats(repo.Format)
 	if !ok {
-		return artifact, nil
+		return artifacts, nil
 	}
 	sa := f.Signatures()
 	if sa == nil {
-		return artifact, nil
+		return artifacts, nil
 	}
 	ref := formats.RepoRef{ID: repo.ID, Name: repo.Name, Class: formats.Class(repo.Class), Format: formats.ID(repo.Format)}
-	subs, err := sa.Gate(ctx, h, ref, []formats.GateItem{{Path: path, Blob: blob}})
+	in := make([]formats.GateItem, len(items))
+	for i, it := range items {
+		in[i] = formats.GateItem{Path: it.Path, Blob: it.Blob}
+	}
+	subs, err := sa.Gate(ctx, h, ref, in)
 	if err != nil {
-		return sgate.Subject{}, err
+		return nil, err
 	}
-	if len(subs) != 1 {
-		return artifact, nil
+	if len(subs) != len(items) {
+		return artifacts, nil
 	}
-	out := sgate.Subject{Covering: subs[0].Covering}
-	switch subs[0].Kind {
-	case formats.GateArtifact:
-		out.Kind = sgate.KindArtifact
-	case formats.GateAttachment:
-		out.Kind = sgate.KindAttachment
-	case formats.GateSignatureFile:
-		out.Kind = sgate.KindSignatureFile
-	default:
-		out.Kind = sgate.KindNone
+	out := make([]sgate.Subject, len(subs))
+	for i, s := range subs {
+		out[i] = sgate.Subject{Covering: s.Covering}
+		switch s.Kind {
+		case formats.GateArtifact:
+			out[i].Kind = sgate.KindArtifact
+		case formats.GateAttachment:
+			out[i].Kind = sgate.KindAttachment
+		case formats.GateSignatureFile:
+			out[i].Kind = sgate.KindSignatureFile
+		default:
+			out[i].Kind = sgate.KindNone
+		}
 	}
 	return out, nil
 }

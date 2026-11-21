@@ -5,8 +5,9 @@
 -- The counting signatures (the roles publisher and provenance, R-SIG-062) of the subjects attached in the repositories of a gate's view,
 -- with what the gate judges each by (R-SIG-066): the integrity state, the key IDs, the OIDC issuer and the identity of the signer, and the
 -- trust row of the scope (the project's when one exists, else the installation's) with its anchors and the epoch it was computed under;
--- and whether Quader issued the signature itself (identity_id, stage 2), which never passes (R-SIG-062).
-SELECT s.subject_sha256, s.state, s.key_ids,
+-- and whether Quader issued the signature itself (identity_id, stage 2), which never passes (R-SIG-062). The signature's id names what
+-- passed an artifact in the API's member gate (R-SIG-073).
+SELECT s.id, s.subject_sha256, s.state, s.key_ids,
        COALESCE(s.signer ->> 'oidcIssuer', '')::text AS oidc_issuer, COALESCE(s.signer ->> 'identity', '')::text AS identity,
        (s.identity_id IS NOT NULL)::boolean AS issued,
        (t.signature_id IS NOT NULL)::boolean AS has_trust, COALESCE(t.state, '')::text AS trust_state,

@@ -251,6 +251,36 @@ func (q *Queries) BastionFeedNow(ctx context.Context, arg BastionFeedNowParams) 
 	return i, err
 }
 
+const bastionGatedRepositories = `-- name: BastionGatedRepositories :many
+SELECT (p.key || '/' || r.key)::text AS name
+  FROM repositories r
+  JOIN project p ON p.id = r.project_id
+ WHERE COALESCE((r.config -> 'signatures' ->> 'onlyVerified')::boolean, false)
+ ORDER BY 1
+`
+
+// The repositories whose signature gate is on when the feed is read (signatures.md R-SIG-075, Q-SIG-94), by their qualified names: the
+// content entry of what narrows the anchors or blocks a signer.
+func (q *Queries) BastionGatedRepositories(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionGatedRepositories)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bastionPrincipalKinds = `-- name: BastionPrincipalKinds :many
 SELECT id::text AS id, kind FROM principal WHERE id = ANY($1::text[]::uuid[])
 `

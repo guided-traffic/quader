@@ -178,7 +178,7 @@ about 15 s; the chart leg about 1 s. With 25 formats the cost is the same: the c
 A repository whose member `signatures.onlyVerified` is on serves an artifact only when a signature of its publisher or its build, attached
 where the repository sees it, is verified by an anchor it accepts (R-SIG-061 to R-SIG-069, R-SIG-075, R-SIG-076; the decisions Q-SIG-75 to
 Q-SIG-95 and Q-SIG-131 to Q-SIG-144 of the specification). Releases, the preview, the impact count, their API and the Bastion's feed are
-package 2's; the screens package 3's.
+package 2's ([below](#stage-3-package-2-releases-previews-and-the-api-built)); the screens package 3's.
 
 | What | Where |
 |---|---|
@@ -244,6 +244,45 @@ bounds the slots, a drain answers every wait at once (the component's `Drain`).
 No end-to-end case (Q-SIG-95). The virtual view and a remote's fetch state are tested at the unit tier (Q-SIG-141). With 25 formats the
 cost is 25 times the kit's milliseconds; no leg loads a client image.
 
+## Stage 3, package 2: releases, previews and the API (built)
+
+The exceptions of a repository's gate, what an administrator sees before a change, and the API the screens of package 3 build on
+(R-SIG-070 to R-SIG-073, R-SIG-075, R-SIG-076; the decisions Q-SIG-196 to Q-SIG-205 of the specification). Everything judges with the gate's
+own `Judge`: a preview, a release's check and the members are `Gate.Assess` over stored items, the impact is `Judge` under two snapshots.
+
+| What | Where |
+|---|---|
+| The release at the serve point: `judge` reads `GateReleased` of each view's repository only when the signatures do not pass; `Verdict.Released` and `Verdict.Signature` say what passed | [gate/gate.go](../../internal/signatures/gate/gate.go) |
+| The judgement without a wait: `Assess` (one classification per holding repository, rows per 1,000 digests, releases for what does not pass), `Preview` (batches of 500 items in the order of the live paths, the 20 newest refused as examples, `preview_limit` items or 10 s), `Impact` (`Snapshot.with` makes the snapshot of the change; candidates from `GateImpact`; per gated repository the artifacts that pass before and not after and that no release passes) | [gate/assess.go](../../internal/signatures/gate/assess.go), [gate/preview.go](../../internal/signatures/gate/preview.go), [gate/impact.go](../../internal/signatures/gate/impact.go) |
+| The batch classification: `sgate.Classifier` takes many items; the format host's `GateClassify` hands them to `SignatureAdapter.Gate` at once | [formathost/signature_gate.go](../../internal/formathost/signature_gate.go) |
+| The store: `GateReleased`, `GateItems`, `GateImpact`, `Releases`, `Release` (`signature.release.granted`), `Withdraw` (`signature.release.withdrawn` with its journal entry), `RefusalHolders`, `Refusals`, `BlobItem`; the replay `replayReleaseWithdrawn` | [store/releases.go](../../internal/signatures/store/releases.go), [store/journal_replay.go](../../internal/signatures/store/journal_replay.go), migration 00104 ([database.md](database.md#the-releases-of-the-signature-gate-00104)) |
+| The operations: the preview, the releases, the refused downloads, the impact; `SignatureServices.Gate`, `.GateStore`, `.PreviewLimit` | [api/v1/signatures_gate.go](../../internal/api/v1/signatures_gate.go), [signatures_gate_lists.go](../../internal/api/v1/signatures_gate_lists.go), [signatures_services.go](../../internal/api/v1/signatures_services.go) |
+| The members `refused`, `refusedReason` (a file, a version and its files, the version list) and `gate` (the signatures answers), each the repository's own gate (Q-SIG-203) | [signatures_gate_members.go](../../internal/api/v1/signatures_gate_members.go), [signatures_views.go](../../internal/api/v1/signatures_views.go), [signatures_versionlist.go](../../internal/api/v1/signatures_versionlist.go), `edge.SignatureView` |
+| The Bastion's feed: a withdrawn release is `content` of its repository; a removed anchor, a block, an anchor switched off or losing a fingerprint, project anchors switched off are `content` of every gated repository (`BastionGatedRepositories`) and the virtual repositories above them | [bastionmain/feed.go](../../internal/bastionmain/feed.go) |
+| The events' registration, the UI's labels | [audit/events_signatures.go](../../internal/audit/events_signatures.go), [audit-labels.ts](../../web/src/app/features/audit/audit-labels.ts) |
+
+### What the screens of package 3 call
+
+| Operation | For |
+|---|---|
+| `GET /api/v1/projects/{p}/repositories/{r}/signatures/preview?anchors=a,b` | the section's state line and the confirmation before a narrowing: `examined`, `artifacts`, `pass`, `pending`, `refused` per reason (`missing`, `untrusted`, `notChosen`, `invalid`, `blocked`, `notChecked`), `complete`, up to 20 `examples` (holding repository, path, package, version, reason); `anchors` absent is the stored setting, empty any anchor |
+| `POST /api/v1/signatures/impact` with `{"anchor", "change"}`, `{"block": {"kind", "value", "issuer"}}` or `{"projectAnchors": false}` | the confirmation before removing, switching off or editing an anchor, blocking a signer, switching project anchors off: `artifacts`, `repositories`, up to 20 `byRepository`, `complete`, `bound` (`upper` for a change of material); ask nothing when `artifacts` is 0 |
+| `GET /api/v1/signatures/refusals?repository=&reason=&cursor=` | the dashboard's **Refused downloads**: repository, format, path, package, version, sha256, reason, first and last refusal, count, the release since |
+| `GET`, `POST /api/v1/projects/{p}/repositories/{r}/signatures/releases`; `DELETE …/releases/{sha256}` | **Release for this repository** (`{"sha256", "reason"}`, `201`; `409 nothing_to_release`, `409 already_released`; `404` without read or for a digest the repository does not store) and **Withdraw release** |
+| the member `signatures.refused` / `refusedReason` of the items answer, a version, its files and the version list | the fact **Signature** "Refused here", no **Download**, the banner of a refused version (`pending` shows nothing more) |
+| the member `gate` of `GET …/versions/{v}/signatures` per repository and of `GET …/repositories/{r}/signatures?path=` | the accepted anchors (`ref`, `title`, `kind`, `scope`, `removed`), `decision`, `reason`, `passedBy` (`signature` with its id, or `release`); absent while the repository's gate is off |
+
+### Tests and what they cost
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Unit | a release at the serve point and in `Assess`, the preview in batches with chosen anchors and the limit, the impact of a removal, a block, a narrowing, project anchors off and the limit (`gate`); the impact request and the preview's parameter, a version's summary (`api/v1`, no document); the feed's mapping (`bastionmain`); the events' registration (`audit`) | milliseconds each; `gate` stays under a second | rows, snapshots and items built by the tests |
+| Integration | area `signatures`, [gate_releases_test.go](../../test/integration/signatures/gate_releases_test.go): R-SIG-070 to R-SIG-073 in one test with one web replica and a worker | 5.6 s | files of a kilobyte, two OpenPGP keys of the test |
+| Integration | area `backup`: a withdrawn release replayed into a restored database, within `TestR_SIG_041_…` | nothing measurable | a row and an entry |
+
+The integration shard that runs `signatures` gains about 6 s; no other leg gains anything measurable. With 25 formats the cost is the same:
+nothing here is per format.
+
 ## The interface for packages 2 and 3
 
 ### The candidate (`formats.SignatureCandidate`, [signatures.go](../../internal/formats/signatures.go))
@@ -299,9 +338,8 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
   `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
   repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
 - **Stage 2:** packages 1 and 2 built, below, and of package 4 the section Signing identity; package 3 and the rest of 4 are not.
-- **Stage 3, package 2**: releases (`signature_releases`, passed to `gate.Judge` as `released`), the preview (`formats.SignatureAdapter.Gate` in
-  batches and `gate.Judge` without the wait), the impact count (the trust rows the change subtracts from, `Snapshot.Subtract`), their API
-  and the members `refused` and `gate`, the read of `signature_refusals`, the Bastion's feed. Stage 3, package 3: the screens.
+- **Stage 3:** packages 1 and 2 built, above; package 3 (the screens of R-SIG-074) builds on the operations listed in
+  [What the screens of package 3 call](#what-the-screens-of-package-3-call).
 
 ## Stage 2: Quader signs
 

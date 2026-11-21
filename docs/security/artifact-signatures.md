@@ -177,9 +177,9 @@ its digest ([H-1196](#h-1196--an-images-gate-guards-its-manifests-a-blob-fetched
 |---|---|---|
 | A writer of the repository's settings, an Owner of the project included | switch it on, accept fewer anchors | a weakening (off, any anchor, an anchor added) needs `repositories:write-config` or `vulnerabilities:triage`; an Owner gets 403 (R-SIG-061) |
 | A holder of `repositories:write-config` or `vulnerabilities:triage` | switch it off, accept more anchors | `repository.updated` with `block: lifted`; a narrowing is journaled, so a restore keeps the gate closed |
-| A holder of `vulnerabilities:triage` with `read` on the repository or `content:metadata-read` | release one artifact in one repository (R-SIG-070, not built yet) | the release names its reason; its withdrawal is journaled and reaches the Bastions |
+| A holder of `vulnerabilities:triage` with `read` on the repository or `content:metadata-read` | release one artifact in one repository, also before the gate is switched on and while it is pending (R-SIG-070, Q-SIG-196, Q-SIG-197); the release passes it in that repository's gate alone, whatever its signatures say later ([H-1223](#h-1223--a-release-keeps-passing-an-artifact-after-its-signer-is-blocked)) | `signature.release.granted` with the reason and the gate's reason at the grant; an Owner gets 403; without `read` the repository answers 404; the withdrawal is journaled, so a restore keeps it withdrawn, and reaches the Bastions as `content` of the repository |
 | A project's Owner, while project anchors are allowed | add an anchor that passes the project's gates that accept any anchor | a gate with chosen anchors does not take it, and adding it to the list is a weakening (H-1195) |
-| An administrator (`security-settings:write`) | remove, switch off or change the material of an anchor, block a signer: the gate refuses at once; add an anchor: it passes after the recomputation | the impact is to be shown before the change is saved (R-SIG-071, not built yet) |
+| An administrator (`security-settings:write`) | remove, switch off or change the material of an anchor, block a signer: the gate refuses at once; add an anchor: it passes after the recomputation | `POST /api/v1/signatures/impact` counts before the change what it makes the gates refuse, by the gate's own decision under the change (R-SIG-071); bounded, so a count beyond `preview_limit` says it is a lower bound ([H-1225](#h-1225--the-impact-of-a-block-of-an-identity-is-a-lower-bound-beyond-the-preview-limit)); the narrowing reaches the Bastions as `content` of every gated repository |
 | The operator | `signatures.enabled: false` switches every gate off ([H-1198](#h-1198--switching-the-signature-checks-off-lifts-every-repositorys-gate)) | the repository's section says so |
 
 **What it does when it cannot decide: it refuses.** A signature not checked yet, a trust row not written yet, a remote whose signatures were
@@ -211,6 +211,8 @@ object store is answered pending (Q-SIG-140). PostgreSQL down fails the download
   picks a version the gate refuses.
 - [H-1200](../spec/signatures.md#h-1200--docker-and-ansible-galaxy-fail-a-first-pull-through-a-gated-remote-when-the-checks-outlast-the-wait):
   Docker and `ansible-galaxy` fail a first pull through a gated remote when the checks outlast the wait.
+- [H-1224](../spec/signatures.md#h-1224--a-virtual-repositorys-member-refused-and-the-version-list-show-one-gate-each): a virtual repository's
+  member `refused` and the version list show one gate each.
 
 ### H-1166 · The worker reads hostile signature containers in a process that holds secrets
 
@@ -399,6 +401,23 @@ configuration switches detection and checks off, and with them every gate, as `m
 repositories' settings stay stored and apply again when the checks are switched on. No repository writer is asked; the repository's section
 says that the setting does not apply. What makes it real: an operator who switches the checks off to spare the worker while teams rely on
 their gates.
+
+### H-1223 · A release keeps passing an artifact after its signer is blocked
+
+Component: `signature_releases` (R-SIG-070, Q-SIG-88). Subject: gated repositories with releases. Live since package 2 of stage 3. A release
+passes its artifact in its repository whatever the signatures say, so an artifact released while its signer was unknown keeps being served
+after an administrator blocks that signer as stolen; the block's impact count leaves it out, because it still passes, and the dashboard's
+list of refused downloads never shows it. The release names its reason and who granted it, and the releases' list of the repository shows
+it. What makes it real: a release granted for an urgent artifact of a signer whose key is later found compromised, and nobody reviews the
+repository's releases at the block.
+
+### H-1225 · The impact of a block of an identity is a lower bound beyond the preview limit
+
+Component: the impact count (R-SIG-071, Q-SIG-202). Subject: an administrator who blocks a Sigstore identity pattern in an installation with
+many keyless signatures. Live since package 2 of stage 3. A block of a key reads its candidates through the index of key IDs; a block of an
+identity has no index to read through and reads at most `signatures.gate.preview_limit` signatures that carry an identity, in no order, and
+matches the pattern itself. Beyond the bound the answer says `complete: false` and its counts are lower bounds; the block itself refuses
+every match at once. What makes it real: more than 100,000 keyless signatures of publishers and builds attached in gated repositories.
 
 ### H-1201 · An npm version's fetch state outlives its tarball
 

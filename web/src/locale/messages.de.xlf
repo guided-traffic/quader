@@ -27320,6 +27320,24 @@
         <target>Ungültige Signatur gefunden</target>
       </segment>
     </unit>
+    <unit id="audit.action.signature.release.granted">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+      </notes>
+      <segment>
+        <source>Artifact released for a repository&apos;s signature check</source>
+        <target>Artefakt für die Signaturprüfung eines Repositorys zugelassen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.signature.release.withdrawn">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+      </notes>
+      <segment>
+        <source>Release for a repository&apos;s signature check withdrawn</source>
+        <target>Zulassung für die Signaturprüfung eines Repositorys zurückgezogen</target>
+      </segment>
+    </unit>
     <unit id="audit.action.signature.settings.changed">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:309</note>

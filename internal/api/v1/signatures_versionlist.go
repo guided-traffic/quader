@@ -6,7 +6,9 @@ import (
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/signatures"
+	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 )
 
 // versionListSignatures is the member signatures of the rows of a page of the version list (R-SIG-034, R-SIG-009): one statement reads
@@ -59,7 +61,52 @@ func (s *Server) versionListSignatures(ctx context.Context, name string, rows []
 		state, stale := signatures.Badge(perVersion[v.Version])
 		out[v.Version] = &gen.SignatureStatus{State: gen.SignatureBadgeState(state), Stale: stale}
 	}
-	return out, nil
+	return out, s.versionListGates(ctx, sv, ids, blobs, out)
+}
+
+// versionListGates adds refused and refusedReason to the rows (R-SIG-073, Q-SIG-203): per gated repository that holds versions of the page
+// for the caller, one judgement of its blobs; a version is refused when one such repository's gate refuses it, else pending when one
+// holds it pending. A version no gated repository holds carries no pair.
+func (s *Server) versionListGates(ctx context.Context, sv SignatureServices, ids []int64, blobs []signatures.VersionBlob, out map[string]*gen.SignatureStatus) error {
+	sums := map[string]gateSummary{}
+	for _, id := range ids {
+		repo, err := sv.Repos.ByID(ctx, id)
+		if err != nil || !gateApplies(sv, repo) || repo.Class == repository.Virtual {
+			continue
+		}
+		var fs []gateFile
+		var versions []string
+		for _, b := range blobs {
+			if b.RepoID == id && b.Path != "" {
+				fs, versions = append(fs, gateFile{holder: repo, path: b.Path, blob: b.Blob}), append(versions, b.Version)
+			}
+		}
+		got, ok, err := gateJudge(ctx, sv, repo, nil, fs)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		byVersion := map[string][]sgate.Assessed{}
+		for i, a := range got {
+			byVersion[versions[i]] = append(byVersion[versions[i]], a)
+		}
+		for v, as := range byVersion {
+			// A refusal before a pending one before a pass (the order of sgate.Outcome).
+			if sum, cur := summarize(as), sums[v]; sum.outcome > cur.outcome {
+				sums[v] = sum
+			} else if _, had := sums[v]; !had {
+				sums[v] = sum
+			}
+		}
+	}
+	for v, sum := range sums {
+		if st := out[v]; st != nil {
+			st.Refused, st.RefusedReason = genRefused(sum.refusedMember())
+		}
+	}
+	return nil
 }
 
 // versionListRepositories resolves the repositories the rows name: their IDs, and the IDs grouped by the project whose scope judges them.

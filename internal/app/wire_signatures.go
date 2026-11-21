@@ -183,6 +183,8 @@ func (a *App) signaturesAPI() v1.SignatureServices {
 	}
 	out := v1.SignatureServices{
 		Store: sg.store, Enabled: a.cfg.Signatures.Enabled, Repos: part[repositoryArea](a.parts).reader, Coverage: a.signatureCoverage,
+		// Stage 3: the gate judges the members refused and gate, the preview, a release and the impact (R-SIG-070 to R-SIG-073).
+		Gate: sg.gate, GateStore: sg.store, PreviewLimit: a.cfg.Signatures.Gate.PreviewLimit,
 	}
 	if az := part[authzArea](a.parts); az.engine != nil {
 		out.Decider = az.engine

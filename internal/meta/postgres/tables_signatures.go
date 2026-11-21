@@ -32,6 +32,9 @@ func init() {
 	// The downloads a gate refused (stage 3, R-SIG-073, R-SIG-076) are transient: a refusal is a recent fact, and the next refused
 	// download writes it again.
 	tables.Register("signature_refusals", tables.Transient, tables.Options{})
+	// The releases of a repository's gate (stage 3, 00104, R-SIG-070, R-SIG-076) are data: a release is a security decision. One granted
+	// after the restore point is lost, which narrows; a withdrawal is journaled and replayed.
+	tables.Register("signature_releases", tables.Data, tables.Options{})
 
 	// version is the ETag of the settings and of an anchor (R-API-012, R-SIG-019, R-SIG-034); a restore raises it like every
 	// client-held revision (R-BAK-022), so a change prepared against the state before the restore is refused with 412.

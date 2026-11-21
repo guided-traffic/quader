@@ -16,8 +16,8 @@ of a project, shows the result at the artifact, alarms on an invalid signature, 
 protocol expects. It blocks nothing. Stage 2, Quader signs, is specified in the section
 [Quader signs (stage 2)](#quader-signs-stage-2) (R-SIG-044 to R-SIG-060, specified, not built): one signing identity per installation,
 npm's registry signatures of local packages and a signed receipt attestation of every artifact. Stage 3, the gate per repository, is
-specified in the section [The gate per repository (stage 3)](#the-gate-per-repository-stage-3) (R-SIG-061 to R-SIG-078, specified, not
-built): a detail setting of a repository that lets only artifacts with a verified signature, optionally of chosen anchors, be downloaded.
+specified in the section [The gate per repository (stage 3)](#the-gate-per-repository-stage-3) (R-SIG-061 to R-SIG-078; the gate and its
+API built, its screens not): a detail setting of a repository that lets only artifacts with a verified signature, optionally of chosen anchors, be downloaded.
 
 The owner asked for it on 2026-11-21 ("Quader muss in Zukunft auch das feststellen, auslesen und verifizieren von Signaturen auf (wenn
 möglich) allen Artefaktarten unterstützen. Dabei muss es zwischen öffentlich gültigen oder intern gültigen Signaturen unterscheiden
@@ -2526,7 +2526,7 @@ it lands, and the result written into this requirement.
 
 ## The gate per repository (stage 3)
 
-Status: package 1 (the gate) built; packages 2 and 3 not built. The owner decided it on 2026-11-21 in his working paper, against the development agent's recommendation of no
+Status: packages 1 (the gate) and 2 (releases, previews and the API) built; package 3 (the screens) not built. The owner decided it on 2026-11-21 in his working paper, against the development agent's recommendation of no
 gate for now ([Q-SIG-9](#q-sig-9--display-or-gate), option (b), in the paper's words translated: besides display and alarm, per repository
 a detail setting "only artifacts with a verified signature", optionally of chosen anchors); with his choice of three stages
 ([Q-SIG-14](#q-sig-14--the-order-of-the-work)) it is the third. Before he left on 2026-11-21 he was told that the second and the third
@@ -2666,8 +2666,9 @@ Priority: **P1** · Covers: BEYOND-019
   the company's anchors.
 
 Built (package 1): `gate.Judge` and `judgeRow` ([decide.go](../../internal/signatures/gate/decide.go)) over the rows the store reads
-(`SignatureGateRows`, the roles `publisher` and `provenance` only, so a registry's signature and an attestation are never read); the
-release parameter is there for package 2, which passes it from `signature_releases`. The statement reads whether `signatures.identity_id`
+(`SignatureGateRows`, the roles `publisher` and `provenance` only, so a registry's signature and an attestation are never read). Package 2
+reads a release of the gate's repository (`signature_releases`, R-SIG-070) only where the signatures do not pass, so a passing download
+reads no more than before ([Q-SIG-205](#q-sig-205--a-release-is-read-only-where-the-signatures-do-not-pass)). The statement reads whether `signatures.identity_id`
 is set (`issued`, stage 2's column), and `Judge` leaves such a row out (`Row.Issued`), so Quader's own signature counts for nothing whatever
 its role or its trust row; the unit table holds one of Quader's own whose chain ends in an anchor (missing), beside a pending one (pending)
 and beside a publisher's (passes).
@@ -3061,8 +3062,22 @@ CREATE TABLE signature_releases (
 - **Recorded:** `signature.release.granted`, not journaled (it widens); `signature.release.withdrawn`, journaled, which reaches the Bastions
   as a feed entry (R-SIG-075).
 
+Built (package 2 of stage 3): the table (migration 00104), the store's `Release`, `Withdraw` and `Releases`
+([store/releases.go](../../internal/signatures/store/releases.go)), the operations of R-SIG-073, and the gate's use of a release at the serve
+point and in every judgement of the API (`Gate.Decide`, `Gate.Assess`). Where it deviates or adds: the gate is judged as if it were on, with
+the stored anchors, so a release can be granted before the gate is switched on
+([Q-SIG-196](#q-sig-196--a-release-is-judged-as-the-gate-switched-on-with-the-stored-anchors)); a pending artifact can be released, with the
+reason `pending` ([Q-SIG-197](#q-sig-197--a-pending-artifact-can-be-released)); the repository (a virtual one: a member the caller reads) must
+hold a stored file with the digest, else 404
+([Q-SIG-198](#q-sig-198--a-release-names-a-stored-file-of-the-repository)); the second half of the permission (`read` or
+`content:metadata-read`) answers 404 without it, as for a repository that does not exist. A release is kept by the purge of a retired
+well-known repository ([Q-SIG-201](#q-sig-201--the-purge-of-a-retired-repository-keeps-its-releases)); it keeps passing its artifact after a later block of the signer ([H-1223](../security/artifact-signatures.md#h-1223--a-release-keeps-passing-an-artifact-after-its-signer-is-blocked)).
+
 Acceptance criteria:
 
+- Unit (`internal/signatures/gate`, milliseconds): a release passes in its repository alone, at the download and in the API's judgement, a
+  blocked signer's artifact too; a released index passes its platform manifest; a passing download reads no release
+  (`TestR_SIG_070_AReleasePassesInItsRepositoryAlone`).
 - Integration (area `signatures`, `TestR_SIG_070_…`, about 2 s): an auditor releases an unsigned file of `files-internal` (201); it is served
   there and refused in a second gated repository that holds the same bytes; an Owner's release answers 403; the withdrawal refuses it again
   and records the journaled event; a release of a passing file answers 409.
@@ -3087,11 +3102,25 @@ Priority: **P1** · Covers: quader-only
   verified artifacts refused: web/docker-local (120), …". Nothing is asked when the answer is 0.
 - Stage 1's table gains `CREATE INDEX signature_trust_anchors ON signature_trust USING gin (anchor_ids);`.
 
+Built (package 2 of stage 3): `POST /api/v1/signatures/impact` and `Gate.Impact` ([gate/impact.go](../../internal/signatures/gate/impact.go)):
+the gate's own decision of each candidate artifact under the snapshot of anchors and blocks of now and under the snapshot the change would
+make, so the count subtracts exactly as the gate does (R-SIG-066)
+([Q-SIG-202](#q-sig-202--the-impact-is-the-gates-decision-under-two-snapshots-counted-per-signed-artifact-and-repository)); the index replaces
+00098's partial one (migration 00104). Where it deviates or adds: the answer carries `bound: "exact" | "upper"` always; it counts an artifact
+by its signed subject in each gated repository whose view attaches it (an index once, not its platform manifests, and a virtual repository
+again beside its member); a block of a key, fingerprint or serial reads the signatures that carry one of the value's spellings
+(`signatures_keys`), a block of an identity reads at most `preview_limit` signatures that carry an identity and matches the pattern itself ([H-1225](../security/artifact-signatures.md#h-1225--the-impact-of-a-block-of-an-identity-is-a-lower-bound-beyond-the-preview-limit)); a
+switched-off anchor or project anchors switched off count from the anchors in force. The permission: the operation admits a holder of
+`security-settings:write` or an Owner of some project, and the handler asks the change's own right (a project anchor's Owner, else
+`security-settings:write`).
+
 Acceptance criteria:
 
-- Integration (area `signatures`, `TestR_SIG_071_…`, about 2 s): with the gate on `files-internal` and on a second generic repository, the
-  impact of removing the release key's anchor counts its two signed files; a file also signed by the company CA and a released file are not
-  counted; a block of the key's fingerprint counts the same two.
+- Unit (`internal/signatures/gate`, milliseconds): removal, block, narrowing (an upper bound), project anchors off and the limit
+  (`TestR_SIG_071_TheImpactCountsWhatStopsPassing`).
+- Integration (area `signatures`, in `TestR_SIG_070_…`, about 1 s): with the gate on `files-internal` and on a second generic repository, the
+  impact of removing the release key's anchor counts its two signed files; a file also signed by a second key (the company CA in the first
+  plan) and a released file are not counted; a block of the key's fingerprint counts the same two.
 
 ### R-SIG-072 · The repository's preview before the gate is switched on
 Priority: **P1** · Covers: quader-only
@@ -3099,8 +3128,9 @@ Priority: **P1** · Covers: quader-only
 ([Q-SIG-90](#q-sig-90--a-preview-before-switching-on-and-an-impact-before-a-narrowing-both-bounded)) What keeps a writer of the settings
 from locking a team out.
 
-- `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview?onlyVerified=true&anchors=<ref>,<ref>` applies the gate of
-  the given setting (the stored one without parameters) to the repository's stored items: the format's `Gate` in batches and the decision of
+- `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview?anchors=<ref>,<ref>` applies the gate switched on with the
+  given anchors (the stored ones without the parameter; present and empty, any anchor;
+  [Q-SIG-199](#q-sig-199--the-preview-always-judges-the-gate-switched-on-and-takes-only-the-anchors)) to the repository's stored items: the format's `Gate` in batches and the decision of
   R-SIG-062, without the wait. It answers `{"examined", "complete", "artifacts", "pass", "pending", "refused": {"missing", "untrusted",
   "notChosen", "invalid", "blocked", "notChecked"}, "examples": [{"path", "package", "version", "reason"}]}`, with at most 20 examples, the
   newest first. It reads at most `signatures.gate.preview_limit` items or for 10 s, else `complete: false`.
@@ -3109,11 +3139,24 @@ from locking a team out.
 - Permission: whoever may change the member: `repositories:read-config`, or the project's Owner.
 - The section of R-SIG-074 asks before it saves a narrowing whose preview refuses anything, and shows the examples.
 
+Built (package 2 of stage 3): `Gate.Preview` and `Gate.Assess` ([gate/preview.go](../../internal/signatures/gate/preview.go),
+[gate/assess.go](../../internal/signatures/gate/assess.go)) in batches of 500 items, each batch one classification per holding repository
+(the format's `Gate` for many items at once), one read of rows per 1,000 digests, one of fetch states for a remote of the view and one of
+releases for what does not pass. Where it deviates or adds: the items are read in the order of the index of live paths, and the examples
+are the newest refused artifacts among those read, by the item's id, not by a read in time order
+([Q-SIG-200](#q-sig-200--the-preview-reads-in-the-order-of-the-live-paths-and-keeps-the-newest-refused-as-examples)); a release passes in
+the preview as at the download; a Debian repository and a system repository of `upstream` answer `422 not_applicable`, the signatures off
+`409 signatures_not_enabled`; `examples` name the holding repository (a member, for a virtual one). A preview of a virtual repository's
+members and of a remote's fetch state is tested at the unit tier, as the download's (Q-SIG-141): the revisit Q-SIG-141 names is not taken,
+because it needs a Sigstore or a CA of the test in the integration area.
+
 Acceptance criteria:
 
-- Integration (area `signatures`, `TestR_SIG_072_…`, about 2 s): the preview of `files-internal` with one file signed by the release key,
-  one by the company CA and one unsigned answers 2 passing and 1 `missing` with any anchor, and 1 passing, 1 `notChosen` and 1 `missing`
-  with only the release key's anchor chosen.
+- Unit (`internal/signatures/gate`, milliseconds): batches, chosen anchors, a signature file that passes as it is, examples newest first, the
+  limit (`TestR_SIG_072_ThePreviewJudgesTheStoredItemsInBatches`).
+- Integration (area `signatures`, in `TestR_SIG_070_…`, about 1 s): the preview of `files-internal` with files signed by the release key, one
+  also by a second key, a released one and an unsigned one answers 3 passing and 1 `missing` with any anchor, and 2 passing, 1 `notChosen`
+  and 1 `missing` with only the second key's anchor chosen.
 
 ### R-SIG-073 · The API of stage 3
 Priority: **P1** · Covers: quader-only
@@ -3122,7 +3165,7 @@ In `api/openapi.yaml` under the tag `signatures`:
 
 | Method | Path | What | Permission |
 |---|---|---|---|
-| GET | `/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview` | R-SIG-072 | `repositories:read-config`, or the project's Owner |
+| GET | `/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview?anchors=` | R-SIG-072 | `repositories:read-config`, or the project's Owner |
 | POST | `/api/v1/signatures/impact` | R-SIG-071 | the change's own |
 | GET | `/api/v1/signatures/refusals` | The downloads a gate refused in the last `signatures.gate.refusals_retention`, one row per repository and artifact: the repository, the path, the package and version, the digest, the reason, the first and the last refusal, the count, and the release if one was granted since; filters `repository`, `reason`; cursor paging (R-API-010) | `content:metadata-read`; a caller with `read` on some repositories sees those |
 | GET, POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases` | The releases of the repository; a release `{"sha256", "reason"}`, `201`, `409 nothing_to_release`, `409 already_released` | read: as the refusals; write: R-SIG-070 |
@@ -3153,12 +3196,27 @@ In `api/openapi.yaml` under the tag `signatures`:
   "title", "kind", "scope", "removed"}], "decision": "pass" | "refused" | "pending", "reason", "passedBy": {"signature"} | {"release"}}`.
 - **The repository document** carries the member of R-SIG-061, validated as the other members (R-REPO-004).
 
+Built (package 2 of stage 3): the six operations in `api/openapi.yaml` (`previewRepositorySignatureGate`, `countSignatureImpact`,
+`listSignatureRefusals`, `listSignatureReleases`, `createSignatureRelease`, `deleteSignatureRelease`;
+[signatures_gate.go](../../internal/api/v1/signatures_gate.go), [signatures_gate_lists.go](../../internal/api/v1/signatures_gate_lists.go)) and
+the members ([signatures_gate_members.go](../../internal/api/v1/signatures_gate_members.go)). Where it deviates or adds: each member is what
+the repository's own gate decides now, a virtual repository's over the members that hold the version for the caller; a member's own gate is in
+its own entry ([Q-SIG-203](#q-sig-203--the-members-refused-and-gate-are-each-repositorys-own-gate)); a version is refused when one of its
+artifacts is, pending when one is, and in the version list when the gate of one repository that holds it for the caller refuses it there
+([Q-SIG-203](#q-sig-203--the-members-refused-and-gate-are-each-repositorys-own-gate)); `refusedReason` is absent, not null, while the artifact
+passes; `gate` is absent while the repository's gate is off, so `onlyVerified` reads true where it is present; `passedBy` is
+`{"kind": "signature" | "release", "signature": <id> | null}` ([Q-SIG-204](#q-sig-204--passedby-names-its-kind-and-the-signatures-id)); the
+refusals' list sorts by the last refusal, newest first, with the cursor (last refusal, repository, digest); the releases' list answers at most
+1,000, newest first, without paging. The refused downloads' release names the reason, the releaser and the time.
+
 Acceptance criteria:
 
-- Integration (area `signatures`, `TestR_SIG_073_…`, about 2 s): the operations of the table for an administrator, an auditor, a
-  `security-admin`, the Owner of `web` and an anonymous caller; `GET …/items?path=` of a refused file carries `signatures.refused: true` and
-  its reason; a refused download makes one row of `signature_refusals` and a second one within the minute raises nothing but `last_at` and
-  `count`.
+- Unit (`internal/api/v1`, milliseconds, no document): the impact request's one change, the preview's parameter, a version's summary
+  (`TestR_SIG_071_TheImpactRequestNamesOneChange`, `TestR_SIG_073_AVersionIsRefusedWhenOneArtifactIs`).
+- Integration (area `signatures`, in `TestR_SIG_070_…`, about 2 s): the operations of the table for an administrator, an auditor, a
+  `security-admin` without read (404), the Owner of `web` (403 at a release and an installation anchor's impact), a caller without a grant and
+  an anonymous caller (401); `GET …/items?path=` of a refused file carries `signatures.refused: true` and its reason, the file's signatures
+  answer `gate`; a second refused download raises nothing but `last_at` and `count`.
 
 ### R-SIG-074 · The screens of stage 3
 Priority: **P1** · Covers: quader-only
@@ -3247,12 +3305,19 @@ the feed is read, and their virtual repositories; a gate switched on is a `repos
 Built (package 1): `signature.download_refused` (asynchronous, deduplicated a minute per repository, path and client address; a pending
 answer is recorded with the reason `pending` as the malware gate records its own,
 [Q-SIG-137](#q-sig-137--a-pending-answer-is-recorded-and-counted-as-the-malware-gates)), the two metrics on every role that builds the
-gate, the alert `QuaderSignatureGatePending` with its `promtool` test. The release events and the Bastion's feed are package 2's.
+gate, the alert `QuaderSignatureGatePending` with its `promtool` test. Built (package 2): the two release events (`signature.release.granted`
+in the grant's transaction, `signature.release.withdrawn` with its journal entry `{"repoId", "repository", "sha256"}`), and the Bastion's feed
+([feed.go](../../internal/bastionmain/feed.go)): a withdrawal is `content` of its repository; `signature.anchor.removed` and
+`signature.signer.blocked`, `signature.anchor.updated` that switched an anchor off or took a fingerprint from it, and
+`signature.settings.changed` that switched project anchors off are `content` of every repository whose member `signatures.onlyVerified` is
+true when the feed is read (`BastionGatedRepositories`), and of the virtual repositories above them; with no gated repository the entry is
+dropped. The feed reads the audit event, whose details say whether an update narrowed; details that do not read are read as a narrowing.
 
 Acceptance criteria:
 
 - Unit (`internal/audit`, under a second): the three events are in the registry with their schemas and journal flags; the Bastion's
-  classification test (`TestR_BAS_015_EveryJournaledEventIsClassified`) classifies the journaled ones.
+  classification test (`TestR_BAS_015_EveryJournaledEventIsClassified`) classifies the journaled ones; the feed's mapping of each
+  (`TestR_SIG_075_TheGatesNarrowingsAreContentEntries`, `internal/bastionmain`, milliseconds).
 - Chart test (`test/chart`, about 0.1 s within `TestR_HA_045_PrometheusRule`): the alert renders and `promtool` checks it.
 
 ### R-SIG-076 · Configuration, backups, restores and replicas of stage 3
@@ -3284,8 +3349,10 @@ signatures:
 
 Built (package 1): `config.Signatures.Gate` with its validation; `signature_refusals` registered `transient` and written by the gate
 ([Q-SIG-142](#q-sig-142--every-refusal-is-written-to-the-list-of-refused-downloads)), removed by the job's discovery step after the
-retention; the member travels with the document and its part with the journal. `signature_releases` and `preview_limit`'s readers are
-package 2's.
+retention; the member travels with the document and its part with the journal. Built (package 2): `signature_releases` registered `data`
+and replayed from `signature.release.withdrawn` (`replayReleaseWithdrawn`, by the repository's id); `preview_limit` bounds the preview's items
+and the impact's candidates. Integration (area `backup`, within `TestR_SIG_041_WhatNarrowedTrustIsReplayedIntoARestore`): a withdrawn release
+is withdrawn again in a restored database.
 
 Acceptance criteria:
 
@@ -3344,6 +3411,12 @@ Measured for package 1 (2026-11-21): the gate's unit tests about 0.8 s (`interna
 member 0.3 s, the kit's gate cases milliseconds per format; the integration area `signatures` gains two tests,
 `TestR_SIG_061_TheGateIsARepositorySettingAnOwnerMayNarrow` and `TestR_SIG_064_TheGateAtTheServePointOfFiles` (R-SIG-064, R-SIG-066 to
 R-SIG-068 as subtests; the second web replica and a worker stopped and started again), about 11 s together with files of a kilobyte.
+
+Measured for package 2 (2026-11-21, on the shared development machine at a load of 6 to 15): the gate's three new unit tests milliseconds (the
+package `internal/signatures/gate` stays under a second), the API's two pure tests milliseconds; the integration area `signatures` gains one
+test, `TestR_SIG_070_ReleasesPreviewImpactAndTheAPI` (R-SIG-070 to R-SIG-073 as subtests, one web replica and a worker, two OpenPGP keys of
+the test), 5.6 s with files of a kilobyte, inside the planned 8 s; the area `backup` gains a row and an entry within an existing test,
+nothing measurable.
 
 What only a real client shows and is not tested: `docker pull` of a multi-platform image signed at its index through a gated repository, a
 refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable.
@@ -5530,6 +5603,123 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** R-SIG-056.
 
+### Q-SIG-196 · A release is judged as the gate switched on with the stored anchors
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Taken when package 2
+of stage 3 was built.
+
+Context: R-SIG-070 releases "an artifact the gate refuses" and answers 409 for one that passes; it does not say what a release on a repository
+whose gate is off is.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The release judges the gate as if it were on, with the stored anchors (chosen) | | The preview of R-SIG-072 shows what switching on would refuse; a team releases those first and switches on without an outage | A release can stand for a gate that is never switched on |
+| (b) 409 `nothing_to_release` while the gate is off | | A release exists only where it acts | Switching on refuses the urgent artifacts until someone releases them, in the outage |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-070.
+
+### Q-SIG-197 · A pending artifact can be released
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Whatever the gate does not pass, a pending artifact included, with the reason `pending` (chosen) | | A remote whose fetch never completes (an upstream that does not answer, the worker down) answers 503 to every client; a release ends it | A release of what a check would have passed a minute later |
+| (b) Only a refused artifact | | The wording of R-SIG-070 | No way past a check that cannot run but switching the gate off |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-070; the column `signature_releases.refused_reason` takes `pending`.
+
+### Q-SIG-198 · A release names a stored file of the repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The repository (a virtual one: a member the caller reads) must hold a stored file with the digest, else 404; the gate is judged on that file (chosen) | The gate classifies an item by its path | The format decides whether the digest is an artifact at all (a layer passes anyway), and a digest of another repository is not released by mistake | An artifact can be released only while it is stored |
+| (b) Any digest | | A release before the upload | The gate cannot say what the digest is, so 409 `nothing_to_release` cannot be decided |
+
+**Choice:** (a). The release itself survives the removal of the items, as R-SIG-070 says. **Applied in the spec:** R-SIG-070.
+
+### Q-SIG-199 · The preview always judges the gate switched on and takes only the anchors
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `?anchors=` alone; absent, the stored anchors; present and empty, any anchor (chosen) | | A preview of the gate switched off answers nothing; one parameter less to explain | The first plan's URL changes |
+| (b) `?onlyVerified=true&anchors=` | | The first plan | `onlyVerified=false` would be a preview that previews nothing |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-072, R-SIG-073.
+
+### Q-SIG-200 · The preview reads in the order of the live paths and keeps the newest refused as examples
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The items in the order of the index of live paths (`items_live_path`), the examples the refused artifacts with the highest item ids among those read (chosen) | | No index more on the largest table; a small repository in a large installation is read from its own rows | Beyond the bound the examples are the newest of what was read, not of the repository |
+| (b) The items newest first by a new index `(repo_id, id)` | | The examples are the repository's newest | An index more on `items` for one preview |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-072.
+
+### Q-SIG-201 · The purge of a retired repository keeps its releases
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signature_releases` is in the purge's kept list, with the repository's other decisions (chosen) | Q-REPO-376: content goes, configuration stays | A release is a decision about the repository's gate and survives its items by R-SIG-070 | Rows of a retired repository stay |
+| (b) Purged with the content | | Nothing of a retired repository stays | A revived repository loses decisions an administrator took |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-070; the list of `test/integration/upstream/purge_test.go`.
+
+### Q-SIG-202 · The impact is the gate's decision under two snapshots, counted per signed artifact and repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The candidates are the artifacts whose counting signatures the change touches (by the anchor index, the key index, or the identity); each is judged by the gate's `Judge` under the snapshot of now and the one the change makes, per gated repository; one that passes before and not after and that no release passes is counted (chosen) | | The count subtracts as the gate does (R-SIG-066), chosen anchors and another signature included; no second rule to keep equal | An artifact counts once per gated repository that attaches it (a virtual repository beside its member); an index counts once, not its platforms |
+| (b) Count trust rows whose anchors contain the anchor | | One statement | Counts artifacts another anchor still passes, and ignores releases and chosen anchors |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-071.
+
+### Q-SIG-203 · The members refused and gate are each repository's own gate
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-073 says "the gate that applies refuses it now in the addressed repository"; through a virtual repository two gates apply (R-SIG-065), and the
+version list names no addressed repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each answer's repository judges its own gate: a file's, a version's in the repository it was read from, a virtual repository's over the members that hold the version for the caller; the version answer's entry per repository; in the version list a version is refused when the gate of one repository that holds it for the caller refuses it (chosen) | | One rule; a member's refusal shows in the member's own entry, which the version answer lists beside the virtual one | A virtual repository's member `refused` does not include its holder's gate, and the version list does not include a virtual repository's own gate (H-1224) |
+| (b) Every gate a download through the repository would meet | | What a client would get | A version list row would need a decision per virtual repository and member, per page |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-073; [H-1224](#h-1224--a-virtual-repositorys-member-refused-and-the-version-list-show-one-gate-each).
+
+### Q-SIG-204 · passedBy names its kind and the signature's id
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `{"kind": "signature" \| "release", "signature": <id> \| null}` (chosen) | | One object the generated types describe; the id finds the signature in the same answer's list | Not the first plan's two shapes |
+| (b) `{"signature": …}` or `{"release": …}` | The first plan | | A union the generated types render loosely |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-073.
+
+### Q-SIG-205 · A release is read only where the signatures do not pass
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The gate reads `signature_releases` of its repository after its decision, only when it is not a pass (chosen) | | A passing download reads no more than package 1 did (R-SIG-064's cost) | One statement more for a refused or pending download |
+| (b) Joined into the rows' statement | | One statement for every download | Every gated download pays for the exceptions |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-062, R-SIG-070.
+
 ## What this does not cover
 
 The gaps of the mechanisms are on [security/artifact-signatures.md](../security/artifact-signatures.md#what-this-does-not-cover). This page
@@ -5615,3 +5805,12 @@ Docker or `ansible-galaxy`, which do not retry a `503` (the malware gate's recor
 built. When the fetch of the upstream's signatures and their check take longer than 25 s from the request's arrival, the pull fails with
 "Quader is checking the signatures …" and works when it is repeated; npm, NuGet and apt retry by themselves. A mirror pass decides ahead of
 demand. What makes it real: a slow or rate-limited upstream, or a backlog of the job `signature-verify`.
+
+### H-1224 · A virtual repository's member refused and the version list show one gate each
+
+Component: the members of R-SIG-073 ([Q-SIG-203](#q-sig-203--the-members-refused-and-gate-are-each-repositorys-own-gate)). Subject: a reader
+of a version or a file through a virtual repository whose member is gated, and of the version list. Live since package 2 of stage 3. The member
+`refused` of a version read from a virtual repository judges the virtual repository's own gate; a download through it meets the holding member's
+gate too, which shows in the member's own entry of the version's signatures answer. The version list judges the gates of the repositories that
+hold the version, not a virtual repository's own gate. A client's download is decided at the serve point either way. What makes it real: a gated
+member under an ungated virtual repository, or a gated virtual repository.

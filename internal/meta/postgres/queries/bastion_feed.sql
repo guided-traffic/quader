@@ -90,3 +90,12 @@ SELECT DISTINCT (p.key || '/' || r.key)::text AS name
   JOIN project p ON p.id = r.project_id
  WHERE i.blob_sha256 = sqlc.arg(sha256)::bytea AND i.kind = 'file' AND i.trashed_at IS NULL
  ORDER BY 1;
+
+-- name: BastionGatedRepositories :many
+-- The repositories whose signature gate is on when the feed is read (signatures.md R-SIG-075, Q-SIG-94), by their qualified names: the
+-- content entry of what narrows the anchors or blocks a signer.
+SELECT (p.key || '/' || r.key)::text AS name
+  FROM repositories r
+  JOIN project p ON p.id = r.project_id
+ WHERE COALESCE((r.config -> 'signatures' ->> 'onlyVerified')::boolean, false)
+ ORDER BY 1;

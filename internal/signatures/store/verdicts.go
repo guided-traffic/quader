@@ -51,7 +51,7 @@ func (s *Store) VersionBlobs(ctx context.Context, repoIDs []int64, name string, 
 			if !asked[v] {
 				v = r.DisplayVersion
 			}
-			out = append(out, signatures.VersionBlob{Version: v, RepoID: r.RepoID, Blob: digest(r.BlobSha256)})
+			out = append(out, signatures.VersionBlob{Version: v, RepoID: r.RepoID, Blob: digest(r.BlobSha256), Path: r.Path})
 		}
 		return nil
 	})

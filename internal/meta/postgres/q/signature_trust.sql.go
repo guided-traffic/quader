@@ -1735,7 +1735,8 @@ func (q *Queries) SignatureUpstreamKeys(ctx context.Context, arg SignatureUpstre
 }
 
 const signatureVersionBlobs = `-- name: SignatureVersionBlobs :many
-SELECT pv.version::text AS version, pv.display_version::text AS display_version, p.repo_id::bigint AS repo_id, i.blob_sha256
+SELECT pv.version::text AS version, pv.display_version::text AS display_version, p.repo_id::bigint AS repo_id, i.blob_sha256,
+       i.path::text AS path
   FROM packages p
   JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
   JOIN items i ON i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL
@@ -1754,10 +1755,11 @@ type SignatureVersionBlobsRow struct {
 	DisplayVersion string
 	RepoID         int64
 	BlobSha256     []byte
+	Path           string
 }
 
 // The blobs of the files of some versions of a package in some repositories, in one statement for a page of the version list (R-SIG-034):
-// the subjects whose counted signatures give each version its badge.
+// the subjects whose counted signatures give each version its badge, and the paths a repository's gate classifies (R-SIG-073).
 func (q *Queries) SignatureVersionBlobs(ctx context.Context, arg SignatureVersionBlobsParams) ([]SignatureVersionBlobsRow, error) {
 	rows, err := q.db.Query(ctx, signatureVersionBlobs, arg.RepoIds, arg.Name, arg.Versions)
 	if err != nil {
@@ -1772,6 +1774,7 @@ func (q *Queries) SignatureVersionBlobs(ctx context.Context, arg SignatureVersio
 			&i.DisplayVersion,
 			&i.RepoID,
 			&i.BlobSha256,
+			&i.Path,
 		); err != nil {
 			return nil, err
 		}

@@ -441,6 +441,9 @@ func (s *Server) versionSignatureReport(ctx context.Context, sv SignatureService
 		if err != nil {
 			return out, err
 		}
+		if rep.Gate, err = s.entryGate(ctx, sv, in, repo, holders, lookup); err != nil {
+			return out, err
+		}
 		rep.Repository, rep.Class, rep.Members = e.Repo.String(), gen.SignatureRepositoryReportClass(e.Class), members
 		out.Repositories = append(out.Repositories, rep)
 	}
@@ -496,6 +499,35 @@ func (s *Server) repositorySignatures(ctx context.Context, sv SignatureServices,
 	origin, err := signatureOrigin(ctx, sv, first)
 	rep.Origin = origin
 	return rep, err
+}
+
+// entryGate is the member gate of one repository's entry (R-SIG-073): the repository's own gate over the version's files as each holder
+// stores them; a virtual repository's gate reads the attachments of those holders. Nil while no gate applies.
+func (s *Server) entryGate(ctx context.Context, sv SignatureServices, in sigVersion, repo repository.Repository, holders []int64, lookup sigItemLookup) (*gen.SignatureGateView, error) {
+	if !gateApplies(sv, repo) {
+		return nil, nil
+	}
+	var fs []gateFile
+	var members []repository.Repository
+	for _, h := range holders {
+		hr, ok := in.topo.Repository(h)
+		if !ok {
+			continue
+		}
+		if repo.Class == repository.Virtual {
+			members = append(members, hr)
+		}
+		got, _, err := versionSubjects(ctx, in, in.topo.Name(h), lookup)
+		if err != nil {
+			return nil, err
+		}
+		for _, sub := range got.list {
+			if sub.path != "" {
+				fs = append(fs, gateFile{holder: hr, path: sub.path, blob: sub.digest})
+			}
+		}
+	}
+	return gateViewRep(ctx, sv, repo, members, fs)
 }
 
 // versionSubjects are the subjects of the version in one physical repository: the blobs of the files at the paths the package view
@@ -640,6 +672,9 @@ func (s *Server) fileSignatureReport(ctx context.Context, sv SignatureServices, 
 	if out.Covering, err = s.covering(ctx, sv, repo.NumericID(), repoKey, repo.Format, string(repo.Class), scopeProject(repo), ss); err != nil {
 		return out, err
 	}
+	if out.Gate, err = gateViewRep(ctx, sv, repo, nil, []gateFile{{holder: repo, path: it.Path, blob: it.Digest}}); err != nil {
+		return out, err
+	}
 	out.Origin, err = signatureOrigin(ctx, sv, it)
 	return out, err
 }
@@ -775,7 +810,11 @@ func (s *Server) signatureMember(ctx context.Context, repoKey qname.Repo, it ite
 		return nil, err
 	}
 	state, stale := signatures.Badge(counts[it.Digest])
-	return &edge.SignatureView{State: state, Stale: stale}, nil
+	out := &edge.SignatureView{State: state, Stale: stale}
+	if repo, ok := repositoryOf(ctx, s.o.Signatures, repoKey); ok && repo.Class != repository.Virtual {
+		out.Refused, out.RefusedReason, err = gateMemberOf(ctx, s.o.Signatures, repo, nil, []gateFile{{holder: repo, path: it.Path, blob: it.Digest}})
+	}
+	return out, err
 }
 
 // addSignatureStatus adds the member to each file of a version and to the version (R-SIG-034, R-SIG-035), from one call: the files
@@ -816,5 +855,54 @@ func (s *Server) addSignatureStatus(ctx context.Context, d view.VersionDetail, o
 			out.Files[i].Signatures = &gen.SignatureStatus{State: gen.SignatureBadgeState(fs), Stale: fstale}
 		}
 	}
+	return s.addGateStatus(ctx, d, out)
+}
+
+// addGateStatus adds refused and refusedReason to the member of the version and of each file (R-SIG-073): the gate of the repository the
+// version was read from, over the files it lists, each judged in the repository that holds it (a member, for a virtual repository).
+func (s *Server) addGateStatus(ctx context.Context, d view.VersionDetail, out *gen.PackageVersion) error {
+	sv := s.o.Signatures
+	repo, ok := repositoryOf(ctx, sv, d.Repo)
+	if !ok || !gateApplies(sv, repo) {
+		return nil
+	}
+	var fs []gateFile
+	var at []int
+	var members []repository.Repository
+	for i, f := range d.Files {
+		dg, ok := blob.ParseDigest(f.SHA256)
+		if !ok {
+			continue
+		}
+		holder := repo
+		if repo.Class == repository.Virtual {
+			if holder, ok = repositoryOf(ctx, sv, f.Repo); !ok {
+				continue
+			}
+			if !slices.ContainsFunc(members, func(m repository.Repository) bool { return m.NumericID() == holder.NumericID() }) {
+				members = append(members, holder)
+			}
+		}
+		fs, at = append(fs, gateFile{holder: holder, path: f.Path, blob: dg}), append(at, i)
+	}
+	got, ok, err := gateJudge(ctx, sv, repo, members, fs)
+	if err != nil || !ok {
+		return err
+	}
+	out.Signatures.Refused, out.Signatures.RefusedReason = genRefused(summarize(got).refusedMember())
+	for j, i := range at {
+		if i < len(out.Files) && out.Files[i].Signatures != nil {
+			out.Files[i].Signatures.Refused, out.Files[i].Signatures.RefusedReason = genRefused(summarize(got[j : j+1]).refusedMember())
+		}
+	}
 	return nil
+}
+
+// genRefused converts the pair of refusedMember to the generated types.
+func genRefused(refused *bool, reason *string) (*bool, *gen.SignatureGateRefusedReason) {
+	if reason == nil {
+		return refused, nil
+	}
+	r := gen.SignatureGateRefusedReason(*reason)
+	return refused, &r
 }

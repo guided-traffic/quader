@@ -154,6 +154,8 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'signature.anchor.updated',
   'signature.download_refused',
   'signature.invalid',
+  'signature.release.granted',
+  'signature.release.withdrawn',
   'signature.settings.changed',
   'signature.signer.blocked',
   'signature.signer.unblocked',

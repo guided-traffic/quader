@@ -7,6 +7,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/signatures"
+	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 )
 
 // The port of the operations of signatures on artifacts (signatures.md R-SIG-034; the store is internal/signatures/store). The store
@@ -74,4 +75,10 @@ type SignatureServices struct {
 	Repos   repository.Reader
 	// Coverage answers the signed documents that name a stored file (Debian's releases, R-SIG-030); nil lists none.
 	Coverage SignatureCoverage
+	// Gate is the gate per repository of stage 3 (R-SIG-061 to R-SIG-073), nil while the signatures are off: it judges the members
+	// refused and gate, the preview, a release and the impact. GateStore keeps the releases and the refused downloads; without it the
+	// operations of the gate answer 503. PreviewLimit is signatures.gate.preview_limit (R-SIG-071, R-SIG-072).
+	Gate         *sgate.Gate
+	GateStore    SignatureGateStore
+	PreviewLimit int
 }

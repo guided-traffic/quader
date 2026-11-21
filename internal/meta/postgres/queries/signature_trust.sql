@@ -487,8 +487,9 @@ SELECT DISTINCT ON (a.location) a.location::text AS path, COALESCE(s.predicate_t
 
 -- name: SignatureVersionBlobs :many
 -- The blobs of the files of some versions of a package in some repositories, in one statement for a page of the version list (R-SIG-034):
--- the subjects whose counted signatures give each version its badge.
-SELECT pv.version::text AS version, pv.display_version::text AS display_version, p.repo_id::bigint AS repo_id, i.blob_sha256
+-- the subjects whose counted signatures give each version its badge, and the paths a repository's gate classifies (R-SIG-073).
+SELECT pv.version::text AS version, pv.display_version::text AS display_version, p.repo_id::bigint AS repo_id, i.blob_sha256,
+       i.path::text AS path
   FROM packages p
   JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
   JOIN items i ON i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL

@@ -201,7 +201,9 @@ tags:
     description: |
       Signatures on artifacts (R-SIG-001 to R-SIG-043): the signatures, attestations and origin of a version and of a stored
       file, the download of a signature's original, the trust anchors of the installation and of the projects, the switch for
-      project anchors, the blocked signers and the security dashboard's view of invalid and blocked signatures.
+      project anchors, the blocked signers and the security dashboard's view of invalid and blocked signatures; the gate per repository
+      (R-SIG-061 to R-SIG-078): the preview before it is switched on, the impact of a change of anchors, the releases of a repository's
+      gate and the refused downloads.
   # <<< signatures
   #
   # >>> T-22 search
@@ -15118,6 +15120,293 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: previewRepositorySignatureGate
+      tags: [signatures]
+      summary: What the repository's signature gate would refuse
+      description: |
+        The preview before the gate is switched on (R-SIG-072): the gate applied to the repository's stored items as if
+        `signatures.onlyVerified` were on, with the anchors of `anchors` (the stored `signatures.anchors` when the parameter is
+        absent; present and empty: any anchor), the formats' classification and the decision of R-SIG-062, without the wait. A remote
+        repository previews its cache, a virtual repository the items of its members the caller may read. It reads at most
+        `signatures.gate.preview_limit` items or for 10 s; beyond either `complete` is false and the counts are lower bounds.
+        `examples` are up to 20 refused artifacts, the newest first. A reference that names no anchor in force matches nothing (fail
+        closed). `422 not_applicable` on a Debian repository and a system repository of `upstream`, `409 signatures_not_enabled`
+        while `signatures.enabled` is false. Needs `repositories:read-config`, or the project's Owner.
+      x-quader-permission:
+        permission: repositories:read-config
+        project: path.projectKey
+        projectRole: owner
+      parameters:
+        - name: anchors
+          in: query
+          description: "Comma-separated references `<scope>/<key>` of the anchors to accept; empty for any anchor; absent for the stored ones."
+          schema:
+            type: string
+            maxLength: 8192
+      responses:
+        "200":
+          description: The preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureGatePreview"
+              example:
+                examined: 412
+                complete: true
+                artifacts: 137
+                pass: 120
+                pending: 2
+                refused: {missing: 11, untrusted: 1, notChosen: 3, invalid: 0, blocked: 0, notChecked: 0}
+                examples:
+                  - {repository: web/files-internal, path: tools/cli-2.4.0.tar.gz, package: null, version: null, reason: missing}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    get:
+      operationId: listSignatureReleases
+      tags: [signatures]
+      summary: The releases of the repository's signature gate
+      description: |
+        The artifacts a holder of the triage right released for this repository's gate (R-SIG-070), newest first, at most 1,000. Needs
+        `read` on the repository or `content:metadata-read`; every other caller gets `404`, as for a repository that does not exist.
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The releases.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureReleaseList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createSignatureRelease
+      tags: [signatures]
+      summary: Release an artifact the repository's signature gate does not pass
+      description: |
+        Passes the artifact (a stored file's SHA-256, an image's manifest or index) through this repository's gate until the release is
+        withdrawn, whatever its signatures say; a released index passes its platform manifests (R-SIG-070). No other repository's gate
+        is affected. The repository (for a virtual repository, a member the caller may read) must hold a stored item with the digest
+        (`404` otherwise). The gate is judged as if it were on, with the stored anchors, so a release can be granted before the gate is
+        switched on (Q-SIG-196); an artifact the gate passes answers `409 nothing_to_release`, one a release passes already `409
+        already_released`. A pending artifact can be released (Q-SIG-197). Needs `vulnerabilities:triage` together with `read` on the
+        repository or `content:metadata-read` (the roles `admin`, `security-admin` and `auditor`); a project's Owner cannot. Records
+        `signature.release.granted`.
+      x-quader-permission:
+        permission: vulnerabilities:triage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignatureReleaseRequest"
+            example:
+              sha256: 275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f
+              reason: The vendor's build of 2.4.0 is unsigned; its digest was confirmed with the vendor by phone on 2026-11-21.
+      responses:
+        "201":
+          description: The release.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureRelease"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases/{sha256}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+      - name: sha256
+        in: path
+        required: true
+        description: The released artifact's SHA-256 as 64 lower-case hexadecimal digits.
+        schema:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+    delete:
+      operationId: deleteSignatureRelease
+      tags: [signatures]
+      summary: Withdraw a release of the repository's signature gate
+      description: |
+        The artifact is judged by its signatures again from the next request (R-SIG-070). Records `signature.release.withdrawn` with
+        the journal flag, so a restore keeps it withdrawn, and the Bastions drop what they cached of the repository and the virtual
+        repositories over it (R-SIG-075). `404` when no release passes the artifact in the repository. Needs `vulnerabilities:triage`
+        together with `read` on the repository or `content:metadata-read`.
+      x-quader-permission:
+        permission: vulnerabilities:triage
+      responses:
+        "204":
+          description: The release is withdrawn.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signatures/refusals:
+    get:
+      operationId: listSignatureRefusals
+      tags: [signatures]
+      summary: List the downloads the repositories' signature gates refused
+      description: |
+        The refused downloads of the last `signatures.gate.refusals_retention` (R-SIG-073): one entry per repository and artifact, the
+        latest refusal first, with the path, the package and version the format gives it, the digest, the reason of the last refusal,
+        the first and the last refusal, their count, and the release that passes the artifact since. A pending answer is no refusal.
+        A holder of `content:metadata-read` sees every entry; a caller with `read` on some repositories sees the entries of those
+        whose path it may read. A page may hold fewer entries than `limit`; `nextCursor` is null only on the last page. Filters:
+        `repository` (`<project>/<key>`), `reason`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - {name: repository, in: query, description: "A repository name `<project>/<key>`.", schema: {type: string}}
+        - {name: reason, in: query, description: "One reason of the gate.", schema: {$ref: "#/components/schemas/SignatureGateReason"}}
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of refused downloads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureRefusalPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/signatures/impact:
+    post:
+      operationId: countSignatureImpact
+      tags: [signatures]
+      summary: Count what a change of anchors, blocks or the switch makes the signature gates refuse
+      description: |
+        Before an anchor is removed, switched off or its material changed, a signer blocked or project anchors switched off (R-SIG-071):
+        how many artifacts of repositories whose gate is on would stop passing, with the repositories, the most first, at most 20. It
+        counts the artifacts attached in gated repositories whose counting signatures the change touches (an anchor's through the index
+        `signature_trust_anchors`, a key's through `signatures_keys`), judged by the gate under the anchors and blocks of now and under
+        those the change would make; another counting signature or a release that still passes an artifact keeps it out. At most
+        `signatures.gate.preview_limit` candidates: beyond, `complete` is false and the counts are lower bounds. A change of material is
+        counted as a removal, an upper bound (`bound: upper`). Exactly one of `anchor`, `block` and `projectAnchors` (which must be
+        false). Needs the change's own right: `security-settings:write`, or for an anchor of a project that project's Owner. `404` for
+        an anchor that does not exist; `409 signatures_not_enabled` while `signatures.enabled` is false.
+      x-quader-permission:
+        permission: security-settings:write
+        projectRole: owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignatureImpactRequest"
+            example: {anchor: 4, change: remove}
+      responses:
+        "200":
+          description: The count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureImpact"
+              example:
+                artifacts: 132
+                repositories: 3
+                complete: true
+                bound: exact
+                byRepository:
+                  - {repository: web/docker-local, artifacts: 120}
+                  - {repository: web/files-internal, artifacts: 9}
+                  - {repository: web/npm-all, artifacts: 3}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   # <<< signatures
   #
   # >>> M6b mirror
@@ -26098,13 +26387,24 @@ components:
         The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
         signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
         read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-        Absent for a folder and while `signatures.enabled` is false.
+        Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+        the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+        is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+        refuses it there (Q-SIG-203).
       properties:
         state:
           $ref: "#/components/schemas/SignatureBadgeState"
         stale:
           type: boolean
           description: A trust row that decides the badge was computed before the last change of anchors, blocks or the switch; the trust job has not reached it yet (R-SIG-012).
+        refused:
+          type: boolean
+          description: The repository's gate refuses it now (R-SIG-073); false while it passes or is pending.
+        refusedReason:
+          oneOf:
+            - $ref: "#/components/schemas/SignatureGateRefusedReason"
+            - type: "null"
+          description: The reason of the refusal, `pending` while it waits for a check; absent while it passes.
     SignatureIntegrityState:
       type: string
       enum: [pending, valid, invalid, no_key, unsupported, malformed, failed]
@@ -26490,7 +26790,7 @@ components:
       type: object
       additionalProperties: false
       required: [repository, class, state, stale, members, signatures, attestations, covering, origin]
-      description: What one repository shows of a version's signatures (R-SIG-034).
+      description: What one repository shows of a version's signatures (R-SIG-034), and its gate while it is on (R-SIG-073).
       properties:
         repository:
           type: string
@@ -26526,6 +26826,8 @@ components:
           oneOf:
             - $ref: "#/components/schemas/SignatureOrigin"
             - type: "null"
+        gate:
+          $ref: "#/components/schemas/SignatureGateView"
     SignatureVersionReport:
       type: object
       additionalProperties: false
@@ -26573,6 +26875,8 @@ components:
           oneOf:
             - $ref: "#/components/schemas/SignatureOrigin"
             - type: "null"
+        gate:
+          $ref: "#/components/schemas/SignatureGateView"
     SignatureTrustRoot:
       type: object
       additionalProperties: false
@@ -27230,6 +27534,285 @@ components:
             $ref: "#/components/schemas/SignatureFinding"
         nextCursor:
           type: [string, "null"]
+    SignatureGateReason:
+      type: string
+      enum: [missing, untrusted, not_chosen, invalid, blocked, not_checked]
+      description: Why a repository's gate refuses an artifact (R-SIG-062, R-SIG-068).
+    SignatureGateRefusedReason:
+      type: string
+      enum: [missing, untrusted, not_chosen, invalid, blocked, not_checked, pending]
+      description: A reason of the gate (R-SIG-068), or `pending` while a check or a fetch of the artifact's signatures is due.
+    SignatureGateAnchor:
+      type: object
+      additionalProperties: false
+      required: [ref, title, kind, scope, removed]
+      description: An anchor a repository's gate accepts, by its reference; `removed` for a reference that names no anchor any more, shown as **Removed trust anchor** (R-SIG-061).
+      properties:
+        ref:
+          type: string
+          description: "`<scope>/<key>`."
+        title:
+          type: [string, "null"]
+        kind:
+          oneOf:
+            - $ref: "#/components/schemas/SignatureAnchorKind"
+            - type: "null"
+        scope:
+          $ref: "#/components/schemas/SignatureAnchorScope"
+        removed:
+          type: boolean
+    SignatureGateView:
+      type: object
+      additionalProperties: false
+      required: [onlyVerified, anchors, decision, reason, passedBy]
+      description: |
+        The gate of the repository of an entry, while it is on (R-SIG-073): the accepted anchors (empty for any anchor) and what it
+        decides now of the entry's artifacts in this repository, with the settings and anchors as they are. A version is `refused`
+        when one of its artifacts is (the first one's reason), else `pending` when one is, else `pass`. `passedBy` says what passed:
+        a release of the repository, or the counting signature of the id (the first artifact's); null when nothing of the entry is an
+        artifact or nothing passed. Absent while the repository's gate is off.
+      properties:
+        onlyVerified:
+          type: boolean
+        anchors:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignatureGateAnchor"
+        decision:
+          type: string
+          enum: [pass, refused, pending]
+        reason:
+          oneOf:
+            - $ref: "#/components/schemas/SignatureGateReason"
+            - type: "null"
+        passedBy:
+          oneOf:
+            - $ref: "#/components/schemas/SignatureGatePassedBy"
+            - type: "null"
+    SignatureGatePassedBy:
+      type: object
+      additionalProperties: false
+      required: [kind, signature]
+      properties:
+        kind:
+          type: string
+          enum: [signature, release]
+        signature:
+          type: [integer, "null"]
+          format: int64
+          description: The id of the counting signature that passed, for `signature`.
+    SignatureGatePreview:
+      type: object
+      additionalProperties: false
+      required: [examined, complete, artifacts, pass, pending, refused, examples]
+      description: What a repository's gate would decide of its stored items (R-SIG-072).
+      properties:
+        examined:
+          type: integer
+          description: The stored items read.
+        complete:
+          type: boolean
+          description: False when the bound of items or the time ended the reading; the counts are then lower bounds.
+        artifacts:
+          type: integer
+          description: Of the items, those the format names artifacts; the others (attachments, layers, signature files) pass as they are.
+        pass:
+          type: integer
+        pending:
+          type: integer
+        refused:
+          $ref: "#/components/schemas/SignatureGateRefusedCounts"
+        examples:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/SignatureGateExample"
+    SignatureGateRefusedCounts:
+      type: object
+      additionalProperties: false
+      required: [missing, untrusted, notChosen, invalid, blocked, notChecked]
+      properties:
+        missing: {type: integer}
+        untrusted: {type: integer}
+        notChosen: {type: integer}
+        invalid: {type: integer}
+        blocked: {type: integer}
+        notChecked: {type: integer}
+    SignatureGateExample:
+      type: object
+      additionalProperties: false
+      required: [repository, path, package, version, reason]
+      properties:
+        repository:
+          type: string
+          description: The repository that holds the item (a member, for a virtual repository).
+        path:
+          type: string
+        package:
+          type: [string, "null"]
+        version:
+          type: [string, "null"]
+        reason:
+          $ref: "#/components/schemas/SignatureGateReason"
+    SignatureReleaseRequest:
+      type: object
+      additionalProperties: false
+      required: [sha256, reason]
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    SignatureRelease:
+      type: object
+      additionalProperties: false
+      required: [repository, sha256, reason, refusedReason, releasedBy, releasedAt]
+      description: A release of one artifact for one repository's gate (R-SIG-070).
+      properties:
+        repository:
+          type: string
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        reason:
+          type: string
+        refusedReason:
+          $ref: "#/components/schemas/SignatureGateRefusedReason"
+        releasedBy:
+          type: [string, "null"]
+          description: "`<kind>:<name>` of the principal that granted it; null when it is gone."
+        releasedAt:
+          type: string
+          format: date-time
+    SignatureReleaseList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignatureRelease"
+    SignatureRefusal:
+      type: object
+      additionalProperties: false
+      required: [repository, format, path, package, version, sha256, reason, firstAt, lastAt, count, release]
+      description: A download a repository's gate refused (R-SIG-073), one entry per repository and artifact.
+      properties:
+        repository:
+          type: string
+        format:
+          type: string
+        path:
+          type: string
+        package:
+          type: [string, "null"]
+        version:
+          type: [string, "null"]
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        reason:
+          $ref: "#/components/schemas/SignatureGateReason"
+        firstAt:
+          type: string
+          format: date-time
+        lastAt:
+          type: string
+          format: date-time
+        count:
+          type: integer
+          format: int64
+        release:
+          oneOf:
+            - $ref: "#/components/schemas/SignatureRefusalRelease"
+            - type: "null"
+    SignatureRefusalRelease:
+      type: object
+      additionalProperties: false
+      required: [reason, releasedBy, releasedAt]
+      description: The release that passes the artifact in the repository since.
+      properties:
+        reason:
+          type: string
+        releasedBy:
+          type: [string, "null"]
+        releasedAt:
+          type: string
+          format: date-time
+    SignatureRefusalPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignatureRefusal"
+        nextCursor:
+          type: [string, "null"]
+    SignatureImpactRequest:
+      type: object
+      additionalProperties: false
+      description: "One change: `anchor` with `change`, `block`, or `projectAnchors: false`."
+      properties:
+        anchor:
+          type: integer
+          format: int64
+          minimum: 1
+        change:
+          type: string
+          enum: [remove, disable, narrow]
+          description: "With `anchor`: removed, switched off, or its material changed (counted as a removal)."
+        block:
+          type: object
+          additionalProperties: false
+          required: [kind, value]
+          properties:
+            kind:
+              $ref: "#/components/schemas/SignatureBlockKind"
+            value:
+              type: string
+              minLength: 1
+              maxLength: 1024
+            issuer:
+              type: string
+              maxLength: 1024
+        projectAnchors:
+          type: boolean
+          description: Only false, the switch for project Owners turned off.
+    SignatureImpact:
+      type: object
+      additionalProperties: false
+      required: [artifacts, repositories, complete, bound, byRepository]
+      description: What a change makes the gates refuse (R-SIG-071).
+      properties:
+        artifacts:
+          type: integer
+        repositories:
+          type: integer
+        complete:
+          type: boolean
+          description: False when the candidates were cut at `signatures.gate.preview_limit`; the counts are then lower bounds.
+        bound:
+          type: string
+          enum: [exact, upper]
+          description: "`upper` for a change of material, counted as a removal."
+        byRepository:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [repository, artifacts]
+            properties:
+              repository:
+                type: string
+              artifacts:
+                type: integer
     # <<< signatures
     VulnerabilityCvss:
       type: object

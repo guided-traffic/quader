@@ -91,6 +91,8 @@ var ownerRightsReads = map[string]string{
 	"getMalwareSwitch":                 "malware.enabled and the installation's switch: nothing of the owner's account (Q-MAL-45)",
 	"listMalwareFinds":                 "the finds the read scope of the decision point admits for the subject, scope included, item by item (malwareScopeOf, R-MAL-022)",
 	"listSignatureFindings":            "the invalid and blocked signatures the read scope of the decision point admits for the subject, scope included, file by file (malwareScopeOf, R-SIG-038)",
+	"listSignatureRefusals":            "the refused downloads the read scope of the decision point admits for the subject, scope included, path by path (malwareScopeOf, R-SIG-073)",
+	"listSignatureReleases":            "the releases of a repository the subject reads, decided by the read scope of the decision point (requireGateRead, R-SIG-070)",
 	"getVulnerabilityAdvisory":         "the advisory and the findings of it inside the subject's read scope (report.Scope)",
 	"getPackageVulnerabilities":        "the findings of a package inside the subject's read scope (report.PackageScope)",
 	"getPackageVersionVulnerabilities": "as getPackageVulnerabilities",

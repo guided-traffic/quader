@@ -311,6 +311,10 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.signature.download_refused:Download refused: no verified signature`;
     case 'signature.invalid':
       return $localize`:@@audit.action.signature.invalid:Invalid signature found`;
+    case 'signature.release.granted':
+      return $localize`:@@audit.action.signature.release.granted:Artifact released for a repository's signature check`;
+    case 'signature.release.withdrawn':
+      return $localize`:@@audit.action.signature.release.withdrawn:Release for a repository's signature check withdrawn`;
     case 'signature.settings.changed':
       return $localize`:@@audit.action.signature.settings.changed:Project trust anchor setting changed`;
     case 'signature.signer.blocked':

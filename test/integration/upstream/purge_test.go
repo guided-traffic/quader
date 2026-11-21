@@ -23,7 +23,7 @@ var (
 	}
 	kept = []string{
 		"authz_policy_selector", "deb_signing_keys", "endpoint_exposure_rule", "limit_assignment", "limit_ceiling", "namespace_claims",
-		"repository_secrets", "service_account", "virtual_deploy_targets", "virtual_members", "virtual_pin_rules",
+		"repository_secrets", "service_account", "signature_releases", "virtual_deploy_targets", "virtual_members", "virtual_pin_rules",
 	}
 )
 

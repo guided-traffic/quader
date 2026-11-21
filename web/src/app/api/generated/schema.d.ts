@@ -5638,6 +5638,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * What the repository's signature gate would refuse
+         * @description The preview before the gate is switched on (R-SIG-072): the gate applied to the repository's stored items as if
+         *     `signatures.onlyVerified` were on, with the anchors of `anchors` (the stored `signatures.anchors` when the parameter is
+         *     absent; present and empty: any anchor), the formats' classification and the decision of R-SIG-062, without the wait. A remote
+         *     repository previews its cache, a virtual repository the items of its members the caller may read. It reads at most
+         *     `signatures.gate.preview_limit` items or for 10 s; beyond either `complete` is false and the counts are lower bounds.
+         *     `examples` are up to 20 refused artifacts, the newest first. A reference that names no anchor in force matches nothing (fail
+         *     closed). `422 not_applicable` on a Debian repository and a system repository of `upstream`, `409 signatures_not_enabled`
+         *     while `signatures.enabled` is false. Needs `repositories:read-config`, or the project's Owner.
+         */
+        get: operations["previewRepositorySignatureGate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The releases of the repository's signature gate
+         * @description The artifacts a holder of the triage right released for this repository's gate (R-SIG-070), newest first, at most 1,000. Needs
+         *     `read` on the repository or `content:metadata-read`; every other caller gets `404`, as for a repository that does not exist.
+         */
+        get: operations["listSignatureReleases"];
+        put?: never;
+        /**
+         * Release an artifact the repository's signature gate does not pass
+         * @description Passes the artifact (a stored file's SHA-256, an image's manifest or index) through this repository's gate until the release is
+         *     withdrawn, whatever its signatures say; a released index passes its platform manifests (R-SIG-070). No other repository's gate
+         *     is affected. The repository (for a virtual repository, a member the caller may read) must hold a stored item with the digest
+         *     (`404` otherwise). The gate is judged as if it were on, with the stored anchors, so a release can be granted before the gate is
+         *     switched on (Q-SIG-196); an artifact the gate passes answers `409 nothing_to_release`, one a release passes already `409
+         *     already_released`. A pending artifact can be released (Q-SIG-197). Needs `vulnerabilities:triage` together with `read` on the
+         *     repository or `content:metadata-read` (the roles `admin`, `security-admin` and `auditor`); a project's Owner cannot. Records
+         *     `signature.release.granted`.
+         */
+        post: operations["createSignatureRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases/{sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The released artifact's SHA-256 as 64 lower-case hexadecimal digits. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw a release of the repository's signature gate
+         * @description The artifact is judged by its signatures again from the next request (R-SIG-070). Records `signature.release.withdrawn` with
+         *     the journal flag, so a restore keeps it withdrawn, and the Bastions drop what they cached of the repository and the virtual
+         *     repositories over it (R-SIG-075). `404` when no release passes the artifact in the repository. Needs `vulnerabilities:triage`
+         *     together with `read` on the repository or `content:metadata-read`.
+         */
+        delete: operations["deleteSignatureRelease"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/refusals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the downloads the repositories' signature gates refused
+         * @description The refused downloads of the last `signatures.gate.refusals_retention` (R-SIG-073): one entry per repository and artifact, the
+         *     latest refusal first, with the path, the package and version the format gives it, the digest, the reason of the last refusal,
+         *     the first and the last refusal, their count, and the release that passes the artifact since. A pending answer is no refusal.
+         *     A holder of `content:metadata-read` sees every entry; a caller with `read` on some repositories sees the entries of those
+         *     whose path it may read. A page may hold fewer entries than `limit`; `nextCursor` is null only on the last page. Filters:
+         *     `repository` (`<project>/<key>`), `reason`.
+         */
+        get: operations["listSignatureRefusals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signatures/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Count what a change of anchors, blocks or the switch makes the signature gates refuse
+         * @description Before an anchor is removed, switched off or its material changed, a signer blocked or project anchors switched off (R-SIG-071):
+         *     how many artifacts of repositories whose gate is on would stop passing, with the repositories, the most first, at most 20. It
+         *     counts the artifacts attached in gated repositories whose counting signatures the change touches (an anchor's through the index
+         *     `signature_trust_anchors`, a key's through `signatures_keys`), judged by the gate under the anchors and blocks of now and under
+         *     those the change would make; another counting signature or a release that still passes an artifact keeps it out. At most
+         *     `signatures.gate.preview_limit` candidates: beyond, `complete` is false and the counts are lower bounds. A change of material is
+         *     counted as a removal, an upper bound (`bound: upper`). Exactly one of `anchor`, `block` and `projectAnchors` (which must be
+         *     false). Needs the change's own right: `security-settings:write`, or for an anchor of a project that project's Owner. `404` for
+         *     an anchor that does not exist; `409 signatures_not_enabled` while `signatures.enabled` is false.
+         */
+        post: operations["countSignatureImpact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/signing/identity": {
         parameters: {
             query?: never;
@@ -11913,12 +12065,19 @@ export interface components {
          * @description The member `signatures` of a stored file and of a version (R-SIG-034): the badge. A version's is computed over the
          *     signatures of its files and, for an OCI tag, of its manifest and its platforms' manifests in the repository the version was
          *     read from, judged in that repository's project's scope; `GET .../versions/{version}/signatures` answers per repository.
-         *     Absent for a folder and while `signatures.enabled` is false.
+         *     Absent for a folder and while `signatures.enabled` is false. `refused` and `refusedReason` (stage 3, R-SIG-073) say whether
+         *     the gate of the repository refuses it now, with the settings and anchors as they are; absent while no gate applies. A version
+         *     is refused when one of its artifacts is; in the version list, when the gate of one repository that holds it for the caller
+         *     refuses it there (Q-SIG-203).
          */
         SignatureStatus: {
             state: components["schemas"]["SignatureBadgeState"];
             /** @description A trust row that decides the badge was computed before the last change of anchors, blocks or the switch; the trust job has not reached it yet (R-SIG-012). */
             stale: boolean;
+            /** @description The repository's gate refuses it now (R-SIG-073); false while it passes or is pending. */
+            refused?: boolean;
+            /** @description The reason of the refusal, `pending` while it waits for a check; absent while it passes. */
+            refusedReason?: components["schemas"]["SignatureGateRefusedReason"] | null;
         };
         /**
          * @description The state of a signature's read and integrity check (R-SIG-003): `pending` not checked yet, `valid` the signature matches its
@@ -12188,7 +12347,7 @@ export interface components {
             ci?: components["schemas"]["SignatureOriginCI"];
             upstreamUrl?: string;
         };
-        /** @description What one repository shows of a version's signatures (R-SIG-034). */
+        /** @description What one repository shows of a version's signatures (R-SIG-034), and its gate while it is on (R-SIG-073). */
         SignatureRepositoryReport: {
             repository: string;
             /** @enum {string} */
@@ -12207,6 +12366,7 @@ export interface components {
              */
             covering: components["schemas"]["SignatureCovering"][];
             origin: components["schemas"]["SignatureOrigin"] | null;
+            gate?: components["schemas"]["SignatureGateView"];
         };
         SignatureVersionReport: {
             packageId: string;
@@ -12225,6 +12385,7 @@ export interface components {
             /** @description As in the version's answer; empty until the format answers the coverage. */
             covering: components["schemas"]["SignatureCovering"][];
             origin: components["schemas"]["SignatureOrigin"] | null;
+            gate?: components["schemas"]["SignatureGateView"];
         };
         /** @description Where the public Sigstore root and npm's keys in use come from (R-SIG-017). */
         SignatureTrustRoot: {
@@ -12590,6 +12751,157 @@ export interface components {
         SignatureFindingPage: {
             items: components["schemas"]["SignatureFinding"][];
             nextCursor: string | null;
+        };
+        /**
+         * @description Why a repository's gate refuses an artifact (R-SIG-062, R-SIG-068).
+         * @enum {string}
+         */
+        SignatureGateReason: "missing" | "untrusted" | "not_chosen" | "invalid" | "blocked" | "not_checked";
+        /**
+         * @description A reason of the gate (R-SIG-068), or `pending` while a check or a fetch of the artifact's signatures is due.
+         * @enum {string}
+         */
+        SignatureGateRefusedReason: "missing" | "untrusted" | "not_chosen" | "invalid" | "blocked" | "not_checked" | "pending";
+        /** @description An anchor a repository's gate accepts, by its reference; `removed` for a reference that names no anchor any more, shown as **Removed trust anchor** (R-SIG-061). */
+        SignatureGateAnchor: {
+            /** @description `<scope>/<key>`. */
+            ref: string;
+            title: string | null;
+            kind: components["schemas"]["SignatureAnchorKind"] | null;
+            scope: components["schemas"]["SignatureAnchorScope"];
+            removed: boolean;
+        };
+        /**
+         * @description The gate of the repository of an entry, while it is on (R-SIG-073): the accepted anchors (empty for any anchor) and what it
+         *     decides now of the entry's artifacts in this repository, with the settings and anchors as they are. A version is `refused`
+         *     when one of its artifacts is (the first one's reason), else `pending` when one is, else `pass`. `passedBy` says what passed:
+         *     a release of the repository, or the counting signature of the id (the first artifact's); null when nothing of the entry is an
+         *     artifact or nothing passed. Absent while the repository's gate is off.
+         */
+        SignatureGateView: {
+            onlyVerified: boolean;
+            anchors: components["schemas"]["SignatureGateAnchor"][];
+            /** @enum {string} */
+            decision: "pass" | "refused" | "pending";
+            reason: components["schemas"]["SignatureGateReason"] | null;
+            passedBy: components["schemas"]["SignatureGatePassedBy"] | null;
+        };
+        SignatureGatePassedBy: {
+            /** @enum {string} */
+            kind: "signature" | "release";
+            /**
+             * Format: int64
+             * @description The id of the counting signature that passed, for `signature`.
+             */
+            signature: number | null;
+        };
+        /** @description What a repository's gate would decide of its stored items (R-SIG-072). */
+        SignatureGatePreview: {
+            /** @description The stored items read. */
+            examined: number;
+            /** @description False when the bound of items or the time ended the reading; the counts are then lower bounds. */
+            complete: boolean;
+            /** @description Of the items, those the format names artifacts; the others (attachments, layers, signature files) pass as they are. */
+            artifacts: number;
+            pass: number;
+            pending: number;
+            refused: components["schemas"]["SignatureGateRefusedCounts"];
+            examples: components["schemas"]["SignatureGateExample"][];
+        };
+        SignatureGateRefusedCounts: {
+            missing: number;
+            untrusted: number;
+            notChosen: number;
+            invalid: number;
+            blocked: number;
+            notChecked: number;
+        };
+        SignatureGateExample: {
+            /** @description The repository that holds the item (a member, for a virtual repository). */
+            repository: string;
+            path: string;
+            package: string | null;
+            version: string | null;
+            reason: components["schemas"]["SignatureGateReason"];
+        };
+        SignatureReleaseRequest: {
+            sha256: string;
+            reason: string;
+        };
+        /** @description A release of one artifact for one repository's gate (R-SIG-070). */
+        SignatureRelease: {
+            repository: string;
+            sha256: string;
+            reason: string;
+            refusedReason: components["schemas"]["SignatureGateRefusedReason"];
+            /** @description `<kind>:<name>` of the principal that granted it; null when it is gone. */
+            releasedBy: string | null;
+            /** Format: date-time */
+            releasedAt: string;
+        };
+        SignatureReleaseList: {
+            items: components["schemas"]["SignatureRelease"][];
+        };
+        /** @description A download a repository's gate refused (R-SIG-073), one entry per repository and artifact. */
+        SignatureRefusal: {
+            repository: string;
+            format: string;
+            path: string;
+            package: string | null;
+            version: string | null;
+            sha256: string;
+            reason: components["schemas"]["SignatureGateReason"];
+            /** Format: date-time */
+            firstAt: string;
+            /** Format: date-time */
+            lastAt: string;
+            /** Format: int64 */
+            count: number;
+            release: components["schemas"]["SignatureRefusalRelease"] | null;
+        };
+        /** @description The release that passes the artifact in the repository since. */
+        SignatureRefusalRelease: {
+            reason: string;
+            releasedBy: string | null;
+            /** Format: date-time */
+            releasedAt: string;
+        };
+        SignatureRefusalPage: {
+            items: components["schemas"]["SignatureRefusal"][];
+            nextCursor: string | null;
+        };
+        /** @description One change: `anchor` with `change`, `block`, or `projectAnchors: false`. */
+        SignatureImpactRequest: {
+            /** Format: int64 */
+            anchor?: number;
+            /**
+             * @description With `anchor`: removed, switched off, or its material changed (counted as a removal).
+             * @enum {string}
+             */
+            change?: "remove" | "disable" | "narrow";
+            block?: {
+                kind: components["schemas"]["SignatureBlockKind"];
+                value: string;
+                issuer?: string;
+            };
+            /** @description Only false, the switch for project Owners turned off. */
+            projectAnchors?: boolean;
+        };
+        /** @description What a change makes the gates refuse (R-SIG-071). */
+        SignatureImpact: {
+            artifacts: number;
+            repositories: number;
+            /** @description False when the candidates were cut at `signatures.gate.preview_limit`; the counts are then lower bounds. */
+            complete: boolean;
+            /**
+             * @description `upper` for a change of material, counted as a removal.
+             * @enum {string}
+             */
+            bound: "exact" | "upper";
+            byRepository: {
+                repository: string;
+                artifacts: number;
+            }[];
         };
         /** @description The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value. */
         VulnerabilityCvss: {
@@ -26627,6 +26939,276 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewRepositorySignatureGate: {
+        parameters: {
+            query?: {
+                /** @description Comma-separated references `<scope>/<key>` of the anchors to accept; empty for any anchor; absent for the stored ones. */
+                anchors?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "examined": 412,
+                     *       "complete": true,
+                     *       "artifacts": 137,
+                     *       "pass": 120,
+                     *       "pending": 2,
+                     *       "refused": {
+                     *         "missing": 11,
+                     *         "untrusted": 1,
+                     *         "notChosen": 3,
+                     *         "invalid": 0,
+                     *         "blocked": 0,
+                     *         "notChecked": 0
+                     *       },
+                     *       "examples": [
+                     *         {
+                     *           "repository": "web/files-internal",
+                     *           "path": "tools/cli-2.4.0.tar.gz",
+                     *           "package": null,
+                     *           "version": null,
+                     *           "reason": "missing"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SignatureGatePreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listSignatureReleases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The releases. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureReleaseList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createSignatureRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "sha256": "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",
+                 *       "reason": "The vendor's build of 2.4.0 is unsigned; its digest was confirmed with the vendor by phone on 2026-11-21."
+                 *     }
+                 */
+                "application/json": components["schemas"]["SignatureReleaseRequest"];
+            };
+        };
+        responses: {
+            /** @description The release. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureRelease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteSignatureRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The released artifact's SHA-256 as 64 lower-case hexadecimal digits. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The release is withdrawn. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listSignatureRefusals: {
+        parameters: {
+            query?: {
+                /** @description A repository name `<project>/<key>`. */
+                repository?: string;
+                /** @description One reason of the gate. */
+                reason?: components["schemas"]["SignatureGateReason"];
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of refused downloads. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureRefusalPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    countSignatureImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "anchor": 4,
+                 *       "change": "remove"
+                 *     }
+                 */
+                "application/json": components["schemas"]["SignatureImpactRequest"];
+            };
+        };
+        responses: {
+            /** @description The count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "artifacts": 132,
+                     *       "repositories": 3,
+                     *       "complete": true,
+                     *       "bound": "exact",
+                     *       "byRepository": [
+                     *         {
+                     *           "repository": "web/docker-local",
+                     *           "artifacts": 120
+                     *         },
+                     *         {
+                     *           "repository": "web/files-internal",
+                     *           "artifacts": 9
+                     *         },
+                     *         {
+                     *           "repository": "web/npm-all",
+                     *           "artifacts": 3
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SignatureImpact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

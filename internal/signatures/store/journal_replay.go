@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 
 	"github.com/guided-traffic/quader/internal/audit"
@@ -21,9 +22,10 @@ import (
 //     R-HA-054 (journal.ApplyUpdate): applied when the journaled state narrows the restored one, skipped when the change only widened,
 //     and suspended (switched off) otherwise;
 //   - signature.signer.blocked blocks the signer again;
-//   - signature.settings.changed that turned the switch off turns it off again.
+//   - signature.settings.changed that turned the switch off turns it off again;
+//   - signature.release.withdrawn withdraws the release of the repository's gate again (stage 3, R-SIG-076).
 //
-// An anchor added after t is lost, which narrows. The trust rows are transient: the trust job recomputes every one after the restore
+// An anchor added after t is lost, which narrows, and so is a release granted after t. The trust rows are transient: the trust job recomputes every one after the restore
 // (R-SIG-041). The replay writes no audit event (Q-AUTHZ-232).
 
 func init() {
@@ -31,6 +33,7 @@ func init() {
 	journal.Register(journal.Handler{Domain: "signatures", Events: []string{audit.EventSignatureAnchorUpdated}, Apply: replayAnchorUpdated})
 	journal.Register(journal.Handler{Domain: "signatures", Events: []string{audit.EventSignatureSignerBlocked}, Apply: replayBlock})
 	journal.Register(journal.Handler{Domain: "signatures", Events: []string{audit.EventSignatureSettingsChanged}, Apply: replaySwitchOff})
+	journal.Register(journal.Handler{Domain: "signatures", Events: []string{audit.EventSignatureReleaseWithdrawn}, Apply: replayReleaseWithdrawn})
 }
 
 // replayed raises the anchor epoch and announces the change area after a replay changed something.
@@ -186,6 +189,32 @@ func replaySwitchOff(ctx context.Context, tx meta.Tx, env journal.Env, o journal
 		return journal.Result{}, err
 	}
 	return o.Result(journal.Applied, "signatures.projectAnchors"), nil
+}
+
+// replayReleaseWithdrawn withdraws a release again (R-SIG-076). The gate reads the releases with its own statement at every download, so no
+// change area is announced.
+func replayReleaseWithdrawn(ctx context.Context, tx meta.Tx, _ journal.Env, o journal.Object) (journal.Result, error) {
+	var e ReleaseWithdrawnEntry
+	if !o.Into(&e) || e.RepoID <= 0 {
+		return o.Malformed("is not a signature.release.withdrawn entry"), nil
+	}
+	d, err := hex.DecodeString(e.SHA256)
+	if err != nil || len(d) != 32 || hex.EncodeToString(d) != e.SHA256 {
+		return o.Malformed("names no SHA-256"), nil //nolint:nilerr // a forged or broken entry is skipped, not an error of the replay
+	}
+	qs, err := queries(tx)
+	if err != nil {
+		return journal.Result{}, err
+	}
+	gone, err := qs.SignatureReleaseDelete(ctx, q.SignatureReleaseDeleteParams{RepoID: e.RepoID, Subject: d})
+	if err != nil {
+		return journal.Result{}, err
+	}
+	subject := "signature release " + e.Repository + "@sha256:" + e.SHA256
+	if len(gone) == 0 {
+		return o.Result(journal.AlreadyInEffect, subject), nil
+	}
+	return o.Result(journal.Applied, subject), nil
 }
 
 // blockInput is a journaled block as the checks of a new one read it.

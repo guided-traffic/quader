@@ -29,6 +29,12 @@ const (
 	// EventSignatureDownloadRefused: a repository's gate refused a download (stage 3, R-SIG-075), or answered it pending after the wait,
 	// at most once a minute per repository, path and client address on each replica.
 	EventSignatureDownloadRefused = "signature.download_refused"
+	// EventSignatureReleaseGranted: a holder of the triage right released an artifact for one repository's gate (stage 3, R-SIG-070). It
+	// widens and is not journaled: a release granted after a restore point is lost.
+	EventSignatureReleaseGranted = "signature.release.granted"
+	// EventSignatureReleaseWithdrawn: a release was withdrawn. Journaled: the replay withdraws it again, and the Bastions drop the
+	// repository's answers (R-SIG-075).
+	EventSignatureReleaseWithdrawn = "signature.release.withdrawn"
 )
 
 func init() {
@@ -92,6 +98,18 @@ func init() {
 			`"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
 			`"reason":{"type":"string","enum":["missing","untrusted","not_chosen","invalid","blocked","not_checked","pending"]}},` +
 			`"required":["repository","path","sha256","reason"],"additionalProperties":false}`,
+	})
+	gateReason := `{"type":"string","enum":["missing","untrusted","not_chosen","invalid","blocked","not_checked","pending"]}`
+	Register(EventType{
+		Name: EventSignatureReleaseGranted, Category: CategoryContent, Mode: Transactional,
+		Schema: `{"type":"object","properties":{"repository":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
+			`"refusedReason":` + gateReason + `,"reason":{"type":"string"}},` +
+			`"required":["repository","sha256","refusedReason","reason"],"additionalProperties":false}`,
+	})
+	Register(EventType{
+		Name: EventSignatureReleaseWithdrawn, Category: CategoryContent, Mode: Transactional, Journal: JournalRevocation,
+		Schema: `{"type":"object","properties":{"repository":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
+			`"reason":{"type":"string"}},"required":["repository","sha256","reason"],"additionalProperties":false}`,
 	})
 	Register(EventType{
 		Name: EventSignatureTrustRootFailed, Category: CategorySystem, Mode: Async,

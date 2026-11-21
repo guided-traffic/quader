@@ -263,7 +263,7 @@ func (q *Queries) SignatureGateRaiseFetch(ctx context.Context, keys []string) (i
 
 const signatureGateRows = `-- name: SignatureGateRows :many
 
-SELECT s.subject_sha256, s.state, s.key_ids,
+SELECT s.id, s.subject_sha256, s.state, s.key_ids,
        COALESCE(s.signer ->> 'oidcIssuer', '')::text AS oidc_issuer, COALESCE(s.signer ->> 'identity', '')::text AS identity,
        (s.identity_id IS NOT NULL)::boolean AS issued,
        (t.signature_id IS NOT NULL)::boolean AS has_trust, COALESCE(t.state, '')::text AS trust_state,
@@ -288,6 +288,7 @@ type SignatureGateRowsParams struct {
 }
 
 type SignatureGateRowsRow struct {
+	ID             int64
 	SubjectSha256  []byte
 	State          string
 	KeyIds         []string
@@ -305,7 +306,8 @@ type SignatureGateRowsRow struct {
 // The counting signatures (the roles publisher and provenance, R-SIG-062) of the subjects attached in the repositories of a gate's view,
 // with what the gate judges each by (R-SIG-066): the integrity state, the key IDs, the OIDC issuer and the identity of the signer, and the
 // trust row of the scope (the project's when one exists, else the installation's) with its anchors and the epoch it was computed under;
-// and whether Quader issued the signature itself (identity_id, stage 2), which never passes (R-SIG-062).
+// and whether Quader issued the signature itself (identity_id, stage 2), which never passes (R-SIG-062). The signature's id names what
+// passed an artifact in the API's member gate (R-SIG-073).
 func (q *Queries) SignatureGateRows(ctx context.Context, arg SignatureGateRowsParams) ([]SignatureGateRowsRow, error) {
 	rows, err := q.db.Query(ctx, signatureGateRows, arg.ProjectID, arg.Subjects, arg.RepoIds)
 	if err != nil {
@@ -316,6 +318,7 @@ func (q *Queries) SignatureGateRows(ctx context.Context, arg SignatureGateRowsPa
 	for rows.Next() {
 		var i SignatureGateRowsRow
 		if err := rows.Scan(
+			&i.ID,
 			&i.SubjectSha256,
 			&i.State,
 			&i.KeyIds,

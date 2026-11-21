@@ -49,27 +49,27 @@ func TestR_SIG_062_WhatPassesAndWhatIsRefused(t *testing.T) {
 		rel    bool
 		want   Judgement
 	}{
-		{"no signature: missing", nil, nil, false, Judgement{Refused, ReasonMissing}},
+		{"no signature: missing", nil, nil, false, Judgement{Outcome: Refused, Reason: ReasonMissing}},
 		{"one pending: pending", []Row{{Subject: blobA, State: signatures.StatePending}}, nil, false, Judgement{Outcome: Pending}},
 		{"one valid without a trust row: pending", []Row{{Subject: blobA, State: signatures.StateValid}}, nil, false, Judgement{Outcome: Pending}},
 		{"one internal: passes", []Row{valid(blobA, TrustInternal, 3)}, nil, false, Judgement{Outcome: Pass}},
 		{"one public with any anchor: passes", []Row{valid(blobA, TrustPublic, 1)}, nil, false, Judgement{Outcome: Pass}},
-		{"one public whose anchor is not chosen", []Row{valid(blobA, TrustPublic, 1)}, chosenRelease, false, Judgement{Refused, ReasonNotChosen}},
+		{"one public whose anchor is not chosen", []Row{valid(blobA, TrustPublic, 1)}, chosenRelease, false, Judgement{Outcome: Refused, Reason: ReasonNotChosen}},
 		{"one internal whose anchor is chosen", []Row{valid(blobA, TrustInternal, 3)}, chosenRelease, false, Judgement{Outcome: Pass}},
 		{
 			"one untrusted and one invalid: invalid",
 			[]Row{valid(blobA, TrustUntrusted), {Subject: blobA, State: signatures.StateInvalid}},
 			nil, false,
-			Judgement{Refused, ReasonInvalid},
+			Judgement{Outcome: Refused, Reason: ReasonInvalid},
 		},
 		{"one blocked beside one internal: passes", []Row{valid(blobA, TrustBlocked), valid(blobA, TrustInternal, 2)}, nil, false, Judgement{Outcome: Pass}},
-		{"one blocked: blocked", []Row{valid(blobA, TrustBlocked)}, nil, false, Judgement{Refused, ReasonBlocked}},
-		{"no key: untrusted", []Row{{Subject: blobA, State: signatures.StateNoKey}}, nil, false, Judgement{Refused, ReasonUntrusted}},
-		{"unsupported: not checked", []Row{{Subject: blobA, State: signatures.StateUnsupported}}, nil, false, Judgement{Refused, ReasonNotChecked}},
-		{"one of Quader's own whose chain ends in an anchor: missing", []Row{issued(valid(blobA, TrustInternal, 3))}, nil, false, Judgement{Refused, ReasonMissing}},
+		{"one blocked: blocked", []Row{valid(blobA, TrustBlocked)}, nil, false, Judgement{Outcome: Refused, Reason: ReasonBlocked}},
+		{"no key: untrusted", []Row{{Subject: blobA, State: signatures.StateNoKey}}, nil, false, Judgement{Outcome: Refused, Reason: ReasonUntrusted}},
+		{"unsupported: not checked", []Row{{Subject: blobA, State: signatures.StateUnsupported}}, nil, false, Judgement{Outcome: Refused, Reason: ReasonNotChecked}},
+		{"one of Quader's own whose chain ends in an anchor: missing", []Row{issued(valid(blobA, TrustInternal, 3))}, nil, false, Judgement{Outcome: Refused, Reason: ReasonMissing}},
 		{"one of Quader's own beside a pending one: pending", []Row{issued(valid(blobA, TrustInternal, 3)), {Subject: blobA, State: signatures.StatePending}}, nil, false, Judgement{Outcome: Pending}},
 		{"one of Quader's own beside a publisher's internal one: passes", []Row{issued(valid(blobA, TrustInternal, 3)), valid(blobB, TrustInternal, 3)}, nil, false, Judgement{Outcome: Pass}},
-		{"a release passes whatever", nil, nil, true, Judgement{Outcome: Pass}},
+		{"a release passes whatever", nil, nil, true, Judgement{Outcome: Pass, Released: true}},
 		{"a covering digest's signature passes", []Row{valid(blobB, TrustInternal, 3)}, nil, false, Judgement{Outcome: Pass}},
 	} {
 		got := Judge(snap, tc.chosen, [][32]byte{blobA, blobB}, tc.rows, nil, tc.rel)
@@ -89,9 +89,9 @@ func TestR_SIG_062_FetchStateOfARemote(t *testing.T) {
 		want Judgement
 	}{
 		{"queued", Fetch{Subject: blobA, Queued: true}, Judgement{Outcome: Pending}},
-		{"failed", Fetch{Subject: blobA, Failed: true}, Judgement{Refused, ReasonNotChecked}},
-		{"fetched, nothing found", Fetch{Subject: blobA, Fetched: true}, Judgement{Refused, ReasonMissing}},
-		{"fetched and queued again by a refresh", Fetch{Subject: blobA, Fetched: true, Queued: true}, Judgement{Refused, ReasonMissing}},
+		{"failed", Fetch{Subject: blobA, Failed: true}, Judgement{Outcome: Refused, Reason: ReasonNotChecked}},
+		{"fetched, nothing found", Fetch{Subject: blobA, Fetched: true}, Judgement{Outcome: Refused, Reason: ReasonMissing}},
+		{"fetched and queued again by a refresh", Fetch{Subject: blobA, Fetched: true, Queued: true}, Judgement{Outcome: Refused, Reason: ReasonMissing}},
 	} {
 		if got := Judge(snap, nil, [][32]byte{blobA}, nil, []Fetch{tc.f}, false); got != tc.want {
 			t.Errorf("%s: %+v, want %+v", tc.name, got, tc.want)
@@ -150,7 +150,7 @@ func TestR_SIG_066_TheGateSubtractsANarrowing(t *testing.T) {
 	a2 := disabled.Anchors[2]
 	a2.Enabled = false
 	disabled.Anchors[2] = a2
-	if got := Judge(disabled, nil, [][32]byte{blobA}, []Row{valid(blobA, TrustInternal, 2)}, nil, false); got != (Judgement{Refused, ReasonUntrusted}) {
+	if got := Judge(disabled, nil, [][32]byte{blobA}, []Row{valid(blobA, TrustInternal, 2)}, nil, false); got != (Judgement{Outcome: Refused, Reason: ReasonUntrusted}) {
 		t.Errorf("an anchor switched off: %+v", got)
 	}
 }

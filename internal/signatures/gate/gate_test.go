@@ -3,6 +3,7 @@ package gate
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -28,6 +29,11 @@ type fakeStore struct {
 	raised    []Fetch
 	rowRepos  [][]int64
 	rowScopes []string
+	// released are the releases per repository, items the stored files a preview reads, candidates what an impact reads.
+	released      map[int64]map[[32]byte]bool
+	items         []StoredItem
+	candidates    []Candidate
+	impactQueries []ImpactQuery
 }
 
 func (f *fakeStore) GateRows(_ context.Context, projectID string, repoIDs []int64, subjects [][32]byte) ([]Row, error) {
@@ -66,6 +72,46 @@ func (f *fakeStore) RecordRefusal(_ context.Context, _ int64, _ [32]byte, _ stri
 	f.refusals = append(f.refusals, r)
 	f.mu.Unlock()
 	return nil
+}
+
+func (f *fakeStore) GateReleased(_ context.Context, repoID int64, subjects [][32]byte) (map[[32]byte]bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := map[[32]byte]bool{}
+	for _, s := range subjects {
+		if f.released[repoID][s] {
+			out[s] = true
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) GateItems(_ context.Context, repoIDs []int64, after ItemCursor, limit int) ([]StoredItem, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []StoredItem
+	for _, it := range f.items {
+		if len(out) == limit {
+			break
+		}
+		if slices.Contains(repoIDs, it.RepoID) && (it.RepoID > after.RepoID || (it.RepoID == after.RepoID && it.Path > after.Path)) {
+			out = append(out, it)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) GateImpact(_ context.Context, q ImpactQuery, repoIDs []int64, limit int) ([]Candidate, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.impactQueries = append(f.impactQueries, q)
+	var out []Candidate
+	for _, c := range f.candidates {
+		if slices.Contains(repoIDs, c.RepoID) && len(out) < limit {
+			out = append(out, c)
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeStore) set(rows ...Row) {
@@ -159,8 +205,8 @@ func TestR_SIG_068_TheAnswers(t *testing.T) {
 	st := &fakeStore{read: map[[32]byte]bool{}}
 	rec := &recorder{}
 	kind := KindArtifact
-	g := newGate(st, rec, Options{Classify: func(context.Context, Repo, string, [32]byte) (Subject, error) {
-		return Subject{Kind: kind}, nil
+	g := newGate(st, rec, Options{Classify: func(context.Context, Repo, []Item) ([]Subject, error) {
+		return []Subject{{Kind: kind}}, nil
 	}})
 	d := dl(filesInternal)
 	d.Path = "tools/tool\n.tar.gz"

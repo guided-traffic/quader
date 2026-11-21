@@ -36,11 +36,21 @@ func TestR_SIG_039_TheEventsAreRegisteredWithTheirSchemasAndJournalFlags(t *test
 	}
 }
 
-// TestR_SIG_075_TheGatesEventIsRegistered: signature.download_refused of the gate per repository is asynchronous and not journaled, with
-// its schema (R-SIG-075).
-func TestR_SIG_075_TheGatesEventIsRegistered(t *testing.T) {
-	et, ok := Lookup(EventSignatureDownloadRefused)
-	if !ok || et.Mode != Async || et.Journal != NoJournal || et.Schema == "" || et.Category != CategoryContent {
-		t.Fatalf("%+v %v", et, ok)
+// TestR_SIG_075_TheGatesEventsAreRegistered: signature.download_refused of the gate per repository is asynchronous and not journaled; a
+// release granted is transactional and not journaled (it widens), a release withdrawn transactional and journaled (R-SIG-075).
+func TestR_SIG_075_TheGatesEventsAreRegistered(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		mode    Mode
+		journal Journal
+	}{
+		{EventSignatureDownloadRefused, Async, NoJournal},
+		{EventSignatureReleaseGranted, Transactional, NoJournal},
+		{EventSignatureReleaseWithdrawn, Transactional, JournalRevocation},
+	} {
+		et, ok := Lookup(c.name)
+		if !ok || et.Mode != c.mode || et.Journal != c.journal || et.Schema == "" || et.Category != CategoryContent {
+			t.Errorf("%s: %+v %v", c.name, et, ok)
+		}
 	}
 }

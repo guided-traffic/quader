@@ -132,9 +132,30 @@ with **Fetch the upstream's signatures** (on by default); switch it off for an u
 an account, where fetching a signature counts as a pull. It is never part of the form that creates a repository, and it is also an
 administrator's setting of a well-known registry of the project `upstream`.
 
+## Only artifacts with a verified signature
+
+A repository can serve only artifacts with a verified signature: its member `signatures.onlyVerified`, optionally with the anchors it
+accepts in `signatures.anchors`. The setting has no screen yet; it is set through the API of the repository document, and the screens follow.
+Before you switch it on, and before you remove an anchor or block a signer, the API tells you what the change refuses:
+
+- **Preview:** `GET /api/v1/projects/<project>/repositories/<repository>/signatures/preview` answers how many of the repository's stored
+  artifacts would pass, wait for a check and be refused, per reason, with up to 20 examples; `?anchors=installation/release-key` previews a
+  choice of anchors. It reads at most `signatures.gate.preview_limit` items (100,000) or for 10 seconds and says when it stopped early.
+- **Impact:** `POST /api/v1/signatures/impact` with `{"anchor": <id>, "change": "remove"}` (or `disable`, `narrow` for a change of its
+  keys), `{"block": {"kind": "fingerprint", "value": "<fingerprint>"}}` or `{"projectAnchors": false}` answers how many artifacts of
+  repositories that serve only verified artifacts would be refused, and in which repositories. A change of an anchor's keys is counted as
+  its removal, an upper bound.
+- **Releases:** a holder of the triage right (`admin`, `security-admin`, `auditor`) who reads the repository can release one artifact for
+  one repository's check with a reason: `POST /api/v1/projects/<project>/repositories/<repository>/signatures/releases` with
+  `{"sha256": "<digest>", "reason": "<why>"}`. The artifact is then served from that repository, and only that one, whatever its signatures
+  say, until the release is withdrawn with `DELETE …/releases/<digest>`. A project's Owner cannot release. A release keeps passing the
+  artifact after its signer is blocked: review a repository's releases (`GET …/releases`) when you block a signer.
+- **Refused downloads:** `GET /api/v1/signatures/refusals` lists the downloads the repositories refused in the last
+  `signatures.gate.refusals_retention` (30 days), one entry per repository and artifact with its reason, count and release.
+
 ## Operations
 
-The audit log records every anchor created, changed and removed, every change of the switch, every block and its lifting, and every
-signature found invalid (`signature.*`). The metrics `quader_signatures_*` and the alerts `QuaderSignatureInvalid`,
+The audit log records every anchor created, changed and removed, every change of the switch, every block and its lifting, every
+signature found invalid, every refused download and every release granted and withdrawn (`signature.*`). The metrics `quader_signatures_*` and the alerts `QuaderSignatureInvalid`,
 `QuaderSignatureBacklog` and `QuaderSignatureTrustRootStale` are described in [Monitoring and operations](operations.md). The
 configuration keys under `signatures` are in [Configuration](configuration.md).

@@ -42,7 +42,7 @@ func (s *Store) GateRows(ctx context.Context, projectID string, repoIDs []int64,
 				continue
 			}
 			out = append(out, gate.Row{
-				Subject: [32]byte(r.SubjectSha256), State: signatures.State(r.State), KeyIDs: r.KeyIds, OIDCIssuer: r.OidcIssuer,
+				ID: r.ID, Subject: [32]byte(r.SubjectSha256), State: signatures.State(r.State), KeyIDs: r.KeyIds, OIDCIssuer: r.OidcIssuer,
 				Identity: r.Identity, Issued: r.Issued, HasTrust: r.HasTrust, TrustState: r.TrustState, TrustAnchors: r.TrustAnchorIds, TrustEpoch: r.TrustEpoch,
 			})
 		}

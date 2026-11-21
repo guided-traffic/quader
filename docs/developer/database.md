@@ -724,6 +724,26 @@ column that references `repositories`, no revision column. The statements of the
 [npm_local.sql](../../internal/meta/postgres/queries/npm_local.sql) `NPMLocalDocument` and `NPMLocalVersion`. The number 00103 follows
 00102_signature_gate.
 
+## The releases of the signature gate (00104)
+
+[00104_signature_releases](../../internal/meta/postgres/migrations/00104_signature_releases.sql) is an expand step of stage 3's second
+package ([signatures.md](signatures.md#stage-3-package-2-releases-previews-and-the-api-built), [spec](../spec/signatures.md) R-SIG-070,
+R-SIG-071):
+
+- `signature_releases`: one row per repository and released artifact (its blob, an image's manifest or index), the reason, the gate's reason
+  at the grant (`refused_reason`, a reason of R-SIG-068 or `pending`), who granted it and when. It cascades with the repository and is kept
+  by the purge of a retired well-known repository (Q-SIG-201, the kept list of
+  [purge_test.go](../../test/integration/upstream/purge_test.go)); `data` for backups, and `signature.release.withdrawn` is replayed into a
+  restore by the repository's id.
+- `signature_trust_anchors` on `signature_trust (anchor_ids)` is replaced: 00098 indexed the installation's rows only (`WHERE project_id IS
+  NULL`); the impact of a change of a project anchor reads its project's rows through it.
+
+The statements are in [signature_releases.sql](../../internal/meta/postgres/queries/signature_releases.sql): the releases, the stored files a
+preview reads in the order of `items_live_path`, the candidates of the impact (through `signature_trust_anchors` and `signatures_keys`), the
+list of refused downloads and the stored file a release names (through `items_blob`); `BastionGatedRepositories` in
+[bastion_feed.sql](../../internal/meta/postgres/queries/bastion_feed.sql) reads the repositories whose `config -> 'signatures' ->>
+'onlyVerified'` is true. No column is a revision (R-ARCH-009). The number 00104 follows 00103_npm_registry_signatures.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

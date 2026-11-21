@@ -102,10 +102,13 @@ type ItemView struct {
 
 // SignatureView is the member signatures of an answer that describes a stored file (R-SIG-034, R-SIG-009): the badge's state
 // (verified_internal, verified_public, untrusted, invalid, not_checked, unsupported, none) and whether a trust row that decides it
-// lags the last change of anchors (R-SIG-012).
+// lags the last change of anchors (R-SIG-012). Refused and RefusedReason say whether the repository's gate refuses the file now (stage 3,
+// R-SIG-073): nil while no gate applies; the reason is null while the file passes and "pending" while it waits for a check.
 type SignatureView struct {
-	State string `json:"state"`
-	Stale bool   `json:"stale"`
+	State         string  `json:"state"`
+	Stale         bool    `json:"stale"`
+	Refused       *bool   `json:"refused,omitempty"`
+	RefusedReason *string `json:"refusedReason,omitempty"`
 }
 
 func nonEmpty(s string) *string {

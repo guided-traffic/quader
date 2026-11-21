@@ -38,6 +38,8 @@ const (
 // Row is one counting signature (the roles publisher and provenance) of a subject attached in a gate's view, as the store reads it
 // (R-SIG-066): the integrity state, what a block matches it by, and its trust row in the gate's scope.
 type Row struct {
+	// ID is the signature's id: what passed an artifact (the member gate of R-SIG-073).
+	ID         int64
 	Subject    [32]byte
 	State      signatures.State
 	KeyIDs     []string
@@ -63,20 +65,23 @@ type Fetch struct {
 	Failed  bool
 }
 
-// Judgement is one gate's decision of one artifact.
+// Judgement is one gate's decision of one artifact. A pass says what passed it: a release of the gate's repository (Released), or the
+// counting signature of the id Signature.
 type Judgement struct {
-	Outcome Outcome
-	Reason  Reason
+	Outcome   Outcome
+	Reason    Reason
+	Released  bool
+	Signature int64
 }
 
 // Judge decides one gate (the table of R-SIG-062) over the rows and fetch states of its view for the digests of one artifact: the item's
 // blob and the digests that cover it (R-SIG-063). One passing signature of one digest passes the artifact, as one decides the badge;
 // nothing passing and something pending waits; nothing passing and nothing pending refuses with the first reason of R-SIG-062's order a
-// signature gives, else missing. A signature Quader issued itself does not count (Row.Issued). A release (package 2 of stage 3) passes
-// whatever the signatures say. chosen are the IDs of the anchors the setting accepts, nil for any anchor.
+// signature gives, else missing. A signature Quader issued itself does not count (Row.Issued). A release of the gate's repository passes
+// whatever the signatures say (R-SIG-070). chosen are the IDs of the anchors the setting accepts, nil for any anchor.
 func Judge(snap *Snapshot, chosen map[int64]bool, digests [][32]byte, rows []Row, fetches []Fetch, released bool) Judgement {
 	if released {
-		return Judgement{Outcome: Pass}
+		return Judgement{Outcome: Pass, Released: true}
 	}
 	seen := map[Reason]bool{}
 	pending := false
@@ -87,7 +92,7 @@ func Judge(snap *Snapshot, chosen map[int64]bool, digests [][32]byte, rows []Row
 			}
 			switch o, reason := judgeRow(snap, chosen, r); o {
 			case Pass:
-				return Judgement{Outcome: Pass}
+				return Judgement{Outcome: Pass, Signature: r.ID}
 			case Pending:
 				pending = true
 			default:

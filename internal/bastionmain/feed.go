@@ -1,6 +1,7 @@
 package bastionmain
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -59,6 +60,8 @@ func feedActions() []string {
 		audit.EventNPMUnpublish, audit.EventPackageDeleted,
 		audit.EventVulnFindingStatusChanged, audit.EventVulnFindingReopened,
 		audit.EventMalwareFound, audit.EventMalwareReleaseWithdrawn,
+		audit.EventSignatureReleaseWithdrawn, audit.EventSignatureAnchorRemoved, audit.EventSignatureAnchorUpdated,
+		audit.EventSignatureSettingsChanged, audit.EventSignatureSignerBlocked,
 	}
 }
 
@@ -86,12 +89,6 @@ func noFeedEntry() map[string]string {
 		audit.EventGroupUpdated:            "clearing auto-join removes no membership that exists (R-AUTH-019): only users created afterwards stay out of the group; a rename or a description changes no grant",
 		audit.EventUserUpdated:             "removes a pending identity link, which no caller holds until a login completes it; a profile change changes no grant",
 		audit.EventMalwareSettingsChanged:  "turning the switch on changes which bytes the main installation serves in every repository; a content entry for every repository would empty every Bastion's cache, so a Bastion learns it at its next revalidation (H-1102, Q-BAS-164)",
-		// The trust of signatures (signatures.md R-SIG-033): a Bastion serves the bytes of signatures and judges none, so withdrawn trust
-		// changes nothing it keeps.
-		audit.EventSignatureAnchorRemoved:   "withdraws a trust anchor; a Bastion serves signatures as bytes and shows no verdict, so it keeps nothing an anchor decides (R-SIG-033)",
-		audit.EventSignatureAnchorUpdated:   "narrows a trust anchor; a Bastion serves signatures as bytes and shows no verdict (R-SIG-033)",
-		audit.EventSignatureSettingsChanged: "switches project trust anchors off; a Bastion shows no verdict (R-SIG-033)",
-		audit.EventSignatureSignerBlocked:   "blocks a signer; a Bastion serves signatures as bytes and shows no verdict, so a block changes nothing it serves (R-SIG-033)",
 		// Quader's signing identity (signatures.md R-SIG-048, R-SIG-059): what a withdrawal changes on the wire, npm's keys and the
 		// documents that carry the identity's signatures, reaches a Bastion as those documents' new revisions, not as an entry of its own.
 		audit.EventSigningRemoved: "stops the signing identity; the keys document and the npm documents it changes reach a Bastion as their new revisions (R-SIG-048)",
@@ -151,6 +148,8 @@ type rawEntry struct {
 	repository string
 	// digest, with kind content, is the hex SHA-256 of a blob whose holders are the repositories of the entry (Q-BAS-164).
 	digest string
+	// gated, with kind content, names the repositories whose signature gate is on when the feed is read (R-SIG-075, Q-SIG-94).
+	gated bool
 	// names, with kind principal, are member names that still need their IDs.
 	names []string
 }
@@ -201,6 +200,13 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		audit.EventVulnFindingStatusChanged: mapBlock,
 		audit.EventMalwareFound:             mapBlob,
 		audit.EventMalwareReleaseWithdrawn:  mapBlob,
+		// The gate per repository of the signatures (signatures.md R-SIG-075, Q-SIG-94): a withdrawn release refuses an artifact in its
+		// repository again; what narrows the anchors or blocks a signer refuses artifacts in every repository whose gate is on.
+		audit.EventSignatureReleaseWithdrawn: mapWithdrawal,
+		audit.EventSignatureAnchorRemoved:    mapGated,
+		audit.EventSignatureSignerBlocked:    mapGated,
+		audit.EventSignatureAnchorUpdated:    mapAnchorUpdated,
+		audit.EventSignatureSettingsChanged:  mapProjectAnchorsOff,
 	}
 	// serviceaccount.updated narrows the actions of a repository's service account (R-AUTHZ-039): the answers of that account go.
 	for _, a := range []string{audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted, audit.EventSAUpdated} {
@@ -360,6 +366,67 @@ func mapBlob(_ FeedEvent, d *detailsDoc, _ string) []rawEntry {
 		return grantsEntry()
 	}
 	return []rawEntry{{kind: iface.FeedContent, digest: d.SHA256}}
+}
+
+// mapGated: a removed anchor and a block narrow what the gate of every repository whose gate is on passes (R-SIG-066): the entry is the
+// content of those repositories when the feed is read and of the virtual ones above them (R-SIG-075, Q-SIG-94).
+func mapGated(FeedEvent, *detailsDoc, string) []rawEntry {
+	return []rawEntry{{kind: iface.FeedContent, gated: true}}
+}
+
+// anchorStateDoc is what the mapping reads of an anchor's state in signature.anchor.updated.
+type anchorStateDoc struct {
+	Enabled      bool              `json:"enabled"`
+	Fingerprints []json.RawMessage `json:"fingerprints"`
+}
+
+// mapAnchorUpdated: a change narrows the gates when the anchor was on and is switched off or loses a fingerprint, the journal's rule
+// (Q-SIG-42); a change that only widens or renames yields none. A pair that does not read is read as a narrowing.
+func mapAnchorUpdated(ev FeedEvent, d *detailsDoc, endpoint string) []rawEntry {
+	var before, after anchorStateDoc
+	if json.Unmarshal(d.Before, &before) != nil || json.Unmarshal(d.After, &after) != nil {
+		return mapGated(ev, d, endpoint)
+	}
+	if !before.Enabled {
+		return nil
+	}
+	if !after.Enabled {
+		return mapGated(ev, d, endpoint)
+	}
+	kept := map[string]bool{}
+	for _, f := range after.Fingerprints {
+		kept[compactJSON(f)] = true
+	}
+	for _, f := range before.Fingerprints {
+		if !kept[compactJSON(f)] {
+			return mapGated(ev, d, endpoint)
+		}
+	}
+	return nil
+}
+
+// mapProjectAnchorsOff: switching project anchors off narrows the gates (R-SIG-019); switching them on widens. A pair that does not read
+// is read as a narrowing.
+func mapProjectAnchorsOff(ev FeedEvent, d *detailsDoc, endpoint string) []rawEntry {
+	var before, after struct {
+		ProjectAnchors *bool `json:"projectAnchors"`
+	}
+	if json.Unmarshal(d.Before, &before) != nil || json.Unmarshal(d.After, &after) != nil || before.ProjectAnchors == nil || after.ProjectAnchors == nil {
+		return mapGated(ev, d, endpoint)
+	}
+	if *before.ProjectAnchors && !*after.ProjectAnchors {
+		return mapGated(ev, d, endpoint)
+	}
+	return nil
+}
+
+// compactJSON is a JSON value without insignificant spaces, so that two renderings of one fingerprint compare equal.
+func compactJSON(raw json.RawMessage) string {
+	var b bytes.Buffer
+	if json.Compact(&b, raw) != nil {
+		return string(raw)
+	}
+	return b.String()
 }
 
 // mapEvent maps one audit event to the entries it yields (the table of R-BAS-015): none for an event that
@@ -603,13 +670,17 @@ type lookups struct {
 	closure map[string][]string
 	blobs   map[string][]string
 	ids     map[string][]string
+	// gated are the repositories whose signature gate is on, with the virtual ones above them, read once when an entry needs them.
+	gated []string
 }
 
 func (f *Feed) lookups(ctx context.Context, qs *q.Queries, mapped [][]rawEntry) (lookups, error) {
 	l := lookups{closure: map[string][]string{}, blobs: map[string][]string{}, ids: map[string][]string{}}
 	var repos, names, digests []string
+	needGated := false
 	for _, es := range mapped {
 		for _, e := range es {
+			needGated = needGated || e.gated
 			if e.repository != "" && !slices.Contains(repos, e.repository) {
 				repos = append(repos, e.repository)
 			}
@@ -643,6 +714,11 @@ func (f *Feed) lookups(ctx context.Context, qs *q.Queries, mapped [][]rawEntry) 
 			return l, err
 		}
 	}
+	if needGated {
+		if err := l.gatedRepositories(ctx, qs); err != nil {
+			return l, err
+		}
+	}
 	if len(names) > 0 {
 		rows, err := qs.BastionPrincipalIDsByName(ctx, names)
 		if err != nil {
@@ -653,6 +729,25 @@ func (f *Feed) lookups(ctx context.Context, qs *q.Queries, mapped [][]rawEntry) 
 		}
 	}
 	return l, nil
+}
+
+// gatedRepositories looks up the repositories whose signature gate is on now and the virtual repositories above them, in that order.
+func (l *lookups) gatedRepositories(ctx context.Context, qs *q.Queries) error {
+	gated, err := qs.BastionGatedRepositories(ctx)
+	if err != nil || len(gated) == 0 {
+		return err
+	}
+	closure, err := qs.BastionVirtualClosure(ctx, gated)
+	if err != nil {
+		return err
+	}
+	l.gated = slices.Clone(gated)
+	for _, n := range closure {
+		if !slices.Contains(l.gated, n) {
+			l.gated = append(l.gated, n)
+		}
+	}
+	return nil
 }
 
 // blobHolders looks up the repositories that hold a blob now and the virtual repositories above them, in that order.
@@ -687,6 +782,9 @@ func (l lookups) entries(ev FeedEvent, es []rawEntry) []iface.FeedEntry {
 		if e.digest != "" && len(l.blobs[e.digest]) == 0 {
 			continue // no repository holds the blob any more: no Bastion keeps an answer of it
 		}
+		if e.gated && len(l.gated) == 0 {
+			continue // no repository's gate is on: the change refuses nothing a Bastion keeps
+		}
 		fe := iface.FeedEntry{ID: ev.ID, At: ev.At, Kind: e.kind}
 		if n := len(out); n > 0 {
 			fe.ID = ev.ID + ":" + strconv.Itoa(n)
@@ -713,6 +811,9 @@ func (l lookups) entries(ev FeedEvent, es []rawEntry) []iface.FeedEntry {
 			fe.Repositories = l.closure[e.repository]
 			if e.digest != "" {
 				fe.Repositories = l.blobs[e.digest]
+			}
+			if e.gated {
+				fe.Repositories = l.gated
 			}
 		}
 		out = append(out, fe)

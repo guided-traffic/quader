@@ -1427,6 +1427,15 @@ type SignatureRefusal struct {
 	Count         int64
 }
 
+type SignatureRelease struct {
+	RepoID        int64
+	SubjectSha256 []byte
+	Reason        string
+	RefusedReason string
+	ReleasedBy    pgtype.UUID
+	ReleasedAt    pgtype.Timestamptz
+}
+
 type SignatureSetting struct {
 	ID                  bool
 	ProjectAnchors      bool
