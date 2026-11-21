@@ -183,8 +183,16 @@ func (e *Engine) flushCounters(ctx context.Context, now time.Time, keys map[stri
 	for key, n := range ceilings {
 		add(ctrUncachedHour, cluster.LimitBucket(key), hour, hIdx, n)
 	}
+	// A lease is given up and renewed in both places it may be held (R-LIM-019, R-LIM-024, engine.go dropLease): on the
+	// replica's share here, in Valkey by the batch, with the drops earlier flushes could not send.
+	e.dropLocal(drops)
+	e.renewLocal(renews, now)
+	unsent := e.takeUnsent(now)
+	for _, d := range unsent {
+		b.Add(cluster.LimitOp{Kind: cluster.OpLeaseDrop, Bucket: d.bucket, Member: d.member, TTL: 2 * e.o.LeaseTTL})
+	}
 	for _, l := range drops {
-		b.Add(cluster.LimitOp{Kind: cluster.OpLeaseDrop, Bucket: cluster.LimitBucket(l.key), Member: l.member, TTL: 2 * e.o.LeaseTTL})
+		b.Add(e.dropOp(l))
 	}
 	for _, l := range renews {
 		b.Add(cluster.LimitOp{
@@ -207,6 +215,11 @@ func (e *Engine) flushCounters(ctx context.Context, now time.Time, keys map[stri
 		markerOps[op] = d
 	}
 	res, local, err := e.run(ctx, &b)
+	if err != nil || local {
+		e.keepUnsent(drops)
+	} else {
+		e.sentUnsent(unsent)
+	}
 	if err != nil {
 		e.o.Log.Warn("the charges of the download limits were not counted", "error", err)
 		return

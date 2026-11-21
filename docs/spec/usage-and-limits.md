@@ -880,7 +880,8 @@ Priority: **MVP** · Covers: BEYOND-030
     `limits.flush_interval` (1 s) of the subject's transfer rate that was not yet charged when a check read the counter.
   - Ceilings: as bytes per hour and upstream requests, over all subjects of the class.
   - Parallel downloads: at most the limit across the cluster, except for the downloads of a replica that crashed, whose leases
-    keep their place for at most `limits.parallel.lease` (60 s).
+    keep their place for at most `limits.parallel.lease` (60 s), and a take that Valkey ran after the replica had given up on it
+    and after the drop of the same lease, which keeps its place as long ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)).
   - Bytes per second: R-LIM-023.
 - **What is not promised**: exact accounting of a window in which Valkey failed over or was unreachable (R-LIM-019), and
   any figure of a request that Quader never saw (a Bastion's cache hit).
@@ -894,7 +895,7 @@ Every figure fails open to the replica's share and never refuses a request becau
 | Figure | While Valkey is unreachable on a replica |
 |---|---|
 | Requests, upstream requests, bytes per hour and per day, refused requests | a local window per budget key and ceiling with the limit ÷ n, n the live replicas of the role in the replica's pool (R-ARCH-034); local windows start empty. The take runs on them under the replica's lock: a refused request fills no local window either. The class of R-API-016 decides on its own token bucket of the replica's share (R-ARCH-034), which takes nothing when it refuses; a request it refuses after the local windows took it is taken back from them |
-| Parallel downloads | a local count per budget key with ⌈limit ÷ n⌉ |
+| Parallel downloads | a local count per budget key with ⌈limit ÷ n⌉ of the replica's own downloads in progress: a lease is given up on the share and in Valkey, wherever its take ran ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)) |
 | Block | only blocks the replica set itself in its local state are known; a block set before the outage is not seen |
 | Pacing | the replica paces at the figure ÷ n |
 | The check's wait | at most `valkey.command_timeout`, then the local state, as every limiter |
@@ -1056,6 +1057,10 @@ Priority: **MVP** · Covers: BEYOND-030
   other three quarters stay for requests that are served, so a burst of callers at their figure cannot make the replica shed another
   caller's requests. The share is a constant (`limits.WaitingShare`), not a setting: it follows the endpoint's `max_in_flight`.
 - The replica renews the leases of its downloads older than 20 s in the flush and removes ended ones there.
+- **A lease is given up in both places it may be held** ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)):
+  on the replica's share at once, and in Valkey by the drop of the flush or of a refusal. A drop that did not reach Valkey (the batch
+  ran on the share) is sent again with every flush until one reaches Valkey or the lease has ended there, its last renewal plus
+  `limits.parallel.lease`. A renewal goes to both places as well. No request waits for it.
 - **A crashed replica** leaves its leases, which expire at their score: the subject has up to 60 s fewer slots.
 - In `audit` a lease above the limit is kept, recorded as `would_limit`, and the download goes on at once.
 
@@ -2833,6 +2838,46 @@ the same bytes may be in many repositories, and the usage store records per repo
 | (c) Under every repository that holds the blob | — | Fair | One read counted many times |
 
 **Choice:** (a). **Applied in the spec:** R-LIM-001; [malware-scanning.md](malware-scanning.md) R-MAL-006.
+
+### Q-LIM-95 · A lease is given up in both places it may be held, and a drop Valkey did not take is sent again until the lease's end
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. What it
+serves is decided: no figure refuses a request because Valkey failed (R-LIM-019, Q-LIM-12; [ha-and-helm.md](ha-and-helm.md) R-HA-057
+rule 1).
+
+Context: while Valkey answers late or not at all, a replica's batches of the limits go to Valkey or to its share from one check to the
+next. A batch that runs into `valkey.command_timeout` runs on the share (R-LIM-019); the circuit opens after
+`valkey.circuit_breaker.failure_threshold` failed calls and closes after a successful probe (R-HA-057 rule 3), and a late answer counts
+as a failed call. A download's lease was dropped only where its flush ran, so a lease taken on the share and dropped by a flush that
+reached Valkey stayed on the share, and one taken in Valkey and dropped by a flush that ran on the share stayed in Valkey, each for
+its `limits.parallel.lease`. A take that ran into the timeout is decided on the share, but a Valkey that held the command ran it
+afterwards and holds that lease too. In the nightly of 2026-11-20 (`TestHAFaults_ValkeySlow`: every Valkey command held up to 2 s for
+three minutes) one `packages` replica answered 176 tarball requests 429 `too_many_parallel_downloads` after the 10 s wait, within one
+minute and on its share (`limit_mode` `fallback` in the 35 of its log that survived, ⌈50 ÷ 3⌉ = 17 places per token), while k6 sent
+each token's tarballs to that replica at five a second and the other replicas served them in under a second: a few downloads in
+progress per token against 17 places, the rest held by downloads that had ended. The k6 p99 of the slow minutes was 4.07 s; without that replica's
+minute it was 554 ms, within R-HA-057's bound of the baseline plus twice the command timeout.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Give every lease up in both places: on the share at once, in Valkey by the drop of the flush or of the refusal; a drop that did not reach Valkey is sent again with every flush until one does or the lease has ended there (its last renewal plus `limits.parallel.lease`); renewals go to both (chosen) | The share counts the replica's own downloads in progress; Valkey loses an ended lease at the next flush that reaches it | Covers the take Valkey ran after the timeout, which nothing on the replica can know of; no round trip more (the drops ride the flush); bounded by the lease's end and `cluster.MaxFallbackBuckets` | A `ZREM` in Valkey for leases that were only on the share; a drop that reaches Valkey before the late take of the same lease leaves that take for its minute |
+| (b) Remember where each take ran and give the lease up only there | | No `ZREM` wasted | The take that timed out and ran later stays in Valkey for its minute: the case of a slow Valkey |
+| (c) Merge the share's leases into Valkey when it answers again | | One count | R-LIM-019 merges nothing (H-1005); more round trips; misses the late take as well |
+| (d) Let the share count only leases younger than a few seconds | | No bookkeeping | A long download leaves the count; the number is arbitrary |
+
+**Choice:** (a).
+
+**Rationale:** a lease is a place of a download in progress; once the download ended it must leave every count it may be in, and the
+replica cannot tell whether a timed-out take reached Valkey. Dropping in both places costs nothing on the request path. The development
+agent would revisit this if the late take that outruns its own drop shows in a run (a token refused in `cluster` mode within a minute
+of a slow Valkey, `quader_limits_decisions_total{figure="parallelDownloads",outcome="limited"}`).
+
+**Applied in the spec:** R-LIM-018, R-LIM-019, R-LIM-024. Code: `dropOp`, `dropLease`, `keepUnsent` in
+[engine.go](../../internal/limits/engine.go), `flushCounters` in [flush.go](../../internal/limits/flush.go). Tests: five cases of
+`TestR_LIM_024_ParallelDownloads` in [engine_test.go](../../internal/limits/engine_test.go) on a store that is down or answers after
+running the batch: a lease taken on the share and ended by a flush that reached Valkey, one taken in Valkey and ended by a flush on the
+share, a take Valkey ran after the timeout, a lease given up at once as a waiting download does, and an unsent drop forgotten at the
+lease's end.
 
 ## What this does not cover
 

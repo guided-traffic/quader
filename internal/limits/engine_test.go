@@ -15,10 +15,14 @@ import (
 )
 
 // countingStore runs batches in memory and counts the round trips, as quader_valkey_command_duration_seconds_count does.
+// down refuses every batch without running it (an open circuit, an unreachable Valkey); late runs the batch and then
+// answers with a timeout, as a Valkey that held the commands longer than valkey.command_timeout (CLIENT PAUSE) and ran
+// them after the client had given up.
 type countingStore struct {
 	mem   *cluster.MemoryLimits
 	trips atomic.Int64
 	down  atomic.Bool
+	late  atomic.Bool
 }
 
 func (s *countingStore) Run(ctx context.Context, b *cluster.LimitBatch) ([]cluster.LimitResult, error) {
@@ -26,7 +30,11 @@ func (s *countingStore) Run(ctx context.Context, b *cluster.LimitBatch) ([]clust
 		return nil, cluster.ErrUnavailable
 	}
 	s.trips.Add(1)
-	return s.mem.Run(ctx, b)
+	res, err := s.mem.Run(ctx, b)
+	if s.late.Load() {
+		return nil, context.DeadlineExceeded
+	}
+	return res, err
 }
 
 type clock struct {
@@ -428,6 +436,86 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 		}
 		if !r.e.Fallback() {
 			t.Fatal("the fallback is not reported")
+		}
+	})
+	// A Valkey that answers late or not at all for a while sends some batches of a replica to Valkey and some to its share,
+	// one after the other: a download's lease can be taken in one and its end flushed to the other. A lease is given up in
+	// every place it may be, or the downloads that ended keep their places for limits.parallel.lease and a caller is refused
+	// because Valkey failed (R-LIM-019).
+	admitN := func(t *testing.T, r *rig, n int) []*Charge {
+		t.Helper()
+		var cs []*Charge
+		for i := range n {
+			c := r.e.Begin(anonCaller("198.51.100.9"), qname.Repo{})
+			if err := r.e.Admit(ctx, c); err != nil {
+				t.Fatalf("download %d of %d: %v", i+1, n, err)
+			}
+			cs = append(cs, c)
+		}
+		return cs
+	}
+	finish := func(r *rig, cs []*Charge) {
+		for _, c := range cs {
+			r.e.Finish(c)
+		}
+	}
+	t.Run("R-LIM-019 R-LIM-024 downloads that ended on the replica's share are given up there when the flush reaches Valkey", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		r.store.down.Store(true)
+		cs := admitN(t, r, 2) // the share: ceil(4 / 2)
+		finish(r, cs)
+		r.store.down.Store(false)
+		r.e.Flush(ctx) // reaches Valkey
+		r.store.down.Store(true)
+		admitN(t, r, 2) // the share is free again
+	})
+	t.Run("R-LIM-019 R-LIM-024 downloads that ended while the flush could not reach Valkey are given up in Valkey at a later flush", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		cs := admitN(t, r, 4) // the leases are in Valkey
+		finish(r, cs)
+		r.store.down.Store(true)
+		r.e.Flush(ctx) // runs on the share
+		r.store.down.Store(false)
+		r.e.Flush(ctx)
+		admitN(t, r, 4)
+	})
+	t.Run("R-LIM-019 R-LIM-024 a lease whose take Valkey ran after the timeout is given up in Valkey and on the share", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		r.store.late.Store(true)
+		cs := admitN(t, r, 2) // decided on the share; Valkey ran the takes too
+		if !r.e.Fallback() {
+			t.Fatal("a late answer is not a fallback")
+		}
+		finish(r, cs)
+		r.store.late.Store(false)
+		r.e.Flush(ctx)
+		admitN(t, r, 4) // nothing is left in Valkey
+		r.store.down.Store(true)
+		admitN(t, r, 2) // nothing is left on the share
+	})
+	t.Run("R-LIM-019 R-LIM-024 a lease given up at once, as a waiting download does before it asks again, leaves the share when the drop reaches Valkey", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		r.store.down.Store(true)
+		c := admitN(t, r, 1)[0]
+		r.store.down.Store(false)
+		r.e.dropLease(ctx, c)
+		r.store.down.Store(true)
+		admitN(t, r, 2)
+	})
+	t.Run("R-LIM-024 a drop that never reaches Valkey is not kept beyond the lease's end", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, f)
+		cs := admitN(t, r, 4)
+		finish(r, cs)
+		r.store.down.Store(true)
+		r.e.Flush(ctx)
+		unsent := func() int { r.e.mu.Lock(); defer r.e.mu.Unlock(); return len(r.e.unsent) }
+		if n := unsent(); n != 4 {
+			t.Fatalf("%d drops wait for Valkey, want 4", n)
+		}
+		r.clk.add(time.Minute + time.Second)
+		r.e.Flush(ctx)
+		if n := unsent(); n != 0 {
+			t.Fatalf("%d drops still wait after the leases' end, want 0", n)
 		}
 	})
 }

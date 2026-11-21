@@ -143,6 +143,9 @@ type Engine struct {
 	// wouldRefused remembers the window in which a would-limit of refusedPerHour was recorded per budget key.
 	wouldRefused map[string]int64
 	pacers       map[string]*pacer
+	// unsent are the lease drops that did not reach Valkey, with the end of each lease there: every flush sends them again
+	// until one reaches Valkey or the lease has ended on its own (R-LIM-024).
+	unsent map[unsentDrop]time.Time
 
 	stop chan struct{}
 	done chan struct{}
@@ -152,6 +155,11 @@ type Engine struct {
 type dueBlock struct {
 	block Block
 	key   string
+}
+
+// unsentDrop names a lease in Valkey whose drop is still to be sent.
+type unsentDrop struct {
+	bucket, member string
 }
 
 // NewEngine creates the engine.
@@ -181,7 +189,8 @@ func NewEngine(o Options) *Engine {
 	local.Now = o.Now
 	return &Engine{
 		o: o, local: local, m: o.Metrics, active: map[*Charge]struct{}{}, due: map[string]*dueBlock{},
-		wouldRefused: map[string]int64{}, pacers: map[string]*pacer{}, stop: make(chan struct{}), done: make(chan struct{}),
+		wouldRefused: map[string]int64{}, pacers: map[string]*pacer{}, unsent: map[unsentDrop]time.Time{},
+		stop: make(chan struct{}), done: make(chan struct{}),
 	}
 }
 
@@ -671,9 +680,90 @@ func (e *Engine) dropLease(ctx context.Context, c *Charge) {
 	if l == nil {
 		return
 	}
+	e.dropLocal([]lease{*l})
+	if e.o.Store == nil {
+		return
+	}
 	var b cluster.LimitBatch
-	b.Add(cluster.LimitOp{Kind: cluster.OpLeaseDrop, Bucket: cluster.LimitBucket(l.key), Member: l.member, TTL: 2 * e.o.LeaseTTL})
-	_, _, _ = e.run(ctx, &b)
+	b.Add(e.dropOp(*l))
+	if _, local, err := e.run(ctx, &b); err != nil || local {
+		e.keepUnsent([]lease{*l})
+	}
+}
+
+// dropOp is the drop of a lease (ZREM). A lease may be held in two places (R-LIM-019, R-LIM-024, Q-LIM-95): the batch that
+// took it ran in Valkey or on the replica's share, and while Valkey answers late or not at all a replica's batches go to one
+// or the other from one check to the next. A take that ran into valkey.command_timeout is decided on the share, but Valkey
+// may still run it when it answers again. So a lease is given up in both places: on the share at once, in Valkey by a drop
+// that is sent again at every flush until one reaches Valkey or the lease has ended there on its own. Without that, the
+// downloads that ended keep their places for limits.parallel.lease and fill the share or the cluster's count, and a caller is
+// refused because Valkey failed.
+func (e *Engine) dropOp(l lease) cluster.LimitOp {
+	return cluster.LimitOp{Kind: cluster.OpLeaseDrop, Bucket: cluster.LimitBucket(l.key), Member: l.member, TTL: 2 * e.o.LeaseTTL}
+}
+
+// dropLocal gives leases up on the replica's share.
+func (e *Engine) dropLocal(ls []lease) {
+	if len(ls) == 0 {
+		return
+	}
+	var b cluster.LimitBatch
+	for _, l := range ls {
+		b.Add(e.dropOp(l))
+	}
+	_, _ = e.local.Run(context.Background(), &b)
+}
+
+// renewLocal moves the end of leases that the replica's share holds.
+func (e *Engine) renewLocal(ls []lease, now time.Time) {
+	if len(ls) == 0 {
+		return
+	}
+	var b cluster.LimitBatch
+	for _, l := range ls {
+		b.Add(cluster.LimitOp{Kind: cluster.OpLeaseRenew, Bucket: cluster.LimitBucket(l.key), Member: l.member, Until: now.Add(e.o.LeaseTTL)})
+	}
+	_, _ = e.local.Run(context.Background(), &b)
+}
+
+// keepUnsent remembers drops that did not reach Valkey, until the end of each lease there: its last renewal plus
+// limits.parallel.lease. Beyond cluster.MaxFallbackBuckets a drop is not kept; its lease ends on its own.
+func (e *Engine) keepUnsent(ls []lease) {
+	if e.o.Store == nil || len(ls) == 0 {
+		return
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	for _, l := range ls {
+		if len(e.unsent) >= cluster.MaxFallbackBuckets {
+			return
+		}
+		e.unsent[unsentDrop{bucket: cluster.LimitBucket(l.key), member: l.member}] = l.renewed.Add(e.o.LeaseTTL)
+	}
+}
+
+// takeUnsent returns the drops still to be sent and forgets those whose lease has ended in Valkey.
+func (e *Engine) takeUnsent(now time.Time) []unsentDrop {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	out := make([]unsentDrop, 0, len(e.unsent))
+	for d, end := range e.unsent {
+		if !now.Before(end) {
+			delete(e.unsent, d)
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
+}
+
+// sentUnsent forgets drops that reached Valkey.
+func (e *Engine) sentUnsent(ds []unsentDrop) {
+	e.mu.Lock()
+	for _, d := range ds {
+		delete(e.unsent, d)
+	}
+	e.mu.Unlock()
 }
 
 // MayFetch is step 9a of R-REPO-025 (R-LIM-022): the request would contact the upstream of the remote repository repoID; the
