@@ -22,7 +22,11 @@
       <quader-error-notice [error]="e" />
     }
 
-    <!-- Stage 2 adds the section Signing identity here, before the four (R-SIG-056). -->
+    <!-- Stage 2's section Signing identity, first and open (R-SIG-056, Q-SIG-70). -->
+    <section class="open-section" aria-labelledby="sig-identity">
+      <h2 id="sig-identity" i18n="@@signing.heading">Signing identity</h2>
+      <quader-signing-identity />
+    </section>
 
     <section class="open-section" aria-labelledby="sig-anchors">
       <h2 id="sig-anchors" i18n="@@sig.settings.anchors">Trust anchors</h2>

@@ -243,8 +243,9 @@ announced for `signing.identity.announce_period` and then switched; the old one 
    Once the Secret holds the new pair, a worker registers it within `signing.identity.reload_interval` and the identity's answer shows it
    announced. A pair that fails the checks shows as `refused` with its reason, and `signing.identity.refused` is in the audit log.
 2. Helm values with an existing Secret: put the new `tls.crt`, `tls.key` and `ca.crt` into the Secret; nothing restarts.
-3. An uploaded identity: create a key (`POST /api/v1/signing/identity/key`), have the company's CA issue a code-signing certificate for the
-   request, and upload it with its chain (`PUT /api/v1/signing/identity/certificate`). The current identity signs until the new one switches.
+3. An uploaded identity: **Replace** in **Admin area › Settings › Signatures** (or `POST /api/v1/signing/identity/key`), have the company's
+   CA issue a code-signing certificate for the request, and **Upload certificate** with its chain (`PUT /api/v1/signing/identity/certificate`).
+   The current identity signs until the new one switches.
 4. Wait for the switch: `signing.identity.switched` in the audit log, the new identity `current` in the answer.
 
 **When to escalate.** To whoever runs the company's CA when it does not issue the certificate. To the maintainers when a passing pair is
@@ -263,7 +264,8 @@ here, until the identity is retired and, for attestations, until its certificate
 
 1. Install a new identity with a new key first (a new Secret with a new key, or a key request and an upload), so that Quader keeps signing.
    With cert-manager, delete the Secret `<fullname>-signing`: cert-manager issues a new key at once (`rotationPolicy: Always`).
-2. After the switch, retire the old identity: `POST /api/v1/signing/identities/<id>/retire`. Its key leaves npm's keys at once, none of its
+2. After the switch, retire the old identity: **Retire** under **Previous identities** of **Admin area › Settings › Signatures**, or
+   `POST /api/v1/signing/identities/<id>/retire`. Its key leaves npm's keys at once, none of its
    signatures is served, its sealed key is dropped, and Quader signs again what it signed. A retirement is refused while the current identity
    has the same key (`409 signing_key_in_use`): replace the key first.
 3. Have the company's CA revoke the old certificate; Quader's verifiers do not ask for revocation, so the retirement and the certificate's

@@ -1655,6 +1655,70 @@
         <source>This signer is blocked already.</source>
       </segment>
     </unit>
+    <unit id="problem.signing_identity_managed">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:19</note>
+      </notes>
+      <segment>
+        <source>The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_pending">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:21</note>
+      </notes>
+      <segment>
+        <source>A signing key is waiting for its certificate. Upload the certificate the CA issued for it, or discard it first.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_key_mismatch">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:23</note>
+      </notes>
+      <segment>
+        <source>This certificate is not for the pending key: the CA certified another key. Upload the certificate issued for this request.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_no_pending_key">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:25</note>
+      </notes>
+      <segment>
+        <source>No signing key is waiting for a certificate. Create a signing key first, then upload the certificate the CA issued for its request.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_announced">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:27</note>
+      </notes>
+      <segment>
+        <source>A new signing identity is announced and becomes current within minutes. Wait for the switch, then try again.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_exists">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:29</note>
+      </notes>
+      <segment>
+        <source>This certificate belongs to a signing identity Quader holds already.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_not_previous">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:31</note>
+      </notes>
+      <segment>
+        <source>Only a previous signing identity can be retired. Reload the page to see its state.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signing_key_in_use">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:33</note>
+      </notes>
+      <segment>
+        <source>The current or the announced identity has the same key, so retiring this certificate would withdraw nothing. Replace the key first.</source>
+      </segment>
+    </unit>
     <unit id="problem.vuln.finding-not-confirmed">
       <notes>
         <note category="location">src/app/core/http/problem-messages-vulnerability.ts:9</note>
@@ -17915,7 +17979,7 @@
     <unit id="sig.form.heading">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:39,41</note>
-        <note category="location">src/app/features/settings/signature-settings.html:35,37</note>
+        <note category="location">src/app/features/settings/signature-settings.html:39,41</note>
         <note category="location">src/app/shared/signatures/anchor-dialog.ts:130</note>
       </notes>
       <segment>
@@ -17989,7 +18053,7 @@
     <unit id="sig.anchor.remove-title">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:132</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:209</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:210</note>
       </notes>
       <segment>
         <source>Remove the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -17998,7 +18062,7 @@
     <unit id="sig.anchor.remove-text">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:133</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:211</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:212</note>
       </notes>
       <segment>
         <source>The signatures it knows read &quot;Signed · signer not trusted&quot; unless another anchor knows their signer.</source>
@@ -18007,7 +18071,7 @@
     <unit id="sig.anchor.remove-confirm">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:134</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:213</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:214</note>
       </notes>
       <segment>
         <source>Remove trust anchor</source>
@@ -18016,7 +18080,7 @@
     <unit id="sig.anchor.removed">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:143</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:222</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:223</note>
       </notes>
       <segment>
         <source>Trust anchor removed.</source>
@@ -26867,9 +26931,17 @@
         <source>Signatures are off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signatures.enabled</pc> is false in the configuration. Nothing is checked, and no badge is shown. The stored signatures and anchors stay.</source>
       </segment>
     </unit>
+    <unit id="signing.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:27,28</note>
+      </notes>
+      <segment>
+        <source>Signing identity</source>
+      </segment>
+    </unit>
     <unit id="sig.settings.anchors">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:28,29</note>
+        <note category="location">src/app/features/settings/signature-settings.html:32,33</note>
       </notes>
       <segment>
         <source>Trust anchors</source>
@@ -26877,7 +26949,7 @@
     </unit>
     <unit id="sig.settings.anchors-note">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:30,33</note>
+        <note category="location">src/app/features/settings/signature-settings.html:34,37</note>
       </notes>
       <segment>
         <source> A signature reads as verified when one of these knows its signer: public when an anchor shipped with Quader knows it, internal when an anchor of this installation does. </source>
@@ -26885,7 +26957,7 @@
     </unit>
     <unit id="sig.settings.pending">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:47,48</note>
+        <note category="location">src/app/features/settings/signature-settings.html:51,52</note>
       </notes>
       <segment>
         <source>Waiting for their check</source>
@@ -26893,7 +26965,7 @@
     </unit>
     <unit id="sig.settings.stale">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:49,50</note>
+        <note category="location">src/app/features/settings/signature-settings.html:53,54</note>
       </notes>
       <segment>
         <source>Trust being recomputed</source>
@@ -26901,7 +26973,7 @@
     </unit>
     <unit id="sig.settings.findings-link">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:54,58</note>
+        <note category="location">src/app/features/settings/signature-settings.html:58,62</note>
       </notes>
       <segment>
         <source>Invalid signatures are in the security dashboard</source>
@@ -26909,7 +26981,7 @@
     </unit>
     <unit id="sig.settings.project">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:60,61</note>
+        <note category="location">src/app/features/settings/signature-settings.html:64,65</note>
       </notes>
       <segment>
         <source>Project trust anchors</source>
@@ -26917,7 +26989,7 @@
     </unit>
     <unit id="sig.settings.switch">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:67,68</note>
+        <note category="location">src/app/features/settings/signature-settings.html:71,72</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project</source>
@@ -26925,7 +26997,7 @@
     </unit>
     <unit id="sig.settings.switch-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:72,73</note>
+        <note category="location">src/app/features/settings/signature-settings.html:76,77</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Project owners may add trust anchors for their project</pc> is on.</source>
@@ -26933,7 +27005,7 @@
     </unit>
     <unit id="sig.settings.switch-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:74,75</note>
+        <note category="location">src/app/features/settings/signature-settings.html:78,79</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Project owners may add trust anchors for their project</pc> is off.</source>
@@ -26941,7 +27013,7 @@
     </unit>
     <unit id="sig.settings.switch-note">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:79,81</note>
+        <note category="location">src/app/features/settings/signature-settings.html:83,85</note>
       </notes>
       <segment>
         <source> Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation. </source>
@@ -26949,7 +27021,7 @@
     </unit>
     <unit id="sig.settings.changed-by">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:83</note>
+        <note category="location">src/app/features/settings/signature-settings.html:87</note>
       </notes>
       <segment>
         <source>Last changed by</source>
@@ -26957,7 +27029,7 @@
     </unit>
     <unit id="sig.settings.save">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:91,92</note>
+        <note category="location">src/app/features/settings/signature-settings.html:95,96</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -26965,7 +27037,7 @@
     </unit>
     <unit id="sig.settings.save-for">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:92,94</note>
+        <note category="location">src/app/features/settings/signature-settings.html:96,98</note>
       </notes>
       <segment>
         <source> (project trust anchors)</source>
@@ -26973,7 +27045,7 @@
     </unit>
     <unit id="sig.settings.project-list">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:98,100</note>
+        <note category="location">src/app/features/settings/signature-settings.html:102,104</note>
       </notes>
       <segment>
         <source>Anchors of the projects</source>
@@ -26981,7 +27053,7 @@
     </unit>
     <unit id="sig.settings.blocks">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:111</note>
+        <note category="location">src/app/features/settings/signature-settings.html:115</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -26989,7 +27061,7 @@
     </unit>
     <unit id="sig.block.heading">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:114,116</note>
+        <note category="location">src/app/features/settings/signature-settings.html:118,120</note>
         <note category="location">src/app/shared/signatures/block-dialog.ts:21,22</note>
       </notes>
       <segment>
@@ -26998,7 +27070,7 @@
     </unit>
     <unit id="sig.block.lift">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:139</note>
+        <note category="location">src/app/features/settings/signature-settings.html:143</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -27006,7 +27078,7 @@
     </unit>
     <unit id="sig.root.source">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:151,153</note>
+        <note category="location">src/app/features/settings/signature-settings.html:155,157</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -27014,7 +27086,7 @@
     </unit>
     <unit id="sig.root.refreshed">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:154,155</note>
+        <note category="location">src/app/features/settings/signature-settings.html:158,159</note>
       </notes>
       <segment>
         <source>Refreshed from the Sigstore update repository</source>
@@ -27022,7 +27094,7 @@
     </unit>
     <unit id="sig.root.release">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:156,158</note>
+        <note category="location">src/app/features/settings/signature-settings.html:160,162</note>
       </notes>
       <segment>
         <source>The snapshot this release of Quader ships</source>
@@ -27030,7 +27102,7 @@
     </unit>
     <unit id="sig.root.fetched">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:159,161</note>
+        <note category="location">src/app/features/settings/signature-settings.html:163,165</note>
       </notes>
       <segment>
         <source>Fetched</source>
@@ -27038,7 +27110,7 @@
     </unit>
     <unit id="sig.root.version">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:167,168</note>
+        <note category="location">src/app/features/settings/signature-settings.html:171,172</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -27046,7 +27118,7 @@
     </unit>
     <unit id="sig.root.failure">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:169,171</note>
+        <note category="location">src/app/features/settings/signature-settings.html:173,175</note>
       </notes>
       <segment>
         <source>Last failure</source>
@@ -27054,7 +27126,7 @@
     </unit>
     <unit id="sig.root.failed">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:172,173</note>
+        <note category="location">src/app/features/settings/signature-settings.html:176,177</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -27062,7 +27134,7 @@
     </unit>
     <unit id="sig.root.no-failure">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:178,181</note>
+        <note category="location">src/app/features/settings/signature-settings.html:182,185</note>
       </notes>
       <segment>
         <source>None since the last refresh</source>
@@ -27070,7 +27142,7 @@
     </unit>
     <unit id="sig.root.note">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:183,186</note>
+        <note category="location">src/app/features/settings/signature-settings.html:187,190</note>
       </notes>
       <segment>
         <source> Without internet, the release&apos;s snapshot holds and ages with the release; an operator can point the refresh at a mirror of the company. </source>
@@ -27078,7 +27150,7 @@
     </unit>
     <unit id="sig.settings.anchors-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:127</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:128</note>
       </notes>
       <segment>
         <source>Trust anchors of the installation</source>
@@ -27086,7 +27158,7 @@
     </unit>
     <unit id="sig.settings.project-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:128</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:129</note>
       </notes>
       <segment>
         <source>Trust anchors of the projects</source>
@@ -27094,7 +27166,7 @@
     </unit>
     <unit id="sig.settings.project-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:129</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:130</note>
       </notes>
       <segment>
         <source>No project has a trust anchor of its own.</source>
@@ -27102,7 +27174,7 @@
     </unit>
     <unit id="sig.settings.blocks-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:130</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:131</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -27110,7 +27182,7 @@
     </unit>
     <unit id="sig.settings.blocks-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:131</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:132</note>
       </notes>
       <segment>
         <source>No signer is blocked.</source>
@@ -27118,7 +27190,7 @@
     </unit>
     <unit id="sig.settings.blocks-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:132</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:133</note>
       </notes>
       <segment>
         <source>Signers whose signatures read as not trusted, whatever anchor knows them.</source>
@@ -27126,7 +27198,7 @@
     </unit>
     <unit id="sig.settings.root">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:133</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:134</note>
       </notes>
       <segment>
         <source>Public Sigstore root</source>
@@ -27134,7 +27206,7 @@
     </unit>
     <unit id="sig.settings.root-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:134</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:135</note>
       </notes>
       <segment>
         <source>Where the public Sigstore root and npm&apos;s registry keys in use come from.</source>
@@ -27142,7 +27214,7 @@
     </unit>
     <unit id="sig.block.col.signer">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:136</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
       </notes>
       <segment>
         <source>Signer</source>
@@ -27150,7 +27222,7 @@
     </unit>
     <unit id="sig.block.col.reason">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:138</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -27158,7 +27230,7 @@
     </unit>
     <unit id="sig.anchor.col.signatures">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:138</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:122</note>
       </notes>
       <segment>
@@ -27167,7 +27239,7 @@
     </unit>
     <unit id="sig.block.col.blocked">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
       </notes>
       <segment>
         <source>Blocked</source>
@@ -27175,7 +27247,7 @@
     </unit>
     <unit id="sig.anchor.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:127</note>
       </notes>
       <segment>
@@ -27184,7 +27256,7 @@
     </unit>
     <unit id="sig.anchor.switched-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:196</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:197</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> applies again. Its signatures are judged again in the background.</source>
@@ -27192,7 +27264,7 @@
     </unit>
     <unit id="sig.anchor.switched-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:197</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:198</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> no longer applies. Its signatures are judged again in the background.</source>
@@ -27200,7 +27272,7 @@
     </unit>
     <unit id="sig.switch.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:239</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:240</note>
       </notes>
       <segment>
         <source>Switch project trust anchors off?</source>
@@ -27208,7 +27280,7 @@
     </unit>
     <unit id="sig.switch.off-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:241</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:242</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
@@ -27216,7 +27288,7 @@
     </unit>
     <unit id="sig.switch.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:243</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:244</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -27224,7 +27296,7 @@
     </unit>
     <unit id="sig.switch.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:254</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:255</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project now.</source>
@@ -27232,7 +27304,7 @@
     </unit>
     <unit id="sig.switch.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:255</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:256</note>
       </notes>
       <segment>
         <source>Project trust anchors are switched off.</source>
@@ -27240,7 +27312,7 @@
     </unit>
     <unit id="sig.block.lift-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:298</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:299</note>
       </notes>
       <segment>
         <source>Lift this block?</source>
@@ -27248,7 +27320,7 @@
     </unit>
     <unit id="sig.block.lift-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:299</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:300</note>
       </notes>
       <segment>
         <source>The signer&apos;s signatures are judged by the trust anchors again.</source>
@@ -27256,7 +27328,7 @@
     </unit>
     <unit id="sig.block.lift-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:300</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:301</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -27264,10 +27336,747 @@
     </unit>
     <unit id="sig.block.lifted">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:308</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:309</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:61,63</note>
+      </notes>
+      <segment>
+        <source> Quader makes an ECDSA P-256 key and keeps it sealed; it never leaves Quader. You get a certificate request for your company&apos;s CA. </source>
+      </segment>
+    </unit>
+    <unit id="signing.key.replace-lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:64,66</note>
+      </notes>
+      <segment>
+        <source>The current identity signs until the new one is current.</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.cn">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:69</note>
+      </notes>
+      <segment>
+        <source>Common name</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.o">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:71</note>
+      </notes>
+      <segment>
+        <source>Organization</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.c">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:76,77</note>
+      </notes>
+      <segment>
+        <source>Country</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.c-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:80,83</note>
+      </notes>
+      <segment>
+        <source>Two letters, such as DE.</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.uri">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:87,88</note>
+      </notes>
+      <segment>
+        <source>URI</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.uri-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:91,93</note>
+      </notes>
+      <segment>
+        <source>The identity a verifier names, such as cosign&apos;s --certificate-identity.</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.more">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:93,95</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:220,221</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:338,339</note>
+        <note category="location">src/app/features/settings/signing-identity.html:164,165</note>
+      </notes>
+      <segment>
+        <source>More options</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.ou">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:95</note>
+      </notes>
+      <segment>
+        <source>Organizational unit</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.l">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:96</note>
+      </notes>
+      <segment>
+        <source>Locality</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.st">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:97</note>
+      </notes>
+      <segment>
+        <source>State or province</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.email">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:98</note>
+      </notes>
+      <segment>
+        <source>E-mail address</source>
+      </segment>
+    </unit>
+    <unit id="signing.dialog.cancel">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:103,104</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:235,236</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:353,354</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.submit">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:104,106</note>
+      </notes>
+      <segment>
+        <source>Create signing key</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.heading-replace">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:132</note>
+      </notes>
+      <segment>
+        <source>Replace signing identity</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:133</note>
+        <note category="location">src/app/features/settings/signing-identity.html:159,163</note>
+      </notes>
+      <segment>
+        <source>Create signing key</source>
+      </segment>
+    </unit>
+    <unit id="signing.cert.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:210,211</note>
+        <note category="location">src/app/features/settings/signing-identity.html:153,154</note>
+      </notes>
+      <segment>
+        <source>Upload certificate</source>
+      </segment>
+    </unit>
+    <unit id="signing.cert.lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:214,216</note>
+      </notes>
+      <segment>
+        <source> The certificate your company&apos;s CA issued for the request, with its chain: the certificate first, then its intermediates, the root last. </source>
+      </segment>
+    </unit>
+    <unit id="signing.cert.chain">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:219</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:337</note>
+      </notes>
+      <segment>
+        <source>Certificate and chain (PEM)</source>
+      </segment>
+    </unit>
+    <unit id="signing.cert.ca">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:225,227</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:343,345</note>
+      </notes>
+      <segment>
+        <source>Root certificate (PEM)</source>
+      </segment>
+    </unit>
+    <unit id="signing.cert.ca-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:230,232</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:348,350</note>
+      </notes>
+      <segment>
+        <source>Only if the chain does not end in the root.</source>
+      </segment>
+    </unit>
+    <unit id="signing.cert.submit">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:236,238</note>
+      </notes>
+      <segment>
+        <source>Upload certificate</source>
+      </segment>
+    </unit>
+    <unit id="signing.import.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:296,297</note>
+        <note category="location">src/app/features/settings/signing-identity.html:168,170</note>
+      </notes>
+      <segment>
+        <source>Import key and certificate</source>
+      </segment>
+    </unit>
+    <unit id="signing.import.lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:300,303</note>
+      </notes>
+      <segment>
+        <source> For a CA that hands out the key and the certificate together, or a key moved from another installation. The key is sent once and sealed on the server; it is never shown again. </source>
+      </segment>
+    </unit>
+    <unit id="signing.import.key">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:307,309</note>
+      </notes>
+      <segment>
+        <source>Private key (PEM)</source>
+      </segment>
+    </unit>
+    <unit id="signing.import.key-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:320,322</note>
+      </notes>
+      <segment>
+        <source> PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with openssl pkcs12 -in &lt;file&gt; -nodes. </source>
+      </segment>
+    </unit>
+    <unit id="signing.import.passphrase">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:330,332</note>
+      </notes>
+      <segment>
+        <source>Passphrase</source>
+      </segment>
+    </unit>
+    <unit id="signing.import.passphrase-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:335,337</note>
+      </notes>
+      <segment>
+        <source>Only if the key is encrypted. It is used once and never stored.</source>
+      </segment>
+    </unit>
+    <unit id="signing.import.submit">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:354,357</note>
+      </notes>
+      <segment>
+        <source>Import</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.subject">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:4,5</note>
+        <note category="location">src/app/features/settings/signing-identity.html:135,136</note>
+      </notes>
+      <segment>
+        <source>Subject</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.issuer">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:6,7</note>
+      </notes>
+      <segment>
+        <source>Issuer</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.names">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:8,10</note>
+      </notes>
+      <segment>
+        <source>Alternative names</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.from">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:14,16</note>
+      </notes>
+      <segment>
+        <source>Valid from</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.until">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:18,19</note>
+      </notes>
+      <segment>
+        <source>Valid until</source>
+      </segment>
+    </unit>
+    <unit id="signing.expired">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:24,25</note>
+        <note category="location">src/app/features/settings/signing-identity.html:195,197</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+      </segment>
+    </unit>
+    <unit id="signing.expires-in">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:30,31</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {expires in 1 day} other {expires in <ph id="0" equiv="INTERPOLATION"/> days}}</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.fingerprint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:35,37</note>
+      </notes>
+      <segment>
+        <source>Fingerprint (SHA-256)</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.keyid">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:40,42</note>
+      </notes>
+      <segment>
+        <source>npm key ID</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.state">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:45,47</note>
+      </notes>
+      <segment>
+        <source>State</source>
+      </segment>
+    </unit>
+    <unit id="signing.switch-at">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:50</note>
+      </notes>
+      <segment>
+        <source>becomes current</source>
+      </segment>
+    </unit>
+    <unit id="signing.off">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:66,68</note>
+      </notes>
+      <segment>
+        <source>Signing is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signing.enabled</pc> is false in the configuration. Quader signs nothing, also with an identity. What it signed stays and is served.</source>
+      </segment>
+    </unit>
+    <unit id="signing.refused">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:75</note>
+      </notes>
+      <segment>
+        <source>The files of the Helm values were refused</source>
+      </segment>
+    </unit>
+    <unit id="signing.refused-keeps">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:76,78</note>
+      </notes>
+      <segment>
+        <source>The identity in use keeps signing.</source>
+      </segment>
+    </unit>
+    <unit id="signing.refused-nothing">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:78,80</note>
+      </notes>
+      <segment>
+        <source>Quader signs nothing until a pair passes.</source>
+      </segment>
+    </unit>
+    <unit id="signing.uploaded-by">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:92</note>
+        <note category="location">src/app/features/settings/signing-identity.html:141</note>
+      </notes>
+      <segment>
+        <source>by</source>
+      </segment>
+    </unit>
+    <unit id="signing.helm-note">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:97,100</note>
+      </notes>
+      <segment>
+        <source>Change it in the values; nothing here changes it.</source>
+      </segment>
+    </unit>
+    <unit id="signing.download-chain">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:102,103</note>
+      </notes>
+      <segment>
+        <source>Download chain</source>
+      </segment>
+    </unit>
+    <unit id="signing.download-root">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:103,105</note>
+        <note category="location">src/app/features/settings/signing-identity.html:176,179</note>
+      </notes>
+      <segment>
+        <source>Download trusted root</source>
+      </segment>
+    </unit>
+    <unit id="signing.replace">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:105,107</note>
+      </notes>
+      <segment>
+        <source>Replace</source>
+      </segment>
+    </unit>
+    <unit id="signing.remove">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:108,111</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="signing.announced">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:112,113</note>
+      </notes>
+      <segment>
+        <source>Announced</source>
+      </segment>
+    </unit>
+    <unit id="signing.announced-text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:114,116</note>
+      </notes>
+      <segment>
+        <source> npm&apos;s keys list this identity already, so that caches learn it before it signs. Until the switch the current identity signs. </source>
+      </segment>
+    </unit>
+    <unit id="signing.source.configuration">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:120</note>
+        <note category="location">src/app/shared/signatures/signing-words.ts:101</note>
+      </notes>
+      <segment>
+        <source>From the Helm values</source>
+      </segment>
+    </unit>
+    <unit id="signing.managed-none">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:121,124</note>
+      </notes>
+      <segment>
+        <source>the values name the signing identity, and Quader signs nothing until a pair of its files passes the checks.</source>
+      </segment>
+    </unit>
+    <unit id="signing.none">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:126,131</note>
+      </notes>
+      <segment>
+        <source> No signing identity: Quader signs nothing. Packages of local npm repositories carry no registry signature, and no artifact gets a receipt attestation. </source>
+      </segment>
+    </unit>
+    <unit id="signing.request">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:133,134</note>
+      </notes>
+      <segment>
+        <source>Certificate request</source>
+      </segment>
+    </unit>
+    <unit id="signing.fact.requested">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:137,139</note>
+      </notes>
+      <segment>
+        <source>Key made</source>
+      </segment>
+    </unit>
+    <unit id="signing.request-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:150,152</note>
+      </notes>
+      <segment>
+        <source>Have your company&apos;s CA issue a code-signing certificate for this request, then upload it with its chain.</source>
+      </segment>
+    </unit>
+    <unit id="signing.discard">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:154,157</note>
+      </notes>
+      <segment>
+        <source>Discard</source>
+      </segment>
+    </unit>
+    <unit id="signing.import.note">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:166,168</note>
+      </notes>
+      <segment>
+        <source> For a CA that hands out the key and the certificate together, or a key moved from another installation. </source>
+      </segment>
+    </unit>
+    <unit id="signing.prev">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:173</note>
+      </notes>
+      <segment>
+        <source>Previous identities</source>
+      </segment>
+    </unit>
+    <unit id="signing.unused">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:187,189</note>
+      </notes>
+      <segment>
+        <source>Not in use: the Helm values name the signing identity</source>
+      </segment>
+    </unit>
+    <unit id="signing.retire">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:209</note>
+      </notes>
+      <segment>
+        <source>Retire</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.identity">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:154</note>
+      </notes>
+      <segment>
+        <source>Identity</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.source">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:155</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.until">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:156</note>
+      </notes>
+      <segment>
+        <source>Valid until</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.signed">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:157</note>
+      </notes>
+      <segment>
+        <source>Signed</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.actions">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:158</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.caption">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:168</note>
+      </notes>
+      <segment>
+        <source>Previous signing identities</source>
+      </segment>
+    </unit>
+    <unit id="signing.prev.hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:169</note>
+      </notes>
+      <segment>
+        <source>Identities that signed before. Their npm signatures stay valid until you retire them.</source>
+      </segment>
+    </unit>
+    <unit id="signing.copy-fingerprint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:170</note>
+      </notes>
+      <segment>
+        <source>Copy fingerprint</source>
+      </segment>
+    </unit>
+    <unit id="signing.copy-keyid">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:171</note>
+      </notes>
+      <segment>
+        <source>Copy npm key ID</source>
+      </segment>
+    </unit>
+    <unit id="signing.copy-request">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:172</note>
+      </notes>
+      <segment>
+        <source>Copy request</source>
+      </segment>
+    </unit>
+    <unit id="signing.draft-restored">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:195</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:198</note>
+      </notes>
+      <segment>
+        <source>Your entries were restored. Send them again.</source>
+      </segment>
+    </unit>
+    <unit id="signing.key.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:224</note>
+      </notes>
+      <segment>
+        <source>The signing key is made. Have your company&apos;s CA issue a certificate for its request.</source>
+      </segment>
+    </unit>
+    <unit id="signing.installed-announced">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:250</note>
+      </notes>
+      <segment>
+        <source>The new signing identity is announced. It becomes current after the announce period; until then the current one signs.</source>
+      </segment>
+    </unit>
+    <unit id="signing.installed-current">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:251</note>
+      </notes>
+      <segment>
+        <source>The signing identity is current. Quader signs with it from now on.</source>
+      </segment>
+    </unit>
+    <unit id="signing.discard.title">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:273</note>
+      </notes>
+      <segment>
+        <source>Discard the signing key?</source>
+      </segment>
+    </unit>
+    <unit id="signing.discard.text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:274</note>
+      </notes>
+      <segment>
+        <source>The key and its request are deleted. A certificate the CA issues for this request can no longer be uploaded.</source>
+      </segment>
+    </unit>
+    <unit id="signing.discard.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:275</note>
+      </notes>
+      <segment>
+        <source>Discard</source>
+      </segment>
+    </unit>
+    <unit id="signing.discard.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:278</note>
+      </notes>
+      <segment>
+        <source>The signing key is discarded.</source>
+      </segment>
+    </unit>
+    <unit id="signing.remove.title">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:283</note>
+      </notes>
+      <segment>
+        <source>Remove the signing identity?</source>
+      </segment>
+    </unit>
+    <unit id="signing.remove.text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:285</note>
+      </notes>
+      <segment>
+        <source>It becomes a previous identity and Quader signs nothing until another identity is current. Its npm signatures stay valid, and the attestations it made stay served until its certificate expires.</source>
+      </segment>
+    </unit>
+    <unit id="signing.remove.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:287</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+      </segment>
+    </unit>
+    <unit id="signing.remove.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:290</note>
+      </notes>
+      <segment>
+        <source>The signing identity is removed. Quader signs nothing now.</source>
+      </segment>
+    </unit>
+    <unit id="signing.retire.title">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:295</note>
+      </notes>
+      <segment>
+        <source>Retire this identity?</source>
+      </segment>
+    </unit>
+    <unit id="signing.retire.text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:297</note>
+      </notes>
+      <segment>
+        <source>Its key leaves npm&apos;s keys at once; Quader signs its packages and attestations again with the current identity.</source>
+      </segment>
+    </unit>
+    <unit id="signing.retire.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:299</note>
+      </notes>
+      <segment>
+        <source>Retire</source>
+      </segment>
+    </unit>
+    <unit id="signing.retire.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:302</note>
+      </notes>
+      <segment>
+        <source>The identity is retired.</source>
       </segment>
     </unit>
     <unit id="setup.unknown-guide">
@@ -40093,6 +40902,150 @@
       </notes>
       <segment>
         <source>Uploaded by <ph id="0" equiv="name" disp="name"/></source>
+      </segment>
+    </unit>
+    <unit id="signing.check.malformed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:34</note>
+      </notes>
+      <segment>
+        <source>This is not PEM, or a certificate in it does not parse.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.chain_bounds">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:36</note>
+      </notes>
+      <segment>
+        <source>The chain is too large: it holds at most 8 certificates of 16 KiB each.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.key_type">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:38</note>
+      </notes>
+      <segment>
+        <source>The key is not ECDSA on P-256, the one type npm&apos;s client accepts.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.key_mismatch">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:40</note>
+      </notes>
+      <segment>
+        <source>The certificate is not for this key.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.leaf_is_ca">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:42</note>
+      </notes>
+      <segment>
+        <source>The first certificate is a CA certificate. Put Quader&apos;s own certificate first, then its intermediates.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.key_usage">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:44</note>
+      </notes>
+      <segment>
+        <source>The certificate&apos;s key usage lacks digitalSignature.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.code_signing">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:46</note>
+      </notes>
+      <segment>
+        <source>The certificate is not for code signing: ask the CA for the extended key usage codeSigning.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.alternative_name">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:48</note>
+      </notes>
+      <segment>
+        <source>The certificate names no URI or e-mail address among its alternative names.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.validity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:50</note>
+      </notes>
+      <segment>
+        <source>The certificate is not valid now.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.remaining_validity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:52</note>
+      </notes>
+      <segment>
+        <source>The certificate ends in less than 24 hours.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.chain_root">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:54</note>
+      </notes>
+      <segment>
+        <source>The chain does not end in a self-signed root. Add the root certificate last, or in the field for the root.</source>
+      </segment>
+    </unit>
+    <unit id="signing.check.chain_build">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:56</note>
+      </notes>
+      <segment>
+        <source>The chain does not lead from the certificate to its root for code signing.</source>
+      </segment>
+    </unit>
+    <unit id="signing.state.pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:86</note>
+      </notes>
+      <segment>
+        <source>Waiting for its certificate</source>
+      </segment>
+    </unit>
+    <unit id="signing.state.announced">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:88</note>
+      </notes>
+      <segment>
+        <source>Announced: listed, does not sign yet</source>
+      </segment>
+    </unit>
+    <unit id="signing.state.current">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:90</note>
+      </notes>
+      <segment>
+        <source>Current: signs</source>
+      </segment>
+    </unit>
+    <unit id="signing.state.previous">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:92</note>
+      </notes>
+      <segment>
+        <source>Previous: its npm signatures stay valid</source>
+      </segment>
+    </unit>
+    <unit id="signing.state.retired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:94</note>
+      </notes>
+      <segment>
+        <source>Retired</source>
+      </segment>
+    </unit>
+    <unit id="signing.source.upload">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:102</note>
+      </notes>
+      <segment>
+        <source>Uploaded in the admin area</source>
       </segment>
     </unit>
     <unit id="table.loading">

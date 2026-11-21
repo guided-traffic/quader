@@ -1442,7 +1442,7 @@ Priority: **P1** · Covers: quader-only
 - **Built** (package 4, [Q-SIG-129](#q-sig-129--the-admin-pages-controls-a-table-of-anchors-a-dialog-per-form-the-switch-saved-on-its-own)):
   `/admin/settings/signatures`, the fourth entry of the side bar's group Settings for the holder of `settings:read`; the four sections, the
   forms of **Add trust anchor** and **Block signer** as dialogs, the backlog under the anchors, and a link to the dashboard's view for the
-  holder of `content:metadata-read`. The page leaves a comment where stage 2's section **Signing identity** goes.
+  holder of `content:metadata-read`. Stage 2's section **Signing identity** stands first (R-SIG-056, built).
 
 Acceptance criteria:
 
@@ -1664,8 +1664,9 @@ Acceptance criteria: none; the stages bring their own.
 ## Quader signs (stage 2)
 
 Status: specified; package 1 of 4 is built: the signing identity with its states, its chart, its API, events, metrics and alerts, and the
-frame of the job `signing` ([developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)). npm's registry signatures, the
-attestations and the screens are not built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
+frame of the job `signing` ([developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)); of package 4 the section **Signing
+identity** of the admin area (R-SIG-056, first bullet). npm's registry signatures, the attestations and the rest of the screens are not
+built. The owner asked for it in his request of 2026-11-21 ("Quader ist ebenso in der Lage Artefakte zu signieren,
 dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden. Hier müssen wir uns aber noch über den Umfang und
 Ziele unterhalten, ich erwarte, dass du mich hier proaktiv berätst.") and decided its frame the same morning: Quader signs as a registry
 where a client checks it with one command, which is Debian (built) and npm ([Q-SIG-10](#q-sig-10--quader-signs-as-a-registry)); it issues
@@ -2317,10 +2318,19 @@ Simple by default ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details
   a refused pair; a version with Quader's signature and attestation beside a publisher's provenance; an image whose attestation is served
   through the API.
 
+- **Built** (the first half of package 4, [developer/signatures.md](../developer/signatures.md#package-4-the-section-signing-identity-built)):
+  the section **Signing identity** in every state of the first bullet, its forms as dialogs and the request in the section
+  ([Q-SIG-170](#q-sig-170--the-sections-forms-are-dialogs-the-request-stands-in-the-section) to
+  [Q-SIG-176](#q-sig-176--what-the-section-shows-beyond-the-first-bullet)), every refusal of R-SIG-055 in plain words, read-only without
+  `security-settings:write`, both languages, and its renders (`admin-settings-signing`). Quader's signature and attestation at a version
+  and a file, and the tab **Verify**, follow with npm's signatures and the attestations (packages 2 and 3).
+
 Acceptance criteria:
 
 - Web unit (Vitest, under a second): the section in each state; controls only for the holder of `security-settings:write`; the amber and
-  red validity; the tab **Verify** hidden without an identity.
+  red validity; the tab **Verify** hidden without an identity. Built for the section
+  ([signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts), seven cases, about 0.3 s); the tab's case
+  follows with the tab.
 
 ### R-SIG-057 · Audit events, metrics and alerts of stage 2
 Priority: **P1** · Covers: quader-only
@@ -5248,6 +5258,91 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) `no-store` | | Always current | Every poll reads the database's snapshot |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-055.
+
+### Q-SIG-170 · The section's forms are dialogs; the request stands in the section
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The first half of
+package 4; R-SIG-056 names the controls and leaves their form open.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Create signing key**, **Replace**, **Upload certificate** and **Import key and certificate** open dialogs; a pending key's request stands in the section as a file window with **Copy** and **Download** (the client setup's `<quader-code-window>`), with **Upload certificate** and **Discard** below it; **Remove**, **Discard** and **Retire** ask first (chosen) | The page's **Add trust anchor** and **Block signer** (Q-SIG-129) | One way for every form of the page; the request survives a reload because it is the server's, not the dialog's; days may pass between the request and the CA's answer | — |
+| (b) The forms inline in the section | | No dialog | The section grows by a form an administrator uses once a year, against simple by default |
+| (c) A wizard of three steps | | Guides the first time | The steps lie days apart; a wizard does not survive the wait |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-056. Code: [signing-identity.ts](../../web/src/app/features/settings/signing-identity.ts),
+[signing-dialogs.ts](../../web/src/app/features/settings/signing-dialogs.ts).
+
+### Q-SIG-171 · The key request takes one URI and one e-mail address
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One field **URI**, holding the base URL, and one **E-mail address** behind **More options**; more through the API, which takes 8 of each (chosen) | | The first URI is the identity a verifier names (R-SIG-045), and a company names one; the form stays a form of single fields | A second URI needs the API |
+| (b) A list editor for each | | Everything the API takes | A list control for what nearly nobody fills twice |
+
+**Choice:** (a). The country is a field of two letters, upper-cased before it is sent. **Applied in the spec:** R-SIG-056.
+
+### Q-SIG-172 · Import key and certificate stays behind More options beside an uploaded identity too
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-SIG-056 places it
+in the state without an identity and says nothing of the others.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Behind the section's **More options** while the Helm values name no identity and no key is pending or announced, with or without a current upload (chosen) | | A CA that hands out key and certificate together renews that way too; the API takes it and announces the new identity | — |
+| (b) Only without an identity | | Shorter section | A renewal by import needs the API |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-056.
+
+### Q-SIG-173 · A refusal of R-SIG-045 reads as its check in plain words, then the server's detail
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The check the refusal names (`(<check>)` at the end of the field error and of a refused pair's reason) as a sentence of the UI's language that says what to ask the CA for, followed by the server's detail with the check's name, which carries what only the server knows (a certificate's dates, a key's curve) (chosen) | | Plain words in both languages without losing the dates; the check is named, as R-SIG-055 wants | The detail stays English in the German UI |
+| (b) The server's detail alone | | Short | English only, and no hint what to do |
+| (c) The sentence alone | | Short | Drops the dates and the curve |
+
+**Choice:** (a). The refusals beyond the checks (Q-SIG-146's codes, `signing_key_mismatch`, `signing_identity_managed`) are sentences of
+the UI that say what to do instead. **Applied in the spec:** R-SIG-056. Code: [signing-words.ts](../../web/src/app/shared/signatures/signing-words.ts),
+[problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts).
+
+### Q-SIG-174 · A write that needs a recent sign-in keeps the key request and the certificate as a draft, never the imported key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As the other admin screens do (R-UI-042): the app's dialog asks for the sign-in on `401 reauthentication_required`; the key request's fields and the certificate with its chain, public material, wait as a draft of the route and their dialog opens again with them after the sign-in; the import keeps nothing and clears the key and the passphrase after any answer (chosen) | The Bastion's token dialog, the Debian key import | Nothing public is typed twice; nothing secret is stored in the browser (R-UI-043) | The import is pasted again after a sign-in |
+| (b) Keep nothing | | Simplest | A chain of three certificates pasted again |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-056.
+
+### Q-SIG-175 · The section's states are rendered from answers changed in the browser
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The profile's real answer without an identity, and each other state as that answer changed in the browser by the walk (`renders/signing.ts`), as the scanner replicas' databases are (chosen) | | No company CA and no sealed key in the profile; nothing of the seed's SQL has to follow the schema | The renders do not show the store's own answer for an upload |
+| (b) Rows of `signing_identities` written by SQL | | The real answer | An upload's row needs a key sealed by the profile's key ring, and the worker would try to open a fake one |
+| (c) The real flow through the API with a CA of the seed | | Everything real | Two rotations wait for the announce period, and the seed needs a CA tool on every runner |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-056; [developer/web-ui.md](../developer/web-ui.md#the-signatures-screens).
+
+### Q-SIG-176 · What the section shows beyond the first bullet
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A note when `signing.enabled` is false; an announced identity below the current one with its facts and the time of its switch; **Previous identities** only while there is one, its rows with the common name and the fingerprint's first groups, the source, the end of validity ("expired" beside it), the span it signed and **Retire**; a stored upload under the Helm values marked "Not in use: the Helm values name the signing identity" (R-SIG-046); **Replace** hidden while a key is pending or announced, **Download trusted root** in **Previous identities** while none is current (chosen) | | Every state the API answers has its words; no control that the API would refuse at once | A longer section in the rare states |
+| (b) Only what R-SIG-056 names | | Shorter | An announced identity and the switch off would be invisible |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-056.
 
 ## What this does not cover
 

@@ -3304,7 +3304,7 @@ provides the files at those paths. Security: whoever can write the values or the
 Quader's signing identity ([R-HA-071](docs/spec/ha-and-helm.md#r-ha-071--the-signing-identitys-secret-in-the-worker-pods-only), [signatures.md
 R-SIG-046](docs/spec/signatures.md#r-sig-046--the-identity-from-the-helm-values)): at most one source, mounted into the worker pods only, its
 three files set in `config.signing.identity`. The default names none and renders nothing; an administrator then creates the identity in
-**Admin area › Settings › Signatures** (the API of R-SIG-055 is built, the screen is not yet). The tuning keys are `config.signing.*`.
+**Admin area › Settings › Signatures**, section **Signing identity** (R-SIG-056), or through the API of R-SIG-055. The tuning keys are `config.signing.*`.
 
 ```yaml
 signing:

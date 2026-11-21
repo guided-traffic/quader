@@ -410,13 +410,14 @@ the blocked signers are set under **Admin area › Settings › Signatures** ([S
 
 Quader signs with one identity per installation: an ECDSA P-256 key with a code-signing certificate of your company's CA. It comes from the
 Helm values (`signing.identity.existingSecret`, or `signing.identity.certManager` for a cert-manager `Certificate` `<fullname>-signing` whose
-issuer can issue the usage `code signing`), mounted into the worker pods only; or, without either, from the management API: a holder of
+issuer can issue the usage `code signing`), mounted into the worker pods only; or, without either, from **Admin area › Settings ›
+Signatures**, section **Signing identity** ([Signatures](signatures.md#signing-identity)), or the management API: a holder of
 `security-settings:write` creates a key (`POST /api/v1/signing/identity/key`), has the CA issue a certificate for the request it answers,
 and uploads it with its chain (`PUT /api/v1/signing/identity/certificate`); a key and certificate the CA handed out together are imported
 (`POST /api/v1/signing/identity/import`). While the Helm values name an identity, uploads answer `409 signing_identity_managed`. A new
 identity beside the current one is listed for `signing.identity.announce_period` (10 minutes) before it signs; the job `signing` on the
-queue `signing` switches it. `GET /api/v1/signing/identity` shows the identities, a refused pair of the files with its reason, and the
-backlog; the trusted root and the chain are public at `/api/v1/signing/trusted-root.json` and `/api/v1/signing/chain.pem`. npm's registry
+queue `signing` switches it. The section and `GET /api/v1/signing/identity` show the identities and a refused pair of the files with its
+reason, the answer also the backlog; the trusted root and the chain are public at `/api/v1/signing/trusted-root.json` and `/api/v1/signing/chain.pem`. npm's registry
 signatures and the receipt attestations that use the identity are not built yet: until they are, nothing is signed with it.
 
 | Signal | Meaning | What to do |

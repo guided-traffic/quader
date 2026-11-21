@@ -1,0 +1,218 @@
+<!-- The facts of an identity (R-SIG-056): what an administrator compares with the CA's record and with what a verifier names. -->
+<ng-template #facts let-i>
+  <dl class="facts" [attr.data-testid]="'signing-facts-' + i.state">
+    <dt i18n="@@signing.fact.subject">Subject</dt>
+    <dd translate="no">{{ i.subject }}</dd>
+    <dt i18n="@@signing.fact.issuer">Issuer</dt>
+    <dd translate="no">{{ i.issuer }}</dd>
+    <dt i18n="@@signing.fact.names">Alternative names</dt>
+    <dd class="names">
+      @for (n of i.names; track n) {
+        <code translate="no">{{ n }}</code>
+      }
+    </dd>
+    <dt i18n="@@signing.fact.from">Valid from</dt>
+    <dd>
+      <time [attr.datetime]="i.notBefore">{{ i.notBefore | date: 'medium' }}</time>
+    </dd>
+    <dt i18n="@@signing.fact.until">Valid until</dt>
+    <dd data-testid="signing-validity">
+      <time [attr.datetime]="i.notAfter">{{ i.notAfter | date: 'medium' }}</time>
+      @switch (validity(i)) {
+        @case ('expired') {
+          &ngsp;<span class="badge bad" data-testid="signing-expired"
+            ><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@signing.expired">expired</ng-container></span
+          >
+        }
+        @case ('soon') {
+          &ngsp;<span class="badge warn" data-testid="signing-expiring"
+            ><span class="material-icons" aria-hidden="true">schedule</span
+            ><ng-container i18n="@@signing.expires-in">{daysLeft(i), plural, =1 {expires in 1 day} other {expires in {{ daysLeft(i) }} days}}</ng-container></span
+          >
+        }
+      }
+    </dd>
+    <dt i18n="@@signing.fact.fingerprint">Fingerprint (SHA-256)</dt>
+    <dd class="digest">
+      <code translate="no">{{ grouped(i.fingerprint) }}</code>
+      <quader-copy-button class="on-line" [value]="i.fingerprint" [label]="copyFingerprint" [quiet]="true" />
+    </dd>
+    <dt i18n="@@signing.fact.keyid">npm key ID</dt>
+    <dd class="digest">
+      <code translate="no">{{ i.npmKeyId }}</code>
+      <quader-copy-button class="on-line" [value]="i.npmKeyId" [label]="copyKeyId" [quiet]="true" />
+    </dd>
+    <dt i18n="@@signing.fact.state">State</dt>
+    <dd>
+      {{ stateText(i) }}
+      @if (i.state === 'announced' && i.switchAt) {
+        &ngsp;<span class="muted"
+          ><ng-container i18n="@@signing.switch-at">becomes current</ng-container>&ngsp;<quader-time-ago [at]="i.switchAt" absolute="title"
+        /></span>
+      }
+    </dd>
+  </dl>
+</ng-template>
+
+@if (loadError(); as e) {
+  <quader-error-notice [error]="e" (retry)="load()" />
+}
+
+@if (overview(); as ov) {
+  @if (!ov.enabled) {
+    <p class="banner-warning" role="note" data-testid="signing-off">
+      <span class="material-icons inline warn" aria-hidden="true">info</span>
+      <span i18n="@@signing.off"
+        >Signing is off in this installation: <code translate="no">signing.enabled</code> is false in the configuration. Quader signs
+        nothing, also with an identity. What it signed stays and is served.</span
+      >
+    </p>
+  }
+  @if (ov.refused; as r) {
+    <p class="refused" data-testid="signing-refused">
+      <span class="material-icons inline" aria-hidden="true">error</span>
+      <span>
+        <strong i18n="@@signing.refused">The files of the Helm values were refused</strong>&ngsp;(<quader-time-ago [at]="r.at" absolute="title" />).&ngsp;<span class="reason">{{ refusalText(r.reason) }}</span>&ngsp;@if (ov.current) {
+          <ng-container i18n="@@signing.refused-keeps">The identity in use keeps signing.</ng-container>
+        } @else {
+          <ng-container i18n="@@signing.refused-nothing">Quader signs nothing until a pair passes.</ng-container>
+        }
+      </span>
+    </p>
+  }
+  @if (actionError(); as e) {
+    <quader-error-notice [error]="e" />
+  }
+
+  @if (ov.current; as cur) {
+    <p data-testid="signing-source">
+      <strong>{{ sourceText(cur) }}</strong>
+      @if (cur.source === 'upload') {
+        @if (cur.createdBy; as by) {
+          &ngsp;<ng-container i18n="@@signing.uploaded-by">by</ng-container>&ngsp;<span translate="no">{{ principal(by) }}</span>&ngsp;<quader-time-ago [at]="cur.createdAt" absolute="title" />
+        } @else {
+          &ngsp;<quader-time-ago [at]="cur.createdAt" absolute="title" />
+        }
+      } @else {
+        &ngsp;<span class="muted" i18n="@@signing.helm-note">Change it in the values; nothing here changes it.</span>
+      }
+    </p>
+    <ng-container *ngTemplateOutlet="facts; context: { $implicit: cur }" />
+    <div class="row-actions">
+      <a class="btn btn-default" [href]="chainUrl" download="quader-signing-chain.pem" i18n="@@signing.download-chain">Download chain</a>
+      <a class="btn btn-default" [href]="rootUrl" download="quader-trusted-root.json" i18n="@@signing.download-root">Download trusted root</a>
+      @if (canReplace()) {
+        <button class="btn btn-default" type="button" [disabled]="busy()" (click)="createKey(true)" i18n="@@signing.replace">Replace</button>
+      }
+      @if (canRemove()) {
+        <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@signing.remove">Remove</button>
+      }
+    </div>
+    @if (ov.announced; as next) {
+      <h3 i18n="@@signing.announced">Announced</h3>
+      <p i18n="@@signing.announced-text">
+        npm's keys list this identity already, so that caches learn it before it signs. Until the switch the current identity signs.
+      </p>
+      <ng-container *ngTemplateOutlet="facts; context: { $implicit: next }" />
+    }
+  } @else if (ov.managed) {
+    <p data-testid="signing-managed">
+      <strong i18n="@@signing.source.configuration">From the Helm values</strong>:&ngsp;<ng-container i18n="@@signing.managed-none"
+        >the values name the signing identity, and Quader signs nothing until a pair of its files passes the checks.</ng-container
+      >
+    </p>
+  } @else {
+    <p data-testid="signing-none" i18n="@@signing.none">
+      No signing identity: Quader signs nothing. Packages of local npm repositories carry no registry signature, and no artifact gets a
+      receipt attestation.
+    </p>
+  }
+
+  @if (ov.pending; as p) {
+    <!-- A key request waits for the CA (R-SIG-047); it is shown again after a reload, and its request is public material. -->
+    <h3 i18n="@@signing.request">Certificate request</h3>
+    <dl class="facts" data-testid="signing-pending">
+      <dt i18n="@@signing.fact.subject">Subject</dt>
+      <dd translate="no">{{ p.subject }}</dd>
+      <dt i18n="@@signing.fact.requested">Key made</dt>
+      <dd>
+        <quader-time-ago [at]="p.createdAt" absolute="title" />
+        @if (p.createdBy; as by) {
+          &ngsp;<ng-container i18n="@@signing.uploaded-by">by</ng-container>&ngsp;<span translate="no">{{ principal(by) }}</span>
+        }
+      </dd>
+    </dl>
+    @if (p.csr; as csr) {
+      <div class="request">
+        <quader-code-window [content]="csr" fileName="quader-signing.csr" [copyLabel]="copyRequest" />
+      </div>
+    }
+    <p i18n="@@signing.request-hint">Have your company's CA issue a code-signing certificate for this request, then upload it with its chain.</p>
+    @if (canChange()) {
+      <div class="row-actions">
+        <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="uploadCertificate()" i18n="@@signing.cert.heading">Upload certificate</button>
+        <button class="btn btn-default" type="button" [disabled]="busy()" (click)="discard()" i18n="@@signing.discard">Discard</button>
+      </div>
+    }
+  } @else if (!ov.current && canChange()) {
+    <div class="row-actions">
+      <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="createKey(false)" i18n="@@signing.key.heading">Create signing key</button>
+    </div>
+  }
+
+  @if (canImport()) {
+    <quader-disclosure [inline]="true" i18n-heading="@@signing.key.more" heading="More options">
+      <p i18n="@@signing.import.note">
+        For a CA that hands out the key and the certificate together, or a key moved from another installation.
+      </p>
+      <button class="btn btn-default" type="button" [disabled]="busy()" (click)="importIdentity()" i18n="@@signing.import.heading">Import key and certificate</button>
+    </quader-disclosure>
+  }
+
+  @if (ov.previous.length > 0) {
+    <quader-disclosure [level]="3" i18n-heading="@@signing.prev" heading="Previous identities" [hint]="previousHint" [count]="ov.previous.length">
+      @if (!ov.current) {
+        <div class="row-actions">
+          <a class="btn btn-default" [href]="rootUrl" download="quader-trusted-root.json" i18n="@@signing.download-root">Download trusted root</a>
+        </div>
+      }
+      <quader-data-table [caption]="previousCaption" [columns]="previousColumns()" [empty]="false">
+        @for (p of ov.previous; track p.id) {
+          <tr>
+            <th scope="row">
+              <span class="icon-name-text">
+                <span translate="no">{{ commonName(p.subject) }}</span>
+                <code class="secondary" translate="no" [attr.title]="p.fingerprint">{{ grouped(p.fingerprint).slice(0, 19) }} …</code>
+                @if (ov.managed && p.source === 'upload') {
+                  <span class="secondary unused" i18n="@@signing.unused">Not in use: the Helm values name the signing identity</span>
+                }
+              </span>
+            </th>
+            <td>{{ sourceText(p) }}</td>
+            <td class="nowrap">
+              <time [attr.datetime]="p.notAfter">{{ p.notAfter | date: 'mediumDate' }}</time>
+              @if (validity(p) === 'expired') {
+                <span class="secondary block" i18n="@@signing.expired">expired</span>
+              }
+            </td>
+            <td class="nowrap">
+              @if (p.currentAt; as from) {
+                <time [attr.datetime]="from">{{ from | date: 'mediumDate' }}</time>
+              }
+              @if (p.expiresAt; as to) {
+                &ngsp;–&ngsp;<time [attr.datetime]="to">{{ to | date: 'mediumDate' }}</time>
+              }
+            </td>
+            @if (canWrite()) {
+              <td class="actions">
+                <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="retire(p)">
+                  <ng-container i18n="@@signing.retire">Retire</ng-container><span class="visually-hidden">&ngsp;{{ grouped(p.fingerprint).slice(0, 19) }}</span>
+                </button>
+              </td>
+            }
+          </tr>
+        }
+      </quader-data-table>
+    </quader-disclosure>
+  }
+}

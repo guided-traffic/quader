@@ -22,6 +22,7 @@ import { QuaderDialog } from '../../shared/ui/dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { SigningIdentitySection } from './signing-identity';
 
 /**
  * **Admin area › Settings › Signatures** (R-SIG-036, Q-SIG-44): for the holder of `settings:read`, its controls for the holder of
@@ -30,12 +31,12 @@ import { TimeAgo } from '../../shared/ui/time-ago';
  * switch, one of the Helm values with nothing, an administrator's with its switch and **Remove**, and **Add trust anchor**, with the
  * backlog of checks under it; **Project trust anchors** (open), the switch for project Owners with what it means and every project's
  * anchors with **Remove**; **Blocked signers** (closed), the blocks with their reasons, **Block signer** and **Lift block**; **Public
- * Sigstore root** (closed), where the root and npm's keys in use come from, when they were fetched and the last failure. Stage 2 adds
- * the section **Signing identity** before the four (R-SIG-056).
+ * Sigstore root** (closed), where the root and npm's keys in use come from, when they were fetched and the last failure. Before the
+ * four stands stage 2's section **Signing identity** (R-SIG-056, `SigningIdentitySection`).
  */
 @Component({
   selector: 'quader-signature-settings',
-  imports: [AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, TimeAgo],
+  imports: [AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TimeAgo],
   templateUrl: './signature-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

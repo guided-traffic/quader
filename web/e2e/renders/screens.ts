@@ -30,6 +30,7 @@ import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
 import { trivyDatabases } from './scanners';
 import { signedFile, signedImage, signedVersions } from './signatures';
+import { signingAnswer } from './signing';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 
@@ -1452,6 +1453,45 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
   await page.unroute(settings);
 }
 
+/**
+ * The section **Signing identity** of **Settings › Signatures** (R-SIG-056): the page without an identity is the real answer and
+ * `admin-settings-signatures`' first picture; here, for the holder of `security-settings:write`, the form of **Create signing key**
+ * with its More options; then, for both kinds, a key request shown, an upload that expires in 12 days with two previous identities
+ * (the section opened), the Helm values' identity, and the Helm values with a refused pair. The states are answered in the browser
+ * (renders/signing.ts); nothing is saved.
+ */
+async function* signingIdentity(page: Page): AsyncGenerator<string> {
+  const url = '**/api/v1/signing/identity';
+  const section = page.locator('main quader-signing-identity');
+  await expect(section.locator('[data-testid="signing-none"]')).toBeVisible();
+  const create = section.getByRole('button', { name: 'Create signing key' });
+  if ((await create.count()) > 0) {
+    await create.click();
+    const dialog = page.getByRole('dialog', { name: 'Create signing key' });
+    await expect(dialog).toBeVisible();
+    await dialog.locator('quader-disclosure button.inline-toggle').click();
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+    yield 'create';
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+  }
+  await answerWith(page, url, signingAnswer('pending'));
+  await expect(section.locator('quader-code-window')).toBeVisible();
+  yield 'pending';
+  await answerWith(page, url, signingAnswer('upload'));
+  const { toggle } = sectionHeaded(page, 'Previous identities');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'upload';
+  await answerWith(page, url, signingAnswer('helm'));
+  await expect(section.locator('[data-testid="signing-facts-current"]')).toBeVisible();
+  yield 'helm';
+  await answerWith(page, url, signingAnswer('helm-refused'));
+  await expect(section.locator('[data-testid="signing-refused"]')).toBeVisible();
+  yield 'helm-refused';
+  await page.unroute(url);
+}
+
 /** The project's section **Trust anchors** opened (R-SIG-037), its form for an Owner; then the switch off, with the anchor not applied. */
 async function* projectAnchors(page: Page): AsyncGenerator<string> {
   const anchors = `**/api/v1/projects/${mainProject}/signatures/anchors`;
@@ -1835,4 +1875,6 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings },
   { id: 'admin-settings-signatures-read', path: '/ui/admin/settings/signatures', kinds: ['auditor'] },
+  // The section Signing identity in each state of R-SIG-056: with the controls of security-settings:write, and read-only.
+  { id: 'admin-settings-signing', path: '/ui/admin/settings/signatures', kinds: [...admins, 'auditor'], walk: signingIdentity },
 ];

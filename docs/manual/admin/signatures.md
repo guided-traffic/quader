@@ -1,14 +1,55 @@
 # Signatures
 
-Quader checks the signatures of every artifact against trust anchors and shows the result at the artifact. This page covers what an
-administrator sets: the trust anchors, the switch for project Owners, blocked signers, the public Sigstore root, and the fetch of a
-remote's signatures.
+Quader checks the signatures of every artifact against trust anchors and shows the result at the artifact, and it signs with an identity
+of your company's CA. This page covers what an administrator sets: Quader's signing identity, the trust anchors, the switch for project
+Owners, blocked signers, the public Sigstore root, and the fetch of a remote's signatures.
 
 What a reader sees at an artifact is in [Signatures](../user/signatures.md) of the user guide.
 
 The settings are **Admin area › Settings › Signatures** (`/ui/<locale>/admin/settings/signatures`). Whoever holds `settings:read`
 (`admin`, `security-admin`, `auditor`) reads the page; changes need `security-settings:write` (`admin`, `security-admin`), and the switch
-for project Owners asks you to sign in again if your sign-in is not recent.
+for project Owners and every change of the signing identity ask you to sign in again if your sign-in is not recent.
+
+## Signing identity
+
+The first section shows the identity Quader signs with: one per installation, an ECDSA P-256 key with a code-signing certificate of your
+company's CA. Without one Quader signs nothing: packages of local npm repositories carry no registry signature and no artifact gets a
+receipt attestation, and the section says so.
+
+**From the Helm values** (`signing.identity.existingSecret`, or `signing.identity.certManager` for a certificate cert-manager issues): the
+section shows the identity's facts and no control; change it in the values ([Monitoring and operations](operations.md#quaders-signing-identity)).
+While the values name an identity, nothing here can replace it. When a worker refuses the files (an RSA key, a certificate without the
+use `codeSigning`, a chain without its root, less than a day left), a red line says why, with the check it failed; the identity in use
+keeps signing.
+
+**Uploaded in the admin area**, the way without a Secret:
+
+1. **Create signing key**. The form holds the defaults: the common name `Quader signing` and the installation's address as the URI, the
+   identity a verifier names; add the organization and the country (two letters). Organizational unit, locality, state and an e-mail
+   address are behind **More options**. Quader makes the key and keeps it sealed with the key ring; it never leaves Quader.
+2. The section shows the **Certificate request**. **Copy** or **Download** it (`quader-signing.csr`) and have your company's CA issue a
+   code-signing certificate for it. The request stays in the section until you upload the certificate or **Discard** the key, also when
+   the CA takes days.
+3. **Upload certificate**: paste what the CA issued with its chain, the certificate first, then its intermediates, the root last (or the root
+   alone behind **More options**). A certificate that fails a check is refused under the field with the check in plain words: no
+   `codeSigning`, no URI or e-mail address among the alternative names, less than 24 hours left, a chain that does not end in a
+   self-signed root, or a certificate for another key.
+
+**Import key and certificate**, behind the section's **More options**, takes a key and its chain that a CA handed out together, or a key
+moved from another installation: a PEM key (PKCS#8 or SEC 1, encrypted or not, with its passphrase); convert PKCS#12 first with
+`openssl pkcs12 -in <file> -nodes`. The key passes through your browser once; the key request keeps it out of any browser.
+
+**The facts** of an identity: its subject and issuer, its alternative names, valid from and until ("expires in 12 days" in amber from 14
+days before the end, "expired" in red), the certificate's SHA-256 fingerprint, npm's key ID and the state. **Download chain** and
+**Download trusted root** give the public material a verifier needs (`/api/v1/signing/chain.pem`, `/api/v1/signing/trusted-root.json`).
+
+**Replace** an uploaded identity before it expires: it starts a new key request. The current identity keeps signing; the new one is
+**Announced** for `signing.identity.announce_period` (10 minutes), so that caches learn its key, and then becomes current. **Remove**
+makes the current uploaded identity previous: Quader signs nothing until another one is current.
+
+**Previous identities**, closed, lists the identities that signed before, with their dates. Their npm signatures stay valid. **Retire** one
+whose key you believe taken: "Retire this identity? Its key leaves npm's keys at once; Quader signs its packages and attestations again with
+the current identity." A retirement cannot be undone ([runbook](runbook.md#a-signing-key-believed-taken)).
 
 ## Trust anchors
 

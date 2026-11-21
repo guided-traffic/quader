@@ -420,3 +420,15 @@ whose content read broke off in the middle. Live from stage 1. A whole-blob read
 and is tried again with its back-off; an error inside the bounded zip or tar reader is reported by the reader as a damaged archive, so the
 signature is recorded `malformed` ("Signature could not be read") and is checked again only when its subject is committed again. What
 makes it real: a transient object-store failure during the check of a NuGet package or an Ansible collection.
+
+### H-1210 · An imported signing key passes through the administrator's browser
+
+Component: **Import key and certificate** of the section **Signing identity** (R-SIG-047, R-SIG-056, Q-SIG-174). Subject: installations
+whose identity is imported in the admin area instead of made by Quader's key request. Live from the section's landing whenever the import is
+used; dormant with the key request and with the Helm values, where the key never reaches a browser. The dialog sends the PEM key and its
+passphrase once and clears both fields after any answer, and no draft keeps them, but the pasted key lives in the page's memory until it is
+collected, in the clipboard until it is replaced, and in reach of every browser extension that may read the page; a password manager may
+offer the passphrase to be saved (the field is `autocomplete="off"`, which not every manager honours). The Debian import has the same
+([H-765](deb-signing.md#h-765--an-imported-secret-key-passes-through-the-operators-browser)). What makes it real: an administrator's browser
+or machine that is not trusted with the installation's signing key; `POST /api/v1/signing/identity/import` from `curl` with the key read
+from a file keeps it out of a browser.

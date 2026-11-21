@@ -1447,10 +1447,11 @@ Stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-035 to R-SIG-038, R-SIG
 | The version list's badge (the row's member `signatures`), the version page's header badge, its column **Signature** of Files and its tab **Signatures** | [package-detail.html](../../web/src/app/features/packages/package-detail.html), [package-version.ts](../../web/src/app/features/packages/package-version.ts), [version-signatures.ts](../../web/src/app/features/packages/version-signatures.ts) |
 | A file's fact **Signature**, its section **Signatures** read on opening, a generic signature file's **Signature of** | [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts) |
 | **Admin area › Settings › Signatures**, the anchors' table and the dialogs **Add trust anchor** and **Block signer** | [signature-settings.ts](../../web/src/app/features/settings/signature-settings.ts), [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts), [anchor-dialog.ts](../../web/src/app/shared/signatures/anchor-dialog.ts), [block-dialog.ts](../../web/src/app/shared/signatures/block-dialog.ts) |
+| The section **Signing identity** of that page (stage 2, R-SIG-056): its states, the dialogs of the key request, the certificate and the import, and the words of R-SIG-045's checks; its API is `SigningApi` ([signing-api.ts](../../web/src/app/api/signing-api.ts)) | [signing-identity.ts](../../web/src/app/features/settings/signing-identity.ts), [signing-dialogs.ts](../../web/src/app/features/settings/signing-dialogs.ts), [signing-words.ts](../../web/src/app/shared/signatures/signing-words.ts); [developer/signatures.md](signatures.md#package-4-the-section-signing-identity-built) |
 | A project's section **Trust anchors** | [project-signature-anchors.ts](../../web/src/app/features/projects/project-signature-anchors.ts) |
 | The dashboard's view **Signatures** (`/security/signatures`) | [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts) |
 | A remote repository's section **Signatures** (`signatures.fetch`) | [repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts) |
-| The refusals of the operations (`secret_material`, `anchor_exists`, `anchor_managed`, `project_anchors_disabled`, `block_exists`) | [problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts) |
+| The refusals of the operations (`secret_material`, `anchor_exists`, `anchor_managed`, `project_anchors_disabled`, `block_exists`, and the signing identity's eight of R-SIG-055) | [problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts) |
 
 **Renders.** No signing key exists in the profile, so the seed ([renders/signatures.ts](../../web/e2e/renders/signatures.ts)) adds the
 anchors (material made once and committed as public data, [signature-material.ts](../../web/e2e/renders/signature-material.ts)), the switch
@@ -1459,9 +1460,14 @@ rows under the current anchor epoch into the database, after the advisories' syn
 them. The screens: `package-version-signatures` (every state of `chart-render-kit`), `package-version-signatures-oci`, `files-signatures`,
 `admin-settings-signatures` (each form, the switch off, a failed refresh of the root, the signatures off), `project-settings-anchors`,
 `security-signatures`, `repository-settings-signatures` and `-docker-hub`; the lists that gained the badge render it from the same seed.
+`admin-settings-signing` renders the section **Signing identity** as the administrator (the form of the key request with its More options)
+and as the auditor: a key request shown, an upload that expires in 12 days with two previous identities, the Helm values' identity, and
+the Helm values with a refused pair. The profile has no identity, so these states are its real answer changed in the browser
+([renders/signing.ts](../../web/e2e/renders/signing.ts), Q-SIG-175), and the seed writes no row of `signing_identities`.
 
-**Tests** (Vitest, about 2.5 s for the four spec files together, data of the fakes): [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts),
+**Tests** (Vitest, about 2.5 s for the four spec files of stage 1 together and about 0.3 s for the section's, data of the fakes): [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts),
 [signature-settings.spec.ts](../../web/src/app/features/settings/signature-settings.spec.ts),
+[signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts),
 [version-signatures.spec.ts](../../web/src/app/features/packages/version-signatures.spec.ts),
 [repository-signatures.spec.ts](../../web/src/app/features/repositories/repository-signatures.spec.ts).
 

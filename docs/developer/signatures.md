@@ -308,7 +308,8 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 Stage 2 of [signatures.md](../spec/signatures.md#quader-signs-stage-2) (R-SIG-044 to R-SIG-060, [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker))
 is built in four packages: (1) the signing identity with its chart, its API, events, metrics and alerts, and the frame of the job
 `signing` (built, below); (2) npm's registry signatures of local versions and the local keys endpoint; (3) the receipt attestations with
-the contract's `AttestationSubjects`; (4) the screens. The decisions of package 1 are Q-SIG-145 to Q-SIG-155.
+the contract's `AttestationSubjects`; (4) the screens, of which the section **Signing identity** of the admin area is built (below). The
+decisions of package 1 are Q-SIG-145 to Q-SIG-155, those of the section Q-SIG-170 to Q-SIG-176.
 
 ### What has to be in your head first
 
@@ -379,6 +380,38 @@ the contract's `AttestationSubjects`; (4) the screens. The decisions of package 
 | Integration | area `backup`: the replay of a removal and a retirement into a restored database | 0.7 s, shard `c` | rows |
 
 No end-to-end leg. The integration area `signing` joins shard `b` by the rule of Q-ARCH-544.
+
+### Package 4: the section Signing identity (built)
+
+The first section of **Admin area › Settings › Signatures** (R-SIG-056, first bullet; Q-SIG-70). It reads `GET /api/v1/signing/identity`
+once per page load and after each write, and decides every state from that answer alone:
+
+| State of the answer | What the section shows |
+|---|---|
+| `current` null, `managed` false, no `pending` | the sentence that Quader signs nothing; for `security-settings:write` **Create signing key**, and **Import key and certificate** behind **More options** |
+| `pending` set | its subject, when and by whom the key was made, the request in a file window with **Copy** and **Download** (`quader-signing.csr`), the sentence about the company's CA, **Upload certificate** and **Discard** |
+| `current` of the source `upload` | "Uploaded in the admin area" with who and when, the facts, **Download chain**, **Download trusted root**, **Replace** (not while a key is pending or announced) and **Remove**; **Import** behind **More options** (Q-SIG-172) |
+| `current` of the source `configuration`, or `managed` | "From the Helm values" and the facts, no control; a `refused` pair as a red line with its check in plain words (Q-SIG-173) |
+| `announced` set | its facts under **Announced**, with the time of its switch |
+| `previous` not empty | **Previous identities**, closed, with **Retire** and the question of R-SIG-056; a stored upload under the Helm values reads "Not in use" |
+| `enabled` false | a note that `signing.enabled` is false |
+
+| What | Where |
+|---|---|
+| The API: the overview and the six writes, the public material's addresses | [signing-api.ts](../../web/src/app/api/signing-api.ts); the fake [fakes-signing.ts](../../web/src/app/api/testing/fakes-signing.ts) |
+| The section and its facts | [signing-identity.ts](../../web/src/app/features/settings/signing-identity.ts), `.html`; placed by [signature-settings.html](../../web/src/app/features/settings/signature-settings.html) |
+| The dialogs **Create signing key** (and **Replace**), **Upload certificate**, **Import key and certificate**, and the drafts they keep for a recent sign-in (Q-SIG-174) | [signing-dialogs.ts](../../web/src/app/features/settings/signing-dialogs.ts) |
+| The words: the validity (amber from 14 days, `signingValidity`), the checks of R-SIG-045 in plain words (`signingCheckText`, `signingRefusalText`, `signingFieldError`), the states and sources | [signing-words.ts](../../web/src/app/shared/signatures/signing-words.ts) |
+| The refusals of R-SIG-055 (`signing_identity_managed`, `signing_identity_pending`, `signing_key_mismatch`, `signing_no_pending_key`, `signing_identity_announced`, `signing_identity_exists`, `signing_identity_not_previous`, `signing_key_in_use`) | [problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts) |
+| The renders: the screen `admin-settings-signing` (as the administrator and the auditor) with the walk `signingIdentity`, whose states are the profile's answer changed in the browser (Q-SIG-175) | [renders/signing.ts](../../web/e2e/renders/signing.ts), [renders/screens.ts](../../web/e2e/renders/screens.ts) |
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Web unit | [signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts): without an identity as the writer (with axe) and read-only; a pending key, its request and **Discard**; an upload with the amber validity, **Replace**, **Remove** and **Retire** with the spec's question; the red "expired" read-only; the Helm values with a refused pair; the key request's defaults and a refused chain under its field | seven cases, about 0.3 s (1.3 s with the file's start) | the fake's answers |
+| Renders | `admin-settings-signing`: five states as the administrator, four as the auditor, at three widths and in both schemes (54 pictures) | 48 s and 39 s of a browser (measured on 2026-11-21 on a shared machine), about 30 s of the job `ui-layout` at its three workers | answers changed in the browser |
+
+What follows with packages 2 and 3: Quader's npm signature and its attestation in the details of a version and a file, and the client
+setup's tab **Verify** (R-SIG-056, the second and third bullets).
 
 ## What this page does not cover
 

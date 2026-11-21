@@ -45689,5 +45689,1075 @@
         <target>Hochgeladen von <ph id="0" equiv="name" disp="name"/></target>
       </segment>
     </unit>
+    <unit id="problem.signing_identity_managed">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:19</note>
+      </notes>
+      <segment>
+        <source>The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.</source>
+        <target>Die Helm-Werte legen die Signaturidentität fest. Ändern Sie sie in den Werten; solange sie eine festlegen, werden Uploads und Schlüsselanforderungen abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_pending">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:21</note>
+      </notes>
+      <segment>
+        <source>A signing key is waiting for its certificate. Upload the certificate the CA issued for it, or discard it first.</source>
+        <target>Ein Signaturschlüssel wartet auf sein Zertifikat. Laden Sie das Zertifikat hoch, das die CA dafür ausgestellt hat, oder verwerfen Sie ihn zuerst.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_key_mismatch">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:23</note>
+      </notes>
+      <segment>
+        <source>This certificate is not for the pending key: the CA certified another key. Upload the certificate issued for this request.</source>
+        <target>Dieses Zertifikat gehört nicht zum wartenden Schlüssel: Die CA hat einen anderen Schlüssel zertifiziert. Laden Sie das Zertifikat hoch, das für diese Anforderung ausgestellt wurde.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_no_pending_key">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:25</note>
+      </notes>
+      <segment>
+        <source>No signing key is waiting for a certificate. Create a signing key first, then upload the certificate the CA issued for its request.</source>
+        <target>Kein Signaturschlüssel wartet auf ein Zertifikat. Erstellen Sie zuerst einen Signaturschlüssel und laden Sie dann das Zertifikat hoch, das die CA für seine Anforderung ausgestellt hat.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_announced">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:27</note>
+      </notes>
+      <segment>
+        <source>A new signing identity is announced and becomes current within minutes. Wait for the switch, then try again.</source>
+        <target>Eine neue Signaturidentität ist angekündigt und wird in wenigen Minuten aktuell. Warten Sie den Wechsel ab und versuchen Sie es dann erneut.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_exists">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:29</note>
+      </notes>
+      <segment>
+        <source>This certificate belongs to a signing identity Quader holds already.</source>
+        <target>Dieses Zertifikat gehört zu einer Signaturidentität, die Quader bereits hat.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_identity_not_previous">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:31</note>
+      </notes>
+      <segment>
+        <source>Only a previous signing identity can be retired. Reload the page to see its state.</source>
+        <target>Nur eine frühere Signaturidentität kann außer Dienst gestellt werden. Laden Sie die Seite neu, um ihren Zustand zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signing_key_in_use">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:33</note>
+      </notes>
+      <segment>
+        <source>The current or the announced identity has the same key, so retiring this certificate would withdraw nothing. Replace the key first.</source>
+        <target>Die aktuelle oder die angekündigte Identität hat denselben Schlüssel; dieses Zertifikat außer Dienst zu stellen, würde nichts zurückziehen. Ersetzen Sie zuerst den Schlüssel.</target>
+      </segment>
+    </unit>
+    <unit id="signing.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.html:27,28</note>
+      </notes>
+      <segment>
+        <source>Signing identity</source>
+        <target>Signaturidentität</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:61,63</note>
+      </notes>
+      <segment>
+        <source> Quader makes an ECDSA P-256 key and keeps it sealed; it never leaves Quader. You get a certificate request for your company&apos;s CA. </source>
+        <target> Quader erzeugt einen ECDSA-P-256-Schlüssel und hält ihn versiegelt; er verlässt Quader nie. Sie erhalten eine Zertifikatsanforderung für die CA Ihres Unternehmens. </target>
+      </segment>
+    </unit>
+    <unit id="signing.key.replace-lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:64,66</note>
+      </notes>
+      <segment>
+        <source>The current identity signs until the new one is current.</source>
+        <target>Die aktuelle Identität signiert, bis die neue aktuell ist.</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.cn">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:69</note>
+      </notes>
+      <segment>
+        <source>Common name</source>
+        <target>Allgemeiner Name (CN)</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.o">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:71</note>
+      </notes>
+      <segment>
+        <source>Organization</source>
+        <target>Organisation</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.c">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:76,77</note>
+      </notes>
+      <segment>
+        <source>Country</source>
+        <target>Land</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.c-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:80,83</note>
+      </notes>
+      <segment>
+        <source>Two letters, such as DE.</source>
+        <target>Zwei Buchstaben, etwa DE.</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.uri">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:87,88</note>
+      </notes>
+      <segment>
+        <source>URI</source>
+        <target>URI</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.uri-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:91,93</note>
+      </notes>
+      <segment>
+        <source>The identity a verifier names, such as cosign&apos;s --certificate-identity.</source>
+        <target>Die Identität, die ein Prüfer nennt, etwa bei cosign mit --certificate-identity.</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.more">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:93,95</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:220,221</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:338,339</note>
+        <note category="location">src/app/features/settings/signing-identity.html:161,162</note>
+      </notes>
+      <segment>
+        <source>More options</source>
+        <target>Weitere Optionen</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.ou">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:95</note>
+      </notes>
+      <segment>
+        <source>Organizational unit</source>
+        <target>Organisationseinheit</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.l">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:96</note>
+      </notes>
+      <segment>
+        <source>Locality</source>
+        <target>Ort</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.st">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:97</note>
+      </notes>
+      <segment>
+        <source>State or province</source>
+        <target>Bundesland oder Region</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.email">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:98</note>
+      </notes>
+      <segment>
+        <source>E-mail address</source>
+        <target>E-Mail-Adresse</target>
+      </segment>
+    </unit>
+    <unit id="signing.dialog.cancel">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:103,104</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:235,236</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:353,354</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.submit">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:104,106</note>
+      </notes>
+      <segment>
+        <source>Create signing key</source>
+        <target>Signaturschlüssel erstellen</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.heading-replace">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:132</note>
+      </notes>
+      <segment>
+        <source>Replace signing identity</source>
+        <target>Signaturidentität ersetzen</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:133</note>
+        <note category="location">src/app/features/settings/signing-identity.html:156,160</note>
+      </notes>
+      <segment>
+        <source>Create signing key</source>
+        <target>Signaturschlüssel erstellen</target>
+      </segment>
+    </unit>
+    <unit id="signing.cert.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:210,211</note>
+        <note category="location">src/app/features/settings/signing-identity.html:150,151</note>
+      </notes>
+      <segment>
+        <source>Upload certificate</source>
+        <target>Zertifikat hochladen</target>
+      </segment>
+    </unit>
+    <unit id="signing.cert.lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:214,216</note>
+      </notes>
+      <segment>
+        <source> The certificate your company&apos;s CA issued for the request, with its chain: the certificate first, then its intermediates, the root last. </source>
+        <target> Das Zertifikat, das die CA Ihres Unternehmens für die Anforderung ausgestellt hat, mit seiner Kette: zuerst das Zertifikat, dann seine Zwischenzertifikate, zuletzt die Wurzel. </target>
+      </segment>
+    </unit>
+    <unit id="signing.cert.chain">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:219</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:337</note>
+      </notes>
+      <segment>
+        <source>Certificate and chain (PEM)</source>
+        <target>Zertifikat und Kette (PEM)</target>
+      </segment>
+    </unit>
+    <unit id="signing.cert.ca">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:225,227</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:343,345</note>
+      </notes>
+      <segment>
+        <source>Root certificate (PEM)</source>
+        <target>Wurzelzertifikat (PEM)</target>
+      </segment>
+    </unit>
+    <unit id="signing.cert.ca-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:230,232</note>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:348,350</note>
+      </notes>
+      <segment>
+        <source>Only if the chain does not end in the root.</source>
+        <target>Nur wenn die Kette nicht mit der Wurzel endet.</target>
+      </segment>
+    </unit>
+    <unit id="signing.cert.submit">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:236,238</note>
+      </notes>
+      <segment>
+        <source>Upload certificate</source>
+        <target>Zertifikat hochladen</target>
+      </segment>
+    </unit>
+    <unit id="signing.import.heading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:296,297</note>
+        <note category="location">src/app/features/settings/signing-identity.html:165,167</note>
+      </notes>
+      <segment>
+        <source>Import key and certificate</source>
+        <target>Schlüssel und Zertifikat importieren</target>
+      </segment>
+    </unit>
+    <unit id="signing.import.lead">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:300,303</note>
+      </notes>
+      <segment>
+        <source> For a CA that hands out the key and the certificate together, or a key moved from another installation. The key is sent once and sealed on the server; it is never shown again. </source>
+        <target> Für eine CA, die Schlüssel und Zertifikat zusammen ausgibt, oder einen Schlüssel aus einer anderen Installation. Der Schlüssel wird einmal gesendet und auf dem Server versiegelt; er wird nie wieder angezeigt. </target>
+      </segment>
+    </unit>
+    <unit id="signing.import.key">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:307,309</note>
+      </notes>
+      <segment>
+        <source>Private key (PEM)</source>
+        <target>Privater Schlüssel (PEM)</target>
+      </segment>
+    </unit>
+    <unit id="signing.import.key-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:320,322</note>
+      </notes>
+      <segment>
+        <source> PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with openssl pkcs12 -in &lt;file&gt; -nodes. </source>
+        <target> PKCS#8 oder SEC 1, verschlüsselt oder nicht. PKCS#12 wird nicht angenommen: Wandeln Sie es mit openssl pkcs12 -in &lt;file&gt; -nodes um. </target>
+      </segment>
+    </unit>
+    <unit id="signing.import.passphrase">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:330,332</note>
+      </notes>
+      <segment>
+        <source>Passphrase</source>
+        <target>Passphrase</target>
+      </segment>
+    </unit>
+    <unit id="signing.import.passphrase-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:335,337</note>
+      </notes>
+      <segment>
+        <source>Only if the key is encrypted. It is used once and never stored.</source>
+        <target>Nur wenn der Schlüssel verschlüsselt ist. Sie wird einmal verwendet und nie gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="signing.import.submit">
+      <notes>
+        <note category="location">src/app/features/settings/signing-dialogs.ts:354,357</note>
+      </notes>
+      <segment>
+        <source>Import</source>
+        <target>Importieren</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.subject">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:4,5</note>
+        <note category="location">src/app/features/settings/signing-identity.html:132,133</note>
+      </notes>
+      <segment>
+        <source>Subject</source>
+        <target>Subjekt</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.issuer">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:6,7</note>
+      </notes>
+      <segment>
+        <source>Issuer</source>
+        <target>Aussteller</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.names">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:8,10</note>
+      </notes>
+      <segment>
+        <source>Alternative names</source>
+        <target>Alternative Namen</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.from">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:14,16</note>
+      </notes>
+      <segment>
+        <source>Valid from</source>
+        <target>Gültig ab</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.until">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:18,19</note>
+      </notes>
+      <segment>
+        <source>Valid until</source>
+        <target>Gültig bis</target>
+      </segment>
+    </unit>
+    <unit id="signing.expired">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:24,25</note>
+        <note category="location">src/app/features/settings/signing-identity.html:192,194</note>
+      </notes>
+      <segment>
+        <source>expired</source>
+        <target>abgelaufen</target>
+      </segment>
+    </unit>
+    <unit id="signing.expires-in">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:30,31</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {expires in 1 day} other {expires in <ph id="0" equiv="INTERPOLATION"/> days}}</source>
+        <target>{VAR_PLURAL, plural, =1 {läuft in 1 Tag ab} other {läuft in <ph id="0" equiv="INTERPOLATION"/> Tagen ab}}</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.fingerprint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:35,37</note>
+      </notes>
+      <segment>
+        <source>Fingerprint (SHA-256)</source>
+        <target>Fingerabdruck (SHA-256)</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.keyid">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:39,41</note>
+      </notes>
+      <segment>
+        <source>npm key ID</source>
+        <target>npm-Schlüssel-ID</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.state">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:43,45</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="signing.switch-at">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:48</note>
+      </notes>
+      <segment>
+        <source>becomes current</source>
+        <target>wird aktuell</target>
+      </segment>
+    </unit>
+    <unit id="signing.off">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:64,66</note>
+      </notes>
+      <segment>
+        <source>Signing is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signing.enabled</pc> is false in the configuration. Quader signs nothing, also with an identity. What it signed stays and is served.</source>
+        <target>Signieren ist in dieser Installation aus: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signing.enabled</pc> ist in der Konfiguration false. Quader signiert nichts, auch nicht mit einer Identität. Was es signiert hat, bleibt und wird ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="signing.refused">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:73</note>
+      </notes>
+      <segment>
+        <source>The files of the Helm values were refused</source>
+        <target>Die Dateien der Helm-Werte wurden abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="signing.refused-keeps">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:74,76</note>
+      </notes>
+      <segment>
+        <source>The identity in use keeps signing.</source>
+        <target>Die verwendete Identität signiert weiter.</target>
+      </segment>
+    </unit>
+    <unit id="signing.refused-nothing">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:76,78</note>
+      </notes>
+      <segment>
+        <source>Quader signs nothing until a pair passes.</source>
+        <target>Quader signiert nichts, bis ein Paar die Prüfungen besteht.</target>
+      </segment>
+    </unit>
+    <unit id="signing.uploaded-by">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:90</note>
+        <note category="location">src/app/features/settings/signing-identity.html:138</note>
+      </notes>
+      <segment>
+        <source>by</source>
+        <target>von</target>
+      </segment>
+    </unit>
+    <unit id="signing.helm-note">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:94,97</note>
+      </notes>
+      <segment>
+        <source>Change it in the values; nothing here changes it.</source>
+        <target>Ändern Sie sie in den Werten; hier ändert nichts sie.</target>
+      </segment>
+    </unit>
+    <unit id="signing.download-chain">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:99,100</note>
+      </notes>
+      <segment>
+        <source>Download chain</source>
+        <target>Kette herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="signing.download-root">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:100,102</note>
+        <note category="location">src/app/features/settings/signing-identity.html:173,176</note>
+      </notes>
+      <segment>
+        <source>Download trusted root</source>
+        <target>Vertrauensbasis herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="signing.replace">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:102,104</note>
+      </notes>
+      <segment>
+        <source>Replace</source>
+        <target>Ersetzen</target>
+      </segment>
+    </unit>
+    <unit id="signing.remove">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:105,108</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="signing.announced">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:109,110</note>
+      </notes>
+      <segment>
+        <source>Announced</source>
+        <target>Angekündigt</target>
+      </segment>
+    </unit>
+    <unit id="signing.announced-text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:111,113</note>
+      </notes>
+      <segment>
+        <source> npm&apos;s keys list this identity already, so that caches learn it before it signs. Until the switch the current identity signs. </source>
+        <target> npms Schlüsselliste nennt diese Identität bereits, damit Caches sie kennen, bevor sie signiert. Bis zum Wechsel signiert die aktuelle Identität. </target>
+      </segment>
+    </unit>
+    <unit id="signing.source.configuration">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:117</note>
+        <note category="location">src/app/shared/signatures/signing-words.ts:101</note>
+      </notes>
+      <segment>
+        <source>From the Helm values</source>
+        <target>Aus den Helm-Werten</target>
+      </segment>
+    </unit>
+    <unit id="signing.managed-none">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:118,121</note>
+      </notes>
+      <segment>
+        <source>the values name the signing identity, and Quader signs nothing until a pair of its files passes the checks.</source>
+        <target>Die Werte legen die Signaturidentität fest, und Quader signiert nichts, bis ein Paar ihrer Dateien die Prüfungen besteht.</target>
+      </segment>
+    </unit>
+    <unit id="signing.none">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:123,128</note>
+      </notes>
+      <segment>
+        <source> No signing identity: Quader signs nothing. Packages of local npm repositories carry no registry signature, and no artifact gets a receipt attestation. </source>
+        <target> Keine Signaturidentität: Quader signiert nichts. Pakete lokaler npm-Repositories tragen keine Registry-Signatur, und kein Artefakt erhält eine Empfangsattestierung. </target>
+      </segment>
+    </unit>
+    <unit id="signing.request">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:130,131</note>
+      </notes>
+      <segment>
+        <source>Certificate request</source>
+        <target>Zertifikatsanforderung</target>
+      </segment>
+    </unit>
+    <unit id="signing.fact.requested">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:134,136</note>
+      </notes>
+      <segment>
+        <source>Key made</source>
+        <target>Schlüssel erzeugt</target>
+      </segment>
+    </unit>
+    <unit id="signing.request-hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:147,149</note>
+      </notes>
+      <segment>
+        <source>Have your company&apos;s CA issue a code-signing certificate for this request, then upload it with its chain.</source>
+        <target>Lassen Sie die CA Ihres Unternehmens ein Code-Signing-Zertifikat für diese Anforderung ausstellen und laden Sie es dann mit seiner Kette hoch.</target>
+      </segment>
+    </unit>
+    <unit id="signing.discard">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:151,154</note>
+      </notes>
+      <segment>
+        <source>Discard</source>
+        <target>Verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="signing.import.note">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:163,165</note>
+      </notes>
+      <segment>
+        <source> For a CA that hands out the key and the certificate together, or a key moved from another installation. </source>
+        <target> Für eine CA, die Schlüssel und Zertifikat zusammen ausgibt, oder einen Schlüssel aus einer anderen Installation. </target>
+      </segment>
+    </unit>
+    <unit id="signing.prev">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:170</note>
+      </notes>
+      <segment>
+        <source>Previous identities</source>
+        <target>Frühere Identitäten</target>
+      </segment>
+    </unit>
+    <unit id="signing.unused">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:184,186</note>
+      </notes>
+      <segment>
+        <source>Not in use: the Helm values name the signing identity</source>
+        <target>Nicht in Gebrauch: Die Helm-Werte legen die Signaturidentität fest</target>
+      </segment>
+    </unit>
+    <unit id="signing.retire">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:206</note>
+      </notes>
+      <segment>
+        <source>Retire</source>
+        <target>Außer Dienst stellen</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.identity">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:136</note>
+      </notes>
+      <segment>
+        <source>Identity</source>
+        <target>Identität</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.source">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:137</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+        <target>Herkunft</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.until">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:138</note>
+      </notes>
+      <segment>
+        <source>Valid until</source>
+        <target>Gültig bis</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.signed">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:139</note>
+      </notes>
+      <segment>
+        <source>Signed</source>
+        <target>Signierte</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.col.actions">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:140</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.caption">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:150</note>
+      </notes>
+      <segment>
+        <source>Previous signing identities</source>
+        <target>Frühere Signaturidentitäten</target>
+      </segment>
+    </unit>
+    <unit id="signing.prev.hint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:151</note>
+      </notes>
+      <segment>
+        <source>Identities that signed before. Their npm signatures stay valid until you retire them.</source>
+        <target>Identitäten, die früher signiert haben. Ihre npm-Signaturen bleiben gültig, bis Sie sie außer Dienst stellen.</target>
+      </segment>
+    </unit>
+    <unit id="signing.copy-fingerprint">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:152</note>
+      </notes>
+      <segment>
+        <source>Copy fingerprint</source>
+        <target>Fingerabdruck kopieren</target>
+      </segment>
+    </unit>
+    <unit id="signing.copy-keyid">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:153</note>
+      </notes>
+      <segment>
+        <source>Copy npm key ID</source>
+        <target>npm-Schlüssel-ID kopieren</target>
+      </segment>
+    </unit>
+    <unit id="signing.copy-request">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:154</note>
+      </notes>
+      <segment>
+        <source>Copy request</source>
+        <target>Anforderung kopieren</target>
+      </segment>
+    </unit>
+    <unit id="signing.draft-restored">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:177</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:180</note>
+      </notes>
+      <segment>
+        <source>Your entries were restored. Send them again.</source>
+        <target>Ihre Eingaben wurden wiederhergestellt. Senden Sie sie erneut.</target>
+      </segment>
+    </unit>
+    <unit id="signing.key.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:206</note>
+      </notes>
+      <segment>
+        <source>The signing key is made. Have your company&apos;s CA issue a certificate for its request.</source>
+        <target>Der Signaturschlüssel ist erzeugt. Lassen Sie die CA Ihres Unternehmens ein Zertifikat für seine Anforderung ausstellen.</target>
+      </segment>
+    </unit>
+    <unit id="signing.installed-announced">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:232</note>
+      </notes>
+      <segment>
+        <source>The new signing identity is announced. It becomes current after the announce period; until then the current one signs.</source>
+        <target>Die neue Signaturidentität ist angekündigt. Sie wird nach der Ankündigungsfrist aktuell; bis dahin signiert die aktuelle.</target>
+      </segment>
+    </unit>
+    <unit id="signing.installed-current">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:233</note>
+      </notes>
+      <segment>
+        <source>The signing identity is current. Quader signs with it from now on.</source>
+        <target>Die Signaturidentität ist aktuell. Quader signiert ab jetzt mit ihr.</target>
+      </segment>
+    </unit>
+    <unit id="signing.discard.title">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:255</note>
+      </notes>
+      <segment>
+        <source>Discard the signing key?</source>
+        <target>Signaturschlüssel verwerfen?</target>
+      </segment>
+    </unit>
+    <unit id="signing.discard.text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:256</note>
+      </notes>
+      <segment>
+        <source>The key and its request are deleted. A certificate the CA issues for this request can no longer be uploaded.</source>
+        <target>Der Schlüssel und seine Anforderung werden gelöscht. Ein Zertifikat, das die CA für diese Anforderung ausstellt, kann danach nicht mehr hochgeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="signing.discard.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:257</note>
+      </notes>
+      <segment>
+        <source>Discard</source>
+        <target>Verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="signing.discard.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:260</note>
+      </notes>
+      <segment>
+        <source>The signing key is discarded.</source>
+        <target>Der Signaturschlüssel ist verworfen.</target>
+      </segment>
+    </unit>
+    <unit id="signing.remove.title">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:265</note>
+      </notes>
+      <segment>
+        <source>Remove the signing identity?</source>
+        <target>Signaturidentität entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="signing.remove.text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:267</note>
+      </notes>
+      <segment>
+        <source>It becomes a previous identity and Quader signs nothing until another identity is current. Its npm signatures stay valid, and the attestations it made stay served until its certificate expires.</source>
+        <target>Sie wird zu einer früheren Identität, und Quader signiert nichts, bis eine andere Identität aktuell ist. Ihre npm-Signaturen bleiben gültig, und die Attestierungen, die sie erstellt hat, werden ausgeliefert, bis ihr Zertifikat abläuft.</target>
+      </segment>
+    </unit>
+    <unit id="signing.remove.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:269</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="signing.remove.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:272</note>
+      </notes>
+      <segment>
+        <source>The signing identity is removed. Quader signs nothing now.</source>
+        <target>Die Signaturidentität ist entfernt. Quader signiert jetzt nichts.</target>
+      </segment>
+    </unit>
+    <unit id="signing.retire.title">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:277</note>
+      </notes>
+      <segment>
+        <source>Retire this identity?</source>
+        <target>Diese Identität außer Dienst stellen?</target>
+      </segment>
+    </unit>
+    <unit id="signing.retire.text">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:279</note>
+      </notes>
+      <segment>
+        <source>Its key leaves npm&apos;s keys at once; Quader signs its packages and attestations again with the current identity.</source>
+        <target>Ihr Schlüssel verlässt npms Schlüsselliste sofort; Quader signiert ihre Pakete und Attestierungen mit der aktuellen Identität neu.</target>
+      </segment>
+    </unit>
+    <unit id="signing.retire.confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:281</note>
+      </notes>
+      <segment>
+        <source>Retire</source>
+        <target>Außer Dienst stellen</target>
+      </segment>
+    </unit>
+    <unit id="signing.retire.done">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:284</note>
+      </notes>
+      <segment>
+        <source>The identity is retired.</source>
+        <target>Die Identität ist außer Dienst gestellt.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.malformed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:34</note>
+      </notes>
+      <segment>
+        <source>This is not PEM, or a certificate in it does not parse.</source>
+        <target>Das ist kein PEM, oder ein Zertifikat darin lässt sich nicht lesen.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.chain_bounds">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:36</note>
+      </notes>
+      <segment>
+        <source>The chain is too large: it holds at most 8 certificates of 16 KiB each.</source>
+        <target>Die Kette ist zu groß: Sie enthält höchstens 8 Zertifikate zu je 16 KiB.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.key_type">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:38</note>
+      </notes>
+      <segment>
+        <source>The key is not ECDSA on P-256, the one type npm&apos;s client accepts.</source>
+        <target>Der Schlüssel ist nicht ECDSA auf P-256, der einzige Typ, den der npm-Client annimmt.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.key_mismatch">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:40</note>
+      </notes>
+      <segment>
+        <source>The certificate is not for this key.</source>
+        <target>Das Zertifikat gehört nicht zu diesem Schlüssel.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.leaf_is_ca">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:42</note>
+      </notes>
+      <segment>
+        <source>The first certificate is a CA certificate. Put Quader&apos;s own certificate first, then its intermediates.</source>
+        <target>Das erste Zertifikat ist ein CA-Zertifikat. Stellen Sie das Zertifikat von Quader an den Anfang, dann seine Zwischenzertifikate.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.key_usage">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:44</note>
+      </notes>
+      <segment>
+        <source>The certificate&apos;s key usage lacks digitalSignature.</source>
+        <target>Der Schlüsselverwendung des Zertifikats fehlt digitalSignature.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.code_signing">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:46</note>
+      </notes>
+      <segment>
+        <source>The certificate is not for code signing: ask the CA for the extended key usage codeSigning.</source>
+        <target>Das Zertifikat ist nicht für Code-Signing: Fordern Sie bei der CA die erweiterte Schlüsselverwendung codeSigning an.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.alternative_name">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:48</note>
+      </notes>
+      <segment>
+        <source>The certificate names no URI or e-mail address among its alternative names.</source>
+        <target>Das Zertifikat nennt keine URI und keine E-Mail-Adresse unter seinen alternativen Namen.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.validity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:50</note>
+      </notes>
+      <segment>
+        <source>The certificate is not valid now.</source>
+        <target>Das Zertifikat ist jetzt nicht gültig.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.remaining_validity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:52</note>
+      </notes>
+      <segment>
+        <source>The certificate ends in less than 24 hours.</source>
+        <target>Das Zertifikat endet in weniger als 24 Stunden.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.chain_root">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:54</note>
+      </notes>
+      <segment>
+        <source>The chain does not end in a self-signed root. Add the root certificate last, or in the field for the root.</source>
+        <target>Die Kette endet nicht mit einer selbstsignierten Wurzel. Fügen Sie das Wurzelzertifikat zuletzt an oder in das Feld für die Wurzel ein.</target>
+      </segment>
+    </unit>
+    <unit id="signing.check.chain_build">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:56</note>
+      </notes>
+      <segment>
+        <source>The chain does not lead from the certificate to its root for code signing.</source>
+        <target>Die Kette führt nicht vom Zertifikat zu seiner Wurzel für Code-Signing.</target>
+      </segment>
+    </unit>
+    <unit id="signing.state.pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:86</note>
+      </notes>
+      <segment>
+        <source>Waiting for its certificate</source>
+        <target>Wartet auf sein Zertifikat</target>
+      </segment>
+    </unit>
+    <unit id="signing.state.announced">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:88</note>
+      </notes>
+      <segment>
+        <source>Announced: listed, does not sign yet</source>
+        <target>Angekündigt: gelistet, signiert noch nicht</target>
+      </segment>
+    </unit>
+    <unit id="signing.state.current">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:90</note>
+      </notes>
+      <segment>
+        <source>Current: signs</source>
+        <target>Aktuell: signiert</target>
+      </segment>
+    </unit>
+    <unit id="signing.state.previous">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:92</note>
+      </notes>
+      <segment>
+        <source>Previous: its npm signatures stay valid</source>
+        <target>Früher: ihre npm-Signaturen bleiben gültig</target>
+      </segment>
+    </unit>
+    <unit id="signing.state.retired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:94</note>
+      </notes>
+      <segment>
+        <source>Retired</source>
+        <target>Außer Dienst</target>
+      </segment>
+    </unit>
+    <unit id="signing.source.upload">
+      <notes>
+        <note category="location">src/app/shared/signatures/signing-words.ts:102</note>
+      </notes>
+      <segment>
+        <source>Uploaded in the admin area</source>
+        <target>Im Adminbereich hochgeladen</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

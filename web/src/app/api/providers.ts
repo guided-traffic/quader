@@ -58,6 +58,7 @@ import { HttpMalwareApi, MalwareApi } from './malware-api';
 // <<< malware
 // >>> signatures
 import { HttpSignaturesApi, SignaturesApi } from './signatures-api';
+import { HttpSigningApi, SigningApi } from './signing-api';
 // <<< signatures
 
 /**
@@ -128,6 +129,7 @@ export function provideApiServices(): Provider[] {
     // <<< malware
     // >>> signatures
     { provide: SignaturesApi, useClass: HttpSignaturesApi },
+    { provide: SigningApi, useClass: HttpSigningApi },
     // <<< signatures
   ];
 }
