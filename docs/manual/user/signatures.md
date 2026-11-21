@@ -61,6 +61,31 @@ bytes in another. Through a virtual repository the details name the member each 
 | Ansible Galaxy | A signature a CI job posted for a local version, or the upstream's signatures of a remote version |
 | Generic | A file beside the file is its signature: `tool.tar.gz.asc`, `.sig`, `.sigstore.json`, `.jws.sig`, `.cose.sig`. The signed file carries the badge; the signature file stays a file to download, and its page says **Signature of** the file it belongs to |
 
+## Repositories that serve only verified artifacts
+
+A repository can be set to serve only artifacts with a verified signature. A download of anything else is refused, and the client says why
+in its own words (see [Troubleshooting](troubleshooting.md)). Where you look in Quader:
+
+- **The version's page** shows a banner: "Downloads are refused in `<project>/<repository>`: it serves only artifacts with a verified
+  signature, and `<version>` has no signature of its publisher or its build." (or what else is missing). The **Files** tab says **Refused
+  here** with the reason where the badge stands, and offers no **Download** for that file. The tab **Signatures** says which trust anchors the
+  repository accepts and what it decides; an image whose index passes says of each platform that it is signed through its index.
+- **The file's page** says **Refused here** with the reason under **Signature**, and its section **Signatures** says why in full.
+- A version that is still being checked shows nothing more than **Not checked yet**: the client waits a little and then gets a "try again".
+
+Only people who triage security findings (an administrator, a security administrator, an auditor) can release one artifact for one
+repository, with a reason: **Release for this repository** on the banner, in the section or in the security dashboard. A released artifact
+says so, by whom, when and why, and the release can be withdrawn. A project's Owner cannot release, because a release loosens the check.
+
+**Setting it.** The repository's **Settings › Signatures** (closed, never part of creating a repository) holds **Only artifacts with a
+verified signature can be downloaded from this repository**. Checked, choose the **Accepted trust anchors**: **Any trust anchor of this
+repository** (which includes the public Sigstore, where anyone can sign) or **These trust anchors**, ticked from the anchors that apply to the
+repository. Under them the section says how many of the repository's artifacts pass now. Before a change refuses anything, Quader asks with
+the numbers per reason and up to 20 examples. A project's Owner can switch it on and narrow it; switching it off, accepting any anchor
+instead of a list, or adding an anchor needs an administrator or someone who triages security findings. A Debian repository has no such
+setting: apt checks the signature of the repository's index, not of a package. The client setup of a repository with the check on says so
+above the snippets, with the accepted anchors.
+
 ## Trust anchors of your project
 
 While your administrator allows it, the Owner of a project adds trust anchors for the project under **Settings › Trust anchors**: a CA
@@ -72,6 +97,6 @@ the section is not shown, and a project that holds anchors shows them to its Own
 
 ## In the security dashboard
 
-The security dashboard's third view, **Signatures**, lists every invalid signature and every signature of a blocked signer, newest first,
-with the artifact it covers, the signer as it claims, the reason, when it was found and the repositories that hold it. Nothing is refused
-because of a signature: the view alarms and blocks nothing. See [Security dashboard](security-dashboard.md).
+The security dashboard's third view, **Signatures**, lists the downloads that repositories refused because of a signature and their
+releases, then every invalid signature and every signature of a blocked signer, newest first, with the artifact it covers, the signer as it
+claims, the reason, when it was found and the repositories that hold it. See [Security dashboard](security-dashboard.md).

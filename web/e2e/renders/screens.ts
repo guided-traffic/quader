@@ -1435,6 +1435,37 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
   await expect(page.getByRole('dialog', { name: 'Block signer' })).toBeVisible();
   yield 'block';
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  // The impact before a removal and a block (R-SIG-071, R-SIG-074), answered in the browser: the profile gates no repository.
+  const impact = '**/api/v1/signatures/impact';
+  await page.route(impact, (route) =>
+    route.fulfill({
+      json: {
+        artifacts: 1328,
+        repositories: 23,
+        complete: true,
+        bound: 'exact',
+        byRepository: [
+          { repository: `${mainProject}/images`, artifacts: 1120 },
+          { repository: `${mainProject}/npm-vendor`, artifacts: 140 },
+          { repository: 'customer-portal-release-delivery/signed-release-artifacts', artifacts: 61 },
+          { repository: `${otherProject}/collections`, artifacts: 7 },
+        ],
+      },
+    }),
+  );
+  await page.locator('main quader-anchor-table tr').filter({ hasText: 'Release key 2026' }).getByRole('button', { name: /^Remove/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  yield 'impact';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'Block signer' }).first().click();
+  const blockDialog = page.getByRole('dialog', { name: 'Block signer' });
+  await blockDialog.getByRole('textbox', { name: 'Value' }).fill('9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08');
+  await blockDialog.getByRole('textbox', { name: 'Reason' }).fill('The key of the old build server was copied.');
+  await blockDialog.getByRole('button', { name: 'Block signer' }).click();
+  await expect(blockDialog.locator('[data-testid="block-impact"]')).toBeVisible();
+  yield 'block-impact';
+  await blockDialog.getByRole('button', { name: 'Cancel' }).click();
+  await page.unroute(impact);
   await answerWith(page, settings, (b) => ({
     ...b,
     projectAnchors: false,
@@ -1534,11 +1565,12 @@ async function* signaturesSection(page: Page): AsyncGenerator<string> {
 async function* signatureFindings(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main tbody tr').first()).toBeVisible();
   yield '';
-  await page.locator('main .filter-toggle').first().click();
+  // The findings' own head, after the refused downloads' (R-SIG-074).
+  await page.locator('main .filter-toggle').last().click();
   const drawer = page.getByRole('dialog', { name: 'Filters' });
   await expect(drawer.locator('form.filter-form')).toBeVisible();
   yield 'filters';
-  await drawer.locator('select').first().selectOption('blocked');
+  await drawer.locator('select[aria-label="Kind"]').selectOption('blocked');
   await drawer.getByRole('button', { name: 'Apply filters' }).click();
   await expect(drawer).toBeHidden();
   await expect(page.locator('main .list-filters .chip-row')).toBeVisible();
@@ -1549,6 +1581,349 @@ async function* signatureFindings(page: Page): AsyncGenerator<string> {
   await expect(page.getByText('No invalid signatures.')).toBeVisible();
   yield 'empty';
   await page.unroute('**/api/v1/signatures/findings?**');
+}
+
+// ---- The gate per repository (R-SIG-074) ----
+
+/** The generic repository of the main project whose settings show the gate, and the anchors a choice of it names (seeded by signatures.ts). */
+const gateRepo = 'assets';
+const chosenAnchors = ['installation/example-code-signing', 'installation/release-key-2026', 'project/web-team-release-key', 'installation/old-build-server'];
+/** A preview of thousands of artifacts with refusals of several reasons and twenty examples (R-SIG-072), answered in the browser. */
+function gatePreviewOf(complete: boolean): Record<string, unknown> {
+  const reasons = ['missing', 'blocked', 'missing', 'invalid', 'not_chosen'] as const;
+  return {
+    examined: 6203,
+    complete,
+    artifacts: 4812,
+    pass: 3410,
+    pending: 12,
+    refused: { missing: 1180, untrusted: 0, notChosen: 9, invalid: 3, blocked: 198, notChecked: 0 },
+    examples: Array.from({ length: 20 }, (_, i) => ({
+      repository: `${mainProject}/${gateRepo}`,
+      path: `releases/portal-cli/1.${20 - i}.0/portal-cli-1.${20 - i}.0-linux-amd64-with-a-long-build-suffix.tar.gz`,
+      package: null,
+      version: null,
+      reason: reasons[i % reasons.length],
+    })),
+  };
+}
+
+/** Opens the section Signatures of a repository's settings and waits for its state line or its notice. */
+async function openGate(page: Page): Promise<void> {
+  const { toggle } = sectionHeaded(page, 'Signatures');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('main [data-testid="gate-state"], main [data-testid="gate-checks-off"]').first()).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+}
+
+/**
+ * The section **Signatures** of a repository's settings (R-SIG-074): the gate off with the real preview of the profile (the real
+ * answer); the question before switching it on, with a preview of thousands; then the stored member changed in the browser: on with any
+ * anchor (the warning of Q-SIG-76), on with three chosen anchors and a removed one (read-only where an Owner may not loosen it), and the
+ * checks switched off in the installation. Nothing is saved.
+ */
+async function* gateSection(page: Page): AsyncGenerator<string> {
+  const doc = `**/api/v1/projects/${mainProject}/repositories/${gateRepo}`;
+  const preview = `**/api/v1/projects/${mainProject}/repositories/${gateRepo}/signatures/preview**`;
+  await openGate(page);
+  yield 'off';
+  await page.route(preview, (route) => route.fulfill({ json: gatePreviewOf(true) }));
+  await page.locator('main [data-testid="repo-signatures"] quader-checkbox input').first().check();
+  await page.getByRole('button', { name: 'Save changes (signatures)' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  yield 'confirm';
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  const gateOf = (anchors: readonly string[]) => (b: Record<string, unknown>) => ({
+    ...b,
+    signatures: { ...(b['signatures'] as Record<string, unknown>), onlyVerified: true, anchors },
+  });
+  await answerWith(page, doc, gateOf([]));
+  await openGate(page);
+  yield 'any';
+  await page.unroute(preview);
+  await page.route(preview, (route) => route.fulfill({ json: gatePreviewOf(false) }));
+  await answerWith(page, doc, gateOf(chosenAnchors));
+  await openGate(page);
+  yield 'chosen';
+  await page.unroute(preview);
+  await page.route(preview, (route) =>
+    route.fulfill({ status: 409, contentType: 'application/problem+json', json: { code: 'signatures_not_enabled', status: 409, title: 'Conflict' } }),
+  );
+  await answerWith(page, doc, gateOf([]));
+  await openGate(page);
+  yield 'checks-off';
+  await page.unroute(preview);
+  await page.unroute(doc);
+}
+
+/** The gate's member of a signatures answer (R-SIG-073), as the walks below answer it. */
+function gateView(decision: string, over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    onlyVerified: true,
+    anchors: [
+      { ref: 'installation/example-code-signing', title: 'Example Code Signing CA', kind: 'ca', scope: 'installation', removed: false },
+      { ref: 'project/web-team-release-key', title: 'Web team release key', kind: 'openpgp', scope: 'project', removed: false },
+      { ref: 'installation/old-build-server', title: null, kind: null, scope: 'installation', removed: true },
+    ],
+    decision,
+    reason: decision === 'refused' ? 'missing' : null,
+    passedBy: null,
+    ...over,
+  };
+}
+
+/** Each repository of a version's signatures answer with the gate's member. */
+async function withGate(page: Page, url: string, gate: Record<string, unknown>): Promise<void> {
+  await page.unroute(url);
+  await page.route(url, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as { repositories: Record<string, unknown>[] };
+    await route.fulfill({ response: res, json: { ...body, repositories: body.repositories.map((r) => ({ ...r, gate })) } });
+  });
+}
+
+/**
+ * A version a repository's gate refuses (R-SIG-074): the banner and the Files tab's "Refused here" without Download; its tab
+ * **Signatures** with the gate's decision; for the holder of the triage right the release's dialog, and the version released, by whom,
+ * when and why. The member `refused` and the gate are the profile's real answers changed in the browser.
+ */
+async function* refusedVersionWalk(page: Page): AsyncGenerator<string> {
+  const details = `**/api/v1/packages/*/versions/${signedVersions.none}`;
+  const report = `**/api/v1/packages/*/versions/${signedVersions.none}/signatures`;
+  const releases = `**/api/v1/projects/${mainProject}/repositories/*/signatures/releases`;
+  const refused = { state: 'none', stale: false, refused: true, refusedReason: 'missing' };
+  let sha = '';
+  await answerWith(page, details, (b) => {
+    const files = (b['files'] as Record<string, unknown>[] | undefined) ?? [];
+    sha = String(files[0]?.['sha256'] ?? '');
+    return { ...b, signatures: refused, files: files.map((f) => ({ ...f, signatures: refused })) };
+  });
+  await expect(page.locator('main [data-testid="signature-banner"]').first()).toBeVisible();
+  yield '';
+  await withGate(page, report, gateView('refused'));
+  await page.getByRole('tab', { name: 'Signatures' }).click();
+  await expect(page.locator('main [data-testid="gate-refused"]')).toBeVisible();
+  yield 'signatures';
+  const release = page.locator('main [data-testid="signature-banner"] button');
+  if ((await release.count()) > 0) {
+    await release.first().click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('textbox').fill('The vendor signs its releases from 3.6.0 on; the hotfix of ticket OPS-4711 needs this one today.');
+    yield 'release';
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await withGate(page, report, gateView('pass', { passedBy: { kind: 'release', signature: null } }));
+    await page.route(releases, (route) =>
+      route.fulfill({
+        json: {
+          items: [
+            {
+              repository: `${mainProject}/npm-vendor`,
+              sha256: sha,
+              reason: 'The vendor signs its releases from 3.6.0 on; the hotfix of ticket OPS-4711 needs this one today.',
+              refusedReason: 'missing',
+              releasedBy: 'user:noor',
+              releasedAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+            },
+          ],
+        },
+      }),
+    );
+    await answerWith(page, details, (b) => b);
+    await page.getByRole('tab', { name: 'Signatures' }).click();
+    await expect(page.locator('main [data-testid="gate-released"] .release-reason')).toBeVisible();
+    yield 'released';
+    await page.unroute(releases);
+  }
+  await page.unroute(report);
+  await page.unroute(details);
+}
+
+/** An image whose index passes the gate on its own signature (R-SIG-063, R-SIG-074): each platform signed through its index. */
+async function* gateImage(page: Page): AsyncGenerator<string> {
+  const details = `**/api/v1/packages/*/versions/${signedImage.tag}`;
+  const report = `**/api/v1/packages/*/versions/${signedImage.tag}/signatures`;
+  await page.route(details, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as Record<string, unknown> & { metadata: Record<string, unknown> };
+    const given = Array.isArray(body.metadata['platforms']) ? (body.metadata['platforms'] as unknown[]) : [];
+    const platforms =
+      given.length > 1
+        ? given
+        : ['linux/amd64', 'linux/arm64', 'linux/arm/v7'].map((platform, i) => ({
+            platform,
+            digest: `sha256:${String(i + 1).repeat(64)}`,
+            mediaType: 'application/vnd.oci.image.manifest.v1+json',
+            size: 1024,
+          }));
+    await route.fulfill({ response: res, json: { ...body, metadata: { ...body.metadata, platforms } } });
+  });
+  await page.route(report, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as { repositories: (Record<string, unknown> & { signatures: { id: number; platform?: string | null }[] })[] };
+    await route.fulfill({
+      response: res,
+      json: {
+        ...body,
+        repositories: body.repositories.map((r) => {
+          const own = r.signatures.find((e) => !e.platform) ?? r.signatures[0];
+          return { ...r, gate: gateView('pass', { anchors: [], passedBy: { kind: 'signature', signature: own?.id ?? null } }) };
+        }),
+      },
+    });
+  });
+  await page.reload();
+  await expect(page.locator('main [data-testid="gate-platforms"]')).toBeVisible();
+  yield '';
+  await page.unroute(report);
+  await page.unroute(details);
+}
+
+/**
+ * A file a repository's gate refuses (R-SIG-074): the fact "Refused here" with its reason and no Download; its section Signatures with
+ * the gate's decision and, for the holder of the triage right, **Release for this repository**. The profile's answers changed in the
+ * browser: the signed file of the seed, judged by a gate whose anchors do not include the one that knows its signer.
+ */
+async function* refusedFileWalk(page: Page): AsyncGenerator<string> {
+  const item = `**/api/v1/projects/${mainProject}/repositories/${signedFile.repo}/items?**`;
+  const report = `**/api/v1/projects/${mainProject}/repositories/${signedFile.repo}/signatures?**`;
+  await answerWith(page, item, (b) => ({ ...b, signatures: { ...(b['signatures'] as Record<string, unknown>), refused: true, refusedReason: 'not_chosen' } }));
+  await expect(page.locator('main [data-testid="signature-refused"]')).toBeVisible();
+  yield '';
+  await page.route(report, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as Record<string, unknown>;
+    await route.fulfill({
+      response: res,
+      json: {
+        ...body,
+        gate: gateView('refused', {
+          reason: 'not_chosen',
+          anchors: [
+            { ref: 'installation/build-server-key', title: 'Build server key', kind: 'public-key', scope: 'installation', removed: false },
+            { ref: 'installation/old-build-server', title: null, kind: null, scope: 'installation', removed: true },
+          ],
+        }),
+      },
+    });
+  });
+  const { toggle } = sectionHeaded(page, 'Signatures');
+  await toggle.click();
+  await expect(page.locator('main [data-testid="gate-refused"]')).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'details';
+  await page.unroute(report);
+  await page.unroute(item);
+}
+
+/** A digest of 64 hex digits from a text, for the rows below. */
+function digestOf(text: string): string {
+  let h = 0;
+  for (const c of text) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h.toString(16).padStart(8, '0').repeat(8);
+}
+
+/** Refused downloads of several reasons, long paths, one released (R-SIG-073), answered in the browser: the profile refuses nothing. */
+function refusalRows(): Record<string, unknown>[] {
+  const at = (h: number): string => new Date(Date.now() - h * 3_600_000).toISOString();
+  const row = (
+    repository: string,
+    format: string,
+    path: string,
+    pkg: string | null,
+    version: string | null,
+    reason: string,
+    last: number,
+    count: number,
+    release: Record<string, unknown> | null = null,
+  ): Record<string, unknown> => ({ repository, format, path, package: pkg, version, sha256: digestOf(path), reason, firstAt: at(last + 70), lastAt: at(last), count, release });
+  return [
+    row(`${mainProject}/images`, 'oci', 'portal/api/_tags/1.4.0', 'portal/api', '1.4.0', 'untrusted', 0.2, 41),
+    row(`${mainProject}/npm-vendor`, 'npm', 'chart-render-kit/-/chart-render-kit-3.5.0.tgz', 'chart-render-kit', '3.5.0', 'missing', 1, 1287),
+    row(`${otherProject}/collections`, 'ansible', 'acme/platform/1.3.0/acme-platform-1.3.0.tar.gz', 'acme.platform', '1.3.0', 'blocked', 5, 3),
+    row(
+      'customer-portal-release-delivery/signed-release-artifacts',
+      'generic',
+      'releases/customer-portal/2026.11/customer-portal-release-2026.11.3-linux-amd64-with-debug-symbols-and-third-party-licences.tar.gz',
+      null,
+      null,
+      'not_chosen',
+      9,
+      12,
+    ),
+    row(`${otherProject}/nuget-internal`, 'nuget', 'acme.logging.abstractions/2.1.0/acme.logging.abstractions.2.1.0.nupkg', 'Acme.Logging.Abstractions', '2.1.0', 'not_checked', 26, 6, {
+      reason: 'NuGet author signatures cannot be read yet; checked by hand against the vendor certificate.',
+      releasedBy: 'user:noor',
+      releasedAt: at(20),
+    }),
+    row(`${mainProject}/assets`, 'generic', 'tools/cli-1.2.0.tar.gz', null, null, 'invalid', 70, 2),
+  ];
+}
+
+/**
+ * The dashboard's refused downloads (R-SIG-074): rows of every kind of artifact and reason with long paths, one released; the closed
+ * section **Releases** opened on a repository with its releases; the dialog of **Release for this repository**. Answered in the browser.
+ */
+async function* refusalsWalk(page: Page): AsyncGenerator<string> {
+  const list = '**/api/v1/signatures/refusals?**';
+  const releases = `**/api/v1/projects/${otherProject}/repositories/nuget-internal/signatures/releases`;
+  await page.route(list, (route) => route.fulfill({ json: { items: refusalRows(), nextCursor: null } }));
+  await page.route(releases, (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          {
+            repository: `${otherProject}/nuget-internal`,
+            sha256: digestOf('acme.logging.abstractions/2.1.0/acme.logging.abstractions.2.1.0.nupkg'),
+            reason: 'NuGet author signatures cannot be read yet; checked by hand against the vendor certificate.',
+            refusedReason: 'not_checked',
+            releasedBy: 'user:noor',
+            releasedAt: new Date(Date.now() - 20 * 3_600_000).toISOString(),
+          },
+          {
+            repository: `${otherProject}/nuget-internal`,
+            sha256: 'e'.repeat(64),
+            reason: 'Released before the gate was switched on: the build agent image of the old pipeline.',
+            refusedReason: 'missing',
+            releasedBy: 'user:ada',
+            releasedAt: new Date(Date.now() - 6 * 86_400_000).toISOString(),
+          },
+        ],
+      },
+    }),
+  );
+  await page.reload();
+  await expect(page.locator('main [data-testid="signature-refusals"] tbody tr').first()).toBeVisible();
+  yield '';
+  const { toggle } = sectionHeaded(page, 'Releases');
+  await toggle.click();
+  await page.locator('#release-repository').selectOption(`${otherProject}/nuget-internal`);
+  await expect(page.locator('main [data-testid="signature-releases"] tbody tr').first()).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'releases';
+  const release = page.locator('main [data-testid="signature-refusals"] td.actions button').first();
+  if ((await release.count()) > 0) {
+    await release.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    yield 'release';
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  }
+  await page.unroute(releases);
+  await page.unroute(list);
+}
+
+/** The client setup of a repository whose gate is on with chosen anchors (R-SIG-074): the line above the snippets. */
+async function* gateSetup(page: Page): AsyncGenerator<string> {
+  const doc = `**/api/v1/projects/${mainProject}/repositories/${gateRepo}`;
+  await answerWith(page, doc, (b) => ({
+    ...b,
+    signatures: { ...(b['signatures'] as Record<string, unknown>), onlyVerified: true, anchors: chosenAnchors.slice(0, 3) },
+  }));
+  await expect(page.locator('main [data-testid="setup-gate"]')).toBeVisible();
+  yield '';
+  await page.unroute(doc);
 }
 
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
@@ -1683,6 +2058,10 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-signatures', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`, kinds: ['plain'], walk: signatureVersions },
   { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'] },
   { id: 'package-version-signatures-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: signatureImages },
+  // A repository's gate at a version, an image and a file (R-SIG-074): what a plain user meets, and the release for an administrator.
+  { id: 'package-version-signature-refused', path: `${ver(P, manyVersionsPackage, signedVersions.none)}?tab=files`, kinds: ['plain', 'admin'], walk: refusedVersionWalk },
+  { id: 'package-version-signature-gate-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: gateImage },
+  { id: 'files-signature-refused', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain', 'admin'], walk: refusedFileWalk },
   { id: 'files-signatures', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain'], walk: signatureFile },
   { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips) },
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
@@ -1697,6 +2076,8 @@ export const screens: readonly Screen[] = [
   { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds },
   // The dashboard's signatures view (R-SIG-038): invalid signatures and blocked signers; an administrator sees the same.
   { id: 'security-signatures', path: '/ui/security/signatures', kinds: ['auditor'], walk: signatureFindings },
+  // The refused downloads and the releases of the gates (R-SIG-074), with the release's dialog for both who triage.
+  { id: 'security-signature-refusals', path: '/ui/security/signatures', kinds: auditors, walk: refusalsWalk },
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
   { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all },
   { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
@@ -1768,6 +2149,16 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-malware', path: `${P}/repositories/${malwarePackage.repo}/settings`, kinds: owners, walk: malwareSection },
   // The fetch of a remote's signatures (R-SIG-040): a project's remote, and Docker Hub of the project upstream, an administrator's.
   { id: 'repository-settings-signatures', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: signaturesSection },
+  // The gate of a repository (R-SIG-074): off, the question before switching on, any anchor, chosen anchors with a removed one (read-only
+  // for the Owner where loosening is not hers), the checks switched off. A Debian repository's section is in repository-settings-deb.
+  {
+    id: 'repository-settings-signature-gate',
+    path: `${P}/repositories/${gateRepo}/settings`,
+    kinds: owners,
+    walk: gateSection,
+    expected: [{ match: /^GET \/api\/v1\/projects\/[^/]+\/repositories\/assets\/signatures\/preview answered 409$/, why: 'the walk answers the preview as an installation whose signature checks are switched off' }],
+  },
+  { id: 'setup-signature-gate', path: `${P}/repositories/${gateRepo}/setup`, kinds: owners, walk: gateSetup },
   { id: 'repository-settings-signatures-docker-hub', path: '/ui/projects/upstream/repositories/docker-hub/settings', kinds: admins, walk: signaturesSection },
   // The one state of the visibility section that no stored repository shows: the server's answer under each level's group.
   {

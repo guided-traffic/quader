@@ -72,6 +72,15 @@ export function contentPath(repository: string, path: string): string {
   return `${repositoryUrl(repository)}/content/${encodePath(path)}`;
 }
 
+/**
+ * The repository `<project>/<key>` of a content route (`/api/v1/projects/{project}/repositories/{key}/content/…`), the one place a
+ * version's file names the repository that holds it (R-API-025); null for another address.
+ */
+export function repositoryOfContent(url: string): string | null {
+  const m = /^\/api\/v1\/projects\/([^/]+)\/repositories\/([^/]+)\/content\//.exec(url);
+  return m ? `${decodeURIComponent(m[1] ?? '')}/${decodeURIComponent(m[2] ?? '')}` : null;
+}
+
 /** SHA-256 of the file as the `Repr-Digest` value of RFC 9530, or undefined above the limit. */
 export async function reprDigestOf(file: Blob): Promise<string | undefined> {
   if (file.size > HASH_LIMIT_BYTES || !crypto.subtle) return undefined;

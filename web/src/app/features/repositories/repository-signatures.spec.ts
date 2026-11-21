@@ -54,14 +54,16 @@ describe('The signatures at a file (R-SIG-035, R-SIG-032)', () => {
 
 describe('The fetch of a remote\'s signatures (R-SIG-040)', () => {
   it('R-SIG-040 a remote\'s detail setting is on by default and saves the change', async () => {
-    const { fixture, root } = await renderScreen(RepositorySignaturesSection, { inputs: { stored: true, canChange: true } });
+    const { fixture, root } = await renderScreen(RepositorySignaturesSection, {
+      inputs: { repository: 'web/docker-hub', project: 'web', format: 'oci', repoClass: 'remote', stored: { fetch: true, onlyVerified: false }, canChange: true },
+    });
     const saved = vi.spyOn(fixture.componentInstance.save, 'emit');
     await openSection(fixture, root, 'Signatures');
-    const box = root.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    const box = [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) => text(i.closest('label')!).startsWith('Fetch'))!;
     expect(box.checked).toBe(true);
     box.click();
     await settle(fixture);
     button(root, /^\s*Save changes/).click();
-    expect(saved).toHaveBeenCalledWith(false);
+    expect(saved).toHaveBeenCalledWith({ fetch: false });
   });
 });

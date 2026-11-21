@@ -14,6 +14,12 @@ import {
   SignatureFileReport,
   SignatureFinding,
   SignatureFindingFilters,
+  SignatureGatePreview,
+  SignatureImpact,
+  SignatureImpactRequest,
+  SignatureRefusal,
+  SignatureRefusalFilters,
+  SignatureRelease,
   SignatureRepositoryReport,
   SignatureSettings,
   SignatureVersionReport,
@@ -205,6 +211,51 @@ export function signatureFinding(repositories: readonly string[], over: Partial<
   };
 }
 
+/** A preview of a repository whose 1,000 artifacts pass but for `refused`; nothing waits, every item read. */
+export function gatePreview(over: Partial<SignatureGatePreview> = {}): SignatureGatePreview {
+  return {
+    examined: 1240,
+    complete: true,
+    artifacts: 1000,
+    pass: 1000,
+    pending: 0,
+    refused: { missing: 0, untrusted: 0, notChosen: 0, invalid: 0, blocked: 0, notChecked: 0 },
+    examples: [],
+    ...over,
+  };
+}
+
+/** A refused download of an unsigned image in `web/docker-local`, refused 14 times. */
+export function signatureRefusal(over: Partial<SignatureRefusal> = {}): SignatureRefusal {
+  return {
+    repository: 'web/docker-local',
+    format: 'oci',
+    path: 'portal/api/_tags/1.4.0',
+    package: 'portal/api',
+    version: '1.4.0',
+    sha256: hex('a11e'),
+    reason: 'missing',
+    firstAt: '2026-11-21T07:00:00Z',
+    lastAt: '2026-11-21T09:40:00Z',
+    count: 14,
+    release: null,
+    ...over,
+  };
+}
+
+/** A release of an artifact of `web/files-internal` by the auditor. */
+export function signatureRelease(over: Partial<SignatureRelease> = {}): SignatureRelease {
+  return {
+    repository: 'web/files-internal',
+    sha256: hex('f11e'),
+    reason: 'The vendor signs from the next release on; this one is needed for the hotfix.',
+    refusedReason: 'missing',
+    releasedBy: 'user:noor',
+    releasedAt: '2026-11-21T09:50:00Z',
+    ...over,
+  };
+}
+
 /**
  * The signatures in memory (R-SIG-034): the settings need the loaded `ETag` (`412` otherwise), anchors and blocks are created and
  * removed, a project's write answers `403 project_anchors_disabled` while the switch is off. Every write is recorded; `failure` makes
@@ -220,8 +271,14 @@ export class FakeSignaturesApi extends SignaturesApi {
   blockList: SignatureBlock[] = [];
   items: SignatureFinding[] = [];
   failure: ApiError | null = null;
+  /** The preview's answer, or a refusal of it (`409 signatures_not_enabled`, `422 not_applicable`). */
+  previewAnswer: SignatureGatePreview | ApiError = gatePreview();
+  impactAnswer: SignatureImpact = { artifacts: 0, repositories: 0, complete: true, bound: 'exact', byRepository: [] };
+  refusalList: SignatureRefusal[] = [];
+  releaseList: Record<string, SignatureRelease[]> = {};
   readonly calls: { op: string; body?: unknown }[] = [];
   readonly findQueries: SignatureFindingFilters[] = [];
+  readonly refusalQueries: SignatureRefusalFilters[] = [];
   private nextId = 100;
 
   private fail(): void {
@@ -340,6 +397,49 @@ export class FakeSignaturesApi extends SignaturesApi {
       const start = cursor === null ? 0 : Number(cursor);
       return { items: structuredClone(all.slice(start, start + limit)), nextCursor: start + limit < all.length ? String(start + limit) : null };
     };
+  }
+
+  override async preview(repository: string, anchors?: readonly string[]): Promise<SignatureGatePreview> {
+    this.calls.push({ op: 'preview', body: { repository, anchors } });
+    const a = this.previewAnswer;
+    if (a instanceof ApiError) throw a;
+    return structuredClone(a);
+  }
+
+  override async impact(change: SignatureImpactRequest): Promise<SignatureImpact> {
+    this.calls.push({ op: 'impact', body: change });
+    this.fail();
+    return structuredClone(this.impactAnswer);
+  }
+
+  override refusals(filters: SignatureRefusalFilters): PageFetcher<SignatureRefusal> {
+    this.refusalQueries.push(filters);
+    return async (cursor, limit): Promise<Page<SignatureRefusal>> => {
+      const all = this.refusalList.filter(
+        (r) => (!filters.repository || r.repository === filters.repository) && (!filters.reason || r.reason === filters.reason),
+      );
+      const start = cursor === null ? 0 : Number(cursor);
+      return { items: structuredClone(all.slice(start, start + limit)), nextCursor: start + limit < all.length ? String(start + limit) : null };
+    };
+  }
+
+  override async releases(repository: string): Promise<readonly SignatureRelease[]> {
+    this.calls.push({ op: 'releases', body: { repository } });
+    return structuredClone(this.releaseList[repository] ?? []);
+  }
+
+  override async release(repository: string, sha256: string, reason: string): Promise<SignatureRelease> {
+    this.calls.push({ op: 'release', body: { repository, sha256, reason } });
+    this.fail();
+    const made = signatureRelease({ repository, sha256, reason, releasedBy: 'user:noor' });
+    this.releaseList[repository] = [made, ...(this.releaseList[repository] ?? [])];
+    return made;
+  }
+
+  override async withdraw(repository: string, sha256: string): Promise<void> {
+    this.calls.push({ op: 'withdraw', body: { repository, sha256 } });
+    this.fail();
+    this.releaseList[repository] = (this.releaseList[repository] ?? []).filter((r) => r.sha256 !== sha256);
   }
 }
 

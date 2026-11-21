@@ -2586,7 +2586,7 @@ it lands, and the result written into this requirement.
 
 ## The gate per repository (stage 3)
 
-Status: packages 1 (the gate) and 2 (releases, previews and the API) built; package 3 (the screens) not built. The owner decided it on 2026-11-21 in his working paper, against the development agent's recommendation of no
+Status: packages 1 (the gate), 2 (releases, previews and the API) and 3 (the screens) built. The owner decided it on 2026-11-21 in his working paper, against the development agent's recommendation of no
 gate for now ([Q-SIG-9](#q-sig-9--display-or-gate), option (b), in the paper's words translated: besides display and alarm, per repository
 a detail setting "only artifacts with a verified signature", optionally of chosen anchors); with his choice of three stages
 ([Q-SIG-14](#q-sig-14--the-order-of-the-work)) it is the third. Before he left on 2026-11-21 he was told that the second and the third
@@ -3347,11 +3347,39 @@ in the main view of a repository; a plain user sees why a download is refused wh
   thousands; a refused version, an image whose index passes and a platform that passes through it; the dashboard's lists empty and with long
   paths; an anchor's removal with its impact.
 
+Built (package 3 of stage 3): the section ([repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts), the order
+of R-SIG-061 in [signature-gate-order.ts](../../web/src/app/features/repositories/signature-gate-order.ts)) on every repository but a system
+one, the fetch of a remote after the gate in the same section and one save; the gate's block above the signatures of a version's tab and a
+file's section ([signature-gate.ts](../../web/src/app/shared/signatures/signature-gate.ts)); the banner, "Refused here" and no **Download** at a
+version and a file; **Release for this repository** and **Withdraw release** with their dialog and question
+([gate-release-dialog.ts](../../web/src/app/shared/signatures/gate-release-dialog.ts), [gate-releases.ts](../../web/src/app/shared/signatures/gate-releases.ts));
+the refused downloads and the releases in the dashboard's view ([signature-refusals.ts](../../web/src/app/features/vulnerabilities/signature-refusals.ts));
+the impact before a removal, a switch-off, a block and project anchors switched off; the line of the client setup; the words of each reason in
+one place ([gate-words.ts](../../web/src/app/shared/signatures/gate-words.ts)). Where it deviates or adds: the section learns that the checks
+are off from the preview's `409 signatures_not_enabled` and reads the preview whenever it opens, so a gate that is off shows what switching it
+on would refuse ([Q-SIG-223](#q-sig-223--the-section-reads-the-preview-when-it-opens-and-learns-from-it-that-the-checks-are-off)); an Owner's
+controls open exactly the narrowings ([Q-SIG-224](#q-sig-224--a-writer-who-may-not-weaken-gets-the-narrowings-as-controls-and-the-rest-read-only));
+the anchors offered come from the project's list and, for `settings:read`, the installation's own
+([Q-SIG-225](#q-sig-225--the-anchors-offered-are-the-projects-list-and-for-settingsread-the-installations-own));
+an image index that passes on its own signature lists its platforms as signed through it, a refused one names no platform's decision
+([Q-SIG-226](#q-sig-226--an-images-platforms-are-said-to-pass-through-their-index-where-the-answer-decides-it));
+the section **Releases** lists one repository's releases ([Q-SIG-227](#q-sig-227--the-section-releases-lists-one-repositorys-releases));
+the client setup's line comes from the full repository document ([Q-SIG-228](#q-sig-228--the-client-setups-line-is-read-from-the-full-repository-document));
+the gate's decision is a block of its own per repository ([Q-SIG-229](#q-sig-229--the-gates-decision-is-a-block-above-the-signatures-and-the-banner-names-the-version));
+a block's impact is a second step inside its dialog ([Q-SIG-230](#q-sig-230--the-impact-of-a-block-is-a-step-of-its-dialog-and-an-impact-that-cannot-be-read-asks-nothing-more));
+narrowing an anchor's material has no screen to ask on ([Q-SIG-231](#q-sig-231--no-screen-narrows-an-anchors-material-so-none-asks-its-impact));
+the dashboard's two lists share the repository filter ([Q-SIG-232](#q-sig-232--the-dashboards-view-shares-its-repository-filter-and-lists-the-refused-downloads-first)).
+Rendered on 2026-11-22 (`repository-settings-signature-gate`, `setup-signature-gate`, `package-version-signature-refused`,
+`package-version-signature-gate-oci`, `files-signature-refused`, `security-signature-refusals`, the states `impact` and `block-impact` of
+`admin-settings-signatures`, and the Debian section in `repository-settings-deb`): the gate off is the profile's real answer, every other
+state its answers changed in the browser, since the profile gates no repository.
+
 Acceptance criteria:
 
 - Web unit (Vitest, under a second): the section's states (off, any, chosen with a removed anchor, read-only for an Owner, Debian, checks
   switched off); the confirmation shows the preview's numbers; the banner for a refused file and none for a pending one; **Release for this
-  repository** only for its holders.
+  repository** only for its holders. Built: [repository-signature-gate.spec.ts](../../web/src/app/features/repositories/repository-signature-gate.spec.ts)
+  (eleven cases, about 0.4 s), and the impact of a removal in [signature-settings.spec.ts](../../web/src/app/features/settings/signature-settings.spec.ts).
 
 ### R-SIG-075 · Audit events, metrics, alerts and the Bastion's feed of stage 3
 Priority: **P1** · Covers: quader-only
@@ -3506,6 +3534,11 @@ nothing measurable. The repair after the measurement with real clients (Q-SIG-21
 format that names its artifacts (microseconds each), and one subtest of `TestR_SIG_070_…` that pushes an image of a few bytes and reads it as
 the pusher and as a reader (under a second).
 
+Measured for package 3 (2026-11-22, on the shared development machine): the gate's web unit cases about 0.4 s
+(`repository-signature-gate.spec.ts`, eleven cases) and two cases of the impact in `signature-settings.spec.ts`, milliseconds; no other tier
+gains anything. The renders of R-SIG-074 add 31 states, 186 pictures, to the job `ui-layout`: about 270 s of a browser, about 90 s at its three
+workers.
+
 What only a real client shows and is not tested: `docker pull` of a multi-platform image signed at its index through a gated repository, a
 refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable.
 **Measured once on 2026-11-21**, after package 1 landed, with Docker 29.9.3, a kind node v1.37.0, npm 11.20.0, the .NET SDK 10.0.403,
@@ -3533,7 +3566,8 @@ Acceptance criteria: the coverage generator lists every requirement of stage 3 w
 The owner decided Q-SIG-1 to Q-SIG-16 on 2026-11-21 in his working paper, from the options the development agent put to him; the blocks
 keep those options as they were put, translated from the paper's German. Q-SIG-20 onward are the development agent's: each question below
 was decided by the development agent from the listed options, and the owner reviews the choices at the walkthrough. Q-SIG-75 to Q-SIG-95
-are stage 3's; Q-SIG-131 to Q-SIG-144 were decided when its first package (the gate) was built.
+are stage 3's; Q-SIG-131 to Q-SIG-144 were decided when its first package (the gate) was built, Q-SIG-223 to Q-SIG-232 when its third
+(the screens) was.
 
 ### Q-SIG-1 · What the icon stands for
 
@@ -5940,6 +5974,137 @@ The version list had the same gap: it counts the blobs of a version's files.
 **Choice:** (a). npm's, NuGet's, Ansible's and Debian's remotes hold a version's file as an item and needed no change; the generic format has
 no remote class; a virtual repository shows the union of its members, a remote member now included. **Applied in the spec:** R-SIG-026.
 
+### Q-SIG-223 · The section reads the preview when it opens and learns from it that the checks are off
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Taken when package 3
+of stage 3 (the screens) was built.
+
+Context: R-SIG-074 shows the stored setting's state "when the section opens" and a sentence "while `signatures.enabled` is false"; the switch is
+read with `settings:read`, which a project Owner does not hold, and the preview answers `409 signatures_not_enabled` while the checks are off.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The preview is read whenever the section opens, the gate on or off; its `409 signatures_not_enabled` says the checks are off; with the gate off the line reads "Switched on with the stored anchors: …" (chosen) | | One read serves the state line, the sentence and the preview before switching on, for an Owner too | A read of up to 10 s on a large repository each time someone opens the section |
+| (b) The preview only while the gate is on, the switch from `GET /api/v1/signatures/settings` | | No read for a gate that is off | An Owner never learns that the checks are off, and nobody sees what switching on would refuse before saving |
+
+**Choice:** (a). The read is bounded (R-SIG-072) and happens only when a writer opens a closed section. **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-224 · A writer who may not weaken gets the narrowings as controls and the rest read-only
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The controls follow the order of R-SIG-061: the box of a gate that is on is read-only; with a stored list, **Any trust anchor** and an anchor not on the list are read-only and the last ticked one cannot be taken away; while the gate is off or accepts any anchor everything is open (chosen) | | The Owner meets no `403 signature_weakening_refused`; a narrowing stays open, as R-SIG-074 says | The rule is spread over the controls instead of one sentence |
+| (b) Everything open, the API's `403` shown on save | | Simple | The page offers what it knows fails |
+| (c) The whole gate read-only once on | | Simpler | Against "a narrowing stays open to it" |
+
+**Choice:** (a), with the sentence "Only an administrator or someone who triages security findings can loosen this." One **Save changes** writes
+the gate and a remote's fetch; a narrowing whose preview refuses anything asks first. **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-225 · The anchors offered are the project's list and, for `settings:read`, the installation's own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `GET /api/v1/projects/{p}/signatures/anchors` answers every member the project's anchors and the installation's applied ones; the
+installation's list with switched-off anchors needs `settings:read`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The project's list for everyone, the installation's own list (switched-off anchors too) for the holder of `settings:read`; a stored reference neither names is **Removed trust anchor** (chosen) | | An Owner sees every anchor that can count in the repository; an administrator sees a switched-off one as such | For an Owner a switched-off installation anchor that the setting names reads as removed ([H-1237](#h-1237--an-owner-reads-a-switched-off-installation-anchor-that-a-gate-names-as-removed)) |
+| (b) A new operation that resolves the references | | Exact for everyone | An operation more for one word |
+
+**Choice:** (a). The gate treats both alike, it matches nothing (R-SIG-061). **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-226 · An image's platforms are said to pass through their index where the answer decides it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-074 lists an image's platforms "with their decision"; the member `gate` of R-SIG-073 judges the tag's artifact (the index) and
+names the signature that passed it, not a decision per platform.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Where the index passes on its own signature (the passing signature names no platform), each platform reads "Signed through its image index"; a refused index names no platform's decision (chosen) | | Says only what the answer decides; the case R-SIG-074's renders name | A platform pulled by its digest with a signature of its own is not shown as passing under a refused index ([H-1238](#h-1238--under-a-refused-image-index-the-screens-name-no-platforms-decision)) |
+| (b) A decision per platform derived in the browser from the platforms' signatures | | Every platform has a word | Chosen anchors, blocks and the subtraction of R-SIG-066 are the server's: the browser would guess |
+| (c) The API answers a decision per platform | | Exact | A change of the API for a case the gate decides at the download anyway |
+
+**Choice:** (a); the development agent would take (c) when a team asks why a platform passes that the screen does not show. **Applied in the
+spec:** R-SIG-074.
+
+### Q-SIG-227 · The section Releases lists one repository's releases
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-074 puts a closed section **Releases** in the dashboard's view; R-SIG-073 lists releases per repository, and a release names a
+digest, not a path.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The section asks for a repository (the view's repository filter by default) and lists its releases; a release's artifact is named where a refused download of the same bytes shows it (chosen) | | Uses the operation as it is; a release is a repository's decision (Q-SIG-88) | No list of every release at once ([H-1239](#h-1239--no-list-of-every-release-and-a-release-names-a-digest)) |
+| (b) A new operation that lists every release the caller reads | | One list | An operation more, which this package does not need to show a release where it acts |
+
+**Choice:** (a). A released row of the refused downloads also says by whom and when, and offers **Withdraw release**. **Applied in the spec:**
+R-SIG-074.
+
+### Q-SIG-228 · The client setup's line is read from the full repository document
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The line and the accepted anchors' titles come from the repository document a writer reads, the titles from the project's anchors; a reader of the reduced view of R-REPO-010 gets no line (chosen) | | No change of the API; R-SIG-074 says "read from the repository document" | A plain reader setting up a client does not learn of the gate there ([H-1240](#h-1240--a-reader-without-the-repositorys-configuration-sees-no-line-of-the-gate-in-the-client-setup)) |
+| (b) The reduced view carries `signatures.onlyVerified` | | Every reader sees it | A member of the configuration in the consumer view, decided at R-REPO-010, not here |
+
+**Choice:** (a); the refusal itself reaches every reader at the file and in the client's answer (R-SIG-068). **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-229 · The gate's decision is a block above the signatures, and the banner names the version
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per repository a block above its signatures in the version's tab and in the file's section: that it serves only verified artifacts, the accepted anchors, the decision with the reason, the release with who, when and why; the version's banner names the version where the repository holds one file of it, else the file (chosen) | | One place for the gate and its actions; the banner says what a client asked for (`chart-render-kit 3.5.0`, not `chart-render-kit-3.5.0.tgz`), as Q-SIG-213 does for the client | A version with several files names each refused file |
+| (b) The decision inside the details of each signature | | Near the signatures | The decision is the repository's, not a signature's |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-230 · The impact of a block is a step of its dialog, and an impact that cannot be read asks nothing more
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Block signer** asks the impact on its first submit; above 0 the dialog shows the count and the repositories and its button reads **Block signer and refuse them**; a removal, a switch-off and project anchors switched off add the count to their question; an impact that fails leaves the screen's own question (chosen) | | No dialog over a dialog; the count is a help, the change stays the administrator's | A failed count is not said |
+| (b) A confirmation over the block's dialog | | One form of question | Two dialogs stacked |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-231 · No screen narrows an anchor's material, so none asks its impact
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-SIG-074 asks with the impact when an anchor's material is narrowed; the screens of stage 1 add and remove anchors and switch them,
+and edit no material (R-SIG-036).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Nothing asked: the change has no screen; `PATCH` of the material through the API counts as `narrow` for whoever asks the impact (chosen) | | No form built for one question | An administrator who edits material through the API is not asked |
+| (b) A form that edits an anchor's material, with the question | | Complete | A screen stage 1 did not specify |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-074.
+
+### Q-SIG-232 · The dashboard's view shares its repository filter and lists the refused downloads first
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Refused downloads** first with its own head (repository, reason), then the findings (search, kind, repository); the repository is one filter of the view (`?repository=`), so a repository's settings link to both (chosen) | | The list with an action first; one address names a repository's whole picture | The repository chip stands in both heads |
+| (b) Separate filters per list | | Independent | Two parameters for the same choice |
+
+**Choice:** (a). **Applied in the spec:** R-SIG-074, R-SIG-038.
+
 ## What this does not cover
 
 The gaps of the mechanisms are on [security/artifact-signatures.md](../security/artifact-signatures.md#what-this-does-not-cover). This page
@@ -6034,3 +6199,32 @@ of a version or a file through a virtual repository whose member is gated, and o
 gate too, which shows in the member's own entry of the version's signatures answer. The version list judges the gates of the repositories that
 hold the version, not a virtual repository's own gate. A client's download is decided at the serve point either way. What makes it real: a gated
 member under an ungated virtual repository, or a gated virtual repository.
+
+### H-1237 · An Owner reads a switched-off installation anchor that a gate names as removed
+
+Component: the section **Signatures** of a repository's settings ([Q-SIG-225](#q-sig-225--the-anchors-offered-are-the-projects-list-and-for-settingsread-the-installations-own)).
+Subject: a project Owner without `settings:read` whose repository's gate names an installation anchor that an administrator switched off. Live
+since package 3 of stage 3. The project's list of anchors holds only the applied ones, so the reference shows as **Removed trust anchor**; it
+matches nothing either way (R-SIG-061), so what the gate does is shown right and only the word is wrong. What makes it real: a gate with
+chosen anchors and an anchor switched off for a while.
+
+### H-1238 · Under a refused image index the screens name no platform's decision
+
+Component: the gate's block at an image ([Q-SIG-226](#q-sig-226--an-images-platforms-are-said-to-pass-through-their-index-where-the-answer-decides-it)).
+Subject: readers of a multi-platform image whose index the gate refuses while a platform manifest carries a signature of its own that passes.
+Live since package 3 of stage 3. The screen says that the image is refused and lists no platform; a client that pulls that platform by its
+digest gets it (R-SIG-063). What makes it real: a publisher that signs platform manifests with `--recursive` and not the index.
+
+### H-1239 · No list of every release, and a release names a digest
+
+Component: the section **Releases** of the dashboard's view ([Q-SIG-227](#q-sig-227--the-section-releases-lists-one-repositorys-releases)).
+Subject: an auditor who reviews releases after blocking a signer ([H-1223](../security/artifact-signatures.md#h-1223--a-release-keeps-passing-an-artifact-after-its-signer-is-blocked)).
+Live since package 3 of stage 3. The releases are listed per repository, one repository at a time, and a release whose bytes no refused download
+of the retention shows is named by its digest only. What makes it real: many gated repositories with releases.
+
+### H-1240 · A reader without the repository's configuration sees no line of the gate in the client setup
+
+Component: the client setup ([Q-SIG-228](#q-sig-228--the-client-setups-line-is-read-from-the-full-repository-document)). Subject: plain
+readers who set up a client for a gated repository. Live since package 3 of stage 3. The reduced view of R-REPO-010 carries no member
+`signatures`, so the page says nothing of the gate; the first refused download says it, in the client and at the file's page (R-SIG-068,
+R-SIG-074). What makes it real: a team that switches a gate on without telling its readers.

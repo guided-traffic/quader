@@ -137,10 +137,10 @@
         </nav>
         @if (view() === 'file' && item(); as it) {
           <div class="file-actions">
-            <!-- A file the malware scan's gate refuses here offers no download: the fact Malware scan says why (Q-UI-882). Nor does
-                 a file of a system repository, whose downloads by path answer 404 to every caller; the file's view says why
-                 (Q-UI-898, Q-UI-899). -->
-            @if (it.contentUrl && it.malware?.refused !== true && !system()) {
+            <!-- A file the malware scan's gate or the repository's signature gate refuses here offers no download: the fact Malware
+                 scan or Signature says why (Q-UI-882, R-SIG-074). Nor does a file of a system repository, whose downloads by path answer
+                 404 to every caller; the file's view says why (Q-UI-898, Q-UI-899). -->
+            @if (it.contentUrl && it.malware?.refused !== true && it.signatures?.refused !== true && !system()) {
               <a class="btn btn-default on-line" [href]="it.contentUrl" download quaderDownload>
                 <span class="material-icons" aria-hidden="true">download</span>
                 <ng-container i18n="@@files.download">Download</ng-container>
@@ -180,7 +180,7 @@
       }
       @case ('file') {
         @if (item(); as it) {
-          <quader-repository-file [item]="it" [format]="repository()?.format ?? 'generic'" />
+          <quader-repository-file [item]="it" [format]="repository()?.format ?? 'generic'" (changed)="itemRead.reload()" />
         }
       }
       @default {

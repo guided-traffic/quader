@@ -39,7 +39,10 @@ import {
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
-import { SignatureStatus } from '../../api/signatures-api';
+import { SignatureGateRefusedReason, SignatureGateReason, SignatureStatus } from '../../api/signatures-api';
+import { repositoryOfContent } from '../../api/files-api';
+import { GateActions } from '../../shared/signatures/gate-releases';
+import { gateReasonWord } from '../../shared/signatures/gate-words';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { hasSignatureBadge } from '../../shared/signatures/signature-words';
 import { VersionSignatures } from './version-signatures';
@@ -398,10 +401,49 @@ export class PackageVersionPage {
   }
 
   /**
-   * The badge per file (R-SIG-035): a column while some file carries one of the four states with a badge; a file without one shows
-   * no value, and the tab Signatures says why.
+   * The badge per file (R-SIG-035): a column while some file carries one of the four states with a badge or a repository's gate refuses
+   * it (R-SIG-074); a file without either shows no value, and the tab Signatures says why.
    */
-  protected readonly signatureShown = computed(() => (this.detail()?.files ?? []).some((f) => hasSignatureBadge(f.signatures)));
+  protected readonly signatureShown = computed(() =>
+    (this.detail()?.files ?? []).some((f) => f.signatures?.refused === true || hasSignatureBadge(f.signatures)),
+  );
+
+  // ---- The signature gate of the repositories that hold the version (R-SIG-074) ----
+
+  private readonly gateActions = inject(GateActions);
+  protected readonly canRelease = computed(() => this.gateActions.canRelease());
+  protected reasonWord(reason: SignatureGateRefusedReason | null | undefined): string {
+    return gateReasonWord(reason ?? 'missing');
+  }
+  /**
+   * The artifacts a repository's gate refuses now, one banner each: the repository that holds the file (its content route names it),
+   * the artifact as a reader names it (the version where it has one file there, else the file) and the reason.
+   */
+  protected readonly signatureRefusals = computed(() => {
+    const files = this.detail()?.files ?? [];
+    const perRepository = new Map<string, number>();
+    for (const f of files) {
+      const r = repositoryOfContent(f.contentUrl) ?? '';
+      perRepository.set(r, (perRepository.get(r) ?? 0) + 1);
+    }
+    return files
+      .filter((f) => f.signatures?.refused === true)
+      .map((f) => {
+        const repository = repositoryOfContent(f.contentUrl) ?? '';
+        return {
+          repository,
+          sha256: f.sha256,
+          name: perRepository.get(repository) === 1 ? this.heading() : this.fileName(f.path),
+          reason: (f.signatures?.refusedReason ?? 'missing') as SignatureGateReason,
+        };
+      });
+  });
+  protected async releaseFor(f: { readonly repository: string; readonly sha256: string; readonly name: string; readonly reason: SignatureGateReason }): Promise<void> {
+    const done = await this.gateActions.release({ repository: f.repository, sha256: f.sha256, artifact: f.name, reason: f.reason });
+    if (done) this.details.reload();
+  }
+  /** The platforms of an image index, which pass through the index's own signature (R-SIG-063). */
+  protected readonly imagePlatforms = computed(() => (this.image()?.platforms ?? []).map((p) => p.platform));
   /** The version's member `signatures` while it carries a badge (R-SIG-035). */
   protected readonly signatureBadged = computed(() => this.badged(this.detail()?.signatures));
   protected badged(s: SignatureStatus | undefined): SignatureStatus | null {

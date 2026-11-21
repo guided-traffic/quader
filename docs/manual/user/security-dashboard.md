@@ -88,15 +88,22 @@ under **Settings › Malware scanning** ([Monitoring and operations](../admin/op
 
 ## Signatures
 
-The third view, **Signatures** (`/ui/<locale>/security/signatures`), lists one row per signature that does not match its content or whose
-signer an administrator blocked, newest first: the artifact it covers (the package and version, or the file), the kind ("Invalid
+The third view, **Signatures** (`/ui/<locale>/security/signatures`), starts with **Refused downloads**: one row per repository and artifact
+that a repository serving only verified artifacts refused, the newest refusal first, with the artifact, the repository, the reason ("No
+publisher's signature", "Signer not accepted", "Anchor not accepted", "Invalid signature", "Signer blocked", "Signature not checked"), the last
+refusal and how often it was refused; **Filters** narrows by repository and reason, and an empty list says "No refused downloads." A holder
+of the triage right (`admin`, `security-admin`, `auditor`) has **Release for this repository** on each row: the dialog names the one
+repository and why it refuses the artifact, and asks for a reason; the artifact is then served from that repository only, until the release
+is withdrawn. A released row says by whom and when, and offers **Withdraw release**, which asks first. The closed section **Releases** lists
+the releases of one repository, the one the filter names or the one you choose there.
+
+Below, the view lists one row per signature that does not match its content or whose signer an administrator blocked, newest first: the artifact it covers (the package and version, or the file), the kind ("Invalid
 signature" or "Blocked signer") with the kind of signature, the signer as the signature claims it, the reason (why it does not match, or
 the block's reason), the first repository that holds it and how many more, and when it was found. Search by signer; **Filters** narrows by
 kind and repository. An empty list says "No invalid signatures."
 
-Nothing is refused because of a signature, so there is nothing to release here. A holder of `security-settings:write` blocks a signer
-under **Admin area › Settings › Signatures** ([Signatures](../admin/signatures.md#blocked-signers)). What the states mean is in
-[Signatures](signatures.md).
+The repository filter is the view's: it narrows both lists. A holder of `security-settings:write` blocks a signer under **Admin area ›
+Settings › Signatures** ([Signatures](../admin/signatures.md#blocked-signers)). What the states mean is in [Signatures](signatures.md).
 
 ## Limits
 

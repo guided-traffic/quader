@@ -145,3 +145,13 @@ dl.digests {
     }
   }
 }
+
+// The banner of an artifact a repository's signature gate refuses (R-SIG-074): the sentence, and under it the release for the holder
+// of the triage right. Codes break where they must rather than widen the page.
+.gate-banner-text {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.banner-warning .gate-banner-actions {
+  margin-block-start: var(--quader-space-2);
+}

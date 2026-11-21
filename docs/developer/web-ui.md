@@ -1436,7 +1436,8 @@ shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-repl
 
 ## The signatures screens
 
-Stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-035 to R-SIG-038, R-SIG-040; decisions Q-SIG-124 to Q-SIG-130). The API is
+Stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-035 to R-SIG-038, R-SIG-040; decisions Q-SIG-124 to Q-SIG-130) and the screens of
+stage 3's gate (R-SIG-074; Q-SIG-223 to Q-SIG-232, [developer/signatures.md](signatures.md#stage-3-package-3-the-screens-built)). The API is
 `SignaturesApi` ([signatures-api.ts](../../web/src/app/api/signatures-api.ts)), its fake [fakes-signatures.ts](../../web/src/app/api/testing/fakes-signatures.ts).
 
 | What | Where |
@@ -1450,7 +1451,9 @@ Stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-035 to R-SIG-038, R-SIG
 | The section **Signing identity** of that page (stage 2, R-SIG-056): its states, the dialogs of the key request, the certificate and the import, and the words of R-SIG-045's checks; its API is `SigningApi` ([signing-api.ts](../../web/src/app/api/signing-api.ts)) | [signing-identity.ts](../../web/src/app/features/settings/signing-identity.ts), [signing-dialogs.ts](../../web/src/app/features/settings/signing-dialogs.ts), [signing-words.ts](../../web/src/app/shared/signatures/signing-words.ts); [developer/signatures.md](signatures.md#package-4-the-section-signing-identity-built) |
 | A project's section **Trust anchors** | [project-signature-anchors.ts](../../web/src/app/features/projects/project-signature-anchors.ts) |
 | The dashboard's view **Signatures** (`/security/signatures`) | [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts) |
-| A remote repository's section **Signatures** (`signatures.fetch`) | [repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts) |
+| A repository's section **Signatures**: the gate (`signatures.onlyVerified`, `signatures.anchors`) with its preview and its question, and a remote's fetch (`signatures.fetch`) | [repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts), [signature-gate-order.ts](../../web/src/app/features/repositories/signature-gate-order.ts) |
+| The gate's block above a repository's signatures, the banner of a refused version, "Refused here", **Release for this repository** and **Withdraw release** | [signature-gate.ts](../../web/src/app/shared/signatures/signature-gate.ts), [gate-release-dialog.ts](../../web/src/app/shared/signatures/gate-release-dialog.ts), [gate-releases.ts](../../web/src/app/shared/signatures/gate-releases.ts), [gate-words.ts](../../web/src/app/shared/signatures/gate-words.ts) |
+| The dashboard's **Refused downloads** and **Releases** | [signature-refusals.ts](../../web/src/app/features/vulnerabilities/signature-refusals.ts) |
 | The refusals of the operations (`secret_material`, `anchor_exists`, `anchor_managed`, `project_anchors_disabled`, `block_exists`, and the signing identity's eight of R-SIG-055) | [problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts) |
 
 **Renders.** No signing key exists in the profile, so the seed ([renders/signatures.ts](../../web/e2e/renders/signatures.ts)) adds the
@@ -1463,9 +1466,18 @@ them. The screens: `package-version-signatures` (every state of `chart-render-ki
 `admin-settings-signing` renders the section **Signing identity** as the administrator (the form of the key request with its More options)
 and as the auditor: a key request shown, an upload that expires in 12 days with two previous identities, the Helm values' identity, and
 the Helm values with a refused pair. The profile has no identity, so these states are its real answer changed in the browser
-([renders/signing.ts](../../web/e2e/renders/signing.ts), Q-SIG-175), and the seed writes no row of `signing_identities`.
+([renders/signing.ts](../../web/e2e/renders/signing.ts), Q-SIG-175), and the seed writes no row of `signing_identities`. The gate (R-SIG-074):
+`repository-settings-signature-gate` (the gate off as the profile answers it, the question before switching on with a preview of thousands,
+any anchor, chosen anchors with a removed one, the checks off; as the Owner and the administrator), `setup-signature-gate`,
+`package-version-signature-refused` (the banner, the tab, the release's dialog and a released version for the administrator),
+`package-version-signature-gate-oci`, `files-signature-refused`, `security-signature-refusals` and the states `impact` and `block-impact` of
+`admin-settings-signatures`; the profile gates no repository, so every state but the first is its answer changed in the browser, and no row
+is written by SQL. A Debian repository's section is in `repository-settings-deb`, and every screen that opens a repository's sections shows
+the gate off with the profile's real preview. They add 31 states, 186 pictures, to the layout job: about 270 s of a browser (measured on 2026-11-22 on a shared machine), about 90 s
+at its three workers.
 
-**Tests** (Vitest, about 2.5 s for the four spec files of stage 1 together and about 0.3 s for the section's, data of the fakes): [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts),
+**Tests** (Vitest, about 2.5 s for the four spec files of stage 1 together, about 0.3 s for the section's and about 0.4 s for the gate's, data
+of the fakes): [repository-signature-gate.spec.ts](../../web/src/app/features/repositories/repository-signature-gate.spec.ts), [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts),
 [signature-settings.spec.ts](../../web/src/app/features/settings/signature-settings.spec.ts),
 [signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts),
 [version-signatures.spec.ts](../../web/src/app/features/packages/version-signatures.spec.ts),

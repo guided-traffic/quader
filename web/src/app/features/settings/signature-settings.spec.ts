@@ -64,11 +64,26 @@ describe('Admin area › Settings › Signatures (R-SIG-036)', () => {
     expect(api.calls).toEqual([{ op: 'settings', body: { projectAnchors: true, etag: '"1"' } }]);
   });
 
-  it('R-SIG-017 switching a shipped anchor off patches only enabled with its version', async () => {
+  it('R-SIG-017 R-SIG-071 switching a shipped anchor off asks its impact, and with none patches only enabled with its version', async () => {
     const { fixture, root, api } = await render(ADMIN);
     rowOf(root, 'Public Sigstore').querySelector<HTMLButtonElement>('quader-switch button')!.click();
     await settle(fixture);
-    expect(api.calls).toEqual([{ op: 'updateAnchor', body: { id: 1, patch: { enabled: false }, version: 1 } }]);
+    expect(api.calls).toEqual([
+      { op: 'impact', body: { anchor: 1, change: 'disable' } },
+      { op: 'updateAnchor', body: { id: 1, patch: { enabled: false }, version: 1 } },
+    ]);
+  });
+
+  it('R-SIG-074 R-SIG-071 removing an anchor that gated repositories rely on asks with the impact and its repositories', async () => {
+    const { fixture, root, api } = await render(ADMIN, (fake) => {
+      fake.impactAnswer = { artifacts: 132, repositories: 3, complete: true, bound: 'exact', byRepository: [{ repository: 'web/docker-local', artifacts: 120 }, { repository: 'web/npm-local', artifacts: 10 }, { repository: 'ops/files', artifacts: 2 }] };
+    });
+    rowOf(root, 'Release key').querySelector<HTMLButtonElement>('td.actions button')!.click();
+    await settle(fixture);
+    const dialog = text(overlay());
+    expect(dialog).toContain('This change makes 132 artifacts in 3 repositories that serve only verified artifacts refused:');
+    expect([...overlay().querySelectorAll('ul.items li')].map((li) => text(li))).toEqual(['web/docker-local (120)', 'web/npm-local (10)', 'ops/files (2)']);
+    expect(api.calls).toEqual([{ op: 'impact', body: { anchor: 3, change: 'remove' } }]);
   });
 
   it('R-SIG-020 lists the blocks with their reasons, and lifting one asks first', async () => {

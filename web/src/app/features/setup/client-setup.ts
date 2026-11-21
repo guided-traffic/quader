@@ -7,6 +7,7 @@ import { Guide, GuidesApi } from '../../api/guides-api';
 import { ClientSetupApi, ClientSnippet } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi, isConsumerView, repoRef } from '../../api/repositories-api';
+import { SignaturesApi } from '../../api/signatures-api';
 import { CreateTokenRequest, TokensApi } from '../../api/tokens-api';
 import { repositoryCommands } from '../../core/project-links';
 import { SessionStore } from '../../core/session-store';
@@ -99,6 +100,7 @@ export class ClientSetupPage {
   private readonly repositories = inject(RepositoriesApi);
   private readonly tokens = inject(TokensApi);
   private readonly bastionsApi = inject(BastionsApi);
+  private readonly signaturesApi = inject(SignaturesApi);
   private readonly router = inject(Router);
   protected readonly session = inject(SessionStore);
 
@@ -163,6 +165,37 @@ export class ClientSetupPage {
   protected readonly repositoryLink = computed(() => {
     const ref = this.ref();
     return ref ? repositoryCommands(ref) : null;
+  });
+
+  // ---- The repository's signature gate (R-SIG-074) ----
+
+  /** The accepted references `<scope>/<key>` of a gated repository; null while its gate is off or the document is the reduced view. */
+  private readonly gateRefs = computed<readonly string[] | null>(() => {
+    const r = this.repository();
+    if (!r || isConsumerView(r) || r.signatures?.onlyVerified !== true) return null;
+    return r.signatures.anchors ?? [];
+  });
+  /** The titles of the scope's anchors, read only for a repository with chosen anchors; a reference without one stays as it is. */
+  private readonly anchorTitles = resource({
+    params: () => {
+      const refs = this.gateRefs();
+      const project = this.project();
+      return refs && refs.length > 0 && project ? { project } : undefined;
+    },
+    loader: async ({ params }): Promise<ReadonlyMap<string, string>> => {
+      try {
+        const list = await this.signaturesApi.projectAnchors(params.project);
+        return new Map([...list.installation, ...list.items].map((a) => [`${a.scope}/${a.key}`, a.title]));
+      } catch {
+        return new Map();
+      }
+    },
+  });
+  protected readonly gated = computed<readonly string[] | null>(() => {
+    const refs = this.gateRefs();
+    if (refs === null) return null;
+    const titles = valueOf(this.anchorTitles) ?? new Map<string, string>();
+    return refs.map((r) => titles.get(r) ?? r);
   });
 
   /** The format's clients (`GET /api/v1/formats`); a format with one client asks nothing (Q-UI-482). */

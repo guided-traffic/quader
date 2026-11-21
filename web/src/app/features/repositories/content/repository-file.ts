@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, computed, inject, input, output, resource, signal } from '@angular/core';
 import { FilesApi, Item } from '../../../api/files-api';
 import { AddressField } from '../../../shared/address-field';
 import { CopyButton } from '../../../shared/copy-button';
@@ -17,6 +17,9 @@ import { filesCommands } from '../../../core/project-links';
 import { SignatureBadge } from '../../../shared/signatures/signature-badge';
 import { SignatureReport } from '../../../shared/signatures/signature-report';
 import { hasSignatureBadge, signatureStateWord } from '../../../shared/signatures/signature-words';
+import { SignatureGateRefusedReason } from '../../../api/signatures-api';
+import { gateReasonWord } from '../../../shared/signatures/gate-words';
+import { SignatureGate } from '../../../shared/signatures/signature-gate';
 
 /** The names of a signature beside its file in a generic repository, longest first (R-SIG-032). */
 const SIBLING_SUFFIXES = ['.sigstore.json', '.jws.sig', '.cose.sig', '.asc', '.sig'];
@@ -34,7 +37,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
  */
 @Component({
   selector: 'quader-repository-file',
-  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureReport, TimeAgo],
+  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureGate, SignatureReport, TimeAgo],
   template: `
     @let it = item();
     <section class="file-view" aria-labelledby="file-name">
@@ -92,7 +95,17 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
         @if (it.signatures; as sig) {
           <dt i18n="@@files.fact.signature">Signature</dt>
           <dd data-testid="signature-fact">
-            @if (badged(sig)) {
+            <!-- The repository's gate refuses the file now (R-SIG-074): "Refused here" with the reason, as the malware scan's fact says
+                 that downloads are refused (Q-UI-882); its section Signatures says why in full and offers the release. -->
+            @if (sig.refused === true) {
+              <span class="gate-fact"
+                ><span class="fstatus bad" data-testid="signature-refused"
+                  ><span class="fstatus-main"
+                    ><span class="material-icons" aria-hidden="true">block</span><span i18n="@@sig.gate.refused-here">Refused here</span></span
+                  ></span
+                ><span class="muted">{{ reasonWord(sig.refusedReason) }}</span></span
+              >
+            } @else if (badged(sig)) {
               <quader-signature-badge [state]="sig.state" [stale]="sig.stale" />
             } @else {
               <span class="muted">{{ stateWord(sig.state) }}</span>
@@ -124,6 +137,15 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           @if (signatureFailure(); as f) {
             <quader-error-notice [error]="f" (retry)="signatureReport.reload()" />
           } @else if (valueOf(signatureReport); as report) {
+            @if (report.gate; as g) {
+              <quader-signature-gate
+                [gate]="g"
+                [repository]="report.repository"
+                [artifacts]="[{ name: name(), sha256: report.sha256, refusedReason: sig.refusedReason ?? null }]"
+                [signatures]="report.signatures"
+                (changed)="signatureReport.reload(); changed.emit()"
+              />
+            }
             <quader-signature-report [report]="report" [format]="format()" [level]="3" />
           } @else if (signaturesOpen()) {
             <p role="status" i18n="@@repo.loading">Loading.</p>
@@ -185,6 +207,15 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
     </section>
   `,
   styleUrl: './repository-content.scss',
+  // "Refused here" and its reason on one row, centred on each other (R-SIG-074).
+  styles: `
+    .gate-fact {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: var(--quader-space-2);
+    }
+  `,
 })
 export class RepositoryFile {
   private readonly files = inject(FilesApi);
@@ -208,6 +239,11 @@ export class RepositoryFile {
     return e ? asApiError(e) : null;
   });
   protected readonly badged = (s: SignatureStatus): boolean => hasSignatureBadge(s);
+  protected reasonWord(reason: SignatureGateRefusedReason | null | undefined): string {
+    return gateReasonWord(reason ?? 'missing');
+  }
+  /** A release was granted or withdrawn in the section Signatures: the page reads the file again for its fact and its Download. */
+  readonly changed = output<void>();
   protected readonly stateWord = signatureStateWord;
   protected signaturesHint(state: SignatureBadgeState): string {
     return state === 'none'

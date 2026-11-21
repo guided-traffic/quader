@@ -66,7 +66,7 @@ import { MemberState, stateBadge, systemLevelSentence } from '../upstream/upstre
 import { memberInactiveText } from './well-known-members';
 import { MalwareSwitchStore } from '../../core/malware-switch';
 import { RepositoryMalwareSection } from './repository-malware';
-import { RepositorySignaturesSection } from './repository-signatures';
+import { RepositorySignaturesSection, SignatureSettingsChange } from './repository-signatures';
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -705,26 +705,29 @@ export class RepositoryDetail implements HasUnsavedChanges {
     }
   }
 
-  // ---- The fetch of the upstream's signatures (R-SIG-026, R-SIG-040) ----
+  // ---- The signature gate and the fetch of the upstream's signatures (R-SIG-074, R-SIG-061, R-SIG-026, R-SIG-040) ----
 
-  /** The section on a remote repository; a system repository's members are the product's. */
-  protected readonly signaturesShown = computed(() => this.stored()?.class === 'remote' && !this.systemRepository());
+  /** The section on every repository; a system repository's members are the product's. */
+  protected readonly signaturesShown = computed(() => this.stored() !== null && !this.systemRepository());
+  /** Loosening the gate is a weakening (R-SIG-061): the capabilities that may, which a project Owner does not hold. */
+  protected readonly canWeakenSignatures = computed(
+    () => this.session.has('repositories:write-config') || this.session.has('vulnerabilities:triage'),
+  );
   protected readonly signaturesSaving = signal(false);
   protected readonly signaturesFailure = signal<ApiError | null>(null);
 
-  /** Stores `signatures.fetch` with the loaded `ETag`; the patch carries that member only, so other unsaved edits stay. */
-  protected async saveSignatures(fetch: boolean): Promise<void> {
+  /**
+   * Stores the members of `signatures` the section changed with the loaded `ETag`; the patch carries them only, so other unsaved
+   * edits stay. A refusal (`403 signature_weakening_refused`, `422` of an anchor, a 412) stands in the section.
+   */
+  protected async saveSignatures(change: SignatureSettingsChange): Promise<void> {
     if (this.signaturesSaving() || !this.stored()) return;
     this.signaturesSaving.set(true);
     this.signaturesFailure.set(null);
     try {
-      const saved = await this.api.patch(this.ref(), { signatures: { fetch } }, this.etag);
+      const saved = await this.api.patch(this.ref(), { signatures: { ...change } }, this.etag);
       this.takeStored(saved.value, saved.etag);
-      this.notifier.status(
-        fetch
-          ? $localize`:@@repo.signatures.saved-on:Quader fetches the upstream's signatures for this repository again.`
-          : $localize`:@@repo.signatures.saved-off:Quader no longer fetches the upstream's signatures for this repository.`,
-      );
+      this.notifier.status(signaturesSavedText(change));
     } catch (e) {
       this.signaturesFailure.set(asApiError(e));
     } finally {
@@ -987,4 +990,17 @@ export class RepositoryDetail implements HasUnsavedChanges {
   }
 
   protected readonly deleteLabel = $localize`:@@repo.delete.progress:Repository deletion`;
+}
+
+/** The notice after a save of the section Signatures: what the gate does now, else what the fetch does. */
+function signaturesSavedText(change: SignatureSettingsChange): string {
+  if (change.onlyVerified === true) {
+    return $localize`:@@repo.gate.saved-on:Only artifacts with a verified signature can be downloaded from this repository now.`;
+  }
+  if (change.onlyVerified === false) {
+    return $localize`:@@repo.gate.saved-off:This repository serves artifacts whatever their signatures say again.`;
+  }
+  return change.fetch === false
+    ? $localize`:@@repo.signatures.saved-off:Quader no longer fetches the upstream's signatures for this repository.`
+    : $localize`:@@repo.signatures.saved-on:Quader fetches the upstream's signatures for this repository again.`;
 }

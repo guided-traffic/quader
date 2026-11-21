@@ -319,12 +319,18 @@
         }
         <!-- <<< malware -->
 
-        <!-- The fetch of the upstream's signatures (R-SIG-026, R-SIG-040): a detail of a remote repository, never a step of the creation
-             flow; not on a system repository, whose members are the product's. -->
+        <!-- The repository's signature gate and, on a remote, the fetch of the upstream's signatures (R-SIG-074, R-SIG-061, R-SIG-026):
+             a detail of every repository, never a step of the creation flow; not on a system repository, whose members are the
+             product's. -->
         @if (signaturesShown()) {
           <quader-repository-signatures
-            [stored]="repo.signatures?.fetch ?? true"
+            [repository]="ref()"
+            [project]="project()"
+            [format]="repo.format"
+            [repoClass]="repo.class"
+            [stored]="repo.signatures"
             [canChange]="managed() ? canNarrow() : canChange()"
+            [canWeaken]="canWeakenSignatures()"
             [saving]="signaturesSaving()"
             [failure]="signaturesFailure()"
             (save)="saveSignatures($event)"

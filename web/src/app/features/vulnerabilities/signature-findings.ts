@@ -11,6 +11,7 @@ import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { SecurityViews } from './security-views';
+import { SignatureRefusals } from './signature-refusals';
 
 /** One chip of a filter that is set, with the query change that removes it. */
 interface Chip extends ListChip {
@@ -29,15 +30,16 @@ export function findingKindWord(kind: SignatureFindingKind): string {
 }
 
 /**
- * The signatures view of the security dashboard (R-SIG-038, Q-SIG-9): one row per signature that is invalid or whose signer an
- * administrator blocked, newest first, with the artifact it covers and the repository that holds it, the kind, the signer as it claims,
- * the reason, when it was found and how many repositories hold it. The head searches a signer, the drawer filters by kind and
- * repository; filters live in the address. Stage 1 refuses nothing, so nothing is released here; a holder of
- * `security-settings:write` finds **Block signer** on the admin page.
+ * The signatures view of the security dashboard (R-SIG-038, R-SIG-074, Q-SIG-9): first the downloads the repositories' gates refused
+ * and their releases (`SignatureRefusals`); then one row per signature that is invalid or whose signer an administrator blocked, newest
+ * first, with the artifact it covers and the repository that holds it, the kind, the signer as it claims, the reason, when it was found
+ * and how many repositories hold it. The head searches a signer, the drawer filters by kind and repository; the repository is the view's
+ * filter, which both lists share; filters live in the address. A holder of `security-settings:write` finds **Block signer** on the
+ * admin page.
  */
 @Component({
   selector: 'quader-signature-findings',
-  imports: [DataTable, FilterCategory, FilterPanel, ListHead, RouterLink, SecurityViews, TimeAgo],
+  imports: [DataTable, FilterCategory, FilterPanel, ListHead, RouterLink, SecurityViews, SignatureRefusals, TimeAgo],
   template: `
     <header class="page-header">
       <h1 tabindex="-1" i18n="@@security.heading">Security dashboard</h1>
@@ -45,7 +47,10 @@ export function findingKindWord(kind: SignatureFindingKind): string {
     <quader-security-views />
     <p class="hint" role="note" data-testid="signature-promise">{{ promise }}</p>
 
-    <h2 class="vuln-list-title" i18n="@@sig.findings.title">Findings</h2>
+    <!-- The downloads the repositories' gates refused, and their releases (R-SIG-074): first, since a release is an action. -->
+    <quader-signature-refusals [repository]="repository()" [reason]="reason()" [repositories]="repositoryOptions()" />
+
+    <h2 class="vuln-list-title findings-title" i18n="@@sig.findings.title">Findings</h2>
     <quader-list-head
       [searchLabel]="searchLabel"
       [search]="q() ?? ''"
@@ -114,7 +119,7 @@ export function findingKindWord(kind: SignatureFindingKind): string {
             @if (f.block; as b) {
               <span translate="no">{{ b.reason }}</span>
             } @else {
-              {{ reason(f.reason) }}
+              {{ reasonText(f.reason) }}
             }
           </td>
           <td class="repositories">
@@ -135,6 +140,9 @@ export function findingKindWord(kind: SignatureFindingKind): string {
     .finding-text {
       overflow-wrap: anywhere;
     }
+    .findings-title {
+      margin-block-start: var(--quader-space-6);
+    }
   `,
 })
 export class SignatureFindings {
@@ -147,13 +155,15 @@ export class SignatureFindings {
   readonly kind = input<string | undefined>();
   readonly repository = input<string | undefined>();
   readonly q = input<string | undefined>();
+  /** The refused downloads' filter of a reason (R-SIG-074). */
+  readonly reason = input<string | undefined>();
 
   protected readonly list = new PagedResource<SignatureFinding>();
   protected readonly panelOpen = signal(false);
   protected readonly staged = signal<Staged>({ kind: '', repository: '' });
   protected readonly kinds = SIGNATURE_FINDING_KINDS;
   protected readonly kindWord = findingKindWord;
-  protected readonly reason = signatureReason;
+  protected readonly reasonText = signatureReason;
   protected readonly promise = signaturePromise();
 
   private readonly repositoryList = resource({ loader: () => this.repositories.listAll() });

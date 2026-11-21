@@ -283,6 +283,38 @@ own `Judge`: a preview, a release's check and the members are `Gate.Assess` over
 The integration shard that runs `signatures` gains about 6 s; no other leg gains anything measurable. With 25 formats the cost is the same:
 nothing here is per format.
 
+## Stage 3, package 3: the screens (built)
+
+The screens of R-SIG-074 (decisions Q-SIG-223 to Q-SIG-232 of the specification) on the operations above; no operation and no member was
+added. What each state is decided from:
+
+| Screen | Reads | Decides |
+|---|---|---|
+| A repository's section **Signatures** | the member `signatures` of the document; the preview (stored anchors) when the section opens; the project's anchors, and the installation's own for `settings:read` | off, on with any anchor (the warning of Q-SIG-76), on with chosen anchors (a stored reference neither list names is **Removed trust anchor**), read-only parts for a writer without `repositories:write-config` or `vulnerabilities:triage` (the order of R-SIG-061, `gateOrder`), Debian (no controls), the checks off (the preview's `409 signatures_not_enabled`); a narrowing previews the draft (`?anchors=` the chosen references, empty for any) and asks when it refuses anything |
+| A version's banner, its Files tab, a file's fact | the member `refused` and `refusedReason` of each file | a banner per refused file in the repository its content route names, "Refused here" with the reason, no **Download**; `pending` shows nothing more |
+| The gate's block in a version's tab and a file's section | the member `gate` per repository; the repository's releases while `passedBy.kind` is `release` | the accepted anchors, the decision, the release (by whom, when, why) with **Withdraw release**, an image's platforms signed through its index (Q-SIG-226) |
+| The dashboard's **Refused downloads** and **Releases** | the refusals with `repository` and `reason`; one repository's releases | rows with **Release for this repository** or, released, **Withdraw release**, for the holder of `vulnerabilities:triage` |
+| The questions of the admin page and a project's anchors | the impact of the change | the count and the repositories when it is above 0, else the screen's own question or none (`GateActions.askImpact`); a block asks inside its dialog |
+| The client setup | the repository document; the project's anchors for the titles | the line above the snippets for a writer; none for the reduced view (Q-SIG-228) |
+
+| What | Where |
+|---|---|
+| The API's operations and the fake's | [signatures-api.ts](../../web/src/app/api/signatures-api.ts), [fakes-signatures.ts](../../web/src/app/api/testing/fakes-signatures.ts) |
+| The words of each reason, the state line, the questions of the preview and of the impact | [gate-words.ts](../../web/src/app/shared/signatures/gate-words.ts) |
+| The release's dialog, the withdrawal's question, the impact's question | [gate-release-dialog.ts](../../web/src/app/shared/signatures/gate-release-dialog.ts), [gate-releases.ts](../../web/src/app/shared/signatures/gate-releases.ts) |
+| The gate's block | [signature-gate.ts](../../web/src/app/shared/signatures/signature-gate.ts), placed by [version-signatures.ts](../../web/src/app/features/packages/version-signatures.ts) and [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts) |
+| The section and the order of R-SIG-061 | [repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts), [signature-gate-order.ts](../../web/src/app/features/repositories/signature-gate-order.ts); saved by `saveSignatures` of [repository-detail.ts](../../web/src/app/features/repositories/repository-detail.ts) |
+| The banner and the Files tab | [package-version.html](../../web/src/app/features/packages/package-version.html), [package-version.ts](../../web/src/app/features/packages/package-version.ts); the repository of a file from its content route, `repositoryOfContent` of [files-api.ts](../../web/src/app/api/files-api.ts) |
+| The dashboard | [signature-refusals.ts](../../web/src/app/features/vulnerabilities/signature-refusals.ts), placed by [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts) |
+| The refusals' texts of the API | [problem-messages-signatures.ts](../../web/src/app/core/http/problem-messages-signatures.ts) (`signature_weakening_refused`, `signature_not_verified`, `signature_check_pending`, `signatures_not_enabled`); the release's dialog says `nothing_to_release` and `already_released` itself, since the malware scan's release has the same codes |
+| The renders | [renders/screens.ts](../../web/e2e/renders/screens.ts): `repository-settings-signature-gate`, `setup-signature-gate`, `package-version-signature-refused`, `package-version-signature-gate-oci`, `files-signature-refused`, `security-signature-refusals`, and the states `impact` and `block-impact` of `admin-settings-signatures`; the gate off is the profile's real answer, the rest its answers changed in the browser (the profile gates nothing), and no row is written by SQL |
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Web unit | [repository-signature-gate.spec.ts](../../web/src/app/features/repositories/repository-signature-gate.spec.ts): the section off (with axe), any anchor, chosen with a removed one, read-only for an Owner, Debian and the checks off, the question with the preview's numbers, the order; the banner of a refused file and none for a pending one, the release's dialog for its holder only; the dashboard's rows and their actions by right | eleven cases, about 0.4 s (1.6 s with the file's start) | the fake's answers |
+| Web unit | the impact of a removal and of a switch-off in [signature-settings.spec.ts](../../web/src/app/features/settings/signature-settings.spec.ts) | two cases, milliseconds | the fake's answers |
+| Renders | six screens and two states of a seventh: 31 states at three widths and in both schemes (186 pictures) | about 270 s of a browser (2026-11-22, shared machine), about 90 s of the job `ui-layout` at its three workers | answers changed in the browser |
+
 ## The interface for packages 2 and 3
 
 ### The candidate (`formats.SignatureCandidate`, [signatures.go](../../internal/formats/signatures.go))
@@ -338,7 +370,7 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
   `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
   repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
 - **Stage 2:** packages 1 and 2 built, below, and of package 4 the section Signing identity; package 3 and the rest of 4 are not.
-- **Stage 3:** packages 1 and 2 built, above; package 3 (the screens of R-SIG-074) builds on the operations listed in
+- **Stage 3:** packages 1, 2 and 3 built, above; the screens of R-SIG-074 call the operations listed in
   [What the screens of package 3 call](#what-the-screens-of-package-3-call).
 
 ## Stage 2: Quader signs

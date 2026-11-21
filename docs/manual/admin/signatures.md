@@ -135,8 +135,12 @@ administrator's setting of a well-known registry of the project `upstream`.
 ## Only artifacts with a verified signature
 
 A repository can serve only artifacts with a verified signature: its member `signatures.onlyVerified`, optionally with the anchors it
-accepts in `signatures.anchors`. The setting has no screen yet; it is set through the API of the repository document, and the screens follow.
-Before you switch it on, and before you remove an anchor or block a signer, the API tells you what the change refuses:
+accepts in `signatures.anchors`, set in the repository's **Settings › Signatures** (see [Signatures](../user/signatures.md#repositories-that-serve-only-verified-artifacts)
+of the user guide) or through the API of the repository document. The section shows how many artifacts pass, and asks with the numbers before
+a change refuses anything. On this page, removing or switching off an anchor, blocking a signer and switching project anchors off ask with the
+number of artifacts the change makes refused in such repositories, and in which, when it is not 0; a project's Owner is asked the same
+before removing a project anchor. Releases and refused downloads are in the security dashboard's view **Signatures**
+([Security dashboard](../user/security-dashboard.md#signatures)). The operations behind the screens, for scripts:
 
 - **Preview:** `GET /api/v1/projects/<project>/repositories/<repository>/signatures/preview` answers how many of the repository's stored
   artifacts would pass, wait for a check and be refused, per reason, with up to 20 examples; `?anchors=installation/release-key` previews a

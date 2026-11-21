@@ -1,6 +1,7 @@
 /**
- * The codes of the signatures' operations (R-SIG-015 to R-SIG-020, R-SIG-034) and of the signing identity (R-SIG-055): what the admin
- * page and a project's anchors meet when a change is refused.
+ * The codes of the signatures' operations (R-SIG-015 to R-SIG-020, R-SIG-034), of the gate per repository (R-SIG-061, R-SIG-068,
+ * R-SIG-073) and of the signing identity (R-SIG-055): what the admin page, a project's anchors and a repository's settings meet when a
+ * change is refused.
  */
 export function describeSignatureProblem(code: string | null): string | null {
   switch (code) {
@@ -14,6 +15,15 @@ export function describeSignatureProblem(code: string | null): string | null {
       return $localize`:@@problem.project_anchors_disabled:An administrator has switched project trust anchors off, so a project's anchors cannot be changed now.`;
     case 'block_exists':
       return $localize`:@@problem.block_exists:This signer is blocked already.`;
+    // The gate per repository (R-SIG-061, R-SIG-068, R-SIG-073).
+    case 'signature_weakening_refused':
+      return $localize`:@@problem.signature_weakening_refused:Only an administrator or someone who triages security findings can loosen this setting. Ask one of them.`;
+    case 'signature_not_verified':
+      return $localize`:@@problem.signature_not_verified:This repository serves only artifacts with a verified signature, and this one has none it accepts. Someone who triages security findings can release it for this repository.`;
+    case 'signature_check_pending':
+      return $localize`:@@problem.signature_check_pending:Quader is checking the signatures of this artifact. Try again in a minute.`;
+    case 'signatures_not_enabled':
+      return $localize`:@@problem.signatures_not_enabled:Signature checks are switched off in this installation, so no repository refuses anything for its signatures.`;
     // The signing identity (R-SIG-055, Q-SIG-146): each refusal says what to do instead.
     case 'signing_identity_managed':
       return $localize`:@@problem.signing_identity_managed:The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.`;

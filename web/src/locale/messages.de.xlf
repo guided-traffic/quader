@@ -46777,5 +46777,1042 @@
         <target>Im Adminbereich hochgeladen</target>
       </segment>
     </unit>
+    <unit id="problem.signature_weakening_refused">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:20</note>
+      </notes>
+      <segment>
+        <source>Only an administrator or someone who triages security findings can loosen this setting. Ask one of them.</source>
+        <target>Nur ein Administrator oder jemand, der Sicherheitsbefunde triagiert, kann diese Einstellung lockern. Fragen Sie eine dieser Personen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signature_not_verified">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:22</note>
+      </notes>
+      <segment>
+        <source>This repository serves only artifacts with a verified signature, and this one has none it accepts. Someone who triages security findings can release it for this repository.</source>
+        <target>Dieses Repository liefert nur Artefakte mit verifizierter Signatur aus, und dieses hat keine, die es akzeptiert. Wer Sicherheitsbefunde triagiert, kann es für dieses Repository freigeben.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signature_check_pending">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:24</note>
+      </notes>
+      <segment>
+        <source>Quader is checking the signatures of this artifact. Try again in a minute.</source>
+        <target>Quader prüft die Signaturen dieses Artefakts. Versuchen Sie es in einer Minute noch einmal.</target>
+      </segment>
+    </unit>
+    <unit id="problem.signatures_not_enabled">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:26</note>
+      </notes>
+      <segment>
+        <source>Signature checks are switched off in this installation, so no repository refuses anything for its signatures.</source>
+        <target>Signaturprüfungen sind in dieser Installation ausgeschaltet, daher verweigert kein Repository etwas wegen seiner Signaturen.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.missing">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:106,107</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
+        <target>Downloads werden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> hat keine Signatur seines Herausgebers oder seines Builds.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.untrusted">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:109,110</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
+        <target>Downloads werden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, deren Unterzeichner kein von diesem Repository akzeptierter Vertrauensanker kennt.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.not-chosen">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:112,113</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
+        <target>Downloads werden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> ist nur durch Vertrauensanker verifiziert, die dieses Repository nicht akzeptiert.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.invalid">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:115,116</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
+        <target>Downloads werden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, die nicht zu seinem Inhalt passt.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.blocked">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:118,119</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
+        <target>Downloads werden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> ist von einem Unterzeichner signiert, den ein Administrator gesperrt hat.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.not-checked">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:121,122</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
+        <target>Downloads werden in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, die Quader nicht lesen oder nicht prüfen konnte.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.action">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:128,129</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:262</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:79,80</note>
+      </notes>
+      <segment>
+        <source>Release for this repository</source>
+        <target>Für dieses Repository freigeben</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.refused-here">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:219,220</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:104,105</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:69,70</note>
+      </notes>
+      <segment>
+        <source>Refused here</source>
+        <target>Hier verweigert</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:998</note>
+      </notes>
+      <segment>
+        <source>Only artifacts with a verified signature can be downloaded from this repository now.</source>
+        <target>Aus diesem Repository können jetzt nur noch Artefakte mit verifizierter Signatur heruntergeladen werden.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1001</note>
+      </notes>
+      <segment>
+        <source>This repository serves artifacts whatever their signatures say again.</source>
+        <target>Dieses Repository liefert Artefakte wieder aus, unabhängig von ihren Signaturen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.deb">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:89,91</note>
+      </notes>
+      <segment>
+        <source> apt checks the signature of this repository&apos;s index, not of a package. This setting is not available for Debian repositories. </source>
+        <target> apt prüft die Signatur des Index dieses Repositorys, nicht die eines Pakets. Diese Einstellung gibt es für Debian-Repositorys nicht. </target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.checks-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:95,97</note>
+      </notes>
+      <segment>
+        <source>Signature checks are switched off in this installation. This setting does not apply.</source>
+        <target>Signaturprüfungen sind in dieser Installation ausgeschaltet. Diese Einstellung wirkt nicht.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.only-verified">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:99,100</note>
+      </notes>
+      <segment>
+        <source>Only artifacts with a verified signature can be downloaded from this repository</source>
+        <target>Aus diesem Repository können nur Artefakte mit verifizierter Signatur heruntergeladen werden</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:103,105</note>
+      </notes>
+      <segment>
+        <source> Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe. </source>
+        <target> Artefakte ohne eine Signatur, deren Unterzeichner ein Vertrauensanker dieses Repositorys kennt, werden verweigert. Eine Signatur sagt, wer ein Artefakt signiert hat, nicht, dass es sicher ist. </target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:107,109</note>
+      </notes>
+      <segment>
+        <source>Applies to everything this repository serves from its members.</source>
+        <target>Gilt für alles, was dieses Repository aus seinen Mitgliedern ausliefert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.locked">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:110,112</note>
+      </notes>
+      <segment>
+        <source>Only an administrator or someone who triages security findings can loosen this.</source>
+        <target>Nur ein Administrator oder jemand, der Sicherheitsbefunde triagiert, kann dies lockern.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.accepted">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:116,117</note>
+      </notes>
+      <segment>
+        <source>Accepted trust anchors</source>
+        <target>Akzeptierte Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.any">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:120,121</note>
+      </notes>
+      <segment>
+        <source>Any trust anchor of this repository</source>
+        <target>Jeder Vertrauensanker dieses Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.any-warning">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:124,126</note>
+      </notes>
+      <segment>
+        <source>This includes the public Sigstore, where anyone can sign. Choose anchors to accept only your own signers.</source>
+        <target>Dazu gehört der öffentliche Sigstore, bei dem jeder signieren kann. Wählen Sie Anker aus, um nur Ihre eigenen Unterzeichner zu akzeptieren.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.these">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:131,132</note>
+      </notes>
+      <segment>
+        <source>These trust anchors</source>
+        <target>Diese Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.no-anchors">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:135,137</note>
+      </notes>
+      <segment>
+        <source>No trust anchor applies to this repository yet.</source>
+        <target>Für dieses Repository gilt noch kein Vertrauensanker.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.removed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:150</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:47,48</note>
+      </notes>
+      <segment>
+        <source>Removed trust anchor</source>
+        <target>Entfernter Vertrauensanker</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:154,155</note>
+      </notes>
+      <segment>
+        <source>switched off, matches nothing</source>
+        <target>ausgeschaltet, passt auf nichts</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.choose">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:163,165</note>
+      </notes>
+      <segment>
+        <source>Choose at least one trust anchor.</source>
+        <target>Wählen Sie mindestens einen Vertrauensanker aus.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.if-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:174</note>
+      </notes>
+      <segment>
+        <source>Switched on with the stored anchors:</source>
+        <target>Eingeschaltet mit den gespeicherten Ankern:</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.refusals-link">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:177,180</note>
+      </notes>
+      <segment>
+        <source>Refused downloads</source>
+        <target>Verweigerte Downloads</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.counting">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:181,185</note>
+      </notes>
+      <segment>
+        <source>Counting what the setting lets pass.</source>
+        <target>Es wird gezählt, was die Einstellung durchlässt.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.fetch-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:201,203</note>
+      </notes>
+      <segment>
+        <source>Signatures of images are not fetched: an image whose signature no client pulled is refused.</source>
+        <target>Signaturen von Images werden nicht abgerufen: Ein Image, dessen Signatur kein Client abgerufen hat, wird verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.hint-gate-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:330</note>
+      </notes>
+      <segment>
+        <source>Whether only artifacts with a verified signature can be downloaded, and whether Quader fetches the upstream&apos;s signatures.</source>
+        <target>Ob nur Artefakte mit verifizierter Signatur heruntergeladen werden können und ob Quader die Signaturen des Upstreams abruft.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.hint-gate">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:331</note>
+      </notes>
+      <segment>
+        <source>Whether only artifacts with a verified signature can be downloaded from this repository.</source>
+        <target>Ob aus diesem Repository nur Artefakte mit verifizierter Signatur heruntergeladen werden können.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.ask-title">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:458</note>
+      </notes>
+      <segment>
+        <source>Refuse downloads of artifacts without an accepted signature?</source>
+        <target>Downloads von Artefakten ohne akzeptierte Signatur verweigern?</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.ask-confirm">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:461</note>
+      </notes>
+      <segment>
+        <source>Save and refuse them</source>
+        <target>Speichern und verweigern</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.examples">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:472</note>
+      </notes>
+      <segment>
+        <source>The newest <ph id="0" equiv="count" disp="count"/> of them:</source>
+        <target>Die neuesten <ph id="0" equiv="count" disp="count"/> davon:</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.off-title">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:195</note>
+      </notes>
+      <segment>
+        <source>Switch off the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
+        <target>Den Vertrauensanker <ph id="0" equiv="title" disp="title"/> ausschalten?</target>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.off-confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:196</note>
+      </notes>
+      <segment>
+        <source>Switch off</source>
+        <target>Ausschalten</target>
+      </segment>
+    </unit>
+    <unit id="setup.gate">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:255,256</note>
+      </notes>
+      <segment>
+        <source>This repository serves only artifacts with a verified signature.</source>
+        <target>Dieses Repository liefert nur Artefakte mit verifizierter Signatur aus.</target>
+      </segment>
+    </unit>
+    <unit id="setup.gate.any">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:257,258</note>
+      </notes>
+      <segment>
+        <source>Any trust anchor of the repository counts.</source>
+        <target>Jeder Vertrauensanker des Repositorys zählt.</target>
+      </segment>
+    </unit>
+    <unit id="setup.gate.anchors">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:259</note>
+      </notes>
+      <segment>
+        <source>Accepted trust anchors:</source>
+        <target>Akzeptierte Vertrauensanker:</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:48,49</note>
+      </notes>
+      <segment>
+        <source>Refused downloads</source>
+        <target>Verweigerte Downloads</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.note">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:50,52</note>
+      </notes>
+      <segment>
+        <source> Downloads that a repository refused because the artifact has no signature it accepts. One row per repository and artifact. </source>
+        <target> Downloads, die ein Repository verweigert hat, weil das Artefakt keine Signatur hat, die es akzeptiert. Eine Zeile je Repository und Artefakt. </target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.filter.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:66</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:66</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:254</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:107,108</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+        <target>Freigegeben</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.heading">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:130</note>
+      </notes>
+      <segment>
+        <source>Releases</source>
+        <target>Freigaben</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:132,133</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.choose">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:134,135</note>
+      </notes>
+      <segment>
+        <source>Choose a repository</source>
+        <target>Repository auswählen</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.refused-for">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:165</note>
+      </notes>
+      <segment>
+        <source>Refused for:</source>
+        <target>Verweigert wegen:</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.none-chosen">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:183,186</note>
+      </notes>
+      <segment>
+        <source>A release belongs to one repository: choose one to see its releases.</source>
+        <target>Eine Freigabe gehört zu einem Repository: Wählen Sie eines aus, um seine Freigaben zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:259</note>
+      </notes>
+      <segment>
+        <source>Downloads the repositories refused for their signatures</source>
+        <target>Downloads, die die Repositorys wegen ihrer Signaturen verweigert haben</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:260</note>
+      </notes>
+      <segment>
+        <source>No refused downloads.</source>
+        <target>Keine verweigerten Downloads.</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:261</note>
+      </notes>
+      <segment>
+        <source>No refused download matches the filters.</source>
+        <target>Kein verweigerter Download passt zu den Filtern.</target>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:263</note>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:48</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:111,112</note>
+      </notes>
+      <segment>
+        <source>Withdraw release</source>
+        <target>Freigabe zurückziehen</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.artifact">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:265</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:297</note>
+      </notes>
+      <segment>
+        <source>Artifact</source>
+        <target>Artefakt</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:266</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:267</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.last">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:268</note>
+      </notes>
+      <segment>
+        <source>Last refusal</source>
+        <target>Letzte Verweigerung</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.count">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:271</note>
+      </notes>
+      <segment>
+        <source>Count</source>
+        <target>Anzahl</target>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.count-help">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:273</note>
+      </notes>
+      <segment>
+        <source>How often a client was refused this artifact here since the first refusal that is still listed.</source>
+        <target>Wie oft einem Client dieses Artefakt hier verweigert wurde, seit der ersten Verweigerung, die noch aufgeführt ist.</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.hint">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:293</note>
+      </notes>
+      <segment>
+        <source>Artifacts released for one repository, which it serves whatever their signatures say.</source>
+        <target>Für ein Repository freigegebene Artefakte, die es unabhängig von ihren Signaturen ausliefert.</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:294</note>
+      </notes>
+      <segment>
+        <source>Releases of the repository</source>
+        <target>Freigaben des Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:295</note>
+      </notes>
+      <segment>
+        <source>No artifact is released for this repository.</source>
+        <target>Für dieses Repository ist kein Artefakt freigegeben.</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.col.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:298</note>
+      </notes>
+      <segment>
+        <source>Reason of the release</source>
+        <target>Grund der Freigabe</target>
+      </segment>
+    </unit>
+    <unit id="sig.releases.col.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:299</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+        <target>Freigegeben</target>
+      </segment>
+    </unit>
+    <unit id="sig.block.submit-anyway">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:56,58</note>
+      </notes>
+      <segment>
+        <source>Block signer and refuse them</source>
+        <target>Unterzeichner sperren und sie verweigern</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.refuses">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:49,51</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.repository }}"/></pc> serves only artifacts with a verified signature and refuses <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ data.artifact }}"/></pc>.</source>
+        <target><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.repository }}"/></pc> liefert nur Artefakte mit verifizierter Signatur aus und verweigert <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ data.artifact }}"/></pc>.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.effect">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:54,57</note>
+      </notes>
+      <segment>
+        <source> A release serves it from this repository only, whatever its signatures say, until it is withdrawn. Every other repository keeps its own decision. </source>
+        <target> Eine Freigabe liefert es nur aus diesem Repository aus, unabhängig von seinen Signaturen, bis sie zurückgezogen wird. Jedes andere Repository behält seine eigene Entscheidung. </target>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:62,63</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Grund</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.cancel">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:70,71</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.submit">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:71,73</note>
+      </notes>
+      <segment>
+        <source>Release for this repository</source>
+        <target>Für dieses Repository freigeben</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:101</note>
+      </notes>
+      <segment>
+        <source>Why this artifact may be downloaded from this repository without a verified signature, for example a vendor who signs from the next release on. At most 1,000 characters; kept with the release.</source>
+        <target>Warum dieses Artefakt ohne verifizierte Signatur aus diesem Repository heruntergeladen werden darf, zum Beispiel ein Hersteller, der erst ab dem nächsten Release signiert. Höchstens 1.000 Zeichen; wird mit der Freigabe gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.title">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:102</note>
+      </notes>
+      <segment>
+        <source>Release <ph id="0" equiv="artifact" disp="this.data.artifact"/> for this repository?</source>
+        <target><ph id="0" equiv="artifact" disp="this.data.artifact"/> für dieses Repository freigeben?</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason-required">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:105</note>
+      </notes>
+      <segment>
+        <source>A release needs a reason.</source>
+        <target>Eine Freigabe braucht einen Grund.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason-long">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:106</note>
+      </notes>
+      <segment>
+        <source>The reason is longer than 1,000 characters.</source>
+        <target>Der Grund ist länger als 1.000 Zeichen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.nothing">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:113</note>
+      </notes>
+      <segment>
+        <source>There is nothing to release: this repository&apos;s gate lets the artifact pass now.</source>
+        <target>Es gibt nichts freizugeben: Die Prüfung dieses Repositorys lässt das Artefakt jetzt durch.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.already">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:115</note>
+      </notes>
+      <segment>
+        <source>This artifact is released for this repository already. Load the page again to see the release.</source>
+        <target>Dieses Artefakt ist für dieses Repository bereits freigegeben. Laden Sie die Seite neu, um die Freigabe zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.release.done">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:37</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="artifact" disp="artifact"/> is released for <ph id="1" equiv="repository" disp="repository"/>.</source>
+        <target><ph id="0" equiv="artifact" disp="artifact"/> ist für <ph id="1" equiv="repository" disp="repository"/> freigegeben.</target>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw.title">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:44</note>
+      </notes>
+      <segment>
+        <source>Withdraw the release of <ph id="0" equiv="artifact" disp="artifact"/>?</source>
+        <target>Die Freigabe von <ph id="0" equiv="artifact" disp="artifact"/> zurückziehen?</target>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw.text">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:46</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> refuses it again from the next download, unless a signature it accepts arrives.</source>
+        <target><ph id="0" equiv="repository" disp="repository"/> verweigert es ab dem nächsten Download wieder, es sei denn, eine Signatur kommt hinzu, die es akzeptiert.</target>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw.done">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:52</note>
+      </notes>
+      <segment>
+        <source>The release of <ph id="0" equiv="artifact" disp="artifact"/> is withdrawn.</source>
+        <target>Die Freigabe von <ph id="0" equiv="artifact" disp="artifact"/> ist zurückgezogen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.missing">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:13</note>
+      </notes>
+      <segment>
+        <source>No publisher&apos;s signature</source>
+        <target>Keine Herausgebersignatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:15</note>
+      </notes>
+      <segment>
+        <source>Signer not accepted</source>
+        <target>Unterzeichner nicht akzeptiert</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.not-chosen">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:17</note>
+      </notes>
+      <segment>
+        <source>Anchor not accepted</source>
+        <target>Anker nicht akzeptiert</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:19</note>
+      </notes>
+      <segment>
+        <source>Invalid signature</source>
+        <target>Ungültige Signatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.blocked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:21</note>
+      </notes>
+      <segment>
+        <source>Signer blocked</source>
+        <target>Unterzeichner gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:23</note>
+      </notes>
+      <segment>
+        <source>Signature not checked</source>
+        <target>Signatur nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.missing">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:33</note>
+      </notes>
+      <segment>
+        <source>It has no signature of its publisher or its build.</source>
+        <target>Es hat keine Signatur seines Herausgebers oder seines Builds.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:35</note>
+      </notes>
+      <segment>
+        <source>No trust anchor this repository accepts knows the signer of its publisher&apos;s or its build&apos;s signature.</source>
+        <target>Kein Vertrauensanker, den dieses Repository akzeptiert, kennt den Unterzeichner der Signatur seines Herausgebers oder seines Builds.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.not-chosen">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:37</note>
+      </notes>
+      <segment>
+        <source>Its publisher&apos;s or its build&apos;s signature is verified only by trust anchors this repository does not accept.</source>
+        <target>Die Signatur seines Herausgebers oder seines Builds ist nur durch Vertrauensanker verifiziert, die dieses Repository nicht akzeptiert.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:39</note>
+      </notes>
+      <segment>
+        <source>Its publisher&apos;s or its build&apos;s signature does not match its content.</source>
+        <target>Die Signatur seines Herausgebers oder seines Builds passt nicht zu seinem Inhalt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.blocked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:41</note>
+      </notes>
+      <segment>
+        <source>An administrator blocked the signer of its publisher&apos;s or its build&apos;s signature.</source>
+        <target>Ein Administrator hat den Unterzeichner der Signatur seines Herausgebers oder seines Builds gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:43</note>
+      </notes>
+      <segment>
+        <source>Its publisher&apos;s or its build&apos;s signature could not be checked: Quader cannot read it, or its check failed.</source>
+        <target>Die Signatur seines Herausgebers oder seines Builds konnte nicht geprüft werden: Quader kann sie nicht lesen, oder ihre Prüfung ist fehlgeschlagen.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:45</note>
+      </notes>
+      <segment>
+        <source>Its signatures are not checked yet.</source>
+        <target>Seine Signaturen sind noch nicht geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.state">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:82</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="pass" disp="pass"/> of <ph id="1" equiv="artifacts" disp="of"/> artifacts pass. <ph id="2" equiv="refused" disp="refused"/> are refused.</source>
+        <target><ph id="0" equiv="pass" disp="pass"/> von <ph id="1" equiv="artifacts" disp="of"/> Artefakten kommen durch. <ph id="2" equiv="refused" disp="refused"/> werden verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.state-partial">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:83</note>
+      </notes>
+      <segment>
+        <source>Of the first <ph id="0" equiv="artifacts" disp="of"/> artifacts read, <ph id="1" equiv="pass" disp="pass"/> pass and <ph id="2" equiv="refused" disp="refused"/> are refused; the preview stopped before the end.</source>
+        <target>Von den ersten <ph id="0" equiv="artifacts" disp="of"/> gelesenen Artefakten kommen <ph id="1" equiv="pass" disp="pass"/> durch und <ph id="2" equiv="refused" disp="refused"/> werden verweigert; die Vorschau hat vor dem Ende aufgehört.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.state-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:86</note>
+        <note category="location">src/app/shared/signatures/gate-words.ts:101</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="pending" disp="pending"/> are still being checked.</source>
+        <target><ph id="0" equiv="pending" disp="pending"/> werden noch geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.ask">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:97</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="refused" disp="refused"/> of <ph id="1" equiv="artifacts" disp="of"/> artifacts in this repository have no verified signature that this setting accepts and will be refused.</source>
+        <target><ph id="0" equiv="refused" disp="refused"/> von <ph id="1" equiv="artifacts" disp="of"/> Artefakten in diesem Repository haben keine verifizierte Signatur, die diese Einstellung akzeptiert, und werden verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.ask-partial">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:98</note>
+      </notes>
+      <segment>
+        <source>At least <ph id="0" equiv="refused" disp="refused"/> of the first <ph id="1" equiv="artifacts" disp="of"/> artifacts read in this repository have no verified signature that this setting accepts and will be refused. The preview stopped before the end.</source>
+        <target>Mindestens <ph id="0" equiv="refused" disp="refused"/> der ersten <ph id="1" equiv="artifacts" disp="of"/> gelesenen Artefakte in diesem Repository haben keine verifizierte Signatur, die diese Einstellung akzeptiert, und werden verweigert. Die Vorschau hat vor dem Ende aufgehört.</target>
+      </segment>
+    </unit>
+    <unit id="sig.impact.upper">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:117</note>
+      </notes>
+      <segment>
+        <source>This change makes at most <ph id="0" equiv="artifacts" disp="artifacts"/> artifacts in <ph id="1" equiv="repositories" disp="repositories"/> repositories that serve only verified artifacts refused:</source>
+        <target>Diese Änderung lässt höchstens <ph id="0" equiv="artifacts" disp="artifacts"/> Artefakte in <ph id="1" equiv="repositories" disp="repositories"/> Repositorys, die nur verifizierte Artefakte ausliefern, verweigern:</target>
+      </segment>
+    </unit>
+    <unit id="sig.impact.exact">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:120</note>
+      </notes>
+      <segment>
+        <source>This change makes <ph id="0" equiv="artifacts" disp="artifacts"/> artifacts in <ph id="1" equiv="repositories" disp="repositories"/> repositories that serve only verified artifacts refused:</source>
+        <target>Diese Änderung lässt <ph id="0" equiv="artifacts" disp="artifacts"/> Artefakte in <ph id="1" equiv="repositories" disp="repositories"/> Repositorys, die nur verifizierte Artefakte ausliefern, verweigern:</target>
+      </segment>
+    </unit>
+    <unit id="sig.impact.partial">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:121</note>
+      </notes>
+      <segment>
+        <source>This change makes at least <ph id="0" equiv="artifacts" disp="artifacts"/> artifacts in <ph id="1" equiv="repositories" disp="repositories"/> repositories that serve only verified artifacts refused:</source>
+        <target>Diese Änderung lässt mindestens <ph id="0" equiv="artifacts" disp="artifacts"/> Artefakte in <ph id="1" equiv="repositories" disp="repositories"/> Repositorys, die nur verifizierte Artefakte ausliefern, verweigern:</target>
+      </segment>
+    </unit>
+    <unit id="sig.impact.more">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:128</note>
+      </notes>
+      <segment>
+        <source>and <ph id="0" equiv="count" disp="n(more)"/> more repositories</source>
+        <target>und <ph id="0" equiv="count" disp="n(more)"/> weitere Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.head">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:37,39</note>
+      </notes>
+      <segment>
+        <source>This repository serves only artifacts with a verified signature.</source>
+        <target>Dieses Repository liefert nur Artefakte mit verifizierter Signatur aus.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.accepted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:40,41</note>
+      </notes>
+      <segment>
+        <source>Accepted trust anchors:</source>
+        <target>Akzeptierte Vertrauensanker:</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.any">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>Any trust anchor of this repository</source>
+        <target>Jeder Vertrauensanker dieses Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.released">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:96,97</note>
+      </notes>
+      <segment>
+        <source>Released for this repository</source>
+        <target>Für dieses Repository freigegeben</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.released-by">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:101</note>
+      </notes>
+      <segment>
+        <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(rel.releasedBy) }}"/></source>
+        <target>von <ph id="0" equiv="INTERPOLATION" disp="{{ principal(rel.releasedBy) }}"/></target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.release-reason">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:108</note>
+      </notes>
+      <segment>
+        <source>Reason:</source>
+        <target>Grund:</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.passes">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:120,121</note>
+      </notes>
+      <segment>
+        <source>Passes</source>
+        <target>Kommt durch</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.passes-why">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:122,124</note>
+      </notes>
+      <segment>
+        <source>A signature this repository accepts verifies it.</source>
+        <target>Eine Signatur, die dieses Repository akzeptiert, verifiziert es.</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.through-index">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:127,129</note>
+      </notes>
+      <segment>
+        <source>Signed through its image index</source>
+        <target>Über seinen Image-Index signiert</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.label">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:211</note>
+      </notes>
+      <segment>
+        <source>Signature check of this repository</source>
+        <target>Signaturprüfung dieses Repositorys</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

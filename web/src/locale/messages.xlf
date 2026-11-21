@@ -1617,7 +1617,7 @@
     </unit>
     <unit id="problem.secret_material">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:8</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:9</note>
       </notes>
       <segment>
         <source>This holds a private key. A trust anchor takes public material only: a certificate or a public key.</source>
@@ -1625,7 +1625,7 @@
     </unit>
     <unit id="problem.anchor_exists">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:10</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:11</note>
       </notes>
       <segment>
         <source>A trust anchor with this key exists already. Choose another key.</source>
@@ -1633,7 +1633,7 @@
     </unit>
     <unit id="problem.anchor_managed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:12</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:13</note>
       </notes>
       <segment>
         <source>This trust anchor is shipped with Quader or declared in the Helm values; it cannot be changed here.</source>
@@ -1641,7 +1641,7 @@
     </unit>
     <unit id="problem.project_anchors_disabled">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:14</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:15</note>
       </notes>
       <segment>
         <source>An administrator has switched project trust anchors off, so a project&apos;s anchors cannot be changed now.</source>
@@ -1649,15 +1649,47 @@
     </unit>
     <unit id="problem.block_exists">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:16</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:17</note>
       </notes>
       <segment>
         <source>This signer is blocked already.</source>
       </segment>
     </unit>
+    <unit id="problem.signature_weakening_refused">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:20</note>
+      </notes>
+      <segment>
+        <source>Only an administrator or someone who triages security findings can loosen this setting. Ask one of them.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signature_not_verified">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:22</note>
+      </notes>
+      <segment>
+        <source>This repository serves only artifacts with a verified signature, and this one has none it accepts. Someone who triages security findings can release it for this repository.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signature_check_pending">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:24</note>
+      </notes>
+      <segment>
+        <source>Quader is checking the signatures of this artifact. Try again in a minute.</source>
+      </segment>
+    </unit>
+    <unit id="problem.signatures_not_enabled">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:26</note>
+      </notes>
+      <segment>
+        <source>Signature checks are switched off in this installation, so no repository refuses anything for its signatures.</source>
+      </segment>
+    </unit>
     <unit id="problem.signing_identity_managed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:19</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:29</note>
       </notes>
       <segment>
         <source>The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.</source>
@@ -1665,7 +1697,7 @@
     </unit>
     <unit id="problem.signing_identity_pending">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:21</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:31</note>
       </notes>
       <segment>
         <source>A signing key is waiting for its certificate. Upload the certificate the CA issued for it, or discard it first.</source>
@@ -1673,7 +1705,7 @@
     </unit>
     <unit id="problem.signing_key_mismatch">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:23</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:33</note>
       </notes>
       <segment>
         <source>This certificate is not for the pending key: the CA certified another key. Upload the certificate issued for this request.</source>
@@ -1681,7 +1713,7 @@
     </unit>
     <unit id="problem.signing_no_pending_key">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:25</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:35</note>
       </notes>
       <segment>
         <source>No signing key is waiting for a certificate. Create a signing key first, then upload the certificate the CA issued for its request.</source>
@@ -1689,7 +1721,7 @@
     </unit>
     <unit id="problem.signing_identity_announced">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:27</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:37</note>
       </notes>
       <segment>
         <source>A new signing identity is announced and becomes current within minutes. Wait for the switch, then try again.</source>
@@ -1697,7 +1729,7 @@
     </unit>
     <unit id="problem.signing_identity_exists">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:29</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:39</note>
       </notes>
       <segment>
         <source>This certificate belongs to a signing identity Quader holds already.</source>
@@ -1705,7 +1737,7 @@
     </unit>
     <unit id="problem.signing_identity_not_previous">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:31</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:41</note>
       </notes>
       <segment>
         <source>Only a previous signing identity can be retired. Reload the page to see its state.</source>
@@ -1713,7 +1745,7 @@
     </unit>
     <unit id="problem.signing_key_in_use">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-signatures.ts:33</note>
+        <note category="location">src/app/core/http/problem-messages-signatures.ts:43</note>
       </notes>
       <segment>
         <source>The current or the announced identity has the same key, so retiring this certificate would withdraw nothing. Replace the key first.</source>
@@ -4568,8 +4600,8 @@
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:172,176</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:190,193</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:129,131</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:174,176</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:151,153</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:196,198</note>
         <note category="location">src/app/features/repositories/repository-create.html:245,247</note>
         <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
         <note category="location">src/app/features/repositories/repository-format-chooser.ts:40,42</note>
@@ -9150,7 +9182,7 @@
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:410,412</note>
         <note category="location">src/app/features/repositories/repository-detail.html:37,40</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:65,67</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:48,50</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:215,217</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:336,338</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:395,397</note>
       </notes>
@@ -10211,7 +10243,7 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:154</note>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:427,428</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:433,434</note>
         <note category="location">src/app/features/repositories/repository-list.html:65,66</note>
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:261</note>
@@ -13116,7 +13148,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
-        <note category="location">src/app/features/packages/package-version.html:359,360</note>
+        <note category="location">src/app/features/packages/package-version.html:413,414</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -13250,8 +13282,8 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:20,21</note>
         <note category="location">src/app/features/packages/package-detail.html:23,24</note>
         <note category="location">src/app/features/packages/package-version.html:34,35</note>
-        <note category="location">src/app/features/packages/package-version.html:149,150</note>
-        <note category="location">src/app/features/packages/version-signatures.ts:33,36</note>
+        <note category="location">src/app/features/packages/package-version.html:188,189</note>
+        <note category="location">src/app/features/packages/version-signatures.ts:46,49</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -13882,7 +13914,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:187</note>
-        <note category="location">src/app/features/packages/package-version.ts:447</note>
+        <note category="location">src/app/features/packages/package-version.ts:489</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -14332,17 +14364,85 @@
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
       </segment>
     </unit>
+    <unit id="pkg.gate.banner.missing">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:106,107</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.untrusted">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:109,110</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.not-chosen">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:112,113</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.invalid">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:115,116</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.blocked">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:118,119</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.not-checked">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:121,122</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.action">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:128,129</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:265</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:79,80</note>
+      </notes>
+      <segment>
+        <source>Release for this repository</source>
+      </segment>
+    </unit>
     <unit id="pkg.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:101</note>
+        <note category="location">src/app/features/packages/package-version.html:140</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
       </segment>
     </unit>
+    <unit id="sig.gate.refused-here">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:219,220</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:104,105</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:69,70</note>
+      </notes>
+      <segment>
+        <source>Refused here</source>
+      </segment>
+    </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:192,194</note>
+        <note category="location">src/app/features/packages/package-version.html:238,240</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -14350,7 +14450,7 @@
     </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:202,204</note>
+        <note category="location">src/app/features/packages/package-version.html:248,250</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -14358,7 +14458,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:205,206</note>
+        <note category="location">src/app/features/packages/package-version.html:251,252</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -14366,7 +14466,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:207,209</note>
+        <note category="location">src/app/features/packages/package-version.html:253,255</note>
       </notes>
       <segment>
         <source>None</source>
@@ -14374,7 +14474,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:213,214</note>
+        <note category="location">src/app/features/packages/package-version.html:259,260</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -14382,7 +14482,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:234,236</note>
+        <note category="location">src/app/features/packages/package-version.html:280,282</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -14390,7 +14490,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:236,238</note>
+        <note category="location">src/app/features/packages/package-version.html:282,284</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -14398,7 +14498,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:248,249</note>
+        <note category="location">src/app/features/packages/package-version.html:302,303</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -14406,7 +14506,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:250,252</note>
+        <note category="location">src/app/features/packages/package-version.html:304,306</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -14414,7 +14514,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:262,263</note>
+        <note category="location">src/app/features/packages/package-version.html:316,317</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -14422,7 +14522,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:265,266</note>
+        <note category="location">src/app/features/packages/package-version.html:319,320</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -14430,7 +14530,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:267,269</note>
+        <note category="location">src/app/features/packages/package-version.html:321,323</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -14438,7 +14538,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:275,276</note>
+        <note category="location">src/app/features/packages/package-version.html:329,330</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -14446,7 +14546,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:277,278</note>
+        <note category="location">src/app/features/packages/package-version.html:331,332</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -14454,7 +14554,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:280,281</note>
+        <note category="location">src/app/features/packages/package-version.html:334,335</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -14462,7 +14562,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:287,288</note>
+        <note category="location">src/app/features/packages/package-version.html:341,342</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -14470,7 +14570,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:289,290</note>
+        <note category="location">src/app/features/packages/package-version.html:343,344</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -14478,7 +14578,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:296,297</note>
+        <note category="location">src/app/features/packages/package-version.html:350,351</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -14486,8 +14586,8 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:298,300</note>
-        <note category="location">src/app/features/packages/package-version.ts:441</note>
+        <note category="location">src/app/features/packages/package-version.html:352,354</note>
+        <note category="location">src/app/features/packages/package-version.ts:483</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -14495,8 +14595,8 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:304,305</note>
-        <note category="location">src/app/features/packages/package-version.ts:442</note>
+        <note category="location">src/app/features/packages/package-version.html:358,359</note>
+        <note category="location">src/app/features/packages/package-version.ts:484</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -14504,7 +14604,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:308,309</note>
+        <note category="location">src/app/features/packages/package-version.html:362,363</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -14512,7 +14612,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:311,312</note>
+        <note category="location">src/app/features/packages/package-version.html:365,366</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -14520,7 +14620,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:315,316</note>
+        <note category="location">src/app/features/packages/package-version.html:369,370</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -14528,7 +14628,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:341,342</note>
+        <note category="location">src/app/features/packages/package-version.html:395,396</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -14536,7 +14636,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:350,351</note>
+        <note category="location">src/app/features/packages/package-version.html:404,405</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -14544,7 +14644,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:369,370</note>
+        <note category="location">src/app/features/packages/package-version.html:423,424</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -14552,7 +14652,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:394,395</note>
+        <note category="location">src/app/features/packages/package-version.html:448,449</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -14560,7 +14660,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:400,402</note>
+        <note category="location">src/app/features/packages/package-version.html:454,456</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -14568,7 +14668,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:404,406</note>
+        <note category="location">src/app/features/packages/package-version.html:458,460</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -14576,9 +14676,9 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:416,417</note>
-        <note category="location">src/app/features/packages/package-version.html:425,426</note>
-        <note category="location">src/app/features/packages/package-version.html:434,435</note>
+        <note category="location">src/app/features/packages/package-version.html:470,471</note>
+        <note category="location">src/app/features/packages/package-version.html:479,480</note>
+        <note category="location">src/app/features/packages/package-version.html:488,489</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -14586,7 +14686,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:443,444</note>
+        <note category="location">src/app/features/packages/package-version.html:497,498</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -14594,7 +14694,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:451,452</note>
+        <note category="location">src/app/features/packages/package-version.html:505,506</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -14602,7 +14702,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:204</note>
+        <note category="location">src/app/features/packages/package-version.ts:207</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -14610,7 +14710,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:209</note>
+        <note category="location">src/app/features/packages/package-version.ts:212</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -14618,7 +14718,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:214</note>
+        <note category="location">src/app/features/packages/package-version.ts:217</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -14626,7 +14726,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:219</note>
+        <note category="location">src/app/features/packages/package-version.ts:222</note>
       </notes>
       <segment>
         <source>README</source>
@@ -14634,7 +14734,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:220</note>
+        <note category="location">src/app/features/packages/package-version.ts:223</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -14642,7 +14742,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:222</note>
+        <note category="location">src/app/features/packages/package-version.ts:225</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -14650,7 +14750,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:223</note>
+        <note category="location">src/app/features/packages/package-version.ts:226</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -14658,7 +14758,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:225</note>
+        <note category="location">src/app/features/packages/package-version.ts:228</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -14666,7 +14766,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:330</note>
+        <note category="location">src/app/features/packages/package-version.ts:333</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -14674,8 +14774,8 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:331</note>
-        <note category="location">src/app/features/packages/package-version.ts:413</note>
+        <note category="location">src/app/features/packages/package-version.ts:334</note>
+        <note category="location">src/app/features/packages/package-version.ts:455</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -14683,7 +14783,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:334</note>
+        <note category="location">src/app/features/packages/package-version.ts:337</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -14691,7 +14791,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:336</note>
+        <note category="location">src/app/features/packages/package-version.ts:339</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -14699,7 +14799,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:339</note>
+        <note category="location">src/app/features/packages/package-version.ts:342</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -14707,7 +14807,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:340</note>
+        <note category="location">src/app/features/packages/package-version.ts:343</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -14715,7 +14815,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:341</note>
+        <note category="location">src/app/features/packages/package-version.ts:344</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -14723,7 +14823,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:412</note>
+        <note category="location">src/app/features/packages/package-version.ts:454</note>
       </notes>
       <segment>
         <source>File</source>
@@ -14731,7 +14831,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:416</note>
+        <note category="location">src/app/features/packages/package-version.ts:458</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -14739,7 +14839,7 @@
     </unit>
     <unit id="pkg.help.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:417</note>
+        <note category="location">src/app/features/packages/package-version.ts:459</note>
       </notes>
       <segment>
         <source>The checksum of the file&apos;s content. Compare it with the output of sha256sum on the downloaded file.</source>
@@ -14747,7 +14847,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:419</note>
+        <note category="location">src/app/features/packages/package-version.ts:461</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -14755,7 +14855,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:420</note>
+        <note category="location">src/app/features/packages/package-version.ts:462</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -14763,7 +14863,7 @@
     </unit>
     <unit id="pkg.file.download">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:421</note>
+        <note category="location">src/app/features/packages/package-version.ts:463</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -14771,7 +14871,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:435</note>
+        <note category="location">src/app/features/packages/package-version.ts:477</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -14779,7 +14879,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:436</note>
+        <note category="location">src/app/features/packages/package-version.ts:478</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -14787,7 +14887,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:437</note>
+        <note category="location">src/app/features/packages/package-version.ts:479</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -14795,7 +14895,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:440</note>
+        <note category="location">src/app/features/packages/package-version.ts:482</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -14803,7 +14903,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:443</note>
+        <note category="location">src/app/features/packages/package-version.ts:485</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -14811,7 +14911,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:445</note>
+        <note category="location">src/app/features/packages/package-version.ts:487</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -14819,7 +14919,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:446</note>
+        <note category="location">src/app/features/packages/package-version.ts:488</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -14827,7 +14927,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:448</note>
+        <note category="location">src/app/features/packages/package-version.ts:490</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -14835,7 +14935,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:449</note>
+        <note category="location">src/app/features/packages/package-version.ts:491</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -14843,7 +14943,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:450</note>
+        <note category="location">src/app/features/packages/package-version.ts:492</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -14851,7 +14951,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:451</note>
+        <note category="location">src/app/features/packages/package-version.ts:493</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -14859,8 +14959,8 @@
     </unit>
     <unit id="repo.class.local">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:453</note>
-        <note category="location">src/app/features/packages/version-signatures.ts:67</note>
+        <note category="location">src/app/features/packages/package-version.ts:495</note>
+        <note category="location">src/app/features/packages/version-signatures.ts:88</note>
         <note category="location">src/app/features/repositories/repository-class.ts:9</note>
       </notes>
       <segment>
@@ -14869,8 +14969,8 @@
     </unit>
     <unit id="repo.class.remote">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:454</note>
-        <note category="location">src/app/features/packages/version-signatures.ts:68</note>
+        <note category="location">src/app/features/packages/package-version.ts:496</note>
+        <note category="location">src/app/features/packages/version-signatures.ts:89</note>
         <note category="location">src/app/features/repositories/repository-class.ts:11</note>
       </notes>
       <segment>
@@ -14879,8 +14979,8 @@
     </unit>
     <unit id="repo.class.virtual">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:455</note>
-        <note category="location">src/app/features/packages/version-signatures.ts:69</note>
+        <note category="location">src/app/features/packages/package-version.ts:497</note>
+        <note category="location">src/app/features/packages/version-signatures.ts:90</note>
         <note category="location">src/app/features/repositories/repository-class.ts:13</note>
       </notes>
       <segment>
@@ -15153,7 +15253,7 @@
     </unit>
     <unit id="sig.version.none">
       <notes>
-        <note category="location">src/app/features/packages/version-signatures.ts:22,24</note>
+        <note category="location">src/app/features/packages/version-signatures.ts:25,27</note>
       </notes>
       <segment>
         <source>No repository you may read holds this version.</source>
@@ -18068,8 +18168,8 @@
     </unit>
     <unit id="sig.anchor.remove-title">
       <notes>
-        <note category="location">src/app/features/projects/project-signature-anchors.ts:132</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:210</note>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:135</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:224</note>
       </notes>
       <segment>
         <source>Remove the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -18077,8 +18177,8 @@
     </unit>
     <unit id="sig.anchor.remove-text">
       <notes>
-        <note category="location">src/app/features/projects/project-signature-anchors.ts:133</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:212</note>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:136</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:226</note>
       </notes>
       <segment>
         <source>The signatures it knows read &quot;Signed · signer not trusted&quot; unless another anchor knows their signer.</source>
@@ -18086,8 +18186,8 @@
     </unit>
     <unit id="sig.anchor.remove-confirm">
       <notes>
-        <note category="location">src/app/features/projects/project-signature-anchors.ts:134</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:214</note>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:137</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:228</note>
       </notes>
       <segment>
         <source>Remove trust anchor</source>
@@ -18095,8 +18195,8 @@
     </unit>
     <unit id="sig.anchor.removed">
       <notes>
-        <note category="location">src/app/features/projects/project-signature-anchors.ts:143</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:223</note>
+        <note category="location">src/app/features/projects/project-signature-anchors.ts:148</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:239</note>
       </notes>
       <segment>
         <source>Trust anchor removed.</source>
@@ -18988,7 +19088,7 @@
     <unit id="repo.deleting">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:164,165</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:524,525</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:530,531</note>
         <note category="location">src/app/features/repositories/repository-list.html:265,266</note>
       </notes>
       <segment>
@@ -19158,8 +19258,8 @@
     </unit>
     <unit id="files.download-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:51,52</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:260</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:54,55</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:296</note>
       </notes>
       <segment>
         <source>Download address</source>
@@ -19167,7 +19267,7 @@
     </unit>
     <unit id="files.fact.size">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:57,58</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:60,61</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -19175,7 +19275,7 @@
     </unit>
     <unit id="files.fact.media">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:59,60</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:62,63</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -19183,7 +19283,7 @@
     </unit>
     <unit id="files.fact.created">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:61,63</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:64,66</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -19191,8 +19291,8 @@
     </unit>
     <unit id="files.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:65</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:72</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:68</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:75</note>
       </notes>
       <segment>
         <source>by</source>
@@ -19200,7 +19300,7 @@
     </unit>
     <unit id="files.fact.modified">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:68,70</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:71,73</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -19208,7 +19308,7 @@
     </unit>
     <unit id="files.fact.content">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:76,78</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:79,81</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -19216,7 +19316,7 @@
     </unit>
     <unit id="files.content.missing">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:80,81</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:83,84</note>
       </notes>
       <segment>
         <source>The stored content is missing.</source>
@@ -19224,7 +19324,7 @@
     </unit>
     <unit id="files.content.corrupt">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:82,84</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:85,87</note>
       </notes>
       <segment>
         <source>The stored content failed its checksum.</source>
@@ -19232,7 +19332,7 @@
     </unit>
     <unit id="files.fact.malware">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:88,89</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:91,92</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -19240,7 +19340,7 @@
     </unit>
     <unit id="files.fact.signature">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:93,94</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:96,97</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -19248,7 +19348,7 @@
     </unit>
     <unit id="files.fact.signature-of">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:103,104</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:116,117</note>
       </notes>
       <segment>
         <source>Signature of</source>
@@ -19256,7 +19356,7 @@
     </unit>
     <unit id="files.signatures">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:120,121</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:133,134</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -19264,7 +19364,7 @@
     </unit>
     <unit id="files.details">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:138</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:160</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -19272,7 +19372,7 @@
     </unit>
     <unit id="files.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:139,140</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:161,162</note>
       </notes>
       <segment>
         <source>Every checksum, the downloads, and the file as the API describes it.</source>
@@ -19280,7 +19380,7 @@
     </unit>
     <unit id="files.checksums">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:142,143</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:164,165</note>
       </notes>
       <segment>
         <source>Checksums</source>
@@ -19288,7 +19388,7 @@
     </unit>
     <unit id="files.stats.heading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:154,155</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:176,177</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -19296,7 +19396,7 @@
     </unit>
     <unit id="files.stats.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:159,160</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:181,182</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -19304,7 +19404,7 @@
     </unit>
     <unit id="files.stats.last">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:161,163</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:183,185</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -19312,7 +19412,7 @@
     </unit>
     <unit id="files.stats.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:169,170</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:191,192</note>
       </notes>
       <segment>
         <source>Last downloader</source>
@@ -19320,7 +19420,7 @@
     </unit>
     <unit id="files.stats.hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:172,173</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:194,195</note>
       </notes>
       <segment>
         <source>Counts reach the database within a minute of a download.</source>
@@ -19328,7 +19428,7 @@
     </unit>
     <unit id="files.api.json">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:176,177</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:198,199</note>
       </notes>
       <segment>
         <source>The file as the API describes it</source>
@@ -19336,7 +19436,7 @@
     </unit>
     <unit id="files.api.curl">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:178,179</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:200,201</note>
       </notes>
       <segment>
         <source>The same request with curl</source>
@@ -19344,7 +19444,7 @@
     </unit>
     <unit id="files.api.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:181,182</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:203,204</note>
       </notes>
       <segment>
         <source>Download with curl</source>
@@ -19352,7 +19452,7 @@
     </unit>
     <unit id="files.signatures-hint-none">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:214</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:250</note>
       </notes>
       <segment>
         <source>No signature found, and who uploaded the file or where it was fetched from.</source>
@@ -19360,7 +19460,7 @@
     </unit>
     <unit id="files.signatures-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:215</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:251</note>
       </notes>
       <segment>
         <source>Who signed the file, whether a trust anchor knows the signer, and who uploaded it.</source>
@@ -19368,7 +19468,7 @@
     </unit>
     <unit id="files.copy-download-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:261</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:297</note>
       </notes>
       <segment>
         <source>Copy download address</source>
@@ -19376,7 +19476,7 @@
     </unit>
     <unit id="files.copy-digest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:263</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:299</note>
       </notes>
       <segment>
         <source>Copy <ph id="0" equiv="checksum" disp="name"/></source>
@@ -21902,7 +22002,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:186,187</note>
         <note category="location">src/app/features/repositories/repository-create.ts:661</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:342,343</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:348,349</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:449</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:466</note>
       </notes>
@@ -22137,7 +22237,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:31,32</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:61,62</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:44,45</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:211,212</note>
         <note category="location">src/app/features/repositories/virtual-members.html:51,52</note>
       </notes>
       <segment>
@@ -22155,7 +22255,7 @@
     <unit id="repo.col.format">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:56,57</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:429,430</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:435,436</note>
         <note category="location">src/app/features/repositories/repository-list.html:52,53</note>
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:259</note>
@@ -22312,7 +22412,7 @@
     </unit>
     <unit id="repo.settings.notes-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:344,346</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:350,352</note>
       </notes>
       <segment>
         <source>Notes for the people who configure the repository.</source>
@@ -22320,7 +22420,7 @@
     </unit>
     <unit id="repo.tab.deb-keys">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:357,358</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:363,364</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -22328,7 +22428,7 @@
     </unit>
     <unit id="repo.settings.deb-keys-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:359,360</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:365,366</note>
       </notes>
       <segment>
         <source>The keys that sign the repository&apos;s indexes.</source>
@@ -22336,7 +22436,7 @@
     </unit>
     <unit id="repo.settings.deb-index">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:369</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:375</note>
       </notes>
       <segment>
         <source>Indexes</source>
@@ -22344,7 +22444,7 @@
     </unit>
     <unit id="repo.settings.deb-index-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:370,371</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:376,377</note>
       </notes>
       <segment>
         <source>The state of each suite&apos;s indexes, and a rebuild.</source>
@@ -22352,7 +22452,7 @@
     </unit>
     <unit id="repo.tab.ansible-imports">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:382,383</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:388,389</note>
       </notes>
       <segment>
         <source>Import tasks</source>
@@ -22360,7 +22460,7 @@
     </unit>
     <unit id="repo.settings.imports-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:384,385</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:390,391</note>
       </notes>
       <segment>
         <source>The imports of published collections and their logs.</source>
@@ -22368,7 +22468,7 @@
     </unit>
     <unit id="repo.tab.ansible-tombstones">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:395,396</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:401,402</note>
       </notes>
       <segment>
         <source>Tombstones</source>
@@ -22376,7 +22476,7 @@
     </unit>
     <unit id="repo.settings.tombstones-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:397,398</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:403,404</note>
       </notes>
       <segment>
         <source>Deleted collection versions whose names stay taken.</source>
@@ -22384,7 +22484,7 @@
     </unit>
     <unit id="repo.settings.service-accounts">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:409,410</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:415,416</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -22392,7 +22492,7 @@
     </unit>
     <unit id="repo.settings.service-accounts-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:411,412</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:417,418</note>
       </notes>
       <segment>
         <source>Accounts that hold their rights on this repository and nowhere else, each with its technical tokens.</source>
@@ -22400,7 +22500,7 @@
     </unit>
     <unit id="repo.settings.details">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:423</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:429</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:430</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:448</note>
       </notes>
@@ -22410,7 +22510,7 @@
     </unit>
     <unit id="repo.settings.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:424,427</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:430,433</note>
       </notes>
       <segment>
         <source>The class, the format, the layout and the dates of the repository.</source>
@@ -22418,7 +22518,7 @@
     </unit>
     <unit id="repo.detail.layout">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:431,432</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:437,438</note>
       </notes>
       <segment>
         <source>Layout</source>
@@ -22426,7 +22526,7 @@
     </unit>
     <unit id="repo.detail.project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:434,435</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:440,441</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -22434,7 +22534,7 @@
     </unit>
     <unit id="repo.detail.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:438,439</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:444,445</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:477,478</note>
       </notes>
       <segment>
@@ -22443,7 +22543,7 @@
     </unit>
     <unit id="repo.detail.updated">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:442,443</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:448,449</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:481,482</note>
       </notes>
       <segment>
@@ -22452,7 +22552,7 @@
     </unit>
     <unit id="repo.col.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:446,447</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:452,453</note>
         <note category="location">src/app/features/repositories/repository-list.ts:337</note>
       </notes>
       <segment>
@@ -22461,7 +22561,7 @@
     </unit>
     <unit id="repo.tab.api">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:455</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:461</note>
       </notes>
       <segment>
         <source>API</source>
@@ -22469,7 +22569,7 @@
     </unit>
     <unit id="repo.settings.api-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:456,458</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:462,464</note>
       </notes>
       <segment>
         <source>The stored document, and each unsaved change as the request that saves it.</source>
@@ -22477,7 +22577,7 @@
     </unit>
     <unit id="repo.detail.api.document">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:458,459</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:464,465</note>
       </notes>
       <segment>
         <source>Stored document</source>
@@ -22485,7 +22585,7 @@
     </unit>
     <unit id="repo.detail.api.patch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:460,461</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:466,467</note>
       </notes>
       <segment>
         <source>Your change as a request</source>
@@ -22493,7 +22593,7 @@
     </unit>
     <unit id="repo.detail.api.nochange">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:465,467</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:471,473</note>
       </notes>
       <segment>
         <source>Change a setting to see the request that saves it.</source>
@@ -22501,7 +22601,7 @@
     </unit>
     <unit id="repo.detail.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:475,476</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:481,482</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -22509,7 +22609,7 @@
     </unit>
     <unit id="repo.settings.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:477,479</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:483,485</note>
       </notes>
       <segment>
         <source>Disable, move or delete this repository.</source>
@@ -22517,7 +22617,7 @@
     </unit>
     <unit id="repo.enable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:484,485</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:490,491</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -22525,7 +22625,7 @@
     </unit>
     <unit id="repo.enable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:485,486</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:491,492</note>
       </notes>
       <segment>
         <source>The repository is disabled: it serves nothing and takes no publish.</source>
@@ -22533,8 +22633,8 @@
     </unit>
     <unit id="repo.enable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:486,488</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:864</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:492,494</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:867</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -22542,7 +22642,7 @@
     </unit>
     <unit id="repo.disable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:488,489</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:494,495</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -22550,7 +22650,7 @@
     </unit>
     <unit id="repo.disable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:489,490</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:495,496</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it; its content stays.</source>
@@ -22558,8 +22658,8 @@
     </unit>
     <unit id="repo.disable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:490,492</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:859</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:496,498</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:862</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -22567,7 +22667,7 @@
     </unit>
     <unit id="repo.move.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:495,496</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:501,502</note>
       </notes>
       <segment>
         <source>Move to another project</source>
@@ -22575,7 +22675,7 @@
     </unit>
     <unit id="repo.move.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:497,498</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:503,504</note>
       </notes>
       <segment>
         <source> The repository keeps its key and its content; its address changes. You must be Owner of the target project too. </source>
@@ -22583,7 +22683,7 @@
     </unit>
     <unit id="repo.move.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:502,503</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:508,509</note>
       </notes>
       <segment>
         <source>Target project</source>
@@ -22591,7 +22691,7 @@
     </unit>
     <unit id="repo.move.action">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:508,509</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:514,515</note>
       </notes>
       <segment>
         <source> Move repository </source>
@@ -22599,7 +22699,7 @@
     </unit>
     <unit id="repo.delete.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:514,515</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:520,521</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -22607,7 +22707,7 @@
     </unit>
     <unit id="repo.detail.delete-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:515,516</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:521,522</note>
       </notes>
       <segment>
         <source>Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</source>
@@ -22615,7 +22715,7 @@
     </unit>
     <unit id="repo.detail.delete">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:516,518</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:522,524</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -22661,7 +22761,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:354</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:104</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:78</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:326</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:215</note>
       </notes>
       <segment>
@@ -22709,25 +22809,9 @@
         <source>This repository follows the installation&apos;s malware setting again.</source>
       </segment>
     </unit>
-    <unit id="repo.signatures.saved-on">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:725</note>
-      </notes>
-      <segment>
-        <source>Quader fetches the upstream&apos;s signatures for this repository again.</source>
-      </segment>
-    </unit>
-    <unit id="repo.signatures.saved-off">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:726</note>
-      </notes>
-      <segment>
-        <source>Quader no longer fetches the upstream&apos;s signatures for this repository.</source>
-      </segment>
-    </unit>
     <unit id="repo.members.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:759</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:762</note>
       </notes>
       <segment>
         <source>Members saved.</source>
@@ -22735,7 +22819,7 @@
     </unit>
     <unit id="mirror.paused-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:788</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:791</note>
       </notes>
       <segment>
         <source>Mirror paused.</source>
@@ -22743,7 +22827,7 @@
     </unit>
     <unit id="mirror.resumed-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:788</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:791</note>
       </notes>
       <segment>
         <source>Mirror resumed.</source>
@@ -22751,7 +22835,7 @@
     </unit>
     <unit id="repo.disable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:855</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:858</note>
       </notes>
       <segment>
         <source>Disable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -22759,7 +22843,7 @@
     </unit>
     <unit id="repo.disable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:857</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:860</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it, and virtual repositories skip it, until it is enabled again. Its content stays.</source>
@@ -22767,7 +22851,7 @@
     </unit>
     <unit id="repo.enable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:862</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:865</note>
       </notes>
       <segment>
         <source>Enable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -22775,7 +22859,7 @@
     </unit>
     <unit id="repo.enable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:863</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:866</note>
       </notes>
       <segment>
         <source>Clients can download from it and publish to it again.</source>
@@ -22783,7 +22867,7 @@
     </unit>
     <unit id="repo.disable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:897</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:900</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> disabled.</source>
@@ -22791,7 +22875,7 @@
     </unit>
     <unit id="repo.enable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:898</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:901</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> enabled.</source>
@@ -22799,7 +22883,7 @@
     </unit>
     <unit id="repo.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:904</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:907</note>
         <note category="location">src/app/features/repositories/repository-list.ts:445</note>
       </notes>
       <segment>
@@ -22808,7 +22892,7 @@
     </unit>
     <unit id="repo.delete.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:906</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:909</note>
         <note category="location">src/app/features/repositories/repository-list.ts:447</note>
       </notes>
       <segment>
@@ -22817,7 +22901,7 @@
     </unit>
     <unit id="repo.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:908</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:911</note>
         <note category="location">src/app/features/repositories/repository-list.ts:449</note>
       </notes>
       <segment>
@@ -22826,7 +22910,7 @@
     </unit>
     <unit id="repo.move.choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:934</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:937</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -22834,7 +22918,7 @@
     </unit>
     <unit id="repo.move.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:952</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:955</note>
       </notes>
       <segment>
         <source>Move repository <ph id="0" equiv="key" disp="this.ref()"/> to project <ph id="1" equiv="project" disp="target"/>?</source>
@@ -22842,7 +22926,7 @@
     </unit>
     <unit id="repo.move.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:954</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:957</note>
       </notes>
       <segment>
         <source>The repository gets a new address; clients must switch to it. Policies, pins, virtual memberships and CI mappings that name it in this project stop applying, and the move is refused while any of them exists.</source>
@@ -22850,7 +22934,7 @@
     </unit>
     <unit id="repo.move.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:956</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:959</note>
       </notes>
       <segment>
         <source>Move repository</source>
@@ -22858,7 +22942,7 @@
     </unit>
     <unit id="repo.move.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:965</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:968</note>
       </notes>
       <segment>
         <source>Repository moved to project <ph id="0" equiv="project" disp="target"/>.</source>
@@ -22866,7 +22950,7 @@
     </unit>
     <unit id="repo.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:979</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:982</note>
         <note category="location">src/app/features/repositories/repository-list.ts:494</note>
       </notes>
       <segment>
@@ -22875,7 +22959,7 @@
     </unit>
     <unit id="repo.delete.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:984</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:987</note>
         <note category="location">src/app/features/repositories/repository-list.ts:484</note>
       </notes>
       <segment>
@@ -22884,11 +22968,43 @@
     </unit>
     <unit id="repo.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:989</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:992</note>
         <note category="location">src/app/features/repositories/repository-list.ts:388</note>
       </notes>
       <segment>
         <source>Repository deletion</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:998</note>
+      </notes>
+      <segment>
+        <source>Only artifacts with a verified signature can be downloaded from this repository now.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1001</note>
+      </notes>
+      <segment>
+        <source>This repository serves artifacts whatever their signatures say again.</source>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1004</note>
+      </notes>
+      <segment>
+        <source>Quader no longer fetches the upstream&apos;s signatures for this repository.</source>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1005</note>
+      </notes>
+      <segment>
+        <source>Quader fetches the upstream&apos;s signatures for this repository again.</source>
       </segment>
     </unit>
     <unit id="repo.field.notes-text">
@@ -23267,23 +23383,152 @@
     </unit>
     <unit id="repo.signatures.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:20,21</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:76,78</note>
       </notes>
       <segment>
         <source>Signatures</source>
       </segment>
     </unit>
-    <unit id="repo.signatures.hint">
+    <unit id="repo.gate.deb">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:22,23</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:89,91</note>
       </notes>
       <segment>
-        <source>Whether Quader fetches the upstream&apos;s signatures of what this repository stores.</source>
+        <source> apt checks the signature of this repository&apos;s index, not of a package. This setting is not available for Debian repositories. </source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.checks-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:95,97</note>
+      </notes>
+      <segment>
+        <source>Signature checks are switched off in this installation. This setting does not apply.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.only-verified">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:99,100</note>
+      </notes>
+      <segment>
+        <source>Only artifacts with a verified signature can be downloaded from this repository</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:103,105</note>
+      </notes>
+      <segment>
+        <source> Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe. </source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:107,109</note>
+      </notes>
+      <segment>
+        <source>Applies to everything this repository serves from its members.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.locked">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:110,112</note>
+      </notes>
+      <segment>
+        <source>Only an administrator or someone who triages security findings can loosen this.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.accepted">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:116,117</note>
+      </notes>
+      <segment>
+        <source>Accepted trust anchors</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.any">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:120,121</note>
+      </notes>
+      <segment>
+        <source>Any trust anchor of this repository</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.any-warning">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:124,126</note>
+      </notes>
+      <segment>
+        <source>This includes the public Sigstore, where anyone can sign. Choose anchors to accept only your own signers.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.these">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:131,132</note>
+      </notes>
+      <segment>
+        <source>These trust anchors</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.no-anchors">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:135,137</note>
+      </notes>
+      <segment>
+        <source>No trust anchor applies to this repository yet.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.removed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:150</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:47,48</note>
+      </notes>
+      <segment>
+        <source>Removed trust anchor</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:154,155</note>
+      </notes>
+      <segment>
+        <source>switched off, matches nothing</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.choose">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:163,165</note>
+      </notes>
+      <segment>
+        <source>Choose at least one trust anchor.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.if-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:174</note>
+      </notes>
+      <segment>
+        <source>Switched on with the stored anchors:</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.refusals-link">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:177,180</note>
+      </notes>
+      <segment>
+        <source>Refused downloads</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.counting">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:181,185</note>
+      </notes>
+      <segment>
+        <source>Counting what the setting lets pass.</source>
       </segment>
     </unit>
     <unit id="repo.signatures.fetch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:30,31</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:188,189</note>
       </notes>
       <segment>
         <source>Fetch the upstream&apos;s signatures</source>
@@ -23291,7 +23536,7 @@
     </unit>
     <unit id="repo.signatures.what">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:34,36</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:192,194</note>
       </notes>
       <segment>
         <source> Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour, so that the badge is right before any client asks. A client&apos;s own request for signatures passes through either way. </source>
@@ -23299,18 +23544,66 @@
     </unit>
     <unit id="repo.signatures.off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:38,40</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:196,197</note>
       </notes>
       <segment>
         <source> Switch it off for an upstream with tight rate limits: on Docker Hub without an account, fetching a signature counts as a pull. </source>
       </segment>
     </unit>
+    <unit id="repo.gate.fetch-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:201,203</note>
+      </notes>
+      <segment>
+        <source>Signatures of images are not fetched: an image whose signature no client pulled is refused.</source>
+      </segment>
+    </unit>
     <unit id="repo.signatures.save-for">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:45,47</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:212,214</note>
       </notes>
       <segment>
         <source> (signatures)</source>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.hint-gate-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:330</note>
+      </notes>
+      <segment>
+        <source>Whether only artifacts with a verified signature can be downloaded, and whether Quader fetches the upstream&apos;s signatures.</source>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.hint-gate">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:331</note>
+      </notes>
+      <segment>
+        <source>Whether only artifacts with a verified signature can be downloaded from this repository.</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.ask-title">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:458</note>
+      </notes>
+      <segment>
+        <source>Refuse downloads of artifacts without an accepted signature?</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.ask-confirm">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:461</note>
+      </notes>
+      <segment>
+        <source>Save and refuse them</source>
+      </segment>
+    </unit>
+    <unit id="repo.gate.examples">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:472</note>
+      </notes>
+      <segment>
+        <source>The newest <ph id="0" equiv="count" disp="count"/> of them:</source>
       </segment>
     </unit>
     <unit id="repo.visibility.level">
@@ -27078,7 +27371,7 @@
     <unit id="sig.block.heading">
       <notes>
         <note category="location">src/app/features/settings/signature-settings.html:118,120</note>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:21,22</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:22,23</note>
       </notes>
       <segment>
         <source>Block signer</source>
@@ -27166,7 +27459,7 @@
     </unit>
     <unit id="sig.settings.anchors-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:128</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:130</note>
       </notes>
       <segment>
         <source>Trust anchors of the installation</source>
@@ -27174,7 +27467,7 @@
     </unit>
     <unit id="sig.settings.project-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:129</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:131</note>
       </notes>
       <segment>
         <source>Trust anchors of the projects</source>
@@ -27182,7 +27475,7 @@
     </unit>
     <unit id="sig.settings.project-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:130</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:132</note>
       </notes>
       <segment>
         <source>No project has a trust anchor of its own.</source>
@@ -27190,7 +27483,7 @@
     </unit>
     <unit id="sig.settings.blocks-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:131</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:133</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -27198,7 +27491,7 @@
     </unit>
     <unit id="sig.settings.blocks-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:132</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:134</note>
       </notes>
       <segment>
         <source>No signer is blocked.</source>
@@ -27206,7 +27499,7 @@
     </unit>
     <unit id="sig.settings.blocks-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:133</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:135</note>
       </notes>
       <segment>
         <source>Signers whose signatures read as not trusted, whatever anchor knows them.</source>
@@ -27214,7 +27507,7 @@
     </unit>
     <unit id="sig.settings.root">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:134</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:136</note>
       </notes>
       <segment>
         <source>Public Sigstore root</source>
@@ -27222,7 +27515,7 @@
     </unit>
     <unit id="sig.settings.root-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:135</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
       </notes>
       <segment>
         <source>Where the public Sigstore root and npm&apos;s registry keys in use come from.</source>
@@ -27230,7 +27523,7 @@
     </unit>
     <unit id="sig.block.col.signer">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
       </notes>
       <segment>
         <source>Signer</source>
@@ -27238,7 +27531,7 @@
     </unit>
     <unit id="sig.block.col.reason">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:138</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -27246,7 +27539,7 @@
     </unit>
     <unit id="sig.anchor.col.signatures">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:122</note>
       </notes>
       <segment>
@@ -27255,7 +27548,7 @@
     </unit>
     <unit id="sig.block.col.blocked">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
       </notes>
       <segment>
         <source>Blocked</source>
@@ -27263,16 +27556,32 @@
     </unit>
     <unit id="sig.anchor.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:143</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:127</note>
       </notes>
       <segment>
         <source>Actions</source>
       </segment>
     </unit>
+    <unit id="sig.anchor.off-title">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:195</note>
+      </notes>
+      <segment>
+        <source>Switch off the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
+      </segment>
+    </unit>
+    <unit id="sig.anchor.off-confirm">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:196</note>
+      </notes>
+      <segment>
+        <source>Switch off</source>
+      </segment>
+    </unit>
     <unit id="sig.anchor.switched-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:197</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:208</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> applies again. Its signatures are judged again in the background.</source>
@@ -27280,7 +27589,7 @@
     </unit>
     <unit id="sig.anchor.switched-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:198</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:209</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> no longer applies. Its signatures are judged again in the background.</source>
@@ -27288,31 +27597,31 @@
     </unit>
     <unit id="sig.switch.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:240</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:257</note>
       </notes>
       <segment>
         <source>Switch project trust anchors off?</source>
       </segment>
     </unit>
-    <unit id="sig.switch.off-text">
-      <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:242</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
-      </segment>
-    </unit>
     <unit id="sig.switch.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:244</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:258</note>
       </notes>
       <segment>
         <source>Switch off</source>
       </segment>
     </unit>
+    <unit id="sig.switch.off-text">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:265</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
+      </segment>
+    </unit>
     <unit id="sig.switch.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:255</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:278</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project now.</source>
@@ -27320,7 +27629,7 @@
     </unit>
     <unit id="sig.switch.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:256</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:279</note>
       </notes>
       <segment>
         <source>Project trust anchors are switched off.</source>
@@ -27328,7 +27637,7 @@
     </unit>
     <unit id="sig.block.lift-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:299</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:322</note>
       </notes>
       <segment>
         <source>Lift this block?</source>
@@ -27336,7 +27645,7 @@
     </unit>
     <unit id="sig.block.lift-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:300</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:323</note>
       </notes>
       <segment>
         <source>The signer&apos;s signatures are judged by the trust anchors again.</source>
@@ -27344,7 +27653,7 @@
     </unit>
     <unit id="sig.block.lift-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:301</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:324</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -27352,7 +27661,7 @@
     </unit>
     <unit id="sig.block.lifted">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:309</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:332</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
@@ -28400,9 +28709,33 @@
         <source>Until a token is pasted, the snippets show this placeholder where it will go:</source>
       </segment>
     </unit>
+    <unit id="setup.gate">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:255,256</note>
+      </notes>
+      <segment>
+        <source>This repository serves only artifacts with a verified signature.</source>
+      </segment>
+    </unit>
+    <unit id="setup.gate.any">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:257,258</note>
+      </notes>
+      <segment>
+        <source>Any trust anchor of the repository counts.</source>
+      </segment>
+    </unit>
+    <unit id="setup.gate.anchors">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:259</note>
+      </notes>
+      <segment>
+        <source>Accepted trust anchors:</source>
+      </segment>
+    </unit>
     <unit id="setup.tab.configure">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:266,267</note>
+        <note category="location">src/app/features/setup/client-setup.html:282,283</note>
       </notes>
       <segment>
         <source>Configure</source>
@@ -28410,7 +28743,7 @@
     </unit>
     <unit id="setup.tab.install">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:270,271</note>
+        <note category="location">src/app/features/setup/client-setup.html:286,287</note>
       </notes>
       <segment>
         <source>Install</source>
@@ -28418,7 +28751,7 @@
     </unit>
     <unit id="setup.tab.publish">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:275,276</note>
+        <note category="location">src/app/features/setup/client-setup.html:291,292</note>
       </notes>
       <segment>
         <source>Publish</source>
@@ -28426,7 +28759,7 @@
     </unit>
     <unit id="setup.publish.no-target">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:278,280</note>
+        <note category="location">src/app/features/setup/client-setup.html:294,296</note>
       </notes>
       <segment>
         <source> This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to one of its local repositories instead. </source>
@@ -28434,7 +28767,7 @@
     </unit>
     <unit id="setup.publish.members">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:282,285</note>
+        <note category="location">src/app/features/setup/client-setup.html:298,301</note>
       </notes>
       <segment>
         <source>Open the repository&apos;s settings to see its members</source>
@@ -28442,7 +28775,7 @@
     </unit>
     <unit id="setup.loading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:290,293</note>
+        <note category="location">src/app/features/setup/client-setup.html:306,309</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -28450,7 +28783,7 @@
     </unit>
     <unit id="setup.bastion.no-guide">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:296,298</note>
+        <note category="location">src/app/features/setup/client-setup.html:312,314</note>
       </notes>
       <segment>
         <source>The explanation describes this installation. Choose This installation under More options to read it.</source>
@@ -28458,7 +28791,7 @@
     </unit>
     <unit id="setup.guide.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:299,300</note>
+        <note category="location">src/app/features/setup/client-setup.html:315,316</note>
       </notes>
       <segment>
         <source>Guide</source>
@@ -28466,7 +28799,7 @@
     </unit>
     <unit id="setup.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:115</note>
+        <note category="location">src/app/features/setup/client-setup.ts:117</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -28474,7 +28807,7 @@
     </unit>
     <unit id="setup.more">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:116</note>
+        <note category="location">src/app/features/setup/client-setup.ts:118</note>
       </notes>
       <segment>
         <source>More options</source>
@@ -28482,7 +28815,7 @@
     </unit>
     <unit id="setup.copy-token">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:119</note>
+        <note category="location">src/app/features/setup/client-setup.ts:121</note>
       </notes>
       <segment>
         <source>Copy token</source>
@@ -28490,7 +28823,7 @@
     </unit>
     <unit id="setup.copy-command">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:120</note>
+        <note category="location">src/app/features/setup/client-setup.ts:122</note>
       </notes>
       <segment>
         <source>Copy command</source>
@@ -28498,7 +28831,7 @@
     </unit>
     <unit id="setup.token.label">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:121</note>
+        <note category="location">src/app/features/setup/client-setup.ts:123</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -28506,7 +28839,7 @@
     </unit>
     <unit id="setup.bastion.replace-host">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:321</note>
+        <note category="location">src/app/features/setup/client-setup.ts:354</note>
       </notes>
       <segment>
         <source>replace-registry-host=always makes npm fetch every package from this address, also when a lockfile written against another host names that host.</source>
@@ -28514,7 +28847,7 @@
     </unit>
     <unit id="setup.token.description">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:342</note>
+        <note category="location">src/app/features/setup/client-setup.ts:375</note>
       </notes>
       <segment>
         <source>Client setup: <ph id="0" equiv="client" disp="setup.client"/>, <ph id="1" equiv="repository" disp="repository"/>, <ph id="2" equiv="date" disp="new Date().toISOString().slice(0, 10)"/></source>
@@ -35351,7 +35684,7 @@
     <unit id="security.heading">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:2,4</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:43,45</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:45,47</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:3,5</note>
       </notes>
       <segment>
@@ -35424,9 +35757,12 @@
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:49,50</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:50</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.ts:194</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:67,68</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:68</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:180</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:72,73</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:73</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:190</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:57,58</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:58</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:256</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -35435,7 +35771,8 @@
     <unit id="malware.filter.any-repository">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:51,52</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:69,70</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:74,75</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:59,60</note>
       </notes>
       <segment>
         <source>Any repository</source>
@@ -35462,6 +35799,7 @@
     <unit id="malware.released-by">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:114</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:110</note>
         <note category="location">src/app/shared/malware/malware-status.ts:41,42</note>
       </notes>
       <segment>
@@ -35583,6 +35921,8 @@
     <unit id="malware.col.actions">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.ts:216</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:278</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:303</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -35985,7 +36325,7 @@
     </unit>
     <unit id="sig.badge.invalid">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:28</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:29</note>
         <note category="location">src/app/shared/signatures/signature-words.ts:42</note>
       </notes>
       <segment>
@@ -35994,7 +36334,7 @@
     </unit>
     <unit id="sig.finding.blocked">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:28</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:29</note>
       </notes>
       <segment>
         <source>Blocked signer</source>
@@ -36002,7 +36342,7 @@
     </unit>
     <unit id="sig.findings.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:48,50</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:53,55</note>
       </notes>
       <segment>
         <source>Findings</source>
@@ -36010,9 +36350,9 @@
     </unit>
     <unit id="sig.findings.filter.kind">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:60</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:60</note>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:179</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:65</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:65</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:189</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -36020,7 +36360,8 @@
     </unit>
     <unit id="sig.findings.filter.any">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:61,62</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:66,67</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:67,68</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -36028,7 +36369,7 @@
     </unit>
     <unit id="sig.findings.more-repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:123,124</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:128,129</note>
       </notes>
       <segment>
         <source>and <ph id="0" equiv="INTERPOLATION" disp="{{ f.repositoryCount - 1 }}"/> more</source>
@@ -36036,7 +36377,7 @@
     </unit>
     <unit id="sig.findings.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:185</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:195</note>
       </notes>
       <segment>
         <source>Search by signer</source>
@@ -36044,7 +36385,7 @@
     </unit>
     <unit id="sig.findings.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:186</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:196</note>
       </notes>
       <segment>
         <source>Invalid signatures and blocked signers</source>
@@ -36052,7 +36393,7 @@
     </unit>
     <unit id="sig.findings.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:187</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:197</note>
       </notes>
       <segment>
         <source>No invalid signatures.</source>
@@ -36060,7 +36401,7 @@
     </unit>
     <unit id="sig.findings.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:188</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:198</note>
       </notes>
       <segment>
         <source>No finding matches the filters.</source>
@@ -36068,7 +36409,7 @@
     </unit>
     <unit id="sig.findings.col.artifact">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:190</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:200</note>
       </notes>
       <segment>
         <source>Artifact</source>
@@ -36076,7 +36417,7 @@
     </unit>
     <unit id="sig.findings.col.kind">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:191</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:201</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -36084,7 +36425,7 @@
     </unit>
     <unit id="sig.findings.col.signer">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:192</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:202</note>
       </notes>
       <segment>
         <source>Signer</source>
@@ -36092,7 +36433,7 @@
     </unit>
     <unit id="sig.findings.col.reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:193</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:203</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -36100,7 +36441,7 @@
     </unit>
     <unit id="sig.findings.col.repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:194</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:204</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -36108,10 +36449,207 @@
     </unit>
     <unit id="sig.findings.col.found">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:195</note>
+        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:205</note>
       </notes>
       <segment>
         <source>Found</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:48,49</note>
+      </notes>
+      <segment>
+        <source>Refused downloads</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.note">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:50,52</note>
+      </notes>
+      <segment>
+        <source> Downloads that a repository refused because the artifact has no signature it accepts. One row per repository and artifact. </source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.filter.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:66</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:66</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:257</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:107,108</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.heading">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:130</note>
+      </notes>
+      <segment>
+        <source>Releases</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:132,133</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.choose">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:134,135</note>
+      </notes>
+      <segment>
+        <source>Choose a repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.refused-for">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:165</note>
+      </notes>
+      <segment>
+        <source>Refused for:</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.none-chosen">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:183,186</note>
+      </notes>
+      <segment>
+        <source>A release belongs to one repository: choose one to see its releases.</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:262</note>
+      </notes>
+      <segment>
+        <source>Downloads the repositories refused for their signatures</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:263</note>
+      </notes>
+      <segment>
+        <source>No refused downloads.</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:264</note>
+      </notes>
+      <segment>
+        <source>No refused download matches the filters.</source>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:266</note>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:48</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:111,112</note>
+      </notes>
+      <segment>
+        <source>Withdraw release</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.artifact">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:268</note>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:300</note>
+      </notes>
+      <segment>
+        <source>Artifact</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.repository">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:269</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:270</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.last">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:271</note>
+      </notes>
+      <segment>
+        <source>Last refusal</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.count">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:274</note>
+      </notes>
+      <segment>
+        <source>Count</source>
+      </segment>
+    </unit>
+    <unit id="sig.refusals.col.count-help">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:276</note>
+      </notes>
+      <segment>
+        <source>How often a client was refused this artifact here since the first refusal that is still listed.</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.hint">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:296</note>
+      </notes>
+      <segment>
+        <source>Artifacts released for one repository, which it serves whatever their signatures say.</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:297</note>
+      </notes>
+      <segment>
+        <source>Releases of the repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.empty">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:298</note>
+      </notes>
+      <segment>
+        <source>No artifact is released for this repository.</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.col.reason">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:301</note>
+      </notes>
+      <segment>
+        <source>Reason of the release</source>
+      </segment>
+    </unit>
+    <unit id="sig.releases.col.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:302</note>
+      </notes>
+      <segment>
+        <source>Released</source>
       </segment>
     </unit>
     <unit id="vuln.triage.results-caption">
@@ -39689,7 +40227,7 @@
     <unit id="sig.form.cancel">
       <notes>
         <note category="location">src/app/shared/signatures/anchor-dialog.ts:100,101</note>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:37,38</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:53,54</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -39857,7 +40395,7 @@
     </unit>
     <unit id="sig.block.kind">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:27</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:28</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -39865,7 +40403,7 @@
     </unit>
     <unit id="sig.block.issuer">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:29</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:30</note>
       </notes>
       <segment>
         <source>OIDC issuer</source>
@@ -39873,7 +40411,7 @@
     </unit>
     <unit id="sig.block.value">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:31</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:32</note>
       </notes>
       <segment>
         <source>Value</source>
@@ -39881,7 +40419,7 @@
     </unit>
     <unit id="sig.block.reason">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:32</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:33</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -39889,7 +40427,7 @@
     </unit>
     <unit id="sig.block.reason-hint">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:33,34</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:34,35</note>
       </notes>
       <segment>
         <source>Shown at every signature of this signer.</source>
@@ -39897,15 +40435,23 @@
     </unit>
     <unit id="sig.block.effect">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:34,36</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:35,36</note>
       </notes>
       <segment>
         <source>The block acts at once on every signature of this signer, in every project.</source>
       </segment>
     </unit>
+    <unit id="sig.block.submit-anyway">
+      <notes>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:56,58</note>
+      </notes>
+      <segment>
+        <source>Block signer and refuse them</source>
+      </segment>
+    </unit>
     <unit id="sig.block.submit">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:38,40</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:58,60</note>
       </notes>
       <segment>
         <source>Block signer</source>
@@ -39913,7 +40459,7 @@
     </unit>
     <unit id="sig.block.hint-fingerprint">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:63</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:96</note>
       </notes>
       <segment>
         <source>The SHA-256 fingerprint of a certificate, or an OpenPGP key&apos;s fingerprint.</source>
@@ -39921,7 +40467,7 @@
     </unit>
     <unit id="sig.block.hint-serial">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:65</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:98</note>
       </notes>
       <segment>
         <source>The issuer&apos;s name and the certificate&apos;s serial, separated by a vertical bar.</source>
@@ -39929,7 +40475,7 @@
     </unit>
     <unit id="sig.block.hint-keyid">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:67</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:100</note>
       </notes>
       <segment>
         <source>npm&apos;s key ID, or the SHA-256 of a raw public key.</source>
@@ -39937,7 +40483,7 @@
     </unit>
     <unit id="sig.block.hint-identity">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:69</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:102</note>
       </notes>
       <segment>
         <source>The identity, exact or as a pattern of the whole identity.</source>
@@ -39945,10 +40491,317 @@
     </unit>
     <unit id="sig.block.created">
       <notes>
-        <note category="location">src/app/shared/signatures/block-dialog.ts:90</note>
+        <note category="location">src/app/shared/signatures/block-dialog.ts:134</note>
       </notes>
       <segment>
         <source>Signer blocked. Its signatures read &quot;Signed · signer not trusted&quot; once the trust is recomputed.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.refuses">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:49,51</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.repository }}"/></pc> serves only artifacts with a verified signature and refuses <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ data.artifact }}"/></pc>.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.effect">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:54,57</note>
+      </notes>
+      <segment>
+        <source> A release serves it from this repository only, whatever its signatures say, until it is withdrawn. Every other repository keeps its own decision. </source>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:62,63</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.cancel">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:70,71</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.submit">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:71,73</note>
+      </notes>
+      <segment>
+        <source>Release for this repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason-hint">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:101</note>
+      </notes>
+      <segment>
+        <source>Why this artifact may be downloaded from this repository without a verified signature, for example a vendor who signs from the next release on. At most 1,000 characters; kept with the release.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.title">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:102</note>
+      </notes>
+      <segment>
+        <source>Release <ph id="0" equiv="artifact" disp="this.data.artifact"/> for this repository?</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason-required">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:105</note>
+      </notes>
+      <segment>
+        <source>A release needs a reason.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.reason-long">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:106</note>
+      </notes>
+      <segment>
+        <source>The reason is longer than 1,000 characters.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.nothing">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:113</note>
+      </notes>
+      <segment>
+        <source>There is nothing to release: this repository&apos;s gate lets the artifact pass now.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.already">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-release-dialog.ts:115</note>
+      </notes>
+      <segment>
+        <source>This artifact is released for this repository already. Load the page again to see the release.</source>
+      </segment>
+    </unit>
+    <unit id="sig.release.done">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:37</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="artifact" disp="artifact"/> is released for <ph id="1" equiv="repository" disp="repository"/>.</source>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw.title">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:44</note>
+      </notes>
+      <segment>
+        <source>Withdraw the release of <ph id="0" equiv="artifact" disp="artifact"/>?</source>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw.text">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:46</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="repository" disp="repository"/> refuses it again from the next download, unless a signature it accepts arrives.</source>
+      </segment>
+    </unit>
+    <unit id="sig.withdraw.done">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-releases.ts:52</note>
+      </notes>
+      <segment>
+        <source>The release of <ph id="0" equiv="artifact" disp="artifact"/> is withdrawn.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.missing">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:13</note>
+      </notes>
+      <segment>
+        <source>No publisher&apos;s signature</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:15</note>
+      </notes>
+      <segment>
+        <source>Signer not accepted</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.not-chosen">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:17</note>
+      </notes>
+      <segment>
+        <source>Anchor not accepted</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:19</note>
+      </notes>
+      <segment>
+        <source>Invalid signature</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.blocked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:21</note>
+      </notes>
+      <segment>
+        <source>Signer blocked</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.word.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:23</note>
+      </notes>
+      <segment>
+        <source>Signature not checked</source>
+      </segment>
+    </unit>
+    <unit id="sig.state.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:25</note>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:88,91</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:59</note>
+      </notes>
+      <segment>
+        <source>Not checked yet</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.missing">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:33</note>
+      </notes>
+      <segment>
+        <source>It has no signature of its publisher or its build.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.untrusted">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:35</note>
+      </notes>
+      <segment>
+        <source>No trust anchor this repository accepts knows the signer of its publisher&apos;s or its build&apos;s signature.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.not-chosen">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:37</note>
+      </notes>
+      <segment>
+        <source>Its publisher&apos;s or its build&apos;s signature is verified only by trust anchors this repository does not accept.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:39</note>
+      </notes>
+      <segment>
+        <source>Its publisher&apos;s or its build&apos;s signature does not match its content.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.blocked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:41</note>
+      </notes>
+      <segment>
+        <source>An administrator blocked the signer of its publisher&apos;s or its build&apos;s signature.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.not-checked">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:43</note>
+      </notes>
+      <segment>
+        <source>Its publisher&apos;s or its build&apos;s signature could not be checked: Quader cannot read it, or its check failed.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.sentence.pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:45</note>
+      </notes>
+      <segment>
+        <source>Its signatures are not checked yet.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.state">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:82</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="pass" disp="pass"/> of <ph id="1" equiv="artifacts" disp="of"/> artifacts pass. <ph id="2" equiv="refused" disp="refused"/> are refused.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.state-partial">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:83</note>
+      </notes>
+      <segment>
+        <source>Of the first <ph id="0" equiv="artifacts" disp="of"/> artifacts read, <ph id="1" equiv="pass" disp="pass"/> pass and <ph id="2" equiv="refused" disp="refused"/> are refused; the preview stopped before the end.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.state-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:86</note>
+        <note category="location">src/app/shared/signatures/gate-words.ts:101</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="pending" disp="pending"/> are still being checked.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.ask">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:97</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="refused" disp="refused"/> of <ph id="1" equiv="artifacts" disp="of"/> artifacts in this repository have no verified signature that this setting accepts and will be refused.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.ask-partial">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:98</note>
+      </notes>
+      <segment>
+        <source>At least <ph id="0" equiv="refused" disp="refused"/> of the first <ph id="1" equiv="artifacts" disp="of"/> artifacts read in this repository have no verified signature that this setting accepts and will be refused. The preview stopped before the end.</source>
+      </segment>
+    </unit>
+    <unit id="sig.impact.upper">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:117</note>
+      </notes>
+      <segment>
+        <source>This change makes at most <ph id="0" equiv="artifacts" disp="artifacts"/> artifacts in <ph id="1" equiv="repositories" disp="repositories"/> repositories that serve only verified artifacts refused:</source>
+      </segment>
+    </unit>
+    <unit id="sig.impact.exact">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:120</note>
+      </notes>
+      <segment>
+        <source>This change makes <ph id="0" equiv="artifacts" disp="artifacts"/> artifacts in <ph id="1" equiv="repositories" disp="repositories"/> repositories that serve only verified artifacts refused:</source>
+      </segment>
+    </unit>
+    <unit id="sig.impact.partial">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:121</note>
+      </notes>
+      <segment>
+        <source>This change makes at least <ph id="0" equiv="artifacts" disp="artifacts"/> artifacts in <ph id="1" equiv="repositories" disp="repositories"/> repositories that serve only verified artifacts refused:</source>
+      </segment>
+    </unit>
+    <unit id="sig.impact.more">
+      <notes>
+        <note category="location">src/app/shared/signatures/gate-words.ts:128</note>
+      </notes>
+      <segment>
+        <source>and <ph id="0" equiv="count" disp="n(more)"/> more repositories</source>
       </segment>
     </unit>
     <unit id="sig.badge.stale">
@@ -39957,6 +40810,86 @@
       </notes>
       <segment>
         <source>Trust is being recomputed after a change of trust anchors.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.head">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:37,39</note>
+      </notes>
+      <segment>
+        <source>This repository serves only artifacts with a verified signature.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.accepted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:40,41</note>
+      </notes>
+      <segment>
+        <source>Accepted trust anchors:</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.any">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>Any trust anchor of this repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.released">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:96,97</note>
+      </notes>
+      <segment>
+        <source>Released for this repository</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.released-by">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:101</note>
+      </notes>
+      <segment>
+        <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(rel.releasedBy) }}"/></source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.release-reason">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:108</note>
+      </notes>
+      <segment>
+        <source>Reason:</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.passes">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:120,121</note>
+      </notes>
+      <segment>
+        <source>Passes</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.passes-why">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:122,124</note>
+      </notes>
+      <segment>
+        <source>A signature this repository accepts verifies it.</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.through-index">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:127,129</note>
+      </notes>
+      <segment>
+        <source>Signed through its image index</source>
+      </segment>
+    </unit>
+    <unit id="sig.gate.label">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-gate.ts:211</note>
+      </notes>
+      <segment>
+        <source>Signature check of this repository</source>
       </segment>
     </unit>
     <unit id="sig.sentence.blocked">
@@ -40344,14 +41277,6 @@
         <source>Signed · signer not trusted</source>
       </segment>
     </unit>
-    <unit id="sig.state.not-checked">
-      <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:59</note>
-      </notes>
-      <segment>
-        <source>Not checked yet</source>
-      </segment>
-    </unit>
     <unit id="sig.state.unsupported">
       <notes>
         <note category="location">src/app/shared/signatures/signature-words.ts:61</note>
@@ -40706,7 +41631,7 @@
     </unit>
     <unit id="sig.cert.short-log">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:230</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:235</note>
       </notes>
       <segment>
         <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing; covered by the log entry</source>
@@ -40714,7 +41639,7 @@
     </unit>
     <unit id="sig.cert.short-timestamp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:231</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:236</note>
       </notes>
       <segment>
         <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing; covered by the timestamp</source>
@@ -40722,7 +41647,7 @@
     </unit>
     <unit id="sig.cert.short">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:232</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:237</note>
       </notes>
       <segment>
         <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing</source>
@@ -40730,7 +41655,7 @@
     </unit>
     <unit id="sig.cert.expired">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:236</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:241</note>
       </notes>
       <segment>
         <source>expired on <ph id="0" equiv="date" disp="when"/></source>
@@ -40738,7 +41663,7 @@
     </unit>
     <unit id="sig.cert.valid-until">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:236</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:241</note>
       </notes>
       <segment>
         <source>valid until <ph id="0" equiv="date" disp="when"/></source>
@@ -40746,7 +41671,7 @@
     </unit>
     <unit id="sig.time.log">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:243</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:248</note>
       </notes>
       <segment>
         <source>proven by the transparency log</source>
@@ -40754,7 +41679,7 @@
     </unit>
     <unit id="sig.time.timestamp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:245</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:250</note>
       </notes>
       <segment>
         <source>proven by a timestamp</source>
@@ -40762,7 +41687,7 @@
     </unit>
     <unit id="sig.time.received">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:247</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:252</note>
       </notes>
       <segment>
         <source>received by Quader</source>
@@ -40770,7 +41695,7 @@
     </unit>
     <unit id="sig.scope.shipped">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:260</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:265</note>
       </notes>
       <segment>
         <source>Shipped with Quader</source>
@@ -40778,7 +41703,7 @@
     </unit>
     <unit id="sig.scope.configuration">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:262</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:267</note>
       </notes>
       <segment>
         <source>From the Helm values</source>
@@ -40786,7 +41711,7 @@
     </unit>
     <unit id="sig.scope.installation">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:264</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:269</note>
       </notes>
       <segment>
         <source>Added by an administrator</source>
@@ -40794,7 +41719,7 @@
     </unit>
     <unit id="sig.scope.project">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:266</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:271</note>
       </notes>
       <segment>
         <source>Added by the project&apos;s Owner</source>
@@ -40802,7 +41727,7 @@
     </unit>
     <unit id="sig.anchor-kind.ca">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:274</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:279</note>
       </notes>
       <segment>
         <source>CA certificate</source>
@@ -40810,7 +41735,7 @@
     </unit>
     <unit id="sig.anchor-kind.openpgp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:276</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:281</note>
       </notes>
       <segment>
         <source>OpenPGP key</source>
@@ -40818,7 +41743,7 @@
     </unit>
     <unit id="sig.anchor-kind.public-key">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:278</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:283</note>
       </notes>
       <segment>
         <source>Public key</source>
@@ -40826,7 +41751,7 @@
     </unit>
     <unit id="sig.anchor-kind.sigstore">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:280</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:285</note>
       </notes>
       <segment>
         <source>Sigstore identity</source>
@@ -40834,7 +41759,7 @@
     </unit>
     <unit id="sig.block-kind.fingerprint">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:288</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:293</note>
       </notes>
       <segment>
         <source>Fingerprint</source>
@@ -40842,7 +41767,7 @@
     </unit>
     <unit id="sig.block-kind.serial">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:290</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:295</note>
       </notes>
       <segment>
         <source>Issuer and serial</source>
@@ -40850,7 +41775,7 @@
     </unit>
     <unit id="sig.block-kind.keyid">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:292</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:297</note>
       </notes>
       <segment>
         <source>Key ID</source>
@@ -40858,7 +41783,7 @@
     </unit>
     <unit id="sig.block-kind.identity">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:294</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:299</note>
       </notes>
       <segment>
         <source>Sigstore identity</source>
@@ -40866,7 +41791,7 @@
     </unit>
     <unit id="sig.origin.fetched">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:302</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:307</note>
       </notes>
       <segment>
         <source>Fetched from <ph id="0" equiv="upstream" disp="from"/></source>
@@ -40874,7 +41799,7 @@
     </unit>
     <unit id="sig.origin.fetched-remote">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:302</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:307</note>
       </notes>
       <segment>
         <source>Fetched from the remote&apos;s upstream</source>
@@ -40882,7 +41807,7 @@
     </unit>
     <unit id="sig.origin.pipeline">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:306</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:311</note>
       </notes>
       <segment>
         <source>pipeline <ph id="0" equiv="id" disp="o.ci.pipelineId"/></source>
@@ -40890,7 +41815,7 @@
     </unit>
     <unit id="sig.origin.ci">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:309</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:314</note>
       </notes>
       <segment>
         <source>Uploaded by CI job <ph id="0" equiv="job" disp="parts"/></source>
@@ -40898,7 +41823,7 @@
     </unit>
     <unit id="sig.origin.service-account">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:313</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:318</note>
       </notes>
       <segment>
         <source>Uploaded by the service account <ph id="0" equiv="name" disp="name"/></source>
@@ -40906,7 +41831,7 @@
     </unit>
     <unit id="sig.origin.anonymous">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:315</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:320</note>
       </notes>
       <segment>
         <source>Uploaded without signing in</source>
@@ -40914,7 +41839,7 @@
     </unit>
     <unit id="sig.origin.user">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:317</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:322</note>
       </notes>
       <segment>
         <source>Uploaded by <ph id="0" equiv="name" disp="name"/></source>

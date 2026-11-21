@@ -15,6 +15,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { AnchorDialog, AnchorDialogData } from '../../shared/signatures/anchor-dialog';
 import { AnchorRowControls, AnchorTable } from '../../shared/signatures/anchor-table';
 import { BlockDialog } from '../../shared/signatures/block-dialog';
+import { GateActions } from '../../shared/signatures/gate-releases';
 import { blockKindWords, signaturePromise } from '../../shared/signatures/signature-words';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -87,6 +88,7 @@ export class SignatureSettingsPage {
   private readonly confirm = inject(Confirm);
   private readonly conflicts = inject(ConflictResolver);
   private readonly dialog = inject(QuaderDialog);
+  private readonly gate = inject(GateActions);
   protected readonly session = inject(SessionStore);
 
   protected readonly loaded = signal<LoadedSignatureSettings | null>(null);
@@ -186,6 +188,15 @@ export class SignatureSettingsPage {
   /** Switches a shipped or an administrator's anchor on or off (`PATCH {enabled}` with its version). */
   protected async toggle(change: { readonly anchor: SignatureAnchor; readonly on: boolean }): Promise<void> {
     const { anchor, on } = change;
+    // Switching an anchor off narrows every gate that relied on it (R-SIG-071): asked with its impact when that is not 0.
+    if (!on) {
+      const title = anchor.title;
+      const go = await this.gate.askImpact({ anchor: anchor.id, change: 'disable' }, null, {
+        title: $localize`:@@sig.anchor.off-title:Switch off the trust anchor ${title}:title:?`,
+        confirmLabel: $localize`:@@sig.anchor.off-confirm:Switch off`,
+      });
+      if (!go) return;
+    }
     this.mark(anchor.id, true);
     this.actionError.set(null);
     try {
@@ -206,14 +217,19 @@ export class SignatureSettingsPage {
 
   protected async removeAnchor(anchor: SignatureAnchor): Promise<void> {
     const title = anchor.title;
-    const answer = await this.confirm.ask({
-      title: $localize`:@@sig.anchor.remove-title:Remove the trust anchor ${title}:title:?`,
-      lines: [
-        $localize`:@@sig.anchor.remove-text:The signatures it knows read "Signed · signer not trusted" unless another anchor knows their signer.`,
-      ],
-      confirmLabel: $localize`:@@sig.anchor.remove-confirm:Remove trust anchor`,
-    });
-    if (answer === null) return;
+    // The removal's question, with the impact on the gates of R-SIG-071 when it refuses anything.
+    const go = await this.gate.askImpact(
+      { anchor: anchor.id, change: 'remove' },
+      {
+        title: $localize`:@@sig.anchor.remove-title:Remove the trust anchor ${title}:title:?`,
+        lines: [
+          $localize`:@@sig.anchor.remove-text:The signatures it knows read "Signed · signer not trusted" unless another anchor knows their signer.`,
+        ],
+        confirmLabel: $localize`:@@sig.anchor.remove-confirm:Remove trust anchor`,
+      },
+      { title: '', confirmLabel: '' },
+    );
+    if (!go) return;
     this.mark(anchor.id, true);
     this.actionError.set(null);
     try {
@@ -234,16 +250,23 @@ export class SignatureSettingsPage {
     const current = this.loaded();
     if (!current || !this.dirty() || this.saving()) return;
     const on = this.projectAnchors();
-    if (!on && this.projectAnchorList().length > 0) {
+    if (!on) {
+      // Switching project anchors off narrows the gates of their projects (R-SIG-071): the impact joins the question.
       const n = this.projectAnchorList().length;
-      const answer = await this.confirm.ask({
+      const off = {
         title: $localize`:@@sig.switch.off-title:Switch project trust anchors off?`,
-        lines: [
-          $localize`:@@sig.switch.off-text:${n}:count: project anchors stay stored and stop applying. The signatures only they know read "Signed · signer not trusted".`,
-        ],
         confirmLabel: $localize`:@@sig.switch.off-confirm:Switch off`,
-      });
-      if (answer === null) return;
+      };
+      const base =
+        n > 0
+          ? {
+              ...off,
+              lines: [
+                $localize`:@@sig.switch.off-text:${n}:count: project anchors stay stored and stop applying. The signatures only they know read "Signed · signer not trusted".`,
+              ],
+            }
+          : null;
+      if (!(await this.gate.askImpact({ projectAnchors: false }, base, off))) return;
     }
     this.saving.set(true);
     this.switchError.set(null);

@@ -221,7 +221,7 @@ describe('Repository edit form', () => {
 
   it('R-UI-021 a repository of a format without settings has no section of format settings', async () => {
     const r = await open((fake) => (fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT]));
-    expect(sectionHeadings(r.root)).toEqual(['Access details', 'Malware scan', 'Administrator notes', 'Service accounts', 'Details', 'API', 'Advanced']);
+    expect(sectionHeadings(r.root)).toEqual(['Access details', 'Malware scan', 'Signatures', 'Administrator notes', 'Service accounts', 'Details', 'API', 'Advanced']);
   });
 
   it('R-UI-021 R-UI-169 a caller who may use but not configure the repository sees the consumer view without a form and without an address field', async () => {
@@ -236,7 +236,7 @@ describe('Repository edit form', () => {
 
   it('R-UI-120 the settings have no section about the client: the guide is on Set up client of the repository\'s header', async () => {
     const r = await open(withNpmLocal(), 'npm-local');
-    expect(sectionHeadings(r.root)).toEqual(['npm settings', 'Access details', 'Malware scan', 'Administrator notes', 'Service accounts', 'Details', 'API', 'Advanced']);
+    expect(sectionHeadings(r.root)).toEqual(['npm settings', 'Access details', 'Malware scan', 'Signatures', 'Administrator notes', 'Service accounts', 'Details', 'API', 'Advanced']);
     const guides = r.get(GuidesApi) as FakeGuidesApi;
     expect(guides.calls).toEqual([]);
     const consumer = await open((fake) => {
@@ -314,7 +314,7 @@ describe('Repository edit form', () => {
 
     it('R-DEB-030 R-UI-021 a local repository has the sections of its format settings, signing keys, indexes and the APT guide', async () => {
       const r = await openDeb('local');
-      expect(tabNames(r)).toEqual(['Debian (APT) settings', 'Access details', 'Malware scan', 'Administrator notes', 'Signing keys', 'Indexes', 'Service accounts', 'Details', 'API', 'Advanced']);
+      expect(tabNames(r)).toEqual(['Debian (APT) settings', 'Access details', 'Malware scan', 'Signatures', 'Administrator notes', 'Signing keys', 'Indexes', 'Service accounts', 'Details', 'API', 'Advanced']);
       await openTab(r, 'Signing keys');
       expect(text(r.root)).toContain('3F2A 0000');
       const api = r.get(DebApi) as FakeDebApi;

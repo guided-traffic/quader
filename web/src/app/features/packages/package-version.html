@@ -94,6 +94,45 @@
         }
       </p>
     }
+    <!-- An artifact a repository's signature gate refuses, in a repository the reader may read (R-SIG-074): why, in the words of the
+         client's answer (R-SIG-068), and the release for the holder of the triage right. A pending one shows nothing more. -->
+    @for (f of signatureRefusals(); track f.repository + ' ' + f.sha256) {
+      <div class="banner-warning gate-banner" role="note" data-testid="signature-banner">
+        <span class="material-icons inline warn" aria-hidden="true">gpp_bad</span>
+        <div class="gate-banner-text">
+          <p>
+            @switch (f.reason) {
+              @case ('missing') {
+                <span i18n="@@pkg.gate.banner.missing">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has no signature of its publisher or its build.</span>
+              }
+              @case ('untrusted') {
+                <span i18n="@@pkg.gate.banner.untrusted">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</span>
+              }
+              @case ('not_chosen') {
+                <span i18n="@@pkg.gate.banner.not-chosen">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is verified only by trust anchors this repository does not accept.</span>
+              }
+              @case ('invalid') {
+                <span i18n="@@pkg.gate.banner.invalid">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that does not match its content.</span>
+              }
+              @case ('blocked') {
+                <span i18n="@@pkg.gate.banner.blocked">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is signed by a signer an administrator blocked.</span>
+              }
+              @default {
+                <span i18n="@@pkg.gate.banner.not-checked">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that Quader cannot read or could not check.</span>
+              }
+            }
+          </p>
+          @if (canRelease()) {
+            <p class="gate-banner-actions">
+              <button class="btn btn-default" type="button" (click)="releaseFor(f)">
+                <ng-container i18n="@@sig.release.action">Release for this repository</ng-container
+                ><span class="visually-hidden" translate="no">&ngsp;{{ f.repository }}</span>
+              </button>
+            </p>
+          }
+        </div>
+      </div>
+    }
     @if (deprecated(); as why) {
       <p class="banner-warning" role="note">
         <span class="material-icons inline warn" aria-hidden="true">warning</span>
@@ -173,7 +212,14 @@
                     }
                     @if (signatureShown()) {
                       <td>
-                        @if (badged(f.signatures); as sig) {
+                        <!-- A file a repository's gate refuses says so where its badge stands, with the reason (R-SIG-074). -->
+                        @if (f.signatures?.refused === true) {
+                          <span class="fstatus bad" data-testid="signature-refused"
+                            ><span class="fstatus-main"
+                              ><span class="material-icons" aria-hidden="true">block</span><span i18n="@@sig.gate.refused-here">Refused here</span></span
+                            ></span
+                          >&ngsp;<span class="secondary block">{{ reasonWord(f.signatures.refusedReason) }}</span>
+                        } @else if (badged(f.signatures); as sig) {
                           <quader-signature-badge [state]="sig.state" [stale]="sig.stale" />
                         } @else {
                           <quader-no-value />
@@ -184,9 +230,9 @@
                          (Q-UI-898); the install panel says why. -->
                     @if (downloadable()) {
                       <td>
-                        <!-- A file the malware scan's gate refuses offers no download; its fact says why (Q-UI-882). Nor does a file
-                             of a system repository (Q-UI-898). -->
-                        @if (f.malware?.refused === true || inSystemRepository(f)) {
+                        <!-- A file the malware scan's gate or a repository's signature gate refuses offers no download; its fact says
+                             why (Q-UI-882, R-SIG-074). Nor does a file of a system repository (Q-UI-898). -->
+                        @if (f.malware?.refused === true || f.signatures?.refused === true || inSystemRepository(f)) {
                           <quader-no-value />
                         } @else {
                           <a class="btn btn-tertiary" [href]="f.contentUrl" download quaderDownload i18n="@@pkg.file.download-link">Download</a>
@@ -239,7 +285,15 @@
             }
             @case ('signatures') {
               @if (activeTab() === 'signatures') {
-                <quader-version-signatures [packageId]="d.packageId" [version]="d.version" [format]="d.format" />
+                <quader-version-signatures
+                  [packageId]="d.packageId"
+                  [version]="d.version"
+                  [format]="d.format"
+                  [files]="d.files"
+                  [artifact]="heading()"
+                  [platforms]="imagePlatforms()"
+                  (changed)="details.reload()"
+                />
               }
             }
             @case ('details') {

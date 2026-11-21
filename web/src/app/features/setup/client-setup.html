@@ -246,6 +246,22 @@
     </p>
   }
 
+  <!-- A repository that serves only artifacts with a verified signature says so above the snippets, with the anchors it accepts
+       (R-SIG-074), read from the repository document; a reader who sees the reduced view of R-REPO-010 gets no line (Q-SIG-228). -->
+  @if (gated(); as g) {
+    <p class="banner-warning gate-line" role="note" data-testid="setup-gate">
+      <span class="material-icons inline warn" aria-hidden="true">policy</span>
+      <span>
+        <ng-container i18n="@@setup.gate">This repository serves only artifacts with a verified signature.</ng-container>&ngsp;
+        @if (g.length === 0) {
+          <ng-container i18n="@@setup.gate.any">Any trust anchor of the repository counts.</ng-container>
+        } @else {
+          <ng-container i18n="@@setup.gate.anchors">Accepted trust anchors:</ng-container>&ngsp;<span translate="no">{{ g.join(', ') }}</span>
+        }
+      </span>
+    </p>
+  }
+
   <!-- The job first (R-UI-121): the steps on one rail, each snippet a window with at most one short sentence; a second way of a
        step sits behind an inline fold. -->
   <ng-template #snippetList let-list>

@@ -4,7 +4,7 @@ import { ApiError } from '../../api/problem';
 import { SignatureAnchor, SignaturesApi } from '../../api/signatures-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
-import { Confirm } from '../../shared/confirm-dialog';
+import { GateActions } from '../../shared/signatures/gate-releases';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { AnchorDialog, AnchorDialogData } from '../../shared/signatures/anchor-dialog';
@@ -72,7 +72,7 @@ export class ProjectSignatureAnchors {
   private readonly api = inject(SignaturesApi);
   private readonly session = inject(SessionStore);
   private readonly dialog = inject(QuaderDialog);
-  private readonly confirm = inject(Confirm);
+  private readonly gate = inject(GateActions);
   private readonly notifier = inject(Notifier);
 
   /** The project's key. */
@@ -128,12 +128,17 @@ export class ProjectSignatureAnchors {
 
   protected async remove(anchor: SignatureAnchor): Promise<void> {
     const title = anchor.title;
-    const answer = await this.confirm.ask({
-      title: $localize`:@@sig.anchor.remove-title:Remove the trust anchor ${title}:title:?`,
-      lines: [$localize`:@@sig.anchor.remove-text:The signatures it knows read "Signed · signer not trusted" unless another anchor knows their signer.`],
-      confirmLabel: $localize`:@@sig.anchor.remove-confirm:Remove trust anchor`,
-    });
-    if (answer === null) return;
+    // The removal's question, with what it makes the project's gated repositories refuse (R-SIG-071, R-SIG-074).
+    const go = await this.gate.askImpact(
+      { anchor: anchor.id, change: 'remove' },
+      {
+        title: $localize`:@@sig.anchor.remove-title:Remove the trust anchor ${title}:title:?`,
+        lines: [$localize`:@@sig.anchor.remove-text:The signatures it knows read "Signed · signer not trusted" unless another anchor knows their signer.`],
+        confirmLabel: $localize`:@@sig.anchor.remove-confirm:Remove trust anchor`,
+      },
+      { title: '', confirmLabel: '' },
+    );
+    if (!go) return;
     this.busy.set(new Set([anchor.id]));
     this.error.set(null);
     try {

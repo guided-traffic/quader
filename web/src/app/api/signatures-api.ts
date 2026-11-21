@@ -32,8 +32,35 @@ export type SignatureBlockKind = Schema<'SignatureBlockKind'>;
 export type NewSignatureBlock = Schema<'NewSignatureBlock'>;
 export type SignatureFinding = Schema<'SignatureFinding'>;
 export type SignatureFindingKind = Schema<'SignatureFindingKind'>;
-/** The member `signatures` of a repository document (R-SIG-040): `fetch` of a remote repository. */
+/** The member `signatures` of a repository document (R-SIG-040, R-SIG-061): `fetch` of a remote repository, and the gate. */
 export type RepositorySignatureSettings = Schema<'RepositorySignatureSettings'>;
+/** Why a repository's gate refuses an artifact (R-SIG-062, R-SIG-068). */
+export type SignatureGateReason = Schema<'SignatureGateReason'>;
+/** A reason of the gate, or `pending` while a check is due (R-SIG-073). */
+export type SignatureGateRefusedReason = Schema<'SignatureGateRefusedReason'>;
+/** The gate of the repository of a signatures answer, while it is on (R-SIG-073). */
+export type SignatureGateView = Schema<'SignatureGateView'>;
+export type SignatureGateAnchor = Schema<'SignatureGateAnchor'>;
+/** What a repository's gate would decide of its stored items (R-SIG-072). */
+export type SignatureGatePreview = Schema<'SignatureGatePreview'>;
+export type SignatureGateExample = Schema<'SignatureGateExample'>;
+/** A release of one artifact for one repository's gate (R-SIG-070). */
+export type SignatureRelease = Schema<'SignatureRelease'>;
+/** A download a repository's gate refused (R-SIG-073). */
+export type SignatureRefusal = Schema<'SignatureRefusal'>;
+/** One change whose impact is asked before it is saved (R-SIG-071). */
+export type SignatureImpactRequest = Schema<'SignatureImpactRequest'>;
+export type SignatureImpact = Schema<'SignatureImpact'>;
+
+/** The reasons of a refusal in the order the screens list them (R-SIG-062: the order of the first reason). */
+export const SIGNATURE_GATE_REASONS: readonly SignatureGateReason[] = ['missing', 'untrusted', 'not_chosen', 'invalid', 'blocked', 'not_checked'];
+
+/** The filters of `GET /api/v1/signatures/refusals` (R-SIG-073); an absent member is no filter. */
+export interface SignatureRefusalFilters {
+  /** `<project>/<key>`. */
+  readonly repository?: string;
+  readonly reason?: SignatureGateReason;
+}
 
 /** The kinds of a finding in the order the screens list them (R-SIG-038). */
 export const SIGNATURE_FINDING_KINDS: readonly SignatureFindingKind[] = ['invalid', 'blocked'];
@@ -98,6 +125,21 @@ export abstract class SignaturesApi {
   abstract deleteBlock(id: number): Promise<void>;
   /** `GET /api/v1/signatures/findings`, newest first, in pages. */
   abstract findings(filters: SignatureFindingFilters): PageFetcher<SignatureFinding>;
+  /**
+   * `GET …/repositories/{repoKey}/signatures/preview` (R-SIG-072): the gate switched on over the stored items, with the stored anchors
+   * (`anchors` undefined), any anchor (an empty list) or the anchors named.
+   */
+  abstract preview(repository: string, anchors?: readonly string[]): Promise<SignatureGatePreview>;
+  /** `POST /api/v1/signatures/impact` (R-SIG-071): what one change makes the gates refuse. */
+  abstract impact(change: SignatureImpactRequest): Promise<SignatureImpact>;
+  /** `GET /api/v1/signatures/refusals`, the newest refusal first, in pages (R-SIG-073). */
+  abstract refusals(filters: SignatureRefusalFilters): PageFetcher<SignatureRefusal>;
+  /** `GET …/repositories/{repoKey}/signatures/releases`: the repository's releases, newest first. */
+  abstract releases(repository: string): Promise<readonly SignatureRelease[]>;
+  /** `POST …/repositories/{repoKey}/signatures/releases`: releases one artifact for this repository's gate (R-SIG-070). */
+  abstract release(repository: string, sha256: string, reason: string): Promise<SignatureRelease>;
+  /** `DELETE …/repositories/{repoKey}/signatures/releases/{sha256}`: withdraws a release. */
+  abstract withdraw(repository: string, sha256: string): Promise<void>;
 }
 
 const BASE = '/api/v1/signatures';
@@ -171,5 +213,33 @@ export class HttpSignaturesApi extends SignaturesApi {
       repository: filters.repository || undefined,
       q: filters.q || undefined,
     });
+  }
+
+  override async preview(repository: string, anchors?: readonly string[]): Promise<SignatureGatePreview> {
+    const params = anchors === undefined ? {} : { anchors: anchors.join(',') };
+    return (await this.client.getJson<SignatureGatePreview>(`${repositoryUrl(repository)}/signatures/preview`, { params })).body;
+  }
+
+  override async impact(change: SignatureImpactRequest): Promise<SignatureImpact> {
+    return (await this.client.post<SignatureImpact>(`${BASE}/impact`, change)).body;
+  }
+
+  override refusals(filters: SignatureRefusalFilters): PageFetcher<SignatureRefusal> {
+    return this.client.page<SignatureRefusal>(`${BASE}/refusals`, {
+      repository: filters.repository || undefined,
+      reason: filters.reason,
+    });
+  }
+
+  override async releases(repository: string): Promise<readonly SignatureRelease[]> {
+    return (await this.client.getJson<{ items: SignatureRelease[] }>(`${repositoryUrl(repository)}/signatures/releases`)).body.items;
+  }
+
+  override async release(repository: string, sha256: string, reason: string): Promise<SignatureRelease> {
+    return (await this.client.post<SignatureRelease>(`${repositoryUrl(repository)}/signatures/releases`, { sha256, reason })).body;
+  }
+
+  override async withdraw(repository: string, sha256: string): Promise<void> {
+    await this.client.delete(`${repositoryUrl(repository)}/signatures/releases/${encodeURIComponent(sha256)}`);
   }
 }
