@@ -1227,7 +1227,10 @@ runs are in `git log`; this section holds the current state.
   it already held and did not wait for itself. Rebased onto the malware scan's landing without a conflict; on that
   commit build, vet with the integration and the end-to-end build tags, `shellcheck` and links are green. **Landed on 2026-11-21 at 07:00 as a commit of its own**, after the malware scan's pipeline had ended (a push
   before that would have cancelled the legs still running), with the full unit run before the push; no restart of
-  the owner's UI backend, because the commit holds no product code. Its pipeline is run 44873483199. Still not verified: the `flock` path on Linux; two runs competing for the lock on
+  the owner's UI backend, because the commit holds no product code. **Its pipeline (run 44873483199) ended green on every job at 07:45**: the
+  three integration shards with the changed queries, and the legs `push`, `access-long`, `npm` and `ci`, three of
+  whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
+  developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
 - **In work** (06:50): one builder, **the two scanner units take their tool's name** (since 06:48, the owner's
   decision of that morning, standing rules): the kinds `scanner` and `malware-scanner` become `vuln-scanner-trivy` and
