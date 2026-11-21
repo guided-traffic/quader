@@ -1568,6 +1568,37 @@ runs are in `git log`; this section holds the current state.
   setting with its preview and its warning, a refused artifact with the reason and the release, the
   confirmation with the impact count, the dashboard's lists; rendered at every width, with eight pictures
   named for the development agent.
+  **The repair of the first stage's three defects reported at 00:17 of 2026-11-22** with one commit on the
+  tip of `main` (decisions Q-SIG-216 to Q-SIG-219, gap H-1233, no migration, no new dependency); it waits for
+  the running pipeline to end and gets one addition meanwhile. **NuGet:** the reader of the signature file
+  is Quader's own now, on the language's ASN.1 package (the library in use and its two alternatives take a
+  signer named by issuer and serial number only, and both real tools name it by its key); it reads both
+  forms, the countersignatures and the timestamp, in DER and BER. **Proven with what the real tools wrote:**
+  a package signed by `dotnet nuget sign` (7.7 KiB) reads valid and trusted under its CA, and the signature
+  file of a public package from nuget.org (24 KiB) yields the author's signature, nuget.org's
+  countersignature and a verified timestamp. **Why the vectors had missed it:** every NuGet signature of the
+  tests was made in process by the same library that read it, which writes only the one form it reads. **A
+  second defect behind the first:** nuget.org's countersignature then read as weakly signed, because its
+  chain ends at a root that signed itself with SHA-1 in 2006; a self-signed certificate's own signature is
+  no longer judged, only its key (Q-SIG-218; it holds for every scheme that checks chains). **Ansible:** a
+  batch replaces the attachments of the sources it names and no others (Q-SIG-217), so discovery's batch no
+  longer removes a posted signature; the exception npm's package had made for Quader's own signatures became
+  a case of that rule, and npm's provenance is attached as what its gate already takes it for. Its
+  integration test fails on the old code. **The remote image's version:** the version's answer and the
+  list's badge also read the document a repository lists a version by (Q-SIG-219); the other formats'
+  remotes hold a version's file as an item and already worked, and a virtual repository now shows a remote
+  member's signatures too. **Its gates, each exit 0:** build, the full unit run, generate-check, the
+  evidence, the complexity check, the lint; under the lock the areas `ansiblelocal`, `signatures`, `signing`,
+  `nuget`, `ociremote`, `ocilocal`, `npm`, `packages` and `upstream`. **A gap it names (H-1233):** the
+  libraries that read the timestamps of the signing service's bundles and of Notation have the same limit;
+  dormant, because the tools that write those timestamps use the same libraries. **Asked of it at 00:18,
+  before the landing:** fuzz targets for the readers it wrote (they parse bytes of anyone who may upload a
+  package or of any remote), seeded with the real-tool fixtures, run for two minutes each, and listed in
+  the nightly's fuzz job. **What an installation that was hit shows after the repair:** a posted signature
+  that was lost stays lost until it is posted again; a remote image's version shows its signatures at once;
+  whether an old NuGet row is checked again is asked of the builder. **Not verified:** the real clients
+  against the repairs (dotnet against a gated repository, `ansible-galaxy`, Docker); nuget.org's
+  countersignature under the shipped anchors.
 - **Landed on 2026-11-21 at 23:44, with the two packages below: a fourth integration shard** (a commit of the
   type `ci`; its builder worked from 23:23 to 23:42; decision Q-ARCH-565). **The rule,** in place of a list:
   the suffix decides first (every `<format>local` in a, every `<format>remote` in c, every
