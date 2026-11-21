@@ -1613,7 +1613,15 @@ runs are in `git log`; this section holds the current state.
   on both nodes the copy took a second and ended with exit 0, the scanner's listener was bound 0.2 s after its
   container started, its readiness check `vulnScannerTrivy` passed, and the pods were ready 4 and 2 s after
   the copy began. Both nodes report the analyser's image as present; the pull itself is in no event that is
-  still listed, so its duration there is not known. Their worktrees and branches are removed.
+  still listed, so its duration there is not known. Their worktrees and branches are removed. **Their run
+  (44948103795) ended at 22:34, green on every job,** the first run of 2026-11-21 that ended whole and
+  green: the end-to-end leg `vuln` (17.2 minutes) with the analyser copied from its own image; the legs of
+  every format's client (`oci` 20.6, `npm` 23.6, `nuget` 16.2, `deb` 12.6, `ansible` 14.7 minutes) and `push`,
+  `ci` and `access-long` with the gate in every format's serve path; the layout job with the identity's
+  section (42.1 minutes of its 75); the integration shards in 38.2, 43.4 and 42.1 minutes of their 45, shard
+  b green again with the repaired test. **Shard b stands six seconds under the mark of 43.5 minutes** at
+  which a fourth shard is cut (section 12 A), and the packages in work add to it; the fourth shard is
+  started as a change of the pipeline as soon as one of the four builders has ended.
 - **In work since 21:01 on `main` with the signing identity: package 2 of the second stage, npm's signatures; the
   section started with it landed at 21:47 (the entry above)** (two builders, with the gate's rebase and package 3
   of the analyser's move that made four): **package 2 of the signatures' second stage, npm's registry
@@ -3732,7 +3740,11 @@ the walk items and the run record); what the code holds beyond the plan has not 
   integration tests into the kit). Until he decides: when a shard is stopped by its limit or passes 43.5 minutes, the
   development agent cuts a fourth shard by the Makefile's rule, because a higher limit would hide the growth and a
   stopped shard is a red job without a finding; it is told to him with the minutes it costs. The run of 20:58 to 21:42
-  with the signing identity: 37.8, 41.0 and 42.2 minutes (the new area `signing` adds 11.5 s to shard b).
+  with the signing identity: 37.8, 41.0 and 42.2 minutes (the new area `signing` adds 11.5 s to shard b). The run of
+  21:47 to 22:34 with the gate: 38.2, 43.4 and 42.1 minutes. Shard b is the bucket of every package the Makefile's rule
+  names in neither of the others, so every new area of the day fell into it; with npm's signatures (about 5 s), the
+  attestations and the gate's releases it passes the mark. **The fourth shard is being cut** (run record); what it
+  costs is read from its first run and told to the owner.
 - **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
   revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
