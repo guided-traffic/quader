@@ -416,7 +416,7 @@ CREATE TABLE signature_trust (
   state         text    NOT NULL CHECK (state IN ('public', 'internal', 'untrusted', 'blocked')),
   anchor_ids    bigint[] NOT NULL DEFAULT '{}',   -- every anchor that knows the signer (a gate of stage 3 asks for a set, R-SIG-043)
   block_id      bigint  NULL,
-  epoch         bigint  NOT NULL,                 -- the anchor epoch it was computed under (R-SIG-012)
+  anchor_epoch  bigint  NOT NULL,                 -- the anchor epoch it was computed under (R-SIG-012)
   computed_at   timestamptz NOT NULL DEFAULT now(),
   UNIQUE NULLS NOT DISTINCT (signature_id, project_id)
 );
@@ -1548,6 +1548,14 @@ Priority: **P1** · Covers: quader-only
 - **Backups** ([backup-and-restore.md](backup-and-restore.md) R-BAK-004): `signature_objects`, `signatures`, `signature_attachments`,
   `signature_anchors`, `signature_settings`, `signature_blocks`, `signature_trust_roots` and `artifact_origins` are `data`;
   `signature_trust` is `transient`: after a restore the trust job recomputes every row from the restored fields, reading no artifact.
+- **Revision columns** ([architecture.md](architecture.md) R-ARCH-009, [backup-and-restore.md](backup-and-restore.md) R-BAK-022): the
+  ETags `signature_settings.version` and `signature_anchors.version` are registered, so a restore raises them by 2^32. The anchor epoch
+  is not: `signature_settings.anchor_epoch` is compared only with its copies, in the trust rows (`signature_trust.anchor_epoch`) and
+  from stage 3 in an anchor's `narrowed_epoch` and a block's `anchor_epoch` (R-SIG-066). A restore leaves no trust row (the table is
+  transient) and restores the other copies with the counter, so it needs no raise; a raised copy beside an unraised counter would make
+  a row look current for good. `signature_trust_roots.tuf_version_number` is the update repository's number (R-SIG-017): raised, the
+  stored root would look newer than every snapshot to come and never be refreshed. None of these columns carries a name the rule reserves
+  for revision columns (`rev_seq`, `revision`, `epoch`, `*_version`).
 - **Restores.** The journal re-applies what narrowed after the restore point: a removed or switched-off anchor, a block, the switch turned
   off ([authorization.md](authorization.md) R-AUTHZ-031); an anchor added after it is lost, which narrows.
 - **Replicas.** The jobs run once in the installation (`coalesce`, `exclusive`); every replica reads anchors, blocks and the switch from a
@@ -1616,7 +1624,7 @@ Stage 2 is specified in [Quader signs (stage 2)](#quader-signs-stage-2) and stag
   alike; the remote's background fetch (R-SIG-026) is what lets a remote's first pull be judged. Stage 3 adds the setting (R-SIG-061), what
   passes (R-SIG-062), what the format names as an artifact (R-SIG-063), the answer in each client's shape (R-SIG-068), the wait for a pending
   check with the fetch's state (R-SIG-067), and the subtraction that keeps the stale rows of H-1175 from serving what a narrowing refuses
-  (R-SIG-066). It changes stage 1's tables by two columns (`signature_anchors.narrowed_epoch`, `signature_blocks.epoch`) and one index
+  (R-SIG-066). It changes stage 1's tables by two columns (`signature_anchors.narrowed_epoch`, `signature_blocks.anchor_epoch`) and one index
   (`signature_trust_anchors`).
 
 Acceptance criteria: none; the stages bring their own.
@@ -2665,17 +2673,17 @@ away or adds a block, which needs no cryptography, so the gate applies it itself
 
 - **Two columns join stage 1's tables:** `signature_anchors.narrowed_epoch bigint NOT NULL DEFAULT 0`, set to the raised `anchor_epoch` by a
   write that narrows the anchor (it is switched off; material is removed or replaced; a CA anchor's subject restriction or use is added or
-  changed; a Sigstore identity's issuer, pattern or trust root changes); and `signature_blocks.epoch bigint NOT NULL`, the epoch the block's
+  changed; a Sigstore identity's issuer, pattern or trust root changes); and `signature_blocks.anchor_epoch bigint NOT NULL`, the anchor epoch the block's
   creation raised.
 - **An anchor of a row's `anchor_ids` counts** only while it is in force in the snapshot (it exists, it is switched on, and a project anchor
-  only while the switch is on) and its `narrowed_epoch` is not above the row's `epoch`. A block whose `epoch` is above the row's and that
+  only while the switch is on) and its `narrowed_epoch` is not above the row's `anchor_epoch`. A block whose `anchor_epoch` is above the row's and that
   matches one of the signature's `key_ids`, or its issuer and identity, makes the row `blocked`. What remains decides the state: no anchor,
   `untrusted`; shipped anchors only, `public`; else `internal`.
 - An anchor that a write narrowed counts for no older row, also where it still knows the signer: until the recomputation reaches those rows
   their artifacts are refused (fail closed). The impact of R-SIG-071 says so before the write.
 - **A widening waits for the recomputation:** an anchor added or switched on, a block lifted, the switch turned on reach the gate when the
   trust job has written the rows (R-SIG-012).
-- The gate's statement reads of each trust row `state`, `anchor_ids` and `epoch`, and of its signature `key_ids`, the issuer and the identity
+- The gate's statement reads of each trust row `state`, `anchor_ids` and `anchor_epoch`, and of its signature `key_ids`, the issuer and the identity
   (R-SIG-005); nothing else.
 
 Acceptance criteria:

@@ -1434,15 +1434,15 @@ type SignatureTrust struct {
 	State       string
 	AnchorIds   []int64
 	BlockID     pgtype.Int8
-	Epoch       int64
+	AnchorEpoch int64
 	ComputedAt  pgtype.Timestamptz
 }
 
 type SignatureTrustRoot struct {
-	Name       string
-	Document   []byte
-	TufVersion int64
-	FetchedAt  pgtype.Timestamptz
+	Name             string
+	Document         []byte
+	TufVersionNumber int64
+	FetchedAt        pgtype.Timestamptz
 }
 
 type StorageUsageDelta struct {

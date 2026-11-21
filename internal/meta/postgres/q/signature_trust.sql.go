@@ -1258,10 +1258,10 @@ const signatureSettings = `-- name: SignatureSettings :one
 SELECT st.project_anchors, st.anchor_epoch, st.version, st.updated_at,
        COALESCE(CASE p.kind WHEN 'ci_mapping' THEN 'ci' ELSE p.kind END || ':' || p.name, '')::text AS updated_by_name,
        COALESCE(st.trust_root_error, '')::text AS trust_root_error, st.trust_root_error_at,
-       (tr.name IS NOT NULL)::boolean AS root_stored, COALESCE(tr.tuf_version, 0)::bigint AS root_tuf_version,
+       (tr.name IS NOT NULL)::boolean AS root_stored, COALESCE(tr.tuf_version_number, 0)::bigint AS root_tuf_version,
        tr.fetched_at AS root_fetched_at,
        (SELECT count(*) FROM signatures s WHERE s.due OR s.state = 'pending')::bigint AS pending,
-       (SELECT count(*) FROM signature_trust t WHERE t.epoch < st.anchor_epoch)::bigint AS stale
+       (SELECT count(*) FROM signature_trust t WHERE t.anchor_epoch < st.anchor_epoch)::bigint AS stale
   FROM signature_settings st
   LEFT JOIN principal p ON p.id = st.updated_by
   LEFT JOIN signature_trust_roots tr ON tr.name = 'trusted_root.json'
@@ -1318,7 +1318,7 @@ SELECT (SELECT count(*) FROM signatures WHERE due AND priority = 0)::bigint AS d
        COALESCE((SELECT extract(epoch FROM now() - min(received_at)) FROM signatures WHERE due), 0)::double precision AS oldest_pending,
        (SELECT count(*) FROM signatures s WHERE s.state = 'invalid'
            AND EXISTS (SELECT 1 FROM signature_attachments a WHERE a.signature_id = s.id))::bigint AS invalid,
-       (SELECT count(*) FROM signature_trust t, signature_settings st WHERE st.id AND t.epoch < st.anchor_epoch)::bigint AS stale,
+       (SELECT count(*) FROM signature_trust t, signature_settings st WHERE st.id AND t.anchor_epoch < st.anchor_epoch)::bigint AS stale,
        (SELECT tr.fetched_at FROM signature_trust_roots tr WHERE tr.name = 'trusted_root.json') AS root_fetched_at
 `
 
@@ -1352,20 +1352,20 @@ func (q *Queries) SignatureStats(ctx context.Context) (SignatureStatsRow, error)
 }
 
 const signatureStoreTrustRoot = `-- name: SignatureStoreTrustRoot :exec
-INSERT INTO signature_trust_roots (name, document, tuf_version, fetched_at)
+INSERT INTO signature_trust_roots (name, document, tuf_version_number, fetched_at)
 VALUES ($1::text, $2::bytea, $3::bigint, now())
-ON CONFLICT (name) DO UPDATE SET document = EXCLUDED.document, tuf_version = EXCLUDED.tuf_version, fetched_at = EXCLUDED.fetched_at
+ON CONFLICT (name) DO UPDATE SET document = EXCLUDED.document, tuf_version_number = EXCLUDED.tuf_version_number, fetched_at = EXCLUDED.fetched_at
 `
 
 type SignatureStoreTrustRootParams struct {
-	Name       string
-	Document   []byte
-	TufVersion int64
+	Name             string
+	Document         []byte
+	TufVersionNumber int64
 }
 
 // Stores a TUF target the task fetched.
 func (q *Queries) SignatureStoreTrustRoot(ctx context.Context, arg SignatureStoreTrustRootParams) error {
-	_, err := q.db.Exec(ctx, signatureStoreTrustRoot, arg.Name, arg.Document, arg.TufVersion)
+	_, err := q.db.Exec(ctx, signatureStoreTrustRoot, arg.Name, arg.Document, arg.TufVersionNumber)
 	return err
 }
 
@@ -1373,7 +1373,7 @@ const signatureTrustBacklog = `-- name: SignatureTrustBacklog :one
 SELECT (EXISTS (SELECT 1 FROM signatures s
                  WHERE s.state IN ('valid', 'no_key')
                    AND NOT EXISTS (SELECT 1 FROM signature_trust t
-                                    WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.epoch >= st.anchor_epoch))
+                                    WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.anchor_epoch >= st.anchor_epoch))
         OR EXISTS (SELECT 1 FROM signature_trust t JOIN signatures s ON s.id = t.signature_id
                     WHERE s.state NOT IN ('valid', 'no_key')))::boolean AS pending
   FROM signature_settings st WHERE st.id
@@ -1395,7 +1395,7 @@ SELECT s.id, o.scheme, s.state, s.key_ids, s.signed_digest, COALESCE(s.digest_al
   JOIN signature_objects o ON o.sha256 = s.object_sha256
  WHERE s.id > $1::bigint AND s.state IN ('valid', 'no_key')
    AND NOT EXISTS (SELECT 1 FROM signature_trust t
-                    WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.epoch >= $2::bigint)
+                    WHERE t.signature_id = s.id AND t.project_id IS NULL AND t.anchor_epoch >= $2::bigint)
  ORDER BY s.id
  LIMIT $3::int
 `
@@ -1591,7 +1591,7 @@ func (q *Queries) SignatureTrustRootSucceeded(ctx context.Context) error {
 }
 
 const signatureTrustRoots = `-- name: SignatureTrustRoots :many
-SELECT name, document, tuf_version, fetched_at FROM signature_trust_roots ORDER BY name
+SELECT name, document, tuf_version_number, fetched_at FROM signature_trust_roots ORDER BY name
 `
 
 // The TUF targets the task stored.
@@ -1607,7 +1607,7 @@ func (q *Queries) SignatureTrustRoots(ctx context.Context) ([]SignatureTrustRoot
 		if err := rows.Scan(
 			&i.Name,
 			&i.Document,
-			&i.TufVersion,
+			&i.TufVersionNumber,
 			&i.FetchedAt,
 		); err != nil {
 			return nil, err
@@ -1621,7 +1621,7 @@ func (q *Queries) SignatureTrustRoots(ctx context.Context) ([]SignatureTrustRoot
 }
 
 const signatureTrustUpsert = `-- name: SignatureTrustUpsert :exec
-INSERT INTO signature_trust (signature_id, project_id, state, anchor_ids, block_id, epoch, computed_at)
+INSERT INTO signature_trust (signature_id, project_id, state, anchor_ids, block_id, anchor_epoch, computed_at)
 SELECT t.signature_id, NULLIF(t.project_id, '')::uuid, t.state, t.anchor_ids::bigint[],
        (SELECT b.id FROM signature_blocks b WHERE b.id = t.block_id), $1::bigint, now()
   FROM (SELECT unnest($2::bigint[]) AS signature_id, unnest($3::text[]) AS project_id,
@@ -1630,7 +1630,7 @@ SELECT t.signature_id, NULLIF(t.project_id, '')::uuid, t.state, t.anchor_ids::bi
  WHERE EXISTS (SELECT 1 FROM signatures s WHERE s.id = t.signature_id)
    AND (t.project_id = '' OR EXISTS (SELECT 1 FROM project p WHERE p.id::text = t.project_id))
 ON CONFLICT (signature_id, project_id) DO UPDATE
-   SET state = EXCLUDED.state, anchor_ids = EXCLUDED.anchor_ids, block_id = EXCLUDED.block_id, epoch = EXCLUDED.epoch,
+   SET state = EXCLUDED.state, anchor_ids = EXCLUDED.anchor_ids, block_id = EXCLUDED.block_id, anchor_epoch = EXCLUDED.anchor_epoch,
        computed_at = EXCLUDED.computed_at
 `
 
@@ -1842,11 +1842,11 @@ SELECT s.id, s.object_sha256, s.part, s.subject_sha256, COALESCE(s.subject_name,
        o.scheme, COALESCE(o.media_type, '')::text AS media_type, o.size AS object_size,
        (t.signature_id IS NOT NULL)::boolean AS has_trust, COALESCE(t.project_id::text, '')::text AS trust_project_id,
        COALESCE(t.state, '')::text AS trust_state, COALESCE(t.anchor_ids, '{}')::bigint[] AS trust_anchor_ids,
-       COALESCE(t.block_id, 0)::bigint AS trust_block_id, COALESCE(t.epoch, 0)::bigint AS trust_epoch, t.computed_at AS trust_computed_at,
+       COALESCE(t.block_id, 0)::bigint AS trust_block_id, COALESCE(t.anchor_epoch, 0)::bigint AS trust_epoch, t.computed_at AS trust_computed_at,
        (SELECT st.anchor_epoch FROM signature_settings st WHERE st.id)::bigint AS current_epoch
   FROM signatures s
   JOIN signature_objects o ON o.sha256 = s.object_sha256
-  LEFT JOIN LATERAL (SELECT x.signature_id, x.project_id, x.state, x.anchor_ids, x.block_id, x.epoch, x.computed_at
+  LEFT JOIN LATERAL (SELECT x.signature_id, x.project_id, x.state, x.anchor_ids, x.block_id, x.anchor_epoch, x.computed_at
                        FROM signature_trust x
                       WHERE x.signature_id = s.id
                         AND (x.project_id IS NULL OR x.project_id::text = $1::text)

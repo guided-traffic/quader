@@ -171,6 +171,9 @@ live replica runs a release below its `requires-app` (the contract guard), and o
    `TestTableRegistry` and `TestRevisionColumns` fail otherwise. A table with an `ON DELETE CASCADE` key to `repositories`
    also runs the integration area `upstream`: its `TestR_REPO_067_ThePurgeOfARetiredRepository` holds every such table as content
    (deleted by `upstream_repository_purge`, which the migration then replaces with the added delete) or as configuration (kept).
+   Every migration runs the integration area `postgres` as well, which holds the schema's conventions (export classes, revision
+   columns, blob references, the steps' headers): a `bigint` column that only copies another row's counter or holds a number from
+   outside gets a name the revision-column rule does not claim, not a registration.
 3. A table with a blob reference: column `blob_sha256`, FK to `blobs`, index, both triggers
    (`TestBlobReferenceRules`).
 4. Backfills are background data migrations (R-HA-022), not migration steps; the first is `data_migration_nuget_semver2`
@@ -664,10 +667,16 @@ The statements are in [signature_fetch.sql](../../internal/meta/postgres/queries
 the trust root task's last failure), `signature_anchors` (the four kinds in four scopes, `project_id uuid REFERENCES project` for a project's,
 unique per scope, project and key), `signature_blocks` (unique per kind, value and issuer), `signature_trust` (one row per signature and
 scope, `project_id` NULL for the installation's, with the epoch it was computed under) and `signature_trust_roots` (the refreshed public
-Sigstore root and npm's keys with the TUF snapshot's version). It also registers the change area `signature_anchors` in `cluster_epoch`.
+Sigstore root and npm's keys with the TUF snapshot's version number). It also registers the change area `signature_anchors` in `cluster_epoch`.
 No table references `repositories`. The statements are in [signature_trust.sql](../../internal/meta/postgres/queries/signature_trust.sql);
 `signature_trust` is `transient` (after a restore the trust job computes every row again from the restored fields), the others are `data`
 ([tables_signatures.go](../../internal/meta/postgres/tables_signatures.go)). The number 00098 follows 00097_usage_certificate.
+
+[00100_signature_trust_names](../../internal/meta/postgres/migrations/00100_signature_trust_names.sql) renames two of its columns that
+carried a name of the revision-column rule without being revision columns (R-ARCH-009): the trust row's copy of the anchor epoch is
+`signature_trust.anchor_epoch` (the name of the counter it copies, with its index `signature_trust_anchor_epoch`), and the TUF snapshot's
+number is `signature_trust_roots.tuf_version_number`, a number of the update repository that a restore must not raise. Only the ETags
+`signature_settings.version` and `signature_anchors.version` are registered ([signatures.md](signatures.md#the-flow)).
 
 ## Debian tables (00060 to 00065)
 

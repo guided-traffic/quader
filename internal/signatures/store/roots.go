@@ -42,7 +42,7 @@ func (s *Store) StoreTrustRoot(ctx context.Context, r shipped.Refreshed) (bool, 
 			return nil
 		}
 		for name, doc := range map[string][]byte{shipped.TargetTrustedRoot: r.TrustedRoot, shipped.TargetNPMKeys: r.NPMKeys} {
-			if err := qs.SignatureStoreTrustRoot(ctx, q.SignatureStoreTrustRootParams{Name: name, Document: doc, TufVersion: r.TUFVersion}); err != nil {
+			if err := qs.SignatureStoreTrustRoot(ctx, q.SignatureStoreTrustRootParams{Name: name, Document: doc, TufVersionNumber: r.TUFVersion}); err != nil {
 				return err
 			}
 		}

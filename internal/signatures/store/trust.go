@@ -276,7 +276,7 @@ func trustRoots(ctx context.Context, qs *q.Queries) (map[string]StoredRoot, erro
 	}
 	out := make(map[string]StoredRoot, len(rows))
 	for _, r := range rows {
-		out[r.Name] = StoredRoot{Document: r.Document, TUFVersion: r.TufVersion, FetchedAt: timeOf(r.FetchedAt.Valid, r.FetchedAt.Time)}
+		out[r.Name] = StoredRoot{Document: r.Document, TUFVersion: r.TufVersionNumber, FetchedAt: timeOf(r.FetchedAt.Valid, r.FetchedAt.Time)}
 	}
 	return out, nil
 }

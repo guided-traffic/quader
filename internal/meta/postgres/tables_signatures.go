@@ -34,4 +34,8 @@ func init() {
 	// client-held revision (R-BAK-022), so a change prepared against the state before the restore is refused with 412.
 	meta.RegisterRevisionColumn("signature_settings", "version")
 	meta.RegisterRevisionColumn("signature_anchors", "version")
+	// Not revision columns, and named so (00100_signature_trust_names): signature_settings.anchor_epoch and its copy
+	// signature_trust.anchor_epoch are compared only with each other, and a restore leaves no trust row; a raised copy would make a
+	// row look current for good. signature_trust_roots.tuf_version_number is the update repository's number: raised, the stored root
+	// would look newer than every snapshot to come and never be refreshed (R-SIG-017).
 }

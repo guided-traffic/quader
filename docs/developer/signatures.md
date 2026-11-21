@@ -134,11 +134,19 @@ Verification, trust, anchors, the jobs, the API, events and metrics (R-SIG-005 t
    doubling back-off from a minute; a result is written with its evidence, the parts a detector could not name are added (`AddParts`), and the
    signature's trust rows are judged at once under the current epoch; a state that turned `invalid` records `signature.invalid` once.
 3. A write of an anchor, a block, the switch or a stored public root raises `signature_settings.anchor_epoch`, announces the change area
-   `signature_anchors` and wakes `signature-trust`, which judges every `valid` or `no_key` signature whose rows are older than the epoch, in
-   batches of 10,000, from the stored fields alone: the installation's scope and every project's with anchors of its own (switch on) that
-   reaches the signature. An anchor key that decides a `no_key` signature rewrites its integrity state.
-4. The task `signature-trust-root` (daily) refreshes the public Sigstore root and npm's keys through TUF; a newer snapshot raises the epoch.
+   `signature_anchors` and wakes `signature-trust`, which judges every `valid` or `no_key` signature whose rows are older than the epoch
+   (`signature_trust.anchor_epoch`, the epoch a row was computed under), in batches of 10,000, from the stored fields alone: the
+   installation's scope and every project's with anchors of its own (switch on) that reaches the signature. An anchor key that decides a
+   `no_key` signature rewrites its integrity state.
+4. The task `signature-trust-root` (daily) refreshes the public Sigstore root and npm's keys through TUF; a snapshot whose version is above
+   the stored `signature_trust_roots.tuf_version_number` and the release's is stored and raises the epoch.
 5. `quader migrate` applies the release's shipped anchors (an administrator's `enabled` kept) and the anchors of `signatures.anchors`.
+
+Neither the anchor epoch, nor its copy in a trust row, nor the TUF version number is a revision column (R-ARCH-009): a restore raises none
+of them, and their names stay out of the ones the schema test of the area `postgres` claims (`rev_seq`, `revision`, `epoch`, `*_version`).
+Raised by 2^32, a copy of the epoch would make a trust row look current for good, and the TUF number would make the stored root look newer
+than every snapshot to come ([00100_signature_trust_names](../../internal/meta/postgres/migrations/00100_signature_trust_names.sql),
+[spec](../spec/signatures.md) R-SIG-041). The registered ones are the ETags `signature_settings.version` and `signature_anchors.version`.
 
 ### What package 2 wires of package 3
 
