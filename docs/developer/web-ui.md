@@ -340,7 +340,10 @@ of each state to render (an empty name is the screen as it opens). `UI_RENDERS_W
 `QUADER_` variable, and the backend that `make ui-renders` starts inherits the environment.
 
 **How to look.** Open the contact sheet; for each changed screen open the light and the dark picture at 1440 px and the one at
-390 px, and go through the [checklist](ui-style-guide.md#checklist).
+390 px, and go through the [checklist](ui-style-guide.md#checklist). Before a screen lands it is rendered at every width the
+job `ui-layout` renders, with 0 failed and 0 layout findings: 1440, 1024 and 390 px, and the screen's own `widths` (1,100 px for
+the start page's projects and a project's repositories, 1,100 and 1,280 px for the admin area's repositories); a change rendered
+at 1440 and 390 px alone left the admin area's repositories 7 px wider than their region at 1,280 px (2026-11-21).
 
 ## How the build reaches the binary
 
@@ -940,7 +943,7 @@ Its look is the reference's table (Q-UI-128, `_list-screens.scss`): no border ar
 head in the heading colour at weight 600 between two hairlines, a hairline under every row. It also owns the layout of every
 list (Q-UI-308): a column's `width` is its least width, carried by the header cell; a column that `prefer`s takes every pixel the
 others leave, and they keep their widths (Q-UI-330); the scroll region keeps no room for a scrollbar its rows do not need, so the
-table ends where the lines above it end (Q-UI-427); every cell is aligned to the top with a control centred on the first line (a control stands at the line's top, its margins the line's height); where its columns at their least widths do not fit its scroll region the rows stack (`measure` sets the class `stacked`, measured again when the list's width, measured on a ruler of no height, or its rows change; `[stack]="false"` keeps the table; Q-UI-680), the cells of a stacked row side by side after the name's line (Q-UI-681), and the head shows only the headers with `aria-sort`, as a row of sort buttons (Q-UI-391), and after every change of the body the table labels each cell with its column
+table ends where the lines above it end (Q-UI-427); every cell is aligned to the top with a control centred on the first line (a control stands at the line's top, its margins the line's height); where its columns at their least widths do not fit its scroll region the rows stack (`measure` sets the class `stacked`, measured again when the list's width (a ruler of no height), the room inside its scroll region (which a scrollbar beside the rows narrows) or its rows change; `[stack]="false"` keeps the table; Q-UI-680), the cells of a stacked row side by side after the name's line (Q-UI-681), and the head shows only the headers with `aria-sort`, as a row of sort buttons (Q-UI-391), and after every change of the body the table labels each cell with its column
 (`data-label`, unless `stackLabel: false`) and marks a cell without a value (`data-empty`). An empty list shows
 `<quader-empty-state>` with the content marked `emptyAction`.
 

@@ -216,23 +216,32 @@ export class DataTable {
           observer.observe(current, { childList: true, subtree: true, characterData: true });
         }
       }
-      // The list's width: an element of no height across the table, so a change of the frame's height alone is no reason to
-      // measure. The measurement waits for the next frame: a change of the layout inside the observer's callback would start a
-      // second round of every observer of the page ("ResizeObserver loop completed with undelivered notifications").
+      // The list's width: an element of no height across the table, and the room inside the scroll region, which a scrollbar
+      // beside the rows narrows while the list keeps its width (a window made lower: the admin area's repositories at 1,280 px
+      // were 10 px wider than their region). Only a change of a width is a reason to measure; the change of the frame's height
+      // that the stacking makes is not. The measurement waits for the next frame: a change of the layout inside the observer's
+      // callback would start a second round of every observer of the page ("ResizeObserver loop completed with undelivered
+      // notifications").
       const ruler = host.querySelector('.table-width');
+      const region = host.querySelector('.table-scroll');
       if (ruler !== measured && typeof ResizeObserver !== 'undefined') {
         resized?.disconnect();
         measured = ruler;
         if (ruler) {
-          let last = -1;
+          const last = new Map<Element, number>();
           resized = new ResizeObserver((entries) => {
-            const width = entries[entries.length - 1]?.contentRect.width ?? 0;
-            if (width === last) return;
-            last = width;
+            let changed = false;
+            for (const entry of entries) {
+              if (last.get(entry.target) === entry.contentRect.width) continue;
+              last.set(entry.target, entry.contentRect.width);
+              changed = true;
+            }
+            if (!changed) return;
             cancelAnimationFrame(frame);
             frame = requestAnimationFrame(() => this.measure(host));
           });
           resized.observe(ruler);
+          if (region) resized.observe(region);
         }
       }
     });

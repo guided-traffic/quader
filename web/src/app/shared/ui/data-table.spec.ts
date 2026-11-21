@@ -332,4 +332,60 @@ describe('Data table', () => {
       client.mockRestore();
     }
   });
+
+  it('Q-UI-680 a scrollbar that appears beside the rows narrows the region, not the list, and the rows stack then', async () => {
+    // The admin area's repositories at 1,280 px (2026-11-21): the window grew and shrank back, the region got its scrollbar
+    // while the ruler across the list kept its width, and the table stayed 10 px wider than its region. jsdom has no
+    // ResizeObserver: a stand-in hands the observer the widths the browser would report.
+    const observers: { observed: Element[]; callback: ResizeObserverCallback }[] = [];
+    class FakeResizeObserver {
+      readonly observed: Element[] = [];
+      constructor(readonly callback: ResizeObserverCallback) {
+        observers.push(this);
+      }
+      observe(el: Element): void {
+        this.observed.push(el);
+      }
+      readonly unobserve = vi.fn();
+      readonly disconnect = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    const need = 963;
+    let has = 968;
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const width = this.tagName === 'TABLE' ? need : has;
+      return { width, height: 10, top: 0, left: 0, right: width, bottom: 10, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => has);
+    try {
+      const { root, settle } = await render();
+      await settle();
+      const table = root.querySelector('quader-data-table')!;
+      expect(table.classList.contains('stacked')).toBe(false);
+      const observer = observers.at(-1)!;
+      const region = root.querySelector('.table-scroll')!;
+      const ruler = root.querySelector('.table-width')!;
+      expect(observer.observed).toEqual([ruler, region]);
+      const report = async (entries: [Element, number][]): Promise<void> => {
+        observer.callback(entries.map(([target, width]) => ({ target, contentRect: { width } }) as ResizeObserverEntry), observer as unknown as ResizeObserver);
+        await new Promise((r) => requestAnimationFrame(() => r(undefined)));
+      };
+      await report([[ruler, 968], [region, 968]]);
+      expect(table.classList.contains('stacked')).toBe(false);
+      // The scrollbar: the region's room is 15 px less, the ruler's width the same.
+      has = 953;
+      await report([[region, 953]]);
+      expect(table.classList.contains('stacked')).toBe(true);
+      // A change of height alone (the stacked rows are taller) measures nothing.
+      has = 968;
+      await report([[region, 953]]);
+      expect(table.classList.contains('stacked')).toBe(true);
+      await report([[region, 968]]);
+      expect(table.classList.contains('stacked')).toBe(false);
+    } finally {
+      rect.mockRestore();
+      client.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
 });

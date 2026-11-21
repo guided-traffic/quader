@@ -315,10 +315,12 @@ export class RepositoryList {
    * (Q-UI-308). Inside a project the repository is the one column that wraps, and it takes what the others leave (`prefer`,
    * Q-UI-330). In the admin area the repository and the project share that room in proportion to their content: a pinned project
    * of 11 rem broke **Customer portal release engineering and delivery** into three lines beside a Last activity of 7.5 rem that
-   * held "4 minutes ago" (2026-11-18). The project is its mark and its name (Q-UI-424).
+   * held "4 minutes ago" (2026-11-18). The project is its mark and its name (Q-UI-424). In the admin area the repository's least
+   * is 12 rem: the format **ClamAV definitions** made the format column 27 px wider than **Ansible Galaxy** had, and at 13 rem
+   * the list needed 963 px at 1,280 px where its region has 953 beside a scrollbar (2026-11-21).
    */
   private readonly allColumns = computed<readonly TableColumn[]>(() => [
-    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: this.inProject() },
+    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: this.inProject() ? '13rem' : '12rem', prefer: this.inProject() },
     // Its mark and "Customer portal release" on one line: at 11 rem the seed's longest project stood in three lines at 1,280 px
     // beside descriptions that took the room (2026-11-18).
     { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '12rem' },

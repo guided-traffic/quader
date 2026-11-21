@@ -17868,7 +17868,9 @@ one screen: wider than its values, it took room the wrapping columns needed.
 | (c) Ellipsis for every long value | One line | Even rows | A name cut where it was readable |
 
 **Choice:** (a). The admin area's repositories: the repository and the project wrap (13 and 11 rem least, the project 12 rem
-since the renders' look of 2026-11-18 found it in three lines at 1,280 px) and share the room,
+since the renders' look of 2026-11-18 found it in three lines at 1,280 px, the repository 12 rem since the format **ClamAV
+definitions** made the format column 27 px wider on 2026-11-21 and the list needed 963 px at 1,280 px where its region has 953
+beside a scrollbar) and share the room,
 the rest is as wide as its values; inside a project the repository is the one that wraps and prefers. The token lists: the
 token and the scope share the room (Q-UI-429 revised), the times and the actions as wide as their values. The jobs: the result is
 the one that wraps and prefers; the kind and the replica stay whole. Where a value can be longer than any column, it is cut on one
@@ -18955,8 +18957,10 @@ no number in the stylesheet can know what a list needs.
 
 **Choice:** (a), in [data-table.ts](../../web/src/app/shared/ui/data-table.ts) (`measure`): the table is given no width, so it
 lays out at its least, then its width back; a stacked table leaves its blocks for that measurement and goes back in the same task,
-so nothing is painted between. `stackWide` is gone. The observed element is a ruler of no height, so the change of the frame's
-height that the stacking makes starts no second round of the observer. **Rationale:** what a list needs is a property of its
+so nothing is painted between. `stackWide` is gone. The observed elements are a ruler of no height and the scroll region, and
+only a change of a width measures, so the change of the frame's height that the stacking makes starts no second round of the
+observer. The region is observed because a scrollbar beside the rows narrows it while the ruler keeps its width: the admin area's
+repositories at 1,280 px, with the window grown and shrunk back, stood 10 px wider than their region (2026-11-21). **Rationale:** what a list needs is a property of its
 columns and its rows, and only the browser knows it. The development agent revisits the measurement if a list with hundreds of
 rows makes a resize slow.
 
