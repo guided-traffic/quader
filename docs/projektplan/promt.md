@@ -273,6 +273,20 @@ Rules while building:
   blocker.
 - **Review before done.** Not during ALPHA (rule 10). After ALPHA: run `voltagent-qa-sec:code-reviewer`
   over the phase's diff, plus the security and architecture reviewers where the table says so.
+- **What a builder's brief carries** (collected on 2026-11-21, each line from a red job or a defect of that
+  day; the run record has the cases): no agents of its own; its own processes are stopped by PID or by a
+  pattern that holds its worktree's path; a kind cluster gets a name, an image tag and a kubeconfig file of
+  its own; a worktree is cut from the pushed `main`, so a base that is merged and not pushed is reached by a
+  fast-forward to its hash, which the brief names; a migration is numbered at the landing, gapless, and runs
+  the integration areas `postgres` and `upstream`; a change of what a task, a job, a statement or a registry
+  walks, counts or lists is followed by a search for that name under `test/integration`, and the areas found
+  are run; a unit test's cost is measured in the unit job's mode, and a test of the API's package uses the
+  shared parse; the copy of the chart's values file equals the chart's; a new method of the format contract
+  joins the developer page's lists; a UI change is rendered at every width of the layout job on a stack of
+  its own, and the translation source is extracted as the last step; the linter gets a stated time limit;
+  and **a reader of a third party's format is proven with a fixture the real tool made, before it lands**
+  (the measurement of the signatures with real clients found three defects that every test made in process
+  had passed).
 
 ## 4 · Definition of done
 
@@ -1547,7 +1561,7 @@ runs are in `git log`; this section holds the current state.
   stage, (3) loses what a user uploaded: **one builder repairs them since 22:44** (the reading of the
   signer for the author's signature, the countersignature and the timestamps, proven with a signature the
   real tool made; a batch replaces the attachments of its own source only, for every format; the version
-  view for remote repositories of every format). (2), (6) and (7) went at 22:45 to the builder of the gate's
+  view for remote repositories of every format). (2), (6) and (7) went at 22:44 to the builder of the gate's
   second package, who is inside that code, as a second commit. (5) is the clients' behaviour; one untried
   way for NuGet (a header its client prints) is tried by that builder and otherwise left. **Decided by the
   development agent for (2), put to the owner ("With the owner"):** who may write to the repository reads
