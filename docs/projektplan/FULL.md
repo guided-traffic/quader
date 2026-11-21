@@ -257,6 +257,7 @@ Selected from [beyond-baseline.md](../features/beyond-baseline.md):
 - ⚪ Cache pre-warming from lockfiles and SBOMs
 - ⚪ SBOM attachment store
 - ⚪ Signature and provenance gates (Sigstore, Notary Project, SLSA): a gate per repository on a verified signature is
-  decided by the owner (2026-11-21) as the third stage of signatures on artifacts and specified since that day
+  decided by the owner (2026-11-21) as the third stage of signatures on artifacts and specified since that day; its
+  first package, the gate at the download, is built (the same day), releases, the preview and the screens are not
   ([promt.md](promt.md), [signatures.md](../spec/signatures.md)); provenance levels stay parked
 - ⚪ JSR through its npm compatibility layer

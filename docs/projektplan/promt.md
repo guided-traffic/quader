@@ -567,6 +567,9 @@ records the recorder that tells such a stall apart).
   (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
   updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
   analyser's move, left.)
+- The developer page on secrets (`docs/developer/secrets.md`) still lists the task `secrets-reencrypt` under what is
+  deliberately not there and calls the API's steps work of a later milestone; both exist (found on 2026-11-21 by the builder
+  that repaired the task's test, left).
 - `make lint` states no time limit, so the linter stops at its own ten minutes on a loaded machine after it has printed its
   result (seen twice on 2026-11-21 at host loads of about 70, by a builder and at a landing; both passed with
   `--timeout 40m`). The cure is a stated limit in the target, as the unit run got one.
@@ -581,8 +584,9 @@ records the recorder that tells such a stall apart).
   address with the trailing slash it tells the reader to leave out; the usage overview's page of one caller lists no
   credentials for a certificate holder (found on 2026-11-21 by the builder of the client certificates, left).
 - The decisions' index (`docs/decisions.md`) has no rows for the decisions of the signatures' second stage (Q-SIG-53 to
-  Q-SIG-74); found on 2026-11-21 by the planner of the third stage, left. (The index also stops at Q-UI-844, an older
-  entry of this list.)
+  Q-SIG-74); found on 2026-11-21 by the planner of the third stage, left. Nor for the signing identity's (Q-SIG-145 to
+  Q-SIG-155; found the same day by the gate's builder, left). (The index also stops at Q-UI-844, an older entry of this
+  list.)
 - A ClamAV inside the cluster that names the definitions' endpoint by a host the endpoint does not accept gets 421, which
   `freshclam` counts as a failed attempt without a cool-down; the client setup does not say which host to use from inside the
   cluster (found on 2026-11-21 by the builder of the ClamAV import's measurement, left).
@@ -1505,8 +1509,108 @@ runs are in `git log`; this section holds the current state.
   the integration tests build a validator per stack and could share the parse the same way (about an hour,
   the gain not measured). **On the pipeline's runner** (run 44937450926): the package took 76.6 s where it had
   taken 599.5 s, and the unit job 8.9 minutes where it had taken 14.4.
-- **In work since 21:01, two builders on `main` with the signing identity** (with the gate's rebase and package 3
-  of the analyser's move that makes four): **package 2 of the signatures' second stage, npm's registry
+- **In work since 21:40 and 21:48, three builders on the stack of 21:47** (with npm's signatures that makes four):
+  **package 3 of the signatures' second stage, the receipt attestations** (R-SIG-051 to R-SIG-054: the statement
+  and its predicate, the bundle with the trusted root and the chain, the kind of the job `signing` that makes,
+  renews and removes them, the API route and an image's referrer where it hides no older signature, the format
+  contract's method for every format, which makes the contract version 10 because the gate took 9, the client
+  setup's tab **Verify**, and the end-to-end case with the real `cosign verify-attestation`, with what the
+  cosign binary adds to the clients' image measured); **package 2 of the third stage, releases, previews and
+  the API** (R-SIG-070 to R-SIG-073, R-SIG-075, R-SIG-076: the release of one artifact for one repository, the
+  impact count before an anchor or a block changes, the preview before the gate is switched on, the refusals'
+  operation, the Bastion's feed, backups; no screen); **the measurement with real clients** that the first
+  stage and the gate's package had left as owed (signatures made by cosign with a key and with a CA's
+  certificate, by notation, `dotnet nuget sign`, `ansible-galaxy` and gpg, read by Quader and verified by the
+  clients through Quader; and each format's client against a refusal, a pass and the pending answer of a
+  gated repository, the `denied:` line of Docker and of a kubelet among them): one documentation commit with
+  the outputs, and every defect as a finding with its reproduction, fixed by no one before it is read.
+  **Learnt at their start:** a builder's worktree is cut from the pushed `main`, so the two that build on the
+  stack were cut three commits short while it was merged and not pushed; one stopped at the brief's base
+  check and said so, and both were told to fast-forward to the stack's commit. A brief that needs commits
+  which are merged and not pushed now says so with that command.
+- **The run of the signing identity (44943728576) ended at 21:42, green on every job but `integration (shard b)`,
+  which holds no release back; its repair landed with the push of 21:47.** The layout job is green (40.9
+  minutes; its first whole run with the seed's repair, and the first that ended since 18:27); the end-to-end
+  legs `npm`, `push`, `ci`, `bastion` and `access-long` green; the shards a and c green in 37.8 and 42.2
+  minutes of their 45, shard b red after 41.0. **The cause:** one test of the area `repository` expects the
+  task that re-encrypts sealed secrets to walk two columns; the signing identity registered a third on
+  purpose (the sealed key of an uploaded identity, R-SIG-047), and its builder had run the areas `postgres`,
+  `signing`, `signatures` and `backup`, not `repository`. No fault of the product; the new area `signing` is
+  green in that shard (11.5 s). **The repair** (one builder, 21:41 to 21:46, a commit of the type `test`): the
+  expectation names the three columns (a repository's secrets, a Debian repository's signing key, the
+  identity's key), confirmed at the task's handler; two developer pages that still described one column are
+  corrected; the test alone and the whole area `repository` under the lock each exit 0 (146 s). No other test
+  counts the columns. **This is the fourth check of a list in an integration area that a landing made red
+  that day** (section 12 A). **For every builder's brief from now on:** a change of what a task, a job or a
+  registry walks, counts or lists is followed by a search for that name under `test/integration`, and the
+  areas found are run beside the feature's own.
+- **Landed on 2026-11-21 at 21:47, three packages in one push: package 3 of the image analyser's move, package 1 of
+  the signatures' third stage (the gate), and the section "Signing identity" of the second stage's screens.**
+  One push, because every push stops the run before it and the long jobs had not ended since 18:27: the three
+  commits were stacked in the order of their reports (the analyser's at 21:04, the gate at 21:27, the section
+  at 21:30; each rebase without a conflict) and pushed when the run of the signing identity had ended at 21:42 (the entry of that run).
+  **The gate** (R-SIG-061 to R-SIG-069, R-SIG-073, R-SIG-075 and R-SIG-076 as far as its package goes;
+  decisions Q-SIG-131 to Q-SIG-144; migration 00102; the format contract is at version 9; what it built is in
+  the entry of the three builders below): its builder brought it onto `main` in two rebases from 19:52 to
+  21:27. Added on the way: **Quader's own signatures never pass** (R-SIG-062: the gate reads the column the
+  identity brought and skips such rows, tested at the unit tier with three rows; today a second guard,
+  because the second stage's own signatures carry roles the gate's statement leaves out already); **one rule
+  with the screens for a well-known repository** (Q-SIG-138 with Q-SIG-128: the whole member `signatures` of
+  a well-known repository of the project `upstream` is an administrator's, on a system repository the
+  product holds it). By its builder on its tip, each exit 0: build, the full unit run (142 s),
+  generate-check, the evidence, the complexity check, the chart's lint and tests (173 s), the UI tests and
+  lint, the lint with a stated limit (417 s); under the lock the areas `upstream` (60.6 s), `signatures`
+  (55.0 s), `postgres` (142.0 s) and `backup` (602.3 s). Red before its second rebase and green on the tip,
+  each at a host load of 70 to 82: the lint with a tool error, one test of the area `ociremote` that waits
+  15 s for a background fetch, four tests of the area `npm` whose migration timed out. Its tests cost, in
+  the job's mode: 0.49 s for nine tests of the gate's package, two defect cases of 1.4 s each in the test
+  format's kit, nothing in the API's package (57.9 s as a whole). Owed and not this package's: the
+  measurement by hand with real clients (R-SIG-078).
+  **The section "Signing identity"** (R-SIG-056's first point; decisions Q-SIG-170 to Q-SIG-176, gap H-1210:
+  an imported key passes through the administrator's browser; its builder worked from 21:01 to 21:30; no
+  change of Go, of the API or of the schema): every state the specification lists. None, with **Create
+  signing key** (a dialog whose fields hold the common name and the base URL as the URI) and the import
+  behind **More options**; a pending key with its request in a file window, **Copy**, **Download**, **Upload
+  certificate** and **Discard**, there again after a reload; uploaded, with the facts, the validity amber
+  from 14 days and red when expired, **Download chain**, **Download trusted root**, **Replace** and
+  **Remove**; from the Helm values without controls, a refused pair of files as a red line with its check in
+  plain words; previous identities closed, each with **Retire** and its question; read-only without the
+  right. Every refusal of the API has plain words. Decided by its builder: every form is a dialog and the
+  request stays in the section (Q-SIG-170); one URI and one e-mail address in the form (Q-SIG-171); the
+  import is offered beside an uploaded identity too, as a way to renew (Q-SIG-172); a refusal reads as the
+  check in plain words, then the server's detail (Q-SIG-173); a write that needs a recent sign-in keeps the
+  key request and the certificate as a draft, never an imported key (Q-SIG-174); the renders take each state
+  from the profile's real answer changed in the browser, because an uploaded row would need a key sealed by
+  the profile's key ring (Q-SIG-175); beyond the specification's point a note while signing is switched off,
+  the announced identity, and "Not in use" on a stored upload under the Helm values (Q-SIG-176). Its gates,
+  each exit 0: the UI's install, tests, lint, the layout checks' own tests, the build in both languages, the
+  evidence; the renders of the section as the administrator and the auditor and of the whole settings page
+  at 1,440, 1,024 and 390 px, light and dark: 114 pictures, none failed, no layout finding (its first run had
+  found 15: two copy buttons off their line and an icon stretched over a paragraph, corrected). **Looked at
+  by the development agent** (rule 11): the uploaded state with two previous identities and "expires in 12
+  days" (wide, light), the key request (1,024 px, dark), the refused pair (narrow, light), the dialog with its
+  options open (wide, dark) and the Helm state read-only (wide, dark); the section reads as the page's other
+  sections do, the facts line up, and the narrow width puts them under their names. Seen and left: a
+  previous identity's expiry stands in plain grey where an expired anchor's date on the same page is amber.
+  **Corrected at the landing by the development agent:** the extracted translation source was three lines
+  behind the template in its location notes (61 lines of the generated file, no text); extracted again into
+  the commit. Its tests cost 0.3 s of UI tests and about 30 s of the layout job (54 pictures). **Not
+  verified:** the German texts in a browser; a real round trip through the screen (a key request, a real
+  CA's certificate, the upload); the Helm state and a refused pair against a pod that mounts a Secret (the
+  renders change the answers in the browser); the recent sign-in's way through the dialogs in a browser; the
+  two downloads.
+  **By the development agent on the stack as it landed, each exit 0:** on the gate's commit over the
+  analyser's build, the full unit run, generate-check, the evidence regenerated without a difference, links
+  and check, the complexity check, the chart's lint and tests, the UI tests (1,916) and lint, the lint; on the
+  section's commit over both the UI's install, the API's types regenerated without a difference, the UI
+  tests, lint, layout tests and build, the evidence and its count test. The three diffs hold no name the
+  white-label rule forbids. **The owner's values** render against the stack's chart (39 objects; the scanner
+  pods gain the analyser's init container and its volume, the gate changes no object). The owner's UI
+  backend started with it before the push (the schema step applied). **Their release was cut at 21:58.** On the pipeline's amd64 runner the image's build (3.6 minutes), the versions check and the job that scans the release image with the analyser's binary taken out of the pinned image (4.7 minutes) are green, which the analyser's builder could not verify; the unit job took 10.8 minutes. Their worktrees and branches are
+  removed.
+- **In work since 21:01 on `main` with the signing identity: package 2 of the second stage, npm's signatures; the
+  section started with it landed at 21:47 (the entry above)** (two builders, with the gate's rebase and package 3
+  of the analyser's move that made four): **package 2 of the signatures' second stage, npm's registry
   signatures and the local keys endpoint** (R-SIG-050 and the npm half of R-SIG-048 and R-SIG-049: a signature
   on every version of a local npm repository, the keys endpoint with the announced, the current and the
   previous keys, the kind of the job `signing` that signs at a publish and finds what was stored before an
@@ -1549,8 +1653,8 @@ runs are in `git log`; this section holds the current state.
   the workers. No identity is configured there, so nothing is signed. **Not verified:** a real cert-manager, a real
   company CA, a rotation on a cluster, a whole backup restored into a fresh installation. Its worktree and
   branch are removed.
-- **Reported at 21:04 and waiting for its landing (in work since 19:45): package 3 of the image analyser's move**
-  (on `main` with packages 1 and 2 released): the
+- **Landed on 2026-11-21 at 21:47 (the entry of the three landings above; reported at 21:04, in work since 19:45):
+  package 3 of the image analyser's move** (on `main` with packages 1 and 2 released): the
   analyser comes from its own image through an init container that copies the binary into a volume the scanner
   mounts read-only, and leaves the release image; one pin by digest in place of the version and the four
   archive digests, the chart's value held equal by a chart test, one Renovate group, the build and release
@@ -1706,7 +1810,8 @@ runs are in `git log`; this section holds the current state.
   **Package 1 of the third stage, the gate, reported at 19:52** with one commit on the base of 17:37; since
   19:52 its builder brings it onto today's `main`, and since 20:58 onto the signing identity, which landed
   before it: its migration becomes 00102, and it builds what its report had named as owed, the exclusion of
-  Quader's own signatures from the gate by the column the identity brought. **What it built:** the repository member `signatures` with
+  Quader's own signatures from the gate by the column the identity brought; landed at 21:47 (the entry of the
+  three landings above). **What it built:** the repository member `signatures` with
   `onlyVerified` and `anchors` (422 for Debian only where the value would do something; a project Owner
   narrows, weakening needs the right the malware gate's weakening needs and is audited as a lifted block; a
   narrowing is journaled and a restore applies the narrower of the two values); the decision state by state
@@ -2902,8 +3007,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   stage. Built as (a) meanwhile; it concerns package 3.
   **The second stage, Quader signs, is specified on `main` since 2026-11-21, 13:10** (R-SIG-044 to R-SIG-060,
   Q-SIG-53 to Q-SIG-74, R-HA-071, Q-HA-385, ADR-230, H-1183 to H-1193; **package 1, the signing identity, is
-  landed since 20:58 the same day and nothing signs with it yet; npm's signatures and the identity's section
-  of the settings page are in work since 21:01 (run record)**). **One signing
+  landed since 20:58 the same day and nothing signs with it yet; its section of the settings page is landed
+  since 21:47; npm's signatures are in work since 21:01 (run record)**). **One signing
   identity per installation:** an ECDSA P-256 key with a code-signing certificate of the company's CA. By the
   chart it is an existing Secret or a certificate the chart asks cert-manager for, mounted into the worker pods
   alone and read again without a restart, never in the database; by the admin area Quader makes the key, seals
@@ -2953,7 +3058,9 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   Quader builds it (read, not run); an admission controller's check with a certificate chain; every figure of
   CPU, storage and duration, which are estimates.
   **The third stage, the gate per repository, is specified on `main` since 2026-11-21, 14:02** (R-SIG-061 to
-  R-SIG-078, Q-SIG-75 to Q-SIG-95, ADR-231, H-1194 to H-1200; nothing of it is built). **The setting:** a
+  R-SIG-078, Q-SIG-75 to Q-SIG-95, ADR-231, H-1194 to H-1200; **package 1, the gate at the download, is landed
+  since 21:47 the same day (run record); releases, the preview and the screens are not built, so the setting
+  is reachable through the API alone**). **The setting:** a
   repository's detail section **Signatures** gets "only artifacts with a verified signature" (off by default)
   and optionally the anchors that count; never in a creation flow; narrowing it is any settings writer's,
   weakening it needs the right that weakening the malware gate needs. **What passes:** an artifact with one
@@ -3195,7 +3302,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   the read-only database and binary and the process that is not dumpable close the cheap ways in, (b) costs
   scanner capacity on every database, and (c) bounds the time without closing the way. **Not verified:** the
   copy in a real pod; any load through the scan listener; anything on amd64; the hardening of the process (a
-  unit test on Linux is specified).
+  unit test on Linux is specified). **The move is whole on `main` since 2026-11-21, 21:47:** its three
+  packages are landed (run record). The copy in a real pod was measured by the third package's builder on
+  arm64 and checked by the development agent on the amd64 image under emulation; the first amd64 nodes that
+  run it are his cluster's, with the release.
 
 **Decided by the owner on 2026-11-20, in work or waiting to be built**
 
@@ -3580,12 +3690,15 @@ the walk items and the run record); what the code holds beyond the plan has not 
   minute more. This is the lever the owner has before him in "With the owner" (a fourth shard, or the formats' repeated
   integration tests into the kit). Until he decides: when a shard is stopped by its limit or passes 43.5 minutes, the
   development agent cuts a fourth shard by the Makefile's rule, because a higher limit would hide the growth and a
-  stopped shard is a red job without a finding; it is told to him with the minutes it costs.
-- **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, three red jobs in one
+  stopped shard is a red job without a finding; it is told to him with the minutes it costs. The run of 20:58 to 21:42
+  with the signing identity: 37.8, 41.0 and 42.2 minutes (the new area `signing` adds 11.5 s to shard b).
+- **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
-  revision columns (area `postgres`). Each failed in the pipeline after a landing whose builder had run other areas.
+  revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
+  Each failed in the pipeline after a landing whose builder had run other areas.
   To look at: which of them can be decided from the migrations' text or the catalog without a database, in the unit
-  job that every builder and the landing run anyway; until then the builders' briefs name the three areas.
+  job that every builder and the landing run anyway; until then the builders' briefs name the areas and the search
+  under `test/integration` for the name of whatever the change makes longer.
 ### B · The download limits (W-26) and a probe starts the download (W-25)
 
 - **A CI token on the request path** is not tested anywhere above the unit test of its subject: the integration stack has no
