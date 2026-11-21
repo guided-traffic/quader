@@ -676,7 +676,7 @@ runs are in `git log`; this section holds the current state.
 
 **State on 2026-11-20**, 21:14, after the landing of the role `scanner` with a certificate for each kind of pod and of the malware scan's tables and API.
 
-- **Landed and released on 2026-11-20** (the last release cut is the one of `3eef34591`, at 22:26, with the malware scan's first stage and the evening's four fixes in it): the measurement of what a format
+- **Landed and released on 2026-11-20** (the last release cut is the one of `781f09d59`, on 2026-11-21 at 04:11, with the image scanning's database in a repository and the two fixes the nightly brought): the measurement of what a format
   costs ([test-cost.md](../developer/test-cost.md)); W-14 (the audit log's warnings); W-20 (a deleted repository leaves
   **Recently opened**); the wiki's visibility behind a fold; W-27 (**Set up client** in variant A) with the fix of the two
   jobs it turned red; the limits' package (the built-in profiles from a measurement, a refused request not counted, waiting
@@ -1078,7 +1078,36 @@ runs are in `git log`; this section holds the current state.
   land in one push with package B of the scanner at the nightly's end** (the branch `fixes/nightly`, gates of the
   development agent on it, each exit 0: build, the full unit run, generate-check, chart tests, lint, the UI tests and
   lint, links and check, the tests' packages with their build tags); the legs they fix are dispatched alone after it.
-- **In work** (03:51), two builders (the malware scan's branch being rebased onto what lands before it, with its areas and renders; the stack's lock and the coordination tests' queries):
+- **Landed on 2026-11-21 at 03:56 and released at 04:11, in one push after the nightly's end:** the six commits of
+  the branch `fixes/nightly` (above): package B of the scanner (the image scanning keeps its database in
+  `upstream/scanner-trivy`, with the removal of older layers), the fix of the limits' slots, the fix of the poolers'
+  connect timeout, and the three commits of the type `test`. Before the push the owner's UI backend was started
+  with them from the main checkout (ready, migration 00089 applied, the scheduled fetch of the image database off in
+  the UI profile). Its pipeline (run 44858533514) also starts the Ansible leg; the legs the fixes are for are
+  dispatched alone when it has ended.
+- **The malware scan on its landing branch, 04:17:** `feat/malware` is `main` with the stack's lock fix and the eleven
+  commits of the feature on top (rebased by package 3's builder onto what landed, each conflict settled in the commit
+  it arose in; one break without a textual conflict found by the area `malware` and fixed: a test set a configuration
+  key package B removed). The page of the upstream registries shows both system repositories in use, looked at by
+  the development agent at 1440 px dark and 390 px light. **Gates of the development agent on the tip, each exit 0:**
+  build, the full unit run (176 packages), generate-check, chart lint and tests, links and check, the UI tests
+  (1,803), the UI lint and layout tests, lint, cyclo, gosec; the commits and the diff scanned for names that may not
+  appear. **Running since 04:10:** every integration area once, through the new lock script. It lands when that run
+  is green and the pipeline on `main` has ended.
+- **The stack's lock and the coordination tests, fixed (one commit of the type `test`, first on the landing branch):**
+  `test/integration/locked.sh` runs a command under the stack's lock from the main checkout or a worktree, loads the
+  stack's environment, never removes the lock file, waits without a timeout and holds the lock as long as the test
+  binaries live; the developer page names the commands. **What `lockf` had really done, shown on scratch files, and it
+  corrects the development agent's reading:** without `-k` it excludes; a holder without `-k` and a waiter with `-k`
+  let a third in, and the development agent's own run of 01:48 used `-k` beside builders who did not, and its later
+  word to the builders to use `-k` spread the mix; a `lockf` that is killed frees the lock while its command runs on.
+  The integration tests' queries of `pg_locks` and `pg_stat_activity` look at their own database now (twelve places;
+  three of them ended sessions by application name and could have ended another run's). The area `coordination` run
+  twice at once without the lock fails the lease tests on the old code in both runs and passes them with the fix;
+  `TestJobs` (100 coalesced enqueues) failed in both of those double runs with a database timeout and passes under
+  the lock, the finding of section 8 seen again. Not verified: the script's path with `flock` on Linux; the changed
+  end-to-end queries on a cluster.
+- **In work** (04:17), no builder; the development agent's integration run on the landing branch and the pipeline on `main`:
   - **Package 4 of the malware scan, the screens** (since 20:25, started on package 1's first stage and rebased when
     that landed): **Admin area › Settings › Malware scanning**, the malware view of the security dashboard, the status
     at file, version and repository, the repository's stricter-only setting, the manual, the German texts, the render
