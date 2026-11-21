@@ -1266,7 +1266,10 @@ runs are in `git log`; this section holds the current state.
   **What an installation sees at the upgrade:** dashboards, alert rules and log queries that select the old values
   match nothing and are edited by hand; usage rows written before keep the old credential; a release whose
   `<fullname>` is longer than 40 characters fails the render. **Not verified:** a rollout with both versions at
-  once (a token signed by one should be refused by the other: read, not tested); the German sentences in a browser. **What the rename's builder reported and left is
+  once (a token signed by one should be refused by the other: read, not tested); the German sentences in a browser.
+  **Released at 09:24, and the owner's installation took it by itself at 09:31** (read on the cluster): the five
+  Deployments ready on the new image without a restart, no error in the worker's log, the malware scanner's log
+  under its unit's name, the ingress answering. **What the rename's builder reported and left is
   built at once** (the owner, 2026-11-21, to that report: "Vom Builder gemeldet, nicht geändert: direkt nacharbeiten.
   Das ist alles wichtig und muss umgesetzt werden"), in two packages on top of the rename's commit, both since
   08:08. (1) **No name of a scanner unit that an operator reads is left without its tool:** the label `listener` of
@@ -1788,6 +1791,35 @@ runs are in `git log`; this section holds the current state.
 ### With the owner
 
 Everything that waits for the owner, one line each, with where the detail is. Put to him one at a time (standing rules).
+
+**A topic he opened on 2026-11-21, being prepared as a working paper**
+
+- **Signatures on artifacts of every format** (his words): "Quader muss in Zukunft auch das feststellen, auslesen und
+  verifizieren von Signaturen auf (wenn möglich) allen Artefaktarten unterstützen. Dabei muss es zwischen öffentlich
+  gültigen oder intern gültigen Signaturen unterscheiden können. Ein Admin muss also gültige unternehmens CAs
+  einstellen können, wie zum Beispiel eine CA der internen Gitlab-CI. Er muss einstellen können, ob Projekt-Owner
+  weitere CAs für ihr Projekt konfigurieren können (default nein). Ich bin mir aber nicht sicher ob das alles Sinn
+  macht, ob man wirklich alles signieren kann. Ob es ein Standard für alle Registries gibt. Das muss bei zukünftigen
+  Registries automatisch mit berücksichtigt werden. Ich kenne zum Beispiel von Dockerhub, dass dort auch signaturen
+  von Images hochgeladen werden und als seperate tags auftauchen, so wollen wir das aber nicht darstellen. Natürlich
+  erfüllen wir den technsichen Standard wie die Applikationen es erwarten, von der Darstellung her, soll eine
+  Signatur aber nicht alleine stehen sondern klar einem Image zugeordnet werden. Das ist hier natürlich nur das
+  Beispiel für OCI, andere Registries haben wahrscheinlich andere Anforderungen. Ziel, signierte Artefakte aller Art
+  werden von uns erkannt, im Frontend mit einem Icon besonders gekennzeichnet und auch die Metadaten wir Zeitpunkt
+  und Ausstellen (alle anderen Infos ebenso) werden durch uns dargestellt. Kommt eine Software über die API vorbei,
+  erhält sie die signierungen wie ihr Interface es erwartet. Quader ist ebenso in der Lage Artefakte zu signieren,
+  dafür muss aber erst ein Zertifikat in Quader über Helm oder das Frontend gepflegt werden. Hier müssen wir uns aber
+  noch über den Umfang und Ziele unterhalten, ich erwarte, dass du mich hier proaktiv berätst." **Nothing is
+  decided or specified.** In work since 09:25: two researches, one of what Quader does today with signatures and
+  signed metadata per format (the specification already holds pieces: the referrers of OCI, the upstream keys of
+  Debian, Q-ANS-14 "signatures pass through; Quader signs nothing and verifies nothing"), one of the signing schemes
+  of the six formats and of the formats likely to follow, with sources; from them the development agent writes a
+  working paper with his words as read, the facts per format and the decisions one by one with options and a
+  recommendation, as an interactive page he answers in (standing rules). The development agent's first reading, told
+  to him and not verified yet: there is no one standard but three families of trust (a certificate chain, an
+  OpenPGP key, an identity of a signing service with a log), so "company CAs" covers a part and the setting has to
+  be "trust anchors" of more than one kind; a publisher's signature, a repository's signature and an attestation
+  are three different things, and what Quader can sign itself is the second and the third, never the first.
 
 **Questions he has not answered**
 
