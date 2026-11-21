@@ -559,6 +559,9 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- The client setup of the ClamAV definitions: its table of troubleshooting is squeezed at 390 px, and one sentence shows the
+  address with the trailing slash it tells the reader to leave out; the usage overview's page of one caller lists no
+  credentials for a certificate holder (found on 2026-11-21 by the builder of the client certificates, left).
 - The decisions' index (`docs/decisions.md`) has no rows for the decisions of the signatures' second stage (Q-SIG-53 to
   Q-SIG-74); found on 2026-11-21 by the planner of the third stage, left. (The index also stops at Q-UI-844, an older
   entry of this list.)
@@ -1334,11 +1337,12 @@ runs are in `git log`; this section holds the current state.
   two commits as rebased, each exit 0:** build, the full unit run, generate-check, the lint, the complexity
   check, links and check, the UI tests and the UI lint; by the builder the layout checks and under the lock
   the area `packages`. **Its release was cut at 16:36**, image and chart were published at 16:41, and the owner's installation runs it
-  since 16:43 (read on the cluster at 16:45: every Deployment ready). The two jobs of this run were still
-  running at 16:45; their end is recorded below when the run ends. **Written down for the next formats** (the developer page): the one
+  since 16:43 (read on the cluster at 16:45: every Deployment ready). **The run of this push (44918638887) ended
+  green on every job at 17:05,** the two repaired jobs and the three integration shards with the signatures'
+  third package among them; it is the first run since the push of 12:55 that ran to its end, because each
+  code push stops the run before it. The next landing was held for a few minutes for that reason. **Written down for the next formats** (the developer page): the one
   list that fails for a missing format (this table), two that do not fail and must be kept by hand, and the
-  hand-written lists that need a decision per format. **Not verified:** the pipeline's runner itself (the
-  renders ran on the development machine, where the overflow was 10 px, not 7); the run of this push shows it.
+  hand-written lists that need a decision per format. The pipeline's runner confirmed it: the layout job of this push's run is green.
 - **Landed on 2026-11-21 at 15:45: package 3 of the signatures' first stage, the formats' wire behaviour**
   (R-SIG-023 to R-SIG-033; its builder worked from 12:56 to 14:43 and brought the commit onto `main` from 14:47
   to 15:40). **OCI:** deleting an image's manifest removes its referrers, its signature tags and the manifests
@@ -1382,6 +1386,46 @@ runs are in `git log`; this section holds the current state.
   developer page): the verdicts that let a local npm bundle be served, the counter of requests to remotes, the
   configuration of the fetch and the repository member that switches it off. Its worktree and branch are
   removed.
+- **Landed on 2026-11-21 at 17:05: a ClamAV installation updates from Quader with its client certificate**
+  (R-CLAMAV-010; the owner's "b + zusätzlich Client-Zertifikate"; its builder worked from 15:16 to 16:47).
+  **What an operator configures:** a further endpoint with a host of its own, `auth.clientCertificates`, a
+  Secret with the admitted CAs and a pair for that host, and either the ingress with `tlsPassthrough` (the
+  chart writes the passthrough for HAProxy Ingress and ingress-nginx, refuses traefik, and refuses every
+  combination that could not work, naming the value) or a Service of its own. **What an administrator
+  sees:** the lines of the certificate in the fold **Visibility** of the definitions' page (the address to use
+  with a certificate while an endpoint admits them, a note and a link to the manual while none does), the
+  certificate's setup behind **Authenticate**, the plain download in a fold **Without freshclam**, and a kind
+  "Client certificate" in the usage overview. **What a ClamAV does:** a stock `freshclam` names the endpoint
+  and finds certificate, key and CA in its environment; a valid certificate reads the definitions at the
+  levels internal and public and nothing else; a missing, expired or foreign one fails the handshake. The
+  client setup shows the four ways. **Decided by its builder:** the guide names only the endpoints on which
+  a certificate reads the repository now (Q-CLAMAV-18, with an added field of the format contract, ADR-232); a
+  certificate holder takes the technical tokens' default download limits and is a kind of its own in the
+  usage overview (Q-LIM-96); where the certificate's setup and the plain download stand on the page
+  (Q-UI-914). **On the commit as rebased onto `main`, each exit 0:** build, the full unit run,
+  generate-check, the lint, the complexity check, links and check, the chart's lint and tests, the UI tests
+  and the UI lint; by its builder the layout checks and under the lock the areas `malware` and `upstream`.
+  **The renders looked at by the development agent:** the definitions' page with every fold open and an
+  endpoint that admits certificates (wide, light), the client setup with the four ways (narrow, dark); the
+  builder rendered at the three widths of the pipeline's job and corrected a file name that ran into its copy
+  button at 390 px. The owner's UI backend started with it before the push. **Its release was cut at 17:20**; the image, the chart and the owner's installation are being followed, and its run is left to end before the next code push. **Measured once with a real client on a cluster of its own** (recorded on the format's developer page; the
+  real set of 2026-11-21, the switch on at the level internal, a stock `freshclam` of the pinned image; cluster
+  and image removed): with an admitted certificate all three databases fetched and tested, exit 0, and the
+  second run up to date, exit 0; without a certificate and with one of a foreign CA "Download failed (56)",
+  exit 11, no cool-down; with a token in the URL all three fetched, exit 0, and the token stands in every
+  line of its log that names the address; without the token 401; the plain download with `curl` and the
+  token on standard input answers 200 for the three files, with a certificate on the certificate endpoint
+  200, without one the handshake's alert; at the level private a valid certificate gets 404. The request
+  log's line, the usage row and the handshake errors in the process log came out as specified. That closes
+  what the first measurement had left out (the token in the URL and the plain download). **Its tests cost**
+  under a second of unit tests, 0.6 s of the chart's job and about 1.1 s in the area `malware`; the
+  integration harness takes a client CA on a further endpoint as it is. **Not verified:** a passthrough
+  through a real HAProxy Ingress (the chart's render alone is tested); an encrypted key with its passphrase
+  variable; the unit's name per distribution; the German screens in a browser. One UI test failed once in
+  the builder's full run under a host load of about 80 and passed alone; it passed in the landing's run.
+  **Found by it and left (section 8):** the guide's table of troubleshooting is squeezed at 390 px; a
+  sentence of the guide shows the address with the trailing slash it says to leave out; the usage overview's
+  page of one caller lists no credentials for a certificate holder. Its worktree and branch are removed.
 - **In work since 15:16, two builders on `main` with the ClamAV change:** **the client certificates of the
   definitions' endpoint** (R-CLAMAV-010; the endpoint key, the certificate subject and its one rule, usage and
   request log, the chart's passthrough per ingress controller, the read-only lines on the registry's page, the
@@ -2619,8 +2663,11 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   naming rule** (the tool in the name); it is fixed with the specification. **His installation:** the new kind of
   pod needs the way to the internet in his values, which the worker carries today for the updater; the
   development agent brings that with the landing (standing rules).
-  **Built and landed on 2026-11-21 at 14:46** (run record), all of it but the client certificates, which are
-  the next package. **Decisions of the builders and the development agent in it, for his walkthrough:** a
+  **Built and landed on 2026-11-21 at 14:46** (run record), and the client certificates the same day at
+  17:05 (run record). **For his installation to use a certificate, he decides and provides** (nothing of it
+  is set there; the endpoint for everyone works without it): a host of its own for the endpoint, a Secret with
+  his company's CA, a certificate for that host, and the endpoint's block in the values with the passthrough
+  of his ingress; the development agent commits it under `apps/quader` when he names the host and the CA. **Decisions of the builders and the development agent in it, for his walkthrough:** a
   version's row stays as history after its files are removed (Q-CLAMAV-15); the client's line is written
   without a trailing slash (Q-CLAMAV-16); a commit without its metadata is refused (Q-CLAMAV-17); switching the
   clients off is a journal part of its own (Q-REPO-420); the mirror's and the proxy's values are checked so
