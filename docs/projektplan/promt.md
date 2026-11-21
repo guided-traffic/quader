@@ -1226,7 +1226,18 @@ runs are in `git log`; this section holds the current state.
   whose tests the commit touched. The pipeline's integration shards do not call the script (it is the way of a
   developer's machine and of agents on the shared stack), so its `flock` path on Linux stays unverified. Still not verified: the `flock` path on Linux; two runs competing for the lock on
   the real stack with the mended script (shown on scratch files, and by the first author).
-- **In work** (09:07): one builder (the scanner replicas on the screens). **Landed on 2026-11-21 at 09:05 in one
+- **In work** (09:22): two builders: the scanner replicas on the screens (since 08:08), and **a system repository
+  set apart everywhere** (since 09:20; what the builder of the project page's section had reported and left, taken up
+  at once by the owner's word of that morning to such reports): no action that leads to a 404 (the admin list's
+  **Copy client address**, **Download** and the curl command on a system repository's file page, install commands
+  of a package there); one name, "System repositories", on the admin area's page of the upstream registries too;
+  not offered where someone picks a repository to work with (the guides' list, the exposure rules' select, the
+  security dashboard's filter, the limit explanation's suggestions); still found by the search and in the admin
+  list, with a quiet mark "System". Left: **Recently opened**, and the alignment of the section's columns, which
+  is with the owner. The choices are the development agent's, by the default that a system repository is never
+  offered for a client's work and stays findable for an administrator; the owner sees them in the renders.
+  Housekeeping at 09:19: the worktrees and branches of the rename, the section, the names and their landing branch
+  are removed, every commit of them on `main`. **Landed on 2026-11-21 at 09:05 in one
   push, after the rename's pipeline had ended green on every job (09:04):** the system repositories' section, the
   names an operator or an auditor reads of a scanner, and the rule's extension in `CLAUDE.md` (pipeline
   44883240572). The two builders' commits were collected on a landing branch without a conflict; on its tip, each
