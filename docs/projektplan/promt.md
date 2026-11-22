@@ -4918,7 +4918,14 @@ the stack of four had ended at 23:53 with every job green. Main installation and
 interface's fifth version from this release on; they are upgraded minutes apart on the owner's cluster, and
 what the Bastion does in between is read after the rollout. The Bastion's P3 is told that its base is on
 `main`. His UI's backend is started again on this state. Released on 2026-11-23 at 00:07; the plan's commits of
-the minutes between waited for it.
+the minutes between waited for it. **His installation runs the release since 00:15** (read at 00:15: the
+upgrade succeeded, every pod of the main installation on the new image, the two of the release before ending;
+the Bastion answers from outside with its certificate checked). **The two versions of the interface met for
+about forty seconds on one Bastion replica:** the Bastion's pods took the release at 00:13, before the main
+installation's; the first logged at 00:13:31 that its interface is 5 and the main installation's 4, and at
+00:14:11 that the main installation is reachable, unreachable for 40 s; the second started twenty seconds
+later and reached the main installation at once. Not read: whether a client's request met that replica in
+those seconds.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
