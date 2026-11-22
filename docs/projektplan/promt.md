@@ -1617,10 +1617,57 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
-- **In work: the receipt attestations (since 21:40; reported at 23:43, since 23:44 brought onto `main`, and
-  since 00:44 onto the repair above, which changes the statement both touch).** The repair of the first
-  stage's defects, whose report follows here, landed at 00:44, and the screens of the gate at 00:57 (the
-  entries above).
+- **In work since 01:43: the second half of the second stage's screens,** the last package of the
+  signatures: Quader's own signature and its receipt in the details of a version, a file and an image (never
+  as the badge), with the members of the API they need (the decoded receipt and how an image's receipt is
+  served), rendered at every width.
+- **Landed on 2026-11-22 at 01:42: the receipt attestations (stage 2, package 3)** (R-SIG-044, R-SIG-051 to
+  R-SIG-054 and their parts of R-SIG-055 to R-SIG-059; decisions Q-SIG-180 to Q-SIG-192, gaps H-1215 to
+  H-1217; migration 00105; the format contract is at version 10; what it built is in its report, in the
+  entry below). Its builder brought it onto `main` from 23:44 to 01:20, over four rebases while `main`
+  moved. **Changed on the way, as sent back:** one mechanism for the rows Quader issues (its own four write
+  statements are gone; a receipt is recorded through the statement npm's signatures use, attached with the
+  source `issued`, which no batch names, and written only while signing is on and an identity is current);
+  npm's line of the step **Verify** (`npm audit signatures`, for npm's client alone, because pnpm and Yarn
+  have no such command); the cosign binary as an image of its own that the set `oci` alone copies onto its
+  cluster (Q-SIG-192), so the OCI clients' image is back at 327 MB and the two other OCI sets load nothing
+  of it. **Two faults it met in the merge:** its statement that drops an attestation would have taken npm's
+  signature of the same tarball with it (limited to the attestation's own row before it existed on `main`);
+  and on `main` the trust job's backlog did not leave out the rows Quader issues, so every run of the
+  signature check would have queued the trust job again once an npm signature exists (dormant without an
+  identity; closed by this commit). **The real tools, on a cluster of the builder's own:** `cosign
+  verify-attestation` validates Quader's receipt of a pushed image and refuses another identity; and **the
+  real `cosign sign` in a gated repository works** (a reader was refused with the gate's text before the
+  signature and served 0.4 s after it), which confirms the repair of Q-SIG-211 that its builder could only
+  show with plain requests. The current cosign needs a signing configuration without a transparency log
+  for it, which the user manual's page says. `notation sign` was not measured again. Both cases are in
+  the set `e2e (oci)` (about 4 and 3 s). **The gate's new readers and the receipts:** the preview counts
+  the image and not the receipt's manifests, the file's answer lists the receipt as an attestation of this
+  installation without a badge, and the gate names nothing of Quader's as what an artifact passed by
+  (asserted in its integration test; the impact count and the refusals list by reading the code). **Its
+  gates on the rebased commit, each exit 0:** build, the full unit run, generate-check, the evidence, the
+  complexity check, the lint, the chart's lint and tests, the UI's install, tests, lint, layout tests and
+  build; under the lock the areas `signing`, `signatures`, `ocilocal`, `npm`, `ansiblelocal`, `ociremote`,
+  `malware`, `vulnrestore`, `repository`, `upstream`, `postgres`, `packages` and `backup`. **By the
+  development agent on the commit as it landed, each exit 0:** build, the full unit run, generate-check,
+  the evidence regenerated without a difference, links and check, the complexity check, the chart's lint
+  and tests, the UI tests (1,931) and lint, the lint. **Looked at** (rule 11): the step **Verify** of a local
+  npm repository as a power user (wide, light) and as a plain user (narrow, dark): the client's own command
+  first, then the three lines that fetch the trusted root and the receipt and verify it offline, the values
+  to replace marked, long lines wrapped inside their window. The diff holds no name the white-label rule
+  forbids; no change of the chart or of a dependency, and **the owner's values** render as before (39
+  objects). The owner's UI backend started with it before the push (the schema step applied). **The run before it (44964287638, the gate's screens) ended at 01:42, green on every job:** the layout job with the gate's 186 pictures in 43.3 minutes of its 75, the four shards in 33.0, 31.8, 31.2 and 32.9 minutes (shard b green: the test of section 12 B passed this time). **Its release was cut at 01:54**; the unit job took 9.9 minutes.
+  **Its tests cost** about 4 s of the unit job (three new packages' starts), about 9 s in shard d, the two
+  cases in the leg `oci`. **Not verified:** an admission controller with a certificate chain;
+  `cosign verify-blob-attestation` of a file's receipt with the real tool (the verifier library alone); an
+  image's index with its platforms, and a remote or virtual image's receipt, beyond the unit tier and the
+  kit; the wait for a pending scan (the integration stack runs without the advisory source). **Gaps it
+  names:** a remote or virtual image's receipt is served through the API only (H-1215); a retired
+  identity's referrer stays until the job makes it again (H-1216); a virtual repository's list of
+  referrers does not leave Quader's out when another member holds an older signature tag (H-1217). Its
+  worktree and branch are removed.
+- **The reports of the receipt attestations (23:43) and of the repair of the first stage's defects (00:17)** follow
+  here; both are landed (the entries above, 00:44 and 01:42), as are the screens of the gate (00:57).
   **The attestations' report** (stage 2, package 3; one commit on the base of 21:47): an in-toto statement
   with a predicate of Quader's own in a bundle with the leaf certificate, made by a kind of the job `signing`
   for every stored file of a format that attests something, after the checks' first verdicts or the bound,
@@ -3348,7 +3395,8 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   Q-SIG-53 to Q-SIG-74, R-HA-071, Q-HA-385, ADR-230, H-1183 to H-1193; **package 1, the signing identity, is
   landed since 20:58 the same day and nothing signs with it yet; its section of the settings page is landed
   since 21:47; npm's registry signatures are landed since 23:44, proven with the real `npm audit signatures`;
-  the attestations are in work (run record)**). **One signing
+  the receipt attestations are landed since 2026-11-22, 01:42, proven with the real `cosign
+  verify-attestation`; the second half of the screens is in work (run record)**). **One signing
   identity per installation:** an ECDSA P-256 key with a code-signing certificate of the company's CA. By the
   chart it is an existing Secret or a certificate the chart asks cert-manager for, mounted into the worker pods
   alone and read again without a restart, never in the database; by the admin area Quader makes the key, seals
