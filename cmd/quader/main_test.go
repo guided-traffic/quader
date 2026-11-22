@@ -210,9 +210,13 @@ func TestBackupCommands(t *testing.T) {
 			t.Fatalf("code %d stderr %q", code, stderr)
 		}
 	})
-	t.Run("R-BAK-015 a separate source credential with static keys but no files exits 2 and names the key", func(t *testing.T) {
-		code, _, stderr := runCmd(t, baseEnv("QUADER_BACKUP_TARGET_BUCKET=b", "QUADER_BACKUP_SOURCE_SEPARATE_CREDENTIALS=true", "QUADER_BACKUP_SOURCE_CREDENTIALS_SOURCE=static"), "backup", "list")
-		if code != 2 || !strings.Contains(stderr, "backup.source.credentials") {
+	t.Run("R-BAK-030 a connection's read credential with static keys but no files exits 2 and names the element", func(t *testing.T) {
+		code, _, stderr := runCmd(t, baseEnv("QUADER_BACKUP_TARGET_BUCKET=b", `QUADER_BACKUP_SOURCE_CONNECTIONS=[{"connection":"default","credentials_source":"static"}]`), "backup", "list")
+		if code != 2 || !strings.Contains(stderr, "backup.source.connections[0] (default):") || !strings.Contains(stderr, "access_key_id_file") {
+			t.Fatalf("code %d stderr %q", code, stderr)
+		}
+		code, _, stderr = runCmd(t, baseEnv("QUADER_BACKUP_TARGET_BUCKET=b", `QUADER_BACKUP_SOURCE_CONNECTIONS=[{"connection":"secondary"}]`), "backup", "list")
+		if code != 2 || !strings.Contains(stderr, "backup.source.connections[0] (secondary):") || !strings.Contains(stderr, "no connection of storage.connections") {
 			t.Fatalf("code %d stderr %q", code, stderr)
 		}
 	})

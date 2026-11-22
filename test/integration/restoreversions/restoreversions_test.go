@@ -151,11 +151,12 @@ func TestR_HA_025_RestoreVersionsBringsBackTheObjectsDeletedAfterT(t *testing.T)
 		t.Errorf("second run: exit %d, %+v", code, rep)
 	}
 
-	// The credentials file replaces the credential of the blob store for this command only.
+	// The credentials file replaces the credential of the blob store for this command only: the element of the connection default
+	// in the journal reader's file of one element per connection (storage.md Q-STOR-268, backup-and-restore.md Q-BAK-73).
 	dir := t.TempDir()
 	o := testenv.S3Config(t)
 	file := filepath.Join(dir, "creds.yaml")
-	body := fmt.Sprintf("source: static\naccess_key_id_file: %s\nsecret_access_key_file: %s\n",
+	body := fmt.Sprintf("connections:\n  - connection: default\n    credentials_source: static\n    access_key_id_file: %s\n    secret_access_key_file: %s\n",
 		testenv.WriteFile(t, dir, "id", o.AccessKey), testenv.WriteFile(t, dir, "secret", o.SecretKey))
 	if err := os.WriteFile(file, []byte(body), 0o600); err != nil {
 		t.Fatal(err)

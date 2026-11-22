@@ -34,7 +34,7 @@ The chart gives each Job its own pod template and the Secrets of its scope only 
 | Mechanism | Effect | Test |
 |---|---|---|
 | `secrets.backupTarget` and `secrets.backupTargetCA` mount in the scopes `backup` and `restore` | no `api`, `packages` or `worker` pod and not the migration Job has a file or a variable with the target's credentials; the shared `quader.yaml` names the paths and nothing exists under them there | `TestR_HA_030_BackupSecrets` (every value set) |
-| the `backupSource` of a connection's entry replaces the connection's runtime keys in the backup scope (the volume `secret-s3-<id>-backup`); `backup.source` makes `quader backup create` read the first connection with it, the one it reads until it reads every connection (`backup.source.connections`, R-BAK-030, Q-HA-396), and the chart refuses static keys without one on any connection while `backup.enabled` (Q-BAK-64) | a compromised backup pod cannot write blobs or the journal on any connection (R-BAK-015); with a workload identity there is nothing to mount | `TestR_HA_030_BackupSecrets`, `TestR_HA_072_SeveralConnectionsAndAProvisioner` |
+| the `backupSource` of a connection's entry replaces the connection's runtime keys in the backup scope (the volume `secret-s3-<id>-backup`); the chart names it in the connection's element of `backup.source.connections`, with which `quader backup create` reads that connection (R-BAK-030), and refuses static keys without one on any connection while `backup.enabled` (Q-BAK-64) | a compromised backup pod cannot write blobs or the journal on any connection (R-BAK-015); with a workload identity there is nothing to mount | `TestR_HA_030_BackupSecrets`, `TestR_HA_072_SeveralConnectionsAndAProvisioner` |
 | `restore.journalCredentials` and `postRestore.journalCredentials` render the credentials file that turns the listing of object versions on | a deletion or delete marker set with the runtime credential cannot hide a journal entry from a restore | `TestR_HA_060_RestoreJob`, `TestR_HA_025_PostRestoreJob` |
 | the replica rule of `restore.enabled` also holds for `postRestore.enabled` | no replica serves the restored database before the clean-up has replayed the journal | `TestR_HA_025_PostRestoreJob` |
 | Valkey Secrets mount in neither Job; the key ring only in the restore Job | a compromised backup pod holds no Valkey credential and no key ring (R-BAK-012) | `TestR_HA_030_BackupSecrets` |
@@ -86,7 +86,13 @@ A blob whose row the installation calls damaged is listed as damaged and never c
 installation itself distrusts; the previous blob list is trusted only after its SHA-256 and entry count matched its manifest
 ([Q-BAK-54](../spec/backup-and-restore.md#q-bak-54--a-blob-whose-row-is-not-ok-is-listed-as-damaged-and-not-copied-and-the-previous-blob-list-is-verified-while-it-streams)).
 A streamed blob is hashed before it becomes a pool object; a blob that does not hash to its digest is recorded as damaged and is
-never copied. A blob copied inside the store is confirmed by size and, where the store reports one, its SHA-256.
+never copied. A blob copied inside the store is confirmed by size and, where the store reports one, its SHA-256. With several
+connections the run reads one present copy per blob, a verified one first among those it copies inside the store, and takes the next
+copy when one is missing, of another size, of another digest or on a connection that does not answer
+([copy.go](../../internal/backup/create/copy.go), R-BAK-030); it writes no copy row and marks no copy, because its role writes only its
+own two tables, and a blob that only an unanswering connection could give ends the run instead of being recorded as damaged
+(Q-BAK-71). Verified in this repo: `TestR_BAK_030_TheBackupReadsOneCopyPerBlob` (fakes) and, with PostgreSQL's copies and a second
+in-memory store, `TestR_BAK_006_ADamagedSourceBlobIsRecordedAndTheRunCompletesWithWarnings`.
 
 Verified in this repo: [create_run_test.go](../../test/integration/backup/create_run_test.go) (connection count, lock timeout, the
 rewrite refused during the export, the migration lock, partitioned `audit_event`),
@@ -246,8 +252,12 @@ a missing member, an oversized value or a digest that is not the expected shape 
   re-create the binding from an older configuration, logs it, and lists it in the outcome, until an administrator binds the role
   again through the API (Q-AUTHZ-235; `TestR_AUTHZ_010_DeclaredBindingRemovedByReplayIsNotBroughtBack`). The CI issuers have no such
   mark: [H-565](ci-federation.md#h-565--a-replayed-disable-of-a-configuration-declared-ci-issuer-is-undone-by-quader-migrate-when-the-restore-runs-with-an-older-configuration).
-- **Credential.** The shipper writes with the runtime credential and deletes nothing. The reader of a restore uses the credentials file
-  of [open.go](../../internal/journal/replay/open.go) and lists object versions with it.
+- **Credential.** The shipper writes with the runtime credential of each connection without drain, through its guard, and deletes
+  nothing. The reader of a restore uses, per connection, its element of the credentials file of
+  [open.go](../../internal/journal/replay/open.go) and lists object versions with it; a connection the file does not name is read with
+  the blob-store credential and a plain listing, which is why the chart requires a `journalReader` for every connection without drain
+  when the source is `static` (Q-HA-399). The replay merges the connections by key and replays every differing content, so a forged or
+  deleted object on one connection does not hide the genuine copy on another (storage.md R-STOR-059).
 
 Not verified, for the exposure and CI handlers: the restore-level runs (`npm view` on every replica of a restored installation, an
 exchange against it), which are the end-to-end suite's; the handlers' outcomes, writes and change-area notes are verified against
@@ -317,7 +327,8 @@ command removes those markers so the restored rows find their objects again.
 
 - **Its credential is its own.** Listing versions and deleting a version (`s3:ListBucketVersions`, `s3:DeleteObjectVersion`) are
   permissions the runtime credential deliberately lacks (R-HA-023). The operator passes a credential with them as `--credentials-file`
-  (the file `post-restore` takes, [LoadCredentials](../../internal/journal/replay/open.go)); it reaches this one process and no role,
+  (the file `post-restore` takes, one element per connection, [LoadCredentials](../../internal/journal/replay/open.go); each connection of
+  the run uses its own element, storage.md Q-STOR-268); it reaches this one process and no role,
   and the chart renders no Job that calls the command.
 - **It can delete only delete markers.** [restoreversions.go](../../internal/blob/restoreversions/restoreversions.go) deletes a version
   only when `ObjectVersion.Marker` is set, younger than *t*, on a key that `verify` found without an object and that has an object
@@ -355,6 +366,8 @@ The mechanisms of this page add:
 - [H-556](../spec/backup-and-restore.md#h-556--adopting-a-target-and-writing-its-marker-are-not-atomic-on-a-store-without-conditional-writes): adopting a target and writing its marker are not atomic on a store without conditional writes.
 - [H-558](../spec/backup-and-restore.md#h-558--a-server-side-copy-into-the-blob-store-is-checked-by-size-not-by-content): a server-side copy into the blob store is checked by size, not by content.
 - [H-569](#h-569--upstream-storage-and-format-settings-of-a-repository-come-back-with-a-restore): upstream, storage and format settings of a repository come back with a restore.
+- [H-1284](#h-1284--an-entry-only-a-connection-that-cannot-be-listed-holds-is-not-replayed): an entry only a connection that cannot be listed holds is not replayed.
+- [H-1285](#h-1285--a-drain-that-runs-beside-a-backup-of-an-older-configuration-can-leave-that-backup-without-a-blob): a drain that runs beside a backup of an older configuration can leave that backup without a blob.
 - [H-566](../spec/backup-and-restore.md#h-566--the-drill-uses-one-s3-login-for-the-blob-store-the-backup-target-and-the-restore): the drill uses one S3 login for the blob store, the backup target and the restore.
 - [H-567](../spec/backup-and-restore.md#h-567--hand-written-journal-objects-are-tried-at-replay-level-not-through-the-restore-job-on-a-cluster): hand-written journal objects are tried at replay level, not through the restore Job on a cluster.
 - [H-568](../spec/backup-and-restore.md#h-568--the-restore-across-releases-and-across-postgresql-major-versions-is-not-run-by-the-drill): the restore across releases and across PostgreSQL major versions is not run by the drill.
@@ -400,3 +413,29 @@ availability only.
   behaves as before.
 
 Sessions are not on the list: a backup restore loads no session (R-BAK-004) and `quader admin post-restore` ends every session.
+
+### H-1284 · An entry only a connection that cannot be listed holds is not replayed
+
+Component: the replay of the revocation journal over several connections (storage.md R-STOR-059,
+[Q-STOR-271](../spec/storage.md#q-stor-271--a-replay-goes-on-without-a-connection-that-cannot-be-listed-and-fails-when-none-can),
+[reader.go](../../internal/journal/replay/reader.go)). Subject: an access removal made after the restore point. The shipper keeps an outbox
+row until every connection without drain holds its object, so an entry lies on one connection alone only while the others did not take it
+(an outage of each of them). A restore or a post-restore that cannot list that one connection then replays the others, which lack the
+entry, and the removal is undone (H-37); the output's unreadable line names the connection that could not be listed, and nothing else
+does. Live only in the window of such an outage followed by a restore that cannot reach the connection that took the entry; dormant with
+one connection, where a journal that cannot be listed fails the replay as before. Mitigation: read the unreadable lines of the replay, and
+replay again with a credential that lists the missing connection (`--journal-credentials-file`), or review the audit trail of the source
+for the removals of that window.
+
+### H-1285 · A drain that runs beside a backup of an older configuration can leave that backup without a blob
+
+Component: the copy of a backup run (R-BAK-030, [Q-BAK-70](../spec/backup-and-restore.md#q-bak-70--a-backup-reads-the-copies-of-a-page-of-pins-when-it-copies-the-page-not-from-the-snapshot))
+and the drain of the reconciliation (storage.md R-STOR-056), which takes no backup hold. Subject: the completeness of one backup. A
+backup reads the copies on the connections of its own configuration; the drain deletes a draining connection's copy once every connection
+without drain of the worker's configuration holds a present copy. When one upgrade adds a connection and drains another while a long
+backup run of the configuration before it still copies, that run knows only the draining connection, finds the copy gone, has no other
+copy it can read, and records the blob under `blobs.damaged` (`QuaderBackupSourceDamage` fires); the installation keeps the blob, and the
+next backup, of the new configuration, copies it. With one configuration on both sides the drain costs a backup nothing: it never deletes
+the last copy, and the run takes the next one. Live only for a backup run that began before such an upgrade and outlasts the filling of
+the new connection; dormant otherwise. Mitigation: add a connection and drain the old one in two upgrades, the second after the new one is
+`active`, or run a backup after the drain.

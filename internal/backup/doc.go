@@ -9,7 +9,7 @@
 //   - runstore.go: the run record in PostgreSQL, the one-at-a-time rule and the fenced transitions (R-BAK-007,
 //     R-BAK-009, R-BAK-010), over the queries in internal/meta/postgres/queries/backup.sql.
 //   - handle.go: the lease, heartbeat and stall detection of a running operation (R-BAK-010, R-BAK-013).
-//   - ports.go: the interfaces to the source database and the blob store that the create pipeline plugs into.
+//   - ports.go: the interfaces to the source database and the copies of the connections that the create pipeline plugs into.
 //   - runner.go: the operation interfaces (Creator, Lister, Verifier, Deleter, Pruner, Restorer), their options and
 //     results; cmd/quader wires one implementation of each.
 //   - metrics.go: the metric families of R-BAK-014, registered once.

@@ -345,7 +345,7 @@ func (e *virtEnv) virtReplay(restoredTo time.Time) *journal.Summary {
 	defer db.Close()
 	store := &virtStore{objs: map[string][]byte{}}
 	const prefix = "quader"
-	if _, err := ship.New(ship.Options{Outbox: ship.NewOutbox(db), Store: store, BlobPrefix: prefix, Log: testenv.Quiet()}).Ship(ctx); err != nil {
+	if _, err := ship.New(ship.Options{Outbox: ship.NewOutbox(db), Targets: []ship.Target{{Connection: "default", Store: store, Prefix: prefix}}, Log: testenv.Quiet()}).Ship(ctx); err != nil {
 		t.Fatalf("ship: %v", err)
 	}
 	sum, err := replay.New(replay.Options{DB: db, Reader: replay.NewReader(store, prefix), Log: testenv.Quiet()}).

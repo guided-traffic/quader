@@ -192,7 +192,7 @@ type App struct {
 	// signatureFetch is the handler of the job signature-fetch (wire_signature_fetch.go).
 	signatureFetch late[jobs.Handler]
 	shipper        late[journal.Shipper]
-	checkBucket    late[platform.Bucket]
+	checkBucket    late[[]platform.ConnectionBucket]
 	// scrub is the scrub's runner and the recheck of the damaged-blobs list (R-STOR-027, wire_storage_scrub.go).
 	scrub late[*scrub.Scrubber]
 	// registryMetrics are the counters of the registry token service, shared by every endpoint (wire_registry.go).

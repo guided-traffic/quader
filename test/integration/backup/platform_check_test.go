@@ -59,7 +59,7 @@ func TestR_HA_023_PlatformCheckAgainstTheStack(t *testing.T) {
 	if err := db.Read(ctx, func(c q.DBTX) error {
 		var rerr error
 		rep, rerr = platform.Checker{
-			ArchiveMode: platform.ArchiveModeOf(c), Bucket: client,
+			ArchiveMode: platform.ArchiveModeOf(c), Buckets: []platform.ConnectionBucket{{Connection: "default", Bucket: client}},
 			Settings: platform.Settings{RecoveryWindow: 168 * time.Hour, ObjectVersioning: true, GracePeriod: 24 * time.Hour},
 		}.Run(ctx)
 		return rerr

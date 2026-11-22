@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -46,13 +47,70 @@ type BackupTarget struct {
 	SSE                   BackupSSE            `yaml:"sse"`
 }
 
-// BackupSource is the credential with which the backup reads the blob bucket (R-BAK-015: the backup never writes or deletes
-// there). Without separate_credentials the backup reads with the first connection's credential, which is the right choice for a
-// workload identity of the backup's ServiceAccount; with static keys the chart sets it, so the backup pod does not mount the
-// runtime credential (Q-BAK-49).
+// BackupSource is how the backup reads the object-store connections (R-BAK-015: the backup never writes or deletes there,
+// R-BAK-030). An element of connections names the read credential of one connection; a connection without an element is read
+// with its own credential, which is the right choice for a workload identity of the backup's ServiceAccount. With static keys
+// the chart renders an element from the entry's backupSource, so the backup pod does not mount the runtime credential
+// (Q-BAK-64).
 type BackupSource struct {
-	SeparateCredentials bool                 `yaml:"separate_credentials" default:"false" doc:"Read the blob bucket with backup.source.credentials instead of the credential of the first storage connection."`
-	Credentials         StorageS3Credentials `yaml:"credentials"`
+	Connections []ConnectionCredentials `yaml:"connections" default:"[]" doc:"The read credential of a connection, one element per connection at most (R-BAK-030); a connection without one is read with its own credential. In the environment the whole list is one JSON value (QUADER_BACKUP_SOURCE_CONNECTIONS)."`
+}
+
+// ConnectionCredentials is a credential of one object-store connection that is not its runtime credential: the backup's read
+// login of backup.source.connections (R-BAK-030) and an element of the credentials file of a journal reader (R-BAK-015,
+// R-HA-025). Its keys are those of a connection's element (R-STOR-031); connection names the id.
+type ConnectionCredentials struct {
+	Connection           string `yaml:"connection" doc:"The id of the connection of storage.connections the credential reads."`
+	CredentialsSource    string `yaml:"credentials_source" doc:"default (default), webIdentity or static (R-STOR-031)."`
+	RoleARN              string `yaml:"role_arn"`
+	WebIdentityTokenFile string `yaml:"web_identity_token_file" secret:"file"`
+	STSEndpoint          string `yaml:"sts_endpoint"`
+	AccessKeyIDFile      string `yaml:"access_key_id_file" secret:"file"`
+	SecretAccessKeyFile  string `yaml:"secret_access_key_file" secret:"file"`
+	SessionTokenFile     string `yaml:"session_token_file" secret:"file"`
+}
+
+// Credentials is the element as the credential of an S3 client; an empty credentials_source is default.
+func (c ConnectionCredentials) Credentials() StorageS3Credentials {
+	src := c.CredentialsSource
+	if src == "" {
+		src = defaultCredentialsSource
+	}
+	return StorageS3Credentials{
+		Source: src, RoleARN: c.RoleARN, WebIdentityTokenFile: c.WebIdentityTokenFile, STSEndpoint: c.STSEndpoint,
+		AccessKeyIDFile: c.AccessKeyIDFile, SecretAccessKeyFile: c.SecretAccessKeyFile, SessionTokenFile: c.SessionTokenFile,
+	}
+}
+
+// CheckCredentialElements applies the rules of R-STOR-031 to a list of credential elements: a valid connection id, one element
+// per connection, a known credentials_source, both key files with static, the token file with webIdentity, no user information
+// in sts_endpoint. add receives the index, the connection and the message.
+func CheckCredentialElements(elems []ConnectionCredentials, add func(i int, id, msg string)) {
+	seen := map[string]int{}
+	for i, e := range elems {
+		c := e.Credentials()
+		switch {
+		case !ValidConnectionID(e.Connection):
+			add(i, e.Connection, fmt.Sprintf("connection %q must be the id of a connection of storage.connections", e.Connection))
+		case seen[e.Connection] > 0:
+			add(i, e.Connection, fmt.Sprintf("connection %s has an element already (connections[%d]); one element per connection", e.Connection, seen[e.Connection]-1))
+		}
+		seen[e.Connection] = i + 1
+		switch c.Source {
+		case "default", "webIdentity", "static":
+		default:
+			add(i, e.Connection, fmt.Sprintf("credentials_source %q must be one of default, webIdentity, static", c.Source))
+		}
+		if c.Source == "static" && (c.AccessKeyIDFile == "" || c.SecretAccessKeyFile == "") {
+			add(i, e.Connection, "credentials_source static needs access_key_id_file and secret_access_key_file (R-STOR-031)")
+		}
+		if c.Source == "webIdentity" && c.WebIdentityTokenFile == "" {
+			add(i, e.Connection, "web_identity_token_file is required with credentials_source webIdentity (R-STOR-031)")
+		}
+		if u, err := url.Parse(c.STSEndpoint); c.STSEndpoint != "" && err == nil && u.User != nil {
+			add(i, e.Connection, "sts_endpoint must not carry user information")
+		}
+	}
 }
 
 // BackupSSE is the server-side encryption of the target (R-BAK-026). The default is s3, unlike the blob store's none.
@@ -115,9 +173,9 @@ func (b *Backup) Validate(r *Report) {
 	if b.Database.MigrationWait >= b.StallTimeout {
 		r.Add("database.migration_wait", "(%s) must stay below backup.stall_timeout (%s)", b.Database.MigrationWait, b.StallTimeout)
 	}
-	if s := b.Source; s.SeparateCredentials && s.Credentials.Source == "static" && (s.Credentials.AccessKeyIDFile == "" || s.Credentials.SecretAccessKeyFile == "") {
-		r.Add("source.credentials", "source static needs access_key_id_file and secret_access_key_file")
-	}
+	CheckCredentialElements(b.Source.Connections, func(i int, id, msg string) {
+		r.Add(fmt.Sprintf("source.connections[%d] (%s):", i, id), "%s (R-BAK-030)", msg)
+	})
 	checkKeyPrefix(r, "target.prefix", b.Target.Prefix)
 	t := b.Target
 	rejectUserinfo(r, "target.endpoint", NormalizeEndpoint(t.Endpoint), "backup.target.credentials.access_key_id_file")
@@ -157,6 +215,7 @@ func (b *Backup) ValidateFor(cmd Command, r *Report) {
 // set, and even then neither prefix may contain the other. It only runs where a target is configured; a connection whose
 // bucket or endpoint comes from a file is not known here.
 func (c *Config) validateBackupCoupling(r *Report) {
+	c.validateBackupSource(r)
 	t := c.Backup.Target
 	if t.Bucket == "" {
 		return
@@ -175,6 +234,21 @@ func (c *Config) validateBackupCoupling(r *Report) {
 		}
 		if prefixContains(t.Prefix, s.KeyPrefix()) || prefixContains(s.KeyPrefix(), t.Prefix) {
 			r.Add("backup.target.prefix", "(%q) and the prefix of storage.connections[%d] (%s) (%q) must not contain each other (R-BAK-002)", t.Prefix, i, s.ID, s.KeyPrefix())
+		}
+	}
+}
+
+// validateBackupSource requires every element of backup.source.connections to name a connection of storage.connections
+// (R-BAK-030): a read credential of a connection the configuration does not have would never be used, and is most likely an id
+// spelled wrong.
+func (c *Config) validateBackupSource(r *Report) {
+	ids := map[string]bool{}
+	for _, raw := range c.Storage.Connections {
+		ids[raw.WithDefaults().ID] = true
+	}
+	for i, e := range c.Backup.Source.Connections {
+		if ValidConnectionID(e.Connection) && !ids[e.Connection] {
+			r.Add(fmt.Sprintf("backup.source.connections[%d] (%s):", i, e.Connection), "connection %s is no connection of storage.connections (R-BAK-030)", e.Connection)
 		}
 	}
 }

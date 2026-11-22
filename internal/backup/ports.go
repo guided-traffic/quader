@@ -104,18 +104,45 @@ type Facts interface {
 	SystemFacts(ctx context.Context) (SystemFacts, error)
 }
 
-// ErrBlobNotFound is a blob object that the source blob store does not have.
+// ErrBlobNotFound is a blob object that a connection of the source does not have.
 var ErrBlobNotFound = errors.New("backup: blob object not found")
 
-// BlobSource reads the source blob store (R-BAK-006), with the credentials of the backup account. Its implementation is a
-// thin adapter over the client that internal/blob/s3 builds for storage.s3.
+// ErrCopyUnavailable wraps a failure of a copy's connection that says nothing about the object: a timeout, a 5xx, throttling,
+// an open circuit (R-BAK-030). The run tries the next copy; a blob whose every copy failed and one of them this way is no source
+// damage, and the run ends temporarily instead (Q-BAK-71).
+var ErrCopyUnavailable = errors.New("backup: the connection of the copy did not answer")
+
+// SourceCopy is one copy of a blob the backup can read (R-BAK-030): a present copy of blob_copies on a connection of the
+// backup's own configuration.
+type SourceCopy struct {
+	// Connection is the connection's id, Key the object's name there (blob_copies.object_key), StoredSize its bytes as stored.
+	Connection string
+	Key        string
+	StoredSize int64
+	// Verified is true when the copy's verified_at is set: the whole stored object was shown to be the blob (R-STOR-052).
+	Verified bool
+	// ServerSide is true when the connection's normalised endpoint is the target's, so a server-side copy can read it
+	// (R-BAK-006).
+	ServerSide bool
+	// Position is the connection's place in the configuration (1 for the first) and Drain its drain flag: the read order of
+	// storage.md R-STOR-055.
+	Position int
+	Drain    bool
+}
+
+// BlobSource reads the copies of the source's blobs (R-BAK-006, R-BAK-030), with the read credentials of the backup account
+// (backup.source.connections, or each connection's own). Its implementation is [StoreSource].
 type BlobSource interface {
-	// Size is the size of the object of a digest (HeadObject), or ErrBlobNotFound.
-	Size(ctx context.Context, d format.Digest) (int64, error)
-	// Open streams length bytes from offset (a ranged GetObject); length < 0 reads to the end.
-	Open(ctx context.Context, d format.Digest, offset, length int64) (io.ReadCloser, error)
-	// Ref names the object for a server-side copy.
-	Ref(d format.Digest) target.ObjectRef
+	// Copies returns the present copies of each digest on the connections of the backup's configuration, read when the copy
+	// phase reaches them (Q-BAK-70). A digest without such a copy is absent from the map.
+	Copies(ctx context.Context, digests []format.Digest) (map[format.Digest][]SourceCopy, error)
+	// Size is the size of a copy's object (HeadObject), or ErrBlobNotFound; a failure of the connection wraps ErrCopyUnavailable.
+	Size(ctx context.Context, c SourceCopy) (int64, error)
+	// Open streams length bytes of a copy from offset (a ranged GetObject); length < 0 reads to the end. A missing object is
+	// ErrBlobNotFound, a failure of the connection, also while the body is read, wraps ErrCopyUnavailable.
+	Open(ctx context.Context, c SourceCopy, offset, length int64) (io.ReadCloser, error)
+	// Ref names a copy's object for a server-side copy.
+	Ref(c SourceCopy) target.ObjectRef
 }
 
 // BlobStateReader reads a blob row at READ COMMITTED, the check that tells source damage from a lost hold (R-BAK-006
@@ -125,7 +152,7 @@ type BlobStateReader interface {
 	BlobState(ctx context.Context, d format.Digest) (state, contentStatus string, found bool, err error)
 }
 
-// BlobSink writes the new installation's blob store during a restore (R-BAK-021 step 3).
+// BlobSink writes the first connection without drain of the new installation during a restore (R-BAK-021 step 3, R-BAK-030).
 type BlobSink interface {
 	// Has reports whether an object of the digest exists with the given size.
 	Has(ctx context.Context, d format.Digest, size int64) (bool, error)

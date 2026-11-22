@@ -244,7 +244,7 @@ Priority: **MVP** · Covers: OPS-032, OPS-034
   never written.
 - `blobs.damaged` lists digests whose source object was missing or had the wrong size during the
   run (R-BAK-006). They are in the blob list but not in the pool.
-- `source` records where the source's blob store was (no credentials) and whether its revocation
+- `source` records where each connection of the source was (no credentials, R-BAK-030) and whether its revocation
   journal was enabled (`backup.revocation_journal.enabled`), so that a restore finds the journal
   it must replay (R-BAK-024).
 - The manifest is the last object of a backup (R-BAK-002). It carries no signature; H-46 covers
@@ -1683,62 +1683,89 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 What the backup and the restore do when the installation keeps its blobs on several connections ([storage.md](storage.md) R-STOR-050
-to R-STOR-063). Specified, not built; until then the backup reads the first element of `storage.connections` (`StoreSource`,
-[internal/backup/blobsource.go](../../internal/backup/blobsource.go)), the restore writes into it (`BlobSink`,
-[internal/blob/s3/blobsink.go](../../internal/blob/s3/blobsink.go)), and the fix-up `storage-copies`
-([storage_copies.go](../../internal/backup/fixup/storage_copies.go)) records every restored live blob as a copy of the connection
-`default`, which the first replica that configures it binds to its bucket and prefix, as after the migration
-([storage.md](storage.md) Q-STOR-250). Check 5 below is built for that first element: it accepts the marker `_connection` of the
-backup's installation when it names the connection the restore writes into, and refuses a marker of another installation or
-connection with a sentence that says whose it is ([checks.go](../../internal/backup/restore/checks.go), `checkBlobPrefix`).
+to R-STOR-063). **Built** (the rest of package E of the build plan, [docs/developer/backup.md](../developer/backup.md)): the backup's
+copy over the copies ([copy.go](../../internal/backup/create/copy.go), [blobsource.go](../../internal/backup/blobsource.go)),
+`backup.source.connections` ([internal/config/backup.go](../../internal/config/backup.go)), the manifest's `source.connections`, the
+restore into the first connection without drain with checks 5 and 7 per connection
+([restore/](../../internal/backup/restore)) and the fix-up `storage-copies`
+([storage_copies.go](../../internal/backup/fixup/storage_copies.go)), the journal of every source connection
+([replay/reader.go](../../internal/journal/replay/reader.go)) and the protection reads of `backup-check` per connection. Not here:
+`restore-versions` per connection, an operator command of package D, and a restore onto existing blob stores, which is R-BAK-025 (P1);
+the second half of the second criterion below needs the reconciliation (package C).
 
 - **Which copy a backup reads** ([Q-BAK-62](#q-bak-62--a-backup-reads-one-copy-per-blob-the-one-that-allows-a-server-side-copy-first)).
-  For each pinned digest the run takes the copies of the snapshot's `blob_copies` in state `present` on connections in its own
-  configuration: first a copy on a connection whose normalised endpoint is the target's (a server-side copy, R-BAK-006), verified before
-  not verified, then the others in the order of the connections. A `404`, a size other than the copy's `stored_size`, or a streamed copy
-  whose SHA-256 differs from the digest moves the run to the next copy; only when no copy succeeds is the blob damaged in the source
-  (R-BAK-006's rules, `blobs.damaged`). The backup pod writes no copy row and marks no copy (its role writes `backup_run` and
-  `backup_blob_pin` only, R-BAK-015); what it found is counted in the run's result per connection (`sourceFailures`) and logged, and the
-  reads and the scrub of the installation find the same damage (storage.md R-STOR-027).
+  For each pinned digest the run takes the copies of `blob_copies` in state `present` on connections in its own configuration, read at
+  `READ COMMITTED` once per page of 1,000 pins when the copy reaches it
+  ([Q-BAK-70](#q-bak-70--a-backup-reads-the-copies-of-a-page-of-pins-when-it-copies-the-page-not-from-the-snapshot)): first a copy on a
+  connection whose normalised endpoint is the target's (a server-side copy, R-BAK-006), verified before not verified, then the others in
+  the order of the connections, a draining connection's last within each group, as a read orders them (storage.md R-STOR-055). A `404`, a
+  size other than the copy's `stored_size`, or a streamed copy whose SHA-256 differs from the digest moves the run to the next copy; only
+  when no copy succeeds is the blob damaged in the source (R-BAK-006's rules, `blobs.damaged`: `corrupt` when a copy had another size or
+  digest, `missing` otherwise). A connection that does not answer (a timeout, `5xx`, an open circuit) moves the run to the next copy as
+  well, and a blob whose every copy failed with one of them failing so ends the run with exit `75` instead of being recorded as damaged
+  ([Q-BAK-71](#q-bak-71--a-blob-whose-copies-all-failed-and-one-only-because-its-connection-did-not-answer-ends-the-run-temporarily)). The
+  backup pod writes no copy row and marks no copy (its role writes `backup_run` and `backup_blob_pin` only, R-BAK-015); what it found is
+  counted in the run's result per connection (`sourceFailures`) and logged, and the reads and the scrub of the installation find the same
+  damage (storage.md R-STOR-027). Each connection's client sits behind a circuit breaker of its own in the backup pod, so a connection that
+  is down is passed over fast.
 - **The source credentials per connection.** `backup.source.separate_credentials` and `backup.source.credentials` give way to
   `backup.source.connections`, a list of flat elements `{connection, credentials_source, role_arn, web_identity_token_file, sts_endpoint,
   access_key_id_file, secret_access_key_file, session_token_file}`: the read credential of the named connection, which may only read
   (R-BAK-015's row "Source blob reader", per connection). A connection without an element is read with its own credential, which is right
-  for a workload identity of the backup's ServiceAccount. The chart renders an element from each entry's `backupSource`
-  ([ha-and-helm.md](ha-and-helm.md) R-HA-072) and refuses static connection credentials without one while `backup.enabled`
+  for a workload identity of the backup's ServiceAccount. An element names a connection of `storage.connections`, at most one element per
+  connection, and follows R-STOR-031's rules; a violation is a configuration error naming `backup.source.connections[<n>] (<id>):`. In the
+  environment the list is one JSON value, `QUADER_BACKUP_SOURCE_CONNECTIONS`. The chart renders an element from each entry's
+  `backupSource` ([ha-and-helm.md](ha-and-helm.md) R-HA-072) and refuses static connection credentials without one while `backup.enabled`
   ([Q-BAK-64](#q-bak-64--the-backups-read-credential-is-an-element-per-connection)).
 - **The manifest** names the source's connections: `source.connections: [{"id", "endpoint", "bucket", "prefix"}]` replaces
-  `source.storage`, for the journal (below).
+  `source.storage`, for the journal (below). A backup of the form before has none, and its restore finds no journal (check 8, or
+  `--skip-revocation-journal`); before the first stable release no older backup needs to restore (Q-ARCH-340).
 - **A restore fills the first connection** ([Q-BAK-63](#q-bak-63--a-restore-fills-the-first-connection-and-the-reconciliation-the-others)).
   Step 3 of R-BAK-021 writes every listed digest into the first connection with `drain: false` of the restoring installation's
   configuration (server-side from the pool where the endpoints allow, else streamed and hashed). The fix-up of R-BAK-022 inserts
-  `storage_connections` rows for the configured connections and a `present` copy row for every restored live blob on that connection
-  (`verified_at` the restore's time when the blob was streamed and hashed, `NULL` after a server-side copy, which the scrub reads first),
-  and no queue row: the reconciliation's first pass (storage.md R-STOR-056) finds every other connection's gaps and fills them after the
-  workers start; until then those connections show their backlog.
+  `storage_connections` rows for the configured connections with the bucket and the prefix their elements resolve to, and a `present` copy
+  row for every restored live blob on that connection under the name of its prefix (a `missing` one for a blob listed under
+  `blobs.damaged`, which has no object), and no queue row: the reconciliation's first pass (storage.md R-STOR-056) finds every other
+  connection's gaps and fills them after the workers start; until then those connections show their backlog. `verified_at` is the
+  restore's time when the process that ran step 3 streamed and hashed every blob it wrote and skipped none, and `NULL` otherwise (a
+  server-side copy, an object a resumed restore found, a restore resumed after step 3), which the scrub reads first
+  ([Q-BAK-72](#q-bak-72--the-restores-copies-are-verified-only-when-the-process-streamed-and-hashed-every-blob-of-step-3)). The blob rows
+  that step 7 deletes after a purge of the remote caches take their copy rows with them.
 - **R-BAK-020's checks per connection.** Check 5 requires every configured connection's prefix to be empty except `_probe/` and the
   marker `_connection` (a marker of the backup's installation that names that connection is accepted, one of another installation or
-  of another connection refuses, since a replica of the restored installation would refuse it too, storage.md R-STOR-051);
-  check 7 probes every configured connection; check 8 lists the journal on at least one of the source's connections.
-- **The revocation journal** is read from every reachable connection of `manifest.source.connections` and merged by key (storage.md
-  R-STOR-059); `--journal-credentials-file` holds one credential per source connection. `--skip-revocation-journal` is for the disaster
-  in which no source connection is left.
+  of another connection refuses, since a replica of the restored installation would refuse it too, storage.md R-STOR-051); after an
+  anchor only the connection the restore writes into may hold the blobs of the interrupted restore. Check 7 probes every configured
+  connection; check 8 lists the journal on at least one of the source's connections. Each failure names the connection.
+- **The revocation journal** is read from every connection of `manifest.source.connections` that can be listed and merged by key
+  (storage.md R-STOR-059); a connection that cannot be listed is reported and the replay goes on, and none listed fails the replay
+  ([storage.md](storage.md) Q-STOR-271). Each source connection is reached with the client settings of the restoring installation's
+  connection of the same id, or of its first connection when none has that id, at the source's bucket, prefix and endpoint.
+  `--journal-credentials-file` holds one credential per source connection
+  ([Q-BAK-73](#q-bak-73--the-credentials-file-of-a-journal-reader-is-a-list-of-elements-keyed-by-the-connection)):
+  `connections: [{connection, credentials_source, …}]`, the elements of `backup.source.connections`; a connection the file names is read
+  with that credential and with the listing of object versions, any other with the blob-store credential and a plain listing.
+  `--skip-revocation-journal` is for the disaster in which no source connection is left.
 - **A restore onto existing blob stores** (R-BAK-025) keeps, per configured connection, an object of the right size at its key and copies
   the others into the first connection; the orphan sweep of each connection adopts the objects of restored blobs that have no copy row
   and removes what the restored database does not reference (storage.md R-STOR-026).
 - **`restore-versions` and the protection reads** work per connection ([ha-and-helm.md](ha-and-helm.md) R-HA-023, R-HA-025): the check
-  of versioning and lifecycle reports each connection, and `restore-versions --connection <id>` (default: every connection) removes the
-  delete markers younger than *t* from the keys of the copies missing there, with the one credential of `--credentials-file` on every
-  connection of the run, so connections with different versioning logins get a run each (storage.md Q-STOR-268; built).
+  of versioning and lifecycle reports each connection (built: `quader_backup_check_ok{check,connection}`), and
+  `restore-versions --connection <id>` (default: every connection) removes the delete markers younger than *t* from the keys of the copies
+  missing there, with that connection's element of `--credentials-file`, the journal reader's file of
+  [Q-BAK-73](#q-bak-73--the-credentials-file-of-a-journal-reader-is-a-list-of-elements-keyed-by-the-connection) (storage.md Q-STOR-268;
+  built).
 
 Acceptance criteria:
 
 - A backup of an installation whose first connection lacks one blob's object (deleted behind its back) and whose second holds it copies
-  the blob from the second and reports no damage; with the object gone from both, the blob is listed under `blobs.damaged`
-  (integration, `test/integration/backup`, two in-memory stores in process).
-- A restore into an installation with two connections writes every blob into the first, records a `present` copy row for each there, and
-  after one reconciliation run every blob is present on the second (integration, `test/integration/backup`, one case, about 8 s).
-- A restore whose second connection holds a foreign object exits `6` naming check 5 and that connection.
+  the blob from the second and reports no damage; with the object gone from both, the blob is listed under `blobs.damaged` (unit,
+  `TestR_BAK_030_TheBackupReadsOneCopyPerBlob` with fakes; the lookup of the copies in PostgreSQL in the integration case
+  `TestR_BAK_006_ADamagedSourceBlobIsRecordedAndTheRunCompletesWithWarnings`, a second in-memory store beside the stack's bucket, no run
+  added).
+- A restore into an installation with two connections writes every blob into the first, records a `present` copy row for each there and a
+  `storage_connections` row for both, and no queue row (integration, `TestR_BAK_021_RestoreEndToEnd`, whose destination has a second
+  connection, no run added); after one reconciliation run every blob is present on the second (with package C, not yet run).
+- A restore whose second connection holds a foreign object exits `6` naming check 5 and that connection (unit, `TestR_BAK_020_Checks`).
 
 ### R-BAK-031 · Backup and restore of encrypted connections
 Priority: **P1** · Covers: quader-only
@@ -2951,6 +2978,89 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 **Choice:** (a). **Rationale:** what can be checked without a key is checked without one; the proof of the bytes needs the key that opens them.
 
 **Applied in the spec:** R-BAK-019, R-BAK-031.
+
+### Q-BAK-70 · A backup reads the copies of a page of pins when it copies the page, not from the snapshot
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAK-030 said the run takes "the copies of the snapshot's `blob_copies`". The snapshot ends with the export, while the copy of
+a first backup runs for hours after it; copies change meanwhile: the reconciliation adds them, a read or the scrub marks one `missing`, a
+drain deletes the copy of a draining connection (which takes no backup hold, R-STOR-056). A pin keeps the blob from collection
+(R-BAK-007), not a single copy.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One read at `READ COMMITTED` of the present copies of each page of 1,000 pins, when the copy reaches the page (chosen) | `BackupPresentCopies` over the primary key of `blob_copies` | The run sees the copies as they are when it reads them: a copy added since the snapshot is used, one marked or deleted since is not tried; a blob is immutable, so any present copy is the blob | One more statement per thousand pins |
+| (b) The copies inside the snapshot, carried with the pins | The diff joins `blob_copies` | One read of everything | `backup_blob_pin` would grow columns or the run would hold every copy in memory; the copies are hours old when they are used, and a drain in between turns a sound blob into a failed read |
+| (c) No lookup: try every configured connection at the key of R-STOR-001 | No query | Nothing to read | Ignores what the installation knows (a `missing` copy, a detached connection), sends a request per connection and blob, and stops working when stage 2 names objects otherwise |
+
+**Choice:** (a). **Rationale:** the copies describe the present, the snapshot describes the content; the backup needs the content of the
+snapshot and the copies of now. The development agent would revisit this if a page's lookup showed up in the backup's duration.
+
+**Applied in the spec:** R-BAK-030. Code: `PresentCopies` in [pgfacts.go](../../internal/backup/pgfacts.go),
+[copy.go](../../internal/backup/create/copy.go).
+
+### Q-BAK-71 · A blob whose copies all failed, and one only because its connection did not answer, ends the run temporarily
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAK-030 names a `404`, a size and a digest as the reasons to take the next copy, and is silent about a connection that does
+not answer. A provider's outage lasted 17.5 hours (storage.md R-STOR-055); a blob committed in the minute before it lies on that
+connection alone until the reconciliation copies it (H-1251).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A timeout, `5xx` or open circuit moves the run to the next copy; when every copy failed and one of them so, the run ends with exit `75` (chosen) | No damage is claimed without evidence about the object | A backup never records a sound blob as damaged, so a restore from it never loses that blob; the Job retries and the next run copies it once the connection answers | During an outage, a backup cannot complete while a blob lies on the failed connection alone |
+| (b) Record such a blob under `blobs.damaged` and complete with warnings | The backup completes | A backup exists during the outage | The restore of that backup loads the blob `missing` although the content exists; damage is a statement about the object, which a timeout is not (R-STOR-052) |
+| (c) A connection that does not answer fails the run at once | As with one connection | Simple | One provider's outage stops every backup, although the other connections hold the blobs |
+
+**Choice:** (a). **Rationale:** R-STOR-052's rule that only evidence about an object marks it holds for the backup too; the previous backup
+stays restorable, and `QuaderBackupStale` says when the outage keeps a new one from completing. The development agent would revisit this if
+the reconciliation's window left blobs on one connection for long enough to block backups in practice.
+
+**Applied in the spec:** R-BAK-030. Code: `failureReason` and `one` in [copy.go](../../internal/backup/create/copy.go),
+`backup.ErrCopyUnavailable`.
+
+### Q-BAK-72 · The restore's copies are verified only when the process streamed and hashed every blob of step 3
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAK-030 sets `verified_at` per blob: the restore's time when it was streamed and hashed, `NULL` after a server-side copy. The
+fix-up runs in step 6, after the load of step 4 truncated every table, possibly in another pod than step 3 (a resumed restore); a list of
+millions of digests does not fit the Job's memory and has no table that survives the load.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One flag of the process: every blob it wrote in step 3 was streamed and hashed, and it skipped none; all copies verified then, none otherwise (chosen) | `Restorer.streamedAll` into `fixup.Env.SinkVerified` | Exact in the two common cases (a target on another endpoint streams everything; a target on the same endpoint copies server-side), constant memory, nothing stored | A mixed or resumed restore records every copy unverified, which the scrub reads first |
+| (b) A set of the streamed digests in memory | Per blob | Exact in one pod | Unbounded memory, and lost with the pod |
+| (c) A table of the streamed digests that the load does not truncate | Per blob, across pods | Exact | A table outside the export classes of R-BAK-004 only for this, written per blob during the copy |
+| (d) Never verified | All `NULL` | Nothing to track | The scrub rereads every blob of a streamed restore at once, although each was hashed |
+
+**Choice:** (a). **Rationale:** `NULL` is never wrong, a claimed verification must be true; the flag is exact where it says verified. The
+development agent would revisit this if mixed restores turned out to be common.
+
+**Applied in the spec:** R-BAK-030. Code: [blobs.go](../../internal/backup/restore/blobs.go),
+[storage_copies.go](../../internal/backup/fixup/storage_copies.go).
+
+### Q-BAK-73 · The credentials file of a journal reader is a list of elements keyed by the connection
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `--journal-credentials-file` and `--credentials-file` held one credential with the keys of `storage.s3.credentials`. R-BAK-030
+asks for one credential per source connection and names no form.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `connections: [{connection, credentials_source, role_arn, web_identity_token_file, sts_endpoint, access_key_id_file, secret_access_key_file, session_token_file}]`, the elements of `backup.source.connections`; a connection without an element is read with the blob-store credential and a plain listing (chosen) | One shape for every per-connection credential | The chart renders the backup's and the journal reader's elements alike; the binary checks both with one function; unknown keys are refused | A workload identity is written once per connection |
+| (b) A map from the connection id to a credential | `{default: {source: …}}` | Short | A second shape for the same thing; a map key is not checked like a field |
+| (c) One credential for every connection | As before | One element | Credentials are per provider (Q-BAK-64's reason) |
+
+**Choice:** (a). **Rationale:** the same reason as Q-BAK-64; one shape, one check. The development agent would revisit this if a provider's
+reader needed keys a connection's element does not have.
+
+**Applied in the spec:** R-BAK-030; [ha-and-helm.md](ha-and-helm.md) R-HA-072. Code: `LoadCredentials` and `CredentialsFile` in
+[open.go](../../internal/journal/replay/open.go), `quader.journalCredentialElements` in
+[_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl).
 
 ## What this does not cover
 

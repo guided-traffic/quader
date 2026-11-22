@@ -14,10 +14,30 @@ import (
 type fakeOutbox struct {
 	rows    []journal.OutboxRow
 	deleted []string
+	claims  int
 }
 
-func (o *fakeOutbox) Claim(_ context.Context, limit int) ([]journal.OutboxRow, error) {
-	return slices.Clone(o.rows[:min(limit, len(o.rows))]), nil
+func (o *fakeOutbox) Claim(_ context.Context, after string, limit int) ([]journal.OutboxRow, error) {
+	o.claims++
+	var out []journal.OutboxRow
+	for _, r := range o.rows {
+		if r.ID > after && len(out) < limit {
+			r.Shipped = slices.Clone(r.Shipped)
+			out = append(out, r)
+		}
+	}
+	return out, nil
+}
+
+func (o *fakeOutbox) MarkShipped(_ context.Context, marks []journal.Shipped) error {
+	for _, m := range marks {
+		for i := range o.rows {
+			if o.rows[i].ID == m.ID && !slices.Contains(o.rows[i].Shipped, m.Connection) {
+				o.rows[i].Shipped = append(o.rows[i].Shipped, m.Connection)
+			}
+		}
+	}
+	return nil
 }
 
 func (o *fakeOutbox) Delete(_ context.Context, ids []string) error {
@@ -28,6 +48,22 @@ func (o *fakeOutbox) Delete(_ context.Context, ids []string) error {
 
 func (o *fakeOutbox) Pending(context.Context) (int64, time.Duration, error) {
 	return int64(len(o.rows)), 0, nil
+}
+
+// pendingOn is what quader_revocation_journal_pending{connection} counts: the rows whose object the connection does not hold.
+func (o *fakeOutbox) pendingOn(conn string) int {
+	n := 0
+	for _, r := range o.rows {
+		if !slices.Contains(r.Shipped, conn) {
+			n++
+		}
+	}
+	return n
+}
+
+// one is the target list of one connection default.
+func one(st journal.Store, prefix string) []Target {
+	return []Target{{Connection: "default", Store: st, Prefix: prefix}}
 }
 
 type fakeStore struct {
@@ -62,7 +98,7 @@ func rows(n int) []journal.OutboxRow {
 
 func TestR_HA_054_ShipWritesInIdOrderAndDeletesAfterTheObject(t *testing.T) {
 	ob, st := &fakeOutbox{rows: rows(3)}, &fakeStore{}
-	n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader"}).Ship(t.Context())
+	n, err := New(Options{Outbox: ob, Targets: one(st, "quader")}).Ship(t.Context())
 	if err != nil || n != 3 {
 		t.Fatalf("Ship = %d, %v; want 3", n, err)
 	}
@@ -81,7 +117,7 @@ func TestR_HA_054_ShipWritesInIdOrderAndDeletesAfterTheObject(t *testing.T) {
 
 func TestR_HA_054_ShipStopsAtTheFirstFailureAndKeepsTheRest(t *testing.T) {
 	ob, st := &fakeOutbox{rows: rows(3)}, &fakeStore{failAt: 2}
-	n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader"}).Ship(t.Context())
+	n, err := New(Options{Outbox: ob, Targets: one(st, "quader")}).Ship(t.Context())
 	if err == nil || n != 1 {
 		t.Fatalf("Ship = %d, %v; want one shipped and an error", n, err)
 	}
@@ -89,7 +125,7 @@ func TestR_HA_054_ShipStopsAtTheFirstFailureAndKeepsTheRest(t *testing.T) {
 		t.Errorf("the rows from the failed one on must stay: %v", ob.rows)
 	}
 	st.failAt = 0
-	if n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader"}).Ship(t.Context()); err != nil || n != 2 {
+	if n, err := New(Options{Outbox: ob, Targets: one(st, "quader")}).Ship(t.Context()); err != nil || n != 2 {
 		t.Fatalf("Ship after the store returned = %d, %v; want 2", n, err)
 	}
 }
@@ -98,7 +134,7 @@ func TestR_HA_054_ShipIsIdempotentInBytes(t *testing.T) {
 	st := &fakeStore{}
 	for range 2 {
 		ob := &fakeOutbox{rows: rows(1)}
-		if _, err := New(Options{Outbox: ob, Store: st, BlobPrefix: ""}).Ship(t.Context()); err != nil {
+		if _, err := New(Options{Outbox: ob, Targets: one(st, "")}).Ship(t.Context()); err != nil {
 			t.Fatal(err)
 		}
 	}

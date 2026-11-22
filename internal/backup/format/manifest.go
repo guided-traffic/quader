@@ -65,15 +65,17 @@ type Options struct {
 	ExcludeRemoteCaches bool `json:"excludeRemoteCaches"`
 }
 
-// Source says where the source's blob store was (no credentials) and whether its revocation journal was enabled, so that
-// a restore finds the journal it must replay (R-BAK-024).
+// Source says where the source's connections were (no credentials) and whether its revocation journal was enabled, so that
+// a restore finds the journal it must replay on each of them (R-BAK-024, R-BAK-030).
 type Source struct {
-	Storage           StorageRef `json:"storage"`
-	RevocationJournal bool       `json:"revocationJournal"`
+	Connections       []ConnectionRef `json:"connections"`
+	RevocationJournal bool            `json:"revocationJournal"`
 }
 
-// StorageRef is the location of a blob store.
-type StorageRef struct {
+// ConnectionRef is the location of one object-store connection of the source: its id, its endpoint (empty for the AWS
+// endpoint of its region), its bucket and its prefix (R-BAK-030).
+type ConnectionRef struct {
+	ID       string `json:"id"`
 	Endpoint string `json:"endpoint"`
 	Bucket   string `json:"bucket"`
 	Prefix   string `json:"prefix"`
@@ -209,6 +211,16 @@ func (m *Manifest) Validate() error {
 		if d.Status != "missing" && d.Status != "corrupt" {
 			errs = append(errs, fmt.Errorf("blobs.damaged: status %q is not missing or corrupt", d.Status))
 		}
+	}
+	ids := map[string]bool{}
+	for _, c := range m.Source.Connections {
+		switch {
+		case c.ID == "" || c.Bucket == "":
+			errs = append(errs, errors.New("every source connection needs an id and a bucket"))
+		case ids[c.ID]:
+			errs = append(errs, fmt.Errorf("source connection %s is listed twice", c.ID))
+		}
+		ids[c.ID] = true
 	}
 	if len(m.Secrets.KeyIDs) == 0 {
 		// A snapshot always holds at least the canary rows of the key ring (R-ARCH-021).

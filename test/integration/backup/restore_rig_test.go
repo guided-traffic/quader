@@ -133,9 +133,18 @@ func (d *destination) restorer(o restorerOptions) (*restore.Restorer, *bytes.Buf
 	if err != nil {
 		d.t.Fatal(err)
 	}
-	client, err := s3.NewFromFactory(ctx, firstS3(cfg.Storage), f)
+	resolved, err := config.ResolveConnections(cfg.Storage.Connections, nil)
 	if err != nil {
 		d.t.Fatal(err)
+	}
+	var conns []restore.Connection
+	for i, el := range resolved {
+		cc := config.ClientConfig(i, el, cfg.Storage.ObjectStore)
+		client, err := s3.NewFromFactory(ctx, cc, f)
+		if err != nil {
+			d.t.Fatal(err)
+		}
+		conns = append(conns, restore.Connection{ID: el.ID, Bucket: el.Bucket, Prefix: el.KeyPrefix(), Drain: el.Drain, Store: s3.NewBlobSink(client, cc, int64(cfg.Backup.Copy.PartSize))})
 	}
 	ring := o.ring
 	if ring == nil {
@@ -164,7 +173,7 @@ func (d *destination) restorer(o restorerOptions) (*restore.Restorer, *bytes.Buf
 	}
 	return restore.New(restore.Deps{
 		Session: session, Target: tgt, Layout: d.src.layout, TargetEndpoint: endpoint, TargetBucket: tgt.Bucket(),
-		Blobs: s3.NewBlobSink(client, firstS3(cfg.Storage), int64(cfg.Backup.Copy.PartSize)), Keys: ring,
+		Connections: conns, Keys: ring,
 		Items:   app.RestoreItems(cfg, testenv.Quiet()),
 		Journal: journalFn,
 		Config:  cfg.Backup, Log: testenv.Quiet(), Out: &out, Pod: "restore-pod", Hook: o.hook,

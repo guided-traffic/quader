@@ -189,7 +189,7 @@ func (s *twinSide) number(sql string, args ...any) int64 {
 // ship writes the side's outbox to the store with the journal's shipper and returns the number of objects.
 func (s *twinSide) ship(store journal.Store) int {
 	s.t.Helper()
-	n, err := ship.New(ship.Options{Outbox: ship.NewOutbox(s.db), Store: store, BlobPrefix: twinPrefix, Log: testenv.Quiet()}).Ship(context.Background())
+	n, err := ship.New(ship.Options{Outbox: ship.NewOutbox(s.db), Targets: []ship.Target{{Connection: "default", Store: store, Prefix: twinPrefix}}, Log: testenv.Quiet()}).Ship(context.Background())
 	if err != nil {
 		s.t.Fatalf("ship: %v", err)
 	}

@@ -54,7 +54,7 @@ func (a *App) registerBackupGauges() {
 				return nil, nil
 			}
 			if col == nil {
-				col = gauges.New(gauges.Options{Reader: backup.NewPGStore(db), Backup: m.bak, Journal: m.jrnl, ExpectedInterval: expected})
+				col = gauges.New(gauges.Options{Reader: backup.NewPGStore(db), Backup: m.bak, Journal: m.jrnl, ExpectedInterval: expected, JournalConnections: journalConnections(a.cfg.Storage.Connections)})
 			}
 			if err := col.Refresh(ctx); err != nil {
 				return nil, err

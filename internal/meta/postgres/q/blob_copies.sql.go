@@ -287,36 +287,6 @@ func (q *Queries) QueueBlobCopy(ctx context.Context, arg QueueBlobCopyParams) er
 	return err
 }
 
-const restoreUnboundConnection = `-- name: RestoreUnboundConnection :exec
-INSERT INTO storage_connections (id, bucket, prefix)
-SELECT 'default', '', '' WHERE EXISTS (SELECT 1 FROM blobs)
-ON CONFLICT (id) DO NOTHING
-`
-
-// The connection of the blobs a restore loaded, until the restore records its copies per connection (backup-and-restore.md
-// R-BAK-030): the row default with an empty bucket, which the first replica that configures default binds (Q-STOR-250).
-func (q *Queries) RestoreUnboundConnection(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, restoreUnboundConnection)
-	return err
-}
-
-const restoreUnboundCopies = `-- name: RestoreUnboundCopies :exec
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, state_changed_at)
-SELECT b.sha256, 'default',
-       'sha256/' || substr(encode(b.sha256, 'hex'), 1, 2) || '/' || substr(encode(b.sha256, 'hex'), 3, 2) || '/' || encode(b.sha256, 'hex'),
-       b.size, CASE WHEN b.content_status = 'ok' THEN 'present' ELSE b.content_status END, b.created_at, now()
-  FROM blobs b
- WHERE b.state = 'live' AND EXISTS (SELECT 1 FROM storage_connections WHERE id = 'default' AND bucket = '')
-ON CONFLICT DO NOTHING
-`
-
-// The copies of the blobs a restore loaded on the row of RestoreUnboundConnection: the restore wrote every blob into the
-// first connection at the key of R-STOR-001; the names lack the prefix until the bind writes it (Q-STOR-250).
-func (q *Queries) RestoreUnboundCopies(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, restoreUnboundCopies)
-	return err
-}
-
 const retireStorageConnection = `-- name: RetireStorageConnection :exec
 UPDATE storage_connections SET retired_at = now() WHERE id = $1::text AND retired_at IS NULL
 `

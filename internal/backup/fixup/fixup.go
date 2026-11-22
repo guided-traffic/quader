@@ -45,6 +45,18 @@ type Env struct {
 	// restore sets it to the item store composed with the format hooks, so the hooks run in the removing
 	// transactions. A purger finds it nil only in a restore that runs no step 7.
 	Items CacheEraser
+	// Connections are the connections of the restoring installation's configuration, with the bucket and the prefix its files
+	// resolve to (R-BAK-030); Sink is the one step 3 wrote every blob into, the first without drain.
+	Connections []ConnectionRecord
+	Sink        string
+	// SinkVerified is true when the restore process that ran step 3 streamed and hashed every blob it wrote there and skipped
+	// none, so the copies are verified (Q-BAK-72); false after a server-side copy, a skipped object or a resumption.
+	SinkVerified bool
+}
+
+// ConnectionRecord is a connection as the fix-up records it in storage_connections (storage.md R-STOR-051).
+type ConnectionRecord struct {
+	ID, Bucket, Prefix string
 }
 
 // CacheEraser removes every cached item of one remote repository through the storage delete path with the trash can

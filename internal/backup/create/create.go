@@ -52,8 +52,9 @@ type Events interface {
 // Deps are what the pipeline works with.
 type Deps struct {
 	Cfg config.Backup
-	// SourceRef names where the blob store is (no credentials): recorded in the manifest.
-	SourceRef format.StorageRef
+	// SourceConnections name where the connections of the source are (no credentials), in the order of the configuration:
+	// recorded in the manifest, for the journal of a restore (R-BAK-030).
+	SourceConnections []format.ConnectionRef
 	// Instance is the pod name, Version and Revision the build.
 	Instance, Version, Revision string
 	// JobName is the Kubernetes Job of the pod (QUADER_JOB_NAME); empty outside a Job (R-BAK-010).

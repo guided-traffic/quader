@@ -5,7 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/journal/ship"
@@ -16,24 +17,45 @@ import (
 // needs the object-store client, which wireBlob builds, and the queue, which the coordination step builds, so the first hands
 // its client to wireJournalShipper and the second starts the trigger.
 //
-//   - wireJournalShipper (worker and all, from wireBlob) builds the shipper over the blob bucket under the runtime credential
-//     and makes it available to the job handler (a late value, because the registry is frozen first).
+//   - wireJournalShipper (worker and all, from wireBlob) builds the shipper over every connection without drain: true, each
+//     through its guard under its runtime credential (storage.md R-STOR-059), and makes it available to the job handler (a late
+//     value, because the registry is frozen first).
 //   - registerJournalJobs adds the job kind revocation-journal-ship to the registry.
 //   - startJournalShipTrigger (worker and all, from the coordination step) enqueues the job every ship_interval while the
 //     outbox holds a row. A change never waits for it.
 
 // wireJournalShipper builds the shipper for a replica that claims jobs.
-func (a *App) wireJournalShipper(client *s3.Client, prefix string, db *postgres.DB) {
+func (a *App) wireJournalShipper(conns *blob.Connections, db *postgres.DB) {
 	j := a.cfg.Backup.RevocationJournal
 	o := ship.Options{
-		Outbox: ship.NewOutbox(db), BlobPrefix: prefix, Discard: !j.Enabled,
+		Outbox: ship.NewOutbox(db), Discard: !j.Enabled,
 		Log:          a.log.With("component", "journal"),
 		OnQuarantine: func(journal.OutboxRow, error) { a.laneMetrics().jrnl.Quarantined.Inc() },
 	}
 	if j.Enabled {
-		o.Store = s3.NewJournalStore(client, false)
+		o.Targets = journalTargets(conns)
 	}
 	a.shipper.set(ship.New(o))
+}
+
+// journalTargets are the connections the journal goes to: every one without drain: true, in the order of the configuration.
+func journalTargets(conns *blob.Connections) []ship.Target {
+	var out []ship.Target
+	for _, c := range conns.Targets() {
+		out = append(out, ship.Target{Connection: c.ID(), Store: ship.NewConnectionStore(c.Objects(), c.PayloadChecksum()), Prefix: c.Prefix()})
+	}
+	return out
+}
+
+// journalConnections are the ids of the connections the journal goes to, for the gauge quader_revocation_journal_pending.
+func journalConnections(cfg []config.StorageConnection) []string {
+	var out []string
+	for _, c := range cfg {
+		if c = c.WithDefaults(); !c.Drain {
+			out = append(out, c.ID)
+		}
+	}
+	return out
 }
 
 // registerJournalJobs registers the shipping job kind.

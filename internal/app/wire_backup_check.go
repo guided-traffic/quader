@@ -7,6 +7,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/platform"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -14,8 +15,8 @@ import (
 
 // The wiring of the platform backup check (R-HA-023, R-OPS-019): the task backup-check verifies the declared point-in-time
 // recovery and bucket versioning once a day and stores the report in system_state; every replica exports the report as
-// quader_backup_check_ok (registerBackupGauges). Only a replica that claims jobs needs the bucket client, which wireBlob
-// hands to wireBackupCheck.
+// quader_backup_check_ok (registerBackupGauges). Only a replica that claims jobs needs the bucket clients, one per connection,
+// which wireBlob hands to wireBackupCheck.
 
 // KindBackupCheck is the job kind and task of the check.
 const KindBackupCheck = "backup-check"
@@ -25,8 +26,15 @@ const defaultBackupCheckSchedule = "40 5 * * *"
 // backupCheckTimeout bounds one run: two reads of the bucket's settings and one statement.
 const backupCheckTimeout = 2 * time.Minute
 
-// wireBackupCheck makes the bucket client available to the job handler (a late value, because the registry is frozen first).
-func (a *App) wireBackupCheck(client *s3.Client) { a.checkBucket.set(client) }
+// wireBackupCheck makes the bucket clients of every connection, in the order of the configuration, available to the job handler
+// (a late value, because the registry is frozen first): the bucket checks report each connection (R-HA-023).
+func (a *App) wireBackupCheck(conns *blob.Connections, clients map[string]*s3.Client) {
+	var buckets []platform.ConnectionBucket
+	for _, c := range conns.List() {
+		buckets = append(buckets, platform.ConnectionBucket{Connection: c.ID(), Bucket: clients[c.ID()]})
+	}
+	a.checkBucket.set(buckets)
+}
 
 // registerBackupCheckJob registers the kind and its task. The report is stored whatever it finds: a failed check is a result,
 // not a failed job; only a run that could not read what it checks fails and is retried.
@@ -36,11 +44,11 @@ func (a *App) registerBackupCheckJob(r *jobs.Registry) {
 	r.RegisterKind(KindBackupCheck, jobs.KindSpec{
 		Queue: "maintenance", DedupMode: jobs.Exclusive, MaxAttempts: 3, Timeout: backupCheckTimeout,
 		Handler: func(ctx context.Context, run *jobs.Run) error {
-			bucket, ok := a.checkBucket.get()
+			buckets, ok := a.checkBucket.get()
 			if !ok {
 				return errors.New("platform backup check: this replica has not wired it yet")
 			}
-			rep, err := platform.Checker{ArchiveMode: platform.ArchiveModeOf(run.DB()), Bucket: bucket, Settings: settings}.Run(ctx)
+			rep, err := platform.Checker{ArchiveMode: platform.ArchiveModeOf(run.DB()), Buckets: buckets, Settings: settings}.Run(ctx)
 			if err != nil {
 				return err
 			}

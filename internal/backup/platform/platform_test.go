@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +32,42 @@ func mode(m string, err error) func(context.Context) (string, error) {
 	return func(context.Context) (string, error) { return m, err }
 }
 
+// one is the bucket of the one connection default.
+func one(b platform.Bucket) []platform.ConnectionBucket {
+	return []platform.ConnectionBucket{{Connection: "default", Bucket: b}}
+}
+
+// TestR_HA_023_TheBucketChecksReportEachConnection (R-HA-023, backup-and-restore.md R-BAK-030): the versioning and lifecycle of
+// every connection's bucket is a result of its own with the connection named, and the gauge carries the label connection.
+func TestR_HA_023_TheBucketChecksReportEachConnection(t *testing.T) {
+	rep, err := platform.Checker{
+		ArchiveMode: mode("on", nil),
+		Buckets: []platform.ConnectionBucket{
+			{Connection: "default", Bucket: fakeBucket{status: "Enabled"}},
+			{Connection: "secondary", Bucket: fakeBucket{status: "Suspended"}},
+		},
+		Settings: platform.Settings{ObjectVersioning: true},
+	}.Run(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]platform.Status{}
+	for _, r := range rep.Results {
+		got[r.Check+"/"+r.Connection] = r.Status
+		if r.Check == platform.CheckObjectVersioning && !strings.HasPrefix(r.Detail, "connection "+r.Connection+": ") {
+			t.Errorf("detail %q does not name the connection", r.Detail)
+		}
+	}
+	if len(got) != 2 || got["object_versioning/default"] != platform.StatusOK || got["object_versioning/secondary"] != platform.StatusFailed {
+		t.Fatalf("results = %v", got)
+	}
+	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "quader_backup_check_ok"}, []string{"check", "connection"})
+	platform.Export(g, rep)
+	if v, ok := gather(t, g)["object_versioning/secondary"]; !ok || v != 0 {
+		t.Errorf("object_versioning{connection=secondary} = %v, want 0", v)
+	}
+}
+
 func run(t *testing.T, c platform.Checker) map[string]platform.Status {
 	t.Helper()
 	c.Now = func() time.Time { return time.Unix(1000, 0) }
@@ -53,7 +90,7 @@ const day = 24 * time.Hour
 // TestR_HA_023_PlatformChecks (R-HA-023): the checks report what the operator declared and nothing else.
 func TestR_HA_023_PlatformChecks(t *testing.T) {
 	t.Run("nothing declared, nothing checked: the gauge has no series", func(t *testing.T) {
-		got := run(t, platform.Checker{ArchiveMode: mode("off", nil), Bucket: fakeBucket{}, Settings: platform.Settings{GracePeriod: day}})
+		got := run(t, platform.Checker{ArchiveMode: mode("off", nil), Buckets: one(fakeBucket{}), Settings: platform.Settings{GracePeriod: day}})
 		if len(got) != 0 {
 			t.Errorf("results = %v", got)
 		}
@@ -74,7 +111,7 @@ func TestR_HA_023_PlatformChecks(t *testing.T) {
 			t.Errorf("grace 1d, window 7d = %s, want failed", got)
 		}
 		short.ObjectVersioning = true
-		got := run(t, platform.Checker{ArchiveMode: mode("on", nil), Bucket: fakeBucket{status: "Enabled"}, Settings: short})
+		got := run(t, platform.Checker{ArchiveMode: mode("on", nil), Buckets: one(fakeBucket{status: "Enabled"}), Settings: short})
 		if got[platform.CheckGracePeriod] != platform.StatusOK {
 			t.Errorf("with versioning = %s, want ok", got[platform.CheckGracePeriod])
 		}
@@ -86,12 +123,12 @@ func TestR_HA_023_PlatformChecks(t *testing.T) {
 	t.Run("object_versioning: Enabled passes, Suspended and never-enabled fail, a denied read is unknown", func(t *testing.T) {
 		s := platform.Settings{ObjectVersioning: true}
 		for status, want := range map[string]platform.Status{"Enabled": platform.StatusOK, "Suspended": platform.StatusFailed, "": platform.StatusFailed} {
-			if got := run(t, platform.Checker{Bucket: fakeBucket{status: status}, Settings: s})[platform.CheckObjectVersioning]; got != want {
+			if got := run(t, platform.Checker{Buckets: one(fakeBucket{status: status}), Settings: s})[platform.CheckObjectVersioning]; got != want {
 				t.Errorf("versioning %q = %s, want %s", status, got, want)
 			}
 		}
 		denied := fakeBucket{statusErr: fmt.Errorf("GetBucketVersioning: %w", s3.ErrProtectionUnknown)}
-		if got := run(t, platform.Checker{Bucket: denied, Settings: s})[platform.CheckObjectVersioning]; got != platform.StatusUnknown {
+		if got := run(t, platform.Checker{Buckets: one(denied), Settings: s})[platform.CheckObjectVersioning]; got != platform.StatusUnknown {
 			t.Errorf("denied = %s, want unknown", got)
 		}
 	})
@@ -109,7 +146,7 @@ func TestR_HA_023_PlatformChecks(t *testing.T) {
 			{fakeBucket{status: "Enabled", lifecycleE: s3.ErrProtectionUnknown}, platform.StatusUnknown},
 		}
 		for i, c := range cases {
-			if got := run(t, platform.Checker{ArchiveMode: mode("on", nil), Bucket: c.b, Settings: s})[platform.CheckNoncurrentExpiry]; got != c.want {
+			if got := run(t, platform.Checker{ArchiveMode: mode("on", nil), Buckets: one(c.b), Settings: s})[platform.CheckNoncurrentExpiry]; got != c.want {
 				t.Errorf("case %d = %s, want %s", i, got, c.want)
 			}
 		}
@@ -120,7 +157,7 @@ func TestR_HA_023_PlatformChecks(t *testing.T) {
 		if _, err := (platform.Checker{ArchiveMode: mode("", boom), Settings: platform.Settings{RecoveryWindow: day}}).Run(t.Context()); err == nil {
 			t.Error("archive_mode failure was swallowed")
 		}
-		if _, err := (platform.Checker{Bucket: fakeBucket{statusErr: boom}, Settings: platform.Settings{ObjectVersioning: true}}).Run(t.Context()); err == nil {
+		if _, err := (platform.Checker{Buckets: one(fakeBucket{statusErr: boom}), Settings: platform.Settings{ObjectVersioning: true}}).Run(t.Context()); err == nil {
 			t.Error("versioning failure was swallowed")
 		}
 	})
@@ -138,7 +175,11 @@ func gather(t *testing.T, g *prometheus.GaugeVec) map[string]float64 {
 	out := map[string]float64{}
 	for _, mf := range mfs {
 		for _, m := range mf.GetMetric() {
-			out[m.GetLabel()[0].GetValue()] = m.GetGauge().GetValue()
+			key := m.GetLabel()[0].GetValue()
+			if c := m.GetLabel()[1].GetValue(); c != "" {
+				key += "/" + c
+			}
+			out[key] = m.GetGauge().GetValue()
 		}
 	}
 	return out
@@ -146,7 +187,7 @@ func gather(t *testing.T, g *prometheus.GaugeVec) map[string]float64 {
 
 // TestR_HA_023_ExportsTheGauge (R-HA-023, R-OPS-008): quader_backup_check_ok{check} is 1, 0, or absent.
 func TestR_HA_023_ExportsTheGauge(t *testing.T) {
-	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "quader_backup_check_ok"}, []string{"check"})
+	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "quader_backup_check_ok"}, []string{"check", "connection"})
 	platform.Export(g, platform.Report{Results: []platform.Result{
 		{Check: platform.CheckArchiveMode, Status: platform.StatusOK},
 		{Check: platform.CheckObjectVersioning, Status: platform.StatusFailed},

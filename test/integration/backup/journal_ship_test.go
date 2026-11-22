@@ -155,7 +155,7 @@ func TestR_HA_054_ShippingTwiceWritesTheSameObject(t *testing.T) {
 	if _, err := e.tokens.Revoke(ctx, principal.Caller{Actor: audit.Actor{Kind: "admin-cli", Name: "test"}}, id, token.ReasonAdmin); err != nil {
 		t.Fatal(err)
 	}
-	rows, err := e.outbox.Claim(ctx, 10)
+	rows, err := e.outbox.Claim(ctx, "", 10)
 	if err != nil || len(rows) != 1 {
 		t.Fatalf("Claim = %v, %v", rows, err)
 	}

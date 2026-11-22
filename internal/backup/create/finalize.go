@@ -52,6 +52,9 @@ func (r *runState) finalize(ctx context.Context) error {
 	}
 	r.res.DatabaseBytes = listing.DatabaseBytes(m)
 	r.res.BlobsCopied, r.res.BytesCopied, r.res.DamagedBlobs = m.Blobs.Copied, m.Blobs.CopiedBytes, int64(len(m.Blobs.Damaged))
+	if len(r.copied.sourceFailures) > 0 {
+		r.res.SourceFailures = r.copied.sourceFailures
+	}
 	for _, t := range r.snapInfo.Tables {
 		if !t.Registered {
 			r.res.UnregisteredTables = append(r.res.UnregisteredTables, t.Name)
@@ -125,7 +128,7 @@ func (r *runState) buildManifest() (*format.Manifest, error) {
 		Postgres:  format.PostgresRef{ServerVersion: r.snapInfo.ServerVersion, Isolation: "repeatable read"},
 		StartedAt: r.started.UTC(), SnapshotAt: r.snapInfo.At.UTC(), CompletedAt: d.Now().UTC(),
 		Options: format.Options{ExcludeRemoteCaches: r.opts.ExcludeRemoteCaches || d.Cfg.Exclude.RemoteCaches},
-		Source:  format.Source{Storage: d.SourceRef, RevocationJournal: d.Cfg.RevocationJournal.Enabled},
+		Source:  format.Source{Connections: append([]format.ConnectionRef{}, d.SourceConnections...), RevocationJournal: d.Cfg.RevocationJournal.Enabled},
 		Tables:  files, Sequences: seqs, Blobs: blobs,
 		Secrets:    format.SecretsInfo{KeyIDs: r.snapInfo.KeyIDs},
 		Encryption: format.Encryption{SSE: r.sse},

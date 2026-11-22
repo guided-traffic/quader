@@ -133,9 +133,9 @@ validates what the configuration says (R-STOR-050), `config.ResolveConnections` 
 (`bucket_file`, `region_file`, `endpoint_file`) and checks the location rule again where the clients are built
 ([Q-STOR-251](../spec/storage.md#q-stor-251--the-files-of-a-connections-location-are-read-when-the-clients-are-built-not-when-the-configuration-is-loaded)),
 and `config.ClientConfig(position, element, objectStore)` is the `config.StorageS3` of one connection's client, the type the backup target and the
-Bastion's bucket use as well. The backup reaches the first connection (`Storage.FirstClient`) until package E teaches it the others;
-`quader admin storage verify`, `restore-versions` and the post-restore's check build a client for every connection (`connectionClients` in
-[admin_storage.go](../../cmd/quader/admin_storage.go)). An error that names a setting of a connection has the form of the validation,
+Bastion's bucket use as well. The backup, the restore, the journal and the platform check reach every connection (package E,
+[backup.md](backup.md)); `quader admin storage verify`, `restore-versions` and the post-restore's check build a client for every
+connection (`connectionClients` in [admin_storage.go](../../cmd/quader/admin_storage.go)). An error that names a setting of a connection has the form of the validation,
 `storage.connections[<n>] (<id>): <key>` (`StorageS3.Names`, filled by `ClientConfig`, and `Connection.Element` in the blob store);
 the backup target's errors name `backup.target.<key>` and the Bastion's `bastion.cache.bucket.<key>`.
 
@@ -641,9 +641,10 @@ worker. The copies of a run share the replica's object-store clients and their b
 the uploads of that replica as well.
 
 **Contracts with the other packages.** A copy row in state `deleting` whose blob is live is the drain's claim: collection (package B) claims
-copies only of a blob it claimed. The drain does not take the backup hold of R-STOR-024 step 2b: the backup reads one copy per blob and must
-read another when its first is gone (package E); until then the backup reads the first connection only
-([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads)).
+copies only of a blob it claimed. The drain does not take the backup hold of R-STOR-024 step 2b: the backup reads one copy per blob and
+reads another when its first is gone (package E, Q-BAK-70); only a backup run of the configuration before an upgrade that adds a
+connection and drains another can find its one copy gone
+([H-1285](../security/backup-and-restore.md#h-1285--a-drain-that-runs-beside-a-backup-of-an-older-configuration-can-leave-that-backup-without-a-blob)).
 The scrub (package D) is what verifies a server-side copy: it reads never-verified copies first and stamps `verified_at`, the stamp
 `verifiedSurvivor` reads, so a drain beside such copies waits up to about two hours (the next hourly scrub run, then the drain's next
 walk, Q-STOR-259).
@@ -694,7 +695,7 @@ build, the sweep runs on the collector of `wireBlob`.
 | **B · Sessions, collection, orphan sweep** (built) | A | Sessions on their connection (R-STOR-054); collection per copy with the release (R-STOR-057); the orphan sweep per connection with the adoption, the marker's check and the staging step (R-STOR-026); decisions Q-STOR-260 to Q-STOR-264 | `internal/uploads`, `internal/blob/gc.go`, `gc_uploads.go`, `gcjob.go`, `internal/blob/sweep.go` (new), `internal/app/wire_storage_sweep.go`, `test/integration/blob/gc_*`, `sweep_test.go` |
 | **C · Reconciliation** (built) | A | The job with queue, pass, server-side and streamed copies, insert bound, drain, retire, journal pass and its metrics (R-STOR-056); the integration case against two real buckets (R-STOR-063) | `internal/blob/reconcile/` (new), `internal/app/wire_storage_reconcile.go`, `test/integration/blob/reconcile_test.go`, `connections_s3_test.go` |
 | **D · Scrub, damaged blobs, operator commands** (built, [above](#the-scrub-r-stor-027)) | A | The scrub per copy with repair (R-STOR-027); the damaged-blobs API with its two scopes; `admin storage verify` and `restore-versions` per connection (R-STOR-058); the renames that make R-STOR-027's evidence true (Q-STOR-240) | `internal/blob/scrub/` (new), `internal/blob/verify`, `internal/blob/restoreversions`, `internal/app/wire_storage_scrub.go`, `internal/api/v1` (the damaged-blobs files and their paths in `openapi.yaml`), `cmd/quader/admin_storage*.go` (but `check`), `cmd/quader/admin_restoreversions.go`, the five test files that name R-STOR-027, `docs/coverage/implemented.txt`, `test/integration/storageverify` |
-| **E · Chart, backup and restore, journal** | A | The chart's list and Secrets with the refusals and the alerts (R-HA-072, R-HA-045); the backup reading one copy per blob and the restore into the first connection with its fix-up (R-BAK-030); the journal shipped per connection through the guards and replayed from every connection (R-STOR-059); the development profile and the integration stack's `QUADER_STORAGE_CONNECTIONS` | `deploy/helm/quader`, `test/chart`, `deploy/dev`, `test/integration/testenv`, `internal/backup`, `internal/journal`, `internal/app/wire_journal.go`, `internal/app/wire_backup_check.go`, `cmd/quader/backup_*.go`, `admin_postrestore.go`, `admin_backupcheck.go`, `test/integration/backup` |
+| **E · Chart, backup and restore, journal** (built) | A | The chart's list and Secrets with the refusals and the alerts (R-HA-072, R-HA-045); the backup reading one copy per blob and the restore into the first connection with its fix-up (R-BAK-030), `backup.source.connections` and the journal credentials file of one element per connection in the binary and the chart, the platform check per connection (R-HA-023); the journal shipped per connection through the guards and replayed from every connection (R-STOR-059); the development profile and the integration stack's `QUADER_STORAGE_CONNECTIONS` ([backup.md](backup.md)) | `deploy/helm/quader`, `test/chart`, `deploy/dev`, `test/integration/testenv`, `internal/backup`, `internal/journal`, `internal/app/wire_journal.go`, `internal/app/wire_backup_check.go`, `cmd/quader/backup_*.go`, `admin_postrestore.go`, `admin_backupcheck.go`, `test/integration/backup` |
 | **F · The surface and the manual** | C, D | The connections' API and the system information (R-STOR-061); the storage summary per connection (R-STOR-028); the tab **Storage** and the dashboard's lines (R-UI-196, R-UI-197), rendered under rule 11; the operator manual, the README and the developer pages that describe a running installation (configuration, installation, backup and restore, TLS, the runbook, the chart, the local profile, observability, and this page's sections above) | `internal/api/v1` (the connections' files and paths), the storage summary's task, `web/src/app/features/system`, `docs/manual`, `README.md`, `docs/developer` |
 
 The tests and their cost are R-STOR-063's table (about 30 s added to CI, nothing per format, no end-to-end leg). Nothing of it needs the

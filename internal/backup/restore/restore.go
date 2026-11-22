@@ -34,11 +34,10 @@ type Deps struct {
 	Layout  format.Layout
 	// TargetEndpoint and TargetBucket name the target for a server-side copy into the blob store.
 	TargetEndpoint, TargetBucket string
-	Blobs                        BlobStore
-	// Connection is the id of the connection Blobs writes into (the first element of storage.connections): a marker of the
-	// backup's installation below its prefix must name it (check 5). Empty checks the installation only.
-	Connection string
-	Keys       *secrets.KeyRing
+	// Connections are the connections of the restoring installation's configuration, in its order (R-BAK-030): step 3 writes
+	// into the first without drain, checks 5 and 7 cover each.
+	Connections []Connection
+	Keys        *secrets.KeyRing
 	// Items builds the storage delete path the remote-cache purgers empty caches through (fixup.Env.Items, R-BAK-008) on the
 	// restore's session; nil means this binary cannot, and a restore that must purge fails at step 7.
 	Items func(ctx context.Context, db meta.Runner, rec audit.Recorder) (fixup.CacheEraser, error)
@@ -64,6 +63,19 @@ type Restorer struct {
 	d    Deps
 	last atomic.Int64
 	rec  audit.Recorder
+	// streamedAll is true when this process wrote every blob of step 3 itself by streaming and hashing it and skipped none:
+	// the fix-up then records the copies verified (Q-BAK-72).
+	streamedAll bool
+}
+
+// sink is the connection step 3 writes into: the first of the configuration without drain (R-BAK-030).
+func (r *Restorer) sink() (Connection, error) {
+	for _, c := range r.d.Connections {
+		if !c.Drain {
+			return c, nil
+		}
+	}
+	return Connection{}, backup.Failf(backup.ExitUsage, backup.CodeConfig, "storage.connections has no connection without drain: true to restore into (R-BAK-030)")
 }
 
 var _ backup.Restorer = (*Restorer)(nil)
@@ -368,10 +380,17 @@ func (r *Restorer) applyFixups(ctx context.Context, tx meta.Tx, env fixup.Env) e
 }
 
 func (r *Restorer) fixupEnv(st *state) fixup.Env {
-	return fixup.Env{
+	env := fixup.Env{
 		Manifest: st.m, Now: r.d.Now().UTC(), NewKeyspaceID: randomUUID(), NewIncarnation: randomUUID(),
-		ExcludeRemoteCaches: st.m.Options.ExcludeRemoteCaches,
+		ExcludeRemoteCaches: st.m.Options.ExcludeRemoteCaches, SinkVerified: r.streamedAll,
 	}
+	for _, c := range r.d.Connections {
+		env.Connections = append(env.Connections, fixup.ConnectionRecord{ID: c.ID, Bucket: c.Bucket, Prefix: c.Prefix})
+	}
+	if sink, err := r.sink(); err == nil {
+		env.Sink = sink.ID
+	}
+	return env
 }
 
 // alreadyRestored reports a database that holds the finished restore of this backup: no anchor, no marker, and restored_from
@@ -400,10 +419,7 @@ func (r *Restorer) recorder() (audit.Recorder, error) {
 
 // journalEnv is what the journal of the backup's source is built from.
 func (r *Restorer) journalEnv(st *state, opts backup.RestoreOptions, rec audit.Recorder) JournalEnv {
-	return JournalEnv{
-		Runner: r.d.Session, SourcePrefix: st.m.Source.Storage.Prefix, SourceBucket: st.m.Source.Storage.Bucket,
-		SourceEndpoint: st.m.Source.Storage.Endpoint, CredentialsFile: opts.JournalCredentialsFile, Recorder: rec,
-	}
+	return JournalEnv{Runner: r.d.Session, Sources: st.m.Source.Connections, CredentialsFile: opts.JournalCredentialsFile, Recorder: rec}
 }
 
 func randomUUID() string {

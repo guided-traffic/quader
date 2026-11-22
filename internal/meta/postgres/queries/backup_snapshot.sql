@@ -50,6 +50,14 @@ SELECT sha256, size FROM backup_blob_pin
 -- The state of a blob row at READ COMMITTED, the check that tells source damage from a lost hold (R-BAK-006).
 SELECT state, content_status FROM blobs WHERE sha256 = sqlc.arg(sha256)::bytea;
 
+-- name: BackupPresentCopies :many
+-- The present copies of a page of pins at READ COMMITTED, read when the copy phase reaches the page (R-BAK-030, Q-BAK-70): one
+-- lookup by the primary key of blob_copies per page of 1,000 pins.
+SELECT sha256, connection_id, object_key, stored_size, (verified_at IS NOT NULL)::boolean AS verified
+  FROM blob_copies
+ WHERE sha256 = ANY(sqlc.arg(digests)::bytea[]) AND state = 'present'
+ ORDER BY sha256, connection_id;
+
 -- name: BackupTablesWithoutSelect :many
 -- The tables and partitions of the schema the current role cannot read (R-BAK-015): the export locks and reads every one.
 SELECT c.relname::text AS name

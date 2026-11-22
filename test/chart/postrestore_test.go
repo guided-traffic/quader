@@ -142,13 +142,13 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 			t.Errorf("args = %q", args)
 		}
 		cm := str(find(d, "ConfigMap", "quader-post-restore"), "data", "credentials.yaml")
-		if strings.TrimSpace(cm) != "source: default" {
+		if !strings.Contains(cm, "connection: default") || !strings.Contains(cm, "credentials_source: default") {
 			t.Errorf("credentials.yaml = %q", cm)
 		}
 		_, d = render(t, required(), postRestoreSets("postRestore.journalCredentials.source=static", "secrets.storageConnections[0].connectionId=default",
 			"secrets.storageConnections[0].journalReader.existingSecret=quader-journal")...)
 		cm = str(find(d, "ConfigMap", "quader-post-restore"), "data", "credentials.yaml")
-		for _, want := range []string{"source: static", "access_key_id_file: /var/run/secrets/quader/s3-default-journal/access-key-id", "secret_access_key_file: /var/run/secrets/quader/s3-default-journal/secret-access-key"} {
+		for _, want := range []string{"connection: default", "credentials_source: static", "access_key_id_file: /var/run/secrets/quader/s3-default-journal/access-key-id", "secret_access_key_file: /var/run/secrets/quader/s3-default-journal/secret-access-key"} {
 			if !strings.Contains(cm, want) {
 				t.Errorf("credentials.yaml lacks %q: %s", want, cm)
 			}
@@ -191,7 +191,7 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 	t.Run("validation names the value", func(t *testing.T) {
 		renderFails(t, required(), []string{"postRestore.enabled=true", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}, "postRestore.restoredTo")
 		renderFails(t, required(), []string{"postRestore.enabled=true", "postRestore.restoredTo=yesterday", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}, "postRestore.restoredTo", "RFC 3339")
-		renderFails(t, required(), postRestoreSets("postRestore.journalCredentials.source=static"), "postRestore.journalCredentials.source", "journalReader", "connectionId: default")
+		renderFails(t, required(), postRestoreSets("postRestore.journalCredentials.source=static"), "postRestore.journalCredentials.source", "journalReader", "missing for: default")
 		renderFails(t, required(), postRestoreSets("postRestore.skipRevocationJournal=true", "postRestore.journalCredentials.source=default"), "postRestore.skipRevocationJournal", "journalCredentials")
 		renderFails(t, required(), append(restoreSets(), "postRestore.enabled=true", "postRestore.restoredTo="+restoredTo), "postRestore.enabled", "restore.enabled")
 		renderFails(t, required(), postRestoreSets("postRestore.terminationGracePeriodSeconds=5"), "terminationGracePeriodSeconds")

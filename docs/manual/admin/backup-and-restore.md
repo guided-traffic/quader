@@ -49,7 +49,7 @@ The target must not be the bucket of an object-store connection on the same endp
 | What the pod reaches | How |
 |---|---|
 | The target | `config.backup.target.credentials.source`: `default` (the workload identity on the ServiceAccount, `backup.serviceAccount.annotations`, the default) or `static` with `secrets.backupTarget.existingSecret` |
-| The blob bucket of a connection whose element in `config.storage.connections` has `credentials_source: static` | the `backupSource` of the connection's entry in `secrets.storageConnections`, a login that may only read its bucket (`s3:GetObject`, `s3:ListBucket`); the chart requires it, so a compromised backup pod cannot write blobs or the journal. The backup reads the blobs from the first element of `config.storage.connections` |
+| The blob bucket of a connection whose element in `config.storage.connections` has `credentials_source: static` | the `backupSource` of the connection's entry in `secrets.storageConnections`, a login that may only read its bucket (`s3:GetObject`, `s3:ListBucket`); the chart requires it, so a compromised backup pod cannot write blobs or the journal. The backup reads each blob from one connection that holds it, and takes another when a copy is missing, damaged or its connection does not answer |
 | PostgreSQL | `secrets.databaseBackup.existingSecret`, the login of `config.database.backup_role`; without one the pod uses `secrets.database` and logs a warning |
 
 The backup pod holds no key ring and no Valkey credential. The CronJob's `concurrencyPolicy` is `Forbid`, and the database lets only one run write to a target at a time. A run missed by more than `backup.startingDeadlineSeconds` (3600 by default) is skipped, not started late. A drain never waits for a backup; the run ends itself as **Interrupted** within the grace period and the Job starts it again.
@@ -93,10 +93,10 @@ A restore goes into a new, empty installation: an empty database schema and an e
 2. The image embeds every migration step of the backup with the same SHA-256. Before the first stable release a migration file can change between builds, so restore with the version shown in `quader backup list`; the message names that version.
 3. The key ring holds every key ID of the backup and opens every canary row: `secrets.encryption` must hold the keys the backup was sealed with, not only today's.
 4. The schema `database.schema` (`quader` by default) exists and holds no relation. The restore does not create it: create it first, for example `CREATE SCHEMA quader AUTHORIZATION quader` in a new database.
-5. The `prefix` of the first element of `storage.connections` is empty in its bucket, apart from `_probe/` and the connection marker `_connection`. The marker may stay only when it names the installation this backup belongs to (a restore keeps that installation's id) and the connection the restore writes into; a marker of another installation or connection fails the check, and the message says whose it is.
+5. The `prefix` of every element of `storage.connections` is empty in its bucket, apart from `_probe/` and the connection marker `_connection`. The marker may stay only when it names the installation this backup belongs to (a restore keeps that installation's id) and that connection; a marker of another installation or connection fails the check, and the message names the connection and says whose the marker is.
 6. PostgreSQL is a supported version and the login owns the schema: `secrets.databaseMigration` when set, otherwise `secrets.database`.
-7. The target and the first element of `storage.connections` are reachable with the configured credentials; the restore writes one probe object to that connection and nothing to the target. It writes every blob into that connection and records the blobs as copies of the connection `default`, which the first replica that configures `default` binds to its bucket and prefix: restore into a configuration whose first element is the connection `default` (the element without id). The other connections receive their copies from the reconciliation once the replicas run.
-8. The revocation journal in the source's blob bucket can be listed, or `restore.skipRevocationJournal: true` is set. See [What a restore does to access removed after the restore point](#what-a-restore-does-to-access-removed-after-the-restore-point).
+7. The target and every element of `storage.connections` are reachable with the configured credentials; the restore writes one probe object to each connection and nothing to the target. It writes every blob into the first connection without `drain: true` and records the blobs as copies there; the other connections receive their copies from the reconciliation once the replicas run.
+8. The revocation journal of at least one of the source's connections can be listed, or `restore.skipRevocationJournal: true` is set. The restore reads the journal of every source connection it can list. See [What a restore does to access removed after the restore point](#what-a-restore-does-to-access-removed-after-the-restore-point).
 
 `restore.extraArgs: [--check]` runs these checks without changing anything: `kubectl -n quader logs job/quader-restore` shows the result. Delete the Job afterwards, because a Job's pod template cannot be changed by a later upgrade: `kubectl -n quader delete job quader-restore`.
 
@@ -190,7 +190,7 @@ Let *t* be the restore point, as an RFC 3339 time such as `2026-10-28T09:15:00Z`
    ```
 
    If the new cluster has its own credentials or CA, change `secrets.database` and `secrets.databaseCA` with it. The encryption key Secret stays the same. The Helm hook Job `<fullname>-post-restore-<hash>` runs `quader admin post-restore --restored-to <t>`; Helm waits for it and fails the upgrade if it fails. It deletes the replica rows, returns running jobs to the queue, sets the deletion pause, ends every UI session, gives the installation a new keyspace and incarnation, raises the revision counters, verifies every live blob, replays the revocation journal entries newer than *t*, and writes `system.restored`. The replicas stay not ready until the Job has finished. A repeat with the same *t* changes nothing; a repeat after a failed run resumes at the replay; a different *t* is refused while one is unfinished.
-4. **Repair missing blobs**, if step 3 reported any and the bucket is versioned. `quader admin storage restore-versions --before <t>` removes the delete markers younger than *t* from the keys of the copies without an object, on every connection or the one `--connection <id>` names, so that the version below the marker is current again. It needs a login that may read the blob bucket and holds `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, passed only to this command: the runtime credential deliberately lacks both. The chart renders no Job for it; the simplest way is to give the post-restore Job such a login (`postRestore.journalCredentials.source: static` and `secrets.journalReader.existingSecret`), then run the command as a one-off Job from that Job's pod template, which mounts the credentials file:
+4. **Repair missing blobs**, if step 3 reported any and the bucket is versioned. `quader admin storage restore-versions --before <t>` removes the delete markers younger than *t* from the keys of the copies without an object, on every connection or the one `--connection <id>` names, so that the version below the marker is current again. It needs, for each connection with a copy to repair, a login that may read that connection's bucket and holds `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, passed only to this command as that connection's element of `--credentials-file`: the runtime credential deliberately lacks both. The chart renders no Job for it; the simplest way is to give the post-restore Job such logins (`postRestore.journalCredentials.source: static` and the `journalReader` of each entry of `secrets.storageConnections`), then run the command as a one-off Job from that Job's pod template, which mounts the credentials file:
 
    ```shell
    kubectl -n quader get jobs -l app.kubernetes.io/component=post-restore -o json \
@@ -269,7 +269,7 @@ Every command takes `--config <file>` (the chart mounts it at `/etc/quader/quade
 | `quader admin maintenance resume-deletions [--json]` | Clears the deletion pause |
 | `quader admin npm reinstate`, `oci reinstate`, `deb reinstate` | Put back a version, manifest or package file a replay withheld |
 
-`--credentials-file` names a YAML file with the keys `source` (`default`, `webIdentity` or `static`; `default` when left out), `access_key_id_file`, `secret_access_key_file`, `session_token_file`, `role_arn`, `web_identity_token_file` and `sts_endpoint`; an unknown key is refused. `storage verify` and `storage restore-versions` work on every element of `storage.connections`, or on the one `--connection` names.
+`--credentials-file` and `--journal-credentials-file` name a YAML file with a list `connections`, one element per connection with the keys `connection` (its id), `credentials_source` (`default`, `webIdentity` or `static`; `default` when left out), `access_key_id_file`, `secret_access_key_file`, `session_token_file`, `role_arn`, `web_identity_token_file` and `sts_endpoint`; an unknown key is refused. A connection the file names is read with that login and its object versions are listed; any other is read with the blob store's credential, which lists no versions. `storage verify` and `storage restore-versions` work on every element of `storage.connections`, or on the one `--connection` names.
 
 Exit codes of the backup commands:
 
@@ -303,7 +303,7 @@ Exit codes `2`, `3`, `4` and `6` end the Job at once; `1` and `75` are retried w
 | `restore.backupId` | empty | Required with `restore.enabled` |
 | `restore.skipRevocationJournal` | `false` | Skips the journal replay, only when the source bucket is gone |
 | `restore.extraArgs` | `[]` | Appended to `quader backup restore`, such as `[--check]` |
-| `restore.journalCredentials.source` | `runtime` | `runtime` (the blob store's credential, a plain listing), `default` (the Job's identity lists versions), `static` (`secrets.journalReader`) |
+| `restore.journalCredentials.source` | `runtime` | `runtime` (the blob store's credential, a plain listing), `default` (the Job's identity lists versions), `static` (the `journalReader` of each entry of `secrets.storageConnections`) |
 | `restore.backoffLimit`, `restore.activeDeadlineSeconds` | `2`, `0` (not rendered) | Retries; a wall-clock limit |
 | `postRestore.hold` | `false` | Allows every role at zero and suspends the backup CronJob, with no Job |
 | `postRestore.enabled` | `false` | Renders the post-install and post-upgrade hook Job |
@@ -311,7 +311,7 @@ Exit codes `2`, `3`, `4` and `6` end the Job at once; `1` and `75` are retried w
 | `postRestore.skipRevocationJournal` | `false` | Skips the replay, only when the source bucket is gone |
 | `postRestore.journalCredentials.source` | `runtime` | As for `restore`; with `default` or `static` the Job lists object versions |
 | `postRestore.backoffLimit`, `postRestore.activeDeadlineSeconds` | `2`, `0` (not rendered) | Retries; a wall-clock limit |
-| `secrets.backupTarget`, `secrets.backupSource`, `secrets.databaseBackup`, `secrets.journalReader` | no Secret | The credentials of [Set up the backup](#set-up-the-backup) and of the journal reader; each reaches only the Jobs that need it |
+| `secrets.backupTarget`, `secrets.databaseBackup`, and the `backupSource` and `journalReader` of each entry of `secrets.storageConnections` | no Secret | The credentials of [Set up the backup](#set-up-the-backup) and of the journal reader; each reaches only the Jobs that need it |
 
 </details>
 

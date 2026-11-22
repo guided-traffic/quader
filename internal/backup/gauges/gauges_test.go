@@ -55,7 +55,7 @@ func newEnv(t *testing.T, runs ...backup.Run) *env {
 	t.Helper()
 	e := &env{mem: &gaugestest.Mem{Now: t0, Runs: runs}, reg: observability.NewMetrics("worker"), clock: t0}
 	e.col = gauges.New(gauges.Options{
-		Reader: e.mem, Backup: backup.NewMetrics(e.reg), Journal: journal.NewMetrics(e.reg),
+		Reader: e.mem, Backup: backup.NewMetrics(e.reg), Journal: journal.NewMetrics(e.reg), JournalConnections: []string{"default", "secondary"},
 		ExpectedInterval: 24 * time.Hour, Clock: func() time.Time { return e.clock },
 	})
 	return e
@@ -233,14 +233,18 @@ func TestR_BAK_014_Gauges(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-054 the journal backlog is read from PostgreSQL", func(t *testing.T) {
+	t.Run("R-STOR-059 the journal backlog is read from PostgreSQL per connection", func(t *testing.T) {
 		e := newEnv(t)
-		e.mem.JournalRows = 17
+		e.mem.JournalPendingOf = map[string]int64{"default": 0, "secondary": 17}
 		if err := e.col.Refresh(t.Context()); err != nil {
 			t.Fatal(err)
 		}
-		if got := e.values(t)[journal.MetricPending]; got != 17 {
-			t.Errorf("pending = %v", got)
+		v := e.values(t)
+		if v[journal.MetricPending+"{connection=secondary}"] != 17 || v[journal.MetricPending+"{connection=default}"] != 0 {
+			t.Errorf("pending = %v", v)
+		}
+		if _, ok := v[journal.MetricPending+"{connection=draining}"]; ok {
+			t.Errorf("a connection the journal does not go to has a series: %v", v)
 		}
 	})
 }

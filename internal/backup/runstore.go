@@ -86,9 +86,10 @@ type RunReader interface {
 	ActiveRuns(ctx context.Context) ([]Run, time.Time, error)
 	// HoldValid reports whether a valid hold of the kind exists (the gauge quader_backup_gc_hold).
 	HoldValid(ctx context.Context, h Hold) (bool, error)
-	// JournalPending returns the revocation-journal backlog: the rows of revocation_outbox not yet shipped, and the age of
-	// the oldest (quader_revocation_journal_pending, R-HA-054).
-	JournalPending(ctx context.Context) (rows int64, oldest time.Duration, err error)
+	// JournalPending returns the revocation-journal backlog per connection: for each of connections, the rows of
+	// revocation_outbox whose object it does not hold yet (quader_revocation_journal_pending{connection}, R-HA-054,
+	// storage.md R-STOR-059).
+	JournalPending(ctx context.Context, connections []string) (map[string]int64, error)
 }
 
 // PGStore is the PostgreSQL implementation of [RunStore] and [RunReader].
@@ -374,24 +375,19 @@ func (s *PGStore) HoldValid(ctx context.Context, h Hold) (held bool, err error) 
 }
 
 // JournalPending implements RunReader.
-func (s *PGStore) JournalPending(ctx context.Context) (rows int64, oldest time.Duration, err error) {
-	err = s.read(ctx, func(qs *q.Queries) error {
-		var e error
-		if rows, e = qs.CountRevocationOutbox(ctx); e != nil || rows == 0 {
-			return e
+func (s *PGStore) JournalPending(ctx context.Context, connections []string) (map[string]int64, error) {
+	out := make(map[string]int64, len(connections))
+	if len(connections) == 0 {
+		return out, nil
+	}
+	err := s.read(ctx, func(qs *q.Queries) error {
+		rows, err := qs.RevocationOutboxPendingByConnection(ctx, connections)
+		for _, r := range rows {
+			out[r.ConnectionID] = r.Pending
 		}
-		ts, e := qs.OldestRevocationOutbox(ctx)
-		if e != nil || len(ts) == 0 {
-			return e
-		}
-		n, e := qs.DatabaseNow(ctx)
-		if e != nil {
-			return e
-		}
-		oldest = max(n.Time.Sub(ts[0].Time), 0)
-		return nil
+		return err
 	})
-	return rows, oldest, err
+	return out, err
 }
 
 func ts(t time.Time) string {

@@ -36,6 +36,8 @@ type OutboxRow struct {
 	At    time.Time
 	Event string
 	Entry json.RawMessage
+	// Shipped are the connections that hold the row's object already (storage.md R-STOR-059).
+	Shipped []string
 }
 
 // NewObject wraps an outbox row.
@@ -103,7 +105,7 @@ func (o Object) Less(p Object) bool {
 	return o.ID < p.ID
 }
 
-// ListPrefix is the key prefix of the whole journal for a blob prefix, with a trailing slash.
+// ListPrefix is the key prefix of the whole journal below the prefix of a connection, with a trailing slash.
 func ListPrefix(blobPrefix string) string {
 	if blobPrefix == "" {
 		return Dir + "/"

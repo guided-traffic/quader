@@ -47,7 +47,7 @@ type Metrics struct {
 	CopiedObjects, CopiedBytes               *prometheus.CounterVec // mode
 	// CheckOK is the result of the platform checks of R-HA-023, set from the stored report of the task backup-check
 	// (internal/backup/platform); a check that is not declared or not readable has no series.
-	CheckOK *prometheus.GaugeVec // check
+	CheckOK *prometheus.GaugeVec // check, connection (empty for the checks of the database and the configuration)
 }
 
 // NewMetrics registers the families on m. It panics when called twice for one registry, like every registration in
@@ -71,7 +71,7 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 		LastVerify:         g(MetricLastVerify, "Finish time of the newest verify run."),
 		LastVerifyFindings: g(MetricLastVerifyFinds, "Findings of the newest verify run."),
 		CopiedObjects:      m.NewCounterVec(MetricCopiedObjects, "Pool objects copied by a backup run, by mode (server or stream). Backup pod only.", "mode"),
-		CheckOK:            m.NewGaugeVec(MetricCheckOK, "1 when a declared platform protection (R-HA-023) holds, 0 when it does not; no series for a check that is not declared or that the credential may not read.", "check"),
+		CheckOK:            m.NewGaugeVec(MetricCheckOK, "1 when a declared platform protection (R-HA-023) holds, 0 when it does not; no series for a check that is not declared or that the credential may not read. connection names the connection of a bucket check.", "check", "connection"),
 		CopiedBytes:        m.NewCounterVec(MetricCopiedBytes, "Bytes copied by a backup run, by mode (server or stream). Backup pod only.", "mode"),
 	}
 }

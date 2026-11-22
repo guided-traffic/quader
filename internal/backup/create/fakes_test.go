@@ -229,21 +229,77 @@ func (s *fakeSnap) Sequences(context.Context) ([]format.Sequence, error) {
 func (s *fakeSnap) ReleaseMigrationLock(context.Context) error { s.released = true; return nil }
 func (s *fakeSnap) Close(context.Context) error                { s.closed = true; return nil }
 
-// fakeSource serves the blobs of the source store.
+// fakeSource serves the copies of the source's connections: default, on the target's endpoint, and secondary, on another one.
+// A copy row and its object are kept apart, so a test can delete the object behind the row's back.
 type fakeSource struct {
-	data map[format.Digest][]byte
+	data   map[format.Digest][]byte // the objects of connection default
+	second map[format.Digest][]byte // the objects of connection secondary
+	rows   map[format.Digest][]string
+	sizes  map[format.Digest]int64
+	down   map[string]bool // connections that answer every request with a failure of the connection
+	drain  map[string]bool
+	heads  map[string]int // Size calls per connection
+	mu     sync.Mutex
 }
 
-func (s *fakeSource) Size(_ context.Context, d format.Digest) (int64, error) {
-	b, ok := s.data[d]
+func newFakeSource() *fakeSource {
+	return &fakeSource{
+		data: map[format.Digest][]byte{}, second: map[format.Digest][]byte{}, rows: map[format.Digest][]string{},
+		sizes: map[format.Digest]int64{}, down: map[string]bool{}, drain: map[string]bool{}, heads: map[string]int{},
+	}
+}
+
+func (s *fakeSource) objects(conn string) map[format.Digest][]byte {
+	if conn == "secondary" {
+		return s.second
+	}
+	return s.data
+}
+
+// object is the object of a digest on a connection, the server-side copy's view of the bucket named by the connection.
+func (s *fakeSource) object(conn string, d format.Digest) ([]byte, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	b, ok := s.objects(conn)[d]
+	return b, ok
+}
+
+func (s *fakeSource) Copies(_ context.Context, digests []format.Digest) (map[format.Digest][]backup.SourceCopy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := map[format.Digest][]backup.SourceCopy{}
+	for _, d := range digests {
+		for _, conn := range s.rows[d] {
+			pos := map[string]int{"default": 1, "secondary": 2}[conn]
+			out[d] = append(out[d], backup.SourceCopy{Connection: conn, Key: d.Hex(), StoredSize: s.sizes[d], ServerSide: conn == "default", Position: pos, Drain: s.drain[conn]})
+		}
+	}
+	return out, nil
+}
+
+func (s *fakeSource) Size(_ context.Context, c backup.SourceCopy) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.heads[c.Connection]++
+	if s.down[c.Connection] {
+		return 0, fmt.Errorf("%w: 503", backup.ErrCopyUnavailable)
+	}
+	d, _ := format.ParseDigest(c.Key)
+	b, ok := s.objects(c.Connection)[d]
 	if !ok {
 		return 0, backup.ErrBlobNotFound
 	}
 	return int64(len(b)), nil
 }
 
-func (s *fakeSource) Open(_ context.Context, d format.Digest, off, length int64) (io.ReadCloser, error) {
-	b, ok := s.data[d]
+func (s *fakeSource) Open(_ context.Context, c backup.SourceCopy, off, length int64) (io.ReadCloser, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.down[c.Connection] {
+		return nil, fmt.Errorf("%w: 503", backup.ErrCopyUnavailable)
+	}
+	d, _ := format.ParseDigest(c.Key)
+	b, ok := s.objects(c.Connection)[d]
 	if !ok {
 		return nil, backup.ErrBlobNotFound
 	}
@@ -254,8 +310,8 @@ func (s *fakeSource) Open(_ context.Context, d format.Digest, off, length int64)
 	return io.NopCloser(bytes.NewReader(b[off:end])), nil
 }
 
-func (s *fakeSource) Ref(d format.Digest) target.ObjectRef {
-	return target.ObjectRef{Bucket: "src", Key: d.Hex()}
+func (s *fakeSource) Ref(c backup.SourceCopy) target.ObjectRef {
+	return target.ObjectRef{Bucket: c.Connection, Key: c.Key, Size: c.StoredSize}
 }
 
 type recEvents struct {
@@ -335,15 +391,14 @@ func newEnv(t *testing.T) *env {
 	t.Helper()
 	e := &env{t: t, runs: newFakeRuns(), mem: targettest.New(), events: &recEvents{}, cfg: testConfig(), prune: &fakePrune{}, now: time.Now().UTC().Truncate(time.Second)}
 	e.facts = &fakeFacts{facts: backup.SystemFacts{InstallationID: "inst-1", Incarnation: "inc-1"}, states: map[format.Digest]string{}}
-	e.src = &fakeSource{data: map[format.Digest][]byte{}}
+	e.src = newFakeSource()
 	e.snap = &fakeSnap{runs: e.runs, rows: map[string]string{}}
 	e.mem.Source = func(r target.ObjectRef) ([]byte, bool) {
 		d, err := format.ParseDigest(r.Key)
 		if err != nil {
 			return nil, false
 		}
-		b, ok := e.src.data[d]
-		return b, ok
+		return e.src.object(r.Bucket, d)
 	}
 	e.snap.tables = []backup.TableInfo{
 		{Name: "items", Class: tables.Data, Columns: [][2]string{{"id", "bigint"}, {"path", "text"}}, Registered: true, EstimatedBytes: 10},
@@ -358,6 +413,8 @@ func newEnv(t *testing.T) *env {
 func (e *env) addBlob(content string) format.Digest {
 	d := digestOf([]byte(content))
 	e.src.data[d] = []byte(content)
+	e.src.rows[d] = []string{"default"}
+	e.src.sizes[d] = int64(len(content))
 	e.snap.blobs = append(e.snap.blobs, format.BlobEntry{Digest: d, Size: int64(len(content))})
 	e.facts.states[d] = "live"
 	return d
@@ -366,7 +423,7 @@ func (e *env) addBlob(content string) format.Digest {
 func (e *env) build() *Pipeline {
 	e.t.Helper()
 	e.deps = Deps{
-		Cfg: e.cfg, SourceRef: format.StorageRef{Bucket: "blobs", Prefix: "b"}, Instance: "pod-1", Version: "0.1.0", Revision: "abc",
+		Cfg: e.cfg, SourceConnections: []format.ConnectionRef{{ID: "default", Bucket: "blobs", Prefix: "b"}}, Instance: "pod-1", Version: "0.1.0", Revision: "abc",
 		BackupRole: "quader_backup", Store: e.runs, Facts: e.facts, Grants: e.facts, Pins: e.runs, Snapshot: e.snap, Source: e.src,
 		BlobState: e.facts, Target: e.mem, Prune: e.prune, Events: e.events, Metrics: nil, Registry: tables.New(),
 		Now:   func() time.Time { return e.now },

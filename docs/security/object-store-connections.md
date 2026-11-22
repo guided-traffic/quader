@@ -5,10 +5,9 @@ R-STOR-035; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-resto
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)),
 partly built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection, the
 reconciliation that copies every blob to every connection, fills a new one and drains an old one, the scrub with its repair and the
-operator check per connection, sessions on their connection, collection per copy and the orphan sweep per connection
-([storage.md](../spec/storage.md#several-object-store-connections), the status there). The backup per connection and the journal per
-connection are not built; H-1262 below is what that costs an installation with two connections today. What
-[privilege-footprint.md](privilege-footprint.md) and
+operator check per connection, sessions on their connection, collection per copy and the orphan sweep per connection, the backup and the
+restore per connection and the journal per connection ([storage.md](../spec/storage.md#several-object-store-connections), the status
+there); the connections' API and screens are not. What [privilege-footprint.md](privilege-footprint.md) and
 [transport-encryption.md](transport-encryption.md) say of the object store holds for each connection.
 
 The perspective of this page is the stored content once it lies on several object stores: which parties can read it, change it or delete
@@ -41,7 +40,7 @@ or takeover costs the others. Encryption of the stored content is stage 2 and de
 |---|---|---|
 | A replica (`api`, `packages`, `worker`) | each configured connection's runtime credential (R-STOR-031, per connection) | read, write and delete every blob of every connection it has; it cannot destroy object versions where the credential lacks `s3:DeleteObjectVersion` ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-023, per connection) |
 | The backup pod | a read credential per connection, or the connection's own with a workload identity (R-BAK-030) | read every blob; it writes no copy row and marks no copy |
-| The restore Job | a write credential for the restoring installation's connections | write the restored blobs into the first connection |
+| The restore Job | a write credential for the restoring installation's connections, and a journal reader per source connection | write the restored blobs into the first connection without drain, probe every connection, read the journal of every source connection |
 | A provider's operators, and each principal its policies admit | the bucket | read every object; replace or delete one, which Quader sees only by a read (below) |
 | A holder of the database | the rows of R-STOR-052 | say that a copy is present or verified when it is not; a drain then deletes beside it (H-1256) |
 
@@ -72,7 +71,7 @@ or takeover costs the others. Encryption of the stored content is stage 2 and de
 | Slow answers within the timeouts | Reads wait up to `response_header_timeout` on it before they fall over (R-STOR-055); no other connection is affected |
 | Its credential stolen | The thief reads every blob there (no encryption in stage 1); writes and deletes there are found by reads and repaired from the others; at a provider whose credentials are project-wide, the thief may also reach other buckets of that project (H-1253) |
 | Its bucket emptied by its provider or a lifecycle rule | Every copy there is found missing by reads and the scrub and rewritten from the others; the drain's check before a deletion keeps the last copy (R-STOR-056) |
-| Its journal objects forged or deleted | The replay reads every connection and replays every differing copy, flagged ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-054, [H-553](../spec/backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential)) |
+| Its journal objects forged or deleted | The replay reads every connection that can be listed and replays every differing copy, flagged with the connections that hold it; an entry only it holds and that cannot be listed is not replayed ([H-1284](backup-and-restore.md#h-1284--an-entry-only-a-connection-that-cannot-be-listed-holds-is-not-replayed)) ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-054, [H-553](../spec/backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential)) |
 
 ## What this does not cover
 
@@ -192,14 +191,3 @@ configuration error, and with the connection not draining it stops (R-STOR-060).
 runtime credential of a connection; it adds nothing to what such a holder can do to the content itself, which is all of it. Repair: delete
 the forged marker; the next start writes it again.
 
-### H-1262 · Until the backup reads every connection, a drain of the first connection empties what it reads
-
-Component: the backup, which reads the first connection of the list only (`config.Storage.FirstClient`, until package E teaches it the
-others, R-BAK-030), and the drain (R-STOR-056), which deletes every copy of a draining connection once the other connections hold the blob.
-Subject: the backups. With `drain: true` on the first element of `storage.connections`, the drain empties the bucket the backup reads: a
-backup run finds the drained blobs missing in its source, records them as damaged and leaves them out (the backup's source damage,
-R-BAK-014, [internal/backup/create/copy.go](../../internal/backup/create/copy.go)), while every blob is whole on the other connections
-(`quader admin storage verify` reads every connection, R-STOR-058, and reports nothing lost). The installation loses nothing; a restore from such a backup lacks those blobs. Live in an installation that drains its first
-connection before package E lands; dormant with one connection, which cannot drain. Mitigation until then: move the connection to
-drain down the list in the same rollout that sets `drain: true`, so that the first element is one that keeps every blob (the reads put a
-draining connection last anyway, R-STOR-055).

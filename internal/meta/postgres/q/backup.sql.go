@@ -208,20 +208,34 @@ func (q *Queries) BackupPinnedHoldValid(ctx context.Context) (bool, error) {
 }
 
 const claimRevocationOutbox = `-- name: ClaimRevocationOutbox :many
-SELECT id::text AS id, at, event, entry FROM revocation_outbox ORDER BY id LIMIT $1::int
+SELECT o.id::text AS id, o.at, o.event, o.entry,
+       COALESCE((SELECT array_agg(s.connection_id ORDER BY s.connection_id) FROM revocation_outbox_shipped s WHERE s.outbox_id = o.id),
+                '{}')::text[] AS shipped
+  FROM revocation_outbox o
+ WHERE o.id > $1::text::uuid
+ ORDER BY o.id
+ LIMIT $2::int
 `
 
-type ClaimRevocationOutboxRow struct {
-	ID    string
-	At    pgtype.Timestamptz
-	Event string
-	Entry json.RawMessage
+type ClaimRevocationOutboxParams struct {
+	After    string
+	RowLimit int32
 }
 
-// The shipper takes rows in id order (R-HA-054). The worker job holds a singleton lease, so a plain read is enough; a row
-// whose object was written and whose deletion did not commit is shipped again under the same key.
-func (q *Queries) ClaimRevocationOutbox(ctx context.Context, rowLimit int32) ([]ClaimRevocationOutboxRow, error) {
-	rows, err := q.db.Query(ctx, claimRevocationOutbox, rowLimit)
+type ClaimRevocationOutboxRow struct {
+	ID      string
+	At      pgtype.Timestamptz
+	Event   string
+	Entry   json.RawMessage
+	Shipped []string
+}
+
+// The shipper takes rows in id order after a position (R-HA-054), each with the connections that hold its object already
+// (storage.md R-STOR-059). The worker job holds a singleton lease, so a plain read is enough; a row whose object was written and
+// whose deletion did not commit is shipped again under the same key. The position lets one run walk past rows that wait for a
+// connection that is down.
+func (q *Queries) ClaimRevocationOutbox(ctx context.Context, arg ClaimRevocationOutboxParams) ([]ClaimRevocationOutboxRow, error) {
+	rows, err := q.db.Query(ctx, claimRevocationOutbox, arg.After, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +248,7 @@ func (q *Queries) ClaimRevocationOutbox(ctx context.Context, rowLimit int32) ([]
 			&i.At,
 			&i.Event,
 			&i.Entry,
+			&i.Shipped,
 		); err != nil {
 			return nil, err
 		}
@@ -552,6 +567,24 @@ func (q *Queries) InsertBackupRun(ctx context.Context, arg InsertBackupRunParams
 	return err
 }
 
+const insertRevocationOutboxShipped = `-- name: InsertRevocationOutboxShipped :exec
+INSERT INTO revocation_outbox_shipped (outbox_id, connection_id)
+SELECT unnest($1::text[])::uuid, unnest($2::text[])
+ON CONFLICT DO NOTHING
+`
+
+type InsertRevocationOutboxShippedParams struct {
+	OutboxIds     []string
+	ConnectionIds []string
+}
+
+// The connections that hold the object of a row that stays because another connection does not yet (storage.md R-STOR-059,
+// Q-STOR-241); the two lists are zipped.
+func (q *Queries) InsertRevocationOutboxShipped(ctx context.Context, arg InsertRevocationOutboxShippedParams) error {
+	_, err := q.db.Exec(ctx, insertRevocationOutboxShipped, arg.OutboxIds, arg.ConnectionIds)
+	return err
+}
+
 const lastBackupRunByOutcome = `-- name: LastBackupRunByOutcome :many
 SELECT id, operation, backup_id, state, hold, trigger, target, pod, quader_version, snapshot_at, progress, result, error, started_at, heartbeat_at, lease_expires_at, finished_at, job_name FROM backup_run
  WHERE operation = $1::text AND state = ANY($2::text[])
@@ -696,6 +729,42 @@ func (q *Queries) OldestRevocationOutbox(ctx context.Context) ([]pgtype.Timestam
 			return nil, err
 		}
 		items = append(items, at)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const revocationOutboxPendingByConnection = `-- name: RevocationOutboxPendingByConnection :many
+SELECT c.id::text AS connection_id, count(o.id)::bigint AS pending
+  FROM unnest($1::text[]) AS c(id)
+  LEFT JOIN revocation_outbox o
+    ON NOT EXISTS (SELECT 1 FROM revocation_outbox_shipped s WHERE s.outbox_id = o.id AND s.connection_id = c.id)
+ GROUP BY c.id
+ ORDER BY c.id
+`
+
+type RevocationOutboxPendingByConnectionRow struct {
+	ConnectionID string
+	Pending      int64
+}
+
+// quader_revocation_journal_pending{connection} (storage.md R-STOR-059): per connection of the replica's configuration without
+// drain, the outbox rows whose object it does not hold yet. The outbox holds a few rows between two runs of the shipper.
+func (q *Queries) RevocationOutboxPendingByConnection(ctx context.Context, connections []string) ([]RevocationOutboxPendingByConnectionRow, error) {
+	rows, err := q.db.Query(ctx, revocationOutboxPendingByConnection, connections)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RevocationOutboxPendingByConnectionRow{}
+	for rows.Next() {
+		var i RevocationOutboxPendingByConnectionRow
+		if err := rows.Scan(&i.ConnectionID, &i.Pending); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

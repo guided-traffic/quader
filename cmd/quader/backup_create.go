@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup/create"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/retention"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
@@ -77,16 +78,8 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 		return nil, mapOpenError(err)
 	}
 	defer db.Close()
-	factory := outbound.New(cfg.Proxy.Outbound)
-	sourceCfg, err := cfg.Storage.FirstClient()
-	if err != nil {
-		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
-	}
-	blobCfg := sourceCfg
-	if cfg.Backup.Source.SeparateCredentials {
-		sourceCfg.Credentials = cfg.Backup.Source.Credentials
-	}
-	blobs, err := s3.NewFromFactory(ctx, sourceCfg, factory)
+	metrics := observability.NewMetrics(meta.RoleBackup)
+	sources, refs, err := backupSources(ctx, cfg, outbound.New(cfg.Proxy.Outbound), blob.NewMetrics(metrics), e.log)
 	if err != nil {
 		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err) // the error names the connection and its key
 	}
@@ -95,7 +88,6 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 		return nil, err
 	}
 	events := backup.NewPGEvents(db, e.instance, e.log)
-	metrics := observability.NewMetrics(meta.RoleBackup)
 	stopOps := serveBackupMetrics(cfg.Server.OpsListen, metrics, e.log)
 	defer stopOps()
 	facts := backup.NewPGFacts(db, cfg.Database.Schema)
@@ -108,14 +100,13 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 		Clock: retention.RunSweepClock{Runs: store}, Log: e.log,
 	}
 	info := buildinfo.Get()
-	endpoint := config.NormalizeEndpoint(blobCfg.Endpoint)
 	pipeline, err := create.New(create.Deps{
-		Cfg:       cfg.Backup,
-		SourceRef: format.StorageRef{Endpoint: endpoint, Bucket: blobCfg.Bucket, Prefix: blobCfg.Prefix},
-		Instance:  e.instance, JobName: jobName(e.environ), Version: info.Version, Revision: info.Commit, BackupRole: cfg.Database.BackupRole,
+		Cfg:               cfg.Backup,
+		SourceConnections: refs,
+		Instance:          e.instance, JobName: jobName(e.environ), Version: info.Version, Revision: info.Commit, BackupRole: cfg.Database.BackupRole,
 		Store: store, Prune: stage, Facts: facts, Grants: facts, Pins: facts, BlobState: facts,
 		Snapshot: backup.NewPGSnapshotter(db),
-		Source:   backup.NewStoreSource(blobs, blobCfg.Prefix, endpoint, blobCfg.Bucket),
+		Source:   backup.NewStoreSource(facts, sources),
 		Target:   tgt, Events: events,
 		Metrics: backup.NewMetrics(metrics), Log: e.log,
 	})
@@ -123,6 +114,47 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 		return nil, err
 	}
 	return pipeline.Create(ctx, opts)
+}
+
+// backupSources builds the backup's reader of every connection of storage.connections (R-BAK-030): a client per connection with
+// the read credential of its element of backup.source.connections, or with the connection's own credential when it has none,
+// behind a guard of its own, so a connection that does not answer opens its circuit and its copies are passed over fast; and the
+// locations the manifest records for the journal of a restore.
+func backupSources(ctx context.Context, cfg *config.Config, out *outbound.Factory, bm *blob.Metrics, log *slog.Logger) ([]backup.SourceConnection, []format.ConnectionRef, error) {
+	conns, err := config.ResolveConnections(cfg.Storage.Connections, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(conns) == 0 {
+		return nil, nil, errors.New("storage.connections: no connection is configured (R-STOR-050)")
+	}
+	read := map[string]config.StorageS3Credentials{}
+	for _, c := range cfg.Backup.Source.Connections {
+		read[c.Connection] = c.Credentials()
+	}
+	t := cfg.Backup.Target
+	target := config.ComparableEndpoint(t.Endpoint, t.Region)
+	var sources []backup.SourceConnection
+	var refs []format.ConnectionRef
+	for i, el := range conns {
+		cc := config.ClientConfig(i, el, cfg.Storage.ObjectStore)
+		if creds, ok := read[el.ID]; ok {
+			cc.Credentials = creds
+		}
+		client, err := s3.NewFromFactory(ctx, cc, out)
+		if err != nil {
+			return nil, nil, err
+		}
+		guard := blob.NewGuard(client, cfg.Storage.ObjectStore.CircuitBreaker, blob.WithGuardMetrics(bm), blob.WithGuardConnection(el.ID),
+			blob.WithGuardLogger(log, cc.Credentials.Source))
+		endpoint := config.NormalizeEndpoint(el.Endpoint)
+		sources = append(sources, backup.SourceConnection{
+			ID: el.ID, Drain: el.Drain, Objects: guard, Endpoint: endpoint, Bucket: el.Bucket,
+			ServerSide: config.ComparableEndpoint(el.Endpoint, el.Region) == target,
+		})
+		refs = append(refs, format.ConnectionRef{ID: el.ID, Endpoint: endpoint, Bucket: el.Bucket, Prefix: el.KeyPrefix()})
+	}
+	return sources, refs, nil
 }
 
 // mapOpenError gives a failure to open the database the exit code of R-BAK-013: a standby is a usage error, an unreachable

@@ -103,10 +103,6 @@ func (r postRestoreRunner) PostRestore(ctx context.Context, opts backup.PostRest
 		return nil, err
 	}
 	out := outbound.New(cfg.Proxy.Outbound)
-	s3cfg, err := cfg.Storage.FirstClient()
-	if err != nil {
-		return nil, err
-	}
 	pr := postrestore.New(postrestore.Options{
 		DB: db, Recorder: rec, Margin: cfg.Backup.RevocationJournal.ReplayMargin, Log: r.env.log,
 		VerifyStorage: func(ctx context.Context) (postrestore.StorageCheck, error) {
@@ -121,7 +117,11 @@ func (r postRestoreRunner) PostRestore(ctx context.Context, opts backup.PostRest
 			return postrestore.StorageCheck{Checked: rep.Checked, Missing: rep.Missing, SizeMismatch: rep.SizeMismatch, Unchecked: int64(len(rep.Unchecked)), ItemsAffected: rep.ItemsAffected}, err
 		},
 		OpenReplayer: func(ctx context.Context, credentialsFile string) (journal.Replayer, error) {
-			reader, err := replay.OpenJournal(ctx, s3cfg, out, credentialsFile)
+			locs, err := journalLocations(cfg)
+			if err != nil {
+				return nil, err
+			}
+			reader, err := replay.OpenJournal(ctx, locs, out, credentialsFile)
 			if err != nil {
 				return nil, err
 			}
@@ -129,4 +129,18 @@ func (r postRestoreRunner) PostRestore(ctx context.Context, opts backup.PostRest
 		},
 	})
 	return pr.PostRestore(ctx, opts)
+}
+
+// journalLocations are the journals of the installation's own connections, every one of the configuration, the draining ones
+// included, whose journal objects stay (storage.md R-STOR-059): the replay of a platform restore merges them by key.
+func journalLocations(cfg *config.Config) ([]replay.Location, error) {
+	conns, err := config.ResolveConnections(cfg.Storage.Connections, nil)
+	if err != nil {
+		return nil, err
+	}
+	locs := make([]replay.Location, 0, len(conns))
+	for i, el := range conns {
+		locs = append(locs, replay.Location{Connection: el.ID, Client: config.ClientConfig(i, el, cfg.Storage.ObjectStore)})
+	}
+	return locs, nil
 }

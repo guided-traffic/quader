@@ -6,8 +6,8 @@
 // The package fixes the shared shapes and seams, so that the owners of the domains build their parts in files of their own:
 //
 //   - object.go: the journal object, its JSON encoding and its object key. The outbox row (revocation_outbox, written by
-//     internal/audit in the transaction of the change) becomes one object per entry under
-//     <storage.s3.prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json.
+//     internal/audit in the transaction of the change) becomes one object per entry, on every connection without drain (storage.md
+//     R-STOR-059), under <prefix of the connection>/_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json.
 //   - ports.go: the object-store port, the outbox port, and the shipper and reader interfaces.
 //   - replay.go: the outcomes of a replay, the [Handler] registry (one handler per event name, registered by the domain
 //     that owns the event), the update rule of R-HA-054 as the generic [ApplyUpdate] over a domain's [Narrower], and the

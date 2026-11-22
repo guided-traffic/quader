@@ -962,61 +962,47 @@
         "source": {
           "additionalProperties": false,
           "properties": {
-            "credentials": {
-              "additionalProperties": false,
-              "properties": {
-                "access_key_id_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_ACCESS_KEY_ID_FILE",
-                  "x-quader-secret": "file-only"
+            "connections": {
+              "default": [],
+              "description": "The read credential of a connection, one element per connection at most (R-BAK-030); a connection without one is read with its own credential. In the environment the whole list is one JSON value (QUADER_BACKUP_SOURCE_CONNECTIONS).",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "access_key_id_file": {
+                    "type": "string",
+                    "x-quader-secret": "file-only"
+                  },
+                  "connection": {
+                    "description": "The id of the connection of storage.connections the credential reads.",
+                    "type": "string"
+                  },
+                  "credentials_source": {
+                    "description": "default (default), webIdentity or static (R-STOR-031).",
+                    "type": "string"
+                  },
+                  "role_arn": {
+                    "type": "string"
+                  },
+                  "secret_access_key_file": {
+                    "type": "string",
+                    "x-quader-secret": "file-only"
+                  },
+                  "session_token_file": {
+                    "type": "string",
+                    "x-quader-secret": "file-only"
+                  },
+                  "sts_endpoint": {
+                    "type": "string"
+                  },
+                  "web_identity_token_file": {
+                    "type": "string",
+                    "x-quader-secret": "file-only"
+                  }
                 },
-                "role_arn": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_ROLE_ARN"
-                },
-                "secret_access_key_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_SECRET_ACCESS_KEY_FILE",
-                  "x-quader-secret": "file-only"
-                },
-                "session_token_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_SESSION_TOKEN_FILE",
-                  "x-quader-secret": "file-only"
-                },
-                "source": {
-                  "default": "default",
-                  "enum": [
-                    "default",
-                    "webIdentity",
-                    "static"
-                  ],
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_SOURCE"
-                },
-                "sts_endpoint": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_STS_ENDPOINT"
-                },
-                "web_identity_token_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_BACKUP_SOURCE_CREDENTIALS_WEB_IDENTITY_TOKEN_FILE",
-                  "x-quader-secret": "file-only"
-                }
+                "type": "object"
               },
-              "type": "object"
-            },
-            "separate_credentials": {
-              "default": false,
-              "description": "Read the blob bucket with backup.source.credentials instead of the credential of the first storage connection.",
-              "type": "boolean",
-              "x-quader-env": "QUADER_BACKUP_SOURCE_SEPARATE_CREDENTIALS"
+              "type": "array",
+              "x-quader-env": "QUADER_BACKUP_SOURCE_CONNECTIONS"
             }
           },
           "type": "object"

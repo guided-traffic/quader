@@ -141,6 +141,49 @@ func (q *Queries) BackupMissingPrivileges(ctx context.Context, pairs []string) (
 	return items, nil
 }
 
+const backupPresentCopies = `-- name: BackupPresentCopies :many
+SELECT sha256, connection_id, object_key, stored_size, (verified_at IS NOT NULL)::boolean AS verified
+  FROM blob_copies
+ WHERE sha256 = ANY($1::bytea[]) AND state = 'present'
+ ORDER BY sha256, connection_id
+`
+
+type BackupPresentCopiesRow struct {
+	Sha256       []byte
+	ConnectionID string
+	ObjectKey    string
+	StoredSize   int64
+	Verified     bool
+}
+
+// The present copies of a page of pins at READ COMMITTED, read when the copy phase reaches the page (R-BAK-030, Q-BAK-70): one
+// lookup by the primary key of blob_copies per page of 1,000 pins.
+func (q *Queries) BackupPresentCopies(ctx context.Context, digests [][]byte) ([]BackupPresentCopiesRow, error) {
+	rows, err := q.db.Query(ctx, backupPresentCopies, digests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BackupPresentCopiesRow{}
+	for rows.Next() {
+		var i BackupPresentCopiesRow
+		if err := rows.Scan(
+			&i.Sha256,
+			&i.ConnectionID,
+			&i.ObjectKey,
+			&i.StoredSize,
+			&i.Verified,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const backupSchemaApplied = `-- name: BackupSchemaApplied :one
 SELECT applied FROM schema_state
 `

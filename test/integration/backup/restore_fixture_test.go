@@ -153,7 +153,7 @@ func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout form
 		Format: format.ManifestFormat, BackupID: o.id, Quader: format.QuaderInfo{Version: "0.1.0", Revision: "test"},
 		Postgres:  format.PostgresRef{ServerVersion: version, Isolation: "repeatable read"},
 		StartedAt: snapshotAt.Add(-time.Second), SnapshotAt: snapshotAt,
-		Source:  format.Source{Storage: format.StorageRef{Bucket: "blobs", Prefix: "it"}},
+		Source:  format.Source{Connections: []format.ConnectionRef{{ID: "default", Bucket: "blobs", Prefix: "it"}}},
 		Secrets: format.SecretsInfo{},
 	}
 	m.InstallationID = textOf(t, tx, "SELECT value #>> '{}' FROM system_state WHERE key = 'installation_id'")

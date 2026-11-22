@@ -57,9 +57,10 @@ type connectionClient struct {
 }
 
 // connectionClients builds a client for every connection of the configuration, in list order, with its files read: with each
-// connection's runtime credential, or with creds when it is set (the credential of restore-versions). A connection whose
-// client cannot be built is a configuration error naming it.
-func connectionClients(ctx context.Context, st config.Storage, out *outbound.Factory, creds *config.StorageS3Credentials) ([]connectionClient, error) {
+// connection's runtime credential, or with its credential in creds when creds names one (the credentials file of
+// restore-versions, one element per connection, Q-STOR-268). A connection whose client cannot be built is a configuration error
+// naming it.
+func connectionClients(ctx context.Context, st config.Storage, out *outbound.Factory, creds map[string]config.StorageS3Credentials) ([]connectionClient, error) {
 	resolved, err := config.ResolveConnections(st.Connections, nil)
 	if err != nil {
 		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
@@ -67,8 +68,8 @@ func connectionClients(ctx context.Context, st config.Storage, out *outbound.Fac
 	list := make([]connectionClient, 0, len(resolved))
 	for i, el := range resolved {
 		cfg := config.ClientConfig(i, el, st.ObjectStore)
-		if creds != nil {
-			cfg.Credentials = *creds
+		if c, ok := creds[el.ID]; ok {
+			cfg.Credentials = c
 		}
 		c, err := s3.NewFromFactory(ctx, cfg, out)
 		if err != nil {

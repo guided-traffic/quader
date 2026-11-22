@@ -580,7 +580,7 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 		if !strings.HasSuffix(strings.Join(containerArgs(restorePod(d)), " "), "--journal-credentials-file /etc/quader/restore/credentials.yaml") || !hasMount(restorePod(d), "/etc/quader/restore") {
 			t.Errorf("args = %v", containerArgs(restorePod(d)))
 		}
-		if cm := str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"); strings.TrimSpace(cm) != "source: default" {
+		if cm := str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"); !strings.Contains(cm, "connection: default") || !strings.Contains(cm, "credentials_source: default") {
 			t.Errorf("credentials.yaml = %q", cm)
 		}
 		_, d = render(t, required(), restoreSets("restore.journalCredentials.source=static", "secrets.storageConnections[0].connectionId=default",
@@ -588,7 +588,7 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 		if !has2(secretVolumes(restorePod(d)), "quader-journal") || !strings.Contains(str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"), "/var/run/secrets/quader/s3-default-journal/access-key-id") {
 			t.Error("static: the journal reader is not mounted or named")
 		}
-		renderFails(t, required(), restoreSets("restore.journalCredentials.source=static"), "restore.journalCredentials.source", "journalReader", "connectionId: default")
+		renderFails(t, required(), restoreSets("restore.journalCredentials.source=static"), "restore.journalCredentials.source", "journalReader", "missing for: default")
 		renderFails(t, required(), restoreSets("restore.skipRevocationJournal=true", "restore.journalCredentials.source=default"), "restore.skipRevocationJournal", "journalCredentials")
 	})
 
@@ -813,11 +813,11 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		if hasMount(backupPod, "/var/run/secrets/quader/s3-default/") || !hasMount(backupPod, "/var/run/secrets/quader/s3-default-backup") {
 			t.Errorf("mounts = %v", mountPaths(backupPod))
 		}
-		src := at(configOf(t, docs), "backup", "source")
-		if at(src, "separate_credentials") != true || str(src, "credentials", "source") != "static" ||
-			str(src, "credentials", "access_key_id_file") != "/var/run/secrets/quader/s3-default-backup/access-key-id" ||
-			str(src, "credentials", "secret_access_key_file") != "/var/run/secrets/quader/s3-default-backup/secret-access-key" {
-			t.Errorf("backup.source = %v", src)
+		src := list(at(configOf(t, docs), "backup", "source"), "connections")
+		if len(src) != 1 || str(src[0], "connection") != "default" || str(src[0], "credentials_source") != "static" ||
+			str(src[0], "access_key_id_file") != "/var/run/secrets/quader/s3-default-backup/access-key-id" ||
+			str(src[0], "secret_access_key_file") != "/var/run/secrets/quader/s3-default-backup/secret-access-key" {
+			t.Errorf("backup.source.connections = %v", src)
 		}
 		for name, pod := range podSpecs(docs) {
 			if has(secretVolumes(pod), "quader-blob-read") {
@@ -837,7 +837,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		if at(configOf(t, d), "backup", "source") != nil {
 			t.Error("backup.source is rendered without a backupSource: the backup pod's workload identity reads with the connection's own credential")
 		}
-		renderFails(t, required(), []string{"config.backup.source.separate_credentials=true"}, "config.backup.source", "managed by the chart")
+		renderFails(t, required(), []string{"config.backup.source.connections[0].connection=default"}, "config.backup.source", "managed by the chart")
 	})
 
 	t.Run("the backup pod without a login of its own uses the runtime login", func(t *testing.T) {

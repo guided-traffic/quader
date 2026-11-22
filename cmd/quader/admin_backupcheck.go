@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/platform"
 	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -44,11 +46,7 @@ func backupCheckCmd(args []string, s streams) error {
 		return backupExit(err)
 	}
 	defer db.Close()
-	s3cfg, err := cfg.Storage.FirstClient()
-	if err != nil {
-		return backupExit(err)
-	}
-	client, err := s3.NewFromFactory(ctx, s3cfg, outbound.New(cfg.Proxy.Outbound))
+	buckets, err := checkBuckets(ctx, cfg)
 	if err != nil {
 		return backupExit(err)
 	}
@@ -56,7 +54,7 @@ func backupCheckCmd(args []string, s streams) error {
 	err = db.Read(ctx, func(c q.DBTX) error {
 		var rerr error
 		rep, rerr = platform.Checker{
-			ArchiveMode: platform.ArchiveModeOf(c), Bucket: client,
+			ArchiveMode: platform.ArchiveModeOf(c), Buckets: buckets,
 			Settings: platform.Settings{RecoveryWindow: cfg.Backup.RecoveryWindow, ObjectVersioning: cfg.Backup.ObjectVersioning, GracePeriod: cfg.Storage.GC.GracePeriod},
 		}.Run(ctx)
 		return rerr
@@ -90,4 +88,23 @@ func backupCheckCmd(args []string, s streams) error {
 		return backup.Fail(backup.ExitFindings, backup.CodeFindings, fmt.Errorf("%d declared protections do not hold", failed))
 	}
 	return nil
+}
+
+// checkBuckets is the bucket of every connection of storage.connections with its runtime credential, in the order of the
+// configuration: the bucket checks of R-HA-023 report each.
+func checkBuckets(ctx context.Context, cfg *config.Config) ([]platform.ConnectionBucket, error) {
+	conns, err := config.ResolveConnections(cfg.Storage.Connections, nil)
+	if err != nil {
+		return nil, err
+	}
+	out := outbound.New(cfg.Proxy.Outbound)
+	buckets := make([]platform.ConnectionBucket, 0, len(conns))
+	for i, el := range conns {
+		client, err := s3.NewFromFactory(ctx, config.ClientConfig(i, el, cfg.Storage.ObjectStore), out)
+		if err != nil {
+			return nil, err
+		}
+		buckets = append(buckets, platform.ConnectionBucket{Connection: el.ID, Bucket: client})
+	}
+	return buckets, nil
 }

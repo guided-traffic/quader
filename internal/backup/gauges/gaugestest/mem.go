@@ -19,9 +19,8 @@ type Mem struct {
 	Runs []backup.Run
 	// Hold says which holds exist, regardless of the runs.
 	HoldAll, HoldPinned bool
-	// JournalRows and JournalOldest answer JournalPending.
-	JournalRows   int64
-	JournalOldest time.Duration
+	// JournalPendingOf answers JournalPending, per connection.
+	JournalPendingOf map[string]int64
 	// Err is returned by every read when set.
 	Err error
 	// Calls counts the reads by method name.
@@ -162,10 +161,14 @@ func (m *Mem) HoldValid(_ context.Context, h backup.Hold) (bool, error) {
 	return m.HoldPinned, nil
 }
 
-// JournalPending implements backup.RunReader.
-func (m *Mem) JournalPending(context.Context) (int64, time.Duration, error) {
+// JournalPending implements backup.RunReader: JournalPendingOf of each connection asked for, 0 for one it does not name.
+func (m *Mem) JournalPending(_ context.Context, connections []string) (map[string]int64, error) {
 	if err := m.call("JournalPending"); err != nil {
-		return 0, 0, err
+		return nil, err
 	}
-	return m.JournalRows, m.JournalOldest, nil
+	out := make(map[string]int64, len(connections))
+	for _, c := range connections {
+		out[c] = m.JournalPendingOf[c]
+	}
+	return out, nil
 }

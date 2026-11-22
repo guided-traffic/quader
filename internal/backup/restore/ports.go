@@ -6,6 +6,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/meta"
@@ -53,12 +54,22 @@ type BlobStore interface {
 	Probe(ctx context.Context, name string) error
 }
 
+// Connection is one connection of the restoring installation's configuration as the restore uses it (R-BAK-030): its id, its
+// bucket and prefix as resolved from the configuration (the fix-up records them), its drain flag and its store. The first
+// connection without drain is the sink of step 3; every connection's prefix is checked (check 5) and probed (check 7).
+type Connection struct {
+	ID             string
+	Bucket, Prefix string
+	Drain          bool
+	Store          BlobStore
+}
+
 // JournalEnv is what the journal needs to be built for one restore.
 type JournalEnv struct {
 	// Runner is the restore's session: the replay handlers apply in transactions on it, as the owner.
 	Runner meta.Runner
-	// SourcePrefix is manifest.source.storage.prefix, below which the journal lives; Bucket and Endpoint name the source.
-	SourcePrefix, SourceBucket, SourceEndpoint string
+	// Sources are manifest.source.connections, below whose prefixes the journal lives (R-BAK-030).
+	Sources []format.ConnectionRef
 	// CredentialsFile is --journal-credentials-file, empty to use the blob-store credentials.
 	CredentialsFile string
 	// Recorder writes the audit events of the replay, in transactions of the restore's session.

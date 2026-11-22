@@ -196,35 +196,46 @@ func TestR_HA_072_SeveralConnectionsAndAProvisioner(t *testing.T) {
 		}
 	})
 
-	t.Run("backup.source names the read login of the first connection, the one the backup reads (Q-HA-396)", func(t *testing.T) {
-		src := at(configOf(t, docs), "backup", "source")
-		if at(src, "separate_credentials") != true || str(src, "credentials", "source") != "static" ||
-			str(src, "credentials", "access_key_id_file") != "/var/run/secrets/quader/s3-default-backup/access-key-id" ||
-			str(src, "credentials", "secret_access_key_file") != "/var/run/secrets/quader/s3-default-backup/secret-access-key" {
-			t.Errorf("backup.source = %v", src)
+	t.Run("backup.source.connections names the read login of every connection that has one (R-BAK-030)", func(t *testing.T) {
+		want := []map[string]any{
+			{"connection": "default", "credentials_source": "static", "access_key_id_file": "/var/run/secrets/quader/s3-default-backup/access-key-id", "secret_access_key_file": "/var/run/secrets/quader/s3-default-backup/secret-access-key"},
+			{"connection": "secondary", "credentials_source": "static", "access_key_id_file": "/var/run/secrets/quader/s3-secondary-backup/access-key-id", "secret_access_key_file": "/var/run/secrets/quader/s3-secondary-backup/secret-access-key"},
+		}
+		if got := list(at(configOf(t, docs), "backup", "source"), "connections"); fmt.Sprint(got) != fmt.Sprint(want) {
+			t.Errorf("backup.source.connections = %v, want %v", got, want)
 		}
 		_, d := render(t, connectionsSet(), "secrets.storageConnections[0].backupSource.existingSecret=", "config.storage.connections[0].credentials_source=default",
 			"secrets.storageConnections[0].accessKeyIdKey=", "secrets.storageConnections[0].secretAccessKeyKey=")
-		if at(configOf(t, d), "backup", "source") != nil {
-			t.Error("backup.source is rendered although the first connection has no backupSource")
+		if got := list(at(configOf(t, d), "backup", "source"), "connections"); len(got) != 1 || str(got[0], "connection") != "secondary" {
+			t.Errorf("a connection without backupSource has an element, or the other lost its own: %v", got)
 		}
 	})
 
-	t.Run("restore and post-restore Jobs mount the journal reader of the first connection with source static", func(t *testing.T) {
+	t.Run("restore and post-restore Jobs mount the journal reader of every connection with source static, and the file names each (Q-HA-399)", func(t *testing.T) {
 		_, d := render(t, connectionsSet(), restoreSets("restore.journalCredentials.source=static", "secrets.storageConnections[0].journalReader.existingSecret=quader-s3-versions",
 			"secrets.storageConnections[1].journalReader.existingSecret=quader-s3-secondary-versions")...)
 		pod := restorePod(d)
 		if got := strings.Join(storageVolumes(pod), ","); got != "secret-s3-default,secret-s3-default-journal,secret-s3-default-location,secret-s3-secondary,secret-s3-secondary-ca,secret-s3-secondary-journal" {
 			t.Errorf("the restore Job mounts %s", got)
 		}
-		if cm := str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"); !strings.Contains(cm, "/var/run/secrets/quader/s3-default-journal/secret-access-key") {
-			t.Errorf("credentials.yaml = %s", cm)
+		cm := str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml")
+		for _, want := range []string{
+			"connection: default", "connection: secondary", "credentials_source: static",
+			"/var/run/secrets/quader/s3-default-journal/secret-access-key", "/var/run/secrets/quader/s3-secondary-journal/access-key-id",
+		} {
+			if !strings.Contains(cm, want) {
+				t.Errorf("credentials.yaml lacks %q: %s", want, cm)
+			}
 		}
 		for name, p := range podSpecs(d) {
 			if name != "quader-restore" && storageVolume(p, "secret-s3-default-journal") != nil {
 				t.Errorf("%s mounts the journal reader", name)
 			}
 		}
+		renderFails(t, connectionsSet(), restoreSets("restore.journalCredentials.source=static", "secrets.storageConnections[0].journalReader.existingSecret=quader-s3-versions"),
+			"restore.journalCredentials.source: static", "every connection without drain: true", "missing for: secondary")
+		render(t, connectionsSet(), restoreSets("restore.journalCredentials.source=static", "secrets.storageConnections[0].journalReader.existingSecret=quader-s3-versions",
+			"config.storage.connections[1].drain=true")...)
 	})
 }
 
@@ -271,7 +282,7 @@ func TestR_HA_072_Refusals(t *testing.T) {
 		{"a key file without an entry", required(), []string{"config.storage.connections[0].secret_access_key_file=/x"}, []string{"config.storage.connections[0].secret_access_key_file (default) is managed by the chart"}},
 		{"a bucket file the entry sets", required(), entry("config.storage.connections[0].bucket=", "secrets.storageConnections[0].existingSecret=p", "secrets.storageConnections[0].bucketKey=B", "config.storage.connections[0].bucket_file=/x"), []string{"config.storage.connections[0].bucket_file (default) is managed by the chart"}},
 		{"static without a read login while the backup is on", required(), backupSets("config.storage.connections[0].credentials_source=static", "secrets.storageConnections[0].connectionId=default", "secrets.storageConnections[0].existingSecret=k"), []string{"backup.enabled with config.storage.connections[0] (default) credentials_source: static needs backupSource"}},
-		{"a journal reader missing for source static", required(), restoreSets("restore.journalCredentials.source=static"), []string{"restore.journalCredentials.source: static", "journalReader", "connection default"}},
+		{"a journal reader missing for source static", required(), restoreSets("restore.journalCredentials.source=static"), []string{"restore.journalCredentials.source: static", "journalReader", "missing for: default"}},
 		{"a typo in an element (schema)", required(), []string{"config.storage.connections[0].bukcet=x"}, []string{"bukcet"}},
 		{"a typo in an entry (schema)", required(), entry("secrets.storageConnections[0].bucketkey=x"), []string{"bucketkey"}},
 		{"an unknown credentials source (schema)", required(), []string{"config.storage.connections[0].credentials_source=file"}, []string{"credentials_source"}},

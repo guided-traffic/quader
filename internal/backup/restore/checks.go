@@ -188,34 +188,50 @@ func (r *Restorer) checkDatabase(ctx context.Context, st *state) error {
 	return nil
 }
 
-// checkBlobPrefix is check 5: the blob prefix holds nothing but probe objects, the marker of the connection the restore writes
-// into when it belongs to the installation of the backup (backup-and-restore.md R-BAK-030, storage.md R-STOR-051), and after
-// an anchor the blobs of this restore. The restored installation keeps the backup's installation id (R-BAK-022), so a replica
-// that starts on it accepts that marker; a marker of another installation, or of another connection, would stop it.
+// checkBlobPrefix is check 5 on every configured connection (R-BAK-030): its prefix holds nothing but probe objects, the marker
+// of that connection when it belongs to the installation of the backup (storage.md R-STOR-051), and on the connection the restore
+// writes into, after an anchor, the blobs of this restore. The restored installation keeps the backup's installation id
+// (R-BAK-022), so a replica that starts on it accepts that marker; a marker of another installation, or of another connection,
+// would stop it.
 func (r *Restorer) checkBlobPrefix(ctx context.Context, st *state) error {
-	key, err := r.d.Blobs.FirstForeign(ctx, st.anchored)
+	sink, err := r.sink()
+	if err != nil {
+		return err
+	}
+	for _, c := range r.d.Connections {
+		if err := r.checkConnectionPrefix(ctx, st, c, st.anchored && c.ID == sink.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkConnectionPrefix is check 5 on one connection.
+func (r *Restorer) checkConnectionPrefix(ctx context.Context, st *state, c Connection, allowBlobs bool) error {
+	where := fmt.Sprintf("the prefix of connection '%s'", c.ID)
+	key, err := c.Store.FirstForeign(ctx, allowBlobs)
 	if err != nil {
 		return err
 	}
 	if key != "" {
-		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf("the blob prefix is not empty: found %q", key))
+		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf("%s is not empty: found %q", where, key))
 	}
-	m, found, err := r.d.Blobs.Marker(ctx)
+	m, found, err := c.Store.Marker(ctx)
 	switch {
 	case errors.Is(err, blob.ErrNotMarker):
-		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf("the blob prefix is not empty: %w", err))
+		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf("%s is not empty: %w", where, err))
 	case err != nil:
 		return err
 	case !found:
 		return nil
 	case m.InstallationID != st.m.InstallationID:
 		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf(
-			"the blob prefix holds the marker %s of connection '%s' of installation %s, and this backup belongs to installation %s: a location belongs to one connection of one installation (storage.md R-STOR-051). Restore into an empty prefix, or delete the marker only if installation %s is gone",
-			m.Key, m.ConnectionID, m.InstallationID, st.m.InstallationID, m.InstallationID))
-	case r.d.Connection != "" && m.ConnectionID != r.d.Connection:
+			"%s holds the marker %s of connection '%s' of installation %s, and this backup belongs to installation %s: a location belongs to one connection of one installation (storage.md R-STOR-051). Restore into an empty prefix, or delete the marker only if installation %s is gone",
+			where, m.Key, m.ConnectionID, m.InstallationID, st.m.InstallationID, m.InstallationID))
+	case m.ConnectionID != c.ID:
 		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf(
-			"the blob prefix holds the marker %s of connection '%s' of this backup's installation, and the restore writes into connection '%s': a location belongs to one connection (storage.md R-STOR-051). Name the connection '%s' in storage.connections, or restore into an empty prefix",
-			m.Key, m.ConnectionID, r.d.Connection, m.ConnectionID))
+			"%s holds the marker %s of connection '%s' of this backup's installation: a location belongs to one connection (storage.md R-STOR-051). Name the connection '%s' in storage.connections, or restore into an empty prefix",
+			where, m.Key, m.ConnectionID, m.ConnectionID))
 	}
 	return nil
 }
@@ -231,19 +247,34 @@ func (r *Restorer) checkServer(ctx context.Context, st *state) error {
 	return nil
 }
 
-// checkReachable is check 7: the target answers a HeadObject and the blob store takes and deletes a probe object. A restore
-// writes nothing to the target, so the target gets no probe object.
+// checkReachable is check 7: the target answers a HeadObject and every configured connection takes and deletes a probe object
+// (R-BAK-030). A restore writes nothing to the target, so the target gets no probe object.
 func (r *Restorer) checkReachable(ctx context.Context) error {
 	if _, err := r.d.Target.Head(ctx, r.d.Layout.Marker()); err != nil && !errors.Is(err, target.ErrNotFound) {
 		return checkFailure(7, "reachability", backup.CodePrecondition, fmt.Errorf("the backup target is not reachable: %w", err))
 	}
-	if err := r.d.Blobs.Probe(ctx, r.d.Pod); err != nil {
-		return checkFailure(7, "reachability", backup.CodePrecondition, fmt.Errorf("the blob store does not take a probe object: %w", err))
+	for _, c := range r.d.Connections {
+		if err := c.Store.Probe(ctx, r.d.Pod); err != nil {
+			return checkFailure(7, "reachability", backup.CodePrecondition, fmt.Errorf("connection '%s' does not take a probe object: %w", c.ID, err))
+		}
 	}
 	return nil
 }
 
-// checkJournal is check 8: the source's revocation journal can be listed, unless the restore skips it.
+// sourceJournals names where the journal of each source connection lies.
+func sourceJournals(conns []format.ConnectionRef) string {
+	if len(conns) == 0 {
+		return "the manifest names no source connection"
+	}
+	out := make([]string, 0, len(conns))
+	for _, c := range conns {
+		out = append(out, fmt.Sprintf("%s: %s/%s", c.ID, c.Bucket, strings.TrimPrefix(c.Prefix+"/_journal/revocations/", "/")))
+	}
+	return strings.Join(out, ", ")
+}
+
+// checkJournal is check 8: the source's revocation journal can be listed on at least one of its connections, unless the
+// restore skips it.
 func (r *Restorer) checkJournal(ctx context.Context, st *state, opts backup.RestoreOptions) error {
 	if !st.m.Source.RevocationJournal || opts.SkipRevocationJournal {
 		return nil
@@ -261,8 +292,8 @@ func (r *Restorer) checkJournal(ctx context.Context, st *state, opts backup.Rest
 	}
 	if err != nil {
 		return checkFailure(8, "revocation journal", backup.CodeJournalUnavailable, fmt.Errorf(
-			"the revocation journal of the source (%s/%s/_journal/revocations/) cannot be listed: %w; give --journal-credentials-file, or --skip-revocation-journal if the source bucket is gone",
-			st.m.Source.Storage.Bucket, st.m.Source.Storage.Prefix, err))
+			"the revocation journal of the source (%s) cannot be listed on any of its connections: %w; give --journal-credentials-file, or --skip-revocation-journal if no source connection is left",
+			sourceJournals(st.m.Source.Connections), err))
 	}
 	st.journal = j
 	return nil

@@ -29,7 +29,7 @@ func TestR_HA_054_AnUnencodableRowIsQuarantinedAndTheRestShips(t *testing.T) {
 	ob := &quarantineOutbox{fakeOutbox: &fakeOutbox{rows: rs}}
 	st := &fakeStore{}
 	var seen []string
-	sh := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader", OnQuarantine: func(r journal.OutboxRow, _ error) { seen = append(seen, r.ID) }})
+	sh := New(Options{Outbox: ob, Targets: one(st, "quader"), OnQuarantine: func(r journal.OutboxRow, _ error) { seen = append(seen, r.ID) }})
 	n, err := sh.Ship(t.Context())
 	if err != nil || n != 2 {
 		t.Fatalf("Ship = %d, %v; want the two good rows shipped", n, err)
@@ -48,7 +48,7 @@ func TestR_HA_054_AnUnencodableRowWithoutQuarantineStillStopsLoudly(t *testing.T
 	rs := rows(2)
 	rs[0].Entry = json.RawMessage(`[1]`)
 	ob := &fakeOutbox{rows: rs}
-	if _, err := New(Options{Outbox: ob, Store: &fakeStore{}}).Ship(t.Context()); err == nil || len(ob.rows) != 2 {
+	if _, err := New(Options{Outbox: ob, Targets: one(&fakeStore{}, "")}).Ship(t.Context()); err == nil || len(ob.rows) != 2 {
 		t.Fatalf("Ship = %v with %d rows left; want an error and nothing dropped", err, len(ob.rows))
 	}
 }

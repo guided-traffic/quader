@@ -9,9 +9,10 @@ mode 0440 and without subPath, so a rotated Secret reaches the files (R-HA-030):
   static)                                                                                                                         session_token_file (with sessionTokenKey)
   bucketKey, regionKey, endpointKey    the same and the backup pods                   /var/run/secrets/quader/s3-<id>-location/   bucket_file, region_file, endpoint_file
   ca                                   the same and the backup pods                   /var/run/secrets/quader/s3-<id>-ca/         ca_file
-  backupSource                         the backup pods                                /var/run/secrets/quader/s3-<id>-backup/     the first connection's in backup.source (quader.backupSourceConfig)
-  journalReader                        restore, post-restore (journalCredentials      /var/run/secrets/quader/s3-<id>-journal/    the journal credentials file (_backup.tpl)
-                                       .source static)
+  backupSource                         the backup pods                                /var/run/secrets/quader/s3-<id>-backup/     the element of the connection in
+                                                                                                                                  backup.source.connections (quader.backupSourceConfig)
+  journalReader                        restore, post-restore (journalCredentials      /var/run/secrets/quader/s3-<id>-journal/    the element of the connection in the journal
+                                       .source static)                                                                            credentials file (_backup.tpl)
 
 trustedCA.useForObjectStore sets the ca_file of every element whose entry has no ca to the one file of trustedCA.keys (R-HA-043).
 The migration Job and the scanner pods mount none of them: they read the shared file and touch no object store.
@@ -157,36 +158,62 @@ The Secret mounts of the connections in the shape of quader.secretMounts (templa
 {{- end -}}
 
 {{/*
-backup.source of the configuration file, as YAML (nothing when the backup reads with the connection's own credential). The backup
-reads the first connection of config.storage.connections today (internal/config FirstClient), so while backup.enabled and that
-connection's entry has backupSource, separate_credentials names the files of its mount in the backup pods; the read login of every
-other connection is mounted already and is named once the backup reads per connection (backup-and-restore.md R-BAK-030, Q-HA-396).
-Without a backupSource the backup reads with the connection's own credential, the right one for a workload identity of the backup's
-ServiceAccount. Argument: the root context.
+backup.source of the configuration file, as YAML (nothing when no connection's entry has a backupSource). While backup.enabled, every
+connection whose entry has backupSource gets its element of backup.source.connections with the files of its mount in the backup pods
+(backup-and-restore.md R-BAK-030, Q-BAK-64); a connection without one is read with its own credential, the right one for a workload
+identity of the backup's ServiceAccount. Argument: the root context.
 */}}
 {{- define "quader.backupSourceConfig" -}}
 {{- if .Values.backup.enabled -}}
-{{- $id := include "quader.backupConnection" . -}}
-{{- $e := include "quader.connectionEntry" (dict "root" . "id" $id) | fromYaml -}}
-{{- if dig "backupSource" "existingSecret" "" $e -}}
+{{- $elems := list -}}
+{{- range $el := include "quader.connectionElements" $ | fromYamlArray -}}
+{{- $id := include "quader.connectionId" $el -}}
+{{- if dig "backupSource" "existingSecret" "" (include "quader.connectionEntry" (dict "root" $ "id" $id) | fromYaml) -}}
 {{- $dir := printf "/var/run/secrets/quader/s3-%s-backup" $id -}}
-{{- toYaml (dict "separate_credentials" true "credentials" (dict "source" "static" "access_key_id_file" (printf "%s/access-key-id" $dir) "secret_access_key_file" (printf "%s/secret-access-key" $dir))) -}}
+{{- $elems = append $elems (dict "connection" $id "credentials_source" "static" "access_key_id_file" (printf "%s/access-key-id" $dir) "secret_access_key_file" (printf "%s/secret-access-key" $dir)) -}}
+{{- end -}}
+{{- end -}}
+{{- if $elems -}}
+{{- toYaml (dict "connections" $elems) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
-The id of the connection the backup reads and whose journal the replay of the restore and post-restore Jobs reads with a credentials
-file, until both read every connection (Q-HA-396): the first element of config.storage.connections, as the binary takes it
-(internal/config FirstClient). Argument: the root context.
+The elements of the journal credentials file of the restore and post-restore Jobs (internal/journal/replay LoadCredentials, R-BAK-015
+"Journal reader", R-BAK-030), as a YAML list: with source default one element per connection that lets the Job's workload identity
+list the object versions; with source static one per connection whose entry has a journalReader, with the files of its mount. A
+connection without an element is read with its runtime credential and a plain listing. Argument: dict "root" . "source" <source>.
 */}}
-{{- define "quader.backupConnection" -}}
-{{- include "quader.journalConnection" . -}}
+{{- define "quader.journalCredentialElements" -}}
+{{- $root := .root -}}
+{{- $src := .source -}}
+{{- $out := list -}}
+{{- range $el := include "quader.connectionElements" $root | fromYamlArray -}}
+{{- $id := include "quader.connectionId" $el -}}
+{{- if eq $src "default" -}}
+{{- $out = append $out (dict "connection" $id "credentials_source" "default") -}}
+{{- else if and (eq $src "static") (dig "journalReader" "existingSecret" "" (include "quader.connectionEntry" (dict "root" $root "id" $id) | fromYaml)) -}}
+{{- $dir := printf "/var/run/secrets/quader/s3-%s-journal" $id -}}
+{{- $out = append $out (dict "connection" $id "credentials_source" "static" "access_key_id_file" (printf "%s/access-key-id" $dir) "secret_access_key_file" (printf "%s/secret-access-key" $dir)) -}}
+{{- end -}}
+{{- end -}}
+{{- toYaml $out -}}
 {{- end -}}
 
-{{/* The id of the connection whose journal reader the credentials file names: the first element. Argument: the root context. */}}
-{{- define "quader.journalConnection" -}}
-{{- include "quader.connectionId" (first (include "quader.connectionElements" . | fromYamlArray) | default (dict)) -}}
+{{/*
+The ids of the elements without drain: true whose entry has no journalReader, comma-separated: with journalCredentials.source static
+each of them must have one (Q-HA-399). Argument: the root context.
+*/}}
+{{- define "quader.journalReadersMissing" -}}
+{{- $missing := list -}}
+{{- range $el := include "quader.connectionElements" $ | fromYamlArray -}}
+{{- $id := include "quader.connectionId" $el -}}
+{{- if and (not (get $el "drain")) (not (dig "journalReader" "existingSecret" "" (include "quader.connectionEntry" (dict "root" $ "id" $id) | fromYaml))) -}}
+{{- $missing = append $missing $id -}}
+{{- end -}}
+{{- end -}}
+{{- join ", " $missing -}}
 {{- end -}}
 
 {{/*

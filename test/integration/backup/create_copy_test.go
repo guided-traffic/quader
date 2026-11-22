@@ -7,11 +7,15 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	dto "github.com/prometheus/client_model/go"
 
 	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/create"
 	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/observability"
 )
@@ -91,7 +95,9 @@ func TestR_BAK_006_ServerSideCopyAndTheStreamingFallback(t *testing.T) {
 }
 
 // TestR_BAK_006_ADamagedSourceBlobIsRecordedAndTheRunCompletesWithWarnings: the object of a referenced blob is removed from the
-// bucket; the manifest lists the digest under blobs.damaged and the blob row is untouched.
+// bucket; the manifest lists the digest under blobs.damaged and the blob row is untouched. With a second connection (an in-memory
+// store) that holds a present copy of another blob whose object is gone from the first, that blob is copied from the second and is
+// no damage (R-BAK-030): the copies come from PostgreSQL's blob_copies at the time the copy reaches the page.
 func TestR_BAK_006_ADamagedSourceBlobIsRecordedAndTheRunCompletesWithWarnings(t *testing.T) {
 	in := newInstall(t)
 	in.mustUpload(in.repo, "good", "good-content")
@@ -99,13 +105,31 @@ func TestR_BAK_006_ADamagedSourceBlobIsRecordedAndTheRunCompletesWithWarnings(t 
 	if err := in.obj.Delete(context.Background(), blobKey(in, bad)); err != nil {
 		t.Fatal(err)
 	}
+	rescued := in.mustUpload(in.repo, "rescued", "rescued-content")
+	second := blobtest.New()
+	second.Set("q2/"+strings.TrimPrefix(blobKey(in, rescued), in.prefix+"/"), []byte("rescued-content"), time.Now())
+	in.exec(`INSERT INTO quader.storage_connections (id, bucket, prefix) VALUES ('secondary', 'second', 'q2')`)
+	in.exec(`INSERT INTO quader.blob_copies (sha256, connection_id, object_key, stored_size, state) VALUES ($1, 'secondary', $2, $3, 'present')`,
+		rescued.Bytes(), "q2/"+strings.TrimPrefix(blobKey(in, rescued), in.prefix+"/"), int64(len("rescued-content")))
+	if err := in.obj.Delete(context.Background(), blobKey(in, rescued)); err != nil {
+		t.Fatal(err)
+	}
 	r := in.newRig(t)
+	r.mutate = func(d *create.Deps) {
+		d.Source = backup.NewStoreSource(d.Pins.(backup.CopyReader), []backup.SourceConnection{
+			{ID: config.DefaultConnectionID, Objects: in.obj, Endpoint: config.NormalizeEndpoint(in.s3cfg.Endpoint), Bucket: in.s3cfg.Bucket, ServerSide: true},
+			{ID: "secondary", Objects: second, Bucket: "second"},
+		})
+	}
 	res, err := in.run(context.Background(), r, backup.CreateOptions{NoPrune: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Outcome != "completed_with_warnings" || res.DamagedBlobs != 1 {
+	if res.Outcome != "completed_with_warnings" || res.DamagedBlobs != 1 || res.BlobsCopied != 2 || res.SourceFailures[config.DefaultConnectionID] != 2 {
 		t.Fatalf("%+v", res)
+	}
+	if !poolHas(t, r.tgt, r.cfg, fmtDigest(rescued)) {
+		t.Fatal("the blob the second connection holds is not in the pool")
 	}
 	m := manifestOf(t, r.tgt, r.cfg, res.BackupID)
 	if len(m.Blobs.Damaged) != 1 || m.Blobs.Damaged[0].SHA256 != bad.Hex() || m.Blobs.Damaged[0].Status != "missing" {

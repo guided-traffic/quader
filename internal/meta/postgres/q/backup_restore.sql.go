@@ -51,6 +51,20 @@ func (q *Queries) RestoreCreateAuditPartitions(ctx context.Context, arg RestoreC
 	return err
 }
 
+const restoreDropCopiesWithoutBlob = `-- name: RestoreDropCopiesWithoutBlob :execrows
+DELETE FROM blob_copies c WHERE NOT EXISTS (SELECT 1 FROM blobs b WHERE b.sha256 = c.sha256)
+`
+
+// The copy rows of the blob rows step 7 deleted because the purge of the remote caches left them without a reference: a copy row
+// has no foreign key to blobs (R-STOR-052), so it goes with its blob here, as collection drops it with its blob row.
+func (q *Queries) RestoreDropCopiesWithoutBlob(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreDropCopiesWithoutBlob)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const restoreEnsureAuditPartitions = `-- name: RestoreEnsureAuditPartitions :exec
 SELECT audit_create_partitions(now(), now() + interval '3 months')
 `
@@ -75,6 +89,65 @@ type RestoreMarkDamagedBlobsParams struct {
 // The blobs the backup recorded as damaged in the source are restored as damaged (R-BAK-006, R-BAK-021 step 4).
 func (q *Queries) RestoreMarkDamagedBlobs(ctx context.Context, arg RestoreMarkDamagedBlobsParams) (int64, error) {
 	result, err := q.db.Exec(ctx, restoreMarkDamagedBlobs, arg.Status, arg.Digests)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const restoreRecordConnection = `-- name: RestoreRecordConnection :exec
+INSERT INTO storage_connections (id, bucket, prefix)
+VALUES ($1::text, $2::text, $3::text)
+ON CONFLICT (id) DO NOTHING
+`
+
+type RestoreRecordConnectionParams struct {
+	ID     string
+	Bucket string
+	Prefix string
+}
+
+// A connection of the restoring installation's configuration (R-BAK-030): storage_connections is transient and comes back
+// empty, and the fix-up records each connection with the bucket and the prefix the configuration resolves to, so the first
+// replica finds the fixed properties it configures (storage.md R-STOR-051).
+func (q *Queries) RestoreRecordConnection(ctx context.Context, arg RestoreRecordConnectionParams) error {
+	_, err := q.db.Exec(ctx, restoreRecordConnection, arg.ID, arg.Bucket, arg.Prefix)
+	return err
+}
+
+const restoreRecordCopies = `-- name: RestoreRecordCopies :execrows
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, verified_at, state_changed_at)
+SELECT b.sha256, $1::text,
+       $2::text || 'sha256/' || substr(encode(b.sha256, 'hex'), 1, 2) || '/' || substr(encode(b.sha256, 'hex'), 3, 2) || '/' || encode(b.sha256, 'hex'),
+       b.size,
+       CASE WHEN b.content_status = 'ok' THEN 'present' ELSE 'missing' END,
+       now(),
+       CASE WHEN b.content_status = 'ok' AND $3::boolean THEN $4::text::timestamptz END,
+       now()
+  FROM blobs b
+ WHERE b.state = 'live'
+ON CONFLICT DO NOTHING
+`
+
+type RestoreRecordCopiesParams struct {
+	ConnectionID string
+	KeyPrefix    string
+	Verified     bool
+	VerifiedAt   string
+}
+
+// A copy of every restored live blob on the connection step 3 wrote into (R-BAK-030): present for a blob whose object it wrote,
+// missing for one the backup listed as damaged, which has no object (a read's recheck heals it when the object appears);
+// verified_at the restore's time when the restore streamed and hashed every blob, NULL otherwise, which the scrub reads first
+// (Q-BAK-72). The name is the connection's naming function of stage 1, <prefix>/sha256/<h0h1>/<h2h3>/<hex> (R-STOR-001). No
+// queue row: the reconciliation's pass finds the other connections' gaps (R-STOR-056).
+func (q *Queries) RestoreRecordCopies(ctx context.Context, arg RestoreRecordCopiesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreRecordCopies,
+		arg.ConnectionID,
+		arg.KeyPrefix,
+		arg.Verified,
+		arg.VerifiedAt,
+	)
 	if err != nil {
 		return 0, err
 	}

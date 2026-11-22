@@ -89,15 +89,17 @@ internal/app/wire_backup_gauges.go  registers the lane's families, the gauge sou
 ## Architecture
 
 `create` runs in the `backup` pod: it inserts the run row (`AcquireSlot`), sets the hold, opens the snapshot through a
-`Snapshotter`, writes the blob list and the table files through `target.Store`, copies the pinned blobs from a `BlobSource` and
-finishes with the manifest. `Handle` heartbeats for the whole time and cancels the run's context when the run is superseded or
-stalled. `restore` runs in the restore Job as the owner: it checks, anchors, migrates to the backup's step, copies blobs from the
-pool to a `BlobSink`, loads, migrates forward, runs the fix-ups of `fixup.Fixups()` in one transaction, the purgers of
-`fixup.Purgers()`, replays the journal through a `journal.Replayer`, verifies and finishes. Both read the same `format` package.
+`Snapshotter`, writes the blob list and the table files through `target.Store`, copies the pinned blobs from a `BlobSource`, one present
+copy per blob over every connection (R-BAK-030), and finishes with the manifest. `Handle` heartbeats for the whole time and cancels the
+run's context when the run is superseded or stalled. `restore` runs in the restore Job as the owner: it checks every connection, anchors,
+migrates to the backup's step, copies blobs from the pool to the `BlobSink` of the first connection without drain, loads, migrates
+forward, runs the fix-ups of `fixup.Fixups()` in one transaction, the purgers of `fixup.Purgers()`, replays the journal of every source
+connection through a `journal.Replayer`, verifies and finishes. Both read the same `format` package.
 
 The revocation journal is independent of the backup: the audit writer inserts a `revocation_outbox` row in the transaction of the
-change, a worker job (`journal.Shipper`) writes `journal.Object`s to the blob bucket, and a replay (`journal.Replayer`) applies the
-handlers that the domains registered. `quader backup restore` and `quader admin post-restore` run the same replay.
+change, a worker job (`journal.Shipper`) writes `journal.Object`s to every connection without drain through its guard, and a replay
+(`journal.Replayer`) applies the handlers that the domains registered to the entries of every connection, merged by key. `quader backup
+restore` and `quader admin post-restore` run the same replay.
 
 ### The S3 target adapter
 
@@ -189,8 +191,18 @@ the load transaction), `fixed` (set with the fix-ups). A step is skipped when th
 `Deps.Hook` names the points (`step2:anchored`, `step2:migrated:<n>`, `step3:copied:<n>`, `load:<table>`, `step5` to `step9`); the tests
 stop the restore there, and the kill tests run the binary.
 
-**The journal.** `restoreJournal` in `cmd/quader/backup_restore.go` opens the reader of the source's bucket and prefix with
-`replay.OpenJournal` and builds the replayer over the restore's session; `Reachable` (check 8) lists today's day prefix.
+**The connections** (R-BAK-030). `Deps.Connections` is every connection of the restoring configuration with its `BlobSink` over the
+runtime credential, its bucket and its prefix (`restoreConnections` in `cmd/quader/backup_restore.go`). Step 3 writes into the first
+without drain (`Restorer.sink`); check 5 lists every prefix and accepts a marker of the backup's installation that names that
+connection, and only the sink may hold blobs after an anchor; check 7 probes every connection. The fix-up `storage-copies` records a row
+of `storage_connections` per connection and a copy of every live blob on the sink under its prefix, verified when this process streamed
+and hashed every blob of step 3 and skipped none (`Restorer.streamedAll`, `fixup.Env.SinkVerified`, Q-BAK-72), and no queue row.
+`DeleteUnreferencedBlobs` of step 7 drops the copy rows of the blob rows it deletes.
+
+**The journal.** `restoreJournal` in `cmd/quader/backup_restore.go` points a client at each connection of `manifest.source.connections`
+(`sourceLocations`: the client settings of the restoring connection of the same id, or of its first, at the source's bucket, prefix and
+endpoint), opens them with `replay.OpenJournal` and builds the replayer over the restore's session; `Reachable` (check 8) lists today's
+day prefix and fails only when no connection can be listed.
 
 **The remote-cache purge (step 7).** The purgers need `fixup.Env.Items`, the storage delete path. `Deps.Items` builds it on the restore's
 session; `app.RestoreItems` ([wire_restore_items.go](../../internal/app/wire_restore_items.go)) composes the item store with the format hooks
@@ -240,11 +252,12 @@ each Job and the tests are in [helm-chart.md](helm-chart.md#the-backup-and-resto
 ## The platform check
 
 The task `backup-check` (R-HA-023, `40 5 * * *`, queue `maintenance`) runs [platform.Checker](../../internal/backup/platform/platform.go) and stores
-its report in `system_state` under `backup_check`; every replica sets `quader_backup_check_ok{check}` from that row in its database gauges
-(`exportBackupCheck` in [wire_backup_check.go](../../internal/app/wire_backup_check.go), Q-OPS-185). Only what `backup.recovery_window` and
-`backup.object_versioning` declare is checked (`archive_mode`, `grace_period`, `object_versioning`, `noncurrent_expiry`); a setting the
-credential may not read is unknown and has no series (`s3.ErrProtectionUnknown`). `quader admin backup check` runs the same checks on
-demand and exits 5 when one fails. The bucket reads are `VersioningStatus` and `NoncurrentExpiryDays` of
+its report in `system_state` under `backup_check`; every replica sets `quader_backup_check_ok{check,connection}` from that row in its
+database gauges (`exportBackupCheck` in [wire_backup_check.go](../../internal/app/wire_backup_check.go), Q-OPS-185). Only what
+`backup.recovery_window` and `backup.object_versioning` declare is checked (`archive_mode`, `grace_period`, and per connection
+`object_versioning`, `noncurrent_expiry`, each over the bucket of every connection of the configuration, `platform.ConnectionBucket`,
+with the connection in the result, its detail and the label); a setting the credential may not read is unknown and has no series
+(`s3.ErrProtectionUnknown`). `quader admin backup check` runs the same checks on demand over every connection and exits 5 when one fails. The bucket reads are `VersioningStatus` and `NoncurrentExpiryDays` of
 [internal/blob/s3/protection.go](../../internal/blob/s3/protection.go). Tests: `TestR_HA_023_*` in `internal/backup/platform` and
 `test/integration/backup/platform_check_test.go`.
 
@@ -354,12 +367,13 @@ link them (`internal/backup/fixup` imports both, `internal/app` binds them).
 
 | File | Responsibility |
 |---|---|
-| [journal/ship/ship.go](../../internal/journal/ship/ship.go), [outbox.go](../../internal/journal/ship/outbox.go) | `Shipper` (id order, row deleted after its object, stops at the first failure, `Discard` when the journal is off) and the `Outbox` over the queries of `backup.sql` |
-| [journal/replay/reader.go](../../internal/journal/replay/reader.go) | `Reader`: day prefixes, forged-key checks, sorted by time and ID |
+| [journal/ship/ship.go](../../internal/journal/ship/ship.go), [outbox.go](../../internal/journal/ship/outbox.go) | `Shipper` over the `Target`s, every connection without drain (R-STOR-059): one walk of the outbox in id order per run (`Claim(after, limit)`), each row written to every target that does not hold it, a target that fails left out for the rest of the run (Q-STOR-270), a row deleted once every target holds it and its partial marks written to `revocation_outbox_shipped` otherwise (`MarkShipped`), `Discard` when the journal is off; the `Outbox` over the queries of `backup.sql` |
+| [journal/ship/store.go](../../internal/journal/ship/store.go) | `ConnectionStore`: the journal's store over a connection's guard, with the connection's payload checksum on every write |
+| [journal/replay/reader.go](../../internal/journal/replay/reader.go) | `Reader` over one `Source` per connection (`ReaderOf`; `NewReader` for one store): day prefixes, forged-key checks, the contents merged by the key below each prefix (the same bytes on two connections are one copy, different bytes each replayed and flagged with their connections), a connection that cannot be listed reported and left out, none listed an error (Q-STOR-271), sorted by time and ID |
 | [journal/replay/replayer.go](../../internal/journal/replay/replayer.go) | `Replayer`: one transaction per entry, panic and unknown event become `skipped`, summary event |
-| [journal/replay/open.go](../../internal/journal/replay/open.go) | `LoadCredentials`, `OpenJournal` (shared with the restore) |
-| [blob/s3/journalstore.go](../../internal/blob/s3/journalstore.go) | `JournalStore`: put, list (with versions on request), get |
-| [jobs/journal.go](../../internal/jobs/journal.go), [app/wire_journal.go](../../internal/app/wire_journal.go) | the job kind `revocation-journal-ship` and the timer that enqueues it |
+| [journal/replay/open.go](../../internal/journal/replay/open.go) | `CredentialsFile` and `LoadCredentials` (one element per connection, Q-BAK-73), `Location` and `OpenJournal` (shared by the restore and the post-restore): a client per connection, with its element of the file and the version listing, or with the blob-store credential |
+| [blob/s3/journalstore.go](../../internal/blob/s3/journalstore.go) | `JournalStore`: put, list (with versions on request), get; the reader's store |
+| [jobs/journal.go](../../internal/jobs/journal.go), [app/wire_journal.go](../../internal/app/wire_journal.go) | the job kind `revocation-journal-ship`, the timer that enqueues it, `journalTargets` (the connections without drain, each through its guard) and `journalConnections` (the label values of the backlog gauge) |
 | `journal_replay.go` in `internal/auth/token`, `internal/auth/principal`, `internal/authz`, `internal/project` | the handlers and comparators of the identity and authorization events |
 | [blob/restoreversions](../../internal/blob/restoreversions/restoreversions.go), [blob/s3/versions.go](../../internal/blob/s3/versions.go), [cmd/quader/admin_restoreversions.go](../../cmd/quader/admin_restoreversions.go) | `quader admin storage restore-versions`: finds the copies without an object on each connection (or the one `--connection` names), lists the versions of each such key on its connection, removes the delete markers younger than *t* |
 | [maintenance](../../internal/maintenance/deletions.go), [cmd/quader/admin_maintenance.go](../../cmd/quader/admin_maintenance.go), [queries/maintenance.sql](../../internal/meta/postgres/queries/maintenance.sql) | `quader admin maintenance pause-deletions` and `resume-deletions`: the deletion pause in `system_state`, one audit event per change |
@@ -374,9 +388,10 @@ writes the same form by hand (keep them equal).
 
 Queries are in [journal.sql](../../internal/meta/postgres/queries/journal.sql). A handler takes IDs only, applies a removal as recorded
 or runs `journal.ApplyUpdate` with its comparator, and returns a `Result`; `ci.token.revoked` is replayed by the token package because
-`RecordCIRevoked` lives there. The gauge `quader_revocation_journal_pending` is the gauge package's (`Outbox.Pending`). Tests:
-`go test ./internal/journal/... ./internal/authz ./internal/project ./internal/auth/token` and the integration files
-`test/integration/backup/journal_*_test.go`. Post-restore refuses to run when no fix-up is registered for the orders it needs, so it
+`RecordCIRevoked` lives there. The gauge `quader_revocation_journal_pending{connection}` is the gauge package's (`RunReader.JournalPending`
+per connection without drain of the replica's configuration, `RevocationOutboxPendingByConnection`). Tests:
+`go test ./internal/journal/... ./internal/authz ./internal/project ./internal/auth/token` (the shipper and the replay over two in-memory
+stores in `TestR_STOR_059_*`) and the integration files `test/integration/backup/journal_*_test.go`. Post-restore refuses to run when no fix-up is registered for the orders it needs, so it
 works only together with the restore package's fix-ups.
 
 ### Producers that a review found without an entry
@@ -469,13 +484,15 @@ opens the connections when the run starts, with the run's context (a SIGTERM end
 | [preflight.go](../../internal/backup/create/preflight.go) | the probe and the encryption check (R-BAK-026), the marker, adoption, the listing that finds the previous backup |
 | [diff.go](../../internal/backup/create/diff.go) | the merge of the referenced set with the previous list: new blob list, pins in batches, the reservoir of the spot check, hold `all` to `pinned` |
 | [export.go](../../internal/backup/create/export.go) | table export with `database.parallel` workers into zstd and a multipart upload, sequences, release of the lock, close of the snapshot |
-| [copy.go](../../internal/backup/create/copy.go) | the blob copy: pages through the pins, server-side or streaming with the digest check, damage versus lost hold, batched pin deletion |
+| [copy.go](../../internal/backup/create/copy.go) | the blob copy: pages through the pins and reads the present copies of each page once (`BlobSource.Copies`, Q-BAK-70), takes one copy per blob in the order of R-BAK-030 (`order`: on the target's endpoint first, verified first there, a draining connection's last) and the next on a missing object, another size, another digest or a connection that does not answer (`failureReason`), server-side (refused per connection, `serverOff`) or streaming with the digest check, damage versus lost hold, a blob only an unanswering connection could give ends the run with exit 75 (Q-BAK-71), `sourceFailures` per connection, batched pin deletion |
 | [finalize.go](../../internal/backup/create/finalize.go) | the fences, the spot check, the manifest, the pruning stage |
 | [util.go](../../internal/backup/create/util.go) | error classification (R-BAK-013), the rate limiter, a small error group |
 
 The database side: [backup_snapshot.go](../../internal/meta/postgres/backup_snapshot.go) (pgx: the backup role's pool, the shared migration
 lock, `LOCK TABLE`, the snapshot, the export connections, `COPY`, the referenced-blob stream) and the adapters in
-`internal/backup` (`pgsnapshot.go`, `pgfacts.go`, `blobsource.go`) that give it the shapes and exit codes of the ports
+`internal/backup` (`pgsnapshot.go`, `pgfacts.go` with `PresentCopies`, `blobsource.go` with `StoreSource` over one
+`SourceConnection` per connection: its client behind a guard, with the read credential of `backup.source.connections` or its own,
+built by `backupSources` in [backup_create.go](../../cmd/quader/backup_create.go)) that give it the shapes and exit codes of the ports
 ([Q-BAK-23](../spec/backup-and-restore.md#q-bak-23--the-database-half-of-the-snapshot-is-pgx-code-in-internalmetapostgres-its-session-settings-are-startup-parameters-and-the-backup-role-holds-one-pooled-connection)).
 Its queries are [backup_snapshot.sql](../../internal/meta/postgres/queries/backup_snapshot.sql). The collector's side of the hold is in
 [blob/gc.go](../../internal/blob/gc.go) (`claim`, `globalHold`).

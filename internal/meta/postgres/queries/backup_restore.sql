@@ -133,3 +133,34 @@ SELECT a.attname::text AS column_name
 -- The partitions for now and the next three months, on the database's clock: the events of the fix-ups, the replay and the
 -- finish need one, and a backup of an earlier month brought none.
 SELECT audit_create_partitions(now(), now() + interval '3 months');
+
+-- name: RestoreRecordConnection :exec
+-- A connection of the restoring installation's configuration (R-BAK-030): storage_connections is transient and comes back
+-- empty, and the fix-up records each connection with the bucket and the prefix the configuration resolves to, so the first
+-- replica finds the fixed properties it configures (storage.md R-STOR-051).
+INSERT INTO storage_connections (id, bucket, prefix)
+VALUES (sqlc.arg(id)::text, sqlc.arg(bucket)::text, sqlc.arg(prefix)::text)
+ON CONFLICT (id) DO NOTHING;
+
+-- name: RestoreRecordCopies :execrows
+-- A copy of every restored live blob on the connection step 3 wrote into (R-BAK-030): present for a blob whose object it wrote,
+-- missing for one the backup listed as damaged, which has no object (a read's recheck heals it when the object appears);
+-- verified_at the restore's time when the restore streamed and hashed every blob, NULL otherwise, which the scrub reads first
+-- (Q-BAK-72). The name is the connection's naming function of stage 1, <prefix>/sha256/<h0h1>/<h2h3>/<hex> (R-STOR-001). No
+-- queue row: the reconciliation's pass finds the other connections' gaps (R-STOR-056).
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, verified_at, state_changed_at)
+SELECT b.sha256, sqlc.arg(connection_id)::text,
+       sqlc.arg(key_prefix)::text || 'sha256/' || substr(encode(b.sha256, 'hex'), 1, 2) || '/' || substr(encode(b.sha256, 'hex'), 3, 2) || '/' || encode(b.sha256, 'hex'),
+       b.size,
+       CASE WHEN b.content_status = 'ok' THEN 'present' ELSE 'missing' END,
+       now(),
+       CASE WHEN b.content_status = 'ok' AND sqlc.arg(verified)::boolean THEN sqlc.arg(verified_at)::text::timestamptz END,
+       now()
+  FROM blobs b
+ WHERE b.state = 'live'
+ON CONFLICT DO NOTHING;
+
+-- name: RestoreDropCopiesWithoutBlob :execrows
+-- The copy rows of the blob rows step 7 deleted because the purge of the remote caches left them without a reference: a copy row
+-- has no foreign key to blobs (R-STOR-052), so it goes with its blob here, as collection drops it with its blob row.
+DELETE FROM blob_copies c WHERE NOT EXISTS (SELECT 1 FROM blobs b WHERE b.sha256 = c.sha256);

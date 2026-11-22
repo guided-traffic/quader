@@ -38,9 +38,15 @@ func TestR_BAK_021_ABackupOfTheCreatePipelineRestoresIntoAFreshInstallation(t *t
 	cleanup(t, tgt, tc.Target.Prefix+"/")
 	r := &rig{cfg: in.backupConfig(t), tgt: tgt}
 	r.cfg.Target = tc.Target
-	// The fixture put its blobs into the pool only; the source's blob store holds them as in a running installation.
+	// The fixture put its blobs into the pool only; the source's blob store holds them as in a running installation, each with
+	// its copy row on the connection default, which the backup reads its copies from (R-BAK-030).
+	s3cfg := firstS3(cfg.Storage)
+	src.stack.Exec(`INSERT INTO storage_connections (id, bucket, prefix) VALUES ('default', $1, $2) ON CONFLICT DO NOTHING`, s3cfg.Bucket, s3cfg.Prefix)
 	for d, content := range src.seed.blobs {
 		src.stack.PutObject(t, d[:], content)
+		h := d.Hex()
+		src.stack.Exec(`INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state) VALUES ($1, 'default', $2, $3, 'present')`,
+			d[:], s3cfg.Prefix+"/sha256/"+h[0:2]+"/"+h[2:4]+"/"+h, int64(len(content)))
 	}
 	sourcePrint := fingerprint(src.stack, exportedTables(src))
 

@@ -19,6 +19,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 
 	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/fixup"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/target"
 	"github.com/guided-traffic/quader/internal/backup/target/targettest"
@@ -219,6 +220,7 @@ type env struct {
 	ring   *secrets.KeyRing
 	sess   *fakeSession
 	blobs  *fakeBlobs
+	extra  []Connection
 	jrn    *fakeJournal
 	pool   map[format.Digest][]byte
 	out    bytes.Buffer
@@ -295,7 +297,7 @@ func newEnv(t *testing.T) *env {
 		Format: 1, BackupID: e.id, InstallationID: "inst", Incarnation: "inc", Quader: format.QuaderInfo{Version: "0.4.0"},
 		Schema:    format.SchemaInfo{Step: 2, Steps: []format.SchemaStep{{Step: 1, Name: "00001_a", SHA256: "aa"}, {Step: 2, Name: "00002_b", SHA256: "bb"}}},
 		StartedAt: snap, SnapshotAt: snap, CompletedAt: snap.Add(time.Minute),
-		Source: format.Source{Storage: format.StorageRef{Bucket: "blobs", Prefix: "quader"}, RevocationJournal: true},
+		Source: format.Source{Connections: []format.ConnectionRef{{ID: "default", Bucket: "blobs", Prefix: "quader"}}, RevocationJournal: true},
 		Tables: []format.TableFile{
 			file("secret_key_canary", [][2]string{{"key_id", "text"}, {"ciphertext", "text"}, {"created_at", "timestamp with time zone"}},
 				"2026-10\t"+sealed+"\t2026-10-01 00:00:00+00\n"),
@@ -314,6 +316,11 @@ func newEnv(t *testing.T) *env {
 	return e
 }
 
+// connections are the restoring configuration: the connection default over e.blobs, then e.extra.
+func (e *env) connections() []Connection {
+	return append([]Connection{{ID: "default", Bucket: "blobs", Prefix: "quader", Store: e.blobs}}, e.extra...)
+}
+
 func (e *env) putManifest() {
 	b, err := e.m.Encode()
 	if err != nil {
@@ -328,7 +335,7 @@ func (e *env) restorer() *Restorer {
 	cfg.Copy.Concurrency = 3
 	cfg.Copy.ServerSide = "auto"
 	return New(Deps{
-		Session: e.sess, Target: e.mem, Layout: e.layout, Blobs: e.blobs, Connection: "default", Keys: e.ring, Config: cfg, Out: &e.out, Pod: "pod",
+		Session: e.sess, Target: e.mem, Layout: e.layout, Connections: e.connections(), Keys: e.ring, Config: cfg, Out: &e.out, Pod: "pod",
 		TargetBucket: "backups",
 		Journal:      func(context.Context, JournalEnv) (Journal, error) { return e.jrn, nil },
 		Registry:     nil,
@@ -471,7 +478,38 @@ func TestR_BAK_020_Checks(t *testing.T) {
 	t.Run("R-BAK-020 check 5: the backup's marker of another connection fails and names both", func(t *testing.T) {
 		e := newEnv(t)
 		e.blobs.marker = marker("inst", "archive")
-		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "connection 'archive'", "writes into connection 'default'")
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "connection 'archive'", "the prefix of connection 'default'")
+	})
+	// R-BAK-030: checks 5 and 7 cover every configured connection, and only the connection the restore writes into may hold the
+	// blobs of an interrupted restore.
+	t.Run("R-BAK-030 check 5: a foreign object on the second connection fails and names it", func(t *testing.T) {
+		e := newEnv(t)
+		e.extra = []Connection{{ID: "secondary", Bucket: "b2", Prefix: "q2", Store: &fakeBlobs{objs: map[format.Digest][]byte{}, foreign: "q2/stray"}}}
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "connection 'secondary'", "q2/stray")
+	})
+	t.Run("R-BAK-030 check 5: the backup's marker of the second connection is accepted there", func(t *testing.T) {
+		e := newEnv(t)
+		e.extra = []Connection{{ID: "secondary", Bucket: "b2", Prefix: "q2", Store: &fakeBlobs{objs: map[format.Digest][]byte{}, marker: marker("inst", "secondary")}}}
+		if err := e.check(backup.RestoreOptions{}); err != nil {
+			t.Fatalf("the backup's marker of the second connection was refused: %v", err)
+		}
+	})
+	t.Run("R-BAK-030 check 5: after an anchor only the connection the restore writes into may hold blobs", func(t *testing.T) {
+		e := newEnv(t)
+		second := &fakeBlobs{objs: map[format.Digest][]byte{}}
+		e.extra = []Connection{{ID: "secondary", Bucket: "b2", Prefix: "q2", Store: second}}
+		e.sess.inspect.Anchor = string(e.id)
+		if err := e.check(backup.RestoreOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		if !e.blobs.allowSeen || second.allowSeen {
+			t.Errorf("blobs allowed on default %v, on secondary %v; want only on default", e.blobs.allowSeen, second.allowSeen)
+		}
+	})
+	t.Run("R-BAK-030 check 7: a second connection that takes no probe object fails and is named", func(t *testing.T) {
+		e := newEnv(t)
+		e.extra = []Connection{{ID: "secondary", Bucket: "b2", Prefix: "q2", Store: &fakeBlobs{objs: map[format.Digest][]byte{}, probeErr: errors.New("AccessDenied")}}}
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 7", "connection 'secondary'", "AccessDenied")
 	})
 	t.Run("R-BAK-020 check 6: an unsupported server and a credential that does not own the schema", func(t *testing.T) {
 		e := newEnv(t)
@@ -625,6 +663,48 @@ func TestR_BAK_021_Blobs(t *testing.T) {
 		// Only the blob list was read again.
 		if got := e.mem.Calls["get"] - before; got != 1 {
 			t.Fatalf("%d reads of the target on a repeated copy, want the blob list only", got)
+		}
+	})
+	t.Run("R-BAK-030 step 3 writes into the first connection without drain, and the fix-up records the copies there", func(t *testing.T) {
+		e := newEnv(t)
+		draining := &fakeBlobs{objs: map[format.Digest][]byte{}}
+		e.extra = []Connection{{ID: "secondary", Bucket: "b2", Prefix: "q2", Store: &fakeBlobs{objs: map[format.Digest][]byte{}}}}
+		r := New(Deps{
+			Session: e.sess, Target: e.mem, Layout: e.layout, Keys: e.ring, Out: &e.out, Pod: "pod",
+			Connections: append([]Connection{{ID: "old", Bucket: "b0", Prefix: "q0", Drain: true, Store: draining}}, e.connections()...),
+			Config:      config.Backup{Copy: config.BackupCopy{Concurrency: 2, ServerSide: "auto"}},
+		})
+		if err := r.stepBlobs(context.Background(), &state{id: e.id, m: e.m}, &postgres.RestoreMarker{Phase: postgres.PhaseBlobs}); err != nil {
+			t.Fatal(err)
+		}
+		if len(e.blobs.objs) != 2 || len(draining.objs) != 0 || len(e.extra[0].Store.(*fakeBlobs).objs) != 0 {
+			t.Fatalf("objects on default %d, on the draining connection %d, on secondary %d", len(e.blobs.objs), len(draining.objs), len(e.extra[0].Store.(*fakeBlobs).objs))
+		}
+		env := r.fixupEnv(&state{id: e.id, m: e.m})
+		if env.Sink != "default" || !env.SinkVerified || len(env.Connections) != 3 || env.Connections[2] != (fixup.ConnectionRecord{ID: "secondary", Bucket: "b2", Prefix: "q2"}) {
+			t.Fatalf("fix-up env = sink %q verified %v connections %+v", env.Sink, env.SinkVerified, env.Connections)
+		}
+	})
+	t.Run("R-BAK-030 copies written server-side or skipped are not recorded as verified", func(t *testing.T) {
+		e := newEnv(t)
+		e.blobs.serverCopy = true
+		r := e.restorer()
+		if err := r.stepBlobs(context.Background(), &state{id: e.id, m: e.m}, &postgres.RestoreMarker{Phase: postgres.PhaseBlobs}); err != nil {
+			t.Fatal(err)
+		}
+		if r.fixupEnv(&state{id: e.id, m: e.m}).SinkVerified {
+			t.Error("server-side copies were recorded as verified")
+		}
+		e.blobs.serverCopy = false
+		for d, b := range e.pool {
+			e.blobs.objs[d] = b
+		}
+		r = e.restorer() // a resumed restore: every object exists and is skipped
+		if err := r.stepBlobs(context.Background(), &state{id: e.id, m: e.m}, &postgres.RestoreMarker{Phase: postgres.PhaseBlobs}); err != nil {
+			t.Fatal(err)
+		}
+		if r.fixupEnv(&state{id: e.id, m: e.m}).SinkVerified {
+			t.Error("skipped objects were recorded as verified")
 		}
 	})
 	t.Run("R-BAK-021 step 3 uses the server-side copy when the store allows it", func(t *testing.T) {

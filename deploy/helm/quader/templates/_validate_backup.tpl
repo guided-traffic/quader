@@ -66,8 +66,7 @@ the day of week 7 is not supported; Sunday is 0
 {{- $r := $v.restore -}}
 {{- $target := dig "backup" "target" (dict) $cfg -}}
 {{- $bucket := dig "bucket" "" $target -}}
-{{- $jc := include "quader.journalConnection" . -}}
-{{- $jrSecret := dig "journalReader" "existingSecret" "" (include "quader.connectionEntry" (dict "root" . "id" $jc) | fromYaml) -}}
+{{- $jrMissing := include "quader.journalReadersMissing" . -}}
 
 {{- if and $b.enabled (not $bucket) -}}
 {{- fail "quader: config.backup.target.bucket is required while backup.enabled is true: name a bucket of its own, in another account or project if you can (example: quader-backups), or switch the backup off with backup.enabled: false" -}}
@@ -138,8 +137,8 @@ endpoint comes from a provisioner's Secret is the binary's to compare. */ -}}
 {{- if $r.enabled -}}
 {{- fail "quader: postRestore.enabled and restore.enabled are both set: the restore Job runs the clean-up of a platform restore itself (R-BAK-021), and post-restore is for a restore of PostgreSQL by the platform (R-HA-025). Set one" -}}
 {{- end -}}
-{{- if and (eq $p.journalCredentials.source "static") (not $jrSecret) -}}
-{{- fail (printf "quader: postRestore.journalCredentials.source: static needs the journalReader of the entry of secrets.storageConnections of connection %s, the first of config.storage.connections, whose journal the replay reads: {connectionId: %s, journalReader: {existingSecret: <Secret with a login that may list its object versions>}}" $jc $jc) -}}
+{{- if and (eq $p.journalCredentials.source "static") $jrMissing -}}
+{{- fail (printf "quader: postRestore.journalCredentials.source: static needs a journalReader in the entry of secrets.storageConnections of every connection without drain: true, because the journal goes to each of them and the replay reads each (R-BAK-030, Q-HA-399); missing for: %s. Add {connectionId: <id>, journalReader: {existingSecret: <Secret with a login that may list its object versions>}}" $jrMissing) -}}
 {{- end -}}
 {{- if and $p.skipRevocationJournal (ne $p.journalCredentials.source "runtime") -}}
 {{- fail "quader: postRestore.skipRevocationJournal skips the journal replay, so postRestore.journalCredentials.source must stay runtime" -}}
@@ -148,8 +147,8 @@ endpoint comes from a provisioner's Secret is the binary's to compare. */ -}}
 
 {{- /* The restore Job's journal reader (M3, Q-HA-159). */ -}}
 {{- if $r.enabled -}}
-{{- if and (eq $r.journalCredentials.source "static") (not $jrSecret) -}}
-{{- fail (printf "quader: restore.journalCredentials.source: static needs the journalReader of the entry of secrets.storageConnections of connection %s, the first of config.storage.connections, whose journal the replay reads: {connectionId: %s, journalReader: {existingSecret: <Secret with a login that may list its object versions>}}" $jc $jc) -}}
+{{- if and (eq $r.journalCredentials.source "static") $jrMissing -}}
+{{- fail (printf "quader: restore.journalCredentials.source: static needs a journalReader in the entry of secrets.storageConnections of every connection without drain: true, because the journal goes to each of them and the replay reads each (R-BAK-030, Q-HA-399); missing for: %s. Add {connectionId: <id>, journalReader: {existingSecret: <Secret with a login that may list its object versions>}}" $jrMissing) -}}
 {{- end -}}
 {{- if and $r.skipRevocationJournal (ne $r.journalCredentials.source "runtime") -}}
 {{- fail "quader: restore.skipRevocationJournal skips the journal replay, so restore.journalCredentials.source must stay runtime" -}}

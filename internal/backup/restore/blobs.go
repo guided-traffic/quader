@@ -16,13 +16,17 @@ import (
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
-// stepBlobs is step 3 (R-BAK-021): every digest of the blob list that is not damaged goes from the pool to the blob store,
-// server-side when the credentials allow it, otherwise streamed and hashed. An object that exists with the right size is
-// skipped, so a resumed restore copies only what is missing. The blobs come before the load so that the load commits
-// references only to objects that exist (R-STOR-005). Once the marker's phase is loaded the step has completed.
+// stepBlobs is step 3 (R-BAK-021): every digest of the blob list that is not damaged goes from the pool to the first connection
+// without drain (R-BAK-030), server-side when the credentials allow it, otherwise streamed and hashed. An object that exists with
+// the right size is skipped, so a resumed restore copies only what is missing. The blobs come before the load so that the load
+// commits references only to objects that exist (R-STOR-005). Once the marker's phase is loaded the step has completed.
 func (r *Restorer) stepBlobs(ctx context.Context, st *state, marker *postgres.RestoreMarker) error {
 	if marker.Phase != postgres.PhaseBlobs {
 		return nil
+	}
+	sink, err := r.sink()
+	if err != nil {
+		return err
 	}
 	rc, _, err := r.d.Target.Get(ctx, r.d.Layout.BlobList(st.id))
 	if err != nil {
@@ -43,7 +47,7 @@ func (r *Restorer) stepBlobs(ctx context.Context, st *state, marker *postgres.Re
 	it := format.Without(list, skip)
 
 	conc := max(r.d.Config.Copy.Concurrency, 1)
-	cp := &copier{r: r, st: st, mode: r.d.Config.Copy.ServerSide}
+	cp := &copier{r: r, st: st, mode: r.d.Config.Copy.ServerSide, sink: sink.Store}
 	if cp.mode == "never" {
 		cp.streamOnly.Store(true)
 	}
@@ -98,7 +102,9 @@ produce:
 	if got := hex.EncodeToString(sum.Sum(nil)); got != st.m.Blobs.SHA256 {
 		return backup.Failf(backup.ExitFailed, backup.CodeInternal, "the blob list has SHA-256 %s, the manifest says %s; run quader backup verify", got, st.m.Blobs.SHA256)
 	}
-	r.d.Log.Info("blobs copied", "copied", cp.copied.Load(), "skipped", cp.skipped.Load(), "server_side", cp.server.Load(), "streamed", cp.streamed.Load())
+	// The copies are verified when this process streamed and hashed every blob and skipped none (Q-BAK-72).
+	r.streamedAll = cp.skipped.Load() == 0 && cp.server.Load() == 0
+	r.d.Log.Info("blobs copied", "connection", sink.ID, "copied", cp.copied.Load(), "skipped", cp.skipped.Load(), "server_side", cp.server.Load(), "streamed", cp.streamed.Load())
 	return nil
 }
 
@@ -107,6 +113,7 @@ type copier struct {
 	r          *Restorer
 	st         *state
 	mode       string
+	sink       BlobStore
 	streamOnly atomic.Bool
 	copied     atomic.Int64
 	skipped    atomic.Int64
@@ -115,7 +122,7 @@ type copier struct {
 }
 
 func (c *copier) one(ctx context.Context, e format.BlobEntry) error {
-	sink := c.r.d.Blobs
+	sink := c.sink
 	has, err := sink.Has(ctx, e.Digest, e.Size)
 	if err != nil {
 		return err

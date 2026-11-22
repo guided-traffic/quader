@@ -51,12 +51,20 @@
     },
     "source": {
       "type": "object",
-      "required": ["storage", "revocationJournal"],
+      "required": ["connections", "revocationJournal"],
       "properties": {
-        "storage": {
-          "type": "object",
-          "required": ["endpoint", "bucket", "prefix"],
-          "properties": {"endpoint": {"type": "string"}, "bucket": {"type": "string"}, "prefix": {"type": "string"}}
+        "connections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "endpoint", "bucket", "prefix"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,30}[a-z0-9]$"},
+              "endpoint": {"type": "string"},
+              "bucket": {"type": "string", "minLength": 1},
+              "prefix": {"type": "string"}
+            }
+          }
         },
         "revocationJournal": {"type": "boolean"}
       }

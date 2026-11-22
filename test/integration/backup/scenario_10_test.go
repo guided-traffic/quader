@@ -26,13 +26,17 @@ import (
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// realJournal is the journal of cmd/quader/backup_restore.go: the reader of the source's bucket and prefix, which the manifest
-// names, and the replayer over the restore's own session.
+// realJournal is the journal of cmd/quader/backup_restore.go: the reader of the journal of every source connection, whose bucket
+// and prefix the manifest names (R-BAK-030), and the replayer over the restore's own session.
 func realJournal(cfg *config.Config) func(context.Context, restore.JournalEnv) (restore.Journal, error) {
 	return func(ctx context.Context, e restore.JournalEnv) (restore.Journal, error) {
-		s3cfg := firstS3(cfg.Storage)
-		s3cfg.Bucket, s3cfg.Prefix = e.SourceBucket, e.SourcePrefix
-		reader, err := replay.OpenJournal(ctx, s3cfg, outbound.New(cfg.Proxy.Outbound), e.CredentialsFile)
+		var locs []replay.Location
+		for _, s := range e.Sources {
+			s3cfg := firstS3(cfg.Storage)
+			s3cfg.Bucket, s3cfg.Prefix = s.Bucket, s.Prefix
+			locs = append(locs, replay.Location{Connection: s.ID, Client: s3cfg})
+		}
+		reader, err := replay.OpenJournal(ctx, locs, outbound.New(cfg.Proxy.Outbound), e.CredentialsFile)
 		if err != nil {
 			return nil, err
 		}
@@ -136,8 +140,8 @@ func TestR_BAK_029_RevocationsSurviveTheRestore(t *testing.T) {
 	}
 
 	src := in.sourceOf(t, r, res.BackupID)
-	if !src.m.Source.RevocationJournal || src.m.Source.Storage.Prefix != e.prefix {
-		t.Fatalf("the manifest names the journal %v at %q, want it at %q", src.m.Source.RevocationJournal, src.m.Source.Storage.Prefix, e.prefix)
+	if c := src.m.Source.Connections; !src.m.Source.RevocationJournal || len(c) != 1 || c[0].Prefix != e.prefix {
+		t.Fatalf("the manifest names the journal %v at %+v, want it at %q", src.m.Source.RevocationJournal, c, e.prefix)
 	}
 	dst := src.destination()
 

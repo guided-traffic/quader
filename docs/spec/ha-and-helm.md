@@ -892,9 +892,9 @@ connections are kept in the chart as a list, their credentials come from Secrets
 `test/chart/storage_test.go`); `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` and `secrets.journalReader` are
 gone and refused with the keys that took their place
 ([Q-HA-395](#q-ha-395--the-values-of-the-one-store-are-refused-by-the-templates-with-the-keys-that-took-their-place)). The backup's
-reading per connection and the journal per connection are the rest of package E; until then the chart names the first connection's
-read login and journal reader
-([Q-HA-396](#q-ha-396--until-the-backup-and-the-journal-read-every-connection-the-chart-names-the-first-connections-read-login-and-journal-reader)).
+read login and the journal reader of every connection are rendered in their target form since the rest of package E: an element of
+`backup.source.connections` per entry with `backupSource`, an element of the journal credentials file per connection
+([backup-and-restore.md](backup-and-restore.md) R-BAK-030; Q-HA-396 is superseded).
 
 - **The list** is `config.storage.connections`, passed through like every key of `config` with each element's `id` filled in and the
   `*_file` keys below; the values file holds one element with the defaults of the plain path. A list given in the values replaces it
@@ -946,8 +946,8 @@ read login and journal reader
   | `existingSecret` with `credentials_source: static` | `api`, `packages`, `worker` and the restore and post-restore Jobs | `/var/run/secrets/quader/s3-<id>/` | `access_key_id_file`, `secret_access_key_file`, `session_token_file` |
   | `bucketKey`, `regionKey`, `endpointKey` | the same pods and the backup pods | `/var/run/secrets/quader/s3-<id>-location/` | `bucket_file`, `region_file`, `endpoint_file` |
   | `ca` | the same pods and the backup pods | `/var/run/secrets/quader/s3-<id>-ca/` | `ca_file` |
-  | `backupSource` | the backup pods only | `/var/run/secrets/quader/s3-<id>-backup/` | `backup.source.connections[]` entry of that connection (R-BAK-030); until the backup reads every connection, `backup.source.separate_credentials` and `credentials` with the first connection's (Q-HA-396) |
-  | `journalReader` | the post-restore and restore Jobs only, with their `journalCredentials.source: static` | `/var/run/secrets/quader/s3-<id>-journal/` | the credentials file of `--credentials-file` and `--journal-credentials-file` names the first connection's (Q-HA-396) |
+  | `backupSource` | the backup pods only | `/var/run/secrets/quader/s3-<id>-backup/` | the element of that connection in `backup.source.connections` (`connection`, `credentials_source: static`, the two key files; R-BAK-030), while `backup.enabled` |
+  | `journalReader` | the post-restore and restore Jobs only, with their `journalCredentials.source: static` | `/var/run/secrets/quader/s3-<id>-journal/` | the element of that connection in the credentials file of `--credentials-file` and `--journal-credentials-file` (R-BAK-030, Q-BAK-73); with `journalCredentials.source: default` the file holds an element `credentials_source: default` per connection |
 
   Each field is a volume of its own, `secret-s3-<id>`, `secret-s3-<id>-location`, `secret-s3-<id>-ca`, `secret-s3-<id>-backup`,
   `secret-s3-<id>-journal`, because the pods that read them differ; a provisioner's location is projected into the backup pods without
@@ -976,7 +976,8 @@ read login and journal reader
     endpoint of its region; an element whose bucket or endpoint comes from a file is the binary's to compare, whose marker of R-STOR-051
     catches it), and the backup target at any element's location (the rule of R-HA-029 for the target, per connection);
   - with `backup.enabled`, an element with `credentials_source: static` whose entry has no `backupSource` (R-BAK-030, Q-BAK-64); with a
-    `journalCredentials.source: static` of `restore` or `postRestore`, no `journalReader` in the entry of the first connection.
+    `journalCredentials.source: static` of `restore` or `postRestore`, an element without `drain: true` whose entry has no `journalReader`
+    (the refusal names each, [Q-HA-399](#q-ha-399--a-static-journal-reader-is-required-for-every-connection-without-drain)).
 - **The PrometheusRule** carries the alerts of [storage.md](storage.md) R-STOR-060 (R-HA-045).
 - The development and test profiles (`deploy/dev`, the stack of `test/integration`) render one connection; the integration case with
   two connections sets the list itself ([storage.md](storage.md) R-STOR-063). The chart's value set `ci/connections.yaml` renders two,
@@ -3525,7 +3526,7 @@ The platform layer is recommended, not required; its checks and rules are MVP (Q
 declared: [Q-HA-151](#q-ha-151--the-platform-check-verifies-what-the-operator-declared-and-nothing-else),
 [Q-HA-152](#q-ha-152--backuprecovery_window-and-backupobject_versioning-are-config-keys-with-the-startup-rule-of-r-ha-024),
 [Q-HA-153](#q-ha-153--quader-admin-backup-check-runs-the-checks-without-storing-them-and-exits-5-on-a-failed-one). The check names the
-results `archive_mode`, `object_versioning`, `noncurrent_expiry` and `grace_period`. Its gap is [H-564](#h-564--the-platform-check-reads-settings-not-outcomes).
+results `archive_mode`, `object_versioning`, `noncurrent_expiry` and `grace_period`; the two bucket checks run once per connection of the configuration and carry its id in the result and in the label `connection` (empty for the other two). Its gap is [H-564](#h-564--the-platform-check-reads-settings-not-outcomes).
 
 Configuration:
 
@@ -4954,8 +4955,8 @@ secrets:
   #    regionKey: ""                    # example: S3_REGION; set = region_file
   #    endpointKey: ""                  # example: S3_ENDPOINT (a host without scheme, which Quader reaches over https); set = endpoint_file
   #    ca: {existingSecret: "", key: ca.crt}               # the connection's ca_file, also in the backup pods; empty = the outbound trust store, or trustedCA with useForObjectStore
-  #    backupSource: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}   # backup pods only; read-only login, required with credentials_source static while backup.enabled (R-BAK-030)
-  #    journalReader: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}  # post-restore and restore Jobs only; lists object versions (R-HA-023); the credentials file names the first connection's (Q-HA-396)
+  #    backupSource: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}   # backup pods only; read-only login, its element of backup.source.connections; required with credentials_source static while backup.enabled (R-BAK-030)
+  #    journalReader: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}  # post-restore and restore Jobs only; lists object versions (R-HA-023), its element of the credentials file; required in the entry of every connection without drain with journalCredentials.source static (Q-HA-399)
   valkey:
     existingSecret: ""                  # required; example: quader-valkey
     usernameKey: username               # a missing key = the "default" user
@@ -12768,7 +12769,11 @@ the pods at start.
 
 ### Q-HA-396 · Until the backup and the journal read every connection, the chart names the first connection's read login and journal reader
 
-Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. **Superseded on 2026-11-22** by the rest of
+package E: the binary reads `backup.source.connections` and a credentials file of one element per connection, and the chart renders both
+in the target form of R-HA-072 (option (c)'s form, which this interim held back only because the binary refused it); the journal reader's
+refusal is [Q-HA-399](#q-ha-399--a-static-journal-reader-is-required-for-every-connection-without-drain). The interim helpers
+`quader.backupConnection` and `quader.journalConnection` are gone. An installation's values did not change.
 
 Context: the backup and the journal replay of the binary read the first connection of `storage.connections` today: the backup takes
 `backup.source.separate_credentials` and `backup.source.credentials` for it (`FirstClient` in
@@ -12819,6 +12824,28 @@ entry, and an entry's `existingSecret` that no field reads: an element without `
 
 **Choice:** (a). **Applied in the spec:** R-HA-072. Code: `quader.validateStorage` in
 [_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl).
+
+### Q-HA-399 · A static journal reader is required for every connection without drain
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with `journalCredentials.source: static` the interim form required the `journalReader` of the first connection (Q-HA-396). The
+journal goes to every connection without `drain: true` (storage.md R-STOR-059), and the replay reads each; a connection that the
+credentials file does not name is read with the runtime credential and a plain listing, where a delete marker set with the runtime
+credential hides an entry (R-HA-054).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The entry of every element without `drain: true` needs a `journalReader`; a draining connection's is used when it has one; the refusal names every connection that lacks one (chosen) | The file names every connection the journal goes to | Each copy of the journal is read with versions, so no holder of one connection's runtime credential can hide an entry on it; a draining connection, whose credential may be gone, does not block the render | An operator with several connections creates a versioned login per provider |
+| (b) At least one `journalReader` | Lenient | One login suffices | The connections without one are read with a plain listing, so the static source protects only some copies, which the value does not say |
+| (c) The first connection's, as before | The interim | Nothing to change | The other connections' entries are read without versions |
+
+**Choice:** (a). **Rationale:** `static` promises the version listing; it should hold for every copy the replay reads. The development agent
+would revisit this if a provider offered no versioned login and an operator needed static readers on the others only.
+
+**Applied in the spec:** R-HA-072, R-HA-029's refusal. Code: `quader.journalReadersMissing` and `quader.journalCredentialElements` in
+[_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl), [_validate_backup.tpl](../../deploy/helm/quader/templates/_validate_backup.tpl),
+`TestR_HA_072_SeveralConnectionsAndAProvisioner`.
 
 ### Q-HA-415 · The chart carries no key of the stored content
 

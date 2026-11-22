@@ -25,6 +25,7 @@ func NewPGFacts(db DB, schema string) *PGFacts { return &PGFacts{db: db, schema:
 var (
 	_ Facts           = (*PGFacts)(nil)
 	_ BlobStateReader = (*PGFacts)(nil)
+	_ CopyReader      = (*PGFacts)(nil)
 )
 
 func (f *PGFacts) read(ctx context.Context, fn func(qs *q.Queries) error) error {
@@ -92,6 +93,34 @@ func (f *PGFacts) BlobState(ctx context.Context, d format.Digest) (state, conten
 		return nil
 	})
 	return state, contentStatus, found, err
+}
+
+// PresentCopies implements [CopyReader]: the present copies of the digests at READ COMMITTED (R-BAK-030).
+func (f *PGFacts) PresentCopies(ctx context.Context, digests []format.Digest) ([]CopyRow, error) {
+	if len(digests) == 0 {
+		return nil, nil
+	}
+	keys := make([][]byte, len(digests))
+	for i := range digests {
+		keys[i] = digests[i][:]
+	}
+	var out []CopyRow
+	err := f.read(ctx, func(qs *q.Queries) error {
+		rows, err := qs.BackupPresentCopies(ctx, keys)
+		if err != nil {
+			return err
+		}
+		out = make([]CopyRow, 0, len(rows))
+		for _, r := range rows {
+			d, err := format.DigestOf(r.Sha256)
+			if err != nil {
+				return err
+			}
+			out = append(out, CopyRow{Digest: d, Connection: r.ConnectionID, Key: r.ObjectKey, StoredSize: r.StoredSize, Verified: r.Verified})
+		}
+		return nil
+	})
+	return out, err
 }
 
 // Pins returns up to limit pins of a run after a digest, in digest order (R-BAK-006): the copy phase pages through its to-copy

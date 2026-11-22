@@ -109,7 +109,6 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 	area := blobArea{store: store, storageKeys: skeys}
 	// The upload sessions (R-STOR-011): a replica that accepts uploads continues any session; the collection run of a worker
 	// expires them. A session starts on the first writable connection and stays on it (R-STOR-054).
-	first := conns.Targets()[0]
 	svc, err := uploads.New(uploads.Options{
 		DB: db, Connections: conns, Spool: store.Spool(), Storage: cfg, Metrics: bm, Log: a.log.With("component", "uploads"),
 	})
@@ -122,8 +121,8 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 		area.gc = blob.NewCollector(cfg, conns, db, blob.WithCollectorLogger(log), blob.WithCollectorMetrics(bm), blob.WithUploadSessions(cfg.Uploads),
 			blob.WithInstallation(opts.Installation))
 		a.gc.set(area.gc)
-		a.wireJournalShipper(clients[first.ID()], first.Prefix(), pg.db)
-		a.wireBackupCheck(clients[first.ID()])
+		a.wireJournalShipper(conns, pg.db)
+		a.wireBackupCheck(conns, clients)
 		// The usage fold of every worker replica (R-STOR-003): no lease, the folds of several replicas take disjoint rows.
 		fold, err := blob.NewUsageFolder(blob.UsageFolderOptions{
 			DB: db, Interval: cfg.Usage.FoldInterval, WatchdogTimeout: a.cfg.Health.WatchdogTimeout,

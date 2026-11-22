@@ -256,7 +256,9 @@ func RaiseRevisionColumns(ctx context.Context, tx meta.Tx, cols []meta.RevisionC
 // DeleteUnreferencedBlobs deletes the blob rows no column references, read from the catalog the way garbage collection reads
 // it (R-STOR-024 rule 3). After a restore that left out the remote caches' blobs and emptied the caches, these are the rows
 // that are neither referenced nor in the pool (R-BAK-008): a digest of the pool is referenced by a row that is not a cache
-// row. It returns the number deleted.
+// row. The copy rows of the deleted blobs go with them, as collection drops them with a blob row (storage.md R-STOR-052): the
+// fix-up of step 6 recorded a copy of every live blob (backup-and-restore.md R-BAK-030). It returns the number of blob rows
+// deleted.
 func DeleteUnreferencedBlobs(ctx context.Context, tx meta.Tx) (int64, error) {
 	ptx, ok := Unwrap(tx)
 	if !ok {
@@ -277,6 +279,9 @@ func DeleteUnreferencedBlobs(ctx context.Context, tx meta.Tx) (int64, error) {
 	}
 	tag, err := ptx.Exec(ctx, sb.String())
 	if err != nil {
+		return 0, err
+	}
+	if _, err := q.New(ptx).RestoreDropCopiesWithoutBlob(ctx); err != nil {
 		return 0, err
 	}
 	return tag.RowsAffected(), nil

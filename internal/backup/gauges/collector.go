@@ -23,6 +23,8 @@ type Collector struct {
 	journal  *journal.Metrics
 	expected time.Duration
 	clock    func() time.Time
+	// journalConns are the connections the journal goes to, the label values of the backlog.
+	journalConns []string
 
 	mu   sync.Mutex
 	last time.Time
@@ -34,6 +36,9 @@ type Options struct {
 	// Backup and Journal are the families to set; a nil member is not set.
 	Backup  *backup.Metrics
 	Journal *journal.Metrics
+	// JournalConnections are the ids of the connections without drain: true of this replica's configuration, to which the
+	// journal goes (storage.md R-STOR-059): the backlog is exported per connection.
+	JournalConnections []string
 	// ExpectedInterval is backup.expected_interval of this replica's configuration.
 	ExpectedInterval time.Duration
 	// Clock is the replica's clock for the reuse window; time.Now when nil.
@@ -42,7 +47,7 @@ type Options struct {
 
 // New builds a Collector and sets the gauge that comes from the configuration, so it is present before the first evaluation.
 func New(o Options) *Collector {
-	c := &Collector{reader: o.Reader, bak: o.Backup, journal: o.Journal, expected: o.ExpectedInterval, clock: o.Clock}
+	c := &Collector{reader: o.Reader, bak: o.Backup, journal: o.Journal, expected: o.ExpectedInterval, clock: o.Clock, journalConns: o.JournalConnections}
 	if c.clock == nil {
 		c.clock = time.Now
 	}
@@ -84,12 +89,14 @@ func (c *Collector) evaluate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	var pending int64
 	if c.journal != nil {
-		if pending, _, err = c.reader.JournalPending(ctx); err != nil {
+		pending, err := c.reader.JournalPending(ctx, c.journalConns)
+		if err != nil {
 			return err
 		}
-		c.journal.Pending.Set(float64(pending))
+		for _, conn := range c.journalConns {
+			c.journal.Pending.WithLabelValues(conn).Set(float64(pending[conn]))
+		}
 	}
 	if c.bak != nil {
 		c.setBackup(jobs, verify, hasVerify, allHeld, pinnedHeld)

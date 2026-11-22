@@ -190,6 +190,10 @@ type Result struct {
 	BytesCopied     int64 `json:"bytesCopied,omitempty"`
 	DamagedBlobs    int64 `json:"damaged,omitempty"`
 	DurationSeconds int64 `json:"durationSeconds,omitempty"`
+	// SourceFailures counts, per connection, the copies the run could not take: a missing object, another size, another
+	// digest, a connection that did not answer. The run went on with the next copy of the blob, or recorded the blob as damaged
+	// when none was left (R-BAK-030); the reads and the scrub of the installation find the same damage.
+	SourceFailures map[string]int64 `json:"sourceFailures,omitempty"`
 
 	UnregisteredTables []string `json:"unregisteredTables,omitempty"`
 	Warnings           []string `json:"warnings,omitempty"`

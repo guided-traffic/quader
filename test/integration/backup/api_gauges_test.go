@@ -88,7 +88,7 @@ func TestR_BAK_014_GaugesOverPostgres(t *testing.T) {
 	clock := time.Now()
 	col := gauges.New(gauges.Options{
 		Reader: backup.NewPGStore(db), Backup: backup.NewMetrics(reg), Journal: journal.NewMetrics(reg),
-		ExpectedInterval: time.Hour, Clock: func() time.Time { return clock },
+		ExpectedInterval: time.Hour, Clock: func() time.Time { return clock }, JournalConnections: []string{"default", "secondary"},
 	})
 	value := func(series string) (float64, bool) {
 		fams, err := reg.Registry().Gather()
@@ -217,9 +217,20 @@ func TestR_BAK_014_GaugesOverPostgres(t *testing.T) {
 		if v, _ := value(backup.MetricLastVerify); math.Abs(v-epoch(st, rid(5), "finished_at")) > 1e-3 {
 			t.Errorf("last verify = %v", v)
 		}
-		if v, ok := value(journal.MetricPending); !ok || v != 0 {
+		if v, ok := value(journal.MetricPending + "{connection=default}"); !ok || v != 0 {
 			t.Errorf("journal pending = %v, %v", v, ok)
 		}
+		// R-STOR-059: an outbox row that the connection default holds and secondary does not counts for secondary only.
+		st.Exec(`INSERT INTO storage_connections (id, bucket, prefix) VALUES ('default', 'b', 'p'), ('secondary', 'b2', 'p2') ON CONFLICT DO NOTHING`)
+		st.Exec(`INSERT INTO revocation_outbox (id, at, event, entry) VALUES ('0192f0c4-0000-7000-8000-000000000001', now(), 'token.revoked', '{"tokenId":"x"}')`)
+		st.Exec(`INSERT INTO revocation_outbox_shipped (outbox_id, connection_id) VALUES ('0192f0c4-0000-7000-8000-000000000001', 'default')`)
+		refresh()
+		d, _ := value(journal.MetricPending + "{connection=default}")
+		s, _ := value(journal.MetricPending + "{connection=secondary}")
+		if d != 0 || s != 1 {
+			t.Errorf("journal pending: default %v, secondary %v; want 0 and 1", d, s)
+		}
+		st.Exec(`DELETE FROM revocation_outbox`)
 	})
 
 	t.Run("R-BAK-014 a second evaluation inside 30 seconds does not read the table", func(t *testing.T) {
@@ -431,7 +442,7 @@ func TestR_API_050_BackupAPIOverPostgres(t *testing.T) {
 		if v := testenv.MetricValue(text, backup.MetricExpectedInterval); v != 3600 {
 			t.Errorf("expected interval = %v", v)
 		}
-		if v := testenv.MetricValue(text, journal.MetricPending); v != 0 {
+		if v := testenv.MetricValue(text, journal.MetricPending+`{connection="default"}`); v != 0 {
 			t.Errorf("journal pending = %v", v)
 		}
 		if strings.Contains(text, backup.MetricRunning+`{`) {

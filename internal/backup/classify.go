@@ -31,11 +31,12 @@ func Classify(err error) error {
 	return err
 }
 
-// Temporary reports an unreachable database or target, or a request that ran into its deadline: retrying later is useful.
+// Temporary reports an unreachable database, target or connection (an open circuit included), or a request that ran into its
+// deadline: retrying later is useful.
 func Temporary(err error) bool {
 	var ne net.Error
 	switch {
-	case postgres.IsUnavailable(err), blob.IsTransient(err):
+	case postgres.IsUnavailable(err), blob.IsTransient(err), errors.Is(err, blob.ErrCircuitOpen), errors.Is(err, ErrCopyUnavailable):
 		return true
 	case errors.As(err, &ne), errors.Is(err, io.ErrUnexpectedEOF), errors.Is(err, syscall.ECONNRESET), errors.Is(err, syscall.ECONNREFUSED),
 		errors.Is(err, syscall.EPIPE), errors.Is(err, context.DeadlineExceeded):

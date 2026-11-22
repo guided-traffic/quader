@@ -5,9 +5,10 @@ import (
 	"time"
 )
 
-// Store is the object store the journal lives in: the blob bucket of the installation that wrote it. The writer uses the
-// runtime credential (put only); the reader uses the blob-store credential or the journal credential of a restore
-// (R-BAK-015 "Journal reader"). The implementation is an adapter over the client that internal/blob/s3 builds.
+// Store is the object store of one connection the journal lives on (storage.md R-STOR-059): its bucket below its prefix. The
+// writer uses the runtime credential (put only); the reader uses the blob-store credential or the journal credential of a
+// restore (R-BAK-015 "Journal reader"). The implementations are adapters over a connection's client: ship.ConnectionStore over
+// its guard for the shipper, s3.JournalStore over an S3 client for a reader.
 type Store interface {
 	// Put writes an object. Writing the same key again with the same bytes is harmless (R-HA-054).
 	Put(ctx context.Context, key string, body []byte) error
@@ -26,20 +27,31 @@ type AllVersions interface {
 	GetAll(ctx context.Context, key string) ([][]byte, error)
 }
 
-// Outbox is revocation_outbox (R-HA-054), the transactional queue the audit writer fills.
+// Outbox is revocation_outbox (R-HA-054), the transactional queue the audit writer fills, with revocation_outbox_shipped, the
+// connections that hold the object of a row that is not yet on every connection (storage.md R-STOR-059).
 type Outbox interface {
-	// Claim returns up to limit rows in id order.
-	Claim(ctx context.Context, limit int) ([]OutboxRow, error)
-	// Delete removes shipped rows.
+	// Claim returns up to limit rows with an id above after (empty for the first) in id order, each with the connections that
+	// already hold its object.
+	Claim(ctx context.Context, after string, limit int) ([]OutboxRow, error)
+	// MarkShipped records that connections hold the objects of rows that stay because another connection does not yet.
+	MarkShipped(ctx context.Context, marks []Shipped) error
+	// Delete removes rows whose object every connection holds; their marks go with them.
 	Delete(ctx context.Context, ids []string) error
-	// Pending returns the number of rows and the age of the oldest (quader_revocation_journal_pending).
+	// Pending returns the number of rows and the age of the oldest.
 	Pending(ctx context.Context) (rows int64, oldest time.Duration, err error)
 }
 
-// Shipper writes the outbox rows to the store (R-HA-054 "Outbox and shipping"): a worker job runs it when its signal fires
-// and at least every backup.revocation_journal.ship_interval. A change never waits for it; during an outage of the object
-// store the outbox grows and ships afterwards. Ship writes the rows in id order, one object each, and deletes each row after
-// its object was written; it returns the number shipped. It never deletes an object.
+// Shipped is a connection that holds the object of an outbox row.
+type Shipped struct {
+	ID         string
+	Connection string
+}
+
+// Shipper writes the outbox rows to the store of every connection without drain: true (R-HA-054 "Outbox and shipping",
+// storage.md R-STOR-059): a worker job runs it when its signal fires and at least every backup.revocation_journal.ship_interval.
+// A change never waits for it; during an outage of a connection that connection's backlog grows and ships afterwards, and the
+// others do not wait for it. Ship writes the rows in id order, one object per row and connection, and deletes a row once every
+// connection holds its object; it returns the number of rows deleted. It never deletes an object.
 type Shipper interface {
 	Ship(ctx context.Context) (int, error)
 }

@@ -144,7 +144,7 @@ func sampleManifest() *Manifest {
 		Schema:    SchemaInfo{Step: 57, Steps: []SchemaStep{{Step: 1, Name: "00001_core", SHA256: strings.Repeat("a", 64)}}},
 		Postgres:  PostgresRef{ServerVersion: "17.6", Isolation: "repeatable read"},
 		StartedAt: at, SnapshotAt: at.Add(time.Second), CompletedAt: at.Add(time.Hour), PreviousBackupID: &prev,
-		Source: Source{Storage: StorageRef{Bucket: "quader-blobs", Prefix: "quader"}, RevocationJournal: true},
+		Source: Source{Connections: []ConnectionRef{{ID: "default", Bucket: "quader-blobs", Prefix: "quader"}, {ID: "secondary", Endpoint: "https://object.example", Bucket: "quader-copy", Prefix: "quader"}}, RevocationJournal: true},
 		Tables: []TableFile{{
 			Name: "items", Class: "data", File: "db/items.copy.zst",
 			Columns: [][2]string{{"id", "bigint"}, {"path", "text"}}, Rows: 3, Bytes: 100, CompressedBytes: 40, SHA256: strings.Repeat("b", 64),
@@ -214,17 +214,22 @@ func TestManifest(t *testing.T) {
 		m.Tables = append(m.Tables, m.Tables[0])
 		m.Secrets.KeyIDs = nil
 		m.Blobs.Damaged[0].Status = "gone"
+		m.Source.Connections = append(m.Source.Connections, m.Source.Connections[0], format0())
 		err := m.Validate()
 		if err == nil {
 			t.Fatal("no error")
 		}
-		for _, w := range []string{"listed twice", "secrets.keyIds", "status"} {
+		// R-BAK-030: the source names each connection once, with its id and its bucket.
+		for _, w := range []string{"listed twice", "secrets.keyIds", "status", "source connection default is listed twice", "an id and a bucket"} {
 			if !strings.Contains(err.Error(), w) {
 				t.Errorf("error lacks %q: %v", w, err)
 			}
 		}
 	})
 }
+
+// format0 is a source connection without an id or a bucket.
+func format0() ConnectionRef { return ConnectionRef{Prefix: "quader"} }
 
 func mustJSON(t *testing.T, v any) []byte {
 	t.Helper()

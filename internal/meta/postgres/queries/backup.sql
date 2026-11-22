@@ -158,9 +158,34 @@ SELECT count(*)::bigint FROM revocation_outbox;
 SELECT at FROM revocation_outbox ORDER BY id LIMIT 1;
 
 -- name: ClaimRevocationOutbox :many
--- The shipper takes rows in id order (R-HA-054). The worker job holds a singleton lease, so a plain read is enough; a row
--- whose object was written and whose deletion did not commit is shipped again under the same key.
-SELECT id::text AS id, at, event, entry FROM revocation_outbox ORDER BY id LIMIT sqlc.arg(row_limit)::int;
+-- The shipper takes rows in id order after a position (R-HA-054), each with the connections that hold its object already
+-- (storage.md R-STOR-059). The worker job holds a singleton lease, so a plain read is enough; a row whose object was written and
+-- whose deletion did not commit is shipped again under the same key. The position lets one run walk past rows that wait for a
+-- connection that is down.
+SELECT o.id::text AS id, o.at, o.event, o.entry,
+       COALESCE((SELECT array_agg(s.connection_id ORDER BY s.connection_id) FROM revocation_outbox_shipped s WHERE s.outbox_id = o.id),
+                '{}')::text[] AS shipped
+  FROM revocation_outbox o
+ WHERE o.id > sqlc.arg(after)::text::uuid
+ ORDER BY o.id
+ LIMIT sqlc.arg(row_limit)::int;
+
+-- name: InsertRevocationOutboxShipped :exec
+-- The connections that hold the object of a row that stays because another connection does not yet (storage.md R-STOR-059,
+-- Q-STOR-241); the two lists are zipped.
+INSERT INTO revocation_outbox_shipped (outbox_id, connection_id)
+SELECT unnest(sqlc.arg(outbox_ids)::text[])::uuid, unnest(sqlc.arg(connection_ids)::text[])
+ON CONFLICT DO NOTHING;
 
 -- name: DeleteRevocationOutboxRows :execrows
 DELETE FROM revocation_outbox WHERE id = ANY(sqlc.arg(ids)::text[]::uuid[]);
+
+-- name: RevocationOutboxPendingByConnection :many
+-- quader_revocation_journal_pending{connection} (storage.md R-STOR-059): per connection of the replica's configuration without
+-- drain, the outbox rows whose object it does not hold yet. The outbox holds a few rows between two runs of the shipper.
+SELECT c.id::text AS connection_id, count(o.id)::bigint AS pending
+  FROM unnest(sqlc.arg(connections)::text[]) AS c(id)
+  LEFT JOIN revocation_outbox o
+    ON NOT EXISTS (SELECT 1 FROM revocation_outbox_shipped s WHERE s.outbox_id = o.id AND s.connection_id = c.id)
+ GROUP BY c.id
+ ORDER BY c.id;

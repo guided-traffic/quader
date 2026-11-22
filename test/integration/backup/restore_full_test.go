@@ -13,6 +13,9 @@ import (
 
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -40,6 +43,26 @@ func fingerprint(s *testenv.Stack, tables []string) string {
 	return b.String()
 }
 
+// listKeys lists the keys below a prefix of a bucket of the destination's store with the client of its first connection.
+func listKeys(t *testing.T, d *destination, bucket, prefix string) []string {
+	t.Helper()
+	cfg := firstS3(d.cfg.Storage)
+	cfg.Bucket = bucket
+	c, err := s3.NewFromFactory(context.Background(), cfg, outbound.New(d.cfg.Proxy.Outbound))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := c.List(context.Background(), prefix, blob.ListOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []string
+	for _, o := range page.Objects {
+		out = append(out, o.Key)
+	}
+	return out
+}
+
 func exportedTables(src *source) []string {
 	var out []string
 	for _, t := range src.m.Tables {
@@ -58,6 +81,14 @@ func TestR_BAK_021_RestoreEndToEnd(t *testing.T) {
 	sourcePrint := fingerprint(src.stack, exportedTables(src))
 
 	dst := src.destination()
+	// R-BAK-030: the restoring installation has a second connection on another prefix of the stack's bucket; the restore checks
+	// and probes it, writes every blob into the first and records the copies there.
+	first := dst.cfg.Storage.Connections[0].WithDefaults()
+	second := first
+	secondPrefix := first.KeyPrefix() + "-second"
+	second.ID, second.Prefix = "secondary", &secondPrefix
+	dst.cfg.Storage.Connections = append(dst.cfg.Storage.Connections, second)
+	testenv.RemoveObjectsAtCleanup(t, second.Bucket, secondPrefix)
 	started := time.Now().Add(-time.Second)
 	rep, err := dst.restore(backup.RestoreOptions{SkipRevocationJournal: true})
 	if err != nil {
@@ -103,11 +134,25 @@ func TestR_BAK_021_RestoreEndToEnd(t *testing.T) {
 		// The restore's fix-up records a copy of every restored live blob and the connection it lies on; nothing else of the
 		// two tables comes back (storage.md R-STOR-047, backup-and-restore.md R-BAK-030).
 		recorded := map[string]bool{"storage_connections": true, "blob_copies": true}
-		if got, want := s.Number("SELECT count(*) FROM blob_copies"), s.Number("SELECT count(*) FROM blobs WHERE state = 'live'"); got != want {
-			t.Errorf("blob_copies holds %d rows for %d live blobs", got, want)
+		live := s.Number("SELECT count(*) FROM blobs WHERE state = 'live'")
+		if got := s.Number("SELECT count(*) FROM blob_copies"); got != live {
+			t.Errorf("blob_copies holds %d rows for %d live blobs", got, live)
 		}
-		if got := s.Number("SELECT count(*) FROM storage_connections"); got != 1 {
-			t.Errorf("storage_connections holds %d rows, want the one connection the restore wrote into", got)
+		// R-BAK-030: every connection of the configuration with its bucket and prefix, the copies present on the first under the
+		// names of its prefix, verified all or none (Q-BAK-72), and no queue row: the reconciliation's pass finds the second's gaps.
+		if got := s.Text("SELECT string_agg(id || '=' || bucket || '/' || prefix, ',' ORDER BY id) FROM storage_connections"); got !=
+			fmt.Sprintf("default=%s/%s,secondary=%s/%s", first.Bucket, first.KeyPrefix(), second.Bucket, secondPrefix) {
+			t.Errorf("storage_connections = %s", got)
+		}
+		if got := s.Number("SELECT count(*) FROM blob_copies WHERE connection_id = 'default' AND state = 'present' AND object_key = $1 || '/sha256/' || substr(encode(sha256, 'hex'), 1, 2) || '/' || substr(encode(sha256, 'hex'), 3, 2) || '/' || encode(sha256, 'hex')",
+			first.KeyPrefix()); got != live {
+			t.Errorf("%d present copies on default under its prefix, want %d", got, live)
+		}
+		if got := s.Number("SELECT count(DISTINCT verified_at IS NULL) FROM blob_copies"); got != 1 {
+			t.Error("some restored copies are verified and some are not")
+		}
+		if objs := listKeys(t, dst, second.Bucket, secondPrefix+"/"); len(objs) != 0 {
+			t.Errorf("the second connection holds %v; the restore writes into the first only", objs)
 		}
 		for _, tb := range tables.All() {
 			if tb.Class != tables.Transient || recorded[tb.Name] {

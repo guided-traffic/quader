@@ -3421,12 +3421,10 @@ R-STOR-062. Built (package B): sessions on their connection (R-STOR-054), collec
 orphan sweep per connection with the adoption (R-STOR-026), with the decisions Q-STOR-260 to Q-STOR-264. Built (package C): the
 reconciliation with its queue, its pass, the server-side and the streamed copies, the drain, the retirement, the journal pass and its
 metrics (R-STOR-056). Built (package D): the scrub with its repair, the gauge of the overdue copies, the audit event of a detection, the
-list of damaged blobs and the recheck (R-STOR-027), the operator check and `restore-versions` per connection (R-STOR-058). Built (the
-chart's part of package E): the chart's list (R-HA-072). Not built: the backup and restore per connection and the journal per connection
-(package E: R-BAK-030, R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built, the backup reads the first
-connection only
-([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads));
-one connection behaves as before this section, except that the orphan sweep now walks its `sha256/` too.
+list of damaged blobs and the recheck (R-STOR-027), the operator check and `restore-versions` per connection (R-STOR-058). Built (package
+E): the chart's list ([ha-and-helm.md](ha-and-helm.md) R-HA-072), the backup and restore per connection
+([backup-and-restore.md](backup-and-restore.md) R-BAK-030) and the journal per connection (R-STOR-059). Not built: the API and the screens
+(package F: R-STOR-061). One connection behaves as before this section, except that the orphan sweep now walks its `sha256/` too.
 
 **What "several connections" is not.** Every connection that is not draining holds every blob (a mirror kept by Quader), unlike the
 sharded stores of the catalog that spread blobs over sub-stores for capacity (STOR-013, STOR-026, and the parked "sharding over several
@@ -3999,7 +3997,7 @@ Priority: **P1** · Covers: quader-only
 The operator check moved here from R-STOR-027, whose scrub it is not
 ([Q-STOR-240](#q-stor-240--the-scrubs-evidence-becomes-true-by-moving-the-tests-that-name-it-for-another-part)). **Built** (package D,
 [blob-store.md](../developer/blob-store.md#storage-verify-r-stor-058-q-stor-200)), with `restore-versions` per connection
-([Q-STOR-268](#q-stor-268--restore-versions-takes-one-credential-per-run-and-several-connections-with-different-logins-take-a-run-each)).
+([Q-STOR-268](#q-stor-268--restore-versions-takes-each-connections-element-of-the-journal-readers-credentials-file)).
 
 - `quader admin storage verify [--connection <id>] [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json]` asks the store
   of each configured connection (or of the one named) for the object of every `present` copy of a `live` blob, with `HeadObject`, using
@@ -4049,22 +4047,35 @@ Priority: **P1** · Covers: quader-only
 | `_journal/revocations/…` | each connection with `drain: false` | below |
 
 - **The revocation journal** ([ha-and-helm.md](ha-and-helm.md) R-HA-054) is shipped to every connection with `drain: false` in the
-  shipper's configuration, through each connection's guarded client, so it passes the circuit breaker and the metrics (today the shipper
-  uses the plain client, [internal/app/wire_journal.go](../../internal/app/wire_journal.go) `wireJournalShipper`, a finding of the plan).
+  shipper's configuration, through each connection's guarded client, so it passes the circuit breaker and the metrics
+  ([internal/app/wire_journal.go](../../internal/app/wire_journal.go) `journalTargets`, [ship.go](../../internal/journal/ship/ship.go)).
   An outbox row is deleted once every such connection holds its object; until then a table `revocation_outbox_shipped (outbox_id,
-  connection_id)` records the connections that do, and `quader_revocation_journal_pending{connection}` shows the backlog per connection.
-  A connection that is unreachable delays only its own copy; a connection taken in later receives the older entries through the journal
-  pass of the reconciliation (R-STOR-056) ([Q-STOR-241](#q-stor-241--the-journal-goes-to-every-connection-and-an-outbox-row-waits-for-each)).
-- **The replay** reads `_journal/revocations/` on every reachable connection of the source, merges by key, counts identical bytes under
-  one key on two connections as one copy, and treats different bytes under one key as R-HA-054 treats two versions of a key (each replayed,
-  flagged).
+  connection_id)` records the connections that do, and `quader_revocation_journal_pending{connection}` shows the backlog per connection
+  (every `web` and `worker` replica counts it from PostgreSQL for the connections without drain of its configuration).
+  A connection that is unreachable delays only its own copy: a run of the shipper leaves it out for the rest of the run and walks the
+  outbox past the rows that wait for it ([Q-STOR-270](#q-stor-270--a-shipper-run-leaves-out-a-connection-that-failed-and-walks-on-past-the-rows-that-wait-for-it)).
+  A connection taken in later receives the older entries through the journal pass of the reconciliation (R-STOR-056)
+  ([Q-STOR-241](#q-stor-241--the-journal-goes-to-every-connection-and-an-outbox-row-waits-for-each)).
+- **The replay** reads `_journal/revocations/` on every connection of the source that can be listed, merges by key, counts identical bytes
+  under one key on two connections as one copy, and treats different bytes under one key as R-HA-054 treats two versions of a key (each
+  replayed, flagged with the connections that hold each) ([replay/reader.go](../../internal/journal/replay/reader.go)). A connection that
+  cannot be listed is reported as unreadable and the replay goes on with the others; when none can be listed the replay fails
+  ([Q-STOR-271](#q-stor-271--a-replay-goes-on-without-a-connection-that-cannot-be-listed-and-fails-when-none-can)). A restore reads the
+  connections its manifest names (backup-and-restore.md R-BAK-030), `quader admin post-restore` every connection of its configuration.
 - Every other key below a connection's `<prefix>/` is foreign: reported by the orphan sweep, never deleted.
 
 Acceptance criteria (unit, `internal/journal` with two in-memory stores):
 
 - With the second store failing, an entry ships to the first, its outbox row stays with one shipped row, and `quader_revocation_journal_pending{connection="secondary"}`
-  is 1; after the fault is lifted the entry lies on both and the outbox row is gone.
-- A replay over two stores whose objects of one key differ replays both and flags them; identical objects are replayed once.
+  is 1; after the fault is lifted the entry lies on both and the outbox row is gone (`TestR_STOR_059_TheJournalGoesToEveryConnection`; the
+  gauge's count per connection in `TestR_BAK_014_Gauges` of `internal/backup/gauges` and over PostgreSQL with a shipped mark in
+  `TestR_BAK_014_GaugesOverPostgres`).
+- A replay over two stores whose objects of one key differ replays both and flags them; identical objects are replayed once
+  (`TestR_STOR_059_TheReplayReadsEveryConnection`).
+
+**Status.** Built (the rest of package E): the shipper per connection through the guards, the marks of `revocation_outbox_shipped`, the
+backlog per connection, the replay over every connection of a restore and of a post-restore. The journal pass of the reconciliation is
+package C's.
 
 ### R-STOR-060 · The health of the connections
 Priority: **P1** · Covers: STOR-012
@@ -4207,11 +4218,11 @@ reaches the store through the host, [architecture.md](architecture.md) Q-ARCH-28
 | The race of R-STOR-005 and R-STOR-024 | integration, the existing race test run with two connections instead of one (it replaces, not adds) | as today | 0 s added |
 | Two real buckets: routing, server-side and streamed copy, metadata kept by a copy, fall-over and repair (R-STOR-056, R-STOR-062) | integration, `test/integration/blob`, the stack's SeaweedFS, the buckets `QUADER_TEST_S3_BUCKET_BLOBS` and `QUADER_TEST_S3_BUCKET_BACKUPS` ([testenv.go](../../test/integration/testenv/testenv.go)) | 3 objects of 1 KiB | 5 s |
 | Operator check per connection (R-STOR-058) | integration, `test/integration/storageverify` (two connections instead of one) | 3 objects | 1 s added |
-| Restore fills the first connection, the reconciliation the second ([backup-and-restore.md](backup-and-restore.md) R-BAK-030) | integration, `test/integration/backup`, one case | 3 objects | 8 s |
+| Restore fills the first connection, the reconciliation the second ([backup-and-restore.md](backup-and-restore.md) R-BAK-030); the backup takes the second copy | integration, `test/integration/backup`: the destination of `TestR_BAK_021_RestoreEndToEnd` has a second connection, the damaged-source case a second in-memory store; the reconciliation's half with package C | the existing cases' data, one blob of 15 bytes more | 0 s added (built) |
 | Metadata round trip, copy with replaced metadata, a wrong payload checksum refused, the server-side copy between two buckets (R-STOR-035) | the conformance checks: unit against `blobtest`, and the job `s3-conformance` against Silo | probe objects | 2 s added to the job |
 
 What each pipeline job gains (estimates): the unit job about 4 s (Go) and 1.5 s (Vitest); the chart test about 1 s; the integration shard
-that runs `blob` about 20 s, the one that runs `storageverify` about 1 s, the one that runs `backup` about 8 s; `s3-conformance` about
+that runs `blob` about 20 s, the one that runs `storageverify` about 1 s, the one that runs `backup` under 1 s (the checks and the probe of a second prefix, one blob more); `s3-conformance` about
 2 s; every end-to-end leg nothing. With 25 formats the cost is the same. Nothing of this needs the owner's provider; what only its real
 bucket can show (R-STOR-035's capabilities there) is a run of `quader admin storage check` against it, not a test.
 
@@ -8673,24 +8684,30 @@ on an `api` replica inside a request.
 **Choice:** (a). **Applied in the spec:** R-STOR-027, [api-and-ui.md](api-and-ui.md) R-API-040; code:
 [storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go), [recheck.go](../../internal/blob/scrub/recheck.go).
 
-### Q-STOR-268 · restore-versions takes one credential per run, and several connections with different logins take a run each
+### Q-STOR-268 · restore-versions takes each connection's element of the journal reader's credentials file
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it. It changes a sentence of
 [backup-and-restore.md](backup-and-restore.md) R-BAK-030, which spoke of "that connection's entry of `--credentials-file`".
 
-Context: the file of `--credentials-file` holds one credential (`replay.LoadCredentials`, the file of `post-restore`); a format with one
-entry per connection is package E's to define for the journal reader, and it does not exist on this package's base.
+Context: `restore-versions` lists and deletes object versions on every connection of its run, with a credential the runtime one lacks
+(R-HA-023). Package D built the command per connection on a base where the file of `--credentials-file` held one credential
+(`replay.LoadCredentials`, the file of `post-restore`) and chose (a), to be revisited once package E's per-connection file existed. Package
+E landed in the same change and made that file a list of elements keyed by the connection
+([backup-and-restore.md](backup-and-restore.md) [Q-BAK-73](backup-and-restore.md#q-bak-73--the-credentials-file-of-a-journal-reader-is-a-list-of-elements-keyed-by-the-connection)),
+which the chart renders for the post-restore Job with one `journalReader` per connection.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The one credential of `--credentials-file` is used on every connection of the run; connections whose versioning logins differ get a run each with `--connection` (chosen) | One file format | Works with the file the chart already renders; a run per connection is the natural unit of a provider's login; no second format beside package E's | An installation with two providers and two logins runs the command twice |
-| (b) A file of entries by connection id | One run | One command | A second credentials format beside the journal reader's, before that one is defined |
+| (a) One credential of `--credentials-file` on every connection of the run; connections whose versioning logins differ get a run each with `--connection` | One credential per run | No second file format before package E's | The file holds no single credential once Q-BAK-73 is built; an installation with two providers runs the command twice |
+| (b) Each connection takes its element of the journal reader's file, and a connection the file names none for keeps its own credential, as for a journal reader (chosen) | One run, one file, one rule for the file | The file the chart already renders for the post-restore Job, so the one-off Job from its pod template works on every connection; one format and one check (`replay.LoadCredentials`); a connection without missing copies needs no versioning login | A connection with missing copies that the file leaves out ends with its store's refusal of the version listing (exit 2), not before the run |
+| (c) As (b), but a connection the file names none for refuses the run before anything is read | Strict | A missing login is named first | A draining connection without a `journalReader` (Q-HA-399 requires one only without drain) refuses every run over all connections, even with nothing missing there |
 
-**Choice:** (a). **Rationale:** the step is a rare, manual one after a point-in-time restore; a run per connection is explicit. The
-development agent would revisit it when package E's per-connection file exists, to read the same file.
+**Choice:** (b). **Rationale:** the step is a rare, manual one after a point-in-time restore; it should take the file the operator already
+has, with the meaning that file has everywhere, and it needs a versioning login only where a copy is missing.
 
 **Applied in the spec:** R-STOR-058, [backup-and-restore.md](backup-and-restore.md) R-BAK-030; code:
-[admin_restoreversions.go](../../cmd/quader/admin_restoreversions.go).
+[admin_restoreversions.go](../../cmd/quader/admin_restoreversions.go) `restoreVersionsCredentials`, `connectionClients` in
+[admin_storage.go](../../cmd/quader/admin_storage.go).
 
 ### Q-STOR-269 · The operator check calls a blob lost when no copy it could ask is there and no present copy was left unasked
 
@@ -8708,6 +8725,45 @@ connection's checks.
 
 **Choice:** (a). **Applied in the spec:** R-STOR-058; code: [internal/blob/verify/verify.go](../../internal/blob/verify/verify.go),
 `verifyExit` ([admin_storage.go](../../cmd/quader/admin_storage.go)).
+### Q-STOR-270 · A shipper run leaves out a connection that failed and walks on past the rows that wait for it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-STOR-059 says that an unreachable connection delays only its own copy. The shipper of one connection stopped at its first
+failure and read the outbox from its start at every run; with a row that waits for one connection, a run that reads from the start reads
+that row again and never reaches the rows behind it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A connection whose write fails is left out for the rest of the run; the run reads the outbox once in id order after a position, so it passes the rows that wait; it ends when every connection failed or the outbox is read, and its error names each failed connection (chosen) | `Claim(after, limit)`, a set of failed connections per run | A connection that is down costs one failed request per run, not one per row; the others receive every row in the same run; the job's error says which connection lags | A run that meets a connection that is down returns an error, so the job records a failure every ship interval for as long as the outage lasts |
+| (b) Retry each row on each connection | No state per run | Simple | A connection that is down costs a timeout per row and the run never ends within its bound |
+| (c) Stop the run at the first failure, as with one connection | As before | Simple | The connections that answer wait for the one that does not, which R-STOR-059 rules out |
+
+**Choice:** (a). **Rationale:** the job's failure is the truth (an entry is not where it must be), the backlog gauge per connection and
+`QuaderRevocationJournalBacklog` say which; the shipping to the others never waits. The development agent would revisit this if the
+recorded failures of a long outage drowned other job failures.
+
+**Applied in the spec:** R-STOR-059. Code: [ship.go](../../internal/journal/ship/ship.go), `ClaimRevocationOutbox` in
+[backup.sql](../../internal/meta/postgres/queries/backup.sql).
+
+### Q-STOR-271 · A replay goes on without a connection that cannot be listed, and fails when none can
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-STOR-059 says the replay reads every "reachable" connection of the source, and R-HA-054 that a journal that cannot be listed is
+a journal not known to be complete. With several connections both hold at once: every entry lies on every connection without drain.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A connection whose listing fails is reported as an unreadable line with its reason and left out; the others are read and merged; no connection listed fails the replay and check 8 (chosen) | Reachable means listed | A restore after the loss of one provider replays from the others, which is why the journal goes to each (Q-STOR-241); the output says which connection was missing | An entry that only the missing connection holds (shipped while the others were down) is not replayed, and the output's line is the only sign |
+| (b) Any connection that cannot be listed fails the replay | Every connection or nothing | The journal is known complete | One provider's loss makes every restore refuse the journal, the disaster the several connections exist for |
+
+**Choice:** (a). **Rationale:** the outbox keeps a row until every connection holds its object, so an entry is on one connection alone only
+while the others were down; a restore in that window reads the line that names the missing connection. The development agent would
+revisit this if the replay's output proved too easy to overlook.
+
+**Applied in the spec:** R-STOR-059, [backup-and-restore.md](backup-and-restore.md) R-BAK-030. Code:
+[replay/reader.go](../../internal/journal/replay/reader.go).
 ### Q-STOR-275 · A download takes its blob's copies from its item lookup
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.

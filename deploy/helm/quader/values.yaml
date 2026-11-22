@@ -619,11 +619,11 @@ secrets:
   #    ca:                              # the connection's ca_file, its whole trust store; empty = the outbound trust store, or trustedCA with useForObjectStore
   #      existingSecret: ""             # example: internal-truststore
   #      key: ca.crt
-  #    backupSource:                    # the backup pods only, in place of existingSecret: a login that may only read this connection (s3:GetObject, s3:ListBucket, R-BAK-015); required with credentials_source static while backup.enabled
+  #    backupSource:                    # the backup pods only, in place of existingSecret: a login that may only read this connection (s3:GetObject, s3:ListBucket, R-BAK-015), its element of backup.source.connections; required with credentials_source static while backup.enabled
   #      existingSecret: ""             # example: quader-s3-read
   #      accessKeyIdKey: access-key-id
   #      secretAccessKeyKey: secret-access-key
-  #    journalReader:                   # the restore and post-restore Jobs only, with their journalCredentials.source static: a login that lists the object versions of this connection (s3:ListBucketVersions, R-HA-023)
+  #    journalReader:                   # the restore and post-restore Jobs only, with their journalCredentials.source static: a login that lists the object versions of this connection (s3:ListBucketVersions, R-HA-023); required then in the entry of every connection without drain
   #      existingSecret: ""             # example: quader-s3-versions
   #      accessKeyIdKey: access-key-id
   #      secretAccessKeyKey: secret-access-key

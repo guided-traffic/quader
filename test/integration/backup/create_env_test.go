@@ -325,12 +325,15 @@ func (in *install) pipeline(r *rig) (*create.Pipeline, *postgres.DB) {
 	}
 	facts := backup.NewPGFacts(db, cfgDB.Schema)
 	d := create.Deps{
-		Cfg: r.cfg, SourceRef: format.StorageRef{Endpoint: in.s3cfg.Endpoint, Bucket: in.s3cfg.Bucket, Prefix: in.s3cfg.Prefix},
-		Instance: instance, Version: "0.1.0", Revision: "it", BackupRole: "it",
+		Cfg:               r.cfg,
+		SourceConnections: []format.ConnectionRef{{ID: config.DefaultConnectionID, Endpoint: in.s3cfg.Endpoint, Bucket: in.s3cfg.Bucket, Prefix: in.s3cfg.Prefix}},
+		Instance:          instance, Version: "0.1.0", Revision: "it", BackupRole: "it",
 		Store: backup.NewPGStore(db), Facts: facts, Grants: facts, Pins: facts, BlobState: facts,
 		Snapshot: backup.NewPGSnapshotter(db),
-		Source:   backup.NewStoreSource(in.obj, in.s3cfg.Prefix, in.s3cfg.Endpoint, in.s3cfg.Bucket),
-		Target:   r.tgt, Events: backup.NewPGEvents(db, instance, quiet),
+		Source: backup.NewStoreSource(facts, []backup.SourceConnection{{
+			ID: config.DefaultConnectionID, Objects: in.obj, Endpoint: config.NormalizeEndpoint(in.s3cfg.Endpoint), Bucket: in.s3cfg.Bucket, ServerSide: true,
+		}}),
+		Target: r.tgt, Events: backup.NewPGEvents(db, instance, quiet),
 		Metrics: r.metrics, Log: quiet,
 	}
 	if d.Metrics == nil {
