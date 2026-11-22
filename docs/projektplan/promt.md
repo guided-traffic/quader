@@ -1637,6 +1637,11 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
+- **The owner is away from 2026-11-22, 11:00, until the evening** ("Ich bin jetzt wieder weg. Wir sehen uns heute Abend
+  wenn ich wieder im Büro bin. Viel Erfolg bei der Umsetzung"). The development agent builds on alone: the
+  Bastion that serves every format and the storage topic by its stages; the timer of every 30 minutes is set
+  again; no measurement against his object storage provider today; the walk through the open questions (16 in
+  the list of "With the owner") is for the evening.
 - **In work since 2026-11-22, 10:51: the planners of the storage topic's first and third stage** (several
   connections with the reconciliation and the scrub; signed links). The owner answered all fifteen decisions
   of its working paper by 10:48, each as the development agent's favourite at that time, two of them changed
@@ -3732,7 +3737,10 @@ that reads the bucket**
   so a research of its object storage reads its documentation since 10:58 (what it supports of copies with new
   metadata, checksums, conditional writes, versioning and object lock, signed links; nothing is called at the
   provider). The first stage stays first also for one connection: switching encryption on later is a second
-  entry of the same bucket under another prefix that the reconciliation fills (decision 7). **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
+  entry of the same bucket under another prefix that the reconciliation fills (decision 7). **No measurement against his
+  provider today** (his word at 11:00: "Stackit kann ich dir im Moment nicht bieten für einen test. Das wird heute
+  nichts. Machen wir ggf. später."); the research reads the provider's documentation, and what needs a real
+  bucket of that provider stays "not verified" in every package until he offers one. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
   the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
