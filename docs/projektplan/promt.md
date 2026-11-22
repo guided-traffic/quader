@@ -2112,6 +2112,10 @@ runs are in `git log`; this section holds the current state.
   landing's gates are through. The owner's installation runs the newest release; the exemption of the
   challenge's path lies uncommitted in his base repository for his review, and the Bastion's
   certificate stands at two failed attempts until then.
+- **The timer's check at 20:44,** during the walk through the questions with the owner: the landing's gates
+  of the keys exit 0 up to the fifth of six integration areas, the query budget runs; the stacking, the
+  links' package and the trace of the writer's read are at work, each active within two minutes; the load
+  is 7; his installation and its Bastion run the newest release, ready.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -4352,7 +4356,8 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
 3. **A gate at the upload as well for npm and NuGet (Q-SIG-79).** Built: (a) no, one behaviour for every format.
    **Answered by him on 2026-11-22 at 20:42: (a), as built** ("a"). Not measured, and told to him: how long a
    correctly signed npm or NuGet package is held back between its publish and the worker's verdict.
-4. **Debian and the gate (Q-SIG-80).** Built: (a) the setting is not offered.
+4. **Debian and the gate (Q-SIG-80).** Built: (a) the setting is not offered. **Answered by him on 2026-11-22 at
+   20:44: (a), as built** ("a").
 5. **Where an image's receipt stands (Q-SIG-66).** Built: (b) as a referrer only where it hides no older signature of a
    publisher, otherwise through the API.
 6. **What proves the time of a receipt (Q-SIG-63).** Built: (a) nothing for now.
