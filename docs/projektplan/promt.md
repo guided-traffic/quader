@@ -1694,6 +1694,14 @@ runs are in `git log`; this section holds the current state.
   review. **Its tests cost** 0.35 s of test time and about 2.4 s of process time in the unit job, nothing
   elsewhere; the nightly job about 27 runner minutes (estimated, it has not run). **Not verified:** the nightly
   job on the pipeline; the format's speed. Its worktree and branch are removed.
+- **The long legs of package C's run were ended by the next push, and the Bastion's end-to-end set has not run on
+  C in the pipeline** (read at 14:01: the run of 13:35 cut its release at 13:49, and the push of the encryption's
+  format at 13:59 ended its integration shards, its layout job and its legs `bastion`, `npm` and `access-long`).
+  The shards and the reference leg run again with the run of 13:59 on the same tree; the leg `bastion` is not
+  chosen by that push, which touched nothing of the Bastion. It runs with the push of package D (the suite's own
+  files) or of the Bastion's cache, and **the development agent lets that run's Bastion and registry legs end
+  before the next push of code,** stacking what is ready meanwhile. Until then C is shown by its builder's
+  integration area and real clients, not by the pipeline's end-to-end set.
 - **The release with package C of the Bastion runs on the owner's installation since 13:58** (cut at 13:49,
   image and chart published at 13:55; read on the cluster at 14:00: every Deployment ready, no restart). His
   installation runs no Bastion, so the feature itself does not show there (number 17 of his list).
