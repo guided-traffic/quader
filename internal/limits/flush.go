@@ -76,14 +76,25 @@ func (e *Engine) Flush(ctx context.Context) {
 	var drops, renews []lease
 	paced := map[string]bool{}
 	for _, c := range charges {
-		finished := c.finished.Load() && c.holds.Load() <= 0
+		// The request itself, its count and the limits it met, is recorded once it has ended: until then the subject (a token
+		// request's, R-LIM-003) and the repository that serves it (a virtual repository's member, R-LIM-027) may still change. Its
+		// bytes, upstream requests and refusal go on at every flush, under what is known then.
+		ended := c.finished.Load()
+		finished := ended && c.holds.Load() <= 0
 		cached, uncached := c.pendCached.Swap(0), c.pendUncached.Swap(0)
 		upstream, refused := c.pendUpstream.Swap(0), c.pendRefused.Swap(0)
-		requests, bg := c.pendRequests.Swap(0), c.pendBg.Swap(0)
+		bg := c.pendBg.Swap(0)
+		var requests int64
+		if ended {
+			requests = c.pendRequests.Swap(0)
+		}
 		c.mu.Lock()
 		subj, res, key, mode, ceil := c.Subject, c.Resolution, c.Key, c.Mode, c.ceiling
-		events := c.events
-		c.events = nil
+		var events []event
+		if ended {
+			events = c.events
+			c.events = nil
+		}
 		l := c.lease
 		if finished && l != nil {
 			c.lease = nil

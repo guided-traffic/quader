@@ -4179,14 +4179,30 @@ the walk items and the run record); what the code holds beyond the plan has not 
   replica gracefully, which releases them.
 - **End to end, not verified:** the `RateLimit` policies of the parallel, upstream and refused figures; the charging of a host
   bound to a repository (no test); the daily fold's sums with rows older than 30 days (only that the query runs).
-- **`TestR_LIM_001`** failed once in 13 runs of its builder with "1 request charged to an address", not reproduced; it prints
-  the rows if it happens again. **It happened again on 2026-11-22 in the pipeline** (run 44958303829, `integration (shard
-  b)`, the first run with four shards): the row is `127.0.0.1 instance repo=- requests=1 refused=0`. The replica's log of
-  the test shows its own three requests (an upload as a user, the token request with Basic, the registry request with the
-  registry token), each charged to its user or its technical token. So the row comes from elsewhere: a request the log
-  does not show, or the usage of an earlier test of the package written late into the same database. To read at the
-  next recurrence or when a builder has room: which test of the package makes an unauthenticated request at the
-  instance's level, and whether a stack's usage buffer can still write after its test has ended.
+- **`TestR_LIM_001` and `TestR_LIM_027_AWellKnownMember…`, red in the pipeline on 2026-11-22: found and repaired, a product
+  defect.** Run 44958303829 (`integration (shard b)`): `TestR_LIM_001` found `127.0.0.1 instance repo=- requests=1
+  refused=0`; run 44967924325: the via test's row (`requests >= 1 AND uncached_bytes > 0` at `upstream/npmjs` with
+  `npm-all`) never came, though its fetch was answered 200 with 6169 cached and 10555 uncached bytes. **One cause:** the
+  charge buffer recorded a request's count in the usage store at the first flush after stage 7, under the subject and the
+  serving repository known at that moment. A flush (every 200 ms in the stack) that fell before the token handler's
+  `Retarget` put the token request under the address; one that fell after the dispatcher's `Served` and before the member's
+  `ServedThrough` put the request under `npm-all` and left the member's row with the bytes and `requests=0`. Besides,
+  `Retarget` made a second, tracked charge: every token request was counted twice and that charge stayed in the buffer for
+  the replica's life. **Verified:** both failures reproduced on the unfixed code with the CI messages (the via test printing
+  `repo=2 via=4 requests=0 cached=6169 uncached=10555; repo=4 via=- requests=1`) by a charge-buffer flush of 1 ms, a
+  change made only for the reproduction; the double count in the stack at 200 ms (the token charged 3 for 2 requests); new
+  unit tests that put a flush between the steps fail on the unfixed code. The pipeline's databases are gone: that this
+  mechanism is what hit there is inferred from the same row and the same byte counts, and from the replica's log, in which
+  the token request is the only request that was anonymous for a while. Not the fourth shard's load: the area took
+  122.8 and 126.2 s in green runs with three shards, 126.9, 129.6 and about 129 s (139.3 less the failed wait) with four, and its
+  measured waits (the switch to Audit 20 to 25 ms, the floor's 4.03 s) are the same. The windows, measured on the
+  development machine in three runs each: stage 7 to `Retarget` 5.6 to 8.7 ms, stage 7 to `ServedThrough` 5.2 to 14.9 ms,
+  so a flush every 200 ms hits one in about 3 to 7 runs of 100 per test (`TestR_LIM_001`'s builder saw 1 in 13).
+  **Repaired:** a request's count and the limits it met reach the usage store at the flush after it ended, its bytes at
+  every flush, and `Retarget` moves the request's own charge. The integration test now asserts exactly two requests of the
+  token, and the via test prints the reader's rows when it fails. Not known: the windows' width on the runners, and so
+  whether two hits in four runs of one night is more than chance; nothing in the area's timings says the runners got
+  slower.
 - **A multi-platform push** against the write class was not measured (single-platform, 40 layers: Q-LIM-56).
 - **The new client cases have run on `linux/arm64` only** when this was written; the first pipeline on the runners shows
   them on `linux/amd64`.

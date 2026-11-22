@@ -629,6 +629,59 @@ func TestR_LIM_025_TheBlock(t *testing.T) {
 	})
 }
 
+// TestR_LIM_003_ATokenRequestIsRecordedOnceUnderTheSubjectItsHandlerAuthenticated: the registry's token service is anonymous at
+// stage 7 and charged to the subject its handler authenticated (Retarget). The usage store records the token request once, under
+// that subject and never under the address, whether or not a flush of the charge buffer fell between stage 7 and the handler; a
+// token request whose credential failed is one request and one refused request of the address; and no charge is left in the
+// buffer after the request ended.
+func TestR_LIM_003_ATokenRequestIsRecordedOnceUnderTheSubjectItsHandlerAuthenticated(t *testing.T) {
+	ctx := context.Background()
+	const addr = "198.51.100.30"
+	token := Caller{Kind: CallerServiceAccount, PrincipalID: "sa-puller", TechnicalTokenID: "tt-1", Client: netip.MustParseAddr(addr)}
+	for _, tc := range []struct {
+		name         string
+		flushBetween bool
+		caller       Caller
+		refused      bool
+	}{
+		{name: "a valid technical token", caller: token},
+		{name: "a valid technical token, a flush between stage 7 and the handler", flushBetween: true, caller: token},
+		{name: "a credential that failed", caller: anonCaller(addr), refused: true},
+		{name: "a credential that failed, a flush between stage 7 and the handler", flushBetween: true, caller: anonCaller(addr), refused: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := newRig(t, ModeEnforce, BuiltinProfiles()[ProfileAnonymous])
+			c := r.e.Begin(anonCaller(addr), qname.Repo{})
+			c.DeferRequestFigures()
+			if st := r.e.Check(ctx, c, time.Time{}, nil); st.Err != nil {
+				t.Fatal(st.Err)
+			}
+			if tc.flushBetween {
+				r.e.Flush(ctx)
+			}
+			if tc.refused {
+				c.MarkRefused()
+			}
+			c.Retarget(ctx, tc.caller)
+			c.AddCached(920)
+			r.e.Finish(c)
+			r.e.Flush(ctx)
+			r.e.Flush(ctx)
+			subject, _ := SubjectOf(tc.caller)
+			want := usageCounts{requests: 1, cached: 920}
+			if tc.refused {
+				want.refused = 1
+			}
+			if rows := r.usage.rows(); len(rows) != 1 || rows[usageRow{subject: subject.String()}] != want {
+				t.Fatalf("recorded %+v, want %+v under %s alone", rows, want, subject)
+			}
+			if n := r.e.activeCharges(); n != 0 {
+				t.Fatalf("%d charges left in the buffer after the token request ended", n)
+			}
+		})
+	}
+}
+
 func TestR_LIM_023_Pacing(t *testing.T) {
 	f := BuiltinProfiles()[ProfileAnonymous]
 	f[CachedBytesPerSecond] = 1000

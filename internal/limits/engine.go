@@ -288,6 +288,18 @@ func (e *Engine) Begin(caller Caller, repo qname.Repo) *Charge {
 }
 
 func (e *Engine) chargeFor(s Subject, repo qname.Repo) *Charge {
+	res, key, mode := e.resolve(s, repo)
+	c := &Charge{
+		e: e, Subject: s, Resolution: res, Key: key, Mode: mode, Addressed: repo,
+		id: e.nextID(), started: e.now(),
+	}
+	c.pendRequests.Store(1)
+	e.track(c)
+	return c
+}
+
+// resolve is the rule of a subject at the repository a request names (R-LIM-013): its resolution, its budget key and the mode.
+func (e *Engine) resolve(s Subject, repo qname.Repo) (Resolution, string, Mode) {
 	x := e.index()
 	var res Resolution
 	if x != nil {
@@ -295,13 +307,7 @@ func (e *Engine) chargeFor(s Subject, repo qname.Repo) *Charge {
 	} else {
 		res.Place = InstancePlace()
 	}
-	c := &Charge{
-		e: e, Subject: s, Resolution: res, Key: BudgetKey(s, res.Place), Mode: x.Settings().Mode, Addressed: repo,
-		id: e.nextID(), started: e.now(),
-	}
-	c.pendRequests.Store(1)
-	e.track(c)
-	return c
+	return res, BudgetKey(s, res.Place), x.Settings().Mode
 }
 
 // Stage is what stage 7 decided.
@@ -903,16 +909,16 @@ func (e *Engine) FailedCredential(caller Caller, repo qname.Repo) {
 	c.finished.Store(true)
 }
 
-// retarget moves a token request to the subject its handler authenticated (R-LIM-003): the request is counted under the new
-// budget key's request windows at the next flush, and the usage store records it there.
+// retarget moves a token request to the subject its handler authenticated (R-LIM-003): the request is counted in the new budget
+// key's request windows at once, and the usage store records the charge's one request under the new subject once it has ended.
 func (e *Engine) retarget(ctx context.Context, c *Charge, s Subject) {
-	n := e.chargeFor(s, c.Addressed)
+	res, key, mode := e.resolve(s, c.Addressed)
 	c.mu.Lock()
-	c.Subject, c.Resolution, c.Key, c.Mode = n.Subject, n.Resolution, n.Key, n.Mode
+	c.Subject, c.Resolution, c.Key, c.Mode = s, res, key, mode
 	c.mu.Unlock()
-	f := n.Figures()
+	f := res.Figures
 	var b cluster.LimitBatch
-	bucket := cluster.LimitBucket(n.Key)
+	bucket := cluster.LimitBucket(key)
 	now := e.now()
 	if bw := burstWindow(f); bw > 0 {
 		idx, _ := cluster.WindowIndex(now, bw)

@@ -115,6 +115,14 @@ func TestR_LIM_027_AWellKnownMemberServedThroughATeamsVirtualRepositoryRecordsTh
 	if a := e.st.Do(e.r, "GET", path, e.reader, nil); a.Status != 200 || a.Header.Get("Quader-Resolved-From") != "upstream/npmjs" {
 		t.Fatalf("the tarball through npm-all: %d from %q", a.Status, a.Header.Get("Quader-Resolved-From"))
 	}
+	defer func() {
+		if t.Failed() {
+			t.Logf("the reader's five-minute rows (npm-all %d, upstream/npmjs %d): %s", all, npmjs, e.st.Text(`SELECT COALESCE(string_agg(
+				'repo=' || COALESCE(repository_id::text, '-') || ' via=' || COALESCE(via_repository_id::text, '-') || ' requests=' || requests ||
+				' cached=' || cached_bytes || ' uncached=' || uncached_bytes, '; '), 'none') FROM usage_bucket WHERE granularity = '5m' AND subject_ref = $1`,
+				e.readerPrincipl))
+		}
+	}()
 	testenv.WaitFor(t, "the usage row of the fetch through npm-all", 10*time.Second, func() bool {
 		n, err := e.st.TryNumber(`SELECT count(*) FROM usage_bucket WHERE granularity = '5m' AND subject_ref = $1
 			AND repository_id = $2 AND via_repository_id = $3 AND requests >= 1 AND uncached_bytes > 0`, e.readerPrincipl, npmjs, all)

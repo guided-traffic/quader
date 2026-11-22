@@ -42,7 +42,7 @@ func (e *env) tokenRow(t *testing.T, id string) map[string]any {
 
 // R-LIM-001: a registry token issued for a technical token's secret is charged to the technical token, on the request path: the
 // token request of a docker-style exchange (Basic with the secret, R-LIM-003: charged after the token service authenticated it) and
-// the registry request with the registry token. Nothing is charged to the client's address.
+// the registry request with the registry token, each once. Nothing is charged to the client's address.
 func TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken(t *testing.T) {
 	var sat, technical string
 	e := newEnvWith(t, envOptions{valkey: true, seed: func(st *testenv.Stack) {
@@ -66,8 +66,8 @@ func TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken(t
 		t.Fatalf("registry request: %d %s", a.Status, a.Body)
 	}
 	time.Sleep(2500 * time.Millisecond) // the charge buffer and the usage buffer flush
-	if n := e.usageOf("technical_token", technical); n < 2 {
-		t.Fatalf("the technical token was charged %d requests, want the token request and the registry request", n)
+	if n := e.usageOf("technical_token", technical); n != 2 {
+		t.Fatalf("the technical token was charged %d requests, want 2: the token request and the registry request", n)
 	}
 	if n := e.st.Number(`SELECT COALESCE(sum(requests), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'anonymous'`); n != 0 {
 		rows := e.st.Text(`SELECT string_agg(subject_ref || ' ' || place || ' repo=' || COALESCE(repository_id::text, '-') || ' requests=' || requests || ' refused=' || refused, '; ') FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'anonymous'`)
