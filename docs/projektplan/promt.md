@@ -596,6 +596,11 @@ records the recorder that tells such a stall apart).
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
 - The 429s of the renders came from the `read` class (`make ui-renders` opens three pages of one user at once); the UI development
   profile admits more. Not verified: restoring many tabs at once may reach the limit.
+- **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
+  `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
+  `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
+  tables held no event and no metric of the signatures before the gate's two were added; the location notes of
+  the German translation file are stale.
 
 ### Product
 
@@ -4375,6 +4380,20 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
    audit event and a metric for every read that passes the gate only because the caller may write, shaped as
    the gate's refusals are, with the decision block's status, R-SIG-064 and H-1229 changed in the same commit;
    unit tier. Builders with a test load: the stacking, the links, this one, and the landing's gates of the keys.
+   **The trace reported at 21:03 and is in the landing's gates since 21:05** (one commit of the type `feat`; its
+   builder worked from 20:36 to 21:03; every gate exits 0, the signatures' integration area among them). A
+   writer's read through the gate leaves the audit event `signature.download_by_writer`, shaped as the refusal's
+   event with the reason a reader would have got, and counts in
+   `quader_signatures_downloads_by_writer_total{reason}`. It is written after the download was served and no
+   other check refused it, into the audit writer's buffer as the refusal's is: no statement and no wait on the
+   request, so a download still costs one statement. Decision Q-SIG-240: one event a minute per repository,
+   path, caller and client address on each replica, and the metric counts every download; a tool's `HEAD` and
+   `GET` are one event and two counts, and the caller joined the refusal's key too, so two callers behind one
+   address get an event each. With the trace taken out the new test fails. The four decision blocks carry his
+   name. Moved onto the keys by the development agent without a conflict, the translation source extracted
+   afresh into the commit. **Not verified:** `cosign sign` and `notation sign` against a running installation
+   with the event read from the audit log; the German label on the screen. It is pushed when the keys' run
+   has finished its integration shards, since a push cancels a run in progress.
 2. **How strong the gate is without chosen anchors (Q-SIG-76).** Built: (a) whatever shows as verified passes, with a
    warning at the setting. **Answered by him on 2026-11-22 at 20:39: (a), as built** ("a"), told with the weakness
    that stays (H-1194). The statuses of the decision blocks he confirms in this walk are changed in one commit of
