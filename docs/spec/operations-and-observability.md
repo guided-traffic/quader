@@ -161,7 +161,7 @@ their `degraded` state.
 | `schema` | The applied schema version is inside the window this binary supports: at least the highest migration it embeds, with a `compat_floor` not above its version ([ha-and-helm.md](ha-and-helm.md) R-HA-018), and `system_state` holds no `restore_in_progress` marker ([backup-and-restore.md](backup-and-restore.md) R-BAK-021) | gating; a connectivity failure gets the outage grace below | A replica never serves against a schema it does not understand, or against a half-restored database |
 | `database` | `SELECT 1` on the replica's control connection ([architecture.md](architecture.md) R-ARCH-019) succeeds within the timeout, and the server is a primary | gating, with the outage grace below | Nothing works without PostgreSQL (INV-3). The control connection keeps an exhausted request pool from failing the check, so load never takes replicas out of the Service one after another ([ha-and-helm.md](ha-and-helm.md) R-HA-008, Q-HA-20) |
 | `invalidation` | The last successful change-log poll is younger than `cluster.epoch_max_staleness` ([architecture.md](architecture.md) R-ARCH-018) | gating | A replica that cannot poll the change log cannot bound how stale its revocations and policies are (INV-8, INV-9). The check depends on PostgreSQL only, never on Valkey. The poll runs on the replica's reserved control connection ([architecture.md](architecture.md) R-ARCH-019), so a saturated request pool does not fail it. Its evaluations start failing only once the poll has been stale for `cluster.epoch_max_staleness`, and it is debounced like `database`, so for the same outage it never turns a replica unready sooner than `database` does ([ha-and-helm.md](ha-and-helm.md) R-HA-008) |
-| `objectStore` | A `HEAD` request on the bucket (or on a sentinel object under the configured prefix) succeeds within the timeout | gating until the replica is first ready, then reported; gating throughout with `health.require_object_store: true` (Q-OPS-2) | The first readiness also requires the object-store startup check of [storage.md](storage.md) R-STOR-035, so a release with a wrong bucket never replaces working pods |
+| `objectStore` | A `HEAD` request on the bucket (or on a sentinel object under the configured prefix) succeeds within the timeout, for each connection of [storage.md](storage.md) R-STOR-050; the reason names the connections that fail | gating until the replica is first ready, then reported; gating throughout with `health.require_object_store: true` (Q-OPS-2), then while no connection that is not draining answers | The first readiness requires the object-store startup check of [storage.md](storage.md) R-STOR-035 on one connection that is not draining and no configuration error on any such connection (R-STOR-060), so a release with a wrong bucket never replaces working pods and one provider's outage does not hold new pods back |
 | `valkey` | The Valkey health probe ([architecture.md](architecture.md) R-ARCH-030: a `SET` of the replica's probe key with its expiry) succeeds within `valkey.command_timeout`, and the replica's Valkey circuit is closed ([ha-and-helm.md](ha-and-helm.md) R-HA-057) | reported; before the replica is first ready it gates on a *configuration error* only (Q-HA-13), found in Valkey's first answer, which the `startup` check waits for | Valkey holds shared ephemeral state only (INV-3). While it is unavailable every mechanism runs its fallback, so the replica still answers correctly and stays in the Service (INV-12) |
 | `tls` | Every TLS material of the listeners that this process serves has loaded at least once (the pairs and the client CA of each listener; [architecture.md](architecture.md) R-ARCH-035). A rotation that does not load keeps the previous material and does not change the check | gating until the replica is first ready, then never again | A replica whose listeners cannot serve a handshake does not enter the Service; a later broken rotation is counted in `quader_tls_reload_errors_total` and does not make the replica unready |
 | `configBootstrap` | Startup configuration documents were applied (R-OPS-031); passes trivially when none are configured | gating | An invalid document stalls a rollout instead of breaking the service |
@@ -493,6 +493,11 @@ Each check also carries `durationMs`, how long its last finished run took (Q-OPS
 the check has not finished a run; the admin dashboard shows the slowest run per dependency as its
 connection latency.
 
+**Object-store view** ([storage.md](storage.md) R-STOR-060). Each heartbeat also writes the replica's connections into the column
+`object_store` (jsonb): `{"connections": [{"id", "circuit", "drain"}]}`, the ids of its configuration in order, its circuit state per
+connection (`closed`, `open`, `half_open`) and the `drain` flag. No endpoint, bucket or credential appears. The connections' API and states
+read it (storage.md R-STOR-051, R-STOR-061): a connection that no live replica lists is `detached`.
+
 **Runtime snapshot** (Q-OPS-175). Each heartbeat also writes the replica's own measurements of the
 time since its previous heartbeat into the column `runtime` (jsonb, `{}` until the first heartbeat
 after the start and for a replica of a release before it), published as `runtime` of the API: the
@@ -532,6 +537,7 @@ CREATE TABLE replica (
   active_secret_key_id text   NOT NULL,           -- the replica's secrets.active_key_id; ID only
   node          text,                             -- Kubernetes node name (QUADER_NODE_NAME); NULL outside Kubernetes
   valkey        jsonb       NOT NULL DEFAULT '{}',-- the replica's view of Valkey (shape above), sentinelsReachable included; no credentials
+  object_store  jsonb       NOT NULL DEFAULT '{}',-- the replica's connections and their circuits (storage.md R-STOR-060); no endpoint, no credential
   pool          text,                             -- endpoint pool (MVP) or R-HA-062 pool (P1), from QUADER_POOL_NAME; NULL for a role's main Deployment
   started_at    timestamptz NOT NULL,
   heartbeat_at  timestamptz NOT NULL
@@ -777,10 +783,10 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
     "degradedReplicas": 0
   },
   "objectStore": {
-    "endpoint": "https://s3.eu-central-1.amazonaws.com",
-    "bucket": "quader-prod",
-    "prefix": "blobs",
-    "credentialSource": "workload-identity"
+    "connections": [
+      {"id": "default", "endpoint": "https://s3.eu-central-1.amazonaws.com", "bucket": "quader-prod", "prefix": "blobs",
+       "credentialSource": "workload-identity", "encrypted": false, "drain": false}
+    ]
   },
   "backup": {
     "expectedIntervalSeconds": 86400,
@@ -1004,6 +1010,7 @@ Rules for every metric family, including families that format pages and other sp
   | `repo` | Repository, as its qualified name `<projectKey>/<repoKey>` (`web/npm-all`); capped, see below. Format pages that write `repository` in a label set (for example [formats/nuget.md](formats/nuget.md) R-NUGET-028) mean this label (cross-page) |
   | `subscription` | Webhook subscription key; capped, see below |
   | `issuer` | Configured CI issuer names ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-002); bounded by configuration |
+  | `connection` | Configured object-store connection ids, at most eight ([storage.md](storage.md) R-STOR-050); bounded by configuration |
   | `operation`, `kind`, `result`, `outcome`, `task`, `cache`, `state`, `status`, `direction`, `auth_method`, `query`, `name`, `reason`, `mode`, `family`, `label`, `source`, `check`, `action`, `trigger`, `via`, `limit` | Enumerations fixed in code; `action` takes the repository actions and capabilities of [authorization.md](authorization.md) (INV-9, R-AUTHZ-010) |
   | `area` | Change and signal areas registered in `internal/cluster/areas.go` ([architecture.md](architecture.md) R-ARCH-018) |
   | `db_pool` | `request`, `control`, `lease`; `backup` on backup pods ([architecture.md](architecture.md) R-ARCH-019) |
@@ -1117,9 +1124,21 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_flight_lock_bypass_total` | counter | `reason` (`valkey_unavailable`, `wait_timeout`, `draining`) | Fetches that went ahead without the cross-replica lock ([architecture.md](architecture.md) R-ARCH-033, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-026, R-REPO-047) |
 | `quader_flight_lock_lost_total` | counter | — | Holds whose lock key was gone or taken when extended (R-ARCH-033) |
 | `quader_shadow_checks_total` | counter | `repo` (the local repository), `outcome` (`no-exposure`, `clear`, `shadowing-approved`, `refused`, `undetermined-approved`, `unavailable`) | Shadowing checks on first publishes of a name ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-048) |
-| `quader_blobstore_operations_total` | counter | `operation` (put, get, head, delete, list, multipart), `outcome` | Object-storage calls |
-| `quader_blobstore_operation_duration_seconds` | histogram | `operation` | Object-storage latency |
-| `quader_blobstore_transferred_bytes_total` | counter | `direction` | Bytes to and from object storage |
+| `quader_blobstore_operations_total` | counter | `connection`, `operation` (put, get, head, delete, list, multipart), `outcome` | Object-storage calls; the code's name is storage.md's `quader_storage_s3_requests_total` (R-STOR-033) |
+| `quader_blobstore_operation_duration_seconds` | histogram | `connection`, `operation` | Object-storage latency |
+| `quader_blobstore_transferred_bytes_total` | counter | `connection`, `direction` | Bytes to and from object storage |
+| `quader_storage_copies` | gauge | `connection`, `state` (`present`, `missing`, `corrupt`) | Copies per connection and state, from the storage summary ([storage.md](storage.md) R-STOR-052, R-STOR-060) |
+| `quader_storage_copies_damaged_total` | counter | `connection`, `status` | Damaged copies detected (storage.md R-STOR-055, R-STOR-027) |
+| `quader_storage_reads_fallen_over_total` | counter | `connection`, `reason` | Reads that left a copy for the next (R-STOR-055) |
+| `quader_storage_reconcile_queue`, `quader_storage_reconcile_queue_oldest_seconds` | gauge | `connection` | The reconciliation's queue and its oldest row, from PostgreSQL (R-STOR-056) |
+| `quader_storage_connection_backlog_blobs`, `quader_storage_connection_backlog_bytes`, `quader_storage_connection_fill_ratio` | gauge | `connection` | From the storage summary (R-STOR-056) |
+| `quader_storage_reconcile_copied_total`, `quader_storage_reconcile_copied_bytes_total` | counter | `connection`, `mode` (`server`, `stream`) | Copies the reconciliation made (R-STOR-056) |
+| `quader_storage_reconcile_failures_total` | counter | `connection`, `reason` | Failed copies (R-STOR-056) |
+| `quader_storage_scrub_copies_total` | counter | `connection`, `result` (`ok`, `corrupt`, `missing`, `error`) | Copies the scrub read (R-STOR-027) |
+| `quader_storage_scrub_read_bytes_total` | counter | `connection` | Bytes the scrub read |
+| `quader_storage_scrub_overdue_copies` | gauge | `connection` | Copies not read within their connection's period, from PostgreSQL (R-STOR-027) |
+| `quader_storage_connection_detached` | gauge | `connection` | 1 while the connection is `detached` (R-STOR-051) |
+| `quader_gc_copies_released_total` | counter | `connection` | Copies collection left to the orphan sweep of their connection (R-STOR-057) |
 | `quader_blobstore_dedup_hits_total` | counter | — | Uploads whose content address already existed (INV-4) |
 | `quader_spool_used_bytes`, `quader_spool_free_bytes` | gauge | — | Local temporary upload spool: the budget that running uploads hold (R-STOR-004), and the free space of the spool volume, read at every reservation and release ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `QuaderSpoolNearlyFull`) |
 | `quader_storage_blobs`, `quader_storage_blob_bytes`, `quader_storage_logical_bytes` | gauge | — | From the storage summary (R-OPS-023); same value on every replica |
@@ -1357,7 +1376,8 @@ backup alerts' expressions.
 | HA Valkey with Sentinel | Sentinel majority lost | `quader_valkey_sentinels_reachable` | `QuaderValkeySentinelsDegraded` |
 | HA Valkey with Sentinel | Failovers repeating (Q-OPS-15) | `quader_valkey_primary_changes_total` | `QuaderValkeyFailoverFlapping` (new): `max(max_over_time(quader_valkey_primary_changes_total[1h]) - min_over_time(quader_valkey_primary_changes_total[1h])) > 2` |
 | HA Valkey with Sentinel | Replicas writing to different primaries (Q-OPS-15) | `quader_valkey_primary_views` | `QuaderValkeyPrimaryDisagreement` (new): `max(quader_valkey_primary_views) > 1` for 5 minutes |
-| HA S3 | Store unreachable | `quader_storage_s3_circuit_open` | `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica` |
+| HA S3 | Store unreachable | `quader_storage_s3_circuit_open{connection}` | `QuaderObjectStoreUnreachable` (every connection), `QuaderObjectStoreConnectionUnreachable` (one of several), `QuaderObjectStoreUnreachableSingleReplica` ([storage.md](storage.md) R-STOR-060) |
+| HA S3 | A blob on fewer connections than configured for long | `quader_storage_reconcile_queue_oldest_seconds` | `QuaderStorageReplicationBacklog` (R-STOR-056) |
 | Drain without outage | A role below two ready replicas | kube-state-metrics, `quader_ready` | `QuaderReplicasNotReady` |
 | Drain without outage | Transfers cut at shutdown | `quader_http_transfers_cut_total` | none: the revisit trigger of [architecture.md](architecture.md) Q-ARCH-18 |
 | Drain without outage | Jobs handed back at shutdown | `quader_jobs_completed_total{outcome="released"}` | none: a release is the designed drain path |
@@ -2062,6 +2082,9 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.restore.journal_replayed` | T | — | The revocation journal was replayed after a restore (R-BAK-024, [ha-and-helm.md](ha-and-helm.md) R-HA-054) | counts per outcome |
 | `system.deletions_paused` | T | — | The deletion pause was set by hand with `quader admin maintenance pause-deletions` ([ha-and-helm.md](ha-and-helm.md) R-HA-025, Q-HA-271); actor `system:admin`; none when it was already set | `reason` |
 | `system.deletions_resumed` | T | — | The deletion pause was cleared with `quader admin maintenance resume-deletions` (R-HA-025 step 7); actor `system:admin`; none when it was not set | `pausedAt`, `reason` |
+| `system.storage.connection_added` | T | — | A replica saw a connection id for the first time ([storage.md](storage.md) R-STOR-051); actor `system:replica` | `connection`, `bucket`, `prefix` |
+| `system.storage.connection_drained` | T | — | A draining connection holds no copy any more (R-STOR-056); actor `system:worker` | `connection`, `copiesDeleted` |
+| `system.storage.connection_forgotten` | T | — | `quader admin storage forget-connection` gave a connection up (R-STOR-051); actor `system:admin` | `connection`, `copiesForgotten`, `blobsMissing` |
 | `system.storage.versions_restored` | T | — | `quader admin storage restore-versions` removed delete markers from the blob bucket (R-HA-025 step 5, Q-HA-270); actor `system:admin`; none for a dry run or a run that removed nothing | `before`, `markersRemoved`, `restored`, `remaining` |
 | `audit.exported` | T | — | R-OPS-017 | `from`, `to`, `filters`, `format` |
 | `webhook.created`, `webhook.updated`, `webhook.deleted` | T | — | R-OPS-038 | `changes` |
@@ -2357,7 +2380,8 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `gc` | [storage.md](storage.md) R-STOR-024 and R-STOR-025: incremental collection (R-OPS-020 is the trigger); dedup key `gc` | `*/30 * * * *` (proposed, storage.md) |
 | `gc-full` | [storage.md](storage.md) R-STOR-025: full sweep (R-OPS-020 is the trigger); shares the dedup key `gc` | `0 2 * * 0` (proposed, storage.md) |
 | `orphan-sweep` | [storage.md](storage.md) R-STOR-026 | `0 5 * * 6` (proposed, storage.md) |
-| `scrub` | [storage.md](storage.md) R-STOR-027 | `0 4 * * *` (proposed, storage.md) |
+| `scrub` | [storage.md](storage.md) R-STOR-027: reads every copy whole once per connection's period | `7 * * * *` (hourly, storage.md) |
+| `storage-reconcile` | [storage.md](storage.md) R-STOR-056: copies to the connections that lack a blob, fills, drains | `* * * * *` (every minute, storage.md) |
 | `storage-summary` | R-OPS-023 | `17 * * * *` (proposed) |
 | `audit-retention` | R-OPS-015 and R-OPS-017: calls `audit_maintain_partitions()`, which creates partitions ahead and drops expired ones | `30 3 * * *` (proposed) |
 | `webhook-retention` | R-OPS-044 and the outbox of R-OPS-035 | `*/15 * * * *` (proposed) |
@@ -2427,7 +2451,8 @@ maintenance:
     gc: {enabled: true, schedule: "*/30 * * * *"}                  # default (proposed); owned by storage.md R-STOR-025
     gc-full: {enabled: true, schedule: "0 2 * * 0"}                # default (proposed); owned by storage.md R-STOR-025
     orphan-sweep: {enabled: true, schedule: "0 5 * * 6"}           # default (proposed); owned by storage.md R-STOR-026 (P1)
-    scrub: {enabled: true, schedule: "0 4 * * *"}                  # default (proposed); owned by storage.md R-STOR-027 (P1)
+    scrub: {enabled: true, schedule: "7 * * * *"}                  # default; owned by storage.md R-STOR-027 (P1)
+    storage-reconcile: {enabled: true, schedule: "* * * * *"}      # default; owned by storage.md R-STOR-056 (P1)
     remote-cache-cleanup: {enabled: true, schedule: "0 3 * * *"}   # default (proposed); owned by storage.md R-STOR-045 (P1)
     storage-summary: {enabled: true, schedule: "17 * * * *"}       # default (proposed)
     audit-retention: {enabled: true, schedule: "30 3 * * *"}       # default (proposed)

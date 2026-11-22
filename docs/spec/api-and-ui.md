@@ -3021,8 +3021,10 @@ of R-OPS-019 (one path per function, Q-API-9 and R-API-020):
 | GET | `/api/v1/storage/summary` | Blob and repository usage (P1, R-STOR-028) | `storage.read` or `admin` |
 | POST | `/api/v1/system/tasks/storage-summary/run` | Recompute; 202 with the job (P1) | `admin` |
 | POST | `/api/v1/system/tasks/orphan-sweep/run`, `/api/v1/system/tasks/scrub/run` | Start an orphan sweep or an integrity scrub (P1, R-STOR-026, R-STOR-027) | `admin` |
-| GET | `/api/v1/storage/damaged-blobs` | Damaged blobs found by the scrub, with their referencing items (P1, R-STOR-027) | `storage.read` or `admin` |
-| POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Re-run both checks for one blob; a per-resource action, not a task (P1, R-STOR-027) | `admin` |
+| GET | `/api/v1/storage/damaged-blobs` | Damaged blobs and copies (`scope=blobs`, `scope=copies`), each with its copies and referencing items (P1, R-STOR-027, Q-API-386) | `storage.read` or `admin` |
+| POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Read every copy of one blob whole now; a per-resource action, not a task (P1, R-STOR-027) | `admin` |
+| GET | `/api/v1/system/storage-connections`, `/api/v1/system/storage-connections/{id}` | The object-store connections with state, fill, backlog and capabilities (P1, R-STOR-061, Q-API-385) | `settings:read` |
+| POST | `/api/v1/system/tasks/storage-reconcile/run` | Start a reconciliation run (P1, R-STOR-056); 202 with the job, 409 with the active one | `admin` |
 
 Acceptance criteria:
 
@@ -5155,7 +5157,7 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   replicas name them (no row where none does, Q-UI-604),
   requests and server errors per second, the worst p95 latency, requests in flight, CPU and memory
   against the limits, summed from the runtime snapshots of R-OPS-003 (lost replicas left out; a role
-  without a replica says so); PostgreSQL, Valkey and the object store with their readiness check over
+  without a replica says so); PostgreSQL, Valkey and the object store (one line per connection, R-UI-197) with their readiness check over
   the live replicas (connected with the slowest `durationMs`, or how many replicas fail), their facts
   of R-OPS-004, and the stored content of the overview; the counts of the overview with links to
   their screens and "New repository" for `repositories:write-config`; and the job queue with the
@@ -8757,6 +8759,65 @@ with presets of two formats and the empty state):
 - Adding a registry sends `PUT /api/v1/settings/registry-presets` with `If-Match` and the list with the new entry last; a `422` at
   `/presets/2/url` shows its message under **Upstream URL** of the dialog.
 - **Remove** of Harbor asks first and sends the list without it.
+
+### R-UI-196 · The object-store connections on the tab Storage of System status
+Priority: **P1** · Covers: quader-only
+
+The owner's decision 9 of 2026-11-22: the admin area shows each connection with its state, fill and backlog and does not change it
+([storage.md](storage.md) R-STOR-050 to R-STOR-061). Specified, not built.
+
+- **Where** ([Q-UI-930](#q-ui-930--the-connections-are-a-fourth-tab-storage-of-system-status)): a fourth tab **Storage**
+  (`/admin/system/storage`) of the page **System status** (R-UI-164), for holders of `settings:read`; the header's refresh controls act
+  on it as on the others. It reads `listStorageConnections` (R-STOR-061) and, for its last section, `GET /api/v1/storage/damaged-blobs`.
+- **The sentence under the tab strip**: "Where Quader keeps your artifacts. Connections are set in the deployment's configuration
+  (`config.storage.connections`); this page only shows them." with the link **How to add or remove a connection** to the operator
+  manual's page.
+- **The table**, one row per connection in its order ([Q-UI-931](#q-ui-931--a-connection-is-one-row-with-its-state-in-words-and-two-figures)):
+  - **Connection**: the `id` as a name, and muted under it the endpoint's host and `bucket/prefix`;
+  - **State** as a badge in words: **Active** (no colour), **Filling** (an hourglass, neutral) with "*n* % of the blobs", **Draining**
+    (neutral) with the copies left, **Drained** ("can be removed from the configuration"), **Detached** (warning: "Not in the
+    configuration of any replica; *n* blobs are only here") and, while its circuit is open on a replica, **Unreachable** (error) with
+    "on *m* of *n* replicas"; a connection configured on only some replicas (a rolling update) shows "Configured on *m* of *n* replicas"
+    (information);
+  - **Fill**: present copies of all blobs as a percentage and the bytes ("100 %, 1.7 TiB"), from the latest storage summary with its age
+    in the column's title;
+  - **Backlog**: the queue ("12 blobs, oldest 4 minutes"), or the en dash when empty; "behind for over an hour" in the warning colour when
+    the alert of R-STOR-056 would fire;
+  - **Damaged copies**: missing and corrupt, the en dash for none;
+  - **Scrub**: "*n* % read within 30 days" (the connection's period), and "behind" in the warning colour when copies are overdue;
+  - **Encrypted**: **No** (stage 1 knows no other value).
+- **Details on demand.** A row's name opens a fold below it with the connection's non-secret settings as read (the credential source,
+  `force_path_style`, the checksum modes, `batch_delete`, `storage_class`, `sse_mode`, `scrub_period`, `scrub_bytes_per_second`), its
+  capabilities found by the start check ("Payload checksums enforced", "Copies keep and replace metadata", "Server-side copy from
+  *other*"), `filledAt`, `lastFullPassAt`, and nothing that could be changed here.
+- **Blobs no connection holds whole**: below the table, the first 20 of `scope=blobs` with digest (shortened, the full one in the
+  title), state, the copies' states per connection and the first referencing item as a link to it; "No damaged blob." when the list is
+  empty; with more, "*n* more" and the command `quader admin storage verify` to see them all. A holder of the system administrator role
+  sees **Check again** per row (`POST …/damaged-blobs/{sha256}/recheck`), which shows the copies' states it answered.
+- **One connection** shows one row; the columns that only matter with several (Backlog, the fold's server-side copies) show the en dash.
+- **Narrow screens**: below 48 rem the row becomes a card with the same labels; nothing scrolls sideways.
+
+Acceptance criteria (Vitest, `storage-connections.spec.ts`, about 1 s; rendered under rule 11 of promt.md, light and dark, wide and
+narrow, with one connection, with two of which one is filling and one unreachable on one replica, and with a detached one):
+
+- Two connections, `default` active and `secondary` filling at 50 %, render two rows in order with **Active** and **Filling** "50 % of
+  the blobs"; a queue of 12 blobs whose oldest is 4 minutes shows "12 blobs, oldest 4 minutes".
+- A connection with `replicas.circuitOpen: 1` of 3 shows **Unreachable** "on 1 of 3 replicas"; a detached one shows the warning with its
+  count.
+- A caller without `settings:read` does not see the tab (R-UI-164's rule); the page offers no control that changes a connection.
+
+### R-UI-197 · The object store on the dashboard, one line per connection
+Priority: **P1** · Covers: quader-only
+
+- The dashboard's object store (R-UI-038: its readiness check over the live replicas, its facts of R-OPS-004) lists one line per
+  connection of `objectStore.connections[]`: the `id`, the host and `bucket/prefix`, and the state of its check over the live replicas
+  ("connected, slowest 11 ms" or "unreachable on 1 of 3 replicas"), with a link **Storage** to the tab of R-UI-196
+  ([Q-UI-932](#q-ui-932--the-dashboard-names-each-connection-in-one-line-and-links-the-tab)). With one connection it is one line, as today.
+- The overall state of the dashboard names "A storage connection is unreachable" as a warning while one of several is unreachable on
+  every replica, and as an error while every connection is (the alerts of R-STOR-060 in words).
+
+Acceptance criteria (Vitest, the dashboard's spec, about 0.3 s more): two connections render two lines; one of them unreachable on every
+replica makes the overall state the warning above.
 
 ## Deferred
 
@@ -21713,6 +21774,64 @@ use: a pod that lags for minutes then becomes a warning, which needs that time i
 (the badge, the column and the line under the tool), [scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts) (`podDatabase`,
 `databaseLag`), [system-status.html](../../web/src/app/features/system/system-status.html) (the line under the heading),
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts) (the summary).
+### Q-UI-930 · The connections are a fourth tab Storage of System status
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the admin area
+shows the connections and does not change them is the owner's (2026-11-22, decision 9).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tab **Storage** of **System status** (chosen) | Beside Status, Jobs, Backups | Operational state belongs where the replicas and the backups are; no new side-bar entry | The tab strip grows to four |
+| (b) An entry **Storage** in the side bar | A page of its own | Prominent | A read-only page among the settings pages suggests something to change |
+| (c) A section of the Status tab | One page | No new tab | The status tab is long already (R-UI-164's reason for the tabs) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-196.
+
+### Q-UI-931 · A connection is one row with its state in words and two figures
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One row: name, state badge in words, fill, backlog, damaged copies, scrub, encrypted; settings and capabilities in a fold (chosen) | The owner's three facts first | Simple by default, details on demand | Seven columns at wide widths |
+| (b) A card per connection with every fact | Rich | Everything at once | The settings an expert reads push the state out of view |
+
+**Choice:** (a). **Applied in the spec:** R-UI-196.
+
+### Q-UI-932 · The dashboard names each connection in one line and links the tab
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One line per connection with its check, a link to the tab (chosen) | As the dependency lines | The dashboard says which store is down | One more line per connection |
+| (b) One summary line ("2 connections, 1 unreachable") | Shorter | Compact | The name of the failing store is one click away in an incident |
+
+**Choice:** (a). **Applied in the spec:** R-UI-197.
+
+### Q-API-385 · The connections are an operation of the system family, read with `settings:read`
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/system/storage-connections` and `…/{id}`, `settings:read`, from PostgreSQL only (chosen) | Beside `/system/replicas` and `/system/scanners` | Same permission and source rule as the replica list; any replica answers alike | A new path |
+| (b) Inside `/api/v1/system/info` | One call | Fewer paths | `info` describes the answering replica; fill and backlog are the installation's |
+| (c) Under `/api/v1/storage/` with `storage.read` | Beside the summary | Storage facts together | Endpoints and buckets are infrastructure, as in `info`, and need the same permission |
+
+**Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-061, R-API-040.
+
+### Q-API-386 · The damaged-blobs list has two scopes and shows each copy
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `scope=blobs` (default, no connection holds the blob whole) and `scope=copies` (a copy damaged), each entry with its copies (chosen) | One operation | The list an administrator must act on is the default; the self-healing view is one parameter away | Two meanings behind one path |
+| (b) Two operations | Separate | Clear | Two lists of the same rows |
+
+**Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-027, R-API-040.
+
 ## What this does not cover
 
 

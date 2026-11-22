@@ -882,6 +882,86 @@ Acceptance criteria:
   `Certificate` renders with ECDSA 256, `rotationPolicy: Always`, the usages `digital signature` and `code signing` and the base URL as a URI;
   with both the render fails and names both keys; with neither nothing of it renders.
 
+### R-HA-072 · The object-store connections in the chart
+Priority: **P1** · Covers: quader-only
+
+The chart's side of several object-store connections ([storage.md](storage.md) R-STOR-050; the owner's decision 9 of 2026-11-22:
+connections are kept in the chart as a list, their credentials come from Secrets as today, the admin area only shows them). Specified,
+not built; until then the chart has `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` and `secrets.journalReader`.
+
+- **The list** is `config.storage.connections`, passed through like every key of `config`; the values file holds one element with the
+  defaults of the plain path, so an installation with one connection sets `bucket` (or a provisioner's key below) and nothing else:
+
+  ```yaml
+  config:
+    storage:
+      connections:
+        - id: default                 # the default; storage.md R-STOR-050
+          bucket: ""                  # required unless secrets.storageConnections[].bucketKey; example: quader-blobs
+          prefix: quader
+          region: ""                  # example: eu01
+          endpoint: ""                # example: object.storage.eu01.onstackit.cloud (a host means https://)
+          force_path_style: false
+          credentials_source: default # default | webIdentity | static
+  secrets:
+    storageConnections: []            # one entry per connection that needs a Secret; example:
+    #  - connectionId: default        # matches config.storage.connections[].id
+    #    existingSecret: quader-s3    # the static credential, or the Secret of an S3 provisioner when a *Key below is set
+    #    accessKeyIdKey: access-key-id
+    #    secretAccessKeyKey: secret-access-key
+    #    sessionTokenKey: ""          # empty = no session token
+    #    bucketKey: ""                # example (provisioner Secret): S3_BUCKET; set = the chart sets bucket_file
+    #    regionKey: ""                # example: S3_REGION; set = region_file
+    #    endpointKey: ""              # example: S3_ENDPOINT; set = endpoint_file
+    #    ca:                          # renders the connection's ca_file; empty = the outbound trust store
+    #      existingSecret: ""
+    #      key: ca.crt
+    #    backupSource:                # the backup pods only: a login that may only read this connection (backup-and-restore.md R-BAK-030)
+    #      existingSecret: ""
+    #      accessKeyIdKey: access-key-id
+    #      secretAccessKeyKey: secret-access-key
+    #    journalReader:               # the post-restore and restore Jobs only: a login that lists this connection's object versions
+    #      existingSecret: ""
+    #      accessKeyIdKey: access-key-id
+    #      secretAccessKeyKey: secret-access-key
+  ```
+
+  `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` and `secrets.journalReader` go; their keys are fields of an entry
+  ([Q-HA-390](#q-ha-390--each-connections-secrets-are-an-entry-of-one-list-keyed-by-the-connection)).
+- **Mounts**, each with `items`, `defaultMode: 0440` and no `subPath`, so a rotation reaches the files (R-HA-030):
+
+  | Entry field | Pods | Mount path | Key the chart sets in the element of that `id` |
+  |---|---|---|---|
+  | `existingSecret` with `credentials_source: static` | `api`, `packages`, `worker` and the restore and post-restore Jobs | `/var/run/secrets/quader/s3-<id>/` | `access_key_id_file`, `secret_access_key_file`, `session_token_file` |
+  | `bucketKey`, `regionKey`, `endpointKey` | the same pods and the backup pods | `/var/run/secrets/quader/s3-<id>-location/` | `bucket_file`, `region_file`, `endpoint_file` |
+  | `ca` | the same pods and the backup pods | `/var/run/secrets/quader/s3-<id>-ca/` | `ca_file` |
+  | `backupSource` | the backup pods only | `/var/run/secrets/quader/s3-<id>-backup/` | `backup.source.connections[]` entry of that connection (R-BAK-030) |
+  | `journalReader` | the post-restore and restore Jobs only | `/var/run/secrets/quader/s3-<id>-journal/` | the connection's entry of the credentials file of `--credentials-file` and `--journal-credentials-file` |
+
+  The keys the chart sets join its managed paths: set under `config` for an element that has an entry, they fail the render.
+- **Refusals** (R-HA-029; each names the values):
+  - `config.storage.connections` empty, an element without `id`, an `id` outside `^[a-z][a-z0-9-]{0,30}[a-z0-9]$`, or two elements
+    with one `id`;
+  - an element without `bucket` and without an entry whose `bucketKey` is set;
+  - `credentials_source: static` without an entry with `existingSecret` for that `id`;
+  - an entry whose `connectionId` names no element;
+  - `encrypted: true` on an element ("the encryption of stored content is not built, storage.md R-STOR-050");
+  - `drain: true` on every element, or `config.storage.replication.min_copies` above the number of elements without it;
+  - two elements on one endpoint and bucket whose prefixes are equal or contain each other, and the backup target at any element's
+    location (the rule of R-HA-029 for the target, per connection).
+- **The PrometheusRule** carries the alerts of [storage.md](storage.md) R-STOR-060 (R-HA-045).
+- The development and test profiles (`deploy/dev`, the stack of `test/integration`) render one connection; the integration case with
+  two connections sets the list itself ([storage.md](storage.md) R-STOR-063).
+
+Acceptance criteria (chart render tests, about 1 s):
+
+- One element with `bucket` renders a configuration whose `storage.connections` has that element and every pod mounts no S3 Secret;
+  with `credentials_source: static` and an entry, the `api`, `packages` and `worker` Deployments mount `/var/run/secrets/quader/s3-default/`
+  and the element names the two files; the backup CronJob does not mount it and mounts the entry's `backupSource` instead.
+- A provisioner entry with `bucketKey: S3_BUCKET` and no `bucket` renders `bucket_file` and passes; without the entry the render fails
+  naming the element.
+- Each refusal above fails the render with the values named.
+
 ### R-HA-003 · Replica registry as the coordination view
 Priority: **MVP** · Covers: HA-006, HA-009
 
@@ -1203,7 +1283,7 @@ Quader MUST behave as in this table. Each row is exercised by the failure-inject
 | PostgreSQL connection limit reached (`53300`) | Connect error | Backoff and retry inside the budget; metric `quader_db_retries_total{kind="too_many_connections"}` | Latency, then `503` | Size the budget (R-HA-016) |
 | PostgreSQL saturated: every request connection, or every server connection of the request pooler, busy | `quader_db_pool_acquire_duration_seconds`, alert `QuaderDatabasePoolSaturated` | Requests wait for a connection within their deadline; those that exceed it get `503` with `Retry-After`. The control connection keeps the change-log poll, the `database` check and the job heartbeats off the request pool: directly on its own backend, behind a pooler on a pool of its own (R-HA-008, Q-HA-20). Replicas stay ready and keep their jobs | Higher latency, some `503`; no replica leaves the Service because of the load | Scale the database, or lower the load |
 | Instance of a transaction-mode pooler stopped or lost (request or control pooler, R-HA-058) | Connection errors of class `08` on the main pool | Retry with backoff (R-HA-009); the new connection reaches another instance of the same pooler through its Service; session-host connections are unaffected | A graceful stop that outlasts Quader's connection lifetime: none. A lost instance: only requests whose `COMMIT` was in flight get `503` with `Retry-After` | Automatic |
-| Object storage unreachable from all replicas, for any duration | Circuit breaker (R-STOR-033), `objectStore` check, alert `QuaderObjectStoreUnreachable` | Behavior per [storage.md](storage.md) R-STOR-036: new uploads `503`, downloads of stored content `503`, metadata, listings, deletes, deduplicated uploads and the API keep working. Running replicas stay ready (R-HA-008, Q-HA-1). A replica that starts during the outage stays not ready until its startup check (R-STOR-035) succeeds; it retries without exiting, so it becomes ready as soon as the store returns | Degraded: reads of metadata, the UI, logins and CI token exchange succeed; blob transfers fail with retryable `503` | Automatic; no blob is marked missing because of errors |
+| Object storage unreachable from all replicas, for any duration (every connection; one of several unreachable is [storage.md](storage.md) R-STOR-036's second table) | Circuit breaker (R-STOR-033), `objectStore` check, alert `QuaderObjectStoreUnreachable` | Behavior per [storage.md](storage.md) R-STOR-036: new uploads `503`, downloads of stored content `503`, metadata, listings, deletes, deduplicated uploads and the API keep working. Running replicas stay ready (R-HA-008, Q-HA-1). A replica that starts during the outage stays not ready until its startup check (R-STOR-035) succeeds; it retries without exiting, so it becomes ready as soon as the store returns | Degraded: reads of metadata, the UI, logins and CI token exchange succeed; blob transfers fail with retryable `503` | Automatic; no blob is marked missing because of errors |
 | Object storage unreachable from one replica only | Its circuit opens; peers' do not; alert `QuaderObjectStoreUnreachableSingleReplica` | That replica's blob requests fail fast with `503` and `Retry-After`; it stays ready | Blob requests that hit it fail; clients' retries are balanced by the edge proxy and usually reach another replica | Automatic when its network path heals; otherwise the responder deletes the pod |
 | S3 throttling (`503 SlowDown`) | SDK retryer | Retries with backoff (R-STOR-033) | Higher latency | The content-addressed key layout spreads load across prefixes (R-HA-050) |
 | S3 credentials fail (expired web identity, revoked key) | `InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken` and the other answers that name the credential, or a refresh error; a plain `AccessDenied` for one operation is an answer about the request and does not count ([Q-HA-254](#q-ha-254--a-store-answer-that-rejects-the-credential-counts-against-the-object-store-circuit)) | Counted as object-store failure: the circuit opens after `failure_threshold` of them; one `WARN` line when it opens, with the credential source and the store's code, never the secret | As the outage rows | Fix the credential; static key files are re-read (R-STOR-031) |
@@ -1245,7 +1325,7 @@ the check thresholds and the chart's probe settings (R-HA-034) must satisfy toge
   `503` at once instead of letting requests queue.
 - Object storage gates readiness only until a replica is ready for the first time (Q-HA-1). A
   replica becomes ready only after its object-store startup check (R-STOR-035,
-  `storage.s3.startup_check: true`) has passed, so a release with a wrong bucket, endpoint,
+  `storage.object_store.startup_check: true`, per connection, storage.md R-STOR-060) has passed, so a release with a wrong bucket, endpoint,
   credential or CA never replaces working pods: the rollout stalls with `maxUnavailable: 0`.
   After that, the `objectStore` check keeps running and is reported (verbose `/readyz`, the
   replica registry, metrics), but its failure MUST NOT make the replica unready. Blob requests
@@ -1446,7 +1526,7 @@ this page requires the following:
   rejected *before* the body is read, after authentication and authorization (`503` with `Retry-After`), so clients that send it
   (`dotnet nuget push`, `curl -T`) do not transfer the body at all. A write without `Expect` is read
   and a deduplicated upload succeeds ([Q-STOR-149](storage.md#q-stor-149--an-upload-that-waits-for-100-continue-is-refused-before-its-body-while-the-circuit-is-open)).
-- `Retry-After` on these `503` responses is `storage.s3.circuit_breaker.open_duration` rounded up to
+- `Retry-After` on these `503` responses is `storage.object_store.circuit_breaker.open_duration` rounded up to
   whole seconds, at least 5.
 - The circuit state is a per-replica gauge (`quader_storage_s3_circuit_open`). The chart's alert
   rules distinguish a shared outage (all replicas open) from a single replica's network problem
@@ -1460,7 +1540,7 @@ Acceptance criteria (in addition to R-STOR-036's):
   virtual repository whose tarballs are cached: `npm view <pkg> versions` keeps succeeding for the
   whole period, every replica's `/readyz` keeps answering `200`, while
   `curl -T big.bin https://quader.example.com/files/web/generic-local/x.bin -H 'Expect: 100-continue'`
-  receives `503` without sending the body. Within `storage.s3.circuit_breaker.open_duration`
+  receives `503` without sending the body. Within `storage.object_store.circuit_breaker.open_duration`
   plus 10 s of the store returning, both work.
 - A pod deleted during that outage is replaced, and the replacement stays not ready until the store
   returns. Its container restart count stays unchanged throughout, because the startup check
@@ -3243,7 +3323,7 @@ its NetworkPolicy. While it is off, `NOTES.txt` says so and names the two values
   own (R-BAK-015). `automountServiceAccountToken: false`.
 - **Credentials.** PostgreSQL with `secrets.databaseBackup` (otherwise the runtime credentials,
   R-HA-014) on the session host (R-HA-058). The blob store with read access, through
-  `config.storage.s3` with the backup account's identity or `secrets.s3`. The target through
+  each connection with the backup account's identity or the entry's `backupSource` (R-HA-072). The target through
   `config.backup.target.credentials.source`: `default` uses the backup account's workload
   identity, `static` mounts `secrets.backupTarget`. Target credentials are rendered into backup and
   restore pods only, never into `web` or `worker` pods (R-BAK-011). The encryption key Secret is not
@@ -3275,7 +3355,7 @@ its NetworkPolicy. While it is off, `NOTES.txt` says so and names the two values
 
 - The target MUST NOT share the blob store's endpoint and bucket unless
   `config.backup.target.allow_same_bucket: true`, and even then neither prefix may contain the
-  other: the orphan sweep deletes every object under `storage.s3.prefix` that no row references
+  other: the orphan sweep deletes every object under each connection's prefix that no row references
   (R-STOR-026), backups included. The chart refuses other values (R-HA-029), and
   `quader backup create` exits `2` on them as well, so a configuration set outside the chart is
   caught too (R-BAK-002). The setting exists for single-bucket evaluation setups and logs a warning
@@ -3305,7 +3385,7 @@ renders the Job `<fullname>-restore` and changes two other things while the valu
   `automountServiceAccountToken: false`. Its cloud identity holds R-BAK-015's target reader, blob
   writer and journal reader rows. Neither existing account fits: the backup account may only read
   the blob bucket, and the replicas' account has no access to the target (R-BAK-015). The Job uses
-  the migration credentials (R-HA-014) on the session host, `secrets.s3` and `secrets.backupTarget`
+  the migration credentials (R-HA-014) on the session host, the entries of `secrets.storageConnections` (R-HA-072) and `secrets.backupTarget`
   where the blob store or the target use static keys, and the encryption key Secret, because the
   restore checks before it loads
   anything that the key ring opens every key ID of the backup (R-BAK-020, R-HA-027). It never
@@ -3367,7 +3447,7 @@ Acceptance criteria:
   (R-BAK-012).
 - The sequence above, run on the local profile against a backup taken there, brings up an
   installation whose `npm view` output matches the backup (R-HA-051 `dev-restore`).
-- With `config.storage.s3.bucket: quader-blobs` and prefix `quader`, `helm template … --set config.backup.target.bucket=quader-blobs --set config.backup.target.prefix=quader/backups --set config.backup.target.allow_same_bucket=true`
+- With a connection with `bucket: quader-blobs` and prefix `quader`, `helm template … --set config.backup.target.bucket=quader-blobs --set config.backup.target.prefix=quader/backups --set config.backup.target.allow_same_bucket=true`
   fails and names both locations; without `allow_same_bucket` any prefix in `quader-blobs` fails.
 
 ### R-HA-023 · Backup of PostgreSQL, object storage and keys
@@ -3383,7 +3463,7 @@ The platform layer is recommended, not required; its checks and rules are MVP (Q
 |---|---|---|
 | Everything in PostgreSQL and every referenced blob, as of one snapshot | Quader's backup CronJob, to its own target | R-HA-060, [backup-and-restore.md](backup-and-restore.md) |
 | PostgreSQL (all metadata, configuration, users, tokens, audit) | Continuous WAL archiving plus base backups, enabling point-in-time recovery ([continuous archiving](https://www.postgresql.org/docs/current/continuous-archiving.html)) | Recovery window ≥ `backup.recovery_window`. With CloudNativePG through the Barman Cloud plugin ([backup](https://cloudnative-pg.io/docs/1.30/backup), [plugin](https://cloudnative-pg.io/plugin-barman-cloud/docs/intro/)); on managed services their PITR. The archive goes to a bucket *other than* the blob bucket, with different credentials |
-| Blob bucket | Bucket versioning with noncurrent-version expiry ≥ `backup.recovery_window`, plus the multipart lifecycle rule (R-HA-012); optionally replication to a second site (R-HA-026) | [S3 versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html) |
+| Blob bucket, of each connection ([storage.md](storage.md) R-STOR-050) | Bucket versioning with noncurrent-version expiry ≥ `backup.recovery_window`, plus the multipart lifecycle rule (R-HA-012) where the store offers one; optionally replication to a second site (R-HA-026). With several connections a second connection is the other way to a second site | [S3 versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html) |
 | Encryption keys (R-HA-027), Helm values | Kept outside the cluster in the operator's secret store; Helm values in Git; a Quader backup does not contain the keys | Without the keys, sealed secrets in a restored database cannot be decrypted |
 | Valkey | None: nothing in it is the only copy (INV-3, INV-19) | — |
 
@@ -3391,13 +3471,13 @@ The platform layer is recommended, not required; its checks and rules are MVP (Q
   (default 5 min, [PostgreSQL configuration](https://cloudnative-pg.io/docs/1.30/postgresql_conf)),
   which bounds data loss on a full restore. Synchronous replication (R-HA-013) bounds it to zero
   for a failover, but not for a restore.
-- **Least privilege against purges.** The runtime S3 credential (R-STOR-031) MUST NOT hold
+- **Least privilege against purges.** The runtime S3 credential of every connection (R-STOR-031) MUST NOT hold
   `s3:DeleteObjectVersion`, `s3:PutBucketVersioning`, `s3:PutLifecycleConfiguration` or
   `s3:PutBucketPolicy`. A compromised replica can then create delete markers but cannot destroy
   history, and versioning can restore the objects.
 - `quader admin backup check` reports, without changing anything:
-  - bucket versioning (`GetBucketVersioning`) and lifecycle rules (`GetLifecycleConfiguration`),
-    when the credential may read them; otherwise "unknown";
+  - bucket versioning (`GetBucketVersioning`) and lifecycle rules (`GetLifecycleConfiguration`) of each connection,
+    when its credential may read them; otherwise "unknown"; the gauge carries the label `connection` for these two checks;
   - `SHOW archive_mode` on the database;
   - whether `storage.gc.grace_period` covers `backup.recovery_window` (R-HA-024).
 
@@ -3447,7 +3527,11 @@ states why they are sufficient and adds the third.
    *d* − grace < now − grace, that is, only for restore points older than the grace period.
    Restore points within `recovery_window` are therefore safe when grace ≥ `recovery_window`, or when
    the bucket keeps deleted objects as noncurrent versions for at least `recovery_window`, in which
-   case R-HA-025 restores them.
+   case R-HA-025 restores them. With several connections the orderings hold per copy, and one
+   connection that keeps noncurrent versions is enough: `restore-versions` brings a copy back there and
+   the reconciliation copies it to the others ([storage.md](storage.md) R-STOR-056); a copy that the
+   restored database lacks but the bucket holds is adopted by the orphan sweep (R-STOR-026).
+   `backup.object_versioning: true` declares versioning on every connection, and the check reports each.
 
 Startup validation: when `backup.recovery_window` is declared (> 0) and exceeds
 `storage.gc.grace_period` (default 24 h), a replica MUST refuse to start unless
@@ -3557,7 +3641,8 @@ keyspace.
      last shipped journal entry are undone (H-37).
 5. **Repair missing blobs** if step 4 reported any and the bucket is versioned:
    `quader admin storage restore-versions --before <t>` removes the delete markers younger than *t* from the keys of the
-   referenced blobs whose object is missing (it runs the check of `quader admin storage verify` over every live blob first),
+   referenced blobs whose object is missing, on each connection or the one `--connection` names (it runs the check of
+   `quader admin storage verify` over every present copy first, [storage.md](storage.md) R-STOR-058),
    so that the version before the marker is current again. It prints one line per such blob and a totals line, and exits 5 while
    a blob is still without an object (no delete marker younger than *t*, or no object version below its markers). `--dry-run`
    lists what it would do and removes nothing. This needs a separate credential with `s3:ListBucketVersions` and
@@ -3608,15 +3693,20 @@ Priority: **P1** · Covers: OPS-033
     ([replica clusters](https://cloudnative-pg.io/docs/1.30/replica_cluster)), or a managed
     cross-region read replica;
   - a bucket filled by one-way replication of the blob bucket
-    ([S3 replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html));
+    ([S3 replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html)), or, simpler and independent of the
+    store's features, a connection of the installation at the recovery site, which Quader's reconciliation fills
+    ([storage.md](storage.md) R-STOR-050, R-STOR-056; [Q-HA-392](#q-ha-392--a-connection-at-the-recovery-site-is-the-second-way-to-a-second-site));
+    a bucket that the store replicates is never itself a connection (R-STOR-035 A4);
   - an installed Helm release with both roles at replica count 0, the backup CronJob suspended,
     the same encryption key Secret, and values that differ only in database host, bucket, region
     and Valkey addresses;
   - a Valkey with Sentinel of its own (R-HA-056). Nothing is replicated into it: its content is
     ephemeral (INV-3), and the recovery site starts with an empty keyspace.
 
-  Active-active operation across sites is not supported. R-STOR-035 assumption A4 allows only one
-  writing site, and federation is Later.
+  Active-active operation across sites is not supported. R-STOR-035 assumption A4 allows one
+  installation per location, and federation is Later. With a connection at the recovery site the release
+  there lists the same connections with the recovery site's first, and its RPO for blobs is the
+  reconciliation's queue age instead of the bucket replication's lag.
 - **Replicate deletes or not.** Delete-marker replication SHOULD be off. The recovery bucket then
   only grows, and a GC delete on the primary can never remove an object that the (lagging) replica
   database still references. After a failover, the orphan sweep at the recovery site removes the
@@ -3829,15 +3919,17 @@ restore does not revive it and it is not journaled.
 **Outbox and shipping.**
 
 - A worker job ships the rows in `id` order to
-  `<storage.s3.prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json`, one object per entry, and
-  deletes each row after its object was written. A row whose object was written but whose deletion
+  `<prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json` of every connection that is not draining ([storage.md](storage.md) R-STOR-059), one object per entry, through each
+  connection's guarded client, and deletes each row once every such connection holds its object (`revocation_outbox_shipped` records the
+  ones that do, [Q-STOR-241](storage.md#q-stor-241--the-journal-goes-to-every-connection-and-an-outbox-row-waits-for-each)). A row whose object was written but whose deletion
   did not commit is shipped again under the same key with identical content, which is harmless.
   Quader never deletes a journal object. `_journal/` is a key family of
   [storage.md](storage.md) R-STOR-001, so the orphan sweep leaves it alone.
 - Shipping is triggered by a signal ([architecture.md](architecture.md) R-ARCH-018) and runs at
   least every `backup.revocation_journal.ship_interval`.
 - A change never waits for object storage. During an object-store outage the outbox grows and ships
-  afterwards. The gauge `quader_revocation_journal_pending` shows the backlog.
+  afterwards; an outage of one connection keeps only that connection's copy pending. The gauge
+  `quader_revocation_journal_pending{connection}` shows the backlog per connection.
 
 **Replay run.**
 
@@ -3846,6 +3938,8 @@ restore does not revive it and it is not journaled.
   them in that order, each to the state its predecessors left.
 - The replay starts at the earlier of *t* and the newest `audit_event.occurred_at` of the restored database, minus the
   margin, so a `--restored-to` that lies later than the database does not skip revocations (Q-HA-158).
+- The replay reads the journal on every reachable connection of the source and merges by key; identical bytes under one key on two
+  connections are one copy ([storage.md](storage.md) R-STOR-059).
 - Every readable copy of an entry is replayed: an ID that appears under two keys and a key whose versions differ are
   somebody else's writes, each copy is replayed (the handlers only remove or narrow) and the output flags them
   (Q-HA-158). With version listing the replay reads every version of a key.
@@ -3997,14 +4091,14 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 |---|---|
 | `config.server.base_url` empty | `config.server.base_url` |
 | `config.database.host` or `secrets.database.existingSecret` empty | the value |
-| `config.storage.s3.bucket` empty | the value |
-| `config.storage.s3.credentials.source: static` without `secrets.s3.existingSecret` | both |
+| `config.storage.connections` empty, or an element without `id` or `bucket` (and without a `bucketKey`), and the other refusals of R-HA-072 | the value and the connection |
+| An element with `credentials_source: static` without an entry of `secrets.storageConnections` with `existingSecret` (R-HA-072) | both |
 | `secrets.encryption.existingSecret` or `secrets.encryption.keys` empty | the value, and the key-creation command of R-HA-027 |
 | `highAvailability.enforce` and fewer than 2 replicas (`replicaCount`, or `autoscaling.minReplicas`) for `api`, `packages`, `worker` or a pool, a disabled PDB, or a missing host spread constraint, one that is not `DoNotSchedule`, or one without `nodeTaintsPolicy: Honor` (R-HA-059 rule 3) | the Deployment and the value |
 | `worker.replicaCount`, `api.replicaCount` or `packages.replicaCount` (or its `autoscaling.minReplicas`) < 1 | the value |
 | `config.storage.upload.max_size` > the spool budget derived from the `packages` spool size; the upload limit of the UI's content route (`config.ui.deploy.max_upload_bytes`, or `config.storage.upload.max_size` when it is 0) > the spool budget of `api` (R-HA-035, Q-UI-106) | both |
 | `terminationGracePeriodSeconds` of a role < `config.health.shutdown_drain_delay` + 15 s | both |
-| `api`, `packages`, a path pool or an endpoint pool without `resources.limits.memory`, or with one that admits fewer than 64 requests: ⌊0.8 × `config.runtime.memory_limit_ratio` × the limit ÷ the request bytes of R-ARCH-005⌋, from `config.storage.download.buffer_size`, `hold_back` and `config.storage.s3.http.receive_window` (R-HA-036, Q-HA-70), or whose kernel share holds fewer than 64 send buffers: ⌊0.8 × (1 − the ratio) × the limit ÷ twice `config.server.send_buffer` (4 MiB with `0`)⌋ (Q-ARCH-500) | the limit, the Deployment or the slot count and the values it comes from |
+| `api`, `packages`, a path pool or an endpoint pool without `resources.limits.memory`, or with one that admits fewer than 64 requests: ⌊0.8 × `config.runtime.memory_limit_ratio` × the limit ÷ the request bytes of R-ARCH-005⌋, from `config.storage.download.buffer_size`, `hold_back` and `config.storage.object_store.http.receive_window` (R-HA-036, Q-HA-70), or whose kernel share holds fewer than 64 send buffers: ⌊0.8 × (1 − the ratio) × the limit ÷ twice `config.server.send_buffer` (4 MiB with `0`)⌋ (Q-ARCH-500) | the limit, the Deployment or the slot count and the values it comes from |
 | `config.valkey.mode: sentinel` with `config.valkey.sentinel.addresses` or `config.valkey.sentinel.primary_name` empty | the value |
 | `highAvailability.enforce` and `config.valkey.mode` other than `sentinel`, or fewer than 3 Sentinel addresses | `config.valkey.mode` or `config.valkey.sentinel.addresses` |
 | `secrets.valkey.existingSecret` empty | the value |
@@ -4014,7 +4108,7 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 | `backup.enabled` and `config.backup.target.bucket` empty (the backup is off by default and needs no bucket then, Q-HA-17) | both |
 | `restore.enabled` and `config.backup.target.bucket` empty | both |
 | `backup.schedule` in a form that Quader's cron parser rejects: six fields, `?`, day-of-week `7`, `@every`, `TZ=` or `CRON_TZ=` ([operations-and-observability.md](operations-and-observability.md) Q-OPS-7, [storage.md](storage.md) R-STOR-025) | `backup.schedule` |
-| The backup target on the blob store's endpoint and bucket without `config.backup.target.allow_same_bucket: true`, or with one prefix containing the other (R-HA-060; `quader backup create` exits `2` on the same rule, R-BAK-002). Checked for any configured target, the backup on or off, because every replica's configuration check refuses it as well | both locations |
+| The backup target on the endpoint and bucket of any connection ([storage.md](storage.md) R-STOR-050) without `config.backup.target.allow_same_bucket: true`, or with one prefix containing the other (R-HA-060; `quader backup create` exits `2` on the same rule, R-BAK-002). Checked for any configured target, the backup on or off, because every replica's configuration check refuses it as well | both locations |
 | `config.backup.target.credentials.source: static` without `secrets.backupTarget.existingSecret`, while `backup.enabled` or `restore.enabled` renders a Job that mounts it | both |
 | `restore.enabled` without `restore.backupId` | `restore.backupId` |
 | `restore.enabled` with a replica count above 0 or autoscaling enabled for any role or pool | `restore.enabled` and the value |
@@ -4118,7 +4212,7 @@ changes, that default follows.
 | `secrets.databaseBackup` (backup pods only; empty = `secrets.database`) | `username`, `password` | same path in the backup pod | same |
 | `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/quader/database-ca/` | `database.ssl_root_cert_file` |
 | `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/database-client/` | `database.ssl_cert_file`, `database.ssl_key_file` |
-| `secrets.s3` (only with `source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/s3/` | `storage.s3.credentials.access_key_id_file`, `…secret_access_key_file` |
+| `secrets.storageConnections[]` (one entry per connection; the fields and pods of R-HA-072) | `access-key-id`, `secret-access-key`, the provisioner's keys, `ca.crt` | `/var/run/secrets/quader/s3-<id>/`, `…/s3-<id>-location/`, `…/s3-<id>-ca/`, `…/s3-<id>-backup/`, `…/s3-<id>-journal/` | the `*_file` keys of the element with that `id` in `storage.connections` (R-HA-072) |
 | `secrets.valkey` (`api`, `packages`, `worker`, `web` only; not in backup, restore, migration or post-restore pods, R-BAK-012, R-BAK-022) | `username` (optional), `password` | `/var/run/secrets/quader/valkey/` | `valkey.username_file`, `valkey.password_file` |
 | `secrets.valkeySentinel` (same pods) | `username` (optional), `password` | `/var/run/secrets/quader/valkey-sentinel/` | `valkey.sentinel.username_file`, `valkey.sentinel.password_file` |
 | `secrets.valkeyCA` (same pods) | `ca.crt` | `/var/run/secrets/quader/valkey-ca/` | `valkey.tls.ca_file` |
@@ -4129,7 +4223,7 @@ changes, that default follows.
 | `secrets.breakGlass` (the same pods as `secrets.oidc[]`, R-AUTH-014, R-AUTH-042) | `password` | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file`; empty value → `auth.break_glass.enabled: false` |
 | `secrets.encryption` | `secrets.encryption.keys` | `/var/run/secrets/quader/encryption/` | `secrets.encryption_key_files` (ordered) and `secrets.active_key_id` (the first entry) |
 | `secrets.metricsToken` | `token` | `/var/run/secrets/quader/metrics/` | `metrics.bearer_token_file` (R-OPS-006) |
-| `trustedCA.*` (Secret or ConfigMap) | listed keys | `/etc/quader/ca/` | `proxy.outbound.tls.ca_files` (R-REPO-035); optionally `storage.s3.ca_file` |
+| `trustedCA.*` (Secret or ConfigMap) | listed keys | `/etc/quader/ca/` | `proxy.outbound.tls.ca_files` (R-REPO-035); optionally the `ca_file` of the connections it names |
 | `bootstrap.existingConfigMap` (P1) | any | `/etc/quader/bootstrap/` | configuration documents of [operations-and-observability.md](operations-and-observability.md) |
 
 - **External database (HA-033).** Only an external PostgreSQL is supported. The host goes in
@@ -4142,7 +4236,7 @@ changes, that default follows.
   ([IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)),
   or a Pod Identity association grants the role without one
   ([EKS Pod Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html)).
-  Static keys use `secrets.s3`.
+  Static keys use an entry of `secrets.storageConnections` (R-HA-072).
 - **Bootstrap (HA-037).** The break-glass administrator is the first-start credential (R-AUTH-014).
   Further bootstrapping is `kubectl exec deploy/quader-api -- quader admin …` (R-AUTH-015), in the role that mounts the
   break-glass secret (`deploy/quader-web` before phase 6a). The chart
@@ -4656,14 +4750,14 @@ config:
       failure_threshold: 5
       open_duration: 5s
   storage:                              # storage.md
-    s3:
-      bucket: ""                        # required; example: quader-blobs
-      prefix: quader                   # the default of storage.md
-      region: ""                        # example: eu-central-1
-      endpoint: ""                      # AWS resolution; example: https://minio.quader.svc:9000
-      force_path_style: false           # true for MinIO, SeaweedFS and Ceph RGW
-      credentials:
-        source: default                 # default | webIdentity | static
+    connections:                        # one to eight (storage.md R-STOR-050, R-HA-072); list order = write and read order
+      - id: default                     # the default; never changes
+        bucket: ""                      # required unless secrets.storageConnections[].bucketKey; example: quader-blobs
+        prefix: quader                 # the default of storage.md
+        region: ""                      # example: eu-central-1
+        endpoint: ""                    # AWS resolution; example: https://minio.quader.svc:9000
+        force_path_style: false         # true for MinIO, SeaweedFS and Ceph RGW
+        credentials_source: default     # default | webIdentity | static
         role_arn: ""
     upload:
       max_size: 10GiB                   # must fit the spool
@@ -4815,14 +4909,18 @@ secrets:
     existingSecret: ""                  # no client certificate
     certKey: tls.crt
     keyKey: tls.key
-  s3:
-    existingSecret: ""                  # required with credentials.source static; also the Secret of an S3 provisioner when a *Key below is set
-    accessKeyIdKey: access-key-id       # example (provisioner Secret): AWS_ACCESS_KEY_ID
-    secretAccessKeyKey: secret-access-key  # example (provisioner Secret): AWS_SECRET_ACCESS_KEY
-    bucketKey: ""                       # the bucket comes from config.storage.s3.bucket; example (provisioner Secret): S3_BUCKET; set = QUADER_STORAGE_S3_BUCKET reads this key of the Secret
-    regionKey: ""                       # config.storage.s3.region; example (provisioner Secret): S3_REGION; set = QUADER_STORAGE_S3_REGION reads this key
-    endpointKey: ""                     # config.storage.s3.endpoint; example (provisioner Secret): S3_ENDPOINT (a host without scheme, which Quader reaches over https); set = QUADER_STORAGE_S3_ENDPOINT reads this key
-    sessionTokenKey: ""
+  storageConnections: []                # one entry per connection that needs a Secret (R-HA-072); example:
+  #  - connectionId: default            # matches config.storage.connections[].id
+  #    existingSecret: quader-s3        # the static credential, or an S3 provisioner's Secret when a *Key is set
+  #    accessKeyIdKey: access-key-id    # example (provisioner Secret): AWS_ACCESS_KEY_ID
+  #    secretAccessKeyKey: secret-access-key
+  #    sessionTokenKey: ""
+  #    bucketKey: ""                    # example (provisioner Secret): S3_BUCKET; set = the element's bucket_file
+  #    regionKey: ""                    # example: S3_REGION
+  #    endpointKey: ""                  # example: S3_ENDPOINT (a host without scheme, which Quader reaches over https)
+  #    ca: {existingSecret: "", key: ca.crt}               # the connection's ca_file; empty = the outbound trust store
+  #    backupSource: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}   # backup pods only; read-only login (R-BAK-030)
+  #    journalReader: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}  # post-restore and restore Jobs only; lists object versions (R-HA-023)
   valkey:
     existingSecret: ""                  # required; example: quader-valkey
     usernameKey: username               # a missing key = the "default" user
@@ -4831,9 +4929,6 @@ secrets:
     existingSecret: ""                  # Sentinels without authentication; example: quader-valkey-sentinel
     usernameKey: ""                     # empty = no Sentinel user, the file is not mounted
     passwordKey: password
-  s3CA:
-    existingSecret: ""                  # empty = the outbound trust store (system roots plus config.proxy.outbound.tls.ca_files); example: quader-s3-tls. Renders storage.s3.ca_file
-    key: ca.crt
   valkeyCA:
     existingSecret: ""                  # empty = system roots plus trustedCA; example: quader-valkey-ca
     key: ca.crt
@@ -4846,14 +4941,6 @@ secrets:
     accessKeyIdKey: access-key-id
     secretAccessKeyKey: secret-access-key
     sessionTokenKey: ""                 # empty = no session token
-  backupSource:
-    existingSecret: ""                  # required with config.storage.s3.credentials.source static and backup.enabled; the backup pods only. A login that may only read the blob bucket (s3:GetObject, s3:ListBucket), so a compromised backup pod cannot write the blobs or the journal (R-BAK-015, Q-HA-160)
-    accessKeyIdKey: access-key-id
-    secretAccessKeyKey: secret-access-key
-  journalReader:
-    existingSecret: ""                  # required with journalCredentials.source static of postRestore or restore; those Jobs only. A login that may list the object versions of the blob bucket (s3:ListBucketVersions), which the runtime credential deliberately lacks (R-HA-023)
-    accessKeyIdKey: access-key-id
-    secretAccessKeyKey: secret-access-key
   backupTargetCA:
     existingSecret: ""                  # empty = the system trust store; the backup and restore pods only; example: quader-backup-target-tls. Renders backup.target.ca_file (Q-HA-146)
     key: ca.crt
@@ -4875,7 +4962,7 @@ trustedCA:
   existingSecret: ""                    # empty = no bundle; at most one of existingSecret and existingConfigMap; example: corp-ca-bundle
   existingConfigMap: ""                 # example: corp-ca-bundle (a trust-manager Bundle target)
   keys: [ca-bundle.crt]                 # the files of the source that are mounted, each a PEM bundle; they are added to config.proxy.outbound.tls.ca_files
-  useForObjectStore: false              # true also sets storage.s3.ca_file to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
+  useForObjectStore: false              # true also sets the ca_file of every connection without its own ca (R-HA-072) to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
 
 # ── Trust anchors of the signatures on artifacts (R-SIG-018) ──────────────────────
 # Who the installation trusts as a signer, beside the shipped anchors and those an administrator adds in the UI. The chart renders
@@ -5120,7 +5207,7 @@ postRestore:
   restoredTo: ""                        # required with enabled, the time t the platform restore went to, RFC 3339; example: "2026-10-28T09:15:00Z"
   skipRevocationJournal: false          # only when the source's bucket is gone (R-BAK-024)
   journalCredentials:
-    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (secrets.journalReader) (Q-HA-150)
+    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (the `journalReader` of each entry of secrets.storageConnections, R-HA-072) (Q-HA-150)
   backoffLimit: 2                       # a retry applies the clean-up again; its steps are safe to repeat
   activeDeadlineSeconds: 0              # 0 = not rendered
   terminationGracePeriodSeconds: 60     # at least 30
@@ -5180,7 +5267,7 @@ restore:
   skipRevocationJournal: false          # only when the source bucket is gone (R-BAK-024, H-37)
   extraArgs: []                         # example: [--check] for a dry run of the preconditions (R-BAK-020)
   journalCredentials:
-    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (secrets.journalReader); anything but runtime keeps a deletion with the runtime credential from hiding a journal entry (R-BAK-015, Q-HA-159)
+    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (the `journalReader` of each entry of secrets.storageConnections, R-HA-072); anything but runtime keeps a deletion with the runtime credential from hiding a journal entry (R-BAK-015, Q-HA-159)
   backoffLimit: 2                       # evictions are not counted, every retry resumes (R-BAK-021)
   activeDeadlineSeconds: 0              # 0 = not rendered
   terminationGracePeriodSeconds: 60     # at least 30; time to stop at the next safe point (Q-HA-147)
@@ -5218,7 +5305,7 @@ Acceptance criteria:
 - `helm show values deploy/helm/quader` equals this block, except for formatting. A CI test
   compares the key sets.
 - `helm template` with only the required values set (`config.server.base_url`,
-  `config.database.host`, `config.storage.s3.bucket`, `config.valkey.sentinel.addresses`,
+  `config.database.host`, `config.storage.connections`, `config.valkey.sentinel.addresses`,
   `config.valkey.sentinel.primary_name`, `secrets.database.existingSecret`,
   `secrets.valkey.existingSecret`, `secrets.encryption.existingSecret`, `secrets.encryption.keys`)
   renders without error. `config.backup.target.bucket` is not among them: it is required only with
@@ -5920,8 +6007,8 @@ kubelet's ([H-804](#h-804--a-change-of-the-ca-source-reaches-the-pods-at-the-kub
   `/etc/quader/ca/`. Its files populate `proxy.outbound.tls.ca_files` (R-REPO-035). They are added to the system
   roots for every outbound TLS connection: upstreams, OIDC issuers, GitLab, webhooks. They are
   reloaded within 60 s without a restart (R-REPO-035).
-- With `trustedCA.useForObjectStore: true` the same bundle becomes `storage.s3.ca_file`, for an
-  S3-compatible store with a private CA.
+- With `trustedCA.useForObjectStore: true` the same bundle becomes the `ca_file` of every connection whose entry of
+  `secrets.storageConnections` has no `ca` (R-HA-072), for an S3-compatible store with a private CA.
 - PostgreSQL uses its own CA (`secrets.databaseCA`), never the general bundle. The database
   connection then trusts exactly the database's CA.
 - Every replica mounts the same source, so there is no per-node trust store to keep in sync
@@ -6014,18 +6101,24 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 |---|---|---|---|
 | `QuaderReplicasNotReady` | `min by (deployment) (kube_deployment_status_replicas_available{deployment=~"<fullname>-(api\|packages\|worker\|vuln-scanner-trivy\|malware-scanner-clamav)(-.*)?"}) < 2`, per Deployment, so one role or pool without replicas fires while the others are healthy (the Deployments are `<fullname>-<role>` and `<fullname>-<role>-<pool>` for the roles `api`, `packages` and `worker`, R-HA-062, and the scanners `<fullname>-vuln-scanner-trivy`, R-HA-065, and `<fullname>-malware-scanner-clamav`, R-HA-068, [Q-HA-341](#q-ha-341--quaderreplicasnotready-covers-the-scanner-deployment); needs kube-state-metrics) | 5m | critical |
 | `QuaderDatabaseUnreachable` | `sum(rate(quader_db_retries_total{kind="connection"}[1m])) > 0 and sum(rate(quader_http_requests_total{code="503"}[1m])) > 0` | 2m | critical |
-| `QuaderObjectStoreUnreachable` | `min(quader_storage_s3_circuit_open) == 1` (all replicas) | 2m | critical |
-| `QuaderObjectStoreUnreachableSingleReplica` | `max(quader_storage_s3_circuit_open) == 1 and min(quader_storage_s3_circuit_open) == 0` | 5m | warning |
+| `QuaderObjectStoreUnreachable` | `min(quader_storage_s3_circuit_open) == 1`: every connection on every replica ([storage.md](storage.md) R-STOR-060; with one connection the expression of before) | 2m | critical |
+| `QuaderObjectStoreConnectionUnreachable` | `min by (connection) (quader_storage_s3_circuit_open) == 1 unless on() (min(quader_storage_s3_circuit_open) == 1)`: one connection on every replica while another answers (R-STOR-060) | 2m | warning |
+| `QuaderObjectStoreUnreachableSingleReplica` | `max by (connection) (quader_storage_s3_circuit_open) == 1 and min by (connection) (quader_storage_s3_circuit_open) == 0`, per connection | 5m | warning |
+| `QuaderStorageReplicationBacklog` | `max by (connection) (quader_storage_reconcile_queue_oldest_seconds) > 3600` for a connection that is not `filling` (R-STOR-056) | 30m | warning |
+| `QuaderStorageCopyDamaged` | `max by (connection) (quader_storage_copies{state=~"missing\|corrupt"}) > 0`: a damaged copy not repaired (R-STOR-055, R-STOR-027) | 1h | warning |
+| `QuaderStorageScrubBehind` | `max by (connection) (quader_storage_scrub_overdue_copies) > 0` (R-STOR-027) | 6h | warning |
+| `QuaderStorageConnectionDetached` | `max by (connection) (quader_storage_connection_detached) == 1` (R-STOR-051) | 15m | warning |
 | `QuaderDatabasePoolSaturated` | `histogram_quantile(0.95, rate(quader_db_pool_acquire_duration_seconds_bucket{db_pool="request"}[5m])) > 0.1`; the control connection's waits are the next row's ([operations-and-observability.md](operations-and-observability.md) R-OPS-046) | 10m | warning |
 | `QuaderControlConnectionWaits` | `histogram_quantile(0.95, rate(quader_db_pool_acquire_duration_seconds_bucket{db_pool="control"}[5m])) > 1`: readiness-critical loops wait for the control connection (Q-HA-20), before `invalidation` and `database` start failing on every replica (R-OPS-046) | 5m | warning |
 | `QuaderJobsStuck` | `max(quader_jobs_oldest_queued_age_seconds) > 900` | 5m | warning |
 | `QuaderLeaseLost` | `increase(quader_lease_lost_total[15m]) > 3` | 0m | warning |
 | `QuaderMixedVersions` | `count(count by (version) (quader_build_info)) > 1` | 2h | warning |
 | `QuaderSpoolNearlyFull` | `max(quader_spool_used_bytes / (quader_spool_used_bytes + quader_spool_free_bytes)) > 0.9` | 10m | warning |
-| `QuaderBlobMissing` | `increase(quader_storage_blobs_damaged_total{status="missing"}[1h]) > 0` | 0m | critical |
+| `QuaderBlobMissing` | `increase(quader_storage_blobs_damaged_total{status="missing"}[1h]) > 0`: no connection holds the blob any more | 0m | critical |
+| `QuaderBlobCorrupt` | `increase(quader_storage_blobs_damaged_total{status="corrupt"}[1h]) > 0`: no connection holds the blob whole ([storage.md](storage.md) R-STOR-052) | 0m | critical |
 | `QuaderGCStale` | `time() - max(quader_gc_last_success_timestamp_seconds) > 172800` | 1h | warning |
 | `QuaderBackupCheckFailed` | `min(quader_backup_check_ok) == 0` | 1h | critical |
-| `QuaderRevocationJournalBacklog` | `max(quader_revocation_journal_pending) > 0` (R-HA-054) | 15m | warning |
+| `QuaderRevocationJournalBacklog` | `max by (connection) (quader_revocation_journal_pending) > 0` (R-HA-054, per connection) | 15m | warning |
 | `QuaderRevocationJournalQuarantined` | `sum(increase(quader_revocation_journal_quarantined_total[1h])) > 0`: an outbox row that could not be encoded was set aside, so a change is missing from the journal (R-HA-054, Q-HA-162) | 0m | critical |
 | `QuaderValkeyUnavailable` | `max(quader_valkey_available) == 0` (every replica degraded, R-HA-057) | 2m | critical |
 | `QuaderValkeyUnavailableSingleReplica` | `min(quader_valkey_available) == 0 and max(quader_valkey_available) == 1` | 5m | warning |
@@ -7160,7 +7253,7 @@ seen from the chart; both pages have the CronJob off by default and require the 
 **Choice:** (b) — the backup CronJob is off by default. `backup.enabled: true` turns it on, and only
 then does the chart require `config.backup.target.bucket` and the other values of the backup: the
 target's Secret with `config.backup.target.credentials.source: static` (also with `restore.enabled`,
-whose Job mounts it too) and `secrets.backupSource` with static blob credentials. While the backup is
+whose Job mounts it too) and the entries' `backupSource` (R-HA-072) with static blob credentials. While the backup is
 off, `NOTES.txt` says so and names the values that turn it on.
 
 **Rationale:** The owner decided that an installation opts in. The backup needs a bucket of its own,
@@ -12531,6 +12624,47 @@ run against an image. The development agent would revisit this if a host tool of
 
 **Applied in the spec:** R-HA-070; [Makefile](../../Makefile) `trivy`, `trivy-dir`, `versions-check`;
 [release.yml](../../.github/workflows/release.yml) job `container-scan`.
+
+### Q-HA-390 · Each connection's Secrets are an entry of one list, keyed by the connection
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That credentials come
+from Secrets as today is the owner's (2026-11-22, decision 9).
+
+Context: the chart has one `secrets.s3`, one `secrets.s3CA`, one `secrets.backupSource` and one `secrets.journalReader` for the one
+store; `secrets.oidc[]` already keys a list of Secrets by the provider's `id` (R-HA-030).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `secrets.storageConnections[]`, one entry per connection with `connectionId` and every Secret of that connection (chosen) | The pattern of `secrets.oidc[]` | All of a connection's Secrets in one place; an entry that names no connection is refused | Four values go |
+| (b) The Secret's name inside each element of `config.storage.connections` | One list | Fewer places | `config` is passed to Quader unchanged; chart-only keys there would reach the binary |
+| (c) One Secret with keys per connection (`default-access-key-id`) | One Secret | Short values | Provisioners write one Secret per bucket |
+
+**Choice:** (a). **Applied in the spec:** R-HA-029, R-HA-030, R-HA-031, R-HA-072.
+
+### Q-HA-391 · The object-store alerts are per connection, critical only when every connection is down
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `QuaderObjectStoreUnreachable` critical for every connection down, `QuaderObjectStoreConnectionUnreachable` warning for one of several (chosen) | Severity by what clients feel | One provider's outage with another serving is not a page at night; the total outage is | Two alerts where there was one |
+| (b) Critical per connection | One rule | Simple | A second provider is meant to make one outage harmless |
+
+**Choice:** (a). **Applied in the spec:** R-HA-045, [storage.md](storage.md) R-STOR-060.
+
+### Q-HA-392 · A connection at the recovery site is the second way to a second site
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: R-HA-026 fills the recovery site's bucket by the store's one-way replication. The owner's provider lists the replication
+operations but documents neither targets nor behaviour (a research of 2026-11-22), and several connections now copy blobs themselves.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the store's replication as one way, add a connection at the recovery site as the other; a replicated bucket is never a connection (chosen) | Two documented ways | Works with any store; the copies are tracked and verified; RPO is the queue's age | During normal operation the primary site's replicas write across sites |
+| (b) Only Quader's connections | One way | Simpler page | Removes an option that works where the store offers it |
+
+**Choice:** (a). **Applied in the spec:** R-HA-026, [storage.md](storage.md) R-STOR-035 A4.
 
 ## What this does not cover
 

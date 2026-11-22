@@ -163,7 +163,8 @@ Valkey is an owner constraint since 2026-10-28.
 
 **INV-4 · Blob store.** S3-compatible object storage (AWS S3, MinIO, Ceph RGW and similar).
 Binaries are content-addressed by SHA-256 under `<prefix>/sha256/<h0h1>/<h2h3>/<64 hex>` and
-stored once, however many repositories and paths reference them. SHA-256, SHA-1, MD5 and SHA-512
+stored once, however many repositories and paths reference them, on each of the installation's object-store connections, every one of
+which holds every blob ([storage.md](storage.md) R-STOR-050, R-STOR-052; one connection in the plain case). SHA-256, SHA-1, MD5 and SHA-512
 are computed for every upload, in one pass while it is spooled to local temporary storage; the
 upload is then written to its content address unless that object already exists
 ([storage.md](storage.md) R-STOR-002, Q-STOR-2). PostgreSQL holds every reference to a blob; a

@@ -3,15 +3,17 @@
 Status: specification — not implemented
 
 This page specifies how Quader keeps package content and the metadata that describes it: the
-content-addressed blob store on S3-compatible object storage (INV-4), the PostgreSQL schema for
+content-addressed blob store on one or several S3-compatible object-store connections (INV-4,
+R-STOR-050), the PostgreSQL schema for
 repositories, items, packages, versions, blobs, blob references and properties (INV-3), the upload
 pipeline (spooling, single-pass hashing, size limits, multipart transfer, deduplication, deploy by
 checksum), the download path (streaming, HTTP range and conditional requests, integrity
-verification, optional presigned redirects per repository), item operations (information,
+verification, delivery by signed links of the object store as a switch of the installation, R-STOR-014), item operations (information,
 listing, delete, copy, move, properties), the trash can, garbage collection that is safe against
 concurrent uploads, the integrity scrub and orphan sweep, quotas and capacity thresholds, retention
-and cleanup policies, the S3 configuration and credential chain, the consistency assumptions about
-the object store, the behavior while the object store is unavailable, which role runs each part
+and cleanup policies, the S3 configuration and credential chain, several connections with a copy
+of every blob on each and the reconciliation between them (R-STOR-050 to R-STOR-063), the
+consistency assumptions about the object store, the behavior while the object store is unavailable, which role runs each part
 of the storage work across any number of replicas (R-STOR-046), and what storage contributes to
 Quader's own backup and restore (R-STOR-047). Repository semantics (classes, virtual resolution,
 pull-through) are in [repositories-and-proxy.md](repositories-and-proxy.md); the permission model
@@ -30,7 +32,9 @@ OPS-067 from [operations-and-monitoring.md](../features/operations-and-monitorin
 
 | Term | Meaning on this page |
 |---|---|
-| Blob | One immutable byte sequence, identified by its SHA-256, stored once as one S3 object. |
+| Blob | One immutable byte sequence, identified by its SHA-256, stored once on each connection that holds it, as one object there. |
+| Connection | One bucket and prefix on one S3-compatible endpoint, with its credentials; an installation has one to eight (R-STOR-050). |
+| Copy | A blob's object on one connection, with its row in `blob_copies` (R-STOR-052). |
 | Item | Anything addressable by repository (project key and repository key) and path: a file or a folder. A file item references exactly one blob. |
 | Reference | A row in any table that points at a blob through a `blob_sha256` foreign key (file items, including items in the trash can; stored run reports; cached documents of other subsystems). |
 | Package, version | The logical unit a format defines (an npm package and its versions, a NuGet package id and its versions). A version groups one or more file items. |
@@ -69,7 +73,8 @@ offer, used throughout this page:
 ### R-STOR-001 · Content-addressed object key layout
 Priority: **MVP** · Covers: STOR-001
 
-Every blob MUST be stored as exactly one S3 object whose key is derived only from its SHA-256:
+On each connection that holds it (R-STOR-052), a blob MUST be stored as exactly one object whose key is derived only from its
+SHA-256 and that connection's prefix (stage 2 may give an encrypted connection another name, read from the copy row, R-STOR-062):
 
 ```text
 <prefix>/sha256/<h0h1>/<h2h3>/<h0…h63>
@@ -94,15 +99,17 @@ starts at `sha256/` (no leading slash).
   | `sha256/…` | Blobs | Created by the upload pipeline, deleted only by garbage collection (R-STOR-024) and the orphan sweep (R-STOR-026). |
   | `_uploads/<session-id>/data`, `_uploads/<session-id>/tail-<writer>` | The S3 multipart upload of a multi-request upload session, and the session's tail of less than one part, one object per request that wrote it (R-STOR-011, P1) | Everything below `_uploads/<session-id>/` is deleted on finalize, abort or expiry; a superseded tail is deleted once its successor is recorded; the orphan sweep removes leftovers (R-STOR-026). |
   | `_probe/<replica-id>` | Startup and conformance probe objects (R-STOR-035) | Deleted after each probe. |
-  | `_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json` | Revocation journal entries ([ha-and-helm.md](ha-and-helm.md) R-HA-054) | Written by the shipping job (a re-ship writes identical content); never deleted by Quader; expired only by an operator lifecycle rule. |
+  | `_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json` | Revocation journal entries ([ha-and-helm.md](ha-and-helm.md) R-HA-054), on every connection that is not draining (R-STOR-059) | Written by the shipping job (a re-ship writes identical content); never deleted by Quader; expired only by an operator lifecycle rule. |
+  | `_connection` | The marker that names the installation and the connection a location belongs to (R-STOR-051) | Written once by the start check; never deleted by Quader. |
 
-  Any other object below `<prefix>/` is foreign: Quader reports it and never deletes it.
+  Any other object below `<prefix>/` is foreign: Quader reports it and never deletes it. With several connections every family
+  lies below each connection's own prefix (R-STOR-059).
 - A backup copies only `sha256/` objects that its database snapshot references; the other key
   families are not part of a backup ([backup-and-restore.md](backup-and-restore.md) R-BAK-001).
   A backup target never lies below `<prefix>/`, and `<prefix>/` never lies below a backup target
   (R-BAK-002), so neither the orphan sweep nor a restore meets the other's objects.
 - Objects are written with the bucket's default storage class unless
-  `storage.s3.storage_class` names another (R-STOR-030). Object content type is
+  the connection's `storage_class` names another (R-STOR-050). Object content type is
   `application/octet-stream`; response headers come from item metadata, never from object
   metadata.
 
@@ -153,7 +160,7 @@ The tables below are the storage core. Other pages add tables and columns throug
 
 - `repositories` holds identity and class; the configuration document `config` belongs to
   [repositories-and-proxy.md](repositories-and-proxy.md) except its `storage` member, which this
-  page defines (`maxUploadSize`, `quota`, `presignedDownloads`, `checksumPolicy`).
+  page defines (`maxUploadSize`, `quota`, `downloadLinks` of R-STOR-014, `checksumPolicy`).
 - `items` holds files and folders. A file references one blob. Folders are rows so that they can
   carry properties and be created explicitly; implicit folders (created as parents of a file) are
   removed when their last child goes, explicit ones stay.
@@ -220,14 +227,14 @@ CREATE TABLE blobs (
     created_at        timestamptz NOT NULL DEFAULT now(),
     state_changed_at  timestamptz NOT NULL DEFAULT now(),
     object_deleted_at timestamptz,             -- set by GC once the S3 delete has succeeded
-    checked_at        timestamptz,             -- last existence check (R-STOR-027)
-    deep_checked_at   timestamptz              -- last full re-hash (R-STOR-027)
+    checked_at        timestamptz              -- last recheck of a blob without a present copy (Q-STOR-153, R-STOR-055)
 );
 CREATE INDEX blobs_sha1     ON blobs (sha1);   -- sidecars, checksum search
 CREATE INDEX blobs_md5      ON blobs (md5);
 CREATE INDEX blobs_deleting ON blobs (state_changed_at) WHERE state = 'deleting';
 CREATE INDEX blobs_damaged  ON blobs (content_status) WHERE content_status <> 'ok';
-CREATE INDEX blobs_check    ON blobs (checked_at NULLS FIRST) WHERE state = 'live';
+-- where a blob's objects lie and what is known about each: blob_copies, storage_connections and blob_copy_queue (R-STOR-052);
+-- content_status is derived from the copies there
 
 CREATE TABLE packages (
     id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -587,11 +594,13 @@ Priority: **MVP** · Covers: STOR-001, STOR-002, STOR-019
 
 After hashing, the pipeline knows the SHA-256 and holds the content in the spool. The commit
 protocol MUST guarantee: *a committed reference always points at a blob row in state `live` whose
-object exists in S3*. It works together with garbage collection (R-STOR-024) and needs no lock
-held across an S3 transfer.
+object exists in S3*; with several connections, at least `storage.replication.min_copies` copies in state `present`, each written
+before its row (R-STOR-053), and "write object" below writes to the first writable connections of R-STOR-053. It works together with
+garbage collection (R-STOR-024) and needs no lock held across an S3 transfer.
 
 Existence of a blob is decided by its PostgreSQL row, not by an S3 `HEAD` (INV-4 refined: the
-row is the authority; an object without a row is an orphan, R-STOR-026).
+row is the authority; an object without a row is an orphan, R-STOR-026; an object of a live blob without its copy row is
+adopted by the orphan sweep of its connection).
 
 ```text
 putDone := false
@@ -687,18 +696,18 @@ Acceptance criteria:
 ### R-STOR-006 · Transfer to S3: single request, multipart, thresholds
 Priority: **MVP** · Covers: STOR-023
 
-- Content up to `storage.s3.multipart.threshold` MUST be written with one `PutObject`; larger
+- Content up to `storage.object_store.multipart.threshold` MUST be written with one `PutObject`; larger
   content MUST use a multipart upload whose parts are read directly from the spool file (section
   readers on the file; no per-part memory buffers).
-- Part size is `storage.s3.multipart.part_size`, raised when needed so that the content fits into
+- Part size is `storage.object_store.multipart.part_size`, raised when needed so that the content fits into
   10,000 parts (rounded up to whole MiB). S3 limits as documented by AWS: parts of 5 MiB to 5 GiB
   except the last, at most 10,000 parts, objects up to 48.8 TiB
   ([multipart upload limits](https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html)).
   S3-compatible stores may have lower limits; `storage.upload.max_size` must respect them.
-- Each upload uses at most `storage.s3.multipart.concurrency` parallel part requests; a replica
-  uses at most `storage.s3.multipart.max_concurrent_parts` in total.
+- Each upload uses at most `storage.object_store.multipart.concurrency` parallel part requests; a replica
+  uses at most `storage.object_store.multipart.max_concurrent_parts` in total.
 - Because the digests are known before the transfer starts, every `PutObject` and every part
-  SHOULD carry a payload checksum the store verifies (`storage.s3.payload_checksum`): SHA-256
+  SHOULD carry a payload checksum the store verifies (the connection's `payload_checksum`): SHA-256
   where the store supports additional checksums (AWS S3), otherwise `Content-MD5`. A store-side
   mismatch fails the transfer.
 - On any failure the pipeline MUST call `AbortMultipartUpload`; the orphan sweep aborts uploads
@@ -711,13 +720,17 @@ Priority: **MVP** · Covers: STOR-023
   can abort an open session.
 - After `CompleteMultipartUpload` the pipeline MUST confirm the object size with `HeadObject`
   before the row may become `live`.
+- With several connections everything above applies per connection, with that connection's `payload_checksum`, checksum modes and
+  storage class, and `max_concurrent_parts` counts the parts of all connections of a replica (R-STOR-050, R-STOR-053); the keys below
+  are `storage.object_store.multipart.*` and the connection's `payload_checksum`.
 
 Configuration:
 
 ```yaml
 storage:
-  s3:
-    payload_checksum: sha256    # default (proposed): sha256 | md5 | none
+  connections:
+    - payload_checksum: sha256  # default (proposed): sha256 | md5 | none; per connection
+  object_store:
     multipart:
       threshold: 100MiB         # default (proposed)
       part_size: 16MiB          # default (proposed); minimum 5MiB
@@ -731,7 +744,7 @@ Acceptance criteria:
   request log of the S3 store, and `aws s3api head-object` reports 314,572,800 bytes.
 - Killing the replica in the middle of a multipart upload leaves an incomplete multipart upload
   that `aws s3api list-multipart-uploads` shows until the next orphan sweep, which aborts it.
-- With `storage.s3.payload_checksum: none` against a store without additional-checksum support, uploads work.
+- With `payload_checksum: none` on the connection against a store without additional-checksum support, uploads work.
 
 ### R-STOR-007 · Raw deploy and folder creation
 Priority: **MVP** · Covers: ART-002
@@ -915,7 +928,8 @@ part hold:
   ([`crypto/sha256`](https://pkg.go.dev/crypto/sha256) and the SHA-1, MD5 and SHA-512 packages),
   so any replica continues hashing where the previous request stopped;
 - the S3 multipart upload of the staging object `<prefix>/_uploads/<session-id>/data`, with the
-  server-side encryption of R-STOR-032. It is created with the first full part, by the request that
+  server-side encryption of R-STOR-032, on the session's connection (`connection_id`, R-STOR-054): a session stays on the connection
+  where it started, with every object below `_uploads/<session-id>/` and the copy of its finalize. It is created with the first full part, by the request that
   sends it, and recorded with that part (`s3_upload_id` is empty until then), so a session that is
   started and never continued costs a row and nothing in the bucket;
 - the *tail*: the bytes after the last completed part, always fewer than
@@ -1055,7 +1069,8 @@ CREATE TABLE upload_sessions (
     state             text NOT NULL CHECK (state IN ('open', 'completing', 'assembled', 'done', 'aborted')),
     created_at        timestamptz NOT NULL DEFAULT now(),
     last_activity_at  timestamptz NOT NULL DEFAULT now(),
-    item_id           bigint                        -- the item a done session committed; a repeated closing request is answered from it
+    item_id           bigint,                       -- the item a done session committed; a repeated closing request is answered from it
+    connection_id     text NOT NULL REFERENCES storage_connections (id)   -- the connection the session's objects lie on (R-STOR-054)
 );
 CREATE INDEX upload_sessions_live ON upload_sessions (last_activity_at)
     WHERE state IN ('open', 'completing', 'assembled');
@@ -1126,7 +1141,8 @@ Priority: **MVP** · Covers: ART-011
 
 `GET` and `HEAD` on `/files/{projectKey}/{repoKey}/{path}` (and every format endpoint that returns stored
 content) resolve the item (virtual and remote resolution:
-[repositories-and-proxy.md](repositories-and-proxy.md)) and stream its blob from S3.
+[repositories-and-proxy.md](repositories-and-proxy.md)) and stream its blob from S3, from the first copy that answers in the order
+of R-STOR-055.
 
 - **Streaming.** The body MUST be copied from the S3 `GetObject` response to the client through
   a bounded buffer (`storage.download.buffer_size`), never spooled. Client disconnect cancels the
@@ -1187,8 +1203,9 @@ content) resolve the item (virtual and remote resolution:
   R-BAK-001), and `500` for `corrupt`; remote repositories instead treat the item as a cache miss
   and refetch, and a request that cannot refetch it is answered `503 content_unavailable`
   ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-025 "Lost content", Q-REPO-202). The first read
-  that finds no object marks the blob `missing` ([ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151), so every
-  later request is answered from PostgreSQL. The mark does not outlive the loss (Q-STOR-153): once the blob's last
+  that finds no object marks that copy `missing` and falls over to the next copy (R-STOR-055); the blob becomes `missing` when no
+  copy is present any more ([ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151), so every later request is answered from
+  PostgreSQL. The mark does not outlive the loss (Q-STOR-153): once the blob's last
   existence check (`checked_at`) is 30 s old, the next read asks the store again with one `HeadObject`, whichever
   replica (the read whose statement moves `checked_at` asks, every other read of the interval does not); an object
   that is back, unchanged in size, sets `content_status = 'ok'` and the read serves it, and one that is still gone
@@ -1238,9 +1255,9 @@ Priority: **MVP** · Covers: quader-only
   connection; HTTP/2 and HTTP/3: reset the stream). The client sees a truncated transfer, never a
   complete corrupted file.
 - Only evidence about the stored object changes its status: an S3 response whose
-  `Content-Length` differs from the blob's size, or a body read to its end whose SHA-256 differs,
-  MUST set the blob's `content_status` to `corrupt` and emit an audit event and the metric
-  `quader_storage_blobs_damaged_total{status="corrupt"}`. A transport error while reading the body
+  `Content-Length` differs from the copy's `stored_size`, or a body read to its end whose SHA-256 differs,
+  MUST set that copy's state to `corrupt` (R-STOR-055); the blob's `content_status` becomes `corrupt`, with an audit event and the
+  metric `quader_storage_blobs_damaged_total{status="corrupt"}`, when no other copy is present (R-STOR-052). A transport error while reading the body
   (connection reset, idle timeout, unexpected end of the body) aborts the response the same way
   but MUST NOT change the status, as for the scrub (R-STOR-027). A check that is on by default must
   not take content offline (R-STOR-012 answers `500` for a `corrupt` blob) because of a network
@@ -2301,11 +2318,13 @@ UPDATE blobs SET state = 'deleting', state_changed_at = now() WHERE sha256 = $1;
 --     only the entry the candidate query read, never one a later release wrote
 DELETE FROM blob_gc_queue WHERE sha256 = $1 AND enqueued_at = $seen;
 COMMIT;
--- (4) outside any transaction; 204 and 404 both count as success
-S3 DeleteObject <prefix>/sha256/…
--- (5)
+-- (4) outside any transaction; 204 and 404 both count as success; once per copy row, on its
+--     connection, each success deleting its copy row; a copy whose delete is never sent is released (R-STOR-057)
+S3 DeleteObject <copy's object_key>
+-- (5) when the blob has no copy row left
 UPDATE blobs SET object_deleted_at = now() WHERE sha256 = $1 AND state = 'deleting';
--- (6) later, once object_deleted_at < now() - storage.gc.delete_settle
+-- (6) later, once object_deleted_at < now() - storage.gc.delete_settle; in the same transaction
+--     the blob's rows of blob_copy_queue (R-STOR-052)
 DELETE FROM blobs WHERE sha256 = $1 AND state = 'deleting';
 ```
 
@@ -2423,8 +2442,8 @@ resumes deletions continues.
 
 **Deletion batching.** The collector MAY claim up to `storage.gc.batch_size` blobs, one
 transaction each or one transaction for the batch with the locks taken in digest order, and
-delete their objects with `DeleteObjects` (up to 1,000 keys per request) when
-`storage.gc.batch_delete` is true. In batch mode one hold-check statement covers the batch
+delete their objects with `DeleteObjects` (up to 1,000 keys per request, per connection) when the
+connection's `batch_delete` is true (R-STOR-050). In batch mode one hold-check statement covers the batch
 (`p.sha256 = ANY($1)`, returning the held digests), issued after the batch's last reference check
 (R-BAK-007), and one queue deletion pairs each digest with its own `$seen`
 (`DELETE FROM blob_gc_queue q USING unnest($1::bytea[], $2::timestamptz[]) AS s(sha256, seen)
@@ -2447,7 +2466,6 @@ storage:
     delete_settle: 30s       # default (proposed); at least 1 s
     handover_delay: 10m      # default (proposed); must exceed jobs.lease_duration + 2 × delete_settle
     batch_size: 1000         # default (proposed)
-    batch_delete: true       # default (proposed); false for stores without DeleteObjects
     delete_concurrency: 8    # default (proposed)
 ```
 
@@ -2580,40 +2598,51 @@ Acceptance criteria:
 ### R-STOR-026 · Orphan sweep
 Priority: **P1** · Covers: STOR-038, OPS-067
 
-The reverse check: walk the bucket and remove objects no blob row knows.
+The reverse check: walk each connection and remove the objects no row stands for, or adopt the object of a live blob whose copy row is
+missing. Not built until stage 1 (R-STOR-050 to R-STOR-063); today the full collection sweep removes what no session stands for below
+`_uploads/` (Q-STOR-172), and nothing walks `sha256/`.
 
-- The sweep lists `<prefix>/sha256/<h0h1>/` prefix by prefix (`ListObjectsV2`, 256 top-level
-  prefixes) and checkpoints the next prefix into the job's `checkpoint` after each one.
-- For each object without a blob row and with `LastModified` older than the run's `minAge`
-  (default `storage.orphans.min_age`), the sweep MUST claim the digest by inserting a `deleting` row
-  (`INSERT … ON CONFLICT DO NOTHING`) before deleting the object, then follow steps (4)–(6) of
-  R-STOR-024 with its hand-over rules. An uploader that wrote the same object concurrently finds
-  the `deleting` row and writes again after it is gone (R-STOR-005); the commit deadline keeps
-  freshly written objects out of reach of `min_age`. The sweep needs no backup-hold check: it
-  deletes only objects without a blob row, and a backup's snapshot references none of them
-  ([backup-and-restore.md](backup-and-restore.md) R-BAK-007).
-- The sweep honours the deletion pause of R-STOR-024 before every prefix: while it is set, the
-  sweep deletes nothing and ends with `result.paused: true`, and a later run resumes at the
-  checkpoint.
-- Keys below `<prefix>/sha256/` that do not match the layout, and any other foreign key below
-  `<prefix>/`, are reported and never deleted.
-- The sweep also aborts multipart uploads below `<prefix>/` initiated longer than
-  `storage.orphans.multipart_max_age` ago, and deletes the staging objects of upload sessions
-  that are aborted, done or unknown (R-STOR-011). An open session's multipart upload is never
-  that old, because `storage.uploads.session_max_age` is shorter than `multipart_max_age`.
-- The sweep is the task `orphan-sweep` of the shared task framework (Q-STOR-10; R-OPS-019).
-  Trigger: `POST /api/v1/system/tasks/orphan-sweep/run` with
-  `{"dryRun": false, "resume": true, "minAge": "24h"}` (all members optional; the values shown are
-  the defaults, `minAge` defaulting to `storage.orphans.min_age`) → `202 {"job": {…}}`, `409` with
-  the active job. Observation and stop through `/api/v1/system/jobs/{id}` and
-  `/api/v1/system/jobs/{id}/cancel`. The job `result` carries `prefixesDone`, `prefixesTotal`,
-  `objectsSeen`, `orphansFound`, `orphansDeleted`, `bytesReclaimed`, `multipartAborted` and
-  `foreignKeys`. Permission: system administrator.
-- `resume: true` starts at the checkpoint of the most recent `orphan-sweep` job that ended
-  `cancelled` or `failed`, if it is newer than the most recent completed one; otherwise the sweep
-  starts at prefix `00`. Scheduled runs use `resume: true`.
-- A `minAge` not greater than twice `storage.upload.commit_deadline` is rejected with `422`: a
-  shorter age could reach objects whose uploader has not yet inserted their row (R-STOR-005).
+- **Per connection.** The sweep lists `<prefix>/sha256/<h0h1>/` of each connection in the worker's configuration with `drain: false`
+  or `drain: true` (256 top-level prefixes each, `ListObjectsV2`), connection after connection in list order, and checkpoints
+  `{connection, prefix}` into the job's `checkpoint` after each prefix. A connection whose circuit is open is skipped and named in the
+  result; the others go on.
+- **Each listed object** is looked up by `(connection_id, object_key)` in `blob_copies` and, by the digest its name carries, in
+  `blobs` ([Q-STOR-238](#q-stor-238--the-orphan-sweep-adopts-the-object-of-a-live-blob-and-claims-an-orphan-through-the-blob-row)):
+  - **A copy row exists**: a listed size other than `stored_size` marks the copy `corrupt` and queues its repair (R-STOR-056); otherwise
+    nothing.
+  - **No copy row, the blob `live`**: the object is adopted: one transaction locks the blob `FOR SHARE` (it must still be `live`) and
+    inserts the copy row `present` and not verified, or `corrupt` with a queued repair when the listed size differs from `blobs.size`.
+    This is how an object written by a commit that lost its round, by a reconciliation run that crashed before its row, or after a
+    point-in-time restore of the database, is counted again.
+  - **No copy row, the blob `deleting`**: skipped; collection or a drain owns it.
+  - **No blob row**, and `LastModified` older than the run's `minAge` (default `storage.orphans.min_age`): the sweep MUST claim the digest
+    by inserting a `deleting` blob row (`INSERT … ON CONFLICT DO NOTHING`; the digest columns other than `sha256` are zero bytes of their
+    length and `size` is the listed size, never read for a `deleting` row, which never counts in the physical totals, R-STOR-003) before
+    it deletes the object on that connection, then follow steps (4)–(6) of R-STOR-024 with its hand-over rules. An uploader that wrote
+    the same object concurrently finds the `deleting` row and writes again after it is gone (R-STOR-005); the commit deadline keeps freshly
+    written objects out of reach of `min_age`. An insert that did nothing (the row exists) leaves the object for the next run. The sweep
+    needs no backup-hold check: it deletes only objects without a blob row, and a backup's snapshot references none of them
+    ([backup-and-restore.md](backup-and-restore.md) R-BAK-007).
+- The sweep honours the deletion pause of R-STOR-024 before every prefix: while it is set, the sweep deletes nothing and ends with
+  `result.paused: true`, and a later run resumes at the checkpoint. Adoptions and marks are not deletions and continue.
+- Keys below `<prefix>/sha256/` that do not match the layout, and any other key below `<prefix>/` outside the families of R-STOR-059, are
+  reported and never deleted.
+- **The staging area per connection.** The sweep also aborts multipart uploads below each connection's `<prefix>/` initiated longer than
+  `storage.orphans.multipart_max_age` ago, and deletes the objects below `_uploads/` of sessions that are aborted, done, unknown or pinned
+  to another connection (R-STOR-011, R-STOR-054) and older than `storage.uploads.session_max_age`. An open session's multipart upload is
+  never that old, because `session_max_age` is shorter than `multipart_max_age`. A store that documents no lifecycle rule to abort
+  incomplete uploads (the owner's provider lists none, a research of 2026-11-22, not verified here) relies on this step.
+- The sweep is the task `orphan-sweep` of the shared task framework (Q-STOR-10; R-OPS-019). Trigger:
+  `POST /api/v1/system/tasks/orphan-sweep/run` with `{"dryRun": false, "resume": true, "minAge": "24h", "connection": ""}` (all members
+  optional; the values shown are the defaults, `minAge` defaulting to `storage.orphans.min_age`, an empty `connection` meaning every one)
+  → `202 {"job": {…}}`, `409` with the active job. Observation and stop through `/api/v1/system/jobs/{id}` and
+  `/api/v1/system/jobs/{id}/cancel`. The job `result` carries, per connection, `prefixesDone`, `prefixesTotal`, `objectsSeen`,
+  `orphansFound`, `orphansDeleted`, `bytesReclaimed`, `adopted`, `copiesMarked`, `multipartAborted` and `foreignKeys`, and the skipped
+  connections. Permission: system administrator.
+- `resume: true` starts at the checkpoint of the most recent `orphan-sweep` job that ended `cancelled` or `failed`, if it is newer than
+  the most recent completed one; otherwise the sweep starts at prefix `00` of the first connection. Scheduled runs use `resume: true`.
+- A `minAge` not greater than twice `storage.upload.commit_deadline` is rejected with `422`: a shorter age could reach objects whose
+  uploader has not yet inserted their row (R-STOR-005).
 
 Configuration:
 
@@ -2627,84 +2656,96 @@ maintenance:
     orphan-sweep: {enabled: true, schedule: "0 5 * * 6"}   # default (proposed): Saturdays 05:00 UTC
 ```
 
-Acceptance criteria:
+Acceptance criteria (integration, PostgreSQL with two in-memory stores, a fake clock):
 
-- `aws s3 cp junk.bin s3://quader-blobs/quader/sha256/00/00/<64 hex>` with a back-dated test
-  clock is removed by a sweep, reported by a dry run before that, and an object with a
-  non-hex name under `sha256/` is only reported.
-- A sweep cancelled at prefix `7f` and triggered again with `resume: true` continues at `7f`
-  without re-listing earlier prefixes.
-- `POST …/tasks/orphan-sweep/run` with `{"minAge": "1h"}` and the default `commit_deadline` of 1h
-  answers `422`.
+- An object put under `quader/sha256/00/00/<64 hex>` on the second connection, with no blob row, is reported by a dry run and removed by
+  a sweep once older than `min_age`; an object with a non-hex name under `sha256/` is only reported.
+- The object of a live blob on the second connection without a copy row is adopted: the row is `present` and not verified, and the scrub
+  reads it first.
+- A sweep cancelled at prefix `7f` of the second connection and triggered again with `resume: true` continues there without re-listing
+  the first connection or earlier prefixes.
+- With the first store's circuit open, the sweep walks the second connection and names the first as skipped.
+- `POST …/tasks/orphan-sweep/run` with `{"minAge": "1h"}` and the default `commit_deadline` of 1h answers `422`.
 
 ### R-STOR-027 · Integrity scrub
 Priority: **P1** · Covers: quader-only
 
-- **Existence check**: every `live` blob MUST be checked with `HeadObject` at least once per
-  `storage.scrub.check_interval` (oldest `checked_at` first). `404` sets `content_status = 'missing'`;
-  a size different from `blobs.size` sets `corrupt`. Errors other than `404` (timeouts, `5xx`,
-  `403`) MUST NOT change the status; they are counted and retried.
-- **Deep check**: every `live` blob SHOULD be downloaded and re-hashed at least once per
-  `storage.scrub.deep_interval`, throttled to `storage.scrub.deep_bytes_per_second` per run (the
-  task is `exclusive`, so one run reads at a time whatever the number of `worker` replicas); a
-  SHA-256 mismatch sets `corrupt`.
-- Every detection (here, in R-STOR-013, and a download or a document read that the store answers "no such
-  object", [ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151) increments the counter
-  `quader_storage_blobs_damaged_total{status}` and writes an audit event per blob; the gauge
-  `quader_storage_blobs_damaged{status}` reports the current number of damaged blobs from the
-  latest storage summary (R-STOR-028).
-- `GET /api/v1/storage/damaged-blobs` lists damaged blobs with their referencing items
-  (permission: `storage.read` or system administrator).
-- **Repair**: a later upload of identical content rewrites the object and resets the status
-  (R-STOR-005); a remote repository treats an item with damaged content as a cache miss and
-  refetches it, and the commit of the refetched content is that repair
-  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-025 "Lost content", Q-REPO-202); a `missing` mark
-  heals by itself: a read of the blob after its last existence check is 30 s old asks the store again, and an
-  object that is back sets `ok` (R-STOR-012, Q-STOR-153); `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` re-runs both checks
-  (permission: system administrator).
-- **Operator check**: `quader admin storage verify [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json]` asks the
-  store for the object of every `live` blob row, with the runtime database role and the runtime object-store credential, and
-  changes nothing (it neither sets `content_status` nor writes an audit event; the scrub's marks stay the scrub's). It reads the
-  `blobs` table in pages of 1,000 rows by digest, so its memory does not grow with the table, and runs `--concurrency` existence
-  checks at a time (default 16). An object that the store reports missing, or whose size differs from `blobs.size`, is a finding;
-  the command prints one line per item that references such a blob (`item <project>/<repository>:<path>`, `(trashed)` for a trashed
-  one, at most `--max-items` per blob, default 20, with the number of the rest) and a line for a blob that no item references (one that only a cache
-  metadata entry, a UI asset or an avatar references prints so), then the totals. An answer other than "no such object" (a timeout, `5xx`, throttling) is retried twice and then counted as *not
-  checked*, never as missing; `AccessDenied` ends the run (a store answers it for a missing object when the credential may not
-  list the bucket). `--since` limits the run to rows created or changed at or after the time (Q-STOR-200); `--json` prints the
-  report as one document. Exit status: `0` every checked object is there, `5` at least one blob has no object or another size,
-  `75` nothing is damaged but a check was not answered, `2` a usage or configuration error, `1` another failure
-  ([backup-and-restore.md](backup-and-restore.md) R-BAK-013 holds the codes). The recovery procedure runs it after a
-  point-in-time restore ([ha-and-helm.md](ha-and-helm.md) R-HA-024, R-HA-025), and the pod-crash scenario of R-HA-052 and the
-  cold-install scenario of exit criterion E5.2 run it as the condition "no item row without its object".
-- The scrub is the task `scrub` of the shared task framework (Q-STOR-10; R-OPS-019). A scheduled
-  run performs the existence checks and the deep checks that are due. A manual trigger
-  `POST /api/v1/system/tasks/scrub/run` with `{"deep": false}` performs only the due existence
-  checks; `{"deep": true}` also the due deep checks. Observation and stop through the job API.
-  Permission: system administrator.
+The owner's decision 10 of 2026-11-22: a worker job reads every copy once within a period, throttled, checks it whole, marks damage and
+replaces a damaged copy from another connection. Not built until stage 1; what exists today is the detection by downloads
+(R-STOR-013), the mark of a missing object and its 30 s recheck (R-STOR-012, Q-STOR-151, Q-STOR-153), and the operator check, which moved
+to R-STOR-058.
+
+- **Per copy, whole.** Every `present` copy on a connection in the worker's configuration is read to its end through the connection's
+  reader (R-STOR-062) at least once per that connection's `scrub_period` (default `720h`), and its SHA-256 and length are compared with the
+  blob's digest and the copy's `stored_size`. Due copies are those whose `verified_at` is `NULL` or older than the period, oldest first:
+  copies never verified (a server-side copy, an adoption, a write without an enforced payload checksum) come first
+  ([Q-STOR-239](#q-stor-239--the-scrub-reads-every-copy-whole-once-per-period-per-connection-and-has-no-separate-existence-check)).
+- **Outcome.** A match stamps `verified_at` and `checked_at`. A digest or length mismatch marks the copy `corrupt`, "no such object" marks
+  it `missing`, each with the counter `quader_storage_copies_damaged_total{connection,status}` and a queued repair (R-STOR-056); the blob's
+  state follows by R-STOR-052. A timeout, a `5xx`, throttling or an open circuit changes nothing; the copy stays due and is counted in
+  `quader_storage_scrub_copies_total{connection,result="error"}`.
+- **Repair from another connection.** The reconciliation replaces a damaged copy from a verified `present` copy on another connection
+  (overwriting a `corrupt` object, writing a `missing` one). With one connection, or when no copy is whole, the blob is `missing` or
+  `corrupt` and is listed by the API below; it is repaired as before: a later upload of identical content rewrites the object
+  (R-STOR-005), a remote repository treats the item as a cache miss and refetches it
+  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-025 "Lost content", Q-REPO-202), and a `missing` mark heals by itself when
+  the object comes back (R-STOR-055).
+- **The job.** Task and kind `scrub` in the queue `maintenance`, `exclusive`, scheduled hourly. A run reads every connection at once, one
+  reader per connection, each throttled to that connection's `scrub_bytes_per_second`, so a slow provider does not hold back a fast one;
+  a run ends after `storage.scrub.run_duration` and the next continues. In a steady state about a 720th of a connection's copies becomes
+  due every hour.
+- **What it costs.** Each connection is read in full once per period: a connection holding 2 TiB reads 2 TiB per 30 days, about
+  0.8 MiB/s on average, in hourly runs throttled to `scrub_bytes_per_second`. At a provider outside the installation's network that is
+  egress traffic; its price is the provider's (the owner's provider lists no egress charge in its price list, and a page that said traffic
+  is free now redirects; a research of 2026-11-22, not verified). The reads count against the provider's request and bandwidth limits that
+  serving shares (documented there as 2,500 requests per second, 500 concurrent requests and 500 MB/s per project, same research). A
+  connection whose present bytes exceed `scrub_period × scrub_bytes_per_second × run_duration / 1h` cannot keep up:
+  `quader_storage_scrub_overdue_copies{connection}` grows and `QuaderStorageScrubBehind` fires.
+- **Detection writes an audit event per blob** whose state changes (here, in R-STOR-013, and a read that the store answers "no such
+  object", [ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151), and increments `quader_storage_blobs_damaged_total{status}`; a copy's
+  damage that leaves the blob `ok` is a metric and a log line, not an audit event. The gauge `quader_storage_blobs_damaged{status}`
+  reports the current number of damaged blobs, and `quader_storage_copies{connection,state}` the copies per state, from the latest storage
+  summary (R-STOR-028).
+- **The list of damaged blobs.** `GET /api/v1/storage/damaged-blobs?scope=blobs|copies&connection=&status=&cursor=&limit=` (permission
+  `storage.read` or system administrator): `scope=blobs` (default) lists the blobs no connection holds whole (`content_status` other than
+  `ok`); `scope=copies` lists the blobs with at least one `missing` or `corrupt` copy, the self-healing view. Each entry carries `sha256`,
+  `size`, `contentStatus`, `copies[]` (`connection`, `state`, `verifiedAt`, `checkedAt`, `stateChangedAt`), the first 20 referencing items
+  (`project`, `repository`, `path`, `trashed`) and `itemCount`
+  ([Q-API-386](api-and-ui.md#q-api-386--the-damaged-blobs-list-has-two-scopes-and-shows-each-copy)).
+  `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` reads every copy of that blob whole at once, unthrottled, sets the states by what it
+  finds, queues the repairs, and answers with the copies (permission: system administrator).
+- **Trigger.** `POST /api/v1/system/tasks/scrub/run` with `{"connection": ""}` (optional; empty: every connection) runs the due reads.
+  Observation and stop through the job API. Permission: system administrator.
+- **How the evidence becomes true.** R-STOR-027 is listed as implemented today ([implemented.txt](../coverage/implemented.txt)) because
+  tests of other parts name it: the lost content of a remote repository (`internal/proxy/lost_test.go`,
+  `test/integration/proxy/lost_test.go`, `test/integration/npm/remote_lost_test.go`, `test/integration/nuget/remote_lost_test.go`) and
+  the operator check (`internal/blob/verify/verify_test.go`). The build renames the first group to R-REPO-025, whose "Lost content" they
+  test, and the second to R-STOR-058, and removes R-STOR-027 from `implemented.txt` in the same change, so the requirement is claimed again
+  only by the scrub's own tests (Q-STOR-240).
 
 Configuration:
 
 ```yaml
 storage:
+  connections:
+    - scrub_period: 720h           # default; per connection (R-STOR-050)
+      scrub_bytes_per_second: 50MiB  # default; per connection and run
   scrub:
-    check_interval: 168h           # default (proposed): every blob HEAD-checked weekly
-    deep_interval: 2160h           # default (proposed): every blob re-hashed every 90 days
-    deep_bytes_per_second: 50MiB   # default (proposed)
+    run_duration: 50m              # default
 maintenance:
   tasks:
-    scrub: {enabled: true, schedule: "0 4 * * *"}   # default (proposed): daily 04:00 UTC
+    scrub: {enabled: true, schedule: "7 * * * *"}   # default: hourly
 ```
 
 Acceptance criteria:
 
-- `aws s3 rm` of one blob object followed by a scrub run marks it `missing`; the damaged-blobs
-  API lists the items referencing it; re-uploading the same file with `curl -T` resets it to
-  `ok`.
-- An S3 outage during a scrub run leaves every status unchanged.
-- With the object of one blob deleted behind Quader's back, `quader admin storage verify` exits `5` and prints the items that reference
-  the blob, a trashed one marked; with the object back it exits `0`. A cut-off after every row checks nothing
-  (`TestR_HA_024_StorageVerifyNamesTheItemsWhoseObjectIsGone`, `TestR_HA_025_StorageVerifySinceNarrowsTheRun`).
+- A copy whose bytes were replaced behind Quader's back (same length) is marked `corrupt` by a scrub run, the blob stays `ok`, the
+  reconciliation rewrites the copy from the other connection, and the next run verifies it (integration, PostgreSQL with two in-memory
+  stores).
+- With one connection and its object deleted, a scrub run marks the copy `missing` and the blob `missing`; the damaged-blobs API lists the
+  items referencing it; re-uploading the same file with `curl -T` sets both `present` and `ok`.
+- A store answering `503` to every read during a run leaves every state unchanged (unit, `internal/blob/scrub`).
+- With a throttle of 1 MiB/s and 4 MiB due, a run's reads take at least four seconds of the fake clock (unit).
 
 ## Capacity
 
@@ -2751,6 +2792,7 @@ Priority: **P1** · Covers: STOR-039
   | `trash` | Trashed items and their logical bytes (R-STOR-022). |
   | `pendingCollection` | Digests in `blob_gc_queue` plus rows in state `deleting`, with their sizes. |
   | `damaged` | Blob counts per `content_status` other than `ok` (R-STOR-027). |
+  | `connections[]` | Per connection (R-STOR-061): `id`, `presentCopies`, `presentBytes`, `missingCopies`, `corruptCopies`, `verifiedWithinPeriod`, `scrubOverdue`, `backlogBlobs` and `backlogBytes` (live blobs and their bytes without a present copy on it), `fillRatio` (`presentCopies` / `blobs.count`, `1` when there is no blob); counted from the indexes of R-STOR-052. |
   | `quota` | The system quota settings of R-STOR-029 and `usedRatio = blobs.bytes / capacityBytes`; `capacityBytes` and `usedRatio` are `null` when no capacity is configured. |
   | `repositories[]` | One entry per local and remote repository, and per virtual repository that holds generated items (Q-STOR-215); a virtual repository without items is not listed. `packages` and `versions` count untrashed rows. |
 
@@ -2880,56 +2922,42 @@ Acceptance criteria:
 Priority: **MVP** · Covers: STOR-006, STOR-020, STOR-029
 
 **TLS (R-ARCH-035, INV-20).** An `https://` endpoint is the production form. The object store's CA trust is part of
-the TLS material of R-ARCH-035: `storage.s3.ca_file` is supported since M0 and replaces the system roots for the
-object-store client, and the file is reloaded like the other bundles (Q-STOR-14). A proxy credential file is still refused. An
-`http://` endpoint is a development exception behind `storage.s3.allow_insecure_endpoint: true`, and the development
+the TLS material of R-ARCH-035: a connection's `ca_file` (`storage.s3.ca_file` until stage 1, supported since M0) replaces the
+system roots for that connection's client, and the file is reloaded like the other bundles (Q-STOR-14). A proxy credential file is
+still refused. An `http://` endpoint is a development exception behind the connection's `allow_insecure_endpoint: true`, and the development
 and integration profiles use TLS, so no profile needs the exception. Where the endpoint rules below name plain HTTP as
 a permitted form, this paragraph governs.
 
-- Quader talks to one bucket through the S3 API with Signature Version 4 (AWS SDK for Go v2).
-  Any store that implements the operations below and meets R-STOR-035 is supported (AWS S3,
-  MinIO, Ceph RGW and similar).
+- Quader talks to the bucket of each of its connections (R-STOR-050; one to eight, each holding every blob that is not being
+  drained, R-STOR-052) through the S3 API with Signature Version 4 (AWS SDK for Go v2). This replaces "one bucket" (superseded on
+  2026-11-22 by the owner's decisions on several connections). Any store that implements the operations below and meets R-STOR-035 is
+  supported (AWS S3, MinIO, Ceph RGW and similar); the keys of this requirement are keys of each connection's element.
 - Operations used: `PutObject`, `GetObject` (with `Range`), `HeadObject`, `DeleteObject`,
   `DeleteObjects` (optional), `ListObjectsV2`, `CreateMultipartUpload`, `UploadPart`,
   `UploadPartCopy`, `CompleteMultipartUpload`, `AbortMultipartUpload`, `ListMultipartUploads`,
-  and presigning for R-STOR-014. Quader never creates or configures the bucket.
+  and presigning for the links of R-STOR-014 and their check (R-STOR-074). Quader never creates or configures the bucket.
 - Configuration is read at startup; a change needs a rolling restart (Helm, INV-13). All
-  replicas MUST use the same bucket and prefix; the prefix is fixed for the life of an
-  installation (changing it makes all content unreachable).
+  replicas MUST use the same connections; a connection's bucket and prefix are fixed once it holds a copy, and moving content to
+  another bucket or prefix is a new connection that the reconciliation fills (R-STOR-051). During a rolling update replicas with
+  the old and the new list run side by side, which the copies and states of R-STOR-051 and R-STOR-052 tolerate.
 - Validation at startup: bucket required; prefix without leading or trailing `/` and without
   `//`, at most 256 characters of `[A-Za-z0-9!_.*'()/-]`; `endpoint`, when set, an absolute
   `https://` URL (`http://` only with `allow_insecure_endpoint: true`). An endpoint without a scheme
   is a host, with an optional port, and means `https://` (Q-STOR-15): `s3.eu01.example.cloud` is read
   as `https://s3.eu01.example.cloud`, as a bucket provisioner writes it. The effective configuration
-  shows the URL with the scheme added, and its source is `derived`. The same holds for
-  `presign.endpoint`. A scheme-less host never becomes `http://`, not even with
+  shows the URL with the scheme added, and its source is `derived`. A scheme-less host never becomes `http://`, not even with
   `allow_insecure_endpoint`; plaintext is always written out.
 - S3-compatible stores: `force_path_style: true` for stores without virtual-hosted addressing;
   explicit `region` (any value the store accepts); `checksums.request_calculation: when_required`
   and `checksums.response_validation: when_required` for stores that reject the SDK's default
   payload checksums (SDK options `RequestChecksumCalculation` and `ResponseChecksumValidation`,
   [aws package](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/aws)); `ca_file` for private CAs.
-- Every key can be overridden by environment variables per INV-15, for example
-  `QUADER_STORAGE_S3_BUCKET`.
+- Every key can be overridden by environment variables per INV-15: the list of connections is one key,
+  `QUADER_STORAGE_CONNECTIONS`, whose value is the list as JSON; the shared block has a variable per key, for example
+  `QUADER_STORAGE_OBJECT_STORE_HTTP_DIAL_TIMEOUT`.
 
-Configuration:
-
-```yaml
-storage:
-  s3:
-    endpoint: ""                 # default (proposed): empty = AWS endpoint resolution for region; a host without a scheme means https://
-    region: eu-central-1         # example
-    bucket: quader-blobs        # example; required
-    prefix: quader              # default (proposed)
-    force_path_style: false      # default (proposed)
-    allow_insecure_endpoint: false  # default (proposed)
-    ca_file: ""                  # default (proposed): system trust store
-    storage_class: ""            # default (proposed): bucket default
-    checksums:
-      request_calculation: when_supported  # default (proposed): when_supported | when_required
-      response_validation: when_supported  # default (proposed)
-    startup_check: true          # default (proposed); R-STOR-035
-```
+Configuration: the keys of a connection and of `storage.object_store` are listed in R-STOR-050 (the checksum modes are the
+element's `request_checksum_calculation` and `response_checksum_validation`; `startup_check` is `storage.object_store.startup_check`).
 
 Acceptance criteria:
 
@@ -2959,18 +2987,23 @@ Priority: **MVP** · Covers: STOR-021
   `CreateBucket`, no ACL permissions. With SSE-KMS add `kms:GenerateDataKey` and `kms:Decrypt` on the key
   (R-STOR-032).
 
-Configuration:
+- With several connections each has its own credential (R-STOR-050), and the permissions above are granted per connection on its
+  bucket and prefix. A provider whose credentials reach every bucket of an account or project unless a bucket policy narrows them
+  (the owner's provider documents it so, a research of 2026-11-22) makes one connection's credential a credential of the others'
+  buckets, and of a backup target in the same project
+  ([H-1253](../security/object-store-connections.md#h-1253--a-connections-credential-reaches-more-than-its-own-bucket)).
+
+Configuration (keys of a connection's element, R-STOR-050):
 
 ```yaml
 storage:
-  s3:
-    credentials:
-      source: default                      # default (proposed): default | webIdentity | static
+  connections:
+    - credentials_source: default          # default (proposed): default | webIdentity | static
       role_arn: ""                         # example: arn:aws:iam::123456789012:role/quader
       web_identity_token_file: ""          # example: /var/run/secrets/tokens/s3
       sts_endpoint: ""                     # example: https://minio.example.com
-      access_key_id_file: ""               # example: /var/run/secrets/quader-s3/access-key-id
-      secret_access_key_file: ""           # example: /var/run/secrets/quader-s3/secret-access-key
+      access_key_id_file: ""               # example: /var/run/secrets/quader/s3-default/access-key-id
+      secret_access_key_file: ""           # example: /var/run/secrets/quader/s3-default/secret-access-key
       session_token_file: ""
 ```
 
@@ -2997,15 +3030,14 @@ Priority: **P1** · Covers: STOR-022
   s3-encryption-proxy.
 - Changing the mode affects new objects only; existing objects keep their encryption.
 
-Configuration:
+Configuration (keys of a connection's element, R-STOR-050; each connection has its own mode):
 
 ```yaml
 storage:
-  s3:
-    sse:
-      mode: none            # default (proposed): none | s3 | kms
-      kms_key_id: ""        # example: arn:aws:kms:eu-central-1:123456789012:key/0f1e…
-      bucket_key: true      # default (proposed)
+  connections:
+    - sse_mode: none            # default (proposed): none | s3 | kms
+      sse_kms_key_id: ""        # example: arn:aws:kms:eu-central-1:123456789012:key/0f1e…
+      sse_bucket_key: true      # default (proposed)
 ```
 
 Acceptance criteria:
@@ -3016,10 +3048,10 @@ Acceptance criteria:
 ### R-STOR-033 · Connection pool, timeouts, retries and circuit breaker
 Priority: **MVP** · Covers: STOR-024, STOR-017
 
-- The S3 client uses one HTTP connection pool per replica with `storage.s3.http.max_connections`, and
+- The S3 client of each connection uses one HTTP connection pool per replica with `storage.object_store.http.max_connections`, and
   explicit dial, TLS-handshake, response-header and idle timeouts. Body transfers have no fixed
-  total timeout; they fail when no byte moves for `storage.s3.http.idle_transfer_timeout`.
-- Over HTTP/2, the store may send at most `storage.s3.http.receive_window` bytes of one object
+  total timeout; they fail when no byte moves for `storage.object_store.http.idle_transfer_timeout`.
+- Over HTTP/2, the store may send at most `storage.object_store.http.receive_window` bytes of one object
   ahead of what Quader has read; the transport's own default, 4 MiB, would let every slow download
   hold that much in memory ([architecture.md](architecture.md) Q-ARCH-241). Over HTTP/1.1, which
   AWS S3 speaks, the kernel's socket buffer holds what is in flight and the key has no effect.
@@ -3027,26 +3059,26 @@ Priority: **MVP** · Covers: STOR-024, STOR-017
   `retry.max_backoff`, for throttling, `5xx` and network errors on idempotent operations (all
   operations Quader uses are idempotent on content-addressed keys). Streaming `GetObject` bodies
   are not retried after the first byte reached the client.
-- The pool and `storage.s3.multipart.max_concurrent_parts` protect one replica. The store sees
+- The pool and `storage.object_store.multipart.max_concurrent_parts` protect one replica. The store sees
   their sum over all replicas, which grows with the replica count; sizing the store for it is
   [ha-and-helm.md](ha-and-helm.md) R-HA-050's.
-- Circuit breaker per replica: after `circuit_breaker.failure_threshold` consecutive failures
+- Circuit breaker per connection and replica (R-STOR-060): after `circuit_breaker.failure_threshold` consecutive failures
   (network errors, timeouts, `5xx`, credential errors; not `404` or other `4xx`) the circuit opens
   for `circuit_breaker.open_duration`; blob operations then fail fast (R-STOR-036); one probe
   request closes it again. A credential error is a failure to obtain a credential, or an answer that names the credential as
   the cause: `InvalidAccessKeyId`, `SignatureDoesNotMatch`, `ExpiredToken`, `InvalidToken`, `AuthorizationHeaderMalformed`.
   A plain `AccessDenied`, a missing bucket and the other `4xx` answers are answers about the request and do not count
   ([ha-and-helm.md](ha-and-helm.md) Q-HA-254). When the circuit opens on such an answer, the replica logs one `WARN` line with
-  `credential_source` (`storage.s3.credentials.source`) and the store's code, never a key or a secret (R-HA-007).
-- Metrics: `quader_storage_s3_requests_total{operation,outcome}`,
-  `quader_storage_s3_request_duration_seconds{operation}`, `quader_storage_s3_bytes_total{direction}`,
-  `quader_storage_s3_circuit_open`.
+  `connection` and `credential_source` (the connection's `credentials_source`) and the store's code, never a key or a secret (R-HA-007).
+- Metrics: `quader_storage_s3_requests_total{connection,operation,outcome}`,
+  `quader_storage_s3_request_duration_seconds{connection,operation}`, `quader_storage_s3_bytes_total{connection,direction}`,
+  `quader_storage_s3_circuit_open{connection}` (R-STOR-060).
 
-Configuration:
+Configuration (shared by every connection, R-STOR-050):
 
 ```yaml
 storage:
-  s3:
+  object_store:
     http:
       max_connections: 256         # default (proposed)
       dial_timeout: 5s             # default (proposed)
@@ -3072,8 +3104,8 @@ Acceptance criteria:
 ### R-STOR-034 · Outbound proxy for object-store traffic
 Priority: **P1** · Covers: STOR-025
 
-- `storage.s3.http.proxy_url` sets an HTTP(S) proxy for S3 and STS traffic only; credentials, when needed,
-  are read from `storage.s3.http.proxy_credentials_file` (`user:password`), never inline. `storage.s3.http.no_proxy` is a
+- `storage.object_store.http.proxy_url` sets an HTTP(S) proxy for the S3 and STS traffic of every connection only; credentials, when
+  needed, are read from `storage.object_store.http.proxy_credentials_file` (`user:password`), never inline. `storage.object_store.http.no_proxy` is a
   comma-separated list of host names, domain suffixes (`.example.com`) and CIDR ranges.
 - When `proxy_url` is empty, the standard `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` environment
   variables apply.
@@ -3084,7 +3116,7 @@ Configuration:
 
 ```yaml
 storage:
-  s3:
+  object_store:
     http:
       proxy_url: ""                  # default (proposed): empty = environment
       proxy_credentials_file: ""     # example: /var/run/secrets/quader-proxy/credentials
@@ -3099,40 +3131,60 @@ Acceptance criteria:
 ### R-STOR-035 · Object-store consistency assumptions and conformance check
 Priority: **MVP** · Covers: STOR-029, STOR-006
 
-The correctness of R-STOR-005, R-STOR-024 and R-STOR-026 rests on these assumptions about the
-object store. Operators MUST use a store that satisfies them.
+The correctness of R-STOR-005, R-STOR-024, R-STOR-026, R-STOR-056 and R-STOR-057 rests on these assumptions about the
+object store. They hold **per connection** (R-STOR-050): each connection is checked on its own, and nothing assumes that two
+connections agree in time or order. Operators MUST use stores that satisfy them.
 
 | ID | Assumption |
 |---|---|
-| A1 | Strong read-after-write consistency for new objects, overwrites and deletes: a read or list started after a successful write or delete response observes it. AWS documents this for S3 ([consistency model](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#ConsistencyModel)). |
+| A1 | Read-after-write consistency for new objects: a read started after a successful write of a key that did not exist observes it. Required. AWS documents strong consistency for S3 also for overwrites, deletes and listings ([consistency model](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#ConsistencyModel)). Overwrites and deletes may be **eventually** consistent, as the owner's provider and the software behind it document (a research of 2026-11-22): a read shortly after an overwrite or a delete may still see the earlier object. Quader tolerates it: the same key always holds the same content, a stale `404` after a re-upload marks a copy `missing` that the recheck and the reconciliation restore (R-STOR-055, R-STOR-056), and a repaired copy read stale is marked again and repaired again until the store agrees ([Q-STOR-249](#q-stor-249--a1-is-required-for-new-objects-overwrites-and-deletes-may-be-eventual-and-no-guarantee-rests-on-a-conditional-write)). |
 | A2 | Single-key atomicity: a read returns the old or the new object, never a partial one; a multipart object becomes visible only on completion. |
-| A3 | A request whose response has been received is not executed again later. `delete_settle` (R-STOR-024) absorbs in-flight retries up to its length. |
-| A4 | One bucket in one consistency domain. Active-active multi-site replication that lets another site write or delete keys under the prefix is not supported; one-way replication to a passive disaster-recovery bucket is. |
+| A3 | A request whose response has been received is not executed again later, and of two completed writes or deletes of one key the one that completed later wins ("latest wins"). `delete_settle` (R-STOR-024) absorbs in-flight retries up to its length. A store that acknowledges a delete and removes the object's replicas afterwards (the software behind the owner's provider queues a delete it cannot finish within 30 s, same research) meets A3 only if that removal cannot reach a later write of the key; not verified ([H-1255](../security/object-store-connections.md#h-1255--a-store-that-applies-a-delete-after-acknowledging-it-is-not-proven-harmless-to-a-later-write)). |
+| A4 | Each connection is one bucket in one consistency domain, written by one installation (the marker of R-STOR-051). Copies between connections are Quader's own reconciliation (R-STOR-056). A store's replication that lets another site or bucket write or delete keys under a connection's prefix is not supported, also not between two connections of one installation; one-way replication from a connection's bucket to a passive disaster-recovery bucket that is not a connection is ([ha-and-helm.md](ha-and-helm.md) R-HA-026). This replaces "one bucket in one consistency domain" (superseded on 2026-11-22). |
 | A5 | Object `LastModified` comes from the store's clock, which differs from replica clocks by at most a few minutes; `storage.orphans.min_age` and `commit_deadline` keep a margin of hours. |
-| A6 | Concurrent writes to one key carry identical bytes (content addressing), so last-writer-wins is harmless. |
+| A6 | Concurrent writes to one key carry identical bytes (content addressing), so last-writer-wins is harmless. On several connections each key lies on one connection, so writes to different connections never meet. |
+| A7 | No guarantee rests on a conditional write (`If-None-Match`, `If-Match` on `PutObject`, `CopyObject` or `CompleteMultipartUpload`). Stores that refuse them, or accept and ignore them (the software behind the owner's provider documents both, depending on its configuration, same research), are supported. |
 
 - AWS S3 satisfies A1–A2 by documentation. MinIO and Ceph RGW (within one zone) are expected to;
-  the conformance check is the operator's evidence.
-- **Startup check** (`storage.s3.startup_check: true`): write, read back, compare and delete
-  `<prefix>/_probe/<replica-id>`, then list `<prefix>/sha256/` with one key, then the part-identity check (a part number sent twice must not assemble the other upload's bytes, R-STOR-011). A replica does not
-  become ready before the check has passed (R-STOR-036, Q-STOR-1). Configuration and permission
+  the conformance check is the operator's evidence. Nothing was run against the owner's provider; its documentation states A1 for new
+  objects and eventual consistency for overwrites and deletes, and is silent on conditional writes, checksum headers and a copy with new
+  metadata (a research of 2026-11-22). What a connection supports is therefore established by the start check below, not assumed.
+- **Startup check** (`storage.object_store.startup_check: true`), on each connection: write, read back, compare and delete
+  `<prefix>/_probe/<replica-id>`, then list `<prefix>/sha256/` with one key, then the part-identity check (a part number sent twice must
+  not assemble the other upload's bytes, R-STOR-011), then the marker (R-STOR-051), then the **capabilities**
+  ([Q-STOR-248](#q-stor-248--the-start-check-establishes-what-a-connection-supports-and-refuses-or-degrades-by-a-stated-rule)):
+
+  | Capability | How it is established | When it fails |
+  |---|---|---|
+  | The configured payload checksum and checksum modes | The probe's `PutObject` and parts carry them | A refusal (`400 InvalidArgument`, `InvalidRequest`, `501 NotImplemented`) is a configuration error naming the connection's `payload_checksum` or `request_checksum_calculation` and the value to try (`md5`, `none`, `when_required`) |
+  | The payload checksum is enforced | One `PutObject` with a wrong checksum below `_probe/` | Accepted: `capabilities.payloadChecksumEnforced: false`; the connection's writes are `present` and not verified (R-STOR-052), so the scrub reads them first |
+  | `DeleteObjects` | One request over two probe keys, when `batch_delete: true` | A configuration error naming `batch_delete` |
+  | Metadata survives a write; a copy replaces it | A `PutObject` with one metadata key, `HeadObject`, a `CopyObject` onto itself with `REPLACE`, `HeadObject` | Recorded as `capabilities.metadata` and `capabilities.copyReplacesMetadata`; stage 1 needs neither, stage 2 refuses what it cannot do (R-STOR-062) |
+  | A server-side copy from every other connection on the same endpoint | One `CopyObject` of a probe object across the two buckets, with this connection's credential | Recorded per pair; the reconciliation streams between them (R-STOR-056) |
+  | A signed link with its overrides (stage 3's link check, R-STOR-074) | As R-STOR-074 says, on every replica that serves downloads, whether or not the rest of the check runs | Optional: the connection serves no link on that replica; nothing else stops |
+
+  The results are written to `storage_connections.capabilities` and shown by the API (R-STOR-061). A replica does not
+  become ready before the check has passed on the connections R-STOR-060 names (R-STOR-036, Q-STOR-1). Configuration and permission
   errors (`AccessDenied`, `NoSuchBucket`, invalid region) stop the process with a clear message.
   Transient errors (timeouts, connection errors, `5xx`, throttling) are retried with exponential
   backoff capped at 30 s for as long as they last; the replica stays not ready, MUST NOT exit, and
   logs the failing step once per minute. Exiting would turn a store outage into a crash loop whose
   restart back-off (up to five minutes in Kubernetes) delays readiness after the store returns;
   [ha-and-helm.md](ha-and-helm.md) R-HA-008 and R-HA-034 treat a wait for the schema the same way.
-- **Conformance check**: `quader admin storage check` runs the startup check plus multipart
+- **Conformance check**: `quader admin storage check [--connection <id>]` runs, on each connection or the one named, the startup check
+  with its capabilities plus multipart
   upload and abort, a completion that names a part (a part number sent twice must not end up in an
   object that names the other upload's ETag, R-STOR-011), ranged read, server-side copy (the object write of an upload session's
   finalize, R-STOR-011), `DeleteObjects`, presigning, read-after-delete and
-  list-after-write, and reports each result. The startup check runs the part-identity check as well, so a replica does not serve on a store that fails it. It changes nothing outside `_probe/`.
+  list-after-write, and reports each result; overwrite and delete visibility are reported as "strong" or "eventual (tolerated, A1)",
+  never as a failure. The startup check runs the part-identity check as well, so a replica does not serve on a store that fails it. It
+  changes nothing outside `_probe/` and the marker.
 
 Configuration:
 
 ```yaml
 storage:
-  s3:
+  object_store:
     startup_check: true      # default (proposed)
 ```
 
@@ -3150,20 +3202,37 @@ Acceptance criteria:
 ### R-STOR-036 · Behavior during an object-store outage
 Priority: **MVP** · Covers: quader-only
 
+With several connections the table holds when **every** connection is unreachable; the next table holds when some are
+(R-STOR-053 to R-STOR-060).
+
 | Operation | While S3 is unreachable or the circuit is open |
 |---|---|
 | Upload of new content (any protocol) | `503` with `Retry-After`; nothing committed; spool file removed. No local queue: a `201` always means durable in S3. |
 | Upload of content already stored (deduplication hit), deploy by checksum | Succeeds (PostgreSQL only). |
 | Copy, move, delete, properties, trash operations | Succeed (PostgreSQL only). |
 | `HEAD`, `304` revalidation, item information, listings, UI, API | Succeed. |
-| Download of stored content | `503` with `Retry-After`; presigned redirects are not issued. |
+| Download of stored content | `503` with `Retry-After`; no link is issued (R-STOR-014). |
 | Remote-repository miss | Behavior defined in [repositories-and-proxy.md](repositories-and-proxy.md) (it MAY pass the upstream body through without caching). |
 | Garbage collection, orphan sweep, scrub | Back off; claimed `deleting` rows are retried later; no status becomes `missing` because of errors. |
 | Retention runs | Continue; their deletions touch only PostgreSQL. |
 | Readiness | Object storage gates only a replica's first readiness (Q-STOR-1, INV-12 as revised): a replica becomes ready only after the startup check of R-STOR-035 passed, so a rollout with a broken S3 configuration stalls. Afterwards an outage leaves running replicas ready ([operations-and-observability.md](operations-and-observability.md) R-OPS-001, `health.require_object_store: false`): `/readyz` answers `200` with `"degraded": ["objectStore"]`, the circuit breaker fails blob operations per request (R-STOR-033), and `quader_storage_s3_circuit_open` feeds the shared-outage and single-replica alerts ([ha-and-helm.md](ha-and-helm.md) R-HA-045). With the opt-in `health.require_object_store: true`, R-OPS-001's `objectStore` check gates readiness continuously with that page's failure and success thresholds; this is meant for installations behind a load balancer that can fail over to another installation. |
 
+| Operation | While one or more connections, but not all, are unreachable or their circuits open |
+|---|---|
+| Upload of new content | Written to the next writable connection in the same request; `201` once `min_copies` connections hold it, otherwise `503` (R-STOR-053); queue rows for the connections that missed it |
+| An upload session on an unreachable connection | Its requests answer `503` with `Retry-After` until the connection answers; a new upload goes to a writable connection (R-STOR-054) |
+| Download of stored content | Served from another present copy (R-STOR-055); `503` with `Retry-After` for a blob whose only copies lie on unreachable connections; no copy and no blob is marked because of the outage |
+| Garbage collection | Deletes on the reachable connections, releases the copies whose delete it cannot send to the orphan sweep of their connection, and goes on (R-STOR-057) |
+| Orphan sweep, scrub | Skip the unreachable connection and go on with the others |
+| Reconciliation | The queue rows of the unreachable connection wait without spending attempts; copied oldest first once it answers (R-STOR-056) |
+| Revocation journal | Shipped to the reachable connections; the outbox keeps the entry for the unreachable one (R-STOR-059) |
+| Readiness | Running replicas stay ready with `objectStore` degraded; a replica that starts becomes ready when one connection that is not draining passed its start check (R-STOR-060) |
+
 There is no storage-specific readiness configuration: the opt-in uses the thresholds of R-OPS-001,
-so one hysteresis mechanism exists.
+so one hysteresis mechanism exists. The longest outage of an object store known to this specification is about 17.5 hours, of the
+owner's provider in July 2026 (a research of 2026-11-22 from its status page; earlier ones there lasted up to about 10 hours): with one
+connection that is 17.5 hours of `503` for uploads and downloads, and of replicas that start and stay not ready (Q-STOR-1); with two, it
+is a backlog the reconciliation catches up (R-STOR-056).
 
 Acceptance criteria:
 
@@ -3176,6 +3245,756 @@ Acceptance criteria:
   replica. A replica started during the outage stays not ready. With
   `health.require_object_store: true`, every replica's `/readyz` answers `503` after R-OPS-001's
   failure threshold.
+
+## Several object-store connections
+
+The owner's decisions of 2026-11-22 on the encryption and integrity of the stored content and several object stores: Quader keeps
+its blobs on several object-store connections at once, so that the outage of one provider does not stop it, and finds a damaged copy
+that nobody downloads. The work comes in three stages (his decision 14): **stage 1**, this section, several connections, the
+reconciliation between them and the scrub; **stage 2**, the encryption of stored content per connection (his decisions 1 to 6, 13
+and 15, specified after this section on top of the seams of R-STOR-062; until then
+[R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) is the older ticket); **stage 3**, the delivery by signed links
+(his decision 11, specified beside this section; R-STOR-014). His answers that this section carries out:
+
+| Decision | His answer | Where |
+|---|---|---|
+| 7 Changing a connection | A connection's properties are fixed once it holds data; changing them means a new connection (also the same bucket under another prefix), which the reconciliation fills, and the old one goes | R-STOR-051, R-STOR-056 |
+| 8 When an upload is done | When one connection holds it; the reconciliation brings it to the others and catches up after an outage; a minimum number of copies before the answer is a detail setting | R-STOR-053, R-STOR-056 |
+| 9 Where connections are kept | In the chart as a list, credentials from Secrets as today; the admin area shows each with state, fill and backlog and does not change them | R-STOR-050, [ha-and-helm.md](ha-and-helm.md) R-HA-072, [api-and-ui.md](api-and-ui.md) R-UI-196 |
+| 10 The scrub | A worker job reads every copy once within a period (proposed: 30 days), throttled, checks it whole, marks damage and replaces a damaged copy from another connection | R-STOR-027 |
+| 14 Stages | Several connections, reconciliation and scrub first; encryption second; signed links beside stage 1 | this section, R-STOR-062 |
+
+**Status.** Specified, not built. Until it is built an installation has the one connection of `storage.s3` that R-STOR-030 described
+before this section, and every statement below about several connections describes the target.
+
+**What "several connections" is not.** Every connection that is not draining holds every blob (a mirror kept by Quader), unlike the
+sharded stores of the catalog that spread blobs over sub-stores for capacity (STOR-013, STOR-026, and the parked "sharding over several
+buckets" of [FULL.md](../projektplan/FULL.md) block E), which stay deferred. A store's own replication between buckets
+([ha-and-helm.md](ha-and-helm.md) R-HA-026) is not a connection either.
+
+### R-STOR-050 · Connections in the configuration
+Priority: **P1** · Covers: STOR-011, STOR-012
+
+- `storage.connections` is a list of one to eight connections; the single block `storage.s3` is gone (no backward compatibility
+  before the first stable release, Q-ARCH-340). Each element names one bucket and prefix on one S3-compatible endpoint and carries
+  everything that may differ between providers; what is the same for every connection (the HTTP client, retries, the circuit
+  breaker's thresholds, multipart sizing, the probe at start) is the block `storage.object_store`
+  ([Q-STOR-220](#q-stor-220--the-connections-are-a-list-of-flat-elements-and-the-shared-client-settings-a-block-of-their-own),
+  [Q-STOR-222](#q-stor-222--what-may-differ-between-providers-is-a-key-of-the-connection-the-rest-is-shared)).
+- **The identifier** `id` (default `default`) names the connection for its whole life: in the rows of its copies (R-STOR-052), in metrics and logs as the
+  label `connection` (R-STOR-060), in the API and the admin area (R-STOR-061). It matches `^[a-z][a-z0-9-]{0,30}[a-z0-9]$`, is unique in
+  the list, never changes and is never given to another connection (R-STOR-051).
+- **Order.** The list order is the write order and the read order: an upload goes to the first connection that can take it
+  (R-STOR-053), a read tries the copies in the order of their connections (R-STOR-055). An operator puts the store nearest to the
+  replicas first. Reordering the list is allowed at any rollout and moves no data
+  ([Q-STOR-221](#q-stor-221--the-list-order-is-the-write-order-and-the-read-order)).
+- **Credentials, CA and address per connection.** The credential keys and their semantics are R-STOR-031's, flattened into the element
+  (`credentials_source`, `role_arn`, `web_identity_token_file`, `sts_endpoint`, `access_key_id_file`, `secret_access_key_file`,
+  `session_token_file`); `ca_file` is the connection's trust anchor (R-STOR-030's TLS rule, reloaded the same way); the server-side
+  encryption of R-STOR-032 is `sse_mode`, `sse_kms_key_id`, `sse_bucket_key`.
+- **A provisioner's Secret.** A bucket provisioner writes the bucket, the region and the endpoint into a Secret. `bucket_file`,
+  `region_file` and `endpoint_file` name a file whose trimmed content is the value; each excludes its plain key, is read once at start
+  (as the plain keys are, R-STOR-030), and the chart sets it from the Secret's keys
+  ([ha-and-helm.md](ha-and-helm.md) R-HA-072, [Q-STOR-223](#q-stor-223--a-provisioners-secret-reaches-a-connection-through-files-named-by-the-element)).
+- **The address for links** is no key of the connection: stage 3 keeps a public address per connection, by its `id`, in the admin area
+  with the links' switch (R-STOR-074,
+  Q-STOR-281); the links' own keys
+  (`storage.s3.presign.*`) are gone.
+- **`encrypted`** is a property of every connection, `false` by default (the owner's decision 6). Stage 1 accepts only `false`; `true`
+  is refused at start with "storage.connections[<n>] (<id>): encrypted: true is not supported yet: the encryption of stored content is
+  not built (storage.md R-STOR-050)".
+- **`drain: true`** takes a connection out (R-STOR-051): no upload goes to it, the reconciliation makes sure every blob it holds lies on
+  the other connections, and then its copies are deleted.
+- **One connection stays as simple as today.** The plain path is one element with an `id` and a bucket (and, with static keys, one
+  Secret in the chart): `storage.connections: [{bucket: quader-blobs}]`, whose `id` is `default`. Every other key has its default in the field;
+  the minimum of copies, the reconciliation and the scrub need no setting. An installation with one connection behaves as before this
+  section, except that the scrub now runs (R-STOR-027) and its damage cannot be repaired from another connection.
+
+Validation at start (a violation is a configuration error naming the key and the connection):
+
+1. One to eight elements ([Q-STOR-247](#q-stor-247--at-most-eight-connections)); every `id` matching the pattern and unique; an element
+   without `id` is `default`, and at most one element may leave it out (so the one connection of the plain path, and of stage 3's
+   answers today, is `default`).
+2. `bucket` or `bucket_file` (exactly one); `endpoint` and `endpoint_file`, `region` and `region_file` exclude each other; a file that
+   cannot be read or is empty is an error naming the key.
+3. `prefix` and `endpoint` by R-STOR-030's rules (a host without a scheme means `https://`).
+4. No two connections at one location: two elements whose normalised endpoints are equal (an empty endpoint compares as the AWS
+   endpoint of its region), whose buckets are equal, and whose prefixes are equal or one contains the other, are refused. The
+   connection marker of R-STOR-051 catches the location that two different addresses reach.
+5. The backup target lies at no connection's location (R-BAK-002, extended to every connection).
+6. `encrypted: false` on every element (above).
+7. At least one element without `drain: true`, and `storage.replication.min_copies` between 1 and the number of elements without it.
+8. The credential rules of R-STOR-031 (`static` needs both key files) and of R-STOR-032 (`sse_mode: kms` needs `sse_kms_key_id`) per
+   element; `scrub_period` at least `24h`, `scrub_bytes_per_second` at least `1MiB`.
+9. The rules against the database (fixed properties, retired identifiers, the marker) are R-STOR-051's.
+
+Configuration (the element with every key; the defaults are in the fields):
+
+```yaml
+storage:
+  connections:                            # one to eight; list order = write order and read order
+    - id: default                         # default: default, for at most one element; never changes, never reused
+      endpoint: ""                        # default: empty = AWS endpoint resolution for region; a host without a scheme means https://
+      endpoint_file: ""                   # default: empty; a file holding the endpoint (a provisioner's Secret); excludes endpoint
+      region: ""                          # default; example: eu-central-1
+      region_file: ""                     # default: empty
+      bucket: ""                          # example: quader-blobs; required unless bucket_file
+      bucket_file: ""                     # default: empty
+      prefix: quader                      # default; fixed once the connection holds data (R-STOR-051)
+      force_path_style: false             # default
+      allow_insecure_endpoint: false      # default
+      ca_file: ""                         # default: empty = the outbound trust store
+      storage_class: ""                   # default: empty = the bucket's default
+      payload_checksum: sha256            # default: sha256 | md5 | none
+      request_checksum_calculation: when_supported   # default: when_supported | when_required
+      response_checksum_validation: when_supported   # default: when_supported | when_required
+      batch_delete: true                  # default; false for a store without DeleteObjects
+      credentials_source: default         # default: default | webIdentity | static
+      role_arn: ""                        # default: empty
+      web_identity_token_file: ""         # default: empty
+      sts_endpoint: ""                    # default: empty
+      access_key_id_file: ""              # default: empty; set by the chart with static keys
+      secret_access_key_file: ""          # default: empty
+      session_token_file: ""              # default: empty
+      sse_mode: none                      # default: none | s3 | kms
+      sse_kms_key_id: ""                  # default: empty
+      sse_bucket_key: true                # default
+      scrub_period: 720h                  # default: every copy read whole once in 30 days (R-STOR-027)
+      scrub_bytes_per_second: 50MiB       # default: per connection and run
+      drain: false                        # default
+      encrypted: false                    # default; true is refused until stage 2 is built
+  object_store:                           # the client of every connection (R-STOR-033 to R-STOR-035)
+    http:
+      max_connections: 256                # default; per connection and replica
+      dial_timeout: 5s                    # default
+      tls_handshake_timeout: 5s           # default
+      response_header_timeout: 30s        # default
+      idle_conn_timeout: 90s              # default
+      idle_transfer_timeout: 60s          # default
+      receive_window: 256KiB              # default; HTTP/2 only
+      proxy_url: ""                       # default: empty = environment
+      proxy_credentials_file: ""          # default: empty
+      no_proxy: ""                        # default: empty
+    retry:
+      max_attempts: 5                     # default
+      max_backoff: 20s                    # default
+    circuit_breaker:                      # one breaker per connection and replica
+      failure_threshold: 5                # default
+      open_duration: 10s                  # default
+    multipart:
+      threshold: 100MiB                   # default
+      part_size: 16MiB                    # default
+      concurrency: 4                      # default
+      max_concurrent_parts: 64            # default; per replica, over all connections
+    startup_check: true                   # default (R-STOR-035)
+  replication:
+    min_copies: 1                         # default; copies written before an upload is answered (R-STOR-053)
+  reconcile:                              # R-STOR-056
+    concurrency: 4                        # default; copies at a time in one run
+    bytes_per_second: 100MiB              # default; streamed bytes per run, server-side copies not counted
+    server_side: auto                     # default: auto | never
+    queue_limit: 10000                    # default; gaps the pass queues per connection before it waits for the copier
+    retry_max_backoff: 1h                 # default
+    run_duration: 10m                     # default; a run ends after this and the next scheduled run continues
+  scrub:
+    run_duration: 50m                     # default; a run of the hourly task ends after this (R-STOR-027)
+maintenance:
+  tasks:
+    storage-reconcile: {enabled: true, schedule: "* * * * *"}   # default: every minute
+```
+
+Acceptance criteria:
+
+- A table test of the configuration (unit, `internal/config`): one element with `id` and `bucket` loads with every default; a missing
+  `id`, a duplicate `id`, `Primary` (pattern), nine elements, `bucket` with `bucket_file`, two elements on one endpoint and bucket with
+  the prefixes `quader` and `quader/a`, `encrypted: true` (the message above), `drain: true` on every element, and
+  `min_copies: 3` with two elements are each refused with the key and the connection named.
+- The environment variable `QUADER_STORAGE_CONNECTIONS` holds the whole list as JSON (INV-15; a list of elements is one key,
+  [internal/config/schema.go](../../internal/config/schema.go) `isStructList`), and overrides the file's list.
+
+### R-STOR-051 · A connection's life and its fixed properties
+Priority: **P1** · Covers: STOR-012
+
+- **The record.** The first replica that starts with a connection inserts its row in `storage_connections` (R-STOR-052) with the
+  properties that decide where and how its data lies: `bucket`, `prefix` and `encrypted`. These are fixed once the connection holds a
+  copy (the owner's decision 7). A replica whose element differs from the row in one of them while the connection holds a copy refuses to
+  start: "connection default holds 412093 copies in quader-blobs/quader; its bucket, prefix and encrypted property are fixed. To move the
+  data, add a connection with another id and set drain: true on this one (storage.md R-STOR-051)". A row without a copy takes the new
+  values. Endpoint, region, credentials, CA, checksum and tuning keys may change at any rollout
+  ([Q-STOR-224](#q-stor-224--bucket-prefix-and-encrypted-are-fixed-endpoint-and-credentials-may-change-and-a-marker-names-the-location)).
+- **The marker.** Each connection's location holds one object `<prefix>/_connection` with `{"installationId", "connectionId",
+  "createdAt"}`. The start check (R-STOR-035) reads it: absent, it is written (and, when the connection holds copies, a warning says the
+  marker was missing and the scrub will find what the location lacks); present with this installation and this id, the check passes;
+  present with another installation or another id, the connection is refused as a configuration error naming both ("quader-blobs/quader
+  is connection 'archive' of installation 0b7c3f5e-…; a location belongs to one connection of one installation. Remove the object
+  quader/_connection only if that installation is gone."). Two connections, or two installations, can therefore not share a location,
+  however their addresses are spelled.
+- **States.** A connection's state is derived, never set by hand:
+
+  | State | When | Uploads | Reads | Reconciliation |
+  |---|---|---|---|---|
+  | `filling` | In the configuration, `drain: false`, and no full pass of the reconciliation has yet ended with every live blob present on it | yes | its present copies | copies every blob to it |
+  | `active` | As `filling`, after the first full pass without a gap (`filled_at`) | yes | its present copies | copies new blobs and repairs |
+  | `draining` | In the configuration with `drain: true` and still holding a copy | no | its present copies, last | moves what only it holds, then deletes its copies |
+  | `drained` | `drain: true` and no copy left (`drained_at`) | no | — | — |
+  | `detached` | Holds copies, is not `retired`, and no live replica has it in its configuration | — | — | its copies count for no blob's redundancy; the blobs it alone holds answer `503` |
+  | `retired` | Was `drained` and left every live replica's configuration, or was forgotten (below) | — | — | — |
+
+  Which replicas have a connection in their configuration comes from the object-store view of the replica registry
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-003), so a rolling update, during which old and new
+  configurations run side by side, flips no stored state; `filled_at`, `drained_at` and `retired_at` are written by the reconciliation
+  run (R-STOR-056).
+- **Taking a connection in** is adding an element: it starts `filling`, the reconciliation copies every live blob to it, and it turns
+  `active` (the owner's decision 7). **Taking one out** is `drain: true`, then removing the element once the admin area shows `drained`.
+  **Changing a fixed property** (another bucket, another prefix, encryption on in stage 2) is both: a new element with a new id, the old
+  one drained.
+- **Removed while it still holds copies.** An element removed without draining leaves the connection `detached`: replicas start, no
+  copy is read from it, the blobs whose only copies lie there answer `503 content_unavailable` with `Retry-After`, the alert
+  `QuaderStorageConnectionDetached` fires, and putting the element back restores everything
+  ([Q-STOR-225](#q-stor-225--a-connection-removed-while-it-holds-copies-is-detached-not-refused)). A connection that is gone for good is
+  forgotten with `quader admin storage forget-connection <id>`: refused while a live replica has it in its configuration; it deletes the
+  connection's copy and queue rows, recomputes the content state of every blob it held (one without a present copy elsewhere becomes
+  `missing`, R-STOR-052), sets `retired_at`, writes the audit event `system.storage.connection_forgotten` with the counts, and never
+  deletes an object.
+- **Identifiers are not reused.** A configuration that names a `retired` id is refused at start ("connection id archive was retired on
+  2026-12-03; choose another id"), so a row of history, and stage 2's keys of that connection, never meet another bucket.
+- Audit events (the registry of [operations-and-observability.md](operations-and-observability.md) R-OPS-014): `system.storage.connection_added`
+  (first sight, actor `system:replica`), `system.storage.connection_drained` (actor `system:worker`, with the copies deleted) and
+  `system.storage.connection_forgotten` (actor `system:admin`).
+
+Acceptance criteria:
+
+- With a connection that holds copies, a replica whose element names another prefix exits with the message above; with a connection that
+  holds none, it starts and the row shows the new prefix (integration, PostgreSQL and two in-memory stores).
+- A second installation (another `installationId`) configured on the first one's bucket and prefix is refused at start and names the
+  object `quader/_connection`; the first installation is untouched.
+- An element removed while its connection holds the only copy of a blob: replicas become ready, a download of that blob answers `503` with
+  `Retry-After`, `GET /api/v1/system/storage-connections` lists the connection `detached`, and the element put back serves the blob again.
+- `quader admin storage forget-connection archive` while a replica configures `archive` exits `2`; after the element is removed it exits
+  `0`, the blob that only `archive` held is `missing`, and a configuration naming `archive` again is refused at start.
+
+### R-STOR-052 · The copies of a blob
+Priority: **P1** · Covers: quader-only
+
+The blob row stays the authority on whether a blob exists (R-STOR-005); a row per copy says where its object lies and what is known
+about it ([Q-STOR-226](#q-stor-226--a-row-per-copy-without-a-foreign-key-to-blobs-and-the-blobs-content-state-derived-from-its-copies)).
+
+```sql
+CREATE TABLE storage_connections (          -- one row per connection id ever seen (R-STOR-051); export class transient
+    id                text PRIMARY KEY CHECK (id ~ '^[a-z][a-z0-9-]{0,30}[a-z0-9]$'),
+    bucket            text NOT NULL,         -- fixed once the connection holds a copy
+    prefix            text NOT NULL,         -- fixed once the connection holds a copy
+    encrypted         boolean NOT NULL DEFAULT false,   -- fixed; stage 1 writes only false
+    capabilities      jsonb NOT NULL DEFAULT '{}',      -- what the start check found (R-STOR-035)
+    first_seen_at     timestamptz NOT NULL DEFAULT now(),
+    filled_at         timestamptz,           -- first full pass without a gap: filling -> active
+    drained_at        timestamptz,           -- drain: true and no copy left
+    retired_at        timestamptz,           -- drained and configured nowhere, or forgotten
+    pass_started_at   timestamptz,           -- the reconciliation's current full pass
+    last_full_pass_at timestamptz
+);
+
+CREATE TABLE blob_copies (                   -- no foreign key to blobs (reference rule 3 would count it as a reference)
+    sha256           bytea NOT NULL CHECK (octet_length(sha256) = 32),
+    connection_id    text  NOT NULL REFERENCES storage_connections (id),
+    object_key       text  NOT NULL,         -- the object's name on that connection; stage 1: <prefix>/sha256/<h0h1>/<h2h3>/<hex>
+    stored_size      bigint NOT NULL CHECK (stored_size >= 0),  -- bytes as stored; stage 1: blobs.size
+    storage_key_id   text,                   -- NULL in stage 1; stage 2: the storage key that wrapped the object's data key
+    state            text NOT NULL CHECK (state IN ('present', 'missing', 'corrupt', 'deleting')),
+    created_at       timestamptz NOT NULL DEFAULT now(),   -- when the object was written
+    verified_at      timestamptz,            -- last time the whole stored object was shown to be the blob (below)
+    checked_at       timestamptz,            -- last time the store answered for it (a read, a check, the scrub)
+    state_changed_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (sha256, connection_id)
+);
+CREATE UNIQUE INDEX blob_copies_key      ON blob_copies (connection_id, object_key);                  -- the orphan sweep's lookup by name
+CREATE INDEX        blob_copies_scrub    ON blob_copies (connection_id, verified_at NULLS FIRST) WHERE state = 'present';  -- the scrub's order, the counts per connection
+CREATE INDEX        blob_copies_damaged  ON blob_copies (connection_id, state) WHERE state IN ('missing', 'corrupt');
+CREATE INDEX        blob_copies_deleting ON blob_copies (state_changed_at) WHERE state = 'deleting';
+
+CREATE TABLE blob_copy_queue (               -- gaps the reconciliation fills (R-STOR-056); no foreign key to blobs
+    connection_id   text  NOT NULL REFERENCES storage_connections (id),
+    sha256          bytea NOT NULL CHECK (octet_length(sha256) = 32),
+    enqueued_at     timestamptz NOT NULL DEFAULT now(),
+    attempts        integer NOT NULL DEFAULT 0,
+    next_attempt_at timestamptz NOT NULL DEFAULT now(),
+    last_error      text,
+    PRIMARY KEY (connection_id, sha256)
+);
+CREATE INDEX blob_copy_queue_due    ON blob_copy_queue (next_attempt_at);
+CREATE INDEX blob_copy_queue_oldest ON blob_copy_queue (connection_id, enqueued_at);
+```
+
+- **No foreign key to `blobs`** in either table: R-STOR-024 reads every single-column foreign key to `blobs` as a reference
+  ([queries/blob.sql](../../internal/meta/postgres/queries/blob.sql) `BlobReferencingColumns`), so such a key would keep every blob
+  forever. The rows of a blob are deleted in the transaction of collection step (6) that drops the blob row (R-STOR-057). A migration
+  test fails on a foreign key from either table to `blobs`.
+- **Copy states** ([Q-STOR-227](#q-stor-227--four-copy-states-and-verified-means-the-whole-stored-object-was-shown-to-be-the-blob)):
+  `present`, the object was written and confirmed (a size from `HeadObject` after a multipart or copy, or the store's answer to a single
+  `PutObject`); `missing`, the store answered "no such object" for it; `corrupt`, its size differs from `stored_size` or a read to its end
+  had another digest; `deleting`, collection or a drain claimed it for deletion. A connection without a row for a blob does not hold it
+  (a gap, R-STOR-056). Only evidence about the object changes a copy's state, as R-STOR-013 says of the blob: a timeout, a `5xx` or an
+  open circuit changes nothing.
+- **Verified** (`verified_at`) means that the whole stored object was shown to be the blob: Quader hashed the bytes it wrote and the store
+  enforced the payload checksum of every request that carried them (R-STOR-006; enforcement is a capability the start check establishes
+  per connection, R-STOR-035), or a read to the end through Quader matched the digest (a download, the scrub, the source of a streamed
+  copy). A server-side copy, a write without an enforced payload checksum and an adopted object (R-STOR-026) are `present` and not
+  verified until the scrub reads them, which it does first.
+- **The blob's content state follows from its copies.** `blobs.content_status` stays one column, so that every reader still refuses a
+  damaged blob from one row (R-STOR-012) and the indexes and alerts that read it stay: `ok` while at least one copy on a connection that is
+  not `retired` is `present`; otherwise `corrupt` if a copy is `corrupt`, else `missing`. The statement that changes a copy's state
+  recomputes it in the same transaction; a change of the blob's state counts `quader_storage_blobs_damaged_total{status}` and writes the
+  audit event of R-STOR-027, as today. **A "no such object" from one connection marks that copy, never the blob, while another copy is
+  present** (R-STOR-055).
+- **Columns that move.** `blobs.deep_checked_at` and the index `blobs_check` go (the scrub orders copies, not blobs);
+  `blobs.checked_at` stays and keeps one meaning, the recheck claim of a blob without a present copy (Q-STOR-153, R-STOR-055).
+- **Indexes the jobs need** (above): the reconciliation reads the queue by `next_attempt_at` and its age per connection by
+  `(connection_id, enqueued_at)`, and walks live blobs by the primary key of `blobs` with one lookup of their copies per batch
+  (`sha256 = ANY(…)` on the primary key of `blob_copies`); the scrub reads `blob_copies_scrub` per connection; the damaged list, the
+  repair and the counts read `blob_copies_damaged`; collection reads a blob's copies by the primary key and finishes interrupted copy
+  deletions by `blob_copies_deleting`; the orphan sweep finds a listed object by `(connection_id, object_key)`, which keeps working when
+  stage 2 gives a connection names that are not the digest.
+- `upload_sessions` gains `connection_id text NOT NULL REFERENCES storage_connections (id)` (R-STOR-054).
+
+Acceptance criteria:
+
+- A unit test over the derivation: copies `present` + `missing` give `ok`; `missing` + `corrupt` give `corrupt`; `missing` alone gives
+  `missing`; a `present` copy on a `retired` connection counts for nothing; a `present` copy on a `detached` one counts.
+- The migration test lists no foreign key from `blob_copies` or `blob_copy_queue` to `blobs`, and every foreign key to `blobs` still
+  has its index and both triggers (R-STOR-003).
+
+### R-STOR-053 · Where an upload is written and when it is done
+Priority: **P1** · Covers: STOR-011
+
+- **Writable connections** of a replica are those in its configuration with `drain: false` whose circuit is closed on that replica,
+  in list order.
+- **An upload is done when `storage.replication.min_copies` connections hold it** (default 1, the owner's decision 8). The commit
+  protocol (R-STOR-005) writes the object from the spool to the first `min_copies` writable connections in parallel
+  ([Q-STOR-229](#q-stor-229--an-upload-goes-to-the-first-writable-connection-and-falls-over-to-the-next-within-the-request),
+  [Q-STOR-230](#q-stor-230--min_copies-is-a-file-setting-and-a-request-that-reaches-fewer-connections-is-refused)); a write that fails
+  with a transient error or meets an open circuit is repeated on the next writable connection within the same request, and the spool
+  still holds the bytes, so a provider's outage costs an upload no retry of its client. Fewer than `min_copies` successful writes answer
+  `503` with `Retry-After` and commit nothing; the objects written are left to the orphan sweep of their connections (R-STOR-026).
+- **The commit's guarantee per connection.** The invariant of R-STOR-005 becomes: *a committed reference always points at a blob row in
+  state `live` that had at least `min_copies` copies in state `present` when the reference was committed, each written before the row or
+  its copy row was*. The link round inserts a copy row for every object this commit wrote within the insert bound of R-STOR-005 (counted
+  from the end of the earliest of its writes), also on a round that turns out a deduplication hit (`ON CONFLICT DO NOTHING`), and a queue
+  row (R-STOR-052) for every other connection in this replica's configuration with `drain: false`. A deduplication hit writes nothing and
+  needs no connection, as before (R-STOR-036): an existing blob with fewer present copies is the reconciliation's.
+- **Repair.** The commit's repair case (`live` and `content_status <> 'ok'`, no present copy) writes the object to the first
+  `min_copies` writable connections, sets their copy rows `present` and, by the derivation, the blob `ok`.
+- **"A `201` always means durable"** (R-STOR-036) holds per copy: durable on `min_copies` connections. With the default, a new blob lies
+  on one connection until the reconciliation has copied it (seconds to minutes normally; the length of an outage when the others are
+  down); the gap is [H-1251](../security/object-store-connections.md#h-1251--a-new-blob-lies-on-one-connection-until-the-reconciliation-copies-it).
+- **The assumptions per connection.** R-STOR-035's assumptions hold per connection and are checked per connection; no guarantee of the
+  commit, the reconciliation or collection rests on a conditional write (`If-None-Match`, `If-Match`), which some stores refuse or accept
+  and ignore (R-STOR-035 A7).
+- **Transfer.** R-STOR-006 applies per connection with that connection's `payload_checksum`, checksum modes and storage class; the
+  replica's `storage.object_store.multipart.max_concurrent_parts` is shared by all its connections.
+
+Acceptance criteria (unit, `internal/blob` with two in-memory stores and the fake database):
+
+- With both connections reachable and `min_copies: 1`, an upload writes one object on the first store, inserts one `present` copy row
+  and one queue row for the second.
+- With a fault that answers every `PutObject` of the first store with `503`, the upload answers `201`, the object lies on the second
+  store, and its copy row and a queue row for the first are inserted.
+- With `min_copies: 2` and the second store failing, the upload answers `503`, no blob row exists, and the object on the first store has
+  no copy row.
+
+### R-STOR-054 · An upload session stays on its connection
+Priority: **P1** · Covers: quader-only
+
+- A multi-request upload session (R-STOR-011) is pinned to one connection, recorded in `upload_sessions.connection_id`: the first
+  writable connection when the session starts. Its multipart upload `_uploads/<session-id>/data`, its tail segments and the server-side
+  copy of its finalize live on that connection, because a multipart upload exists in one store only and a server-side copy stays inside
+  one ([Q-STOR-231](#q-stor-231--a-session-stays-on-its-connection-and-answers-503-while-it-is-unreachable)).
+- A session that has not yet written an object (`received = 0`) moves to the next writable connection when its connection is not
+  writable at its first write.
+- **When its connection fails.** A request of a session whose connection is unreachable or whose circuit is open answers `503` with
+  `Retry-After` (`storage.object_store.circuit_breaker.open_duration`), and the session stays as it is; a client that keeps retrying
+  continues once the connection is back, and one that gives up starts a new upload, which goes to a writable connection. The abandoned
+  session expires by `storage.uploads.session_ttl` (R-STOR-011); its objects are removed on its connection when that connection is
+  reachable again, or by the orphan sweep there (R-STOR-026).
+- **Finalize.** The commit's object write is the server-side copy of R-STOR-011 on the session's connection, and its copy row records
+  that connection (`present`, not verified: the scrub reads it first, which also covers
+  [H-591](../security/upload-sessions.md#h-591--the-staging-object-is-copied-without-being-read-back) within one scrub run).
+  With `min_copies` above 1 the finalize then streams the staging object through the replica to the next writable connections, hashing
+  it (those copies are verified; a mismatch fails the finalize with `503` and leaves the session `assembled` for the client's retry); with the default it copies nothing else and queues the other connections.
+- The session step of collection (R-STOR-025) removes a session's objects on the session's connection; a session on a connection that
+  is unreachable keeps its row until the connection answers, unless the row is older than `storage.uploads.session_max_age`, when the row
+  goes and the orphan sweep removes its objects.
+
+Acceptance criteria (unit, `internal/uploads` with two in-memory stores):
+
+- A session started while both stores are reachable records the first connection; its parts and tails lie only there; finalize writes
+  the content object there and queues the second.
+- With the first store failing after the session's first part, the next `PATCH` answers `503` with `Retry-After`; after the fault is
+  lifted the same session continues and finalizes with the right digest.
+- A session whose first request meets the first store failing, before any object, lies on the second store.
+
+### R-STOR-055 · Reads over the copies
+Priority: **P1** · Covers: STOR-012
+
+- **Order.** A read (a download, a range, an internal reader of [R-STOR-013](#r-stor-013--download-integrity-verification)) takes the
+  copies of the blob in state `present` whose connection is in this replica's configuration, in list order, a `draining` connection's
+  last, and leaves out a connection whose circuit is open on this replica. With no such copy it answers `503 content_unavailable` with
+  `Retry-After` and marks nothing.
+- **Falling over.** A copy is left for the next one, before the first byte reached the client, when its connection answers "no such
+  object", a transient error, an open circuit or a `Content-Length` other than `stored_size`. A failure after the first byte aborts the
+  response as R-STOR-013 says, and the client's retry or resume (`Range` with `If-Range`, R-STOR-012) takes the next copy
+  ([Q-STOR-232](#q-stor-232--a-read-falls-over-only-before-its-first-byte)).
+- **What is recorded.** "No such object" marks that copy `missing`, then looks once more with `HeadObject` on the same connection, as
+  Q-STOR-151 does for the blob today, so that a concurrent repair stays; a size other than `stored_size`, or a digest mismatch at the end of
+  a verified read, marks it `corrupt`. Each mark counts `quader_storage_copies_damaged_total{connection,status}`, queues the copy for
+  repair (R-STOR-056) and, by the derivation of R-STOR-052, changes the blob's state only when no other copy is present. A transient error
+  marks nothing. Each fall-over counts `quader_storage_reads_fallen_over_total{connection,reason}`.
+- **Verification as today.** A full read is verified with the hold-back of R-STOR-013 and compared with the copy's `stored_size`; a range
+  is served as stored (H-11). A verified full read stamps the copy's `verified_at` and `checked_at` when `verified_at` is older than 24
+  hours, so downloads of a hot blob serve as its scrub at one write per copy and day
+  ([Q-STOR-233](#q-stor-233--a-verified-download-stamps-its-copy-at-most-once-a-day)).
+- **The recheck of a missing blob** (Q-STOR-153) asks each `missing` copy on a reachable connection with one `HeadObject`; an object of
+  `stored_size` sets that copy `present` and the blob `ok`.
+- **A slow connection** that answers within its timeouts is not left: a read waits up to `response_header_timeout` on it before it falls
+  over. A store that is slow but not failing (the owner's provider reported slow answers for about 17.5 hours on 2026-07-08/09, a
+  research of 2026-11-22 from its status page, not verified here) costs reads time, not answers; an operator who sees it moves the
+  connection down the list.
+
+Acceptance criteria (unit, `internal/blob`, two in-memory stores, the fault hook `SetFault`):
+
+- The object deleted from the first store: the download answers `200` with the right bytes from the second, the first copy is `missing`, a
+  queue row for the first connection exists, and the blob is `ok`.
+- The object on the first store replaced by other bytes of the same length: the download is aborted at its end (R-STOR-013), the copy is
+  `corrupt`, and the next download serves the second copy whole.
+- Both objects deleted: the download answers `503 content_unavailable`, the blob is `missing`, and one `HeadObject` per copy follows
+  within the recheck interval, not one per read.
+- Every `GetObject` of the first store answering `503`: downloads are served from the second, and no copy changes state.
+
+### R-STOR-056 · The reconciliation
+Priority: **P1** · Covers: STOR-015
+
+The worker job that brings every blob onto every connection that is not draining, catches up after an outage, fills a new connection,
+empties a draining one, and replaces damaged copies.
+
+- **The job.** Task and kind `storage-reconcile` in the queue `maintenance`, `exclusive` under its name, scheduled every minute and
+  signalled after a commit that queued a gap ([architecture.md](architecture.md) R-ARCH-016, R-ARCH-018). A run ends when the queue holds
+  no due row and the pass is done or waiting, or after `storage.reconcile.run_duration`; its checkpoint carries the pass's and the drain's
+  positions, so a drain moves it to another worker without loss
+  ([Q-STOR-235](#q-stor-235--the-reconciliation-is-one-exclusive-job-per-installation)).
+- **What it works from** ([Q-STOR-228](#q-stor-228--a-queue-for-what-happens-and-a-pass-for-what-was-missed)):
+  1. the **queue** `blob_copy_queue`, filled by the commit (R-STOR-053), by a copy marked `missing` or `corrupt` (R-STOR-055,
+     R-STOR-027) and by the pass; rows are taken by `next_attempt_at`, oldest first, for connections in the worker's configuration whose
+     circuit is closed;
+  2. the **pass**, a walk over the live blobs by digest in batches of 1,000 with one lookup of their copies per batch, which queues the
+     gaps of every connection with `drain: false` in the worker's configuration (`ON CONFLICT DO NOTHING`), and waits at its position while
+     a connection's queue holds `storage.reconcile.queue_limit` rows. The pass finds what no queue row stands for: a connection that is
+     new, a blob committed by a replica whose configuration lacked the connection during a rollout, a gap left by a lost queue row. A
+     full pass records `last_full_pass_at`; the first one that ends with no gap and an empty queue for a `filling` connection sets its
+     `filled_at` (R-STOR-051).
+- **One copy.** For a queue row (connection C, blob B): a row whose blob is not `live`, whose C is not a target any more (`drain: true`, not
+  configured) or already holds a `present` copy is deleted. Otherwise the source is a `present` copy on another reachable connection,
+  verified before not verified, then by list order:
+  - **within one endpoint, a server-side copy** (`storage.reconcile.server_side: auto`, where C and the source share a normalised
+    endpoint): `CopyObject` across buckets up to 5 GiB, `UploadPartCopy` above, signed with C's credential, which needs read access to the
+    source (the start check establishes it per pair of connections, R-STOR-035); an `AccessDenied` or `NotImplemented` falls back to
+    streaming for that pair for the rest of the run. The copy is confirmed by `HeadObject` (`stored_size`) and is `present`, not verified;
+  - **across providers, a stream through the worker**: a `GetObject` of the source (ranged parts above the multipart threshold) piped into
+    `PutObject` or C's multipart upload with C's payload checksums, hashed while it passes; a SHA-256 other than the digest aborts the
+    upload, marks the source copy `corrupt` (a read to the end is evidence) and tries the next source. The copy is `present` and verified
+    (when C enforces payload checksums).
+  - **Recording.** One transaction: `SELECT … FROM blobs WHERE sha256 = $1 FOR SHARE` must find `live`, then the copy row of C is set
+    `present` (inserted, or a `missing` or `corrupt` row overwritten) and the queue row deleted. A blob found `deleting` leaves the object
+    to C's orphan sweep. The row is recorded within the insert bound of R-STOR-005 after the write ended, or the object is written again,
+    so a collection delete that may still be in flight never meets a copy recorded after it (R-STOR-024 rule 3).
+  - **A failure** counts `attempts`, sets `next_attempt_at` to `now() + min(2^attempts minutes, storage.reconcile.retry_max_backoff)` and
+    `last_error`, and counts `quader_storage_reconcile_failures_total{connection,reason}`.
+- **Verification before a copy counts.** A copy counts for redundancy once `present`; it counts for a drain's deletion only when it is
+  verified within its connection's `scrub_period` (below), and a server-side copy is the scrub's first work
+  ([Q-STOR-234](#q-stor-234--a-server-side-copy-counts-as-present-and-is-the-scrubs-first-work-a-drain-needs-a-verified-one)).
+- **Throttling.** At most `storage.reconcile.concurrency` copies at a time; the streamed bytes of a run at most
+  `storage.reconcile.bytes_per_second`; server-side copies move no byte through the worker and are bounded by the concurrency alone.
+- **Catching up after an outage.** While C's circuit is open on the worker, its queue rows wait without spending attempts; once it
+  answers, they are copied oldest first. A recorded outage of the owner's provider lasted about 17.5 hours (2026-07-08/09, a research
+  of 2026-11-22, not verified here): at 5 new blobs per second *(example)* that is about 315,000 queue rows, a few tens of megabytes of
+  PostgreSQL, and at 10 GiB of new content per hour *(example)* 175 GiB, which `bytes_per_second: 100MiB` copies in about half an hour.
+- **Draining** ([Q-STOR-236](#q-stor-236--a-drain-deletes-a-copy-once-every-other-connection-holds-the-blob-and-one-copy-is-verified)).
+  For a connection D with `drain: true`, the run walks D's `present` copies; a blob that lacks a copy on a connection with `drain: false`
+  is queued there; a copy on D whose blob has a `present` copy on every connection with `drain: false` in the worker's configuration, one of
+  them verified within its `scrub_period`, is deleted: the verified copy is confirmed with `HeadObject` (its `stored_size`) right before,
+  then in one transaction the blob is locked `FOR SHARE` (it must be `live`) and D's row set `deleting`, then the object is deleted under the
+  hand-over deadline of R-STOR-024, then the row. The deletion pause of [ha-and-helm.md](ha-and-helm.md) R-HA-025 stops it. The last
+  copy of a blob is never deleted. When D holds no copy, `drained_at` is set and `system.storage.connection_drained` written. D's `_journal/`
+  objects and its marker stay: Quader never deletes journal objects (R-HA-054).
+- **Retiring.** A `drained` connection that no live replica has in its configuration gets `retired_at`.
+- **The journal pass.** At the end of a full pass the run lists `_journal/revocations/` on every connection with `drain: false` and copies
+  each object one has and another lacks (R-STOR-059).
+- **Backlog, metric and alert.** Every `web` and `worker` replica exports from PostgreSQL
+  `quader_storage_reconcile_queue{connection}` (queue rows) and `quader_storage_reconcile_queue_oldest_seconds{connection}` (the age of the
+  oldest), and from the storage summary (R-STOR-028) `quader_storage_connection_backlog_blobs{connection}`,
+  `quader_storage_connection_backlog_bytes{connection}` (live blobs and bytes without a present copy on the connection) and
+  `quader_storage_connection_fill_ratio{connection}`; the run counts `quader_storage_reconcile_copied_total{connection,mode}` and
+  `quader_storage_reconcile_copied_bytes_total{connection,mode}` (`mode` `server`, `stream`). `QuaderStorageReplicationBacklog` fires when
+  the oldest queue row of a connection that is not `filling` is older than one hour for 30 minutes ([ha-and-helm.md](ha-and-helm.md)
+  R-HA-045).
+- **One connection.** The queue stays empty and the pass finds nothing; the run costs one batch query per thousand blobs per full pass.
+
+Acceptance criteria (integration, PostgreSQL of the stack with two in-memory stores, unless named):
+
+- With the second store failing, ten uploads land on the first and queue ten rows; after the fault is lifted one run copies all ten, each
+  copy row `present` and verified, and the queue is empty.
+- A connection added to an installation of twenty blobs is `filling`, gets every blob in one or more runs, and turns `active` after the
+  first full pass without a gap.
+- `drain: true` on the first connection with every blob on both: after a run the first store holds no blob object, its rows are gone, the
+  connection is `drained`, every blob downloads from the second; a blob whose copy on the second is not verified is kept on the first until
+  the scrub verified it; a blob whose only copy is on the first is copied before it is deleted.
+- A fault that pauses a run after its copy write for longer than `min(commit_deadline, delete_settle / 2)` makes it write again before it
+  records the row.
+- Integration against S3 (the stack's SeaweedFS, two connections on the buckets `QUADER_TEST_S3_BUCKET_BLOBS` and
+  `QUADER_TEST_S3_BUCKET_BACKUPS` under a prefix of the run): a copy between them is server-side; with `server_side: never` it is streamed;
+  both downloads return the blob's bytes.
+
+### R-STOR-057 · Collection with several connections
+Priority: **P1** · Covers: quader-only
+
+R-STOR-024's per-blob protocol stays; its step (4) deletes every copy, and one connection's outage stops neither the run nor an
+uploader for long.
+
+- **Step (4) per copy.** After the claim (step 3), the run reads the blob's copy rows and deletes each object on its connection, with
+  `DeleteObjects` per connection when its `batch_delete` is true, under the hand-over deadline of R-STOR-024; each successful delete
+  deletes its copy row. `object_deleted_at` (step 5) is set when the blob has no copy row left; step (6) drops the blob row and its queue
+  rows after `delete_settle`.
+- **A copy whose delete was never sent is released** ([Q-STOR-237](#q-stor-237--collection-releases-a-copy-whose-delete-was-never-sent-to-the-orphan-sweep-of-its-connection)):
+  when the copy's connection is not in this replica's configuration, or its circuit is open, the row is deleted without a request; the
+  object becomes an orphan of that connection, which its orphan sweep removes (R-STOR-026), and
+  `quader_gc_copies_released_total{connection}` counts it. A delete whose outcome is unknown (a timeout, a transient error after the request
+  left) keeps its row and the blob `deleting`, and a later run repeats it under the hand-over rules, as for one store. An upload of the same
+  content therefore waits for a `deleting` row (R-STOR-005) no longer than for one store, whatever the state of the other connections.
+- **One connection's open circuit stops nothing else**: the run goes on with the other connections and blobs (today an open circuit ends
+  the run, [internal/blob/gc.go](../../internal/blob/gc.go) `stopsRun`).
+- The session step works per session on its connection (R-STOR-054).
+- The orphan that a release leaves is deleted content that stays in the bucket of the connection that was down until its sweep runs
+  ([H-1254](../security/object-store-connections.md#h-1254--deleted-content-outlives-its-deletion-on-a-connection-that-was-unreachable)).
+
+Acceptance criteria (integration, PostgreSQL with two in-memory stores):
+
+- An unreferenced blob on both connections is collected: both objects are gone, then the rows.
+- With the second store's circuit open, the collection deletes the first object, releases the second copy, drops the blob row after
+  `delete_settle`, and an upload of the same content started meanwhile answers `201`; the orphan sweep of the second connection removes the
+  released object after `min_age` (fake clock).
+- A fault that times out the second store's delete keeps the blob `deleting`; the next run deletes it.
+
+### R-STOR-058 · The operator check of every copy
+Priority: **P1** · Covers: quader-only
+
+The operator check moved here from R-STOR-027, whose scrub it is not
+([Q-STOR-240](#q-stor-240--the-scrubs-evidence-becomes-true-by-moving-the-tests-that-name-it-for-another-part)).
+
+- `quader admin storage verify [--connection <id>] [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json]` asks the store
+  of each configured connection (or of the one named) for the object of every `present` copy of a `live` blob, with `HeadObject`, using
+  the runtime database role and each connection's runtime credential, and changes nothing (it neither sets a state nor writes an audit
+  event; the marks stay the scrub's and the reads'). It reads the copies in pages of 1,000 blobs by digest, so its memory does not grow
+  with the table, and runs `--concurrency` checks at a time (default 16).
+- **Findings.** A copy whose object the store reports missing, or whose size differs from `stored_size`, is a finding of its connection;
+  a blob is **lost** when none of its copies is there with its size. The command prints one line per missing copy (`copy <connection>
+  <sha256>`) and, for a lost blob, one line per item that references it (`item <project>/<repository>:<path>`, `(trashed)` for a trashed
+  one, at most `--max-items` per blob, default 20, with the number of the rest) and a line for a lost blob that no item references (one
+  that only a cache metadata entry, a UI asset or an avatar references prints so), then the totals per connection and in all.
+- An answer other than "no such object" (a timeout, `5xx`, throttling) is retried twice and then counted as *not checked*, never as
+  missing; `AccessDenied` ends the run for that connection (a store answers it for a missing object when the credential may not list the
+  bucket). `--since` limits the run to blobs created or changed at or after the time (Q-STOR-200); `--json` prints the report as one
+  document.
+- **Exit status:** `0` when no blob is lost (missing copies are listed, the reconciliation repairs them); `5` when at least one blob is
+  lost, or, with `--connection`, when a copy on that connection is missing or of another size; `75` when nothing is lost but a check was
+  not answered; `2` a usage or configuration error; `1` another failure ([backup-and-restore.md](backup-and-restore.md) R-BAK-013 holds
+  the codes).
+- The recovery procedure runs it after a point-in-time restore ([ha-and-helm.md](ha-and-helm.md) R-HA-024, R-HA-025), whose
+  post-restore step reads `Report.Lost` and the missing copies per connection; the pod-crash scenario of R-HA-052 and the cold-install
+  scenario of exit criterion E5.2 run it as the condition "no item row without its object".
+
+Acceptance criteria:
+
+- With the object of one blob deleted behind Quader's back on its only connection, the command exits `5` and prints the items that
+  reference the blob, a trashed one marked; with the object back it exits `0`. A cut-off after every row checks nothing
+  (`TestR_HA_024_StorageVerifyNamesTheItemsWhoseObjectIsGone`, `TestR_HA_025_StorageVerifySinceNarrowsTheRun`).
+- With two connections and one blob's object deleted on the first only, it exits `0` and lists the missing copy; deleted on both, it exits
+  `5`; with `--connection default` and the first object deleted, it exits `5` (integration, `test/integration/storageverify`).
+
+### R-STOR-059 · The other key families on several connections
+Priority: **P1** · Covers: quader-only
+
+| Family (below each connection's `<prefix>/`) | On which connections | Rule |
+|---|---|---|
+| `sha256/…` | each connection that holds a copy | R-STOR-052; written by the commit, the reconciliation and a restore; deleted by collection, a drain and the orphan sweep |
+| `_uploads/<session-id>/…` | the session's connection | R-STOR-054 |
+| `_probe/<replica-id>` | each connection, at each start and conformance check | R-STOR-035 |
+| `_connection` | each connection | the marker of R-STOR-051; written once, never deleted by Quader |
+| `_journal/revocations/…` | each connection with `drain: false` | below |
+
+- **The revocation journal** ([ha-and-helm.md](ha-and-helm.md) R-HA-054) is shipped to every connection with `drain: false` in the
+  shipper's configuration, through each connection's guarded client, so it passes the circuit breaker and the metrics (today the shipper
+  uses the plain client, [internal/app/wire_journal.go](../../internal/app/wire_journal.go) `wireJournalShipper`, a finding of the plan).
+  An outbox row is deleted once every such connection holds its object; until then a table `revocation_outbox_shipped (outbox_id,
+  connection_id)` records the connections that do, and `quader_revocation_journal_pending{connection}` shows the backlog per connection.
+  A connection that is unreachable delays only its own copy; a connection taken in later receives the older entries through the journal
+  pass of the reconciliation (R-STOR-056) ([Q-STOR-241](#q-stor-241--the-journal-goes-to-every-connection-and-an-outbox-row-waits-for-each)).
+- **The replay** reads `_journal/revocations/` on every reachable connection of the source, merges by key, counts identical bytes under
+  one key on two connections as one copy, and treats different bytes under one key as R-HA-054 treats two versions of a key (each replayed,
+  flagged).
+- Every other key below a connection's `<prefix>/` is foreign: reported by the orphan sweep, never deleted.
+
+Acceptance criteria (unit, `internal/journal` with two in-memory stores):
+
+- With the second store failing, an entry ships to the first, its outbox row stays with one shipped row, and `quader_revocation_journal_pending{connection="secondary"}`
+  is 1; after the fault is lifted the entry lies on both and the outbox row is gone.
+- A replay over two stores whose objects of one key differ replays both and flags them; identical objects are replayed once.
+
+### R-STOR-060 · The health of the connections
+Priority: **P1** · Covers: STOR-012
+
+- **Circuit breaker per connection and replica**, with the thresholds of `storage.object_store.circuit_breaker` and R-STOR-033's rules of
+  what counts; one connection's open circuit changes nothing on the others.
+- **Metrics.** The families of R-STOR-033 keep their names and gain the label `connection` (an id of the configuration, at most eight,
+  [operations-and-observability.md](operations-and-observability.md) R-OPS-007): `quader_storage_s3_requests_total{connection,operation,outcome}`,
+  `quader_storage_s3_request_duration_seconds{connection,operation}`, `quader_storage_s3_bytes_total{connection,direction}`,
+  `quader_storage_s3_circuit_open{connection}` ([Q-STOR-243](#q-stor-243--the-object-store-metrics-keep-their-names-and-gain-the-label-connection)).
+  New families: those of R-STOR-055, R-STOR-056, R-STOR-057 and R-STOR-027, `quader_storage_copies{connection,state}` (from the storage
+  summary) and `quader_storage_connection_detached{connection}` (1 while `detached`).
+- **Alerts** (rendered and tested by [ha-and-helm.md](ha-and-helm.md) R-HA-045): `QuaderObjectStoreUnreachable` (every connection's circuit
+  open on every replica, critical), `QuaderObjectStoreConnectionUnreachable` (one connection's circuit open on every replica while another
+  is reachable, warning), `QuaderObjectStoreUnreachableSingleReplica` (per connection), `QuaderStorageReplicationBacklog`,
+  `QuaderStorageCopyDamaged` (a damaged copy not repaired for an hour), `QuaderBlobCorrupt` (beside `QuaderBlobMissing`),
+  `QuaderStorageScrubBehind` and `QuaderStorageConnectionDetached`.
+- **Readiness** ([Q-STOR-242](#q-stor-242--a-replica-is-first-ready-when-one-connection-passed-and-no-connection-has-a-configuration-error)).
+  The check `objectStore` of [operations-and-observability.md](operations-and-observability.md) R-OPS-001 covers every connection. **First
+  readiness:** the start check (R-STOR-035) has passed on at least one connection with `drain: false`, and no connection with
+  `drain: false` has a configuration error (a configuration error of such a connection stops the process, as for one store today); a
+  connection that fails only transiently does not hold a replica back. A replica that starts while one of two connections is down
+  therefore becomes ready and serves from the other; a replica that starts while every connection is down stays not ready, as one with
+  one store does today (Q-STOR-1). **Afterwards** the check is reported: `degraded` while any configured connection's circuit is open on
+  the replica, with the connections named in its reason (`"unavailable: secondary"`); with `health.require_object_store: true` it gates
+  while no connection with `drain: false` is reachable. A draining connection's configuration error is logged and shown, and does not stop
+  the process, so a connection whose credential was already withdrawn can still be drained of what it holds elsewhere.
+- **The object-store view of the replica registry.** Each heartbeat writes the replica's connections with their circuit state and `drain`
+  flag ([operations-and-observability.md](operations-and-observability.md) R-OPS-003), which R-STOR-051's states and the API read.
+- **The start check and the conformance check per connection** are R-STOR-035's, run for each connection; the conformance command takes
+  `--connection <id>`, and for two connections on one endpoint it adds the server-side copy between them.
+
+Acceptance criteria:
+
+- A replica started with the second of two stores failing (in-memory fault, transient) becomes ready with `objectStore` degraded and its
+  reason naming the second; started with both failing it stays not ready; started with a configuration error (`AccessDenied`) on the
+  second it exits naming the connection; with `drain: true` on the second it starts (unit, `internal/app` readiness evaluation).
+- The rule tests of R-HA-045 for each alert above, one firing and one silent.
+
+### R-STOR-061 · The connections in the API
+Priority: **P1** · Covers: quader-only
+
+- `GET /api/v1/system/storage-connections` → `200` (operation `listStorageConnections`) and
+  `GET /api/v1/system/storage-connections/{id}` → `200` or `404` (`getStorageConnection`), both with `settings:read`, the permission of the
+  replica list ([Q-API-385](api-and-ui.md#q-api-385--the-connections-are-an-operation-of-the-system-family-read-with-settingsread)).
+  They read PostgreSQL only: the rows of R-STOR-052, the replica registry's object-store view, the queue, and the figures of the latest
+  storage summary with its `computedAt`. No secret, no credential file path and no key appear.
+
+  ```json
+  {
+    "connections": [
+      {
+        "id": "default", "position": 1, "state": "active",
+        "endpoint": "https://object.storage.eu01.onstackit.cloud", "bucket": "quader-blobs", "prefix": "quader",
+        "credentialSource": "static", "encrypted": false, "drain": false,
+        "replicas": {"configured": 7, "live": 7, "circuitOpen": 0},
+        "queue": {"blobs": 0, "oldestQueuedAt": null},
+        "summary": {"computedAt": "2026-11-22T10:17:00Z", "presentCopies": 412093, "presentBytes": 1893341184512,
+                    "backlogBlobs": 0, "backlogBytes": 0, "fillRatio": 1.0, "missingCopies": 0, "corruptCopies": 0,
+                    "verifiedWithinPeriod": 401233, "scrubOverdue": 0},
+        "scrubPeriodSeconds": 2592000, "filledAt": "2026-11-23T08:02:11Z", "lastFullPassAt": "2026-11-24T09:58:40Z",
+        "capabilities": {"payloadChecksumEnforced": true, "batchDelete": true, "metadata": true, "copyReplacesMetadata": true}
+      }
+    ]
+  }
+  ```
+
+  *(example values)*. `position` is the place in the configuration of the replica that answered (`null` for a connection it does not
+  configure); `state` is R-STOR-051's; `summary` is `null` before the first storage summary.
+- `GET /api/v1/system/info` (R-OPS-004) replaces its object `objectStore` by `objectStore.connections[]` with `id`, `endpoint`, `bucket`,
+  `prefix`, `credentialSource`, `encrypted` and `drain` per connection of the answering replica.
+- The storage summary (R-STOR-028) gains `connections[]` with the figures of `summary` above; `blobs` and `damaged` keep their meaning
+  (blobs, not copies).
+- The routes of R-API-040 gain `POST /api/v1/system/tasks/storage-reconcile/run` (`admin`) and the two reads above.
+
+Acceptance criteria:
+
+- `GET /api/v1/system/storage-connections` with two connections, one `filling` with half the blobs, lists both in order with their states
+  and the figures of the summary; with a caller without `settings:read` it answers `403`; no field holds a file path or a secret
+  (unit, `internal/api/v1`, `TestR_STOR_061_…`).
+
+### R-STOR-062 · The seams the encryption and the signed links build on
+Priority: **P1** · Covers: quader-only
+
+Stage 1 leaves exactly this room for stages 2 and 3 and specifies neither
+([Q-STOR-244](#q-stor-244--the-store-interface-carries-object-metadata-and-every-size-check-compares-the-copys-stored-size),
+[Q-STOR-245](#q-stor-245--stage-3-asks-the-store-which-copies-can-serve-a-blob-now)).
+
+- **Object metadata in the store's interface** ([internal/blob/objects.go](../../internal/blob/objects.go) `ObjectStore`, which carries none
+  today): `Put` and `CreateMultipart` take a `Metadata` (`map[string]string`, keys `[a-z0-9-]+`, the prefix `quader-` reserved for Quader,
+  at most 2 KiB in all, the bound AWS documents for user metadata); `Copy` takes one too, `nil` keeping the source's metadata
+  (`x-amz-metadata-directive: COPY`) and a value replacing it (`REPLACE`); `ObjectInfo` of `Head` and `Get` returns it. The S3 adapter,
+  the guard and `blobtest` carry it. **Stage 1 writes no metadata.** The start check establishes per connection whether metadata survives a
+  write and whether a copy replaces it (R-STOR-035), so stage 2 learns from a row, not from a promise, whether a provider takes its
+  wrapped key; stage 2 decides what it puts there.
+- **The copy row** carries what stage 2 fills: `object_key` (the name on that connection; every reader takes it from the row, and only a
+  write asks the connection's naming function, which in stage 1 returns `blob.Key(prefix, digest)`), `storage_key_id` (`NULL` in stage 1)
+  and `stored_size` beside the blob's plain `size`.
+- **Every check of a stored object's size compares with the copy's `stored_size`**, not with `blobs.size`: the commit after a multipart or
+  copy, the download, the recheck, the operator check, the reconciliation, the scrub, the backup and the restore (today they compare the
+  plain size, the research's list in R-STOR-048's open point 8 notwithstanding). In stage 1 the two are equal; stage 2 changes the value,
+  not the checks.
+- **Reading a copy** goes through one function per connection that returns the blob's bytes and verifies them against the digest
+  (identity in stage 1); stage 2 makes it decrypt and authenticate. The scrub, the reconciliation's stream and the backup's stream use it.
+- **`encrypted`** is a fixed property of a connection (R-STOR-050, R-STOR-051); a server-side copy is made in stage 1 only between two
+  connections with `encrypted: false`, and stage 2 says what a copy between encrypted connections needs.
+- **For stage 3** (R-STOR-074, "a connection that is not encrypted, holds a sound copy of the blob, is not failing and passed its link
+  check"): `blob.Store.Servable(ctx, digest) ([]Copy, error)` returns the copies a read would try now, in the order of R-STOR-055
+  (`present`, configured on this replica, circuit closed), each with its connection's `id`, `object_key` and `stored_size`; the connection
+  offers `Encrypted()`, the result of its link check, and signing through its guard (`Presign(ctx, key, ttl, …)` against the address stage
+  3 hands it), which today bypasses the breaker ([internal/blob/guard.go](../../internal/blob/guard.go) `Presign`). The `id` is the key
+  of stage 3's public addresses; the one connection of today is `default` there and here. When and for whom a link is issued is stage 3's.
+
+Acceptance criteria:
+
+- `blobtest` and the S3 adapter (against the fake endpoint) round-trip metadata on `Put`, `CreateMultipart` and `Get`/`Head`, keep it on a
+  `Copy` with `nil` and replace it on a `Copy` with a value (unit).
+- `Servable` lists the copies in read order and leaves out a missing copy and a connection whose circuit is open (unit).
+
+### R-STOR-063 · The tests of the feature
+Priority: **P1** · Covers: quader-only
+
+By the repository's rule that tests stay runnable ([Q-STOR-246](#q-stor-246--every-behaviour-once-at-the-cheapest-tier-no-end-to-end-leg)):
+every behaviour once, at the cheapest tier that shows it; nothing grows with the number of formats (a format never sees a connection: it
+reaches the store through the host, [architecture.md](architecture.md) Q-ARCH-28); no end-to-end leg; payloads of bytes to kilobytes.
+
+| Test | Tier | Data | Run time (estimate) |
+|---|---|---|---|
+| Configuration table (R-STOR-050) | unit, `internal/config` | — | 0.1 s |
+| Commit routing, fall-over within the request, `min_copies` (R-STOR-053); reads, fall-over, marks, recheck, the daily stamp (R-STOR-055); derivation (R-STOR-052) | unit, `internal/blob`, two `blobtest` stores, the fault hook, the fake database | objects of 1 KiB | 0.6 s |
+| Metadata on the seam, `Servable` (R-STOR-062) | unit, `internal/blob/s3` against the fake endpoint, `blobtest` | — | 0.2 s |
+| Sessions on their connection (R-STOR-054) | unit, `internal/uploads`, two `blobtest` stores, parts of 1 KiB (`MinPartSize`) | ≤ 8 KiB | 0.3 s |
+| Journal per connection, replay union (R-STOR-059) | unit, `internal/journal` | entries of < 1 KiB | 0.2 s |
+| Readiness per connection (R-STOR-060) | unit, `internal/app` | — | 0.1 s |
+| Scrub reader: digest, size, transient, throttle (R-STOR-027) | unit, `internal/blob/scrub` | 4 KiB | 0.3 s |
+| API of the connections (R-STOR-061), damaged blobs (R-STOR-027) | unit, `internal/api/v1` | — | 0.3 s |
+| Admin tab and dashboard line ([api-and-ui.md](api-and-ui.md) R-UI-196, R-UI-197) | Vitest | fixtures | 1.5 s |
+| Chart: the list, the Secrets and the refusals ([ha-and-helm.md](ha-and-helm.md) R-HA-072) | chart render tests | — | 1 s |
+| Fixed properties, detached, forget (R-STOR-051); reconciliation: queue, catch-up, fill, drain, insert bound (R-STOR-056); collection per copy and release (R-STOR-057); orphan sweep, adoption (R-STOR-026); scrub with repair (R-STOR-027) | integration, `test/integration/blob`, PostgreSQL of the stack with two `blobtest` stores in process | ≤ 30 objects of 1 KiB | 15 s |
+| The race of R-STOR-005 and R-STOR-024 | integration, the existing race test run with two connections instead of one (it replaces, not adds) | as today | 0 s added |
+| Two real buckets: routing, server-side and streamed copy, metadata kept by a copy, fall-over and repair (R-STOR-056, R-STOR-062) | integration, `test/integration/blob`, the stack's SeaweedFS, the buckets `QUADER_TEST_S3_BUCKET_BLOBS` and `QUADER_TEST_S3_BUCKET_BACKUPS` ([testenv.go](../../test/integration/testenv/testenv.go)) | 3 objects of 1 KiB | 5 s |
+| Operator check per connection (R-STOR-058) | integration, `test/integration/storageverify` (two connections instead of one) | 3 objects | 1 s added |
+| Restore fills the first connection, the reconciliation the second ([backup-and-restore.md](backup-and-restore.md) R-BAK-030) | integration, `test/integration/backup`, one case | 3 objects | 8 s |
+| Metadata round trip, copy with replaced metadata, a wrong payload checksum refused, the server-side copy between two buckets (R-STOR-035) | the conformance checks: unit against `blobtest`, and the job `s3-conformance` against Silo | probe objects | 2 s added to the job |
+
+What each pipeline job gains (estimates): the unit job about 4 s (Go) and 1.5 s (Vitest); the chart test about 1 s; the integration shard
+that runs `blob` about 20 s, the one that runs `storageverify` about 1 s, the one that runs `backup` about 8 s; `s3-conformance` about
+2 s; every end-to-end leg nothing. With 25 formats the cost is the same. Nothing of this needs the owner's provider; what only its real
+bucket can show (R-STOR-035's capabilities there) is a run of `quader admin storage check` against it, not a test.
 
 ## Retention and cleanup
 
@@ -3699,11 +4518,11 @@ load exceeds one replica (INV-12), so no mechanism on this page may depend on th
 | Multi-request upload sessions (R-STOR-011, P1) | `web` | Session row and parts in PostgreSQL, bytes in one S3 multipart upload; each request may reach another replica |
 | Download-statistics buffer (R-STOR-015) | `web` | Per replica; flushed every interval and at shutdown, in item order |
 | Usage fold (R-STOR-003), cap enforcement (R-STOR-044, P1) | `worker`, every replica | Loops that lock their rows with `FOR UPDATE SKIP LOCKED`; any number of workers, no lease |
-| Collection, orphan sweep, scrub, remote-cache cleanup (R-STOR-025 to R-STOR-027, R-STOR-045) | `worker` | Jobs of the queue `maintenance` with an exclusive dedup key in the job table (Q-STOR-10, Q-STOR-13) |
+| Collection, orphan sweep, scrub, reconciliation, remote-cache cleanup (R-STOR-025 to R-STOR-027, R-STOR-045, R-STOR-056) | `worker` | Jobs of the queue `maintenance` with an exclusive dedup key in the job table (Q-STOR-10, Q-STOR-13); each walks every connection of the worker's configuration |
 | Storage summary (R-STOR-028) | `worker` | The task of [operations-and-observability.md](operations-and-observability.md) R-OPS-023; reads are served by any `web` replica from its snapshot table |
 | Retention runs, build retention, background deletes, copies, moves and trash restorations (R-STOR-018, R-STOR-019, R-STOR-023, R-STOR-040, R-STOR-043) | `worker` | Jobs of the queue `default` ([architecture.md](architecture.md) R-ARCH-016; retention runs and build retention with the dedup keys registered there); the retention run limit through the row lock of `retention_run_gate` (R-STOR-040) |
 | Retention reports (R-STOR-042) | `worker` | Written by the run through the upload pipeline and the worker's spool |
-| Startup check (R-STOR-035) | `web`, `worker` | Per replica, before its first readiness |
+| Startup check (R-STOR-035) | `web`, `worker` | Per replica and connection, before its first readiness (R-STOR-060) |
 
 - **Local storage.** The spool is the only local storage on this page: one per `web` and `worker`
   pod, an `emptyDir` or a generic ephemeral volume, never shared between pods and never persistent
@@ -3773,6 +4592,7 @@ leaves for storage.
   | Table | Class | Reason |
   |---|---|---|
   | `blobs` | `blobs` | Only rows that the snapshot references; unreferenced and `deleting` rows are not restored |
+  | `blob_copies`, `blob_copy_queue`, `storage_connections`, `revocation_outbox_shipped` | `transient` | They describe the objects of the source's connections; a restore writes its own copies and the fix-up records them (R-STOR-052, [backup-and-restore.md](backup-and-restore.md) R-BAK-030) |
   | `blob_gc_queue` | `transient` | Candidates only |
   | `upload_sessions`, `upload_session_parts`, `upload_session_tails` | `transient` | Staged bytes under `_uploads/` are not backed up; clients restart their uploads |
   | `pending_sidecars` | `transient` | Declarations waiting for a file for at most `storage.sidecars.pending_ttl` |
@@ -3791,8 +4611,9 @@ leaves for storage.
   replicas wait at their schema check and claim no job ([architecture.md](architecture.md)
   R-ARCH-024 step 3). No collection, orphan sweep or retention run can therefore meet blob objects
   that the restore has copied before the rows that reference them are loaded.
-- **Key families.** Only `sha256/` objects that the snapshot references are backed up (R-STOR-001).
-  A restore into an empty installation writes exactly those, so it leaves no orphans. A restore
+- **Key families.** Only `sha256/` objects that the snapshot references are backed up (R-STOR-001), each read from one copy
+  ([backup-and-restore.md](backup-and-restore.md) R-BAK-030). A restore into an empty installation writes exactly those, on the
+  first connection, so it leaves no orphans; the reconciliation fills the other connections. A restore
   onto an existing blob prefix (R-BAK-025, P1) sets the deletion pause, and after deletions resume,
   the orphan sweep (R-STOR-026) removes what the restored database does not reference.
 - **Platform restores.** A point-in-time restore of the platform's database backup relies on the
@@ -3814,31 +4635,38 @@ Acceptance criteria:
 
 ```yaml
 storage:
-  s3:
-    endpoint: ""                         # default (proposed)
-    region: eu-central-1                 # example
-    bucket: quader-blobs                # example; required
-    prefix: quader                      # default (proposed)
-    force_path_style: false              # default (proposed)
-    allow_insecure_endpoint: false       # default (proposed)
-    ca_file: ""                          # default (proposed)
-    storage_class: ""                    # default (proposed)
-    payload_checksum: sha256             # default (proposed)
-    checksums:
-      request_calculation: when_supported  # default (proposed)
-      response_validation: when_supported  # default (proposed)
-    credentials:
-      source: default                    # default (proposed)
+  connections:                           # R-STOR-050; one to eight; list order = write and read order
+    - id: default                        # default: default, for at most one element
+      endpoint: ""                       # default (proposed)
+      endpoint_file: ""                  # default
+      region: ""                         # default; example: eu-central-1
+      region_file: ""                    # default
+      bucket: ""                         # example: quader-blobs; required unless bucket_file
+      bucket_file: ""                    # default
+      prefix: quader                     # default (proposed)
+      force_path_style: false            # default (proposed)
+      allow_insecure_endpoint: false     # default (proposed)
+      ca_file: ""                        # default (proposed)
+      storage_class: ""                  # default (proposed)
+      payload_checksum: sha256           # default (proposed)
+      request_checksum_calculation: when_supported  # default (proposed)
+      response_checksum_validation: when_supported  # default (proposed)
+      batch_delete: true                 # default (proposed)
+      credentials_source: default        # default (proposed)
       role_arn: ""
       web_identity_token_file: ""
       sts_endpoint: ""
       access_key_id_file: ""
       secret_access_key_file: ""
       session_token_file: ""
-    sse:
-      mode: none                         # default (proposed)
-      kms_key_id: ""
-      bucket_key: true                   # default (proposed)
+      sse_mode: none                     # default (proposed)
+      sse_kms_key_id: ""
+      sse_bucket_key: true               # default (proposed)
+      scrub_period: 720h                 # default
+      scrub_bytes_per_second: 50MiB      # default
+      drain: false                       # default
+      encrypted: false                   # default; true refused until stage 2
+  object_store:                          # every connection's client (R-STOR-033 to R-STOR-035)
     http:
       max_connections: 256               # default (proposed)
       dial_timeout: 5s                   # default (proposed)
@@ -3861,11 +4689,16 @@ storage:
       part_size: 16MiB                   # default (proposed)
       concurrency: 4                     # default (proposed)
       max_concurrent_parts: 64           # default (proposed)
-    presign:
-      endpoint: ""                       # default (proposed)
-      ttl: 60s                           # default (proposed)
-      min_size: 1MiB                     # default (proposed)
     startup_check: true                  # default (proposed)
+  replication:
+    min_copies: 1                        # default (R-STOR-053)
+  reconcile:                             # R-STOR-056
+    concurrency: 4                       # default
+    bytes_per_second: 100MiB             # default
+    server_side: auto                    # default
+    queue_limit: 10000                   # default
+    retry_max_backoff: 1h                # default
+    run_duration: 10m                    # default
   spool:
     dir: /var/lib/quader/spool          # default (proposed)
     max_bytes: 50GiB                     # default (proposed)
@@ -3906,15 +4739,12 @@ storage:
     delete_settle: 30s                   # default (proposed); at least 1 s
     handover_delay: 10m                  # default (proposed)
     batch_size: 1000                     # default (proposed)
-    batch_delete: true                   # default (proposed)
     delete_concurrency: 8                # default (proposed)
   orphans:
     min_age: 24h                         # default (proposed)
     multipart_max_age: 24h               # default (proposed)
   scrub:
-    check_interval: 168h                 # default (proposed)
-    deep_interval: 2160h                 # default (proposed)
-    deep_bytes_per_second: 50MiB         # default (proposed)
+    run_duration: 50m                    # default (R-STOR-027; the period and the throttle are keys of each connection)
 retention:
   min_schedule_interval: 6h              # default (proposed)
   max_concurrent_runs: 3                 # default (proposed)
@@ -3932,7 +4762,8 @@ maintenance:
     gc:                   {enabled: true, schedule: "*/30 * * * *"}  # default (proposed)
     gc-full:              {enabled: true, schedule: "0 2 * * 0"}     # default (proposed)
     orphan-sweep:         {enabled: true, schedule: "0 5 * * 6"}     # default (proposed)
-    scrub:                {enabled: true, schedule: "0 4 * * *"}     # default (proposed)
+    scrub:                {enabled: true, schedule: "7 * * * *"}     # default: hourly (R-STOR-027)
+    storage-reconcile:    {enabled: true, schedule: "* * * * *"}     # default: every minute (R-STOR-056)
     storage-summary:      {enabled: true, schedule: "17 * * * *"}    # default (proposed, R-OPS-019)
     remote-cache-cleanup: {enabled: true, schedule: "0 3 * * *"}     # default (proposed)
 ```
@@ -3947,31 +4778,29 @@ keep their own interval keys. There is no storage key for Valkey: storage uses i
 [architecture.md](architecture.md) (R-STOR-046). Startup validation refuses
 `storage.gc.handover_delay` not above `jobs.lease_duration` plus twice `storage.gc.delete_settle`,
 `storage.uploads.session_max_age` not below `storage.orphans.multipart_max_age`,
-`storage.upload.blob_wait_timeout` not above twice `storage.gc.delete_settle`, and a
-`storage.upload.max_size` above 10,000 × `storage.uploads.part_size`; each message names the keys.
+`storage.upload.blob_wait_timeout` not above twice `storage.gc.delete_settle`, a
+`storage.upload.max_size` above 10,000 × `storage.uploads.part_size`, and the rules of R-STOR-050 and R-STOR-051 for the
+connections; each message names the keys.
 
 </details>
 
 ## Deferred
 
 <details>
-<summary>Deferred catalog entries (51)</summary>
+<summary>Deferred catalog entries (48)</summary>
 
 | Catalog ID | Priority | Note |
 |---|---|---|
 | STOR-005 | P2 | SHA-256 backfill: not needed, every digest is computed at ingest from the first release. |
-| STOR-007 | P2 | Composable provider chain: one S3 store by design (INV-4). |
+| STOR-007 | P2 | Composable provider chain: one kind of store by design (INV-4); several connections of that kind, each holding every blob, are R-STOR-050. |
 | STOR-008 | P2 | Local file-system store: unsafe with stateless replicas; MinIO covers on-premises use. |
 | STOR-009 | P2 | Node-local read cache in front of S3. |
 | STOR-010 | P2 | Database blob store: contradicts INV-4 (no binary content in PostgreSQL); not planned. |
-| STOR-011 | P2 | Sharded store with redundancy. |
-| STOR-012 | P2 | Health-aware and read-only shards. |
-| STOR-013 | P2 | Cross-zone sharding. |
+| STOR-013 | P2 | Cross-zone sharding; several connections in several regions, each holding every blob, need no zones (R-STOR-050). |
 | STOR-014 | P2 | Cluster-shared node-local stores. |
-| STOR-015 | P2 | Rebalancing of sharded stores. |
 | STOR-016 | P2 | Asynchronous upload queue: conflicts with "201 means durable in S3" on stateless replicas. |
 | STOR-018 | Later | Binary fetch workers for federated repositories. |
-| STOR-026 | P2 | Multi-bucket sharding. |
+| STOR-026 | P2 | Multi-bucket sharding, spreading blobs over buckets for capacity; not the mirror of R-STOR-050, in which every connection holds every blob. |
 | STOR-027 | P2 | Migration of an existing store into object storage. |
 | STOR-028 | P2 | Storage-class (tiering) compatibility; `storage_class` exists, guidance pending. |
 | STOR-030 | P2 | Google Cloud Storage native client. |
@@ -4035,6 +4864,9 @@ keep their own interval keys. There is no storage key for Valkey: storage uses i
   every repository, bypassing Quader's permissions. The IAM policy of R-STOR-031 grants Quader
   only its prefix; operators keep S3 Block Public Access on, require TLS (`aws:SecureTransport`
   in the bucket policy) and grant no other principal access to the prefix. Residual risk: H-11.
+  With several connections every connection's bucket is such a boundary, at every provider
+  that holds one (R-STOR-050); the security page of the connections
+  ([object-store-connections.md](../security/object-store-connections.md)) has what that adds.
 - **Credentials.** S3 credentials come from workload identity or from mounted files, never from
   inline configuration (R-STOR-031); the outbound proxy password likewise (R-STOR-034). Static
   keys are the weakest mode and need rotation by the operator.
@@ -4057,7 +4889,9 @@ keep their own interval keys. There is no storage key for Valkey: storage uses i
   [file-transfer.md](../security/file-transfer.md)).
 - **Integrity.** Uploads are verified against declared digests and, where the store supports it,
   by the store against the payload checksum (R-STOR-006); full downloads are verified before the
-  last bytes leave (R-STOR-013); the scrub catches damage at rest (R-STOR-027).
+  last bytes leave (R-STOR-013); the scrub reads every copy whole once per period and catches
+  damage at rest (R-STOR-027), and the reconciliation replaces a damaged copy from another
+  connection (R-STOR-056).
 - **Mass deletion is privileged and observable.** Retention policies, trash purge, garbage
   collection and the orphan sweep are system-administrator operations; policies start disabled
   and can be dry-run; every run, trigger and removal is audited (INV-16).
@@ -5927,6 +6761,461 @@ revisit it if the run that continues the job is seen to wait longer than `delete
 
 **Applied in the spec:** R-STOR-024 (the hand-over rules). Test: "a run in its settle wait when the replica begins its shutdown hands
 the wait over at once" in `TestGCJobHandler` ([gc_test.go](../../test/integration/blob/gc_test.go)).
+
+### Q-STOR-220 · The connections are a list of flat elements and the shared client settings a block of their own
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That connections are
+kept in the chart as a list is the owner's (2026-11-22, decision 9).
+
+Context: `storage.s3` is one nested block ([internal/config/storage.go](../../internal/config/storage.go) `StorageS3`, with
+`credentials`, `sse`, `http`, `retry`, `circuit_breaker`, `multipart`, `presign` inside). The configuration loader accepts a list of
+elements only when each element is flat: scalars, pointers to scalars and lists of strings
+([internal/config/schema.go](../../internal/config/schema.go) `checkElement`), and the whole list is one key whose environment value
+is JSON (`isStructList`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A list of flat elements for what belongs to a connection, a shared block `storage.object_store` for the client (chosen) | `credentials_source`, `sse_mode` … in the element; `http`, `retry`, `circuit_breaker`, `multipart` once | Fits the loader's rule unchanged; a provider's differences stay per connection; one place for the tuning that is the same | The credential and SSE keys are spelled flat, unlike `backup.target` |
+| (b) A list of nested elements | Every block of `storage.s3` inside each element | Each connection tunable in full | The loader's rule changes for one key; eight copies of tuning nobody varies |
+| (c) A map keyed by the id | `storage.connections.default.…` | Nested blocks, per-key environment variables | A map has no order, so read and write order need a key of their own; the id becomes a key name |
+
+**Choice:** (a). **Rationale:** what differs between providers is the address, the credential, the encryption and a few protocol
+switches; the client's timeouts and pools are the replica's. The planner would revisit this if two providers ever need different
+timeouts, by adding the one key to the element.
+
+**Applied in the spec:** R-STOR-030 to R-STOR-035, R-STOR-050, the configuration reference.
+
+### Q-STOR-221 · The list order is the write order and the read order
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list order for both (chosen) | The first writable connection takes an upload, reads try the copies in that order | One rule an operator reads off the list; no setting | A connection cannot be first for reads and last for writes |
+| (b) `read_priority` and `write_priority` per connection | Two numbers | Reads near, writes elsewhere | Two orders to keep consistent; the simple path gets two keys |
+| (c) Reads by measured latency | The fastest answering connection first | Adapts by itself | Behaviour that changes under load and is hard to reason about in an incident |
+
+**Choice:** (a). **Rationale:** the store nearest to the replicas should take both; a case for two orders has not appeared. Reordering
+moves no data, so a wrong order costs a rollout.
+
+**Applied in the spec:** R-STOR-050, R-STOR-053, R-STOR-055.
+
+### Q-STOR-222 · What may differ between providers is a key of the connection, the rest is shared
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: providers differ in checksum defaults, conditional writes and `DeleteObjects` (the research of 2026-11-22: the AWS SDK's
+default checksums are the likeliest break with S3-compatible stores; the software behind the owner's provider refuses the checksum
+trailer of newer SDK defaults). `storage.gc.batch_delete` was installation-wide.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `payload_checksum`, both checksum modes, `batch_delete`, `storage_class`, the scrub's period and throttle per connection (chosen) | Each provider's quirks where the provider is | A second provider never forces its quirks on the first | `storage.gc.batch_delete` moves |
+| (b) All shared | One value each | Fewer keys | Adding a provider that refuses SHA-256 checksums lowers the integrity of the first |
+
+**Choice:** (a). **Rationale:** these are the keys whose right value depends on the store, as the research found. The scrub's period is a
+connection's because its cost is the provider's egress.
+
+**Applied in the spec:** R-STOR-024, R-STOR-050.
+
+### Q-STOR-223 · A provisioner's Secret reaches a connection through files named by the element
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: today the chart maps a provisioner's Secret keys `bucketKey`, `regionKey` and `endpointKey` to the environment variables
+`QUADER_STORAGE_S3_BUCKET` and so on ([deploy/helm/quader/templates/_endpoints.tpl](../../deploy/helm/quader/templates/_endpoints.tpl)).
+A list element has no variable of its own (the list is one JSON variable), and the owner's tool stack provisions buckets through such
+Secrets.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bucket_file`, `region_file`, `endpoint_file` in the element, the chart mounts the Secret's keys (chosen) | A file's trimmed content is the value, read at start | Every connection can take its own provisioner's Secret; the same file mounts as for credentials | Three keys more in the element |
+| (b) The chart renders the whole list as JSON from the Secret | `secretKeyRef` cannot compose JSON | — | Not possible in a pod spec |
+| (c) Helm `lookup` of the Secret at render | The chart reads the Secret | No new key | Fails under GitOps renderers, which have no cluster access |
+
+**Choice:** (a). **Rationale:** the only mechanism that works per element under every renderer. The values are no secrets; they are read
+once at start like the plain keys.
+
+**Applied in the spec:** R-STOR-050, [ha-and-helm.md](ha-and-helm.md) R-HA-072.
+
+### Q-STOR-224 · Bucket, prefix and encrypted are fixed, endpoint and credentials may change, and a marker names the location
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That a connection's
+properties are fixed once it holds data is the owner's (2026-11-22, decision 7). That a new database on an old bucket meets the marker is an
+open question for the owner (his installation is a playground he resets), specified meanwhile with (a).
+
+Context: the owner fixed "the properties"; which ones decide where and how data lies is the planner's reading. An endpoint changes for
+legitimate reasons (a renamed host, an internal and an external address of one store), and then the data is the same.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Fixed: bucket, prefix, `encrypted` (and stage 2's naming); free: endpoint, region, credentials, CA, tuning; a marker object names installation and connection at the location (chosen) | A replica refuses a changed fixed property while the connection holds a copy; the marker refuses a location that belongs to another connection | A moved host is a rollout; a misconfiguration that points two ids or two installations at one location is refused, however the addresses are spelled | One object per connection Quader writes; a database reset with an old bucket meets the marker |
+| (b) Every key fixed | Any change is a new connection | Simplest rule | A renamed host costs a full copy of the data |
+| (c) Fixed properties without a marker | Compare only what the configuration says | Nothing written to the bucket | Two spellings of one location are two connections; a drain of one deletes the other's objects |
+
+**Choice:** (a). **Rationale:** the marker closes the one case in which the copies' bookkeeping would delete live data (two connections
+on one location, a drain of one); the price is an object per connection. The planner would revisit it if a store refuses a write outside
+`sha256/`.
+
+**Applied in the spec:** R-STOR-001, R-STOR-051, R-STOR-059.
+
+### Q-STOR-225 · A connection removed while it holds copies is detached, not refused
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. An open question for
+the owner, specified meanwhile with (a).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Detached: replicas start, its copies are not read, blobs only it holds answer `503`, an alert fires, putting the element back restores everything; `forget-connection` gives it up (chosen) | Availability first, nothing destroyed | A provider that is gone does not block a rollout; a mistake is undone by the next rollout | A blob only that connection held is unavailable until the element is back or the connection is forgotten |
+| (b) Refused: replicas do not start while a non-drained connection is missing | The rollout stalls | Nobody loses access by accident | A provider that went away for good blocks every rollout until an operator runs a command |
+| (c) Forgotten at once | Rows deleted when the element goes | Nothing lingers | A typo in a values file marks blobs missing |
+
+**Choice:** (a). **Rationale:** the configuration is the operator's statement of what exists; Quader keeps what it knows and makes the
+consequence visible. Recommendation to the owner: (a).
+
+**Applied in the spec:** R-STOR-051.
+
+### Q-STOR-226 · A row per copy without a foreign key to blobs, and the blob's content state derived from its copies
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: `blobs` holds no location and one `content_status` per blob ([00002_storage_core.sql](../../internal/meta/postgres/migrations/00002_storage_core.sql));
+a "no such object" marks the blob `missing` installation-wide ([internal/blob/download.go](../../internal/blob/download.go) `markMissing`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `blob_copies` with no foreign key to `blobs`; `content_status` kept and derived in the transaction that changes a copy (chosen) | Readers refuse from one row as today | Collection's catalog rule untouched; the alerts and indexes on `content_status` stay | Two places to keep in step, in one transaction |
+| (b) A foreign key from `blob_copies` to `blobs` | Referential integrity | The database guards orphans of rows | R-STOR-024 counts every foreign key to `blobs` as a reference: no blob would ever be collected |
+| (c) Drop `content_status`, compute it from the copies on every read | No derived column | One truth | Every refusal of a damaged blob costs a join; the alert on the counter needs a new source |
+
+**Choice:** (a). **Rationale:** the derived column is maintained by the only statements that change its inputs, so it cannot drift; the
+foreign key is impossible by the reference rule.
+
+**Applied in the spec:** R-STOR-003, R-STOR-052.
+
+### Q-STOR-227 · Four copy states, and verified means the whole stored object was shown to be the blob
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `present`, `missing`, `corrupt`, `deleting`; `verified_at` set by an enforced payload checksum on write or a full read that matched (chosen) | A gap is the absence of a row | A drain and the scrub know which copies were shown whole; a server-side copy's weaker evidence is visible | Whether a store enforces the checksum is established, not assumed (R-STOR-035) |
+| (b) Add `pending` rows before a write | Every gap is a row | Gaps visible in one table | A row per connection per blob before anything happened; the queue already says it |
+| (c) No verified mark | `present` is enough | Simpler | A drain could delete the copy that was read, leaving one never read |
+
+**Choice:** (a). **Rationale:** what deletes data must know the survivor was read; the mark is cheap.
+
+**Applied in the spec:** R-STOR-052, R-STOR-055, R-STOR-056.
+
+### Q-STOR-228 · A queue for what happens and a pass for what was missed
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `blob_copy_queue` written in the commit and by each mark, plus a pass over the live blobs that queues what no row stands for (chosen) | Event and sweep | A new blob reaches its second copy within the minute; a rollout, a lost row or a new connection is caught by the pass | Two producers of one queue |
+| (b) Only a pass | Walk the blobs | One mechanism | A new blob waits for the next pass; the pass runs continuously |
+| (c) Only the queue | Event-driven | Cheapest | A blob committed by a replica that did not know a connection is never copied |
+
+**Choice:** (a). **Rationale:** a rolling update runs old and new configurations side by side, so an event-only design loses gaps by
+construction; a pass alone makes the window of one copy as long as a pass. The pass waits at `queue_limit` rows so the queue stays bounded
+during a fill.
+
+**Applied in the spec:** R-STOR-052, R-STOR-056.
+
+### Q-STOR-229 · An upload goes to the first writable connection and falls over to the next within the request
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That an upload is done
+when one connection holds it is the owner's (decision 8).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) First writable in list order; a transient failure or an open circuit retries on the next within the request (chosen) | The spool still holds the bytes | A provider's outage costs no client a retry | A request may take two writes' time |
+| (b) First writable only, `503` on its failure | The client retries | Simpler | An outage of the first store costs every upload until its circuit opens |
+| (c) Round robin | Spread writes | Even load | The nearest store loses its role; reads miss the order |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-053.
+
+### Q-STOR-230 · `min_copies` is a file setting, and a request that reaches fewer connections is refused
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. The minimum as a
+detail setting is the owner's (decision 8).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `storage.replication.min_copies` in the file configuration, default 1; fewer successful writes answer `503` (chosen) | Infrastructure beside the connections | One place with the list it counts; GitOps | A change is a rollout |
+| (b) A runtime setting in the admin area | Changeable at once | Quick | The admin area does not change connections (decision 9), and this number is bounded by their count |
+| (c) Below the minimum, accept and alert | Never refuse | Uploads always work | The setting would promise what it does not keep |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-050, R-STOR-053.
+
+### Q-STOR-231 · A session stays on its connection and answers 503 while it is unreachable
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a session's multipart upload exists in one store only ([00054_upload_sessions.sql](../../internal/meta/postgres/migrations/00054_upload_sessions.sql)
+`s3_upload_id`), and its finalize is a server-side copy inside that store ([internal/blob/staged.go](../../internal/blob/staged.go)).
+The owner's paper said: if its connection fails, the client starts again.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Pinned; `503` with `Retry-After` while the connection is unreachable; a client that gives up starts a new upload elsewhere (chosen) | No new timer | A short blip costs a retry, not a restart; a long outage ends in the restart the owner named | A client retrying against a long outage spends its retries |
+| (b) Abort at once (`404 BLOB_UPLOAD_UNKNOWN`) | The client restarts | Fastest to a new connection | A breaker that opens for 10 s costs a multi-gigabyte restart |
+| (c) Move the session by reading its parts back | Continue elsewhere | No restart | The parts are on the store that is down |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-054.
+
+### Q-STOR-232 · A read falls over only before its first byte
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Before the first byte only; after it, abort as today and let the client's retry or resume take the next copy (chosen) | One copy per response | Every byte of a response comes from one object; a digest mismatch blames one copy | A cut response costs the client a resume |
+| (b) Continue a cut body from the next copy with a ranged read | Seamless | No resume | A mismatch at the end cannot be blamed on one copy; stage 2's segments complicate the join |
+
+**Choice:** (a). **Rationale:** resumption on any replica exists (R-STOR-012), and evidence must name one copy.
+
+**Applied in the spec:** R-STOR-055.
+
+### Q-STOR-233 · A verified download stamps its copy at most once a day
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Stamp `verified_at` when it is older than 24 hours (chosen) | At most one write per copy and day | Hot blobs are scrubbed by their downloads; the scrub reads less | A write on the download path once a day per copy |
+| (b) Never | Only the scrub verifies | No write on the path | Every hot blob is read again by the scrub |
+| (c) Every download | Always current | — | A write per download |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-055.
+
+### Q-STOR-234 · A server-side copy counts as present and is the scrub's first work, a drain needs a verified one
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `present` after a size check, not verified; the scrub reads unverified copies first; a drain deletes only beside a copy verified within its period (chosen) | Cheap copies, safe deletions | No byte through the worker; nothing is deleted on the word of an unread copy | Until the scrub reached it, a server-side copy's bytes are taken on the store's word |
+| (b) Read every server-side copy back before it counts | Verified at once | Strongest | A full read of every copy, which is what the server-side copy avoids |
+| (c) Stream every copy | Always verified | One path | Bytes through the worker inside one endpoint |
+
+**Choice:** (a). **Rationale:** a copy counts for availability at once and for deletion only when read; the gap until the scrub is
+[H-1252](../security/object-store-connections.md#h-1252--a-server-side-copy-or-an-adopted-object-counts-as-present-before-it-is-read).
+
+**Applied in the spec:** R-STOR-052, R-STOR-056, R-STOR-027.
+
+### Q-STOR-235 · The reconciliation is one exclusive job per installation
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One `exclusive` job with `concurrency` copies at a time (chosen) | As the other storage tasks | One owner of the pass and the drain; drains hand it over by checkpoint | One worker's bandwidth bounds streamed copies |
+| (b) One job per connection | Parallel per target | More throughput across providers | Two jobs may pick the same source; drains coordinate across jobs |
+| (c) Every worker takes queue rows with `SKIP LOCKED` | Scale with workers | Throughput | The pass and the drain still need one owner; two mechanisms |
+
+**Choice:** (a). **Rationale:** streamed copies are a catch-up, not the serving path; at 100 MiB/s a 17.5-hour backlog of 175 GiB
+*(example)* is half an hour. The planner would revisit it when a measured catch-up is too slow.
+
+**Applied in the spec:** R-STOR-056.
+
+### Q-STOR-236 · A drain deletes a copy once every other connection holds the blob and one copy is verified
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the old
+connection goes is the owner's (decision 7); that Quader deletes its copies is an open question for the owner, specified meanwhile with (a).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The drain deletes each copy on the draining connection beside a present copy on every other connection, one verified within its period and confirmed by `HeadObject` just before (chosen) | Quader removes what it put there; journal and marker stay | Switching encryption on (stage 2) leaves no plaintext behind; the same bucket under another prefix is not paid twice | Objects are deleted from a bucket; an operator who wanted a frozen copy must not drain |
+| (b) The drain only stops using the connection; the objects stay for the operator | Nothing deleted | Reversible by hand | Encryption switched on keeps every plaintext copy until someone deletes it; storage paid twice |
+| (c) Delete without checking the survivors | Fast | — | The last good copy can go |
+
+**Choice:** (a). **Rationale:** a drain moves data; leaving it behind defeats the cases the owner named. The residual is
+[H-1256](../security/object-store-connections.md#h-1256--a-drain-trusts-a-copy-that-was-verified-within-its-period). Recommendation to
+the owner: (a).
+
+**Applied in the spec:** R-STOR-051, R-STOR-056.
+
+### Q-STOR-237 · Collection releases a copy whose delete was never sent to the orphan sweep of its connection
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: an open circuit ends a collection run today ([internal/blob/gc.go](../../internal/blob/gc.go) `stopsRun`), and an upload of
+the same content waits for the `deleting` row (R-STOR-005).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A delete never sent (open circuit, connection not configured here) drops its copy row; the object is that connection's orphan; an unknown outcome keeps the row (chosen) | The blob row goes after `delete_settle` | An upload of the content is not held up by another provider's outage; no late delete is possible for a request never sent | Deleted content stays on that connection until its sweep (H-1254) |
+| (b) Keep the row until every connection confirms | Exact | Nothing left behind | An uploader of that content gets `503` for the length of an outage (17.5 hours at the owner's provider) |
+| (c) Skip the blob until all connections answer | Nothing changes | Simple | The same wait for uploaders, and the blob stays claimed |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-057.
+
+### Q-STOR-238 · The orphan sweep adopts the object of a live blob and claims an orphan through the blob row
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Adopt an object of a live blob without a copy row (unverified); claim an orphan with a `deleting` blob row whose other digests are zero bytes (chosen) | One protocol for every object found | A crashed reconciliation, a commit's lost round and a point-in-time restore lose no copy; the commit protocol sees the claim | A `deleting` row with placeholder digests |
+| (b) Delete every object without a copy row | Simple | — | Deletes good copies and copies them again |
+| (c) Claim orphans in a table of their own | Clean rows | No placeholders | The commit protocol does not see the claim and races the delete |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-026.
+
+### Q-STOR-239 · The scrub reads every copy whole once per period per connection and has no separate existence check
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. The scrub as a full
+read in a period is the owner's (decision 10, option a over c).
+
+Context: R-STOR-027 had a weekly existence check and a deep check every 90 days, neither built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One period per connection (default 30 days), one throttle per connection, full reads only, hourly runs (chosen) | What the owner chose | One clock; a missing object is found by a read within the period and by every download | A deleted object nobody downloads is found up to 30 days later |
+| (b) Keep a weekly `HeadObject` beside the full reads | Two clocks | A deletion found within a week | Two settings, which the owner declined in option (c) |
+| (c) One installation-wide period | Simpler | One key | An expensive provider cannot be read less often |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-027, R-STOR-050.
+
+### Q-STOR-240 · The scrub's evidence becomes true by moving the tests that name it for another part
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-027 is in [implemented.txt](../coverage/implemented.txt) while the scrub is not built
+([docs/developer/blob-store.md](../developer/blob-store.md) says so); the tests that name it test the lost content of a remote
+repository and the operator check.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Rename those tests to R-REPO-025 and to R-STOR-058 (the operator check moved there), remove R-STOR-027 from the list in the same change (chosen) | Each test names what it tests | The record tells the truth; the scrub's own tests bring it back | A rename across five files |
+| (b) Split R-STOR-027 into parts | Several IDs | Keeps the names | The lost-content part belongs to R-REPO-025 already |
+| (c) Leave it | — | Nothing to do | The record claims a scrub that does not exist |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-027, R-STOR-058.
+
+### Q-STOR-241 · The journal goes to every connection, and an outbox row waits for each
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Ship to every connection with `drain: false`; delete the outbox row when each holds it; the journal pass copies older entries to a new connection (chosen) | The journal survives the loss of any one provider | A restore after a provider's loss still replays | A table of shipped marks; an unreachable connection keeps rows |
+| (b) Ship to the first connection only | As today | Simplest | The provider that is lost may be the one with the journal |
+| (c) Ship to any one, let the reconciliation copy | One write | Fast | Entries depend on a job that may be behind when they matter |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-059, [ha-and-helm.md](ha-and-helm.md) R-HA-054.
+
+### Q-STOR-242 · A replica is first ready when one connection passed and no connection has a configuration error
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: Q-STOR-1 holds a replica back until the start check passed, so a broken configuration never replaces working pods. With two
+connections, a pod that starts during one provider's outage (17.5 hours in July 2026 at the owner's provider) should serve from the
+other.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Ready when one connection with `drain: false` passed and none has a configuration error; reported afterwards per connection; with `require_object_store` gating when none is reachable (chosen) | Availability from any connection | A drain during one provider's outage adds capacity; a wrong credential still stalls the rollout | A pod that cannot reach the second connection's network path becomes ready |
+| (b) Every connection must pass | Strict | A broken path to any store stalls the rollout | One provider's outage blocks every new pod, the case the owner wants to survive |
+| (c) Only the first connection must pass | Simple | — | The first may be the one that is down |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-060, [operations-and-observability.md](operations-and-observability.md) R-OPS-001.
+
+### Q-STOR-243 · The object-store metrics keep their names and gain the label connection
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Same names, label `connection` (chosen) | `quader_storage_s3_circuit_open{connection}` | Dashboards keep working with a `sum`/`min`; the label is bounded (eight) | The rules change their aggregation |
+| (b) New names per connection | — | — | Unbounded names |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-033, R-STOR-060, [operations-and-observability.md](operations-and-observability.md) R-OPS-007.
+
+### Q-STOR-244 · The store interface carries object metadata, and every size check compares the copy's stored size
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the wrapped data
+key lies in the object's metadata is the owner's (decision 2, option e), for stage 2.
+
+Context: the interface has no metadata anywhere ([internal/blob/objects.go](../../internal/blob/objects.go)); six checks compare a stored
+object's size with the plain size of the row (the research of 2026-11-22: commit, download, recheck, verify, backup, restore).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Stage 1 adds metadata to `Put`, `CreateMultipart`, `Copy`, `Head`, `Get` and writes none; every check compares `stored_size`; the start check records what a connection does with metadata (chosen) | The seam once, now | Stage 2 changes values, not interfaces; its provider question is answered by a check | An unused parameter until stage 2 |
+| (b) Leave it to stage 2 | Smaller now | — | Stage 2 reopens every caller and every size check |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-052, R-STOR-062.
+
+### Q-STOR-245 · Stage 3 asks the store which copies can serve a blob now
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Store.Servable(digest)` with the read order and each connection's `Encrypted()`, its link check and a guarded `Presign` (chosen) | One answer for the read and the link | A link never names a copy a read would skip | The guard's presign passes the breaker check now |
+| (b) Stage 3 reads the rows itself | No new method | — | Two orders that can drift |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-062.
+
+### Q-STOR-246 · Every behaviour once at the cheapest tier, no end-to-end leg
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Unit tests with two in-memory stores and the fault hook; integration with PostgreSQL and in-memory stores; one case against two real buckets; the race test run with two connections instead of one (chosen) | About 30 s added to CI, nothing per format | The rule of the repository; no format sees a connection | The S3 adapter's cross-bucket copy is shown against SeaweedFS and Silo only |
+| (b) An end-to-end leg with two buckets | Real replicas | Closest to production | Minutes per run for behaviour the integration tier shows |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-063.
+
+### Q-STOR-247 · At most eight connections
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Eight (chosen) | A bound | Bounds the label, the clients per replica and every blob's copies | An arbitrary number |
+| (b) No bound | — | — | Metric cardinality and copies grow with a typo |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-050.
+
+### Q-STOR-248 · The start check establishes what a connection supports and refuses or degrades by a stated rule
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the owner's provider documents neither conditional writes, nor checksum headers, nor a copy with new metadata; the software
+behind it documents conditional writes as unsupported (refused with `501` or accepted and ignored) and the newer SDK's checksum trailer as
+refused (a research of 2026-11-22). Nothing was run against that provider.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The start check probes the configured checksums (refusal is a configuration error naming the key and the value to try), whether a wrong checksum is refused (else writes are not verified), `DeleteObjects`, metadata and a copy with replaced metadata (recorded), and server-side copies between connections on one endpoint (recorded) (chosen) | Every replica, every start, a few requests per connection | A provider's gap is found before data depends on it; each gap has one stated consequence | Six requests more per connection at start |
+| (b) The operator declares capabilities | Keys per capability | No probe | A wrong declaration is found by a failure in production |
+| (c) The conformance command only | On demand | No cost at start | A replica serves on a store nobody checked |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-035, R-STOR-052, R-STOR-062.
+
+### Q-STOR-249 · A1 is required for new objects, overwrites and deletes may be eventual, and no guarantee rests on a conditional write
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: A1 demanded strong consistency for overwrites and deletes. The owner's provider documents read-after-write for new objects and
+eventual consistency for overwrites and deletes. Quader writes one content per key and deletes only through collection, a drain and the
+sweep.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Require A1 for new objects; tolerate eventual overwrites and deletes with "latest wins" (A3); state A7 (chosen) | A stale read is the same content or a `404` that the recheck and the reconciliation heal | The owner's provider qualifies; the protocols are argued on what they need | A repaired copy may be read stale and repaired again |
+| (b) Keep strong A1 | As before | Simplest argument | Refuses the owner's provider by documentation |
+| (c) Use conditional writes where offered | Stronger write-once | Fewer stale cases | Two code paths, and stores that ignore the header give a false sense of safety |
+
+**Choice:** (a). **Rationale:** the content address makes every write of a key the same bytes, so what eventual overwrite consistency can
+show is the same content, and what eventual delete consistency can show is a copy that is still there; neither is wrong content.
+
+**Applied in the spec:** R-STOR-035, R-STOR-053.
 
 ## What this does not cover
 

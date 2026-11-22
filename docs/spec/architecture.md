@@ -581,7 +581,7 @@ nothing worth taking.
 - **Reads.** Its configuration load reads and validates only the keys it uses: `process`, `server` (`listen`, `ops_listen`, `tls`, `ops_tls`,
   `internal_tls`, the timeouts, `shutdown_timeout`), `health`, `log`, `metrics`, `runtime`, `storage.spool`, `system.heartbeat_interval` (the
   period of its report of itself, R-OPS-048) and `vulnerabilities.images`. It
-  resolves no secret file: a `database`, `valkey`, `storage.s3`, `secrets`, `auth` or `proxy` key that names a file it does not have is not
+  resolves no secret file: a `database`, `valkey`, `storage.connections`, `secrets`, `auth` or `proxy` key that names a file it does not have is not
   read, and its absence is no error in this role.
 - **Holds.** The TLS pair it serves and presents, the internal CA, and, for the length of a call, the call's scan token and the image's
   bytes. It never opens a connection to PostgreSQL, Valkey, the object store, an upstream or the Kubernetes API, and never calls a worker.
@@ -1032,7 +1032,7 @@ a replica admits is bounded by its memory as well as by `max_in_flight`:
   below 0.8 × `L`; a request that is alone is always admitted. The request bytes are what a
   download of a large object holds (Q-ARCH-241): the buffer of a verified download
   (`storage.download.buffer_size`, at least twice `storage.download.hold_back` and 4 KiB, rounded up
-  to a power of two), the object store's receive window `storage.s3.http.receive_window` and 128 KiB
+  to a power of two), the object store's receive window `storage.object_store.http.receive_window` and 128 KiB
   for the rest (connection, TLS state, stacks, the object-store call), 640 KiB with the defaults;
   100 downloads of 1, 2 and 5 MiB held open measured 636 to 659 KiB each.
   - **A download settles.** The blob store knows the size of the object before it asks the object
@@ -3523,8 +3523,9 @@ Normative rules:
 | Kind | Owner | Registration |
 |---|---|---|
 | `gc`, `gc-full` | [storage.md](storage.md) R-STOR-025 | Queue `maintenance`. Dedup key `gc`, shared by both kinds, `exclusive`: one collection run at a time, whichever task started it. `gc-full` checkpoints its keyset position. |
-| `orphan-sweep` | [storage.md](storage.md) R-STOR-026 (P1) | Queue `maintenance`, `exclusive`; checkpoints after each prefix |
-| `scrub` | [storage.md](storage.md) R-STOR-027 (P1) | Queue `maintenance`, `exclusive` |
+| `orphan-sweep` | [storage.md](storage.md) R-STOR-026 (P1) | Queue `maintenance`, `exclusive`; checkpoints the connection and the prefix after each prefix |
+| `scrub` | [storage.md](storage.md) R-STOR-027 (P1) | Queue `maintenance`, `exclusive`; scheduled hourly, one reader per connection |
+| `storage-reconcile` | [storage.md](storage.md) R-STOR-056 (P1) | Queue `maintenance`, `exclusive`; scheduled every minute and signalled after a commit that queued a gap; checkpoints the pass and the drain |
 | `remote-cache-cleanup` | [storage.md](storage.md) R-STOR-045 (P1) | Queue `maintenance`, `exclusive`; checkpoints after each batch |
 | `build-retention` | [storage.md](storage.md) R-STOR-043 (P1) | Queue `default`. Dedup key `build-retention:<build name>`, `coalesce`: one run per build name at a time, and a build published during a run is covered by the waiting one |
 | `retention-run` | [storage.md](storage.md) R-STOR-040 (P1) | Queue `default`. Dedup key `retention:<policy key>`, `exclusive`. `MaxAttempts: 1`, so the reaper fails a run whose worker was lost instead of re-queueing it. The kind name is fixed here, because storage.md names none. |
@@ -4590,7 +4591,7 @@ keeps the last good material in service:
   ([ha-and-helm.md](ha-and-helm.md) R-HA-015).
 - Valkey and Sentinel CA, client certificate and key: read for each new handshake
   ([ha-and-helm.md](ha-and-helm.md) R-HA-056).
-- Outbound CA bundles, and the object store's `storage.s3.ca_file` (supported since M0, R-STOR-030): reloaded
+- Outbound CA bundles, and each object-store connection's `ca_file` (supported since M0, R-STOR-030, R-STOR-050): reloaded
   within the bound of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-035 and R-ARCH-022.
 
 Acceptance criteria:
@@ -12020,7 +12021,7 @@ shipper of the replicas, and in the Jobs of the backup lane the backup target cl
 the backup's read of the blob bucket (`backup.source`) and the journal reader of a restore and of the
 post-restore ([backup-and-restore.md](backup-and-restore.md)).
 
-Live for every installation whose `storage.s3.endpoint` or `backup.target.endpoint` resolves to an
+Live for every installation whose connection endpoint ([storage.md](storage.md) R-STOR-050) or `backup.target.endpoint` resolves to an
 address that the egress policy would refuse, which includes every private-network object store. The
 endpoints come from the configuration the operator writes. Subject: the set of addresses that a replica or
 a Job of the backup lane may connect to with the object-store or backup-target credentials.
