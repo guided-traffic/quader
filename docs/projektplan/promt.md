@@ -4465,7 +4465,13 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     the configuration is valid, and nine cases answer as they should (an ordinary path from Asia or without
     a continent 403, the challenge's path 200, a path that only resembles it 403; Europe, North America and
     a private address 200). Not verified until he has committed it: the certificate's issue, which
-    cert-manager tries again by itself after a wait. **His rule for his
+    cert-manager tries again by itself after a wait. **He committed and pushed it at 20:18** ("Habe
+    k8s-flux-base gepusht"); read at 20:21: the controller's release is upgraded and the condition stands
+    in both frontends of both of its pods, which loaded it without a restart; from Europe the registry's
+    base path answers as before. The certificate stands at two failed attempts, the last at 19:11, so
+    cert-manager's next attempt by itself is due about two hours after that (its doubling wait, from
+    memory of its documentation); at once it is a renewal by hand, which is his. A waiter of the
+    development agent reads the certificate every minute. **His rule for his
     deployment repositories stands in his global rules for agents since 18:46, at his word** ("Das kommt
     nach …"): every file at once; a Secret he fills as a placeholder `s-<name>.unenc.yml` with the one
     command that encrypts it; no secret value fetched or issued by an agent, the cluster read only and
