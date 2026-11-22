@@ -1,8 +1,10 @@
 package testformat_test
 
 import (
+	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -161,6 +163,10 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 	})
 }
 
+// sharedFixture is testformat.Fixture built once for the tests of checks 19 and 20, which copy it and replace the fields they change, never
+// write through them: its crafted inputs cost most of a second to build under the race detector.
+var sharedFixture = sync.OnceValue(testformat.Fixture)
+
 // failsAlone asserts that the format fails check and the checks of also, no other, and that the failures of check say match.
 func failsAlone(t *testing.T, f formats.Format, fx formattest.Fixture, check formattest.Check, match string, also ...formattest.Check) {
 	t.Helper()
@@ -182,10 +188,10 @@ func failsAlone(t *testing.T, f formats.Format, fx formattest.Fixture, check for
 //
 // A defect runs every check but check 6, whose subject (Inspect against crafted inputs of gigabytes, half a second a run under the
 // race detector) none of the four touches; TestR_ARCH_010_TheTestFormatPassesTheKit runs it on the format they vary. An exemption
-// runs check 19 alone. The fixture is built once: its crafted inputs cost most of a second to build under the race detector.
+// runs check 19 alone. The fixture is built once (sharedFixture): its crafted inputs cost most of a second to build under the race detector.
 func TestR_BAS_058_KitCheck19(t *testing.T) {
 	notInspect := slices.DeleteFunc(formattest.Checks(), func(c formattest.Check) bool { return c == formattest.CheckInspect })
-	base := testformat.Fixture()
+	base := sharedFixture()
 	for _, c := range []struct {
 		name   string
 		defect testformat.Defect
@@ -242,6 +248,66 @@ func TestR_BAS_058_KitCheck19(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestR_STOR_071_KitCheck20: a declaration that the format's client checks a digest passes check 20 where the declaring route serves
+// the stored blob through Host.Items().Serve under its content address, and each of the two defects fails check 20 and no other check.
+// A defect takes the exemption another check grants its route, as the fixture of such a format would: the route of
+// DeclaresUnservedBody is in NoContent with cases that expect its 501, the route of DeclaresUnaddressedBody in NoBastion (Q-STOR-296);
+// neither exempts it from check 20, which has no exemption of its own. That OCI, npm, NuGet, Debian, Ansible Galaxy, the ClamAV
+// definitions and generic pass it is each format's TestR_ARCH_010_Conformance.
+//
+// As for check 19, a case runs every check but check 6 (Inspect against crafted inputs of gigabytes, which none of the variants
+// touches), on the fixture check 19's test built.
+func TestR_STOR_071_KitCheck20(t *testing.T) {
+	notInspect := slices.DeleteFunc(formattest.Checks(), func(c formattest.Check) bool { return c == formattest.CheckInspect })
+	base := sharedFixture()
+	t.Run("R-STOR-071 a declaring route served through Items().Serve under its content address passes every check", func(t *testing.T) {
+		if rep := formattest.EvaluateChecks(testformat.With(testformat.DeclaresClientDigest), base, notInspect...); len(rep.Failed()) > 0 {
+			t.Fatalf("failed checks = %v:\n%v", rep.Failed(), rep)
+		}
+	})
+	unserved := base // a copy; the fields it changes are replaced, never written through
+	unserved.Content = slices.Clone(base.Content)
+	for i, c := range unserved.Content {
+		method := c.Method
+		if method == "" {
+			method = http.MethodGet
+		}
+		if r, _, err := testformat.New().Match(method, c.Path); err == nil && r.Name == "tf.tarball.get" {
+			unserved.Content[i].Status = http.StatusNotImplemented
+		}
+	}
+	unserved.NoContent = map[string]string{"tf.tarball.get": "a local repository of this variant serves no tarball; its remote class does"}
+	unaddressed := base
+	unaddressed.NoBastion = map[string]string{"tf.tarball.get": "this variant's tarball carries a revision as its ETag"}
+	for _, c := range []struct {
+		name   string
+		defect testformat.Defect
+		fx     formattest.Fixture
+		match  string
+	}{
+		{"a declaring route no case shows serving the stored blob, NoContent notwithstanding", testformat.DeclaresUnservedBody, unserved, `route "tf.tarball.get" declares ClientDigest.Checks and no GET content case answered it 200`},
+		{"a declaring route whose answer is no content address, NoBastion notwithstanding", testformat.DeclaresUnaddressedBody, unaddressed, `the ETag "\"1\"", which is no content address`},
+	} {
+		t.Run("R-STOR-071 "+c.name+" fails check 20 and no other check", func(t *testing.T) {
+			rep := formattest.EvaluateChecks(testformat.With(c.defect), c.fx, notInspect...)
+			if failed := rep.Failed(); !slices.Equal(failed, []formattest.Check{formattest.CheckLinks}) {
+				t.Fatalf("failed checks = %v, want check 20 alone:\n%v", failed, rep)
+			}
+			if got := strings.Join(rep.Result(formattest.CheckLinks).Failures, "\n"); !strings.Contains(got, c.match) {
+				t.Fatalf("failures do not say %q:\n%s", c.match, got)
+			}
+		})
+	}
+	t.Run("R-STOR-071 check 20 cannot be skipped while a route declares", func(t *testing.T) {
+		fx := base
+		fx.Skip = map[formattest.Check]string{formattest.CheckLinks: "not applicable"}
+		res := formattest.EvaluateChecks(testformat.With(testformat.DeclaresClientDigest), fx, formattest.CheckLinks).Result(formattest.CheckLinks)
+		if got := strings.Join(res.Failures, "\n"); !strings.Contains(got, `route "tf.tarball.get" declares ClientDigest.Checks`) {
+			t.Fatalf("check 20 does not refuse the skip: %v", res)
+		}
+	})
 }
 
 func FuzzR_ARCH_028_Match(f *testing.F) { formattest.FuzzMatch(f, testformat.New()) }

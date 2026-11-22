@@ -360,6 +360,53 @@ func TestR_ARCH_010_RegisterChecksTheRoutes(t *testing.T) {
 	})
 }
 
+// TestR_STOR_071_RegisterRefusesADeclarationItCannotHold: a route declares that its clients check a digest only as a GET of the kind
+// Download, with what they compare against and the evidence; Register refuses any other declaration, and the zero value is no
+// declaration at all (ADR-243).
+func TestR_STOR_071_RegisterRefusesADeclarationItCannotHold(t *testing.T) {
+	withBase := func(id string, r Route) fake {
+		d := valid(id)
+		d.ProtocolBasePath = "/api/" + id + "/{project}/{key}/"
+		return fake{d: d, routes: []Route{r}}
+	}
+	declared := ClientDigest{Checks: true, Against: "the digest in the path", Evidence: "the client's source"}
+	for _, c := range []struct {
+		name, want string
+		edit       func(*Route)
+	}{
+		{"a declaring Metadata route is refused", "only a GET of the kind download", func(r *Route) { r.Kind = Metadata }},
+		{"a declaring Volatile route is refused", "only a GET of the kind download", func(r *Route) { r.Kind = Volatile }},
+		{"a declaring Download route of another method is refused", "only a GET of the kind download", func(r *Route) { r.Method = http.MethodPost }},
+		{"a declaration without evidence is refused", "without saying what they compare against and the evidence", func(r *Route) { r.ClientDigest.Evidence = "" }},
+		{"a declaration without what the clients compare against is refused", "without saying what they compare against", func(r *Route) { r.ClientDigest.Against = " " }},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r := route("blob.get", http.MethodGet, "/{name}", "a")
+			r.ClientDigest = declared
+			c.edit(&r)
+			if err := Validate(withBase("probe-digest", r)); err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("Validate = %v, want it to say %q", err, c.want)
+			}
+		})
+	}
+	t.Run("Register refuses with the message of Validate", func(t *testing.T) {
+		r := route("doc.get", http.MethodGet, "/{name}", "a")
+		r.Kind, r.ClientDigest = Metadata, declared
+		mustPanic(t, withBase("probe-digest-meta", r), "only a GET of the kind download")
+	})
+	t.Run("a declaring GET of the kind Download is accepted, and so is a route that declares nothing", func(t *testing.T) {
+		r := route("blob.get", http.MethodGet, "/{name}", "a")
+		r.ClientDigest = declared
+		if err := Validate(withBase("probe-digest-ok", r)); err != nil {
+			t.Fatal(err)
+		}
+		r.Kind, r.ClientDigest = Metadata, ClientDigest{}
+		if err := Validate(withBase("probe-digest-none", r)); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 // TestR_ARCH_010_RegisterChecksTheDataPort: a data port is an interface type.
 func TestR_ARCH_010_RegisterChecksTheDataPort(t *testing.T) {
 	d := valid("probe-port")

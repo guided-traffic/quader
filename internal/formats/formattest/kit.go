@@ -50,7 +50,7 @@ const CheckMalware Check = 17
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
 	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware, CheckSignatures,
-	CheckBastion,
+	CheckBastion, CheckLinks,
 }
 
 // name is the short name of the check.
@@ -92,6 +92,8 @@ func (c Check) name() string {
 		return "signatures"
 	case CheckBastion:
 		return "bastion"
+	case CheckLinks:
+		return "signed links"
 	}
 	return "unknown"
 }
@@ -468,6 +470,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.signatures()
 	case CheckBastion:
 		r.bastion()
+	case CheckLinks:
+		r.links()
 	}
 	return res
 }
@@ -529,6 +533,8 @@ func (r *run) skipProblem(c Check, reason string) string {
 		return fmt.Sprintf("%s is skipped (%s) and the format has wiki content", c, reason)
 	case c.servesDownloads() && r.hasRoute(formats.Download):
 		return fmt.Sprintf("%s is skipped (%s) and the format has a Download route", c, reason)
+	case c == CheckLinks && r.declaresClientDigest() != "":
+		return fmt.Sprintf("%s is skipped (%s) and route %q declares ClientDigest.Checks", c, reason, r.declaresClientDigest())
 	}
 	return ""
 }

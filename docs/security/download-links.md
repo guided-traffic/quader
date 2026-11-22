@@ -6,8 +6,10 @@ Status: specified on 2026-11-22 and not built ([storage.md](../spec/storage.md) 
 [ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it)). What is built today: the
 object store's client can sign a link for `GET` ([client.go](../../internal/blob/s3/client.go) lines 460 to 469), its only caller is the
 conformance check ([conformance.go](../../internal/blob/conformance.go) from line 564), and every download is streamed through Quader
-([content.go](../../internal/api/edge/content.go) lines 56 to 128). Every gap below is therefore dormant until the design is built and an
-administrator switches it on; the sections describe that design.
+([content.go](../../internal/api/edge/content.go) lines 56 to 128). Built on 2026-11-22: the format's declaration that its clients check
+a digest (`formats.Route.ClientDigest`, R-STOR-071) with kit check 20, declared by `oci.blob.get`, `npm.tarball.get` and
+`ansible.artifact.get`; nothing reads it yet. Every gap below is therefore dormant until the design is built and an administrator
+switches it on; the sections describe that design.
 
 The perspective of this page is what changes for the security of a download when Quader answers it with a link to the object store
 instead of the bytes: who can use the link, what Quader no longer sees or checks, and what the object store learns and records.
@@ -87,7 +89,9 @@ Component: the declaration of R-STOR-071 and the clients. Subject: every client 
 switch is on. Quader does not hold back the last bytes, does not compare the digest, does not mark a changed object `corrupt`
 (R-STOR-013), so a damaged or replaced object is delivered whole and is refused, if at all, by the client. The declarations rest on the
 source of the reference clients read on 2026-11-22 (containerd, npm's pacote, `ansible-galaxy`); Podman and CRI-O, the Docker Engine's
-older pull path, pnpm and Yarn were not read and are shown by the end-to-end case before the declaration lands (R-STOR-074). A client that a
+older pull path, pnpm and Yarn were not read. The declarations are in the format contract since 2026-11-22 and read by nothing; those
+families are shown by the end-to-end case of R-STOR-070 before the serve point that reads them lands, and a family that takes altered bytes
+turns its route's declaration back then (R-STOR-071). A client that a
 user configured to skip its check (an option of the client, an old version) gets unchecked bytes. What makes it real: a principal who can
 write the bucket (H-11), or a store that damages an object, together with a client that does not check.
 

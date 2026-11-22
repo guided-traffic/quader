@@ -23,6 +23,16 @@ const (
 	routeRoleArchive  = "ansible.role.archive"
 )
 
+// artifactClientDigest declares that ansible-galaxy checks a collection archive against the SHA-256 the collection version names, so
+// that the artifact route may hand a download to a signed link of the object store (storage.md R-STOR-071, the format's row there). A
+// role archive declares nothing: a role carries no digest the client could hold.
+var artifactClientDigest = formats.ClientDigest{
+	Checks:  true,
+	Against: "artifact.sha256 of the collection version",
+	Evidence: `ansible-galaxy compares the SHA-256 ("Mismatch artifact hash with downloaded file", concrete_artifact_manager.py, ` +
+		"_download_file) and never sends its credential after a redirect",
+}
+
 // buildRoutes is the whole endpoint map of the format, written once with the name of every handler. A route serves the classes its
 // Classes name; a route none of whose classes is registered is left out, so the table grows with the classes without an edit (the
 // registry of class_*.go files, format.go). A handler is looked up by class and route name (handlers.go); an unregistered one answers
@@ -73,6 +83,9 @@ func (f *Format) buildRoutes() []formats.Route {
 	for i := range all {
 		// The documentation of a version is the wiki of the repository (R-ANS-037, R-AUTHZ-034): the dispatcher refuses a caller who may not read it.
 		all[i].Wiki = all[i].Name == routeDocs
+		if all[i].Name == routeArtifact {
+			all[i].ClientDigest = artifactClientDigest
+		}
 	}
 	return f.forClasses(all)
 }

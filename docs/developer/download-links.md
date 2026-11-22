@@ -1,6 +1,6 @@
 # Delivery by signed links of the object store
 
-Status: specified on 2026-11-22, not built ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
+Status: specified on 2026-11-22; package 1 built on 2026-11-22, packages 2 and 3 not built ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
 [usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040; [api-and-ui.md](../spec/api-and-ui.md) R-UI-200, R-UI-201;
 [security/download-links.md](../security/download-links.md)). This page is the build plan: the three packages, what each owns, the order,
 the tests and what they cost.
@@ -27,7 +27,11 @@ the tests and what they cost.
 | 2 | The serve point, the store and the limits | `internal/blob/` (`Presign` with options and the link's expiry, the in-memory store's signing, the link check in `conformance.go`, run per connection at start), a new domain package `internal/downloadlinks/` (the row's store and the audit event `storage.download_links.changed`, the replica's snapshot, the host rule, "can serve links" per connection, the metrics), `internal/formathost/` (`links.go` and the branch in `ingest.go`), `internal/api/edge/` (`ServeOptions.Link`, the `307`), `internal/limits/` (the pace check of R-LIM-040), `internal/items/` (`ServedEvent` with the link's fields), `internal/repository/` (the closed member `storage`, `downloadLinks`, `not_applicable`), the migration and statements under `internal/meta/postgres/`, the change area in `internal/cluster/areas.go`, the request log's `delivery`, the removal of `storage.s3.presign` from `internal/config/storage.go`, the wiring in `internal/app/`; the integration case in `test/integration/blob/`, the end-to-end cases in `test/e2e/` | package 1 (it reads `rq.Route.ClientDigest`) |
 | 3 | The API, the settings page and the repository's opt-out on the screen | `internal/api/v1/download_links_api.go`, `api/openapi.yaml` and what `make generate` writes from it, `web/src/app/features/settings/` (the page `/admin/settings/storage` and its route), `web/src/app/features/repositories/` (the section **Download links**), `web/src/locale/`, the manual's pages of the administrator and of a project Owner | package 2's store and repository member; the screens can be built beside package 2 against the answers R-STOR-014 specifies |
 
-Package 1 is small and lands first. Package 2 is the whole feature behind the API; package 3 makes it reachable. The directories do not
+Package 1 is small and lands first; it is built: `formats.Route.ClientDigest` and `formats.ClientDigest`
+([route.go](../../internal/formats/route.go)), `checkClientDigest` in `Validate`, kit check 20 (`formattest.CheckLinks`), the declarations of
+`oci.blob.get`, `npm.tarball.get` and `ansible.artifact.get`, and the table test; nothing reads the declaration yet. A package that needs
+the routes whose clients check (the settings' `routes`, the repository's `not_applicable`) walks `formats.List()` and each format's
+`Routes()` for `ClientDigest.Checks`. Package 2 is the whole feature behind the API; package 3 makes it reachable. The directories do not
 overlap; `internal/app/` is package 2's alone, and package 3 mounts its handler through the router the API already has.
 
 ## The decision, step by step
@@ -54,7 +58,7 @@ the number of formats outside a format's own leg; bytes to kilobytes. Estimates,
 
 | Tier | What | Package | Time | Data |
 |---|---|---|---|---|
-| Unit | `Register`'s refusals, kit check 20 with its two defects, the table of declarations | 1 | under 1 s; check 20 adds about 10 to 20 ms to each format's kit | none |
+| Unit | `Register`'s refusals, kit check 20 with its two defects, the table of declarations | 1 | measured in the unit job's mode (race detector, atomic coverage): under 0.01 s, 0.64 s, 0.02 s; check 20 adds 0.07 s to npm's kit, 0.04 s to Ansible Galaxy's and under 0.01 s to every other format's | none: the test format's and the formats' own seeds of bytes |
 | Unit | `Presign` with options and the credential's bound, the in-memory store's links, the link check, the host rule, the conditions table of R-STOR-070 with the in-memory store, the `307`, the pace check and the charge, the repository member, what a link counts | 2 | about 2 s together | bytes |
 | Conformance | `checkPresign` asks for the three overrides and checks them (job `s3-conformance`, against Silo) | 2 | milliseconds on the job's 35 to 38 s of tests | 2 KiB |
 | Integration | area `blob`: the switch through the API reaches another replica within 2 s, Valkey stopped too; a link fetched by a plain client from the stack's store | 2 | about 3 s in the shard that holds `blob` | one tarball of kilobytes |
@@ -62,7 +66,7 @@ the number of formats outside a format's own leg; bytes to kilobytes. Estimates,
 | Unit (API) | the operations, `If-Match`, the reasons, the test link | 3 | about 1 s | none |
 | Web unit | the page and the repository's section (Vitest) | 3 | about 2 s | none |
 
-What each pipeline job gains: the unit job about 3 s; the web unit job about 2 s; `s3-conformance` under a second; the integration shard
+What each pipeline job gains: the unit job about 3 s (package 1's share measured: about 0.8 s); the web unit job about 2 s; `s3-conformance` under a second; the integration shard
 that holds `blob` about 3 s; `e2e (oci)` about 30 s, `e2e (npm)` about 20 s, `e2e (ansible)` about 15 s; every other leg nothing. A change
 of the serve point is shared code and starts the npm leg, whose case shows the link with a real client.
 

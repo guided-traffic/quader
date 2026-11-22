@@ -9,6 +9,16 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 )
 
+// tarballClientDigest declares that every npm client checks a tarball against the integrity the package document named for its version,
+// so that the tarball route may hand a download to a signed link of the object store (storage.md R-STOR-071, the format's row there).
+// pnpm and Yarn are still to be shown with the real client, by the case of R-STOR-070 in the format's own end-to-end leg, before the
+// serve point reads the declaration; a client that takes altered bytes turns it back.
+var tarballClientDigest = formats.ClientDigest{
+	Checks:   true,
+	Against:  "dist.integrity of the version in the package document (dist.shasum where it has none)",
+	Evidence: "pacote's remote fetcher checks integrity (lib/remote.js)",
+}
+
 // buildRoutes is the whole endpoint map of R-NPM-001, written once with the name of
 // every handler, so that a work package that adds a handler adds a handler file and
 // never edits this table (handlers_*.go).
@@ -46,6 +56,9 @@ func (f *Format) buildRoutes() []formats.Route {
 		}
 		return out
 	}
+	tarball := route("tarball.get", http.MethodGet, "/{name}/-/{file}", formats.Download, read,
+		matchName(tailTarball), with("/-/ui-1.2.0.tgz"), f.handleTarball)
+	tarball.ClientDigest = tarballClientDigest
 	return []formats.Route{
 		// The registry URL itself answers 200 {} (R-NPM-001).
 		route("root", http.MethodGet, "/", formats.Computed, read, matchRoot, []string{""}, f.handleRoot),
@@ -55,8 +68,7 @@ func (f *Format) buildRoutes() []formats.Route {
 			matchName(tailDocument), names, f.handleDocument),
 		route("version.get", http.MethodGet, "/{name}/{version-or-tag}", formats.Metadata, read,
 			matchName(tailVersion), with("/1.2.0"), f.handleVersion),
-		route("tarball.get", http.MethodGet, "/{name}/-/{file}", formats.Download, read,
-			matchName(tailTarball), with("/-/ui-1.2.0.tgz"), f.handleTarball),
+		tarball,
 
 		// Publish and the metadata update that shares its path (R-NPM-007, R-NPM-018).
 		route("publish", http.MethodPut, "/{name}", formats.Upload, deploy,

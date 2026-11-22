@@ -51,7 +51,7 @@ only writer is `Member` (Q-ARCH-252, [Q-AUTHZ-165](../spec/authorization.md)).
 |---|---|
 | [formats.go](../../internal/formats/formats.go) | `ContractVersion`, the aliases and constants, `Format`, `Descriptor`, `Register` / `Validate` / `CatalogEntry`, `Lookup`, `List`, `Descriptors`, the optional capabilities (`ItemsRestorer`, `VersionPather` (the file of a version, Q-AUTHZ-255), `Capabilities`, `CapabilitiesOf`, `CapabilitiesFor`; the remote adapter's `Discoverer` and `FillInspector` are declared in remote.go) |
 | [scope.go](../../internal/formats/scope.go) | The repositories a request may name: `ServeRoute` puts them in the handler's context, `RepositoryAllowed` is the check of the stores and the package writer (Q-ARCH-260) |
-| [route.go](../../internal/formats/route.go) | `Route`, `RouteKind`, `Params`, `Template`, `MatchRoutes`, `Request`, `Refusal` (`WithRefusal`, `RefusalFrom`), `EndpointFacts`, `Target`, `PathKind`, `PathInfo` |
+| [route.go](../../internal/formats/route.go) | `Route` (with `ClientDigest`, whether every client checks the route's body against a digest, R-STOR-071), `RouteKind`, `Params`, `Template`, `MatchRoutes`, `Request`, `Refusal` (`WithRefusal`, `RefusalFrom`), `EndpointFacts`, `Target`, `PathKind`, `PathInfo` |
 | [host.go](../../internal/formats/host.go) | `Host` (with `PathsAllowed`, the listing form of `Authorize` for many paths, ADR-174) and its parts: `Ingestor`, `ItemStore`, `PackageStore`, `LinkBuilder`, `RenditionCache` |
 | [hooks.go](../../internal/formats/hooks.go) | The storage-hook types: `RepoRef`, `ItemRef`, `CommitEvent`, `ItemsEvent`, `Inspection`, `PackageWriter`, `OwnershipWrite` |
 | [remote.go](../../internal/formats/remote.go) | `RemoteAdapter`, `RemoteFetcher` and their types, among them `Exchange` and `ErrOffline` for a request outside the cache (Q-NPM-62), `Query`/`QueryResult` for the pass-through of a `Volatile` request with the engine's cached answer (`RemoteAdapter.UpstreamQuery` builds the request; Q-ARCH-270) and `Gate`, the artifact gate as a method of the fetcher (Q-ARCH-272) (the engine is internal/proxy, bridged by [internal/formathost/remote.go](../../internal/formathost/remote.go)) |
@@ -70,7 +70,7 @@ only writer is `Member` (Q-ARCH-252, [Q-AUTHZ-165](../spec/authorization.md)).
 |---|---|
 | [internal/formats/catalog](../../internal/formats/catalog/) | The facts of every format, the name rule, the exposure facts and the compiled settings schema with `Entry.ValidateSettings` (a leaf layer); `Register` fills it. [bastion.go](../../internal/formats/catalog/bastion.go): `BastionFacts`, the core's `RepresentationHeaders` and `PerRequestHeaders`, `Facts.BoundPrefixes` and the rules `Register` applies to them ([What a Bastion needs of a format](#what-a-bastion-needs-of-a-format)) |
 | [internal/formats/untrusted](../../internal/formats/untrusted/) | `Limits`, `DefaultLimits`, `Tighten`, and the bounded readers of R-ARCH-028 (see [Untrusted content](#untrusted-content)) |
-| [internal/formats/formattest](../../internal/formats/formattest/) | The conformance kit: the in-memory `Host`, the checks (1 to 13, 15 and 17 to 19), the fuzz helpers (see [Conformance kit](#conformance-kit)); `crafted/` generates the hostile inputs, `testformat/` is the kit's own format with one named defect per check |
+| [internal/formats/formattest](../../internal/formats/formattest/) | The conformance kit: the in-memory `Host`, the checks (1 to 13, 15 and 17 to 20), the fuzz helpers (see [Conformance kit](#conformance-kit)); `crafted/` generates the hostile inputs, `testformat/` is the kit's own format with one named defect per check |
 | [internal/formats/generic](../../internal/formats/generic/) | The generic format: no routes, `Classify`, a paths-only exposure adapter, the curl setup templates ([setup.go](../../internal/formats/generic/setup.go)) and the guide of curl ([guide.go](../../internal/formats/generic/guide.go), [guide/](../../internal/formats/generic/guide/)) |
 | [internal/formats/all](../../internal/formats/all/all.go) | Registers every format at compile time (R-ARCH-010) |
 | [internal/httpserver/content](../../internal/httpserver/content/content.go) | The content-header wrapper (`File`, `Index`, `Document`); `httpserver.ContentWriterFor` is the request-aware call |
@@ -317,15 +317,26 @@ A format that needs a path family INV-6 does not have, or a host root beyond the
 
 ## What a signed link needs of a format
 
-**Specified, not built** ([R-STOR-070](../spec/storage.md#r-stor-070--the-conditions-of-one-download-in-the-order-of-the-serve-point) and
-[R-STOR-071](../spec/storage.md#r-stor-071--the-format-declares-whether-its-clients-check-a-digest), the owner's decision of 2026-11-22):
-with the installation's switch on, a download may be answered `307` to a signed link of the object store, but only on a route that
-declares `ClientDigest{Checks: true, Against, Evidence}`: every client family the format supports compares the whole body with a digest
-it knew before the request. The zero value streams, so a format that says nothing is safe. Declare it only with evidence (the client's
-source, or the end-to-end case in the format's own leg in which the real client refuses a link whose object was altered), add the route
-to `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` in [all_test.go](../../internal/formats/all/all_test.go), and serve the
-route through `rq.Host.Items().Serve`; kit check 20 holds the rest. It follows the pattern of the Bastion's facts above (a declared fact,
-held by the kit), with the difference that it is a field of the route, read only at the main installation's serve point.
+With the installation's switch on, a download may be answered `307` to a signed link of the object store
+([R-STOR-070](../spec/storage.md#r-stor-070--the-conditions-of-one-download-in-the-order-of-the-serve-point), the owner's decision of
+2026-11-22), but only on a route that declares `ClientDigest{Checks: true, Against, Evidence}`
+([R-STOR-071](../spec/storage.md#r-stor-071--the-format-declares-whether-its-clients-check-a-digest)): every client family the format
+supports compares the whole body with a digest it knew before the request. The declaration, its checks and the three declarations are
+built; the serve point that reads it is not yet ([download-links.md](download-links.md)), so today every download streams.
+
+| Rule | Where |
+|---|---|
+| The zero value is "does not check" and the route streams, so a format that says nothing is safe | `formats.ClientDigest` ([route.go](../../internal/formats/route.go)) |
+| Only a `GET` of the kind `Download` declares, and only with `Against` (what the clients compare with) and `Evidence` (the client's source read, or the end-to-end case in the format's own leg in which the real client refuses a link whose object was altered) | `Register` (`checkClientDigest`, [formats.go](../../internal/formats/formats.go)), so kit check 1 too |
+| Every `GET` answer `200` of a declaring route is served through `rq.Host.Items().Serve` and is the stored blob under its content address; a route only the remote or the virtual class serves cannot show it in the kit and does not declare | kit check 20 ([checks_links.go](../../internal/formats/formattest/checks_links.go)); `NoContent` and `NoBastion` do not exempt from it ([Q-STOR-295](../spec/storage.md#q-stor-295--kit-check-20-judges-every-200-a-declaring-route-answers-to-a-get-against-the-stored-blob-and-a-skip-while-a-route-declares-is-refused)) |
+| Every format has its row of declaring routes | `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` ([all_test.go](../../internal/formats/all/all_test.go)) |
+
+Declaring today: `oci.blob.get` (the digest in the path), `npm.tarball.get` (`dist.integrity` of the version) and `ansible.artifact.get`
+(`artifact.sha256` of the collection version); each declaration sits beside its route with the evidence and the client families still to
+be shown with the real client (Podman, CRI-O and the Docker Engine's older pull path; pnpm and Yarn), which the end-to-end cases of the
+serve point's package show before it lands. NuGet, Debian, generic and the ClamAV definitions declare nothing. It follows the pattern of
+the Bastion's facts above (a declared fact, held by the kit), with the difference that it is a field of the route, read only at the main
+installation's serve point.
 
 ## Wiring
 
@@ -406,7 +417,7 @@ The fixture ([kit.go](../../internal/formats/formattest/kit.go)) holds what only
 | `GateCases` | 18 | A `GateCase` per row of the format's classification for the signature gate (R-SIG-063): a `Seed` that stores the item (and what `Gate` reads of the data port), its `Path`, the `GateKind` it wants and, for an artifact covered by another, the stored paths of what covers it (`Covering`), and whether Quader's receipt attestation is about it (`Attested`, R-SIG-044). Required of a format that declares signature kinds, with at least one `Attested` case when the declaration attests something; a format without signatures is held to `GateNone` and to no attestation subject over its content cases |
 | `Skip` | all | The checks that do not apply, each with the reason |
 
-### The checks (1 to 13, 15 and 17 to 19; check 14, the vulnerability corpus, runs in the vulnerability tests; check 16 is in [usage-and-limits.md](usage-and-limits.md))
+### The checks (1 to 13, 15 and 17 to 20; check 14, the vulnerability corpus, runs in the vulnerability tests; check 16 is in [usage-and-limits.md](usage-and-limits.md))
 
 | # | The kit does | Fails when |
 |---|---|---|
@@ -425,12 +436,12 @@ The fixture ([kit.go](../../internal/formats/formattest/kit.go)) holds what only
 | 15 | `Route.Wiki` is a `Metadata` or `Computed` route with the action `read`, and only a format whose facts say it has wiki content (`catalog.Facts.Wiki`) declares one; a format with wiki content has `Fixture.WikiSamples`; every content case is served again on a host with `HostOptions.WikiDenied` (`WikiReadable` false, `Authorize` of a wiki target refused) and no answer holds a byte of a sample ([checks_wiki.go](../../internal/formats/formattest/checks_wiki.go)); a route declared `Wiki` is refused by the dispatcher's coarse check before its handler runs and is not served | A `Wiki` route that is not a read, a `Wiki` route in a format without wiki content, no sample, a document or file that holds the README for a caller who may not read the wiki (`testformat.LeaksWiki`) |
 | 18 | Every kind of the format's signature declaration has a case of `Fixture.Signatures`; each case is stored through a fresh host (or handed over as a remote's document), the kit builds the `SignatureEvent` from what was stored and runs `Detect`; every wanted candidate is named with its source, location, part, role, subject and object, and every named one has a valid role, source and scheme, a location, a subject and at most `MaxSignatureRaw` bytes; no live version's lead item is a carrier the case names (a signature embedded in its subject's own file excepted); a format that declares none detects nothing over the items its content cases seed; each `GateCase` is seeded on a fresh host and `Gate` must name its kind and the covering items' digests and `AttestationSubjects` attest it exactly when the case says (under a name), and a format without signatures answers `GateNone` and no attestation subject over the items its content cases seed ([checks_signatures.go](../../internal/formats/formattest/checks_signatures.go)) | A kind without a case, a candidate not named, a signature that became a version (`testformat.SignatureVersion`), no declaration (`testformat.NoSignatureDeclaration`), no gate case, a signature file named an artifact (`testformat.GatesAttachment`), an artifact named `GateNone` (`testformat.PassesArtifact`), a signature file attested (`testformat.AttestsSignature`) |
 | 19 ([R-BAS-058](../spec/bastion.md#r-bas-058--what-a-format-owes-a-bastion-and-kit-check-19)) | Every content case of a `Download`, `Metadata` or `Computed` route again, on a fresh seeded host, for a Bastion ([checks_bastion.go](../../internal/formats/formattest/checks_bastion.go)): every header of a `200`, `206` or `304` against `catalog.RepresentationHeaders()`, `catalog.PerRequestHeaders()` and `catalog.Facts.Bastion.ReplayHeaders`; a `Download` answer's `Content-Length` and content-address `ETag` against its body; a document served again with its own `ETag` in `If-None-Match`; the format's `WriteError` of a rate limit against `catalog.Facts.Bastion.RateLimited()`; the `NoBastion` entries (Q-BAS-184) | An undeclared header (`testformat.UndeclaredReplayHeader`), a `Download` answer without a content address (`DownloadWithoutContentAddress`, and a format that writes its downloads itself, `WritesOwnDownload`), a document without an `ETag` or that answers its own `200` (`DocumentIgnoresConditional`), another status for a rate limit (`RateLimitedStatusDiffers`), a route of those kinds without a case that served, an exemption it does not need |
-| 20 (specified, not built: [R-STOR-071](../spec/storage.md#r-stor-071--the-format-declares-whether-its-clients-check-a-digest)) | Every route that declares `Route.ClientDigest.Checks` (`checks_links.go`): a content case served with `200` through `Items().Serve`, whose `ETag` is the content address of its body | A declaring route without such a case (`testformat.DeclaresUnservedBody`), an answer whose `ETag` is no content address of its body (`DeclaresUnaddressedBody`) |
+| 20 ([R-STOR-071](../spec/storage.md#r-stor-071--the-format-declares-whether-its-clients-check-a-digest)) | Every `GET` content case of a route that declares `Route.ClientDigest.Checks` again, on a fresh seeded host ([checks_links.go](../../internal/formats/formattest/checks_links.go), Q-STOR-295): each `200` against the items `Items().Serve` served (`h.ServedPaths()`), its body, its `ETag` and the SHA-256 of the stored item; a format that declares nothing passes | A declaring route without a `GET` case answered `200` (`testformat.DeclaresUnservedBody`, whose route `NoContent` lists), a `200` not served through `Items().Serve`, without a body, whose `ETag` is no content address of its body (`DeclaresUnaddressedBody`, whose route `NoBastion` lists) or whose body is not the stored blob |
 | 17 | Every content case of a `Download` route the fixture serves with `GET`, again on a host whose `Serve` answers each of the malware gate's three answers (`HostOptions.Admit`; [checks_malware.go](../../internal/formats/formattest/checks_malware.go), [malware.md](malware.md#the-gate)) | Another status than `403`, `403`, `503`; no `Cache-Control: no-store`; no `Retry-After` on the `503`; the item served after the refusal (`testformat.WritesOwnDownload`, `testformat.RendersBareErrors`) |
 
 A skip without a reason fails the check. So does a skip the format contradicts: checks 1, 3, 7, 12, 13 and 19 with routes, 4 with a remote adapter, 5 with a virtual
 adapter, 6 with an `Upload` route, 8 with clients, setup templates or a guide, 9 with package names or a route that writes, 10 with package names, 11 with a
-view adapter, 15 with wiki content, 16 and 17 with a `Download` route, and checks 2 and 18 always. npm and NuGet skip nothing (`TestR_ARCH_010_NoCheckIsSkipped` in each package); Debian's fixture declares no skip either ([conformance_test.go](../../internal/formats/deb/conformance_test.go), the merge check 5 runs over its virtual adapter), though no test of its own pins that. A check with nothing to run over and no skip fails: that is how a later generic remote
+view adapter, 15 with wiki content, 16 and 17 with a `Download` route, 20 with a route that declares `ClientDigest.Checks`, and checks 2 and 18 always. npm and NuGet skip nothing (`TestR_ARCH_010_NoCheckIsSkipped` in each package); Debian's fixture declares no skip either ([conformance_test.go](../../internal/formats/deb/conformance_test.go), the merge check 5 runs over its virtual adapter), though no test of its own pins that. A check with nothing to run over and no skip fails: that is how a later generic remote
 class cannot pass vacuously ([generic's test](../../internal/formats/generic/conformance_test.go) shows the skips of a format with no routes).
 
 ### The in-memory host
@@ -473,8 +484,11 @@ kit's cases, and a format may answer such an input with its own 400.
 `Defect` per check that breaks the rule the check exists for (`AmbiguousRoutes`, `CleaningMatch`, `ContentMetadata`, `NondeterministicRewrite`, `UpstreamLeak`, `MergeLastWins`,
 `InspectAccepts`, `InspectWrongKind`, `InspectHeap`, `TarballVolatile`, `TemplateCredential`, `NoInstallTemplate`, `NoGuide`, `GuideCredential`, `TagWithoutRevision`,
 `NamesCaseSensitive`, `WrongDocumentPath`, `AdminReadsPackages`, `NotifiesUndeclared`, `ReadsOtherRepository`, `SignatureVersion`, `NoSignatureDeclaration`,
-`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`, `RateLimitedStatusDiffers`; the option `SearchReadsPackages` is a conforming variant).
-Its documents carry the SHA-256 of their bytes as `ETag` and answer it `304`, as check 19 asks. [format_test.go](../../internal/formats/formattest/testformat/format_test.go) asserts that each defect fails the check the spec names, plus the checks that cannot
+`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`, `RateLimitedStatusDiffers`, `DeclaresUnservedBody`, `DeclaresUnaddressedBody`;
+the options `SearchReadsPackages` and `DeclaresClientDigest`, a declaration on the tarball route, are conforming variants).
+Its documents carry the SHA-256 of their bytes as `ETag` and answer it `304`, as check 19 asks. Every way a declaring route can miss check 20 is one checks 16 and 19
+catch as well, unless the route carries their exemption, so each defect of check 20 is tested with the fixture entry such a format would carry, `NoContent` or
+`NoBastion`, and fails check 20 alone ([Q-STOR-296](../spec/storage.md#q-stor-296--each-defect-of-check-20-takes-the-exemption-another-check-grants-its-route-so-that-it-fails-check-20-alone)). [format_test.go](../../internal/formats/formattest/testformat/format_test.go) asserts that each defect fails the check the spec names, plus the checks that cannot
 stand without it (routes that are not told apart cannot be served), and no other: these are the acceptance criteria of R-ARCH-010 and R-ARCH-007. To add a rule to the kit, add the defect first
 and watch the test fail.
 
@@ -492,6 +506,8 @@ kit's tightened limits: it must not panic, finish within its deadline, fail only
 - That a route handler decides authorization on the right action and package: check 13 holds every target to a canonical path of its package and every
   served file to a read at its path, but not that the action is the one R-AUTHZ-007 names; the host records every `Authorize` call (`h.Authorizations()`),
   and a format's own test asserts on them.
+- Whether a client really checks what a route declares (`Route.ClientDigest`): check 20 holds the route's answers to the stored blob, never
+  the client; the declaration rests on its `Evidence`, and the table test makes every change of it a reviewed one.
 - The dispatcher's order of checks and the error shapes of the chain: [dispatcher_test.go](../../internal/api/dispatch/dispatcher_test.go).
 - Retried transactions: `Write` runs the function once; a format with a non-transactional twin of its data port must not depend on a rollback.
 - A leak of package bytes through an `Upload`, `Delete` or `Admin` route that the kit detects only when the bytes appear unchanged in the body or the route served an item; a `Volatile` route is allowed to return them (Q-ARCH-258), so what a search puts in its answer is the format's to review.
@@ -594,8 +610,9 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    answered from a member's own handler); `ProbedOnSeen` says which, and `TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo` holds
    that every probe route serves the class `virtual` (Q-REPO-367).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
-   A `Download` route whose clients all check a digest declares it, with its evidence, once the declaration is built
-   ([What a signed link needs of a format](#what-a-signed-link-needs-of-a-format)); without evidence it declares nothing.
+   A `Download` route whose clients all check a digest declares it in `Route.ClientDigest`, with its evidence, and gets its row in
+   `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` ([What a signed link needs of a format](#what-a-signed-link-needs-of-a-format));
+   without evidence it declares nothing, and every format has its row either way.
    If it has settings: embed the schema, set `Facts.SettingsSchema`, add the member to `repository.Settings` and to `formatMembers`, the schema to `api/openapi.yaml`
    (`<Format>Settings`, referenced from `Repository`) and read the member with defaults ([Format settings](#format-settings)).
    `Names.Normalize` is the widest rule the format accepts anywhere (a remote may serve a name a local repository would refuse): `!ok` means the string is no name of the

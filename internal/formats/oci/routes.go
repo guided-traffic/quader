@@ -140,6 +140,19 @@ func matchReferrers(escaped string) (formats.Params, bool) {
 	return matchWord(wordReferrers, "digest")(escaped)
 }
 
+// blobClientDigest declares that every client of the registry checks a blob it pulls against the digest in its path, so that the
+// blob route may hand a download to a signed link of the object store (storage.md R-STOR-071, the format's row there). The manifest by
+// digest declares nothing: what a client does with a manifest answered without Docker-Content-Digest was not read. Podman and CRI-O
+// (the containers image library) and the Docker Engine's older pull path are still to be shown with the real client, by the case of
+// R-STOR-070 in the format's own end-to-end leg, before the serve point reads the declaration; a family that takes altered bytes turns
+// it back.
+var blobClientDigest = formats.ClientDigest{
+	Checks:  true,
+	Against: "the digest in the path",
+	Evidence: `containerd checks on commit ("unexpected commit digest", plugins/content/local/writer.go, (*writer).Commit); ` +
+		"the distribution specification asks clients to check (SHOULD)",
+}
+
 // buildRoutes is the whole endpoint map of R-OCI-009 to R-OCI-018, written once with the name of every handler, so that a work
 // package that builds an operation replaces its stub file with a file of its own and never edits this table.
 //
@@ -167,6 +180,9 @@ func (f *Format) buildRoutes() []formats.Route {
 		}
 		return r
 	}
+	blob := route(routeBlobGet, http.MethodGet, "/{name...}/blobs/{digest}", formats.Download, read,
+		matchBlob, []string{"app/blobs/" + dgst, "team/app/blobs/" + dgst}, f.handleBlobGet)
+	blob.ClientDigest = blobClientDigest
 	return []formats.Route{
 		route(routeManifestGetTag, http.MethodGet, "/{name...}/manifests/{tag}", formats.Metadata, read,
 			matchManifestByTag, []string{"app/manifests/1", "library/nginx/manifests/latest"}, f.handleManifestGet),
@@ -177,8 +193,7 @@ func (f *Format) buildRoutes() []formats.Route {
 		route(routeManifestDelete, http.MethodDelete, "/{name...}/manifests/{reference}", formats.Delete, del,
 			matchManifest, []string{"app/manifests/1", "team/app/manifests/" + dgst}, f.handleDeleteManifest),
 
-		route(routeBlobGet, http.MethodGet, "/{name...}/blobs/{digest}", formats.Download, read,
-			matchBlob, []string{"app/blobs/" + dgst, "team/app/blobs/" + dgst}, f.handleBlobGet),
+		blob,
 		route(routeBlobDelete, http.MethodDelete, "/{name...}/blobs/{digest}", formats.Delete, del,
 			matchBlob, []string{"app/blobs/" + dgst}, f.handleDeleteBlob),
 

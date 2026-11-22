@@ -1548,6 +1548,19 @@ type Route struct {
 	APIKey   bool     // the route accepts a credential in the format's API-key header besides Authorization (NuGet X-NuGet-ApiKey, R-NUGET-012); examined only there, first (Q-ARCH-266)
 	TokenScheme bool  // the route accepts "Authorization: Token <quader token>", the scheme the Galaxy clients send (R-ANS-006); examined only there, from the dispatcher's own match (Q-ANS-4, ADR-191)
 	Wiki     bool     // the route serves only wiki content (R-AUTHZ-034): the dispatcher's coarse check decides it with the part wiki; kit check 15 requires the kind Metadata or Computed and the action read
+	ClientDigest ClientDigest // whether every client checks the body against a digest it knew (storage.md R-STOR-071); the zero value streams
+}
+
+// ClientDigest says whether every client of the format compares the whole body of the route's answer with a
+// digest it knew before the request and refuses the bytes when they differ (R-STOR-071). Only such a route
+// hands a download to a signed link of the object store (R-STOR-070); the zero value is "does not check".
+// Register refuses a declaration on a route that is no GET of the kind Download, or without Against and Evidence;
+// kit check 20 holds a declaring route to answers through Items().Serve that are the stored blob under its
+// content address (ADR-243, Q-STOR-295). It is an addition: ContractVersion stays 10.
+type ClientDigest struct {
+	Checks   bool   // shown by the clients' source or by a test with the real client
+	Against  string // where the clients' expected digest comes from, e.g. "the digest in the path"
+	Evidence string // the source read or the test that shows it
 }
 
 // ServesClass reports whether the route serves repositories of a class (Classes empty: every class).

@@ -9,7 +9,7 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 656 of 1,186 spec requirements are implemented: a passing test names them and no
+**Status.** 657 of 1,186 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
@@ -3375,7 +3375,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-SIG-078 | The tests of stage 3 and what they cost | P1 | [signatures.md](../spec/signatures.md) |
 | R-STOR-011 (implemented) | Multi-request upload sessions | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
-| R-STOR-071 | The format declares whether its clients check a digest | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-071 (implemented) | The format declares whether its clients check a digest | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-073 | What a link counts and records | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-048 | Client-side encryption of stored content | P2 | [storage.md](../spec/storage.md) |
 | R-STOR-027 (implemented) | Integrity scrub | P1 | [storage.md](../spec/storage.md) |

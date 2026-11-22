@@ -655,6 +655,9 @@ func checkRoutes(f Format, d Descriptor) error {
 		case len(r.Examples) == 0:
 			return fmt.Errorf("%q: route %q has no example", d.ID, r.Name)
 		}
+		if err := checkClientDigest(d.ID, r); err != nil {
+			return err
+		}
 		names[r.Name] = true
 		for _, c := range r.Classes {
 			if !d.Supports(c) {
@@ -687,6 +690,22 @@ func checkRoutes(f Format, d Descriptor) error {
 				}
 			}
 		}
+	}
+	return nil
+}
+
+// checkClientDigest refuses a declaration that the clients of a route check a digest (R-STOR-071, ADR-243) where the serve point could
+// never hand the download to a link, a route that is no GET of the kind Download, and a declaration that does not say what the clients
+// compare against and what shows it: a declaration is a reviewed act with its evidence, never a default.
+func checkClientDigest(id ID, r *Route) error {
+	cd := r.ClientDigest
+	switch {
+	case !cd.Checks:
+		return nil
+	case r.Kind != Download || r.Method != http.MethodGet:
+		return fmt.Errorf("%q: route %q (%s %s) declares that its clients check a digest, which only a GET of the kind download can (R-STOR-071)", id, r.Name, r.Method, r.Kind)
+	case strings.TrimSpace(cd.Against) == "" || strings.TrimSpace(cd.Evidence) == "":
+		return fmt.Errorf("%q: route %q declares that its clients check a digest without saying what they compare against and the evidence that shows it (R-STOR-071)", id, r.Name)
 	}
 	return nil
 }

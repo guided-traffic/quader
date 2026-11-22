@@ -50,6 +50,9 @@ formats.Class: alias catalog.Class
 formats.Client: field DisplayName string
 formats.Client: field ID string
 formats.Client: field Versions []string
+formats.ClientDigest: field Against string
+formats.ClientDigest: field Checks bool
+formats.ClientDigest: field Evidence string
 formats.Commit: field Companions []Companion
 formats.Commit: field CreateOnly bool
 formats.Commit: field Inspection *Inspection
@@ -456,6 +459,7 @@ formats.Revision: field RevSeq RevSeq
 formats.Route: field APIKey bool
 formats.Route: field Action authz.Action
 formats.Route: field Classes []Class
+formats.Route: field ClientDigest ClientDigest
 formats.Route: field Examples []string
 formats.Route: field Handler HandlerFunc
 formats.Route: field Kind RouteKind

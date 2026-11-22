@@ -123,6 +123,50 @@ func TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo(t *testing.T) {
 	}
 }
 
+// TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck lists every registered format with the routes that declare that every client
+// of the format checks a digest (Route.ClientDigest.Checks, ADR-243), the only routes that may hand a download to a signed link of the
+// object store (R-STOR-070). A format added later, or a declaration changed, fails here until its row says so: a declaration is a
+// reviewed act with its evidence, never a default (the rule of evidence and the table of R-STOR-071).
+func TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck(t *testing.T) {
+	want := map[formats.ID][]string{
+		"oci":     {"oci.blob.get"},         // the digest in the path; the manifest by digest declares nothing
+		"npm":     {"npm.tarball.get"},      // dist.integrity of the version
+		"ansible": {"ansible.artifact.get"}, // artifact.sha256 of the collection version; a role archive declares nothing
+		"nuget":   nil,                      // no client's check was read
+		"deb":     nil,                      // apt's hash path was not read
+		"generic": nil,                      // no routes; /files/ is never a link
+		"clamav":  nil,                      // freshclam was not researched, and its routes are Metadata
+	}
+	seen := map[formats.ID]bool{}
+	for _, f := range formats.List() {
+		d := f.Descriptor()
+		seen[d.ID] = true
+		rule, ok := want[d.ID]
+		if !ok {
+			t.Errorf("%s is not in this list: add its row with the routes whose clients check a digest, none without evidence (R-STOR-071)", d.ID)
+			continue
+		}
+		var got []string
+		for _, r := range f.Routes() {
+			if !r.ClientDigest.Checks {
+				continue
+			}
+			got = append(got, r.Name)
+			if r.ClientDigest.Against == "" || r.ClientDigest.Evidence == "" {
+				t.Errorf("%s: route %s declares without what its clients compare against and the evidence", d.ID, r.Name)
+			}
+		}
+		if strings.Join(got, ", ") != strings.Join(rule, ", ") {
+			t.Errorf("%s declares that the clients of %v check a digest, want %v", d.ID, got, rule)
+		}
+	}
+	for id := range want {
+		if !seen[id] {
+			t.Errorf("%s is listed and not registered", id)
+		}
+	}
+}
+
 func TestCatalog(t *testing.T) {
 	t.Run("R-GENERIC-001 R-REPO-003 the generic format is in the catalog and lists only the local class", func(t *testing.T) {
 		f, ok := formats.Lookup("generic")

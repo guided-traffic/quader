@@ -137,6 +137,21 @@ type Route struct {
 	// wiki, so a caller who may read the artifacts and not the wiki is refused as for a missing resource. The kit (check 15)
 	// requires the Kind Metadata or Computed and the action read.
 	Wiki bool
+	// ClientDigest says whether every client of the format checks the whole body of the route's answer against a digest it knew
+	// before the request (storage.md R-STOR-071, Q-STOR-286); only a route that declares it hands a download to a signed link of the
+	// object store (R-STOR-070). Register refuses a declaration on a route that is no GET of the kind Download, or without Against
+	// and Evidence; kit check 20 holds a declaring route to answers through Items().Serve that are the stored blob under its content
+	// address. The zero value is "does not check": the route streams.
+	ClientDigest ClientDigest
+}
+
+// ClientDigest says whether every client of the format compares the whole body of the route's answer with a
+// digest it knew before the request and refuses the bytes when they differ (R-STOR-071). Only such a route
+// hands a download to a signed link of the object store (R-STOR-070); the zero value is "does not check".
+type ClientDigest struct {
+	Checks   bool   // shown by the clients' source or by a test with the real client
+	Against  string // where the clients' expected digest comes from, e.g. "the digest in the path"
+	Evidence string // the source read or the test that shows it
 }
 
 // matcher returns the route's matcher: Match, or the compiled Template.

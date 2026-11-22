@@ -2202,7 +2202,9 @@ R-UI-200, R-UI-201, Q-API-400, Q-UI-950 to Q-UI-955; [operations-and-observabili
 ### ADR-243 · A route declares whether its clients check a digest, and kit check 20 holds it
 
 **Status:** Decided by the planner in the owner's absence — put to the owner. An addition to the format contract frozen by
-[ADR-141](#adr-141--the-format-contract-is-frozen-at-version-1); the contract's version does not change.
+[ADR-141](#adr-141--the-format-contract-is-frozen-at-version-1); the contract's version does not change. Built on 2026-11-22:
+`formats.Route.ClientDigest`, the refusals of `Register`, kit check 20 with its two defects, the three declarations and the table test
+(the builder's decisions Q-STOR-295 and Q-STOR-296). The serve point that reads the declaration is not built.
 
 **Context.** A link replaces Quader's check of the bytes with the client's, which is no loss only where every client of the format checks.
 Which clients check is each format's knowledge, and the owner's standing rule is that a decision taken at one format holds for every format
@@ -2223,8 +2225,8 @@ definitions do not. A format added later streams until its author declares with 
 
 **Revisit condition:** a format whose clients check only some of its answers on one route.
 
-**Spec:** [storage.md](spec/storage.md) R-STOR-071, Q-STOR-286; [architecture.md](spec/architecture.md) R-ARCH-008 (the Go block takes the
-field when it is built).
+**Spec:** [storage.md](spec/storage.md) R-STOR-071, Q-STOR-286, Q-STOR-295, Q-STOR-296; [architecture.md](spec/architecture.md) R-ARCH-008
+(the Go block holds the field).
 
 ## Design invariants
 
@@ -9484,6 +9486,8 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-STOR-292](spec/storage.md#q-stor-292--a-link-is-recorded-as-the-download-it-stands-for) | How is a link recorded? Decided by the planner | (a) as `artifact.downloaded` with `delivery` under `audit.record_downloads`, and the request log's `delivery` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-STOR-293](spec/storage.md#q-stor-293--a-link-is-signed-by-the-connections-runtime-credential) | Which credential signs a link? Decided by the planner | (a) the connection's runtime credential | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-STOR-294](spec/storage.md#q-stor-294--each-connection-proves-at-start-that-a-link-with-the-overrides-works) | How is a store's support of a link with overrides established? Decided by the planner | (a) an optional link check at every start and when the switch is turned on; a failure takes the connection out of links | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-STOR-295](spec/storage.md#q-stor-295--kit-check-20-judges-every-200-a-declaring-route-answers-to-a-get-against-the-stored-blob-and-a-skip-while-a-route-declares-is-refused) | What does kit check 20 judge? Decided by the builder | (a) every `200` a declaring route answers to a `GET`: through `Items().Serve`, a content-address `ETag` equal to the body's SHA-256, the body the stored blob; a case per declaring route; no skip while a route declares | [ADR-243](#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it) |
+| [Q-STOR-296](spec/storage.md#q-stor-296--each-defect-of-check-20-takes-the-exemption-another-check-grants-its-route-so-that-it-fails-check-20-alone) | How do the defects of check 20 fail it alone? Decided by the builder | (a) each with the fixture entry another check grants its route, `NoContent` or `NoBastion`; the option `DeclaresClientDigest` is the conforming variant | [ADR-243](#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it) |
 | [Q-DEB-70](spec/formats/debian.md#q-deb-70--the-stubs-test-keys-have-a-fixed-creation-date-not-an-hour-back) | When are the stub archive's test keys created? | (a) On fixed dates in the past (2026-01-01; the expired key 2024-01-01), so fingerprints are the same in every process | — |
 | [Q-DEB-71](spec/formats/debian.md#q-deb-71--the-openpgp-library-error-classes-bounds-that-default-and-what-the-key-carries) | What does the OpenPGP library return besides the plan's functions? | (a) Four error classes, a `Reason` for failed verifications, zero `Limits` fields that default to the bounds of R-DEB-034, a `Key` that prints as its fingerprint, and imports that keep the primary key alone | — |
 | [Q-DEB-72](spec/formats/debian.md#q-deb-72--verification-a-hash-header-that-does-not-match-ignores-the-signature-signing-subkeys-count-certificates-are-read-strictly) | How does the verifier treat a mismatched Hash header, signing subkeys and unreadable certificates? | (a) A mismatched signature is ignored, signing subkeys count, unreadable certificates are refused | — |

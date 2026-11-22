@@ -170,6 +170,15 @@ const (
 	// RateLimitedStatusDiffers declares the rate-limit status 503 while WriteError answers a rate limit 429, so a Bastion's own
 	// refusals on the format's family would differ from the format's: check 19.
 	RateLimitedStatusDiffers Defect = "rate-limited-status-differs"
+	// DeclaresUnservedBody declares on the tarball route that the format's client checks a digest (Route.ClientDigest) while a
+	// local repository refuses the tarball 501, as a format whose downloads only its remote class serves: no case can show that
+	// the route's downloads are the stored blob, check 20 (storage.md R-STOR-071). Its test lists the route in NoContent with
+	// cases that expect the 501, as the fixture of such a format does, so that checks 7, 16 and 19 accept it (Q-STOR-296).
+	DeclaresUnservedBody Defect = "declares-unserved-body"
+	// DeclaresUnaddressedBody declares on the tarball route that the format's client checks a digest and answers the tarball with
+	// a strong ETag that names a revision instead of the content address: check 20. Its test lists the route in NoBastion, the
+	// exemption check 19 grants such an answer; check 20 grants none (Q-STOR-296).
+	DeclaresUnaddressedBody Defect = "declares-unaddressed-body"
 )
 
 // UndeclaredHeader is the protocol header the defect UndeclaredReplayHeader puts on the package document.
@@ -195,6 +204,16 @@ const VaryUserAgent Option = "vary-user-agent"
 // WithWiki gives the test format wiki content (R-AUTHZ-034): its facts say so and its package document holds the member "readme",
 // which it puts in only for a caller whose Host.WikiReadable says it may read the wiki.
 const WithWiki Option = "with-wiki"
+
+// DeclaresClientDigest declares on the tarball route that the format's client checks a digest (Route.ClientDigest, storage.md
+// R-STOR-071). The tarball is served through Host.Items().Serve under its content address, so the variant passes check 20.
+const DeclaresClientDigest Option = "declares-client-digest"
+
+// ClientDigest is the declaration the tarball route carries with DeclaresClientDigest, DeclaresUnservedBody or DeclaresUnaddressedBody.
+var ClientDigest = formats.ClientDigest{
+	Checks: true, Against: "the integrity of the version in the package document",
+	Evidence: "the kit's test format: its client tf is a model, and the kit's own tests are its evidence",
+}
 
 // ReadmeSample is the README text the format of WithWiki puts into the package document; its fixture lists it as a wiki sample.
 const ReadmeSample = "tf wiki sample: the README of this package"
@@ -426,6 +445,7 @@ func (f Format) Routes() []formats.Route {
 			Name: "tf.tarball.get", Method: http.MethodGet, Template: "/{package}/-/{file}",
 			Examples: []string{"left-pad/-/left-pad-1.0.0.tgz", "@scope/name/-/name-1.0.0.tgz"},
 			Action:   formats.ActionRead, Kind: tarballKind, Match: matcher([]string{"-"}, "file"), Handler: f.tarballGet,
+			ClientDigest: f.tarballDigest(),
 		},
 		{
 			Name: "tf.tarball.put", Method: http.MethodPut, Template: "/{package}/-/{file}",
@@ -457,6 +477,15 @@ func (f Format) Routes() []formats.Route {
 		})
 	}
 	return rs
+}
+
+// tarballDigest is the tarball route's declaration that the client checks a digest: ClientDigest with DeclaresClientDigest or one of
+// the two defects of check 20, else none.
+func (f Format) tarballDigest() formats.ClientDigest {
+	if f.has(string(DeclaresClientDigest)) || f.has(string(DeclaresUnservedBody)) || f.has(string(DeclaresUnaddressedBody)) {
+		return ClientDigest
+	}
+	return formats.ClientDigest{}
 }
 
 // Match implements formats.Format.
@@ -948,6 +977,9 @@ func (w revisionTag) WriteHeader(code int) {
 func (w revisionTag) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 func (f Format) tarballGet(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
+	if f.has(string(DeclaresUnservedBody)) && rq.Repo.Class == formats.Local {
+		return errs.E(errs.NotImplemented, errs.CodeNotImplemented, "A local repository of this variant serves no tarball; its remote class does.")
+	}
 	name := f.norm(rq.Params.Get("package"))
 	t := formats.Target{Package: name, Path: rq.Path.Path, Actions: []formats.Action{formats.ActionRead}}
 	if f.has(string(AuthorizesDocumentForFile)) {
@@ -974,7 +1006,7 @@ func (f Format) tarballGet(ctx context.Context, rq *formats.Request, w http.Resp
 		return err
 	}
 	f.strip(w)
-	if f.has(string(DownloadWithoutContentAddress)) {
+	if f.has(string(DownloadWithoutContentAddress)) || f.has(string(DeclaresUnaddressedBody)) {
 		w = revisionTag{w}
 	}
 	err = rq.Host.Items().Serve(ctx, rq, w, it, formats.ServeStored)

@@ -1480,9 +1480,20 @@ owner's standing rule is that a decision taken at one format holds for every for
 Bastion ([bastion.md](bastion.md) R-BAS-058): those are format-wide and reach the Bastion in its handshake, this one is a fact of one
 route and is read only at the main installation's serve point.
 
+**As built** (2026-11-22, package 1 of [developer/download-links.md](../developer/download-links.md#work-packages)): `formats.Route.ClientDigest`
+and `formats.ClientDigest` ([route.go](../../internal/formats/route.go)), the refusals of `Register` (`checkClientDigest`,
+[formats.go](../../internal/formats/formats.go)), kit check 20 (`formattest.CheckLinks`,
+[checks_links.go](../../internal/formats/formattest/checks_links.go); what it judges:
+[Q-STOR-295](#q-stor-295--kit-check-20-judges-every-200-a-declaring-route-answers-to-a-get-against-the-stored-blob-and-a-skip-while-a-route-declares-is-refused)),
+its two defects with the option `DeclaresClientDigest` in the test format
+([Q-STOR-296](#q-stor-296--each-defect-of-check-20-takes-the-exemption-another-check-grants-its-route-so-that-it-fails-check-20-alone)), the three
+declarations of the table below and the table test. The contract's version stays 10. Nothing reads the declaration before the serve point
+of R-STOR-070 is built (package 2); the client families the table names as still to be shown are shown by that package's end-to-end cases
+before its serve point lands, and a family that takes altered bytes turns its route's declaration back then.
+
 - **The contract's addition** ([ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it);
   [Q-STOR-286](#q-stor-286--the-declaration-is-a-field-of-the-route)). `formats.Route` gains `ClientDigest`; the Go block of
-  [architecture.md](architecture.md) R-ARCH-008 takes it when it is built, as the contract test holds that block to the code:
+  [architecture.md](architecture.md) R-ARCH-008 holds it, as the contract test holds that block to the code:
 
   ```go
   // ClientDigest says whether every client of the format compares the whole body of the route's answer with a
@@ -1530,9 +1541,11 @@ What each format declares (the clients' behaviour read on 2026-11-22 in their so
 Acceptance criteria:
 
 - Unit (`internal/formats`, `internal/formats/formattest`): `Register` refuses a declaring `Metadata` route and a declaration without
-  evidence; each defect fails check 20 and no other check; OCI, npm, NuGet, Debian, Ansible Galaxy, the ClamAV definitions and generic
-  pass it (`TestR_STOR_071_KitCheck20`).
-- Unit (`internal/formats/all`): the table names `oci.blob.get`, `npm.tarball.get` and `ansible.artifact.get` and no other route.
+  evidence (`TestR_STOR_071_RegisterRefusesADeclarationItCannotHold`); each defect fails check 20 and no other check, with the exemption
+  another check grants its route (Q-STOR-296); OCI, npm, NuGet, Debian, Ansible Galaxy, the ClamAV definitions and generic pass it, in
+  each format's `TestR_ARCH_010_Conformance` (`TestR_STOR_071_KitCheck20`).
+- Unit (`internal/formats/all`): the table names `oci.blob.get`, `npm.tarball.get` and `ansible.artifact.get` and no other route
+  (`TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck`).
 - End-to-end, one case in each leg of a format that declares `Checks`, constant in size (R-STOR-070's client case, below).
 
 ### R-STOR-072 · The link: signed for GET, its headers, its host and its life
@@ -5354,6 +5367,47 @@ stored type.
 | (c) Trust the documentation | | | Not documented for the provider that matters |
 
 **Choice:** (a). **Applied in the spec:** R-STOR-074.
+
+### Q-STOR-295 · Kit check 20 judges every 200 a declaring route answers to a GET, against the stored blob, and a skip while a route declares is refused
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-071 asks of a declaring route "a content case it serves with `200` and a body, through `Items().Serve`", whose `ETag`
+is the content address of the body, "so the bytes a client checks are the stored blob's". Open were whether one such case is enough when
+the route has others, what "through `Items().Serve`" is measured by, whether the body is compared with the stored blob or only with its
+`ETag`, and whether the check may be skipped. Read on 2026-11-22: kit check 16 already holds every `GET` of a `Download` route that a case
+serves to the admission of `Items().Serve`, and check 19 every such answer to a content-address `ETag` equal to its body's SHA-256, unless
+`NoContent` or `NoBastion` lists the route.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every `GET` case a declaring route answers `200` is held: the in-memory host recorded the item `Items().Serve` served, a body, a content-address `ETag` equal to the body's SHA-256, and the body's SHA-256 is the one of a stored item the request served; at least one such case per declaring route; a skip of the check is refused while a route declares; `NoContent` and `NoBastion` do not reach it (chosen) | Every answer the serve point could hand to a link is judged as the link would deliver it | A declaration cannot rest on one good case beside answers that are not the stored blob; the exemptions of checks 7, 16 and 19 cannot carry a declaration | A route only remote or virtual repositories serve cannot declare, since the kit's cases run on the fixture's class (local unless it says otherwise) |
+| (b) One case per declaring route suffices, the others are not judged | The specification's minimum | Fewer failures to read | A route whose other answers are rendered by the format would declare all the same |
+| (c) The `ETag` alone, as check 19 judges it | | Nothing new to compute | An answer the format changed on its way out under a matching `ETag` passes, and a link would deliver the stored object instead |
+
+**Choice:** (a). A format that declares nothing passes the check without a skip, as NuGet, Debian, the ClamAV definitions and generic
+do. **Applied in the spec:** R-STOR-071; code: kit check 20 ([checks_links.go](../../internal/formats/formattest/checks_links.go)).
+
+### Q-STOR-296 · Each defect of check 20 takes the exemption another check grants its route, so that it fails check 20 alone
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-071 asks for the defects `DeclaresUnservedBody` and `DeclaresUnaddressedBody`, each failing check 20 "and no other
+check". Measured on 2026-11-22 with the test format's unchanged fixture: a declaring tarball route refused in a local repository fails
+checks 7, 16, 17, 19 and 20; one written by the handler itself (`WritesOwnDownload`) fails 16, 17, 19 and 20; one answered with a revision
+as `ETag` fails 19 and 20. Every way a declaring route can miss check 20 is one that checks 16 and 19 already catch, unless the route
+carries the exemption those checks grant: `NoContent` (a route whose cases only refuse) or `NoBastion` (an answer without a content
+address by design).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each defect is a format variant, and its test gives it the fixture entry such a format would carry: `DeclaresUnservedBody` refuses the tarball `501` in a local repository and is listed in `NoContent` with cases that expect it; `DeclaresUnaddressedBody` answers the tarball with a revision as `ETag` and is listed in `NoBastion`. The test format declares nothing by default; the option `DeclaresClientDigest` is the conforming variant (chosen) | The two tests show the one thing check 20 adds: the exemptions of the other checks do not carry a declaration | The test format and its fixture stay as they are; the defects model a remote-only route (as Ansible Galaxy's role archive) and a route without a content address | The defect alone, with the unchanged fixture, fails checks 19 or 7, 16 and 17 as well |
+| (b) A route of its own in the test format for the defect (a `Download` route only the remote class serves, listed in `NoContent` in the base fixture) | One more route every check of the kit runs over | The unchanged fixture shows check 20 alone | A route that exists only for one defect; every kit test of the test format serves it |
+| (c) The defects fail check 20 together with checks 16, 17 and 19 | | No fixture entry in the test | Contradicts the specification's "and no other check"; the test cannot show what check 20 adds |
+
+**Choice:** (a). `TestR_STOR_071_KitCheck20` runs each defect with its entry over every check but check 6 and asserts that check 20 fails
+alone, and that check 20 is not skipped while a route declares. **Applied in the spec:** R-STOR-071; code:
+[testformat](../../internal/formats/formattest/testformat/format.go), [format_test.go](../../internal/formats/formattest/testformat/format_test.go).
 
 ### Q-STOR-7 · Status code for an exceeded quota
 
