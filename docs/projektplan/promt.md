@@ -63,6 +63,12 @@ Hard rules, also for every subagent (put them into every subagent prompt):
    - **Features in parallel, at most four builders.** Each builder owns a whole feature end to end (for example OCI remote with its
      mirror, OCI virtual, APT local, APT remote), not a slice of 14 small work packages that share files. More than four builders
      overload the host (load 80 to 160 on 20 cores on 2026-11-08), and the overload turned tests into false failures.
+     **Planners and researches do not count against the four** (owner, 2026-11-22, 14:36: "Ja, Planen under Recherchen
+     zählen nicht gegen die 4", after he had asked where the rule comes from). The four are builders: agents that run
+     tests, the integration stack or a kind cluster. Whatever carries a builder's test load counts as one, whatever it is
+     called, and a long integration run of the development agent weighs like one (measured that minute: load 16 to 21 on
+     20 cores with three builders, one planner, such a run and 19 containers). Whose number the four was, his or the
+     proposal's he chose on 2026-11-08, could not be shown: his recorded words do not hold it.
    - **No review subagents during ALPHA.** No code reviewer, security auditor, penetration tester, architecture reviewer or
      re-check round after a builder. A builder's work lands once its own gates are green: the unit tests of the touched packages,
      the integration areas it touches (one run each, through the slot wrapper), lint, `make cyclo`, `make generate-check`, the
@@ -1694,8 +1700,41 @@ runs are in `git log`; this section holds the current state.
   package).
 - **The chart's package of the several connections is at work again since 14:05** with A's commit: its rebase,
   the tests that pass the rendered configuration to the binary, and the proof of the development profile on a
-  kind cluster of its own. At 14:21 its commit stands on A's rebased commit with a clean tree; it has not
-  reported.
+  kind cluster of its own. **It reported at 14:36** (one commit of the type `feat` on A's commit; rebased with A
+  onto `main` by the development agent at 14:37, without a conflict). **Built:** the chart renders the list
+  of connections and gives an element without an identifier the identifier `default`, as the binary does; a
+  connection's Secrets are one entry of `secrets.storageConnections`, found by `connectionId`, each field a
+  volume of its own under `/var/run/secrets/quader/s3-<id>…`; a provisioner's bucket, region and endpoint
+  reach a pod as files, so no Secret of the store is an environment variable any more; the backup's pods get
+  every connection's location, CA and read login and never its runtime keys; the migration Job and the scanner
+  pods mount nothing of a connection; the alerts are per connection (every connection down is critical, one of
+  several a warning; backlog, damaged copy, scrub behind, detached), each with a firing and a silent case; the
+  chart's value set of the tests has two connections; the values block of the specification is the chart's
+  again. **The chart refuses the values of the one store at rendering** with a sentence that names the new
+  keys, and every refusal of R-HA-072 names the element by index and identifier. Decisions Q-HA-393 to
+  Q-HA-398, among them: the backlog alert leaves out a connection that is still filling, by a gauge the
+  reconciliation's package has to export (393); an element without an identifier is `default`, which
+  corrected a disagreement between R-HA-072 and R-STOR-050 (394); the backup and the journal replay read the
+  first connection alone until the binary knows the others, so their values name the first connection's
+  logins (396). **Its gates:** chart lint over 22 value sets, the whole of the chart tests, build, the full
+  unit run, generate-check, the evidence regenerated with links, check and the count test, and the lint exit
+  0; the wording scan is clean. **The proof on a cluster ran on a reduced installation, not on the development
+  profile,** because the machine's container memory was three quarters in use by other clusters: one node, plain
+  PostgreSQL, Valkey and an object store, one connection with static keys from an entry; the migration ran,
+  `api`, `packages` and `worker` became available, the start check wrote the marker, and a file pushed to a
+  generic repository came back the same. **Not verified:** the development profile on a cluster (TLS, the CA
+  mount, the backup's login, the operators), which the render tests and the binary's validator over the
+  rendered values cover and the pipeline's end-to-end legs run; the alerts whose metrics later packages
+  export stay silent until then (a list in the chart's tests names each metric with its package, which
+  removes its line).
+- **A finding before the landing, in repair since 14:38:** the README, the developer pages, the security page of
+  the transport encryption and above all the manual of the administrator (its table of the store's keys, the
+  installation, TLS, backup, limitations, operations, the runbook) still describe the keys of the one store as
+  current, about 35 places in 13 files; package A's build plan had left the manual to the last package, but
+  what a page says of a removed key is wrong the moment the change lands (rule "document immediately"). The
+  builder of package A corrects them as one commit of the type `docs` on top of the two, every key read from
+  the configuration's code and the chart; the three land in one push once that commit and the development
+  agent's integration run (20 areas passed at 14:36, the others run) are done.
 - **In work since 2026-11-22, 14:22: the planner of the handover per blob to a Bastion** (the owner's decision
   12, option b: a short-lived link of the object store and, on an encrypted connection, the data key of that
   one blob, so a Bastion reads large content from the store itself; no account and no key above the blob's own
