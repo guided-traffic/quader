@@ -3699,6 +3699,12 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
 23. **A copy between two encrypted connections (Q-STOR-308):** (a) always a new data key, so a leak at one
     connection never reaches another, at the price of the server-side copy between two encrypted connections of
     one provider (specified); (b) the data key is carried and wrapped under the other storage key; (c) a setting.
+25. **The object gateway of his cluster and signed links:** his cluster runs the 19.2.3 release of its object store,
+    and the line's release notes name a security defect of signed links for uploads that is repaired in 19.2.6
+    and whole in 19.2.7 (read by a research on 2026-11-22, not checked on his cluster). Quader signs links for
+    downloads alone; still, (a) he brings the gateway to 19.2.7 or newer before the switch for signed links is
+    turned on there (the development agent's advice); (b) he leaves it. Whatever he chooses for Quader, the
+    defect concerns every other use of signed upload links on that gateway.
 24. **Object names in a backup's pool (Q-BAK-65):** (a) the pool keeps digest names, so a reader of the backup's
     target can confirm known files, which adds nothing while the database files beside them are plain
     (specified); (b) keyed names in the pool, together with the backup's own encryption; (c) a plain pool.
@@ -3980,8 +3986,25 @@ that reads the bucket**
   hand; its address is inside the cluster, so signed links need a public address there before a client outside
   can follow one; his chart follows every new release on its own, so the values of his installation are
   rewritten to the list of connections in the step the release with package A and the chart is published (the
-  chart refuses the old values at rendering, which leaves the running pods in place until then). A reading of
-  that gateway's documentation is queued behind the planner of the second stage. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
+  chart refuses the old values at rendering, which leaves the running pods in place until then). **The reading of
+  that gateway's documentation and source ended at 13:22** (the 19.2 line at its newest tag, its release notes and
+  tracker, the operator's documentation; nothing run against a gateway; his cluster runs 19.2.3). *Supported, by
+  the documentation or the source:* ranged reads, copies and copies of parts, a copy with replaced metadata (in
+  the source, not in the documentation; refused for a source above 5 GiB and for one under the store's own
+  encryption), tagging, versioning, object lock, signed links with the response headers a link asks for, and
+  read-after-write with listing for a single zone. *Not there:* **no additional checksum of an upload in the 19.2
+  line** (it comes with the next major line), so only `Content-MD5` and a signed SHA-256 of the payload are
+  verified; conditional writes exist but are ignored at the completion of a multipart upload and, in buckets with
+  versioning, were ignored before 19.2.7 and are not atomic. *Two defects of the line that concern him:* a copy of
+  an object onto itself lost data in 19.2.1 (repaired in 19.2.2, so his 19.2.3 has the repair), and **signed links
+  for an upload had a security defect until 19.2.6** (whoever held one could add headers and read every object
+  its signer may read; repaired in 19.2.6, whose repair broke such links with a content type until 19.2.7).
+  Quader signs links for downloads alone, and whether a download link was open to the same is not stated in
+  what was read; **the development agent's advice for his list: the gateway of his cluster is at 19.2.7 or newer
+  before signed links are switched on there** (number 25 above). *The provisioner:* the Secret of a claimed
+  bucket holds the two keys, its user is limited to that bucket, and a read-only user needs a user of its own
+  with a policy. *Nothing about annotations.* The builder of the first stage's package A was told what bears on
+  the start check (no additional checksum to rely on, no conditional write, the copy's limits). **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
   the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
