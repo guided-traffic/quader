@@ -1617,10 +1617,56 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
-- **In work since 01:43: the second half of the second stage's screens,** the last package of the
-  signatures: Quader's own signature and its receipt in the details of a version, a file and an image (never
-  as the badge), with the members of the API they need (the decoded receipt and how an image's receipt is
-  served), rendered at every width.
+- **In work since 02:28: the cause of two red runs of `integration (shard b)`.** In two of the three runs that
+  ended since the fourth shard was cut, one test of the area `limits` failed, a different one each time and
+  both about usage rows: at 00:35 the test of section 12 B (one request charged to an address that is none
+  of the test's own), and at 02:16, in the run of the receipt attestations (44967924325), the test that a
+  fetch through a team's virtual repository records that repository ("the usage row … did not happen
+  within 10 s"). Before 23:44 the area had passed in every run of the day. One agent reads both jobs' logs
+  beside the green run's, decides between a fault of the product that one of the night's changes brought,
+  a fault of the tests' isolation that timing now shows, and the runners' load with a fourth stack, tries
+  to reproduce it under the lock within about ten runs, and repairs what it can establish. **The rest of
+  that run (01:42 to 02:27) is green:** the nine end-to-end legs, among them `oci` with the two cases of the
+  real cosign on the pipeline's runner; the layout job in 44.9 minutes; the shards a, c and d in 35.0, 30.5
+  and 34.9 minutes, shard b red after 33.4.
+- **Landed on 2026-11-22 at 02:29: Quader's own signature and its receipt on the screens (the second half of
+  stage 2's package 4), and with it the second stage and the whole of the signatures are on `main`** (the
+  rest of R-SIG-055 and R-SIG-056; decisions Q-SIG-233 to Q-SIG-239, gap H-1241; its builder worked from
+  01:43 to 02:27; no migration). **The API:** each entry of the signatures' answers that Quader issued
+  carries who issued it, the receipt as read back from its stored bundle (the time of receipt, the origin,
+  the signatures it names with their states, the malware state with its database, the vulnerability state
+  with its grade; no second copy that could disagree, Q-SIG-234) and how it is served, as a referrer or
+  through the API, with the reason for an image. **At a version, a file and an image:** npm's signature of
+  this installation reads "Origin confirmed by registry · this installation" with its key and a sentence
+  that it confirms where a version was published, not who built it; the receipt is a block of its own
+  under **Attestations** with when it was issued, the malware verdict it holds, how it is served and why,
+  and its download, the rest of the statement one fold further; neither carries a badge, and the sentence
+  that no trust anchor knows the signer is gone from Quader's own entries. An artifact without a
+  publisher's signature that lists Quader's or a registry's entries says "No signature of the publisher"
+  where it had said that none was found (Q-SIG-235). A retired identity's entry says that it is no longer
+  served. **The section "Signing identity"** shows the job's backlog in one quiet line. **Seen with a real
+  identity:** on a stack of its own the builder imported an identity of a CA it made; the job signed 51 npm
+  versions and issued 12 receipts, and the version's page in a browser showed the real entries, the
+  receipt of an infected package with "Malware found", and the download of the bundle. **Its gates, each
+  exit 0:** build, the full unit run, generate-check, the evidence, the complexity check, the lint, the
+  UI's install, tests, lint, layout tests and build; under the lock the areas `signing`, `signatures` and
+  `ansiblelocal`; the renders of every signature and signing screen at 1,440, 1,024 and 390 px, light and
+  dark, none failed, no layout finding. **Looked at by the development agent** (rule 11): a local npm
+  version with a publisher's provenance, Quader's signature and the receipt with its fold open (wide,
+  light); an image with an older cosign signature whose receipt is served through the API with the reason
+  in a sentence (1,024 px, light); and the builder's picture of the real entries on its stack. The blocks
+  read in the order a person asks: who built it, who published it, what this installation saw. **By the
+  development agent on the commit as it landed, each exit 0:** build, the full unit run, generate-check,
+  the evidence regenerated without a difference, links and check, the complexity check, the lint, the UI
+  tests (1,935) and lint, the layout tests, the build in both languages, the API's types and the
+  translation source regenerated without a difference; the diff holds no name the white-label rule
+  forbids; no change of the chart. The owner's UI backend started with it before the push. **Its release was cut at 02:42.** **Its
+  tests cost** milliseconds of unit tests, about 0.25 s of UI tests, and an estimated 6 s of the layout job
+  (two states, 12 pictures; the job stands at 45 of its 75 minutes). **Not verified:** a real receipt
+  served as a referrer, and one held back because of an older signature, in a browser (the renders and the
+  integration assertions alone); the German texts in a browser. **A gap it names (H-1241):** a receipt
+  that still waits for its checks is not shown at the artifact, only counted in the backlog line. Its
+  worktree and branch are removed.
 - **Landed on 2026-11-22 at 01:42: the receipt attestations (stage 2, package 3)** (R-SIG-044, R-SIG-051 to
   R-SIG-054 and their parts of R-SIG-055 to R-SIG-059; decisions Q-SIG-180 to Q-SIG-192, gaps H-1215 to
   H-1217; migration 00105; the format contract is at version 10; what it built is in its report, in the
@@ -3399,7 +3445,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   landed since 20:58 the same day and nothing signs with it yet; its section of the settings page is landed
   since 21:47; npm's registry signatures are landed since 23:44, proven with the real `npm audit signatures`;
   the receipt attestations are landed since 2026-11-22, 01:42, proven with the real `cosign
-  verify-attestation`; the second half of the screens is in work (run record)**). **One signing
+  verify-attestation`; the second half of the screens is landed since 02:29 (run record): the second stage
+  is whole. To use it his installation needs a signing identity, by one value of the chart or by the
+  admin area's section; whether his issuer signs such a certificate is among the questions below
+  (Q-SIG-53)**). **One signing
   identity per installation:** an ECDSA P-256 key with a code-signing certificate of the company's CA. By the
   chart it is an existing Secret or a certificate the chart asks cert-manager for, mounted into the worker pods
   alone and read again without a restart, never in the database; by the admin area Quader makes the key, seals
