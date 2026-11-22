@@ -1841,7 +1841,11 @@ runs are in `git log`; this section holds the current state.
   updated, no pod that is not running, no restart; his values needed no change). **The timer's check at
   17:13:** the reconciliation's commit stands moved onto the landing stack with a clean tree and has not
   reported; the repair of the statement budget, package B and the rest of package E are at work; the long
-  legs of this push's run, the Bastion's among them, run, and no code is pushed before they have ended. What the
+  legs of this push's run, the Bastion's among them, run, and no code is pushed before they have ended.
+  **The whole run ended in success, read at 17:44** (every job, the Bastion's and the registry's end-to-end
+  legs and the four integration shards among them), so nothing of the pipeline holds the next push. At 17:44
+  the machine's load stood at 64 on 20 cores, with four builders in their gates at once; a test that fails
+  in such a minute is run again alone before it counts. What the
   cache's package is, as its builder reported it at 15:09 (one commit
   of the type `feat`, 36 files; its builder worked from 14:00 to 15:09; rebased onto `main` by the development
   agent without a conflict, with the row of the manual for the new Secret added from its builder's sentence).
