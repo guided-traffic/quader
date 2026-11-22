@@ -1637,6 +1637,11 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
+- **In work since 2026-11-22, 10:51: the planners of the storage topic's first and third stage** (several
+  connections with the reconciliation and the scrub; signed links). The owner answered all fifteen decisions
+  of its working paper by 10:48, each as the development agent's favourite at that time, two of them changed
+  that morning by his own objections ("With the owner", the topic of 2026-11-22). The planner of the second
+  stage, encryption, starts when the first stage's specification is on `main`.
 - **In work since 2026-11-22, 10:26: package A of "a Bastion serves every format"** (the two contracts and the
   kit's nineteenth check; one builder in a worktree). The owner decided it at 09:46 ("With the owner", decided
   on 2026-11-22): images and Debian were kept from the Bastion by two deferrals of the development agent, not
@@ -3707,6 +3712,27 @@ that reads the bucket**
   connection and not by project: an object belongs to exactly one connection and, by the deduplication, to any
   number of projects. The paper has the table of the keys since 10:37; the wording of decision 4 no longer
   speaks of a derived key family, which a sealed row does not need.
+  **Answered by him on 2026-11-22 between 09:21 and 10:48, read at 10:48 on his word** "Ich habe die Fragen
+  beantwortet, lese sie ein". **All fifteen decisions as the development agent's favourite at the time he
+  answered:** (1) a format of Quader's own; (2) the wrapped data key once, at the object, the option his own
+  objection brought; (3) no level of keys per project or repository; (4) the existing key ring is the root;
+  (5) keyed names on an encrypted connection, with the note "Ggf. optional?"; (6) a new connection is not
+  encrypted unless told; (7) a connection's properties are fixed, changing them is a new connection; (8) an
+  upload is done on one connection; (9) connections in the chart; (10) the scrub that reads and repairs; (11)
+  signed links as a switch of the installation with its conditions; (12) (b), the handover per blob to a
+  Bastion, which lifts his Q-BAS-10 for a link and a data key per released blob and for nothing else; (13) the
+  Bastion's cache encrypted; (14) three stages; (15) the storage keys once, sealed in the database. **His note at
+  decision 5, read and decided by the development agent:** the keyed names become a detail of an encrypted
+  connection, on by default and fixed once the connection holds data, as every property of a connection is
+  (decision 7); it costs next to nothing, because the plain name exists for the connections that are not
+  encrypted anyway, and on a connection that is not encrypted it is not offered, since the content there is
+  readable in any case. **Not answered:** the eight readings and the question which stores his own installation
+  shall get; every reading is covered by a decision he took, and the question is needed only when a provider is
+  measured. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
+  the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
+  identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
+  tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
+  and after the Bastion serves every format.
 
 **A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
 open questions are in the list above**
