@@ -2176,6 +2176,20 @@ runs are in `git log`; this section holds the current state.
   **Before it lands** its builder adapts it to the repair below it (one call of the changed signature, its
   own helper for a connection's name), extracts the translation source instead of the two units written by
   hand, and exports the gauge of a detached connection, which nobody exports yet and its state query gives.
+  **Moved onto the landing stack and adapted, reported at 18:07** (one commit on the stack's top, no conflict; every
+  gate exits 0 again, with the store's, the coordination's and the API's integration areas and the web gates;
+  no test failed in this round). The call of the changed signature and the connection's name follow the
+  repair; the translation source is the extraction's, and a second extraction changes nothing; **the gauge of
+  a detached connection is exported** (a connection that is not retired, holds a copy and that no live replica
+  configures; as fresh as the replicas' heartbeats, which the alert's 15 minutes cover), so no metric of this
+  package is left on the chart tests' list. It corrected seven sentences of the manual and the README that
+  the documentation's correction had brought in and that its change made false. **A finding of the way of
+  working:** the scratchpad is shared, and two builders overwrote each other's commit message file; the
+  message was not used, the builders at work are told to prefix their files, and briefs say so from now on.
+  **The scrub's builder moves its package onto this commit since 18:07** (one mark of a damaged copy, the
+  reconciliation's; the two calls of the changed signature; the audit event of a detected damage; and whether
+  the reconciliation closes its gap of a failed repair and its scrub the reconciliation's gap of a drain
+  that waits).
   What it was at its start:
   (the job with its queue and
   its pass, copies made by the store and copies streamed through Quader, the bound on inserts, drain, retire,
