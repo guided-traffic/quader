@@ -96,17 +96,18 @@ deploy/helm/quader/
 │   ├── endpoints-pool.yaml     an endpoint with a pool of its own
 │   ├── roles-pools.yaml        a path pool of api and of packages, two worker pools, an autoscaler, a mixed endpoint with pools
 
-│   └── s3-provisioner.yaml     bucket, region, endpoint and credentials from one provisioner Secret, the backup on with a read-only login
+│   └── connections.yaml        two object-store connections: one from a provisioner's Secret, one with static keys and a private CA; the backup on with a read-only login each
 └── templates/
     ├── _helpers.tpl        names, labels, image, byte and duration parsing, spool budget, config
     ├── _secrets.tpl        the Secret mounts of a pod, as one list used for volumes and mounts
+    ├── _storage.tpl        the object-store connections: the elements with their ids and *_file keys, the mounts of secrets.storageConnections, backup.source, the refusals (R-HA-072)
     ├── _pod.tpl            probes, topology spread, downward-API variables
     ├── _validate.tpl       fail-fast validation (R-HA-029), endpoint validation (R-EP-008)
     ├── _units.tpl          the Deployments as data (quader.units), surface roles, endpoints per pod, replica counts
     ├── _edge.tpl           the edge's path rules (quader.edgeRules), read by the Ingresses and the BackendTLSPolicies
     ├── _validate_roles.tpl roles, pools, autoscalers, spool and memory budgets
     ├── _deployment.tpl     one Deployment of a unit
-    ├── _endpoints.tpl      endpoint defaults, quader.yaml block, mounts, S3 settings from a Secret
+    ├── _endpoints.tpl      endpoint defaults, quader.yaml block, mounts
     ├── _notes.tpl          the text of NOTES.txt
     ├── _tls.tpl            the kinds of pod with a pair (quader.tlsKindTable), their names and Secrets, the edge's backend settings
     ├── _vuln.tpl           the image scanning's links and checks, the scan listener both scannings read through
@@ -137,6 +138,7 @@ deploy/helm/quader/
 |---|---|
 | `_helpers.tpl` | `quader.fullname` (release name, or `<release>-quader`, never cut; `quader.validateNames` in `_validate.tpl` refuses one too long for the names built from it, [Q-HA-374](../spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)), `quader.labels` / `quader.selectorLabels`, `quader.image` (digest wins over tag), `quader.bytes` and `quader.seconds` (parse sizes and durations; they fail on anything else, so a typo never becomes a wrong budget), `quader.spoolBudget`, `quader.config` |
 | `_secrets.tpl` | `quader.secretMounts` builds one list per scope (`runtime` for the Deployments, `migrate` for the Job); `quader.secretVolumes` and `quader.secretVolumeMounts` render it |
+| `_storage.tpl` | the object-store connections (R-HA-072): `quader.connectionId` (an element without one is `default`), `quader.connectionEntry`, `quader.connectionManagedKeys` (the `*_file` keys an entry and `trustedCA.useForObjectStore` set), `quader.storageConnectionsConfig` (the list in `quader.yaml`), `quader.storageSecretMounts` (the volumes per scope, joined into `quader.secretMounts`), `quader.backupSourceConfig`, `quader.journalConnection`, `quader.validateStorageMoved` (the values of the one store of before) and `quader.validateStorage` |
 | `_units.tpl` | `quader.units`, the one list of Deployments; `quader.unitEndpoints` (which endpoint ports a pod opens, R-EP-002); `quader.poolValues`; `quader.connectionCounts` |
 | `_validate.tpl`, `_validate_roles.tpl` | every `fail` of R-HA-029, each message naming the offending value |
 | `deployments.yaml` | one loop over `quader.units`, so no role can drift from another; the same `quader.deployment` renders a pool |
@@ -209,7 +211,6 @@ The chart sets these variables and no others (R-HA-030):
 | `QUADER_POOL_NAME` | the pool's name, `ep-<name>` for an endpoint pool | the pods of a pool (R-HA-062, R-EP-002) |
 | `QUADER_JOBS_QUEUES` | the pool's `queues` as a JSON list, `["vuln"]` | a worker pool |
 | `QUADER_JOBS_EXCLUDE_QUEUES` | the sorted union of the worker pools' queues as a JSON list | the main `worker` while a pool lists a queue |
-| `QUADER_STORAGE_S3_BUCKET`, `..._REGION`, `..._ENDPOINT` | `secretKeyRef` into `secrets.s3.existingSecret`, only for the keys named by `secrets.s3.bucketKey`, `regionKey`, `endpointKey` (the settings of an S3 provisioner's Secret; not credentials) | every Deployment |
 | `QUADER_STORAGE_SPOOL_MAX_BYTES` | spool size minus `spool.headroom`, in bytes; not set when `config.storage.spool.max_bytes` is set | every Deployment |
 | `GOMAXPROCS` | `resourceFieldRef requests.cpu`, only when the role has no CPU limit | every Deployment |
 | `TMPDIR` | `/tmp` | every Quader pod |
@@ -222,13 +223,16 @@ The chart sets these variables and no others (R-HA-030):
 
 `quader.config` (in `_helpers.tpl`) renders `config` merged with the keys the chart manages. The
 chart-managed keys win, and setting one inside `config` fails the render naming it
-(`config.storage.spool.dir`, `config.database.password_file`, `config.secrets.active_key_id`, …).
+(`config.storage.spool.dir`, `config.database.password_file`, `config.secrets.active_key_id`, …). The list
+`storage.connections` is rendered whole by `quader.storageConnectionsConfig`, because a merge replaces a list: each element of
+`config.storage.connections` with its `id` and the `*_file` keys of its entry (see [The object-store connections](#the-object-store-connections)).
 
 ### Secrets
 
 Every Secret is pre-existing; the chart never creates one. Each is mounted read-only with `items`
 (only the named keys), `defaultMode: 0440`, no `subPath`, so a rotation reaches the files, and
-never as an environment variable (the one exception is the non-secret S3 settings above, see [S3 from a provisioner's Secret](#s3-from-a-provisioners-secret)). A mount exists only in the pods that read it.
+never as an environment variable, not even a provisioner's bucket, region and endpoint, which are files too (see
+[The object-store connections](#the-object-store-connections)). A mount exists only in the pods that read it.
 
 | Value | Keys (default names) | Mount path | Config key set by the chart | Pods |
 |---|---|---|---|---|
@@ -237,11 +241,12 @@ never as an environment variable (the one exception is the non-secret S3 setting
 | `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/quader/database-ca/` | `database.ssl_root_cert_file` | all |
 | `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/database-client/` | `database.ssl_cert_file`, `database.ssl_key_file` | all |
 | `secrets.encryption` | the names in `secrets.encryption.keys` | `/var/run/secrets/quader/encryption/` | `secrets.encryption_key_files` (ordered), `secrets.active_key_id` (first entry without `.key`) | every Deployment, the same Secret (R-HA-027) and the restore Job, which checks that it opens every key ID of the backup (R-BAK-020); the migration Job and the backup pods never mount it (R-HA-030, R-BAK-012) |
-| `secrets.s3` (`source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/s3/` | `storage.s3.credentials.access_key_id_file`, `..._secret_access_key_file` | every Deployment, the restore Job (it writes the bucket) and the post-restore Job; not the backup pods |
-| `secrets.s3CA` | `ca.crt` (the Secret's `key`) | `/var/run/secrets/quader/s3-ca/` | `storage.s3.ca_file` (also refused inside `config`) | every Deployment, the backup pods and the restore Job; never the migration Job |
+| `secrets.storageConnections[]` `existingSecret` (element with `credentials_source: static`) | `access-key-id`, `secret-access-key`, `session-token` (with `sessionTokenKey`) | `/var/run/secrets/quader/s3-<id>/` | the element's `access_key_id_file`, `secret_access_key_file`, `session_token_file` (always refused inside `config`) | the role Deployments, the restore Job (it writes the bucket) and the post-restore Job; not the backup pods |
+| `secrets.storageConnections[]` `bucketKey`, `regionKey`, `endpointKey` | `bucket`, `region`, `endpoint` | `/var/run/secrets/quader/s3-<id>-location/` | the element's `bucket_file`, `region_file`, `endpoint_file` (refused inside `config` while the entry sets them) | the same pods and the backup pods |
+| `secrets.storageConnections[]` `ca` | `ca.crt` (the field's `key`) | `/var/run/secrets/quader/s3-<id>-ca/` | the element's `ca_file` (refused inside `config` while set) | the same pods and the backup pods; never the migration Job |
 | `secrets.backupTarget` (`config.backup.target.credentials.source: static`) | `access-key-id`, `secret-access-key`, `session-token` (with `sessionTokenKey`) | `/var/run/secrets/quader/backup-target/` | `backup.target.credentials.access_key_id_file`, `..._secret_access_key_file`, `..._session_token_file` (all three refused inside `config`) | the backup pods and the restore Job; no Deployment, not the migration Job |
-| `secrets.journalReader` (`journalCredentials.source: static` of `postRestore` or `restore`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/journal-reader/` | none; the credentials file names the paths | the post-restore Job and the restore Job only |
-| `secrets.backupSource` (`config.storage.s3.credentials.source: static`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/backup-source/` | `backup.source.credentials.*` and `backup.source.separate_credentials` (refused inside `config`, Q-BAK-49) | the backup pods only; they do not mount `secrets.s3` |
+| `secrets.storageConnections[]` `journalReader` (`journalCredentials.source: static` of `postRestore` or `restore`) | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/s3-<id>-journal/` | none; the credentials file names the first connection's paths ([Q-HA-396](../spec/ha-and-helm.md#q-ha-396--until-the-backup-and-the-journal-read-every-connection-the-chart-names-the-first-connections-read-login-and-journal-reader)) | the post-restore Job and the restore Job only |
+| `secrets.storageConnections[]` `backupSource` | `access-key-id`, `secret-access-key` | `/var/run/secrets/quader/s3-<id>-backup/` | the first connection's in `backup.source.separate_credentials` and `credentials`, the form the backup reads until it reads every connection ([Q-HA-396](../spec/ha-and-helm.md#q-ha-396--until-the-backup-and-the-journal-read-every-connection-the-chart-names-the-first-connections-read-login-and-journal-reader); `backup.source` refused inside `config`, Q-BAK-49) | the backup pods only; they do not mount the connection's runtime keys |
 | `secrets.backupTargetCA` | `ca.crt` (the Secret's `key`) | `/var/run/secrets/quader/backup-target-ca/` | `backup.target.ca_file` (refused inside `config`, Q-HA-146) | the backup pods and the restore Job |
 | `secrets.valkey` | `username` (omit with `usernameKey: ""`), `password` | `/var/run/secrets/quader/valkey/` | `valkey.username_file`, `valkey.password_file` | every Deployment |
 | `secrets.valkeySentinel` | `username` (default: none), `password` | `/var/run/secrets/quader/valkey-sentinel/` | `valkey.sentinel.username_file`, `valkey.sentinel.password_file` | every Deployment |
@@ -250,7 +255,7 @@ never as an environment variable (the one exception is the non-secret S3 setting
 | `secrets.breakGlass` | `password` (the Secret's `key`) | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file` (also refused inside `config`); without the Secret `auth.break_glass.enabled: false` | `api` pods (main, pools, endpoint pools); never `packages`, `worker`, the Job or backup pods (R-AUTH-014, R-AUTH-042, Q-HA-79) |
 | `secrets.oidc[]` (`providerId`, `existingSecret`, `key`) | `client-secret` (the entry's `key`) | `/var/run/secrets/quader/oidc-<providerId>/` | `auth.oidc.providers.<providerId>.client_secret_file` (refused inside `config` for a listed provider) | `api` pods only (R-AUTH-004, R-AUTH-042, Q-HA-79) |
 | `secrets.metricsToken` (`config.metrics.auth: static`) | `token` | `/var/run/secrets/quader/metrics/` | `metrics.bearer_token_file` | every Deployment |
-| `trustedCA` (`existingSecret` or `existingConfigMap`, `keys`) | the names in `trustedCA.keys` (default `ca-bundle.crt`) | `/etc/quader/ca/` | appended to `proxy.outbound.tls.ca_files` after the operator's own; with `useForObjectStore` the one file is `storage.s3.ca_file` (refused with `secrets.s3CA`) | every pod of the release: the Deployments and all Jobs ([Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)); the entry of `quader.secretMounts` named `trusted-ca` has `configMap` instead of `secret` for a ConfigMap source |
+| `trustedCA` (`existingSecret` or `existingConfigMap`, `keys`) | the names in `trustedCA.keys` (default `ca-bundle.crt`) | `/etc/quader/ca/` | appended to `proxy.outbound.tls.ca_files` after the operator's own; with `useForObjectStore` the one file is the `ca_file` of every connection whose entry has no `ca` | every pod of the release: the Deployments and all Jobs ([Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)); the entry of `quader.secretMounts` named `trusted-ca` has `configMap` instead of `secret` for a ConfigMap source |
 | `<fullname>-tls-<kind>` (the chart's Certificate) or `tls.existingSecrets.<kind>` | `tls.crt`, `tls.key`; `ca.crt` where a link verifies | `/var/run/secrets/quader/tls/` | `server.tls.certificates[0]`; `server.internal_tls.ca_file` | the pods of that kind only, see [Mounts follow the kinds](#mounts-follow-the-kinds); never a Job |
 | `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/` | `server.tls.client_ca_file`, `server.tls.client_auth` | the pods that open :8080 (`api`, `packages`, their path pools), not an endpoint pool |
 | `endpoints.<name>.tls.existingSecret`, each of `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position in `tls.certificates`) | `server.endpoints.<name>.tls.certificates` | the pods that serve the endpoint (the main Deployments of the roles its surface holds, or its pools) |
@@ -426,16 +431,36 @@ Deployments or with an empty `networkPolicy.from`.
 
 Not rendered: `gateway.*` (HTTPRoute, BackendTLSPolicy per endpoint; the default endpoint has none either).
 
-### S3 from a provisioner's Secret
+### The object-store connections
 
-An object-store provisioner writes one Secret with the credentials and the location. `secrets.s3.existingSecret` names it;
-`accessKeyIdKey` and `secretAccessKeyKey` name the credential keys (mounted as files with `credentials.source: static`);
-`bucketKey`, `regionKey` and `endpointKey` name the keys that become `QUADER_STORAGE_S3_BUCKET`, `..._REGION` and
-`..._ENDPOINT` by `secretKeyRef`. The environment wins over the file, so `config.storage.s3.bucket` may stay empty; the
-chart's bucket check accepts `bucketKey` instead. [ci/s3-provisioner.yaml](../../deploy/helm/quader/ci/s3-provisioner.yaml)
-shows the key names of one provisioner (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION`,
-`S3_ENDPOINT`). Its endpoint is a host without a scheme, which the binary treats as https. The migration Job does not
-read these variables (it uses no object store).
+R-HA-072, [_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl). `config.storage.connections` is the binary's list
+(storage.md R-STOR-050) and reaches `quader.yaml` whole: each element with its `id` filled in (the element without one is
+`default`) and the `*_file` keys the chart sets. A list given in the values replaces the default one whole, so an element carries
+only what it sets; its other keys have the binary's defaults. One connection is one element with a bucket.
+
+The Secrets of a connection are one entry of `secrets.storageConnections`, keyed by `connectionId` like `secrets.oidc[]`
+([Q-HA-390](../spec/ha-and-helm.md#q-ha-390--each-connections-secrets-are-an-entry-of-one-list-keyed-by-the-connection)). Each
+field is a volume `secret-s3-<id>[-location|-ca|-backup|-journal]` of its own, because the pods that read it differ:
+
+| Entry field | Volume, mount path | Keys set in the element | Pods |
+|---|---|---|---|
+| `existingSecret` with `credentials_source: static` | `secret-s3-<id>`, `/var/run/secrets/quader/s3-<id>/` | `access_key_id_file`, `secret_access_key_file`, `session_token_file` | role Deployments, restore, post-restore |
+| `bucketKey`, `regionKey`, `endpointKey` (keys of `existingSecret`) | `secret-s3-<id>-location`, `…/s3-<id>-location/` | `bucket_file`, `region_file`, `endpoint_file`; an empty plain key is left out | the same and the backup pods |
+| `ca` | `secret-s3-<id>-ca`, `…/s3-<id>-ca/` | `ca_file` | the same and the backup pods |
+| `backupSource` | `secret-s3-<id>-backup`, `…/s3-<id>-backup/` | the first connection's in `backup.source` (`quader.backupSourceConfig`, while `backup.enabled`); the others are mounted for the backup per connection of R-BAK-030 | the backup pods |
+| `journalReader` | `secret-s3-<id>-journal`, `…/s3-<id>-journal/` | the credentials file names the first connection's | restore, post-restore with `journalCredentials.source: static` |
+
+A provisioner writes one Secret with the credentials and the location; one entry names it and its key names
+([ci/connections.yaml](../../deploy/helm/quader/ci/connections.yaml) shows `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`). The location keys are projected without the credentials into the backup pods, which read
+the bucket with their own login. The binary reads the `*_file` keys once at start (R-STOR-050), so a provisioner that changes the
+bucket of a Secret needs a rollout; a change of a key name changes `quader.yaml` and with it `checksum/config`. The migration Job
+and the scanner pods mount nothing of a connection.
+
+The values of the one store of before (`config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource`,
+`secrets.journalReader`) are refused first, by `quader.validateStorageMoved`, with the keys that took their place; the schema
+declares them as description-only markers so that Helm's own schema check does not refuse them first with a message that names no
+new key ([Q-HA-395](../spec/ha-and-helm.md#q-ha-395--the-values-of-the-one-store-are-refused-by-the-templates-with-the-keys-that-took-their-place)).
 
 ## The scanner
 
@@ -556,10 +581,10 @@ tests in `chart_test.go` assert both, row by row.
 
 | Row | State |
 |---|---|
-| `config.server.base_url`, `config.database.host`, `secrets.database.existingSecret`, `config.storage.s3.bucket` empty (not when `secrets.s3.bucketKey` names the bucket in the S3 Secret) | implemented |
-| `secrets.s3.bucketKey`, `regionKey`, `endpointKey` without `secrets.s3.existingSecret` | implemented |
+| `config.server.base_url`, `config.database.host`, `secrets.database.existingSecret` empty | implemented |
+| the object-store connections (R-HA-072, `quader.validateStorage`): the list empty or not a list, more than 8 elements, an `id` outside `^[a-z][a-z0-9-]{0,30}[a-z0-9]$`, two elements with one `id` (also two without one, both `default`, [Q-HA-394](../spec/ha-and-helm.md#q-ha-394--an-element-without-id-is-default-in-the-chart-as-in-the-binary)); an element without `bucket` and without `bucketKey`, or with a plain `bucket`, `region` or `endpoint` beside its file; `credentials_source: static` without an entry with `existingSecret`; an entry that names no element or a connection twice, a `*Key` without `existingSecret`, an `existingSecret` nothing reads ([Q-HA-398](../spec/ha-and-helm.md#q-ha-398--what-of-an-element-the-chart-manages-and-an-entry-that-nothing-reads)); `encrypted: true`; `drain: true` on every element; `storage.replication.min_copies` outside 1 to the elements without `drain`; two elements at one location (normalised endpoint, bucket, prefixes that contain each other; skipped where the bucket or the endpoint comes from a file); a key file of an element, or a `*_file` key its entry or `trustedCA.useForObjectStore` sets | implemented, each naming the element by index and id, or the entry |
+| the values of the one store of before: `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource`, `secrets.journalReader` (`quader.validateStorageMoved`, checked first) | implemented, naming the keys that took their place ([Q-HA-395](../spec/ha-and-helm.md#q-ha-395--the-values-of-the-one-store-are-refused-by-the-templates-with-the-keys-that-took-their-place)) |
 | endpoints: a `port` that is missing, 8080, 8081 or another endpoint's; an invalid name or a Service name over 63 characters; a missing or non-origin `baseUrl`; a host in two endpoints, a wildcard host that covers another endpoint's host or is shared; an invalid wildcard host; `ui` in a further endpoint's `surface`; `extraSecrets`, `clientCaSecret`, `existingSecret` without `tls.enabled`; a pool below two replicas or without a budget under `enforce`; `config.server.endpoints` set (managed); `auth.clientCertificates` without `tls.clientCaSecret`, beside `auth.anonymous`, or on `default`; `ingress.tlsPassthrough` without `tls.enabled` or `tls.existingSecret`, with `ingress.tls`, with a surface of both roles, or with `traefik` (R-EP-008) | implemented, each naming `endpoints.<name>.<key>` |
-| `credentials.source: static` without `secrets.s3.existingSecret` | implemented |
 | `secrets.encryption.existingSecret` or `.keys` empty (prints the creation command of R-HA-027) | implemented |
 | `highAvailability.enforce` with fewer than 2 replicas (`replicaCount`, or the autoscaler's `minReplicas`), a disabled PDB, a host spread that is not `DoNotSchedule` or lacks `nodeTaintsPolicy: Honor` | implemented, per Deployment (role, pool, endpoint pool) and for custom constraints |
 | `api`, `packages` or `worker` below 1 replica | implemented, naming `<role>.replicaCount` (`.autoscaling.minReplicas`) |
@@ -588,9 +613,10 @@ tests in `chart_test.go` assert both, row by row.
 | `backup.enabled` (or `restore.enabled`) without `config.backup.target.bucket` | implemented, naming the value |
 | a `<fullname>` too long for a name built from it alone (`quader.validateNames`): the Service and certificate name `<fullname>-<kind>` of every kind of `quader.tlsKindTable`, rendered or not, `<fullname>-ops`, `<fullname>-packages-scan` and the Jobs `-migrate`, `-restore`, `-post-restore-<8 hex>` (63 each), the CronJob `<fullname>-backup` (52); the bound is computed, today 37 from `<fullname>-malware-updater-freshclam` ([Q-HA-374](../spec/ha-and-helm.md#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)) | implemented, naming the name, its length, and the longest release name and `fullnameOverride` that fit |
 | `backup.schedule` outside the dialect of Quader's cron parser (six or seven fields, `?`, `L`, `W`, `#`, day of week `7`, `@every`, `@reboot`, `TZ=`, `CRON_TZ=`, an unknown macro) | implemented, the reason named; a value out of range and an expression that never fires are Kubernetes's at apply time |
-| the target on the blob store's bucket and endpoint (the endpoints compared as the binary does, no scheme meaning https) without `allow_same_bucket`, or with one prefix containing the other; for any configured target, the backup on or off, because every replica's configuration check refuses it too | implemented, naming both locations |
+| the target on the bucket and endpoint of any connection (the endpoints compared as the binary does, no scheme meaning https) without `allow_same_bucket`, or with one prefix containing the other; for any configured target, the backup on or off, because every replica's configuration check refuses it too; a connection whose bucket or endpoint comes from a file is the binary's to compare | implemented, naming the target and the connection |
+| `backup.enabled` with a connection of `credentials_source: static` whose entry has no `backupSource` (R-BAK-030, Q-BAK-64) | implemented, naming the connection |
 | `config.backup.target.credentials.source: static` without `secrets.backupTarget.existingSecret` while `backup.enabled` or `restore.enabled` renders a Job that mounts it | implemented, naming both |
-| `postRestore.enabled` without an RFC 3339 `postRestore.restoredTo`, together with `restore.enabled`, or with `journalCredentials.source: static` and no `secrets.journalReader.existingSecret`; `skipRevocationJournal` with a credentials source | implemented, naming the values |
+| `postRestore.enabled` without an RFC 3339 `postRestore.restoredTo`, together with `restore.enabled`, or with `journalCredentials.source: static` and no `journalReader` in the entry of the first connection (also for `restore`); `skipRevocationJournal` with a credentials source | implemented, naming the values |
 | `restore.enabled` without `restore.backupId` (its form is the command's to check); with a replica count above 0 or an autoscaler on any role, pool or endpoint pool | implemented, naming `restore.enabled` and the value; the replica minimums do not apply meanwhile (Q-HA-148) |
 | a chart-managed key of the backup set inside `config` (`backup.manual_run`, `backup.target.ca_file`, the three credential files) | implemented |
 | pooler (`session_host`, control endpoint), the Gateway the chart creates, `contentOrigin` | with those features |
@@ -644,7 +670,7 @@ before it loads anything). Valkey is in neither. The files of the target are cha
 `extraEnvFrom` (Q-HA-149): what a Job mounts is what its values and its scope say.
 
 **TLS.** The Jobs open no listener, so they mount none of the listener material. Every link they open is TLS-capable like the replicas':
-the database with `verify-full` and `secrets.databaseCA` and `databaseClientCert`, the blob store with `secrets.s3CA`, the target with
+the database with `verify-full` and `secrets.databaseCA` and `databaseClientCert`, each connection with the `ca` of its entry, the target with
 `secrets.backupTargetCA` (Q-HA-146) or the system trust store. All of them are directory mounts without `subPath`, so a rotated Secret
 reaches the files; whether a running process re-reads a CA is the binary's, and a Job lives hours at most.
 
@@ -676,7 +702,7 @@ keeps the old keyspace until it restarts.
 | `postRestore.restoredTo` | required, RFC 3339; the argument `--restored-to` |
 | `postRestore.skipRevocationJournal` | `--skip-revocation-journal`; refused together with a `journalCredentials.source` other than `runtime` |
 | `restore.journalCredentials.source` | the same three sources for the restore Job (`--journal-credentials-file /etc/quader/restore/credentials.yaml`, ConfigMap `<fullname>-restore`), Q-HA-159 |
-| `postRestore.journalCredentials.source` | `runtime`: no file, the replay lists with the blob store's credential. `default`: the chart renders `credentials.yaml` (`source: default`) into the ConfigMap `<fullname>-post-restore` and passes `--credentials-file`, so the identity of the Job's ServiceAccount lists object versions (`postRestore.serviceAccount.annotations`). `static`: the same file names `secrets.journalReader` (`access-key-id`, `secret-access-key`), mounted in this Job only |
+| `postRestore.journalCredentials.source` | `runtime`: no file, the replay lists with the blob store's credential. `default`: the chart renders `credentials.yaml` (`source: default`) into the ConfigMap `<fullname>-post-restore` and passes `--credentials-file`, so the identity of the Job's ServiceAccount lists object versions (`postRestore.serviceAccount.annotations`). `static`: the same file names the `journalReader` of the first connection's entry of `secrets.storageConnections` (`/var/run/secrets/quader/s3-<id>-journal/`), mounted in the restore and post-restore Jobs only (Q-HA-396) |
 | `postRestore.backoffLimit`, `activeDeadlineSeconds`, `terminationGracePeriodSeconds`, `resources`, `podAnnotations`, `extraEnv`, `serviceAccount.*` | as for the restore Job |
 
 The Job is named `<fullname>-post-restore-<8 hex digits of the sha256 of restoredTo>` and carries the annotation `quader/restored-to`, so the Jobs of two restore points stay visible side by side; a repeat of the same point is a Job of the same name, which Helm replaces and the command answers without running its steps again (Q-HA-161), and NOTES prints a reminder to set `postRestore.enabled` back to false. Every role, pool and endpoint pool must be at zero (the rule of `restore.enabled`, H1 of the audit): the hook runs after the Deployments are applied, so a replica would serve the restored database before the journal replay.
@@ -684,7 +710,7 @@ The Job is named `<fullname>-post-restore-<8 hex digits of the sha256 of restore
 The scope `post-restore` of `quader.secretMounts` mounts the owner login (`secrets.databaseMigration`, else `secrets.database`), the CA and
 client certificate of the database, the blob store's keys and CA, and the journal credential; no Valkey Secret, no key ring, nothing of the
 backup target. Validation: `postRestore.restoredTo` must be an RFC 3339 time, `postRestore.enabled` with `restore.enabled` is refused (a
-backup restore runs the clean-up itself), `static` needs `secrets.journalReader.existingSecret`. Test: `TestR_HA_025_PostRestoreJob`.
+backup restore runs the clean-up itself), `static` needs the `journalReader` of the first connection's entry. Test: `TestR_HA_025_PostRestoreJob`.
 
 ## The values reference
 
@@ -699,18 +725,21 @@ same change; a feature that arrives takes its prefix out of `unbuiltPrefixes`.
 
 `metrics.prometheusRule.enabled` renders one PrometheusRule `<fullname>`, group `<fullname>`: every alert of
 [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) except `disabledAlerts`, then `extraRules`, with `labels` on the object. With
-`backup.enabled` the rule holds 35 alerts; without it the last six, the alerts of the backup runs, are left out (29 alerts, Q-HA-17),
+`backup.enabled` the rule holds 41 alerts; without it the last six, the alerts of the backup runs, are left out (35 alerts, Q-HA-17),
 because with no CronJob no run succeeds and `QuaderBackupStale` would fire one interval after every installation that leaves the backup
 off. A name of the six stays a valid entry of `disabledAlerts` either way. The order: `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`,
-`QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
+`QuaderObjectStoreUnreachable` (every connection down on every replica), `QuaderObjectStoreConnectionUnreachable` (one of several down, Q-HA-391),
+`QuaderObjectStoreUnreachableSingleReplica` (per connection), `QuaderStorageReplicationBacklog` (not for a filling connection,
+[Q-HA-393](../spec/ha-and-helm.md#q-ha-393--the-replication-backlog-alert-leaves-a-filling-connection-out-by-a-gauge-of-its-own)), `QuaderStorageCopyDamaged`,
+`QuaderStorageScrubBehind`, `QuaderStorageConnectionDetached` (R-STOR-060), `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
 `QuaderMixedVersions`, `QuaderSpoolNearlyFull` (rows of R-HA-045's table), `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`,
 `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious` (R-VULN-024, Q-VULN-122), `QuaderMirrorFailing`, `QuaderMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-167),
 `QuaderBlobMissing` (a read found the object of a blob missing within the
-hour, R-HA-024, Q-STOR-152), `QuaderGCStale`, `QuaderBackupCheckFailed` (R-HA-023), `QuaderRevocationJournalBacklog` (R-HA-054), `QuaderRevocationJournalQuarantined` (a row set aside, Q-HA-162), `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`,
+hour, R-HA-024, Q-STOR-152), `QuaderBlobCorrupt` (no connection holds a blob whole, R-STOR-052), `QuaderGCStale`, `QuaderBackupCheckFailed` (R-HA-023), `QuaderRevocationJournalBacklog` (R-HA-054, per connection), `QuaderRevocationJournalQuarantined` (a row set aside, Q-HA-162), `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`,
 `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement` (rows of the table), `QuaderBackupStale`,
 `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage` and `QuaderBackupVerifyFindings` (R-BAK-014). Severities are in the spec's table (`critical`:
 `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderValkeyUnavailable`, `QuaderValkeyPrimaryDisagreement`,
-`QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderBlobMissing`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalQuarantined`, `QuaderBackupStale`, `QuaderBackupFailed`,
+`QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderBlobMissing`, `QuaderBlobCorrupt`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalQuarantined`, `QuaderBackupStale`, `QuaderBackupFailed`,
 `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`; the others `warning`).
 
 **The platform check.** `QuaderBackupCheckFailed` is `min(quader_backup_check_ok) == 0` for an hour. The gauge is exported by every replica
@@ -733,7 +762,11 @@ series, so a drain followed by a successful retry never fires `QuaderBackupFaile
 spool gauges are `quader_spool_used_bytes` and `quader_spool_free_bytes`, the pool metrics are in
 [internal/meta/postgres/metrics.go](../../internal/meta/postgres/metrics.go) and
 [internal/app/wire_gauges.go](../../internal/app/wire_gauges.go), the queue ages in the `JobQueueGauges` query. `TestR_HA_045_PrometheusRule` fails
-for an expression that reads a `quader_*` name no code under `internal/` registers.
+for an expression that reads a `quader_*` name no code under `internal/` registers, except the metrics of the object-store alerts that a
+later package of the several connections registers (`metricsOfLaterPackages` in
+[prometheusrule_test.go](../../test/chart/prometheusrule_test.go), each with its package of the build plan in
+[blob-store.md](blob-store.md#several-connections-the-build-plan)); the package that registers one removes its line.
+Until then the alert reads a series that does not exist and stays silent.
 
 - `QuaderReplicasNotReady` reads kube-state-metrics: `min by (deployment)` of `kube_deployment_status_replicas_available` for the Deployments
   `<fullname>-(api|packages|worker)(-.*)?`, the main Deployments and their pools (`<fullname>-<role>-<pool>`); a Deployment
@@ -778,7 +811,7 @@ is where the coverage generator reads the IDs from.
 
 | Test (subtest prefix) | Asserts |
 |---|---|
-| `R-HA-043` (`TestR_HA_043_TrustedCA`) | the bundle of a Secret or a ConfigMap is mounted without `subPath` at `/etc/quader/ca/` in every Deployment and Job, its files follow the operator's `ca_files`, `useForObjectStore` sets `storage.s3.ca_file`, PostgreSQL's CA stays apart, the refusals name the value |
+| `R-HA-043` (`TestR_HA_043_TrustedCA`) | the bundle of a Secret or a ConfigMap is mounted without `subPath` at `/etc/quader/ca/` in every Deployment and Job, its files follow the operator's `ca_files`, `useForObjectStore` sets the `ca_file` of every connection without a `ca` of its own, PostgreSQL's CA stays apart, the refusals name the value |
 | `R-HA-050` (`TestR_HA_050_SizingProfiles`) | each file of `profiles/` renders on [operator-minimum.yaml](../../test/chart/testdata/operator-minimum.yaml) and the rendered replicas, autoscalers, resources, spool and `max_conns` equal the row of the table in the specification |
 | `R-HA-028` | lint passes for every set; no Secret, RBAC, CRD or subchart; names follow the fullname rule; standard labels |
 | `R-HA-002` | every Deployment runs the `--role` its name says (`api`, `packages`, `worker`), never `web` or `all`; `api`/`packages`/`worker` replicas below 1 fail naming the key; each role Service selects the main pods of its role; the pool label is in the selectors |
@@ -821,10 +854,11 @@ is where the coverage generator reads the IDs from.
 | `R-HA-019` | hook annotations and weights, `podFailurePolicy`, same `quader.yaml`, nothing from Valkey or S3; disabled renders no Job |
 | `R-HA-056` | Valkey wiring reaches `api`, `packages` and `worker` only |
 | `R-EP-008` (`TestEndpoints`) | two endpoints render two Services (own port, selecting the main packages pods), two Ingresses (class, hosts incl. the wildcard, TLS entry, backend), the port rules in the packages policy, the `server.endpoints` block and the default endpoint's hosts; mounts of the pairs without `subPath`; backend TLS per controller; the pool (Deployment of the role, PDB, Service, spread selector, policy with the operations port, no port on the main pods); NOTES; each validation row |
-| `R-HA-030`, `R-HA-029` (`TestS3ProvisionerSecret`) | bucket, region, endpoint by `secretKeyRef`, credentials as files with only their two keys, the Job reads none, the bucket is required unless the Secret carries it |
+| `R-HA-072` (`TestR_HA_072_OneConnection`) | one element with a bucket renders that element with its `id` and no pod mounts an object-store Secret; static keys mount `s3-default` with the two keys into `api`, `packages`, `worker` and set the element's two files, the backup pod mounts the read login instead; key names and a session token are projected under the chart's file names; a `ca` is mounted as `ca.crt` in the roles and the backup pod |
+| `R-HA-072` (`TestR_HA_072_SeveralConnectionsAndAProvisioner`, on `ci/connections.yaml`) | a provisioner's Secret renders `bucket_file`, `region_file`, `endpoint_file` and leaves the plain keys out; the writing pods mount both connections' keys, every reading pod the location and the CA, the backup pod no runtime key, the migration Job and the scanners nothing; `backup.source` with the first connection's read login; the journal reader of the first connection in the restore Job only |
+| `R-HA-072`, `R-HA-029` (`TestR_HA_072_Refusals`, `TestR_HA_072_MovedValues`, `TestR_HA_072_AnInstallationMoves`) | every refusal of R-HA-072 names the value and the connection; the values of the one store of before fail naming the new keys; an installation's values of before fail and its values of after render the same store |
 | `R-HA-030` (`TestTLSMountsFollowTheListeners`) | the listener pair is mounted by the pods that load it: everywhere without `tls.ops`; with it, not into the worker, into an endpoint pool only while an endpoint it serves has no pair of its own; the client CA reaches the main `packages` pods and not an endpoint pool |
 | `R-HA-030`, `R-AUTH-014`, `R-AUTH-042` (`TestLoginSecrets`) | `secrets.breakGlass` and `secrets.oidc[]` mount a directory of the Secret read-only without `subPath` into `api` pods only (main, pools, endpoint pools; not `packages`, `worker` or the Job), render the config paths, take a different key, leave `enabled` alone with a Secret and render `auth.break_glass.enabled: false` without; the validation rows; the rendered file passes `quader admin config validate` |
-| `R-HA-030` (`TestS3CA`) | `secrets.s3CA` mounts read-only without `subPath` with the one projected key, renders `storage.s3.ca_file`, stays out of the Job; without it nothing is rendered and `config.storage.s3.ca_file` is refused |
 | `R-HA-063`, `R-HA-030` (`TestTLS`, `TestTLSMountsFollowTheListeners`) | the Certificate per kind with its names and usages; each kind mounts its own Secret only, without `subPath`; neither issuer nor Secrets, both, or one Secret for two kinds fail; HTTPS probes, config paths, `appProtocol`; the edge's name per Service, an Ingress per kind for ingress-nginx; opt-out renders no TLS wiring; no TLS mount in the migration Job; client CA and `ops_tls` separation; per-controller Ingress settings (HAProxy Ingress default, verification and client-certificate rules); one `BackendTLSPolicy` per role Service; every value set agrees between config and probe scheme |
 
 Not covered by these tests (needs a cluster): that the pods start in a restricted namespace, that

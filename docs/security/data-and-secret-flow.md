@@ -14,16 +14,16 @@ The rules are the code's; the requirement pages are linked.
 ## Where credentials live
 
 Credentials are files. The chart mounts each one from an existing Secret and names only the path in the configuration.
-No credential is an environment variable: the chart injects only non-secret object-store settings from the provisioner's
-Secret through `secretKeyRef` (`QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`;
-[_endpoints.tpl](../../deploy/helm/quader/templates/_endpoints.tpl), `quader.s3EnvFromSecret`). The chart never creates a Secret
-([values.yaml](../../deploy/helm/quader/values.yaml), `secrets`).
+No Secret becomes an environment variable, not even the non-secret bucket, region and endpoint that an object-store provisioner writes
+beside the keys: they are files under `/var/run/secrets/quader/s3-<id>-location/` that the connection's `bucket_file`, `region_file` and
+`endpoint_file` name ([_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl), [ha-and-helm.md](../spec/ha-and-helm.md)
+R-HA-072). The chart never creates a Secret ([values.yaml](../../deploy/helm/quader/values.yaml), `secrets`).
 
 | Credential | Where it lives | When a process reads it | Where it is not |
 |---|---|---|---|
 | PostgreSQL user and password | files under `/var/run/secrets/quader/database/` | on every new connection ([postgres/connect.go](../../internal/meta/postgres/connect.go), `beforeConnect`) | the connection string carries neither ([connString](../../internal/meta/postgres/connect.go)) |
 | Valkey user and password, Sentinel user and password | files under `/var/run/secrets/quader/valkey/` and `valkey-sentinel/` | on every connection attempt, through `AuthCredentialsFn` ([cluster/valkey_auth.go](../../internal/cluster/valkey_auth.go)) | the process holds the values only while it authenticates |
-| Object-store access key and secret | files under `/var/run/secrets/quader/s3/` (`static`), or the SDK's default chain, or a web-identity token file | the static files at most once per second ([blob/s3/credentials.go](../../internal/blob/s3/credentials.go), `fileReread`) | the default chain: see [H-74](privilege-footprint.md#h-74--the-default-object-store-credential-chain-can-reach-node-metadata) |
+| Object-store access key and secret, per connection | files under `/var/run/secrets/quader/s3-<id>/` (`credentials_source: static`, the entry of `secrets.storageConnections` with that id), or the SDK's default chain, or a web-identity token file | the static files at most once per second ([blob/s3/credentials.go](../../internal/blob/s3/credentials.go), `fileReread`) | the default chain: see [H-74](privilege-footprint.md#h-74--the-default-object-store-credential-chain-can-reach-node-metadata) |
 | Metrics bearer token | file `metrics.bearer_token_file` | on every request to `/metrics` with `auth: static` ([observability/metrics.go](../../internal/observability/metrics.go), `authorized`) | not logged |
 | OTLP headers | file `tracing.headers_file`, `Name: value` per line | once, when the exporter is built ([observability/otlp.go](../../internal/observability/otlp.go)) | not in the configuration |
 | Stored-secret key ring | files under `/var/run/secrets/quader/encryption/`, one per key | once, at start ([wire_keys.go](../../internal/app/wire_keys.go), `secrets.Load`) | see [H-55](../spec/architecture.md#h-55--key-files-of-the-stored-secret-key-ring-are-read-once-at-start-up) |

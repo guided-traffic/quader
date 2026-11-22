@@ -142,7 +142,7 @@ Bytes of a Kubernetes memory quantity: an integer, a binary unit (Ki, Mi, Gi, Ti
 {{/*
 What one request may hold, for the memory slots of R-ARCH-005 step 4 (Q-ARCH-240): the buffer of a
 verified download (storage.download.buffer_size, at least twice hold_back and 4 KiB, rounded up to
-a power of two), storage.s3.http.receive_window and 128 KiB. internal/app/memory.go computes the same.
+a power of two), storage.object_store.http.receive_window and 128 KiB. internal/app/memory.go computes the same.
 */}}
 {{- define "quader.requestBytes" -}}
 {{- $cfg := .Values.config -}}
@@ -155,7 +155,7 @@ a power of two), storage.s3.http.receive_window and 128 KiB. internal/app/memory
 {{- $class = mul $class 2 -}}
 {{- end -}}
 {{- end -}}
-{{- add $class (include "quader.bytes" (dig "storage" "s3" "http" "receive_window" "256KiB" $cfg) | int64) 131072 -}}
+{{- add $class (include "quader.bytes" (dig "storage" "object_store" "http" "receive_window" "256KiB" $cfg) | int64) 131072 -}}
 {{- end -}}
 
 {{/*
@@ -252,15 +252,8 @@ keys win; setting one inside config is refused by quader.validate.
 {{- end -}}
 {{- $_ := set $vk "tls" $tls -}}
 {{- $_ := set $managed "valkey" $vk -}}
-{{- if eq (dig "storage" "s3" "credentials" "source" "" .Values.config) "static" -}}
-{{- $_ := set (get $managed "storage") "s3" (dict "credentials" (dict "access_key_id_file" "/var/run/secrets/quader/s3/access-key-id" "secret_access_key_file" "/var/run/secrets/quader/s3/secret-access-key")) -}}
-{{- end -}}
-{{- if $s.s3CA.existingSecret -}}
-{{- $st := get $managed "storage" -}}
-{{- $s3 := get $st "s3" | default (dict) -}}
-{{- $_ := set $s3 "ca_file" "/var/run/secrets/quader/s3-ca/ca.crt" -}}
-{{- $_ := set $st "s3" $s3 -}}
-{{- end -}}
+{{- /* The object-store connections (R-HA-072): the whole list, each element with its id and the *_file keys of its entry of secrets.storageConnections and of trustedCA.useForObjectStore (templates/_storage.tpl). */ -}}
+{{- $_ := set (get $managed "storage") "connections" (include "quader.storageConnectionsConfig" . | fromYamlArray) -}}
 {{- if eq (dig "metrics" "auth" "" .Values.config) "static" -}}
 {{- $_ := set $managed "metrics" (dict "bearer_token_file" "/var/run/secrets/quader/metrics/token") -}}
 {{- end -}}
@@ -287,8 +280,8 @@ the whole of what a replica sees of the target's credentials.
 {{- if .Values.backup.enabled -}}
 {{- $_ := set $bk "manual_run" (dict "namespace" .Release.Namespace "cronjob" (printf "%s-backup" (include "quader.fullname" .))) -}}
 {{- end -}}
-{{- if and .Values.backup.enabled (eq (dig "storage" "s3" "credentials" "source" "" .Values.config) "static") -}}
-{{- $_ := set $bk "source" (dict "separate_credentials" true "credentials" (dict "source" "static" "access_key_id_file" "/var/run/secrets/quader/backup-source/access-key-id" "secret_access_key_file" "/var/run/secrets/quader/backup-source/secret-access-key")) -}}
+{{- with include "quader.backupSourceConfig" . | fromYaml -}}
+{{- $_ := set $bk "source" . -}}
 {{- end -}}
 {{- if $bk -}}
 {{- $_ := set $managed "backup" $bk -}}
@@ -345,7 +338,8 @@ Probes and scrapers present no client certificate, which is why a client CA on :
 {{- end -}}
 {{- /*
 The trusted CA bundle (R-HA-043): its files are added to proxy.outbound.tls.ca_files after those the operator listed in config
-(the system roots stay, use_system_roots is not touched), and with useForObjectStore the one file is storage.s3.ca_file.
+(the system roots stay, use_system_roots is not touched); with useForObjectStore the one file is the ca_file of every connection
+without a ca of its own, which quader.storageConnectionsConfig sets.
 */ -}}
 {{- $ca := .Values.trustedCA -}}
 {{- if or $ca.existingSecret $ca.existingConfigMap -}}
@@ -357,12 +351,6 @@ The trusted CA bundle (R-HA-043): its files are added to proxy.outbound.tls.ca_f
 {{- $caFiles = append $caFiles (printf "/etc/quader/ca/%s" .) -}}
 {{- end -}}
 {{- $_ := set $managed "proxy" (dict "outbound" (dict "tls" (dict "ca_files" $caFiles))) -}}
-{{- if $ca.useForObjectStore -}}
-{{- $st := get $managed "storage" -}}
-{{- $s3 := get $st "s3" | default (dict) -}}
-{{- $_ := set $s3 "ca_file" (printf "/etc/quader/ca/%s" (first $ca.keys)) -}}
-{{- $_ := set $st "s3" $s3 -}}
-{{- end -}}
 {{- end -}}
 {{- /* The links of both scannings (R-HA-066, R-HA-068, templates/_vuln.tpl and templates/_malware.tpl). */ -}}
 {{- include "quader.scannerManagedConfig" (dict "root" . "managed" $managed) -}}

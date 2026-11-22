@@ -41,9 +41,10 @@ func staticTarget() []string {
 		"secrets.backupTargetCA.existingSecret=quader-backup-ca",
 		"secrets.databaseBackup.existingSecret=quader-db-backup",
 		"secrets.databaseMigration.existingSecret=quader-db-owner",
-		"config.storage.s3.credentials.source=static",
-		"secrets.s3.existingSecret=quader-s3",
-		"secrets.backupSource.existingSecret=quader-blob-read",
+		"config.storage.connections[0].credentials_source=static",
+		"secrets.storageConnections[0].connectionId=default",
+		"secrets.storageConnections[0].existingSecret=quader-s3",
+		"secrets.storageConnections[0].backupSource.existingSecret=quader-blob-read",
 	)
 }
 
@@ -582,11 +583,12 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 		if cm := str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"); strings.TrimSpace(cm) != "source: default" {
 			t.Errorf("credentials.yaml = %q", cm)
 		}
-		_, d = render(t, required(), restoreSets("restore.journalCredentials.source=static", "secrets.journalReader.existingSecret=quader-journal")...)
-		if !has2(secretVolumes(restorePod(d)), "quader-journal") || !strings.Contains(str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"), "journal-reader/access-key-id") {
+		_, d = render(t, required(), restoreSets("restore.journalCredentials.source=static", "secrets.storageConnections[0].connectionId=default",
+			"secrets.storageConnections[0].journalReader.existingSecret=quader-journal")...)
+		if !has2(secretVolumes(restorePod(d)), "quader-journal") || !strings.Contains(str(find(d, "ConfigMap", "quader-restore"), "data", "credentials.yaml"), "/var/run/secrets/quader/s3-default-journal/access-key-id") {
 			t.Error("static: the journal reader is not mounted or named")
 		}
-		renderFails(t, required(), restoreSets("restore.journalCredentials.source=static"), "restore.journalCredentials.source", "secrets.journalReader.existingSecret")
+		renderFails(t, required(), restoreSets("restore.journalCredentials.source=static"), "restore.journalCredentials.source", "journalReader", "connectionId: default")
 		renderFails(t, required(), restoreSets("restore.skipRevocationJournal=true", "restore.journalCredentials.source=default"), "restore.skipRevocationJournal", "journalCredentials")
 	})
 
@@ -633,22 +635,27 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 		renderFails(t, []string{filepath.Join(chartDir, "ci", "roles-pools.yaml")}, restoreSets("packages.autoscaling.enabled=false"), "restore.enabled", ".pools[")
 	})
 
-	t.Run("the target must not be the blob store's bucket on the same endpoint", func(t *testing.T) {
-		same := []string{"config.storage.s3.bucket=quader-blobs", "config.backup.target.bucket=quader-blobs"}
-		renderFails(t, required(), same, "config.backup.target.bucket", "config.storage.s3.bucket", "allow_same_bucket")
+	t.Run("the target must not be a connection's bucket on the same endpoint", func(t *testing.T) {
+		same := []string{"config.storage.connections[0].bucket=quader-blobs", "config.backup.target.bucket=quader-blobs"}
+		renderFails(t, required(), same, "config.backup.target.bucket", "config.storage.connections[0] (default)", "allow_same_bucket")
 		renderFails(t, required(), append([]string{"config.backup.target.prefix=quader/backups", "config.backup.target.allow_same_bucket=true"}, same...),
-			"config.backup.target.prefix", "config.storage.s3.prefix", "quader/backups")
-		renderFails(t, required(), append([]string{"config.backup.target.prefix=quader", "config.storage.s3.prefix=quader/blobs", "config.backup.target.allow_same_bucket=true"}, same...),
-			"config.backup.target.prefix", "config.storage.s3.prefix")
+			"config.backup.target.prefix", "config.storage.connections[0] (default)", "quader/backups")
+		renderFails(t, required(), append([]string{"config.backup.target.prefix=quader", "config.storage.connections[0].prefix=quader/blobs", "config.backup.target.allow_same_bucket=true"}, same...),
+			"config.backup.target.prefix", "config.storage.connections[0] (default)")
 		// Prefixes that do not contain each other pass with the flag, and another endpoint or bucket needs nothing.
-		render(t, required(), append([]string{"config.backup.target.prefix=backups", "config.storage.s3.prefix=blobs", "config.backup.target.allow_same_bucket=true"}, same...)...)
-		render(t, required(), "config.storage.s3.bucket=quader-blobs", "config.backup.target.bucket=quader-backups")
+		render(t, required(), append([]string{"config.backup.target.prefix=backups", "config.storage.connections[0].prefix=blobs", "config.backup.target.allow_same_bucket=true"}, same...)...)
+		render(t, required(), "config.storage.connections[0].bucket=quader-blobs", "config.backup.target.bucket=quader-backups")
 		render(t, required(), append([]string{"config.backup.target.endpoint=https://backups.example.com"}, same...)...)
+		// R-HA-060's criterion, and the rule holds for every connection, not only the first (storage.md R-STOR-050 rule 5).
+		renderFails(t, required(), []string{
+			"config.storage.connections[1].id=archive", "config.storage.connections[1].bucket=quader-archive",
+			"config.backup.target.bucket=quader-archive",
+		}, "config.backup.target.bucket", "config.storage.connections[1] (archive)")
 	})
 	t.Run("the endpoints are compared the way the binary compares them: no scheme means https", func(t *testing.T) {
-		same := []string{"config.storage.s3.bucket=quader-blobs", "config.backup.target.bucket=quader-blobs"}
-		renderFails(t, required(), append([]string{"config.storage.s3.endpoint=s3.example.com", "config.backup.target.endpoint=https://s3.example.com"}, same...), "config.backup.target.bucket")
-		render(t, required(), append([]string{"config.storage.s3.endpoint=s3.example.com", "config.backup.target.endpoint=http://s3.example.com"}, same...)...)
+		same := []string{"config.storage.connections[0].bucket=quader-blobs", "config.backup.target.bucket=quader-blobs"}
+		renderFails(t, required(), append([]string{"config.storage.connections[0].endpoint=s3.example.com", "config.backup.target.endpoint=https://s3.example.com"}, same...), "config.backup.target.bucket")
+		render(t, required(), append([]string{"config.storage.connections[0].endpoint=s3.example.com", "config.backup.target.endpoint=http://s3.example.com"}, same...)...)
 	})
 
 	t.Run("static credentials of the target need secrets.backupTarget.existingSecret", func(t *testing.T) {
@@ -803,13 +810,13 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 	})
 
 	t.Run("the backup pod reads the blob bucket with its own read-only login, never the runtime credential (R-BAK-015)", func(t *testing.T) {
-		if hasMount(backupPod, "/var/run/secrets/quader/s3/") || !hasMount(backupPod, "/var/run/secrets/quader/backup-source") {
+		if hasMount(backupPod, "/var/run/secrets/quader/s3-default/") || !hasMount(backupPod, "/var/run/secrets/quader/s3-default-backup") {
 			t.Errorf("mounts = %v", mountPaths(backupPod))
 		}
 		src := at(configOf(t, docs), "backup", "source")
 		if at(src, "separate_credentials") != true || str(src, "credentials", "source") != "static" ||
-			str(src, "credentials", "access_key_id_file") != "/var/run/secrets/quader/backup-source/access-key-id" ||
-			str(src, "credentials", "secret_access_key_file") != "/var/run/secrets/quader/backup-source/secret-access-key" {
+			str(src, "credentials", "access_key_id_file") != "/var/run/secrets/quader/s3-default-backup/access-key-id" ||
+			str(src, "credentials", "secret_access_key_file") != "/var/run/secrets/quader/s3-default-backup/secret-access-key" {
 			t.Errorf("backup.source = %v", src)
 		}
 		for name, pod := range podSpecs(docs) {
@@ -820,11 +827,15 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		if has(secretVolumes(restore), "quader-blob-read") || !has(secretVolumes(restore), "quader-s3") {
 			t.Errorf("the restore Job writes the blob bucket and needs the runtime credential: %v", secretVolumes(restore))
 		}
-		renderFails(t, required(), backupSets("config.storage.s3.credentials.source=static", "secrets.s3.existingSecret=quader-s3"), "secrets.backupSource.existingSecret", "backup.enabled")
-		render(t, required(), "config.storage.s3.credentials.source=static", "secrets.s3.existingSecret=quader-s3")
+		static := []string{
+			"config.storage.connections[0].credentials_source=static", "secrets.storageConnections[0].connectionId=default",
+			"secrets.storageConnections[0].existingSecret=quader-s3",
+		}
+		renderFails(t, required(), backupSets(static...), "config.storage.connections[0] (default)", "backupSource", "backup.enabled")
+		render(t, required(), static...)
 		_, d := render(t, required(), backupSets()...)
 		if at(configOf(t, d), "backup", "source") != nil {
-			t.Error("backup.source is rendered without static blob credentials: the backup pod's workload identity reads with storage.s3.credentials")
+			t.Error("backup.source is rendered without a backupSource: the backup pod's workload identity reads with the connection's own credential")
 		}
 		renderFails(t, required(), []string{"config.backup.source.separate_credentials=true"}, "config.backup.source", "managed by the chart")
 	})

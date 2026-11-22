@@ -47,11 +47,11 @@ config:
     host: quader-db-pooler-rw.quader.svc           # example: the transaction-mode pooler (R-HA-058)
     session_host: quader-db-rw.quader.svc          # example: the read-write Service, for the session-bound connections
   storage:
-    s3:
-      bucket: quader-blobs                         # example
-      region: eu-central-1                         # example
-      credentials:
-        source: static
+    connections:                                   # one connection; a second one is a further element with an id of its own
+      - id: default
+        bucket: quader-blobs                       # example
+        region: eu-central-1                       # example
+        credentials_source: static                 # the keys of the entry default of secrets.storageConnections
     upload:
       max_size: 10GiB                              # example; it must fit the spool below
   valkey:
@@ -72,8 +72,11 @@ secrets:
     existingSecret: quader-db-owner                # example
   databaseCA:
     existingSecret: quader-db-ca                   # example
-  s3:
-    existingSecret: quader-s3                      # example
+  storageConnections:
+    - connectionId: default
+      existingSecret: quader-s3                    # example: the keys access-key-id and secret-access-key
+      backupSource:
+        existingSecret: quader-s3-read             # example: a login that only reads the bucket of the connection
   valkey:
     existingSecret: quader-valkey                  # example
   valkeySentinel:
@@ -83,8 +86,6 @@ secrets:
   encryption:
     existingSecret: quader-encryption-keys         # example
     keys: [2026-10.key]
-  backupSource:
-    existingSecret: quader-s3-read                 # example: a login that only reads the blob bucket
 
 spool:
   type: ephemeral

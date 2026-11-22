@@ -108,13 +108,13 @@ config:
     tls:
       mode: verify-full
   storage:
-    s3:
-      bucket: quader-restore-blobs              # the empty bucket of restore-ns.yaml
-      region: us-east-1
-      endpoint: https://quader-s3.${NS}.svc:9000
-      force_path_style: true
-      credentials:
-        source: static
+    connections:
+      - id: default
+        bucket: quader-restore-blobs            # the empty bucket of restore-ns.yaml
+        region: us-east-1
+        endpoint: https://quader-s3.${NS}.svc:9000
+        force_path_style: true
+        credentials_source: static
     upload:
       max_size: 1GiB
   backup:
@@ -134,15 +134,16 @@ secrets:
   databaseCA:
     existingSecret: quader-db-ca
     key: ca.crt
-  s3:
-    existingSecret: quader-s3
-  backupSource:
-    existingSecret: quader-s3                   # backup.enabled with static S3 keys needs the backup's own blob login (Q-BAK-49); the profile has one SeaweedFS login
+  storageConnections:
+    - connectionId: default
+      existingSecret: quader-s3
+      ca:
+        existingSecret: quader-s3-tls
+        key: ca.crt
+      backupSource:
+        existingSecret: quader-s3               # backup.enabled with static S3 keys needs the backup's own blob login (Q-BAK-49); the profile has one SeaweedFS login
   backupTarget:
     existingSecret: quader-s3
-  s3CA:
-    existingSecret: quader-s3-tls
-    key: ca.crt
   backupTargetCA:
     existingSecret: quader-s3-tls
     key: ca.crt

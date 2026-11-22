@@ -134,9 +134,6 @@ spec:
             - name: QUADER_JOBS_EXCLUDE_QUEUES
               value: {{ $unit.excludeQueues | toJson | quote }}
             {{- end }}
-            {{- with (include "quader.s3EnvFromSecret" $) }}
-            {{- . | nindent 12 }}
-            {{- end }}
             {{- with (include "quader.scanListenEnv" $ctx) }}
             {{- . | nindent 12 }}
             {{- end }}

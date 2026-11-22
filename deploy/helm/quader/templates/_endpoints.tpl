@@ -239,22 +239,3 @@ the endpoint's own ingress.backendTLS on top. Argument: dict "root" . "name" "cu
 {{- $own := dig "ingress" "backendTLS" (dict) (index .root.Values.endpoints .name) -}}
 {{- include "quader.mergeValues" (dict "base" .root.Values.ingress.backendTLS "over" $own) -}}
 {{- end -}}
-
-{{/*
-Non-secret S3 settings that the provisioner's Secret carries (bucket, region, endpoint), read into
-environment variables by secretKeyRef. Credentials stay files. Argument: the root context.
-*/}}
-{{- define "quader.s3EnvFromSecret" -}}
-{{- $s3 := .Values.secrets.s3 -}}
-{{- if $s3.existingSecret -}}
-{{- range $var, $key := dict "QUADER_STORAGE_S3_BUCKET" $s3.bucketKey "QUADER_STORAGE_S3_ENDPOINT" $s3.endpointKey "QUADER_STORAGE_S3_REGION" $s3.regionKey -}}
-{{- if $key }}
-- name: {{ $var }}
-  valueFrom:
-    secretKeyRef:
-      name: {{ $s3.existingSecret }}
-      key: {{ $key }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}

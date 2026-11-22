@@ -3833,8 +3833,9 @@ empties a draining one, and replaces damaged copies.
 - **The journal pass.** At the end of a full pass the run lists `_journal/revocations/` on every connection with `drain: false` and copies
   each object one has and another lacks (R-STOR-059).
 - **Backlog, metric and alert.** Every `web` and `worker` replica exports from PostgreSQL
-  `quader_storage_reconcile_queue{connection}` (queue rows) and `quader_storage_reconcile_queue_oldest_seconds{connection}` (the age of the
-  oldest), and from the storage summary (R-STOR-028) `quader_storage_connection_backlog_blobs{connection}`,
+  `quader_storage_reconcile_queue{connection}` (queue rows), `quader_storage_reconcile_queue_oldest_seconds{connection}` (the age of the
+  oldest) and `quader_storage_connection_filling{connection}` (1 while `filling`, R-STOR-051; [ha-and-helm.md](ha-and-helm.md) Q-HA-393),
+  and from the storage summary (R-STOR-028) `quader_storage_connection_backlog_blobs{connection}`,
   `quader_storage_connection_backlog_bytes{connection}` (live blobs and bytes without a present copy on the connection) and
   `quader_storage_connection_fill_ratio{connection}`; the run counts `quader_storage_reconcile_copied_total{connection,mode}` and
   `quader_storage_reconcile_copied_bytes_total{connection,mode}` (`mode` `server`, `stream`). `QuaderStorageReplicationBacklog` fires when

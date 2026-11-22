@@ -96,9 +96,6 @@ spec:
             fieldRef:
               fieldPath: metadata.labels['job-name']
         {{- end }}
-        {{- with (include "quader.s3EnvFromSecret" $) }}
-        {{- . | nindent 8 }}
-        {{- end }}
         - name: TMPDIR
           value: /tmp
         {{- with $r.extraEnv }}
@@ -144,9 +141,11 @@ spec:
 The credentials file of --credentials-file and --journal-credentials-file (internal/journal/replay LoadCredentials), a ConfigMap
 <fullname>-<kind>. The file is what turns the listing of object versions on, so a delete marker or a deletion by the holder of the
 runtime credential cannot hide a journal entry (R-HA-054); the source default lets the Job's workload identity do it, static reads
-secrets.journalReader. Argument: dict "root" . "kind" "restore" | "post-restore" "values" <the Job's values>.
+the journalReader of the entry of secrets.storageConnections of the first connection, whose journal the replay reads
+(quader.journalConnection). Argument: dict "root" . "kind" "restore" | "post-restore" "values" <the Job's values>.
 */}}
 {{- define "quader.journalCredentialsConfigMap" -}}
+{{- $jc := include "quader.journalConnection" .root -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -161,7 +160,7 @@ data:
   credentials.yaml: |
     source: {{ .values.journalCredentials.source }}
     {{- if eq .values.journalCredentials.source "static" }}
-    access_key_id_file: /var/run/secrets/quader/journal-reader/access-key-id
-    secret_access_key_file: /var/run/secrets/quader/journal-reader/secret-access-key
+    access_key_id_file: /var/run/secrets/quader/s3-{{ $jc }}-journal/access-key-id
+    secret_access_key_file: /var/run/secrets/quader/s3-{{ $jc }}-journal/secret-access-key
     {{- end }}
 {{- end -}}

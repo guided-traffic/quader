@@ -2577,35 +2577,134 @@
         "storage": {
           "type": "object",
           "properties": {
-            "s3": {
-              "type": "object",
-              "properties": {
-                "bucket": {
-                  "type": "string"
-                },
-                "endpoint": {
-                  "type": "string"
-                },
-                "region": {
-                  "type": "string"
-                },
-                "force_path_style": {
-                  "type": "boolean"
-                },
-                "credentials": {
-                  "type": "object",
-                  "properties": {
-                    "source": {
-                      "type": "string",
-                      "enum": [
-                        "default",
-                        "webIdentity",
-                        "static"
-                      ]
-                    }
+            "connections": {
+              "type": "array",
+              "description": "The object-store connections (storage.md R-STOR-050, R-HA-072), passed to the binary with the *_file keys the chart sets from secrets.storageConnections. Each element carries the keys of storage.md R-STOR-050 and no other; the count, the ids and the refusals of R-HA-072 are checked by the templates, which name the connection.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "endpoint": {
+                    "type": "string"
+                  },
+                  "endpoint_file": {
+                    "type": "string"
+                  },
+                  "region": {
+                    "type": "string"
+                  },
+                  "region_file": {
+                    "type": "string"
+                  },
+                  "bucket": {
+                    "type": "string"
+                  },
+                  "bucket_file": {
+                    "type": "string"
+                  },
+                  "prefix": {
+                    "type": "string"
+                  },
+                  "force_path_style": {
+                    "type": "boolean"
+                  },
+                  "allow_insecure_endpoint": {
+                    "type": "boolean"
+                  },
+                  "ca_file": {
+                    "type": "string"
+                  },
+                  "storage_class": {
+                    "type": "string"
+                  },
+                  "payload_checksum": {
+                    "type": "string",
+                    "enum": [
+                      "sha256",
+                      "md5",
+                      "none"
+                    ]
+                  },
+                  "request_checksum_calculation": {
+                    "type": "string",
+                    "enum": [
+                      "when_supported",
+                      "when_required"
+                    ]
+                  },
+                  "response_checksum_validation": {
+                    "type": "string",
+                    "enum": [
+                      "when_supported",
+                      "when_required"
+                    ]
+                  },
+                  "batch_delete": {
+                    "type": "boolean"
+                  },
+                  "credentials_source": {
+                    "type": "string",
+                    "enum": [
+                      "default",
+                      "webIdentity",
+                      "static"
+                    ]
+                  },
+                  "role_arn": {
+                    "type": "string"
+                  },
+                  "web_identity_token_file": {
+                    "type": "string"
+                  },
+                  "sts_endpoint": {
+                    "type": "string"
+                  },
+                  "access_key_id_file": {
+                    "type": "string"
+                  },
+                  "secret_access_key_file": {
+                    "type": "string"
+                  },
+                  "session_token_file": {
+                    "type": "string"
+                  },
+                  "sse_mode": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "s3",
+                      "kms"
+                    ]
+                  },
+                  "sse_kms_key_id": {
+                    "type": "string"
+                  },
+                  "sse_bucket_key": {
+                    "type": "boolean"
+                  },
+                  "scrub_period": {
+                    "type": "string"
+                  },
+                  "scrub_bytes_per_second": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ]
+                  },
+                  "drain": {
+                    "type": "boolean"
+                  },
+                  "encrypted": {
+                    "type": "boolean"
                   }
-                }
+                },
+                "additionalProperties": false
               }
+            },
+            "s3": {
+              "description": "Removed: the one store of before is the list config.storage.connections (R-HA-072). The templates refuse this key and name the new ones."
             },
             "upload": {
               "type": "object",
@@ -2791,29 +2890,87 @@
           },
           "additionalProperties": false
         },
+        "storageConnections": {
+          "type": "array",
+          "description": "The Secrets of the object-store connections (R-HA-072), one entry per connection of config.storage.connections that needs one, keyed by connectionId.",
+          "items": {
+            "type": "object",
+            "required": [
+              "connectionId"
+            ],
+            "properties": {
+              "connectionId": {
+                "type": "string"
+              },
+              "existingSecret": {
+                "type": "string"
+              },
+              "accessKeyIdKey": {
+                "type": "string"
+              },
+              "secretAccessKeyKey": {
+                "type": "string"
+              },
+              "sessionTokenKey": {
+                "type": "string"
+              },
+              "bucketKey": {
+                "type": "string"
+              },
+              "regionKey": {
+                "type": "string"
+              },
+              "endpointKey": {
+                "type": "string"
+              },
+              "ca": {
+                "type": "object",
+                "properties": {
+                  "existingSecret": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "backupSource": {
+                "type": "object",
+                "properties": {
+                  "existingSecret": {
+                    "type": "string"
+                  },
+                  "accessKeyIdKey": {
+                    "type": "string"
+                  },
+                  "secretAccessKeyKey": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "journalReader": {
+                "type": "object",
+                "properties": {
+                  "existingSecret": {
+                    "type": "string"
+                  },
+                  "accessKeyIdKey": {
+                    "type": "string"
+                  },
+                  "secretAccessKeyKey": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "s3": {
-          "type": "object",
-          "properties": {
-            "existingSecret": {
-              "type": "string"
-            },
-            "accessKeyIdKey": {
-              "type": "string"
-            },
-            "secretAccessKeyKey": {
-              "type": "string"
-            },
-            "bucketKey": {
-              "type": "string"
-            },
-            "regionKey": {
-              "type": "string"
-            },
-            "endpointKey": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+          "description": "Removed: the Secret of a connection is the entry of secrets.storageConnections with its connectionId (existingSecret, accessKeyIdKey, secretAccessKeyKey, bucketKey, regionKey, endpointKey; R-HA-072). The templates refuse this key and name the new ones."
         },
         "valkey": {
           "type": "object",
@@ -2846,16 +3003,7 @@
           "additionalProperties": false
         },
         "s3CA": {
-          "type": "object",
-          "properties": {
-            "existingSecret": {
-              "type": "string"
-            },
-            "key": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+          "description": "Removed: a connection's CA is the field ca of its entry of secrets.storageConnections (R-HA-072). The templates refuse this key and name the new one."
         },
         "valkeyCA": {
           "type": "object",
@@ -2995,34 +3143,10 @@
           "additionalProperties": false
         },
         "journalReader": {
-          "type": "object",
-          "properties": {
-            "existingSecret": {
-              "type": "string"
-            },
-            "accessKeyIdKey": {
-              "type": "string"
-            },
-            "secretAccessKeyKey": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+          "description": "Removed: the journal reader of a connection is the field journalReader of its entry of secrets.storageConnections (R-HA-072). The templates refuse this key and name the new one."
         },
         "backupSource": {
-          "type": "object",
-          "properties": {
-            "existingSecret": {
-              "type": "string"
-            },
-            "accessKeyIdKey": {
-              "type": "string"
-            },
-            "secretAccessKeyKey": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+          "description": "Removed: the backup's read login of a connection is the field backupSource of its entry of secrets.storageConnections (R-HA-072). The templates refuse this key and name the new one."
         }
       },
       "additionalProperties": false

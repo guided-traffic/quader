@@ -66,6 +66,8 @@ the day of week 7 is not supported; Sunday is 0
 {{- $r := $v.restore -}}
 {{- $target := dig "backup" "target" (dict) $cfg -}}
 {{- $bucket := dig "bucket" "" $target -}}
+{{- $jc := include "quader.journalConnection" . -}}
+{{- $jrSecret := dig "journalReader" "existingSecret" "" (include "quader.connectionEntry" (dict "root" . "id" $jc) | fromYaml) -}}
 
 {{- if and $b.enabled (not $bucket) -}}
 {{- fail "quader: config.backup.target.bucket is required while backup.enabled is true: name a bucket of its own, in another account or project if you can (example: quader-backups), or switch the backup off with backup.enabled: false" -}}
@@ -82,18 +84,26 @@ the day of week 7 is not supported; Sunday is 0
 {{- end -}}
 {{- end -}}
 
-{{- /* The target must not be inside what the orphan sweep of the blob store deletes (R-HA-060, R-BAK-002, R-STOR-026). The rule
-holds for any configured target, the backup on or off: the configuration check of every replica applies it as well
-(internal/config/backup.go, validateBackupCoupling), so the chart refuses what the replicas would refuse at start. */ -}}
-{{- $blobBucket := dig "storage" "s3" "bucket" "" $cfg -}}
-{{- if and $bucket $blobBucket (eq $bucket $blobBucket) (eq (include "quader.normalizeEndpoint" (dig "endpoint" "" $target)) (include "quader.normalizeEndpoint" (dig "storage" "s3" "endpoint" "" $cfg))) -}}
-{{- $tp := dig "prefix" "quader" $target -}}
-{{- $sp := dig "storage" "s3" "prefix" "quader" $cfg -}}
+{{- /* The target must not be inside what the orphan sweep of any connection deletes (R-HA-060, R-BAK-002, R-STOR-026, storage.md
+R-STOR-050 rule 5). The rule holds for any configured target, the backup on or off: the configuration check of every replica
+applies it as well (internal/config), so the chart refuses what the replicas would refuse at start. A connection whose bucket or
+endpoint comes from a provisioner's Secret is the binary's to compare. */ -}}
+{{- if $bucket -}}
+{{- $tEndpoint := include "quader.normalizeEndpoint" (dig "endpoint" "" $target) -}}
+{{- $tp := trimAll "/" (dig "prefix" "quader" $target) -}}
+{{- range $i, $el := include "quader.connectionElements" $ | fromYamlArray -}}
+{{- $id := include "quader.connectionId" $el -}}
+{{- $e := include "quader.connectionEntry" (dict "root" $ "id" $id) | fromYaml -}}
+{{- with include "quader.connectionLocation" (dict "element" $el "entry" $e) | fromYaml -}}
+{{- if and (eq .bucket $bucket) (eq .rawEndpoint $tEndpoint) -}}
 {{- if not (dig "allow_same_bucket" false $target) -}}
-{{- fail (printf "quader: config.backup.target.bucket (%s) is the bucket of config.storage.s3.bucket on the same endpoint: the orphan sweep of the blob store deletes every object under config.storage.s3.prefix that no row references, backups included. Use a bucket of its own, or accept it for a single-bucket evaluation setup with config.backup.target.allow_same_bucket: true and prefixes that do not contain each other" $bucket) -}}
+{{- fail (printf "quader: config.backup.target.bucket (%s) is the bucket of config.storage.connections[%d] (%s) on the same endpoint: the orphan sweep of that connection deletes every object under its prefix that no row references, backups included. Use a bucket of its own, or accept it for a single-bucket evaluation setup with config.backup.target.allow_same_bucket: true and prefixes that do not contain each other" $bucket $i $id) -}}
 {{- end -}}
-{{- if or (eq $tp "") (eq $sp "") (eq $tp $sp) (hasPrefix (printf "%s/" $tp) $sp) (hasPrefix (printf "%s/" $sp) $tp) -}}
-{{- fail (printf "quader: config.backup.target.prefix (%q) and config.storage.s3.prefix (%q) in the shared bucket %s must not contain each other: the orphan sweep of the blob store would delete the backups" $tp $sp $bucket) -}}
+{{- if include "quader.prefixesOverlap" (list $tp .prefix) -}}
+{{- fail (printf "quader: config.backup.target.prefix (%q) and the prefix of config.storage.connections[%d] (%s) (%q) in the shared bucket %s must not contain each other: the orphan sweep of that connection would delete the backups" $tp $i $id .prefix $bucket) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
@@ -128,8 +138,8 @@ holds for any configured target, the backup on or off: the configuration check o
 {{- if $r.enabled -}}
 {{- fail "quader: postRestore.enabled and restore.enabled are both set: the restore Job runs the clean-up of a platform restore itself (R-BAK-021), and post-restore is for a restore of PostgreSQL by the platform (R-HA-025). Set one" -}}
 {{- end -}}
-{{- if and (eq $p.journalCredentials.source "static") (not $v.secrets.journalReader.existingSecret) -}}
-{{- fail "quader: postRestore.journalCredentials.source: static needs secrets.journalReader.existingSecret (keys secrets.journalReader.accessKeyIdKey and secretAccessKeyKey)" -}}
+{{- if and (eq $p.journalCredentials.source "static") (not $jrSecret) -}}
+{{- fail (printf "quader: postRestore.journalCredentials.source: static needs the journalReader of the entry of secrets.storageConnections of connection %s, the first of config.storage.connections, whose journal the replay reads: {connectionId: %s, journalReader: {existingSecret: <Secret with a login that may list its object versions>}}" $jc $jc) -}}
 {{- end -}}
 {{- if and $p.skipRevocationJournal (ne $p.journalCredentials.source "runtime") -}}
 {{- fail "quader: postRestore.skipRevocationJournal skips the journal replay, so postRestore.journalCredentials.source must stay runtime" -}}
@@ -138,16 +148,21 @@ holds for any configured target, the backup on or off: the configuration check o
 
 {{- /* The restore Job's journal reader (M3, Q-HA-159). */ -}}
 {{- if $r.enabled -}}
-{{- if and (eq $r.journalCredentials.source "static") (not $v.secrets.journalReader.existingSecret) -}}
-{{- fail "quader: restore.journalCredentials.source: static needs secrets.journalReader.existingSecret (keys secrets.journalReader.accessKeyIdKey and secretAccessKeyKey)" -}}
+{{- if and (eq $r.journalCredentials.source "static") (not $jrSecret) -}}
+{{- fail (printf "quader: restore.journalCredentials.source: static needs the journalReader of the entry of secrets.storageConnections of connection %s, the first of config.storage.connections, whose journal the replay reads: {connectionId: %s, journalReader: {existingSecret: <Secret with a login that may list its object versions>}}" $jc $jc) -}}
 {{- end -}}
 {{- if and $r.skipRevocationJournal (ne $r.journalCredentials.source "runtime") -}}
 {{- fail "quader: restore.skipRevocationJournal skips the journal replay, so restore.journalCredentials.source must stay runtime" -}}
 {{- end -}}
 {{- end -}}
 
-{{- /* The backup reads the blob bucket with a login of its own (M5, Q-HA-160). */ -}}
-{{- if and $b.enabled (eq (dig "storage" "s3" "credentials" "source" "" $cfg) "static") (not $v.secrets.backupSource.existingSecret) -}}
-{{- fail "quader: backup.enabled with config.storage.s3.credentials.source: static needs secrets.backupSource.existingSecret: the backup pod must not hold the runtime credential of the blob bucket, which can write and delete there (R-BAK-015); name a Secret with a login that may only read it (keys secrets.backupSource.accessKeyIdKey and secretAccessKeyKey), or switch the backup off with backup.enabled: false" -}}
+{{- /* The backup reads every connection whose credential is static with a login of its own (M5, Q-HA-160, R-BAK-030, Q-BAK-64). */ -}}
+{{- if $b.enabled -}}
+{{- range $i, $el := include "quader.connectionElements" $ | fromYamlArray -}}
+{{- $id := include "quader.connectionId" $el -}}
+{{- if and (eq (toString (get $el "credentials_source")) "static") (not (dig "backupSource" "existingSecret" "" (include "quader.connectionEntry" (dict "root" $ "id" $id) | fromYaml))) -}}
+{{- fail (printf "quader: backup.enabled with config.storage.connections[%d] (%s) credentials_source: static needs backupSource in its entry of secrets.storageConnections: the backup pod must not hold the runtime credential of the connection, which can write and delete there (R-BAK-015); add backupSource: {existingSecret: <Secret with a login that may only read it>} to the entry {connectionId: %s} (keys accessKeyIdKey and secretAccessKeyKey), or switch the backup off with backup.enabled: false" $i $id $id) -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

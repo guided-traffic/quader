@@ -19,11 +19,11 @@ config:
     host: quader-db-pooler-rw.quader.svc
     session_host: quader-db-rw.quader.svc
   storage:
-    s3:
-      bucket: quader-blobs
-      region: eu-central-1
-      credentials:
-        source: static
+    connections:
+      - id: default
+        bucket: quader-blobs
+        region: eu-central-1
+        credentials_source: static
     upload:
       max_size: 10GiB
   valkey:
@@ -72,8 +72,6 @@ signatures:
         trustedRootFrom:                           # the company's own Sigstore, not the public one
           configMapKeyRef: {name: company-sigstore-root, key: trusted_root.json}
 secrets:
-  backupSource:
-    existingSecret: quader-s3-read             # a login that only reads the blob bucket
   database:
     existingSecret: quader-db-app
   databaseMigration:
@@ -82,8 +80,11 @@ secrets:
     existingSecret: quader-db-ca
   databaseClientCert:
     existingSecret: quader-db-client
-  s3:
-    existingSecret: quader-s3
+  storageConnections:
+    - connectionId: default
+      existingSecret: quader-s3
+      backupSource:
+        existingSecret: quader-s3-read         # a login that only reads the blob bucket
   valkey:
     existingSecret: quader-valkey
   valkeySentinel:

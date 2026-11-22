@@ -102,8 +102,8 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 		if at(cfg, "proxy", "outbound", "tls", "use_system_roots") != nil {
 			t.Error("the chart sets use_system_roots; the bundle is added to the system roots, so it must leave the key alone")
 		}
-		if at(cfg, "storage", "s3", "ca_file") != nil {
-			t.Error("storage.s3.ca_file is set without trustedCA.useForObjectStore")
+		if at(cfg, "storage", "connections", "0", "ca_file") != nil {
+			t.Error("the ca_file of a connection is set without trustedCA.useForObjectStore")
 		}
 	})
 
@@ -123,11 +123,21 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-043 useForObjectStore makes the one file storage.s3.ca_file", func(t *testing.T) {
-		_, docs := render(t, required(), "trustedCA.existingConfigMap=corp-ca-bundle", "trustedCA.useForObjectStore=true", "trustedCA.keys={s3-ca.pem}")
-		if got := str(configOf(t, docs), "storage", "s3", "ca_file"); got != "/etc/quader/ca/s3-ca.pem" {
-			t.Errorf("storage.s3.ca_file = %q, want /etc/quader/ca/s3-ca.pem", got)
+	t.Run("R-HA-043 R-HA-072 useForObjectStore makes the one file the ca_file of every connection without a ca of its own", func(t *testing.T) {
+		_, docs := render(t, required(), "trustedCA.existingConfigMap=corp-ca-bundle", "trustedCA.useForObjectStore=true", "trustedCA.keys={s3-ca.pem}",
+			"config.storage.connections[1].id=own-ca", "config.storage.connections[1].bucket=b2",
+			"secrets.storageConnections[0].connectionId=own-ca", "secrets.storageConnections[0].ca.existingSecret=b2-ca")
+		cfg := configOf(t, docs)
+		if got := str(cfg, "storage", "connections", "0", "ca_file"); got != "/etc/quader/ca/s3-ca.pem" {
+			t.Errorf("ca_file of default = %q, want /etc/quader/ca/s3-ca.pem", got)
 		}
+		if got := str(cfg, "storage", "connections", "1", "ca_file"); got != "/var/run/secrets/quader/s3-own-ca-ca/ca.crt" {
+			t.Errorf("ca_file of own-ca = %q, want the file of its own ca", got)
+		}
+		renderFails(t, required(), []string{
+			"trustedCA.existingConfigMap=corp-ca-bundle", "trustedCA.useForObjectStore=true", "trustedCA.keys={s3-ca.pem}",
+			"config.storage.connections[0].ca_file=/x",
+		}, "config.storage.connections[0].ca_file", "managed by the chart")
 	})
 
 	t.Run("R-HA-043 the values the bundle cannot serve are refused and name the value", func(t *testing.T) {
@@ -135,7 +145,6 @@ func TestR_HA_043_TrustedCA(t *testing.T) {
 		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.keys=null"}, "trustedCA.keys")
 		renderFails(t, required(), []string{"trustedCA.useForObjectStore=true"}, "trustedCA.useForObjectStore", "trustedCA.existingSecret")
 		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.useForObjectStore=true", "trustedCA.keys={a.pem,b.pem}"}, "exactly one file", "trustedCA.keys")
-		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.useForObjectStore=true", "secrets.s3CA.existingSecret=quader-s3-ca"}, "trustedCA.useForObjectStore", "secrets.s3CA")
 		renderFails(t, required(), []string{"trustedCA.existingSecret=a", "trustedCA.keys={../etc/passwd}"}, "/trustedCA/keys/0")
 	})
 }

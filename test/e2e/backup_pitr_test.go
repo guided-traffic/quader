@@ -302,7 +302,7 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 		extra := append(pitrNoRoles(), pitrNewDatabase()...)
 		extra = append(extra,
 			"--set", "postRestore.enabled=true", "--set-string", "postRestore.restoredTo="+st.tRFC,
-			"--set", "postRestore.journalCredentials.source=static", "--set", "secrets.journalReader.existingSecret=quader-s3")
+			"--set", "postRestore.journalCredentials.source=static", "--set", "secrets.storageConnections[0].journalReader.existingSecret=quader-s3")
 		pitrHelm(t, "pitr-step4", extra...)
 		out, err := kubectl("-n", cfg.namespace, "get", "jobs", "-l", "app.kubernetes.io/component=post-restore", "-o", "jsonpath={.items[*].metadata.name}")
 		if err != nil || len(strings.Fields(out)) != 1 {

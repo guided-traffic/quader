@@ -180,13 +180,13 @@ Generated or created in namespace `quader`; nothing in `up.sh` makes a random va
 | `quader-db-app`, `quader-db-ca` | `username`, `password`; `ca.crt` | CloudNativePG | chart: `secrets.database`, `secrets.databaseCA` |
 | `quader-valkey-auth` | `password` (32 characters) | internal-secrets-operator | the Valkey resource (`spec.auth`), and the chart as `secrets.valkey` **and** `secrets.valkeySentinel`, user `default` |
 | `quader-valkey-tls` | `tls.crt`, `tls.key`, `ca.crt` | the Valkey operator, through cert-manager (`unifiedCertificate: true`: one Secret for both tiers) | Valkey and Sentinels; chart: `secrets.valkeyCA` (`ca.crt`) |
-| `quader-s3` | `access-key-id` (`quader-dev`), `secret-access-key` (40 characters) | internal-secrets-operator | SeaweedFS and the bucket Job; chart: `secrets.s3` |
+| `quader-s3` | `access-key-id` (`quader-dev`), `secret-access-key` (40 characters) | internal-secrets-operator | SeaweedFS and the bucket Job; chart: the entry `default` of `secrets.storageConnections` (`existingSecret`, and `backupSource` for the backup pods) |
 | `quader-encryption-keys` | `dev.key`: 32 random bytes, **raw** (`iso.gtrfc.com/type: bytes`) | internal-secrets-operator | chart: `secrets.encryption`; the file name without `.key`, `dev`, is the key ID. The key ring accepts a 32-byte file as it is and base64 text of 32 bytes |
 | `quader-break-glass` | `password` (32 characters, plaintext: at least 20 are required) | internal-secrets-operator, **rotated every 24 h** (`iso.gtrfc.com/rotate: 24h`) | chart: `secrets.breakGlass` (mounted into `api` pods, renders `auth.break_glass.password_file`); the e2e tests read it for E1.1 and R-AUTH-042 |
 | `quader-dev-ca` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager (self-signed root, ten years) | the Issuer `quader-dev-ca` |
 | `quader-tls-api`, `quader-tls-packages`, `quader-tls-worker`, and `quader-tls-vuln-scanner-trivy` and `quader-tls-malware-scanner-clamav` in the profile `vuln` | `tls.crt`, `tls.key`, `ca.crt` | the chart's Certificates (`tls.certManager.issuerRef: quader-dev-ca`), cert-manager | the pair of each kind of pod, in that kind's pods only; each names `quader-<kind>.<ns>.svc` (the name HAProxy Ingress verifies per Service for `api` and `packages`, and the links check), `quader-ops.<ns>.svc` and, as the profile's extra names, `localhost` and `127.0.0.1` for the tests that reach one pod through a port-forward; the worker's and the scanners' allow client authentication. `quader-customers-tls` names `quader-ep-customers` and `quader-api-ep-customers` |
 | `quader-edge-tls` | `tls.crt`, `tls.key` | cert-manager | the edge's certificate for `localhost` |
-| `quader-s3-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | SeaweedFS; Quader mounts its `ca.crt` through `secrets.s3CA`, which renders `storage.s3.ca_file` |
+| `quader-s3-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | SeaweedFS; Quader mounts its `ca.crt` through the `ca` of the entry `default` of `secrets.storageConnections`, which renders the connection's `ca_file` |
 | `quader-customers-tls`, `quader-customers-wildcard-tls`, `quader-customers-edge-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | the endpoint `customers` (below) |
 
 **Rotation of `quader-break-glass`.** It is the one rotating Secret of the profile. The operator (1.6.14) takes `rotate` as a
@@ -248,7 +248,7 @@ values-dev.yaml turns the backup on (`backup.enabled: true`; the chart's default
 the bucket `quader-backups` of the profile's SeaweedFS (created beside `quader-blobs` by the Job of [s3.yaml](../../deploy/dev/s3.yaml)),
 a bucket of its own on the same endpoint, so the rule that a target must not be the blob store's bucket (R-BAK-002) holds without
 `allow_same_bucket`. The link is HTTPS like every link of the profile: `secrets.backupTargetCA` is the SeaweedFS certificate Secret
-`quader-s3-tls`, which also serves `secrets.s3CA`, and the keys are the blob store's (`secrets.backupTarget` names `quader-s3`), because the
+`quader-s3-tls`, which is also the `ca` of the connection `default`, and the keys are the blob store's (`secrets.backupTarget` names `quader-s3`), because the
 profile has one S3 login; a real target has credentials of its own that no replica holds. The Jobs mount these in the backup and restore
 pods only. A restore on the profile is the sequence of R-HA-060 with `restore.enabled`, `restore.backupId` and every replica count at zero;
 the `dev-backup` and `dev-restore` targets and their drill belong to the end-to-end suite and are not part of the chart.

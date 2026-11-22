@@ -25,11 +25,11 @@ config:
     ssl_mode: disable
     allow_insecure: true
   storage:
-    s3:
-      bucket: quader-blobs
-      endpoint: http://minio.default.svc:9000
-      allow_insecure_endpoint: true                # plain HTTP inside the cluster
-      force_path_style: true
+    connections:
+      - bucket: quader-blobs
+        endpoint: http://minio.default.svc:9000
+        allow_insecure_endpoint: true              # plain HTTP inside the cluster
+        force_path_style: true
     upload:
       max_size: 1GiB
   valkey:

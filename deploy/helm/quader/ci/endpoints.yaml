@@ -9,8 +9,8 @@ config:
   database:
     host: quader-db-rw.quader.svc
   storage:
-    s3:
-      bucket: quader-blobs
+    connections:
+      - bucket: quader-blobs
   valkey:
     sentinel:
       addresses:

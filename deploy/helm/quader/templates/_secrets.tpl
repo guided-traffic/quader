@@ -1,7 +1,7 @@
 {{/*
 The Secret mounts of a pod (R-HA-030) as a YAML list. Argument: dict "root" . "scope" "runtime"
 (the pods of the roles), "migrate" (the migration Job), "backup" (the backup CronJob's pods) or "restore" (the
-restore Job's pod) or "post-restore" (the hook Job after a platform restore: the database login of the migration Job, the blob store, and the journal credential). Each entry names one existing Secret,
+restore Job's pod) or "post-restore" (the hook Job after a platform restore: the database login of the migration Job, the object-store connections, and the journal credential). Each entry names one existing Secret,
 the keys that are projected and the file name each key gets. Secrets mount read-only with
 defaultMode 0440, with items and without subPath, so a rotated Secret reaches the files.
 Secrets never become environment variables. The login secrets (secrets.oidc, secrets.breakGlass) are
@@ -50,16 +50,9 @@ backup (R-BAK-020).
 {{- end -}}
 {{- $out = append $out (dict "name" "encryption" "secret" $s.encryption.existingSecret "path" "/var/run/secrets/quader/encryption" "items" $encItems) -}}
 {{- end -}}
+{{- /* The object-store connections (R-HA-072, templates/_storage.tpl): the runtime credential in the pods that write, the provisioner's location and the CA in every pod that reads, the backup's read login in the backup pods and the journal reader in the restore and post-restore Jobs (Q-HA-160). */ -}}
 {{- if or (eq .scope "runtime") $ioJob -}}
-{{- if and (eq .scope "backup") (eq (dig "storage" "s3" "credentials" "source" "" .root.Values.config) "static") -}}
-{{- /* The backup reads the blob bucket and never writes or deletes there (R-BAK-015): it gets the read-only login of secrets.backupSource, not the runtime credential (Q-HA-160). */ -}}
-{{- $out = append $out (dict "name" "backup-source" "secret" $s.backupSource.existingSecret "path" "/var/run/secrets/quader/backup-source" "items" (list (dict "key" $s.backupSource.accessKeyIdKey "path" "access-key-id") (dict "key" $s.backupSource.secretAccessKeyKey "path" "secret-access-key"))) -}}
-{{- else if eq (dig "storage" "s3" "credentials" "source" "" .root.Values.config) "static" -}}
-{{- $out = append $out (dict "name" "s3" "secret" $s.s3.existingSecret "path" "/var/run/secrets/quader/s3" "items" (list (dict "key" $s.s3.accessKeyIdKey "path" "access-key-id") (dict "key" $s.s3.secretAccessKeyKey "path" "secret-access-key"))) -}}
-{{- end -}}
-{{- if $s.s3CA.existingSecret -}}
-{{- $out = append $out (dict "name" "s3-ca" "secret" $s.s3CA.existingSecret "path" "/var/run/secrets/quader/s3-ca" "items" (list (dict "key" $s.s3CA.key "path" "ca.crt"))) -}}
-{{- end -}}
+{{- $out = concat $out (include "quader.storageSecretMounts" (dict "root" .root "scope" .scope) | fromYamlArray) -}}
 {{- end -}}
 {{- if $job -}}
 {{- /* The backup target: its keys and its CA reach the Jobs that write or read it and no replica (R-HA-060, R-BAK-011). */ -}}
@@ -73,13 +66,6 @@ backup (R-BAK-020).
 {{- if $s.backupTargetCA.existingSecret -}}
 {{- $out = append $out (dict "name" "backup-target-ca" "secret" $s.backupTargetCA.existingSecret "path" "/var/run/secrets/quader/backup-target-ca" "items" (list (dict "key" $s.backupTargetCA.key "path" "ca.crt"))) -}}
 {{- end -}}
-{{- end -}}
-{{- $jcSource := "runtime" -}}
-{{- if eq .scope "post-restore" -}}{{- $jcSource = .root.Values.postRestore.journalCredentials.source -}}{{- end -}}
-{{- if eq .scope "restore" -}}{{- $jcSource = .root.Values.restore.journalCredentials.source -}}{{- end -}}
-{{- if eq $jcSource "static" -}}
-{{- /* The credential that lists object versions, for the journal replay of the post-restore and the restore Job only (R-HA-025 step 5, R-BAK-015, R-HA-023); the runtime credential deliberately lacks it. */ -}}
-{{- $out = append $out (dict "name" "journal-reader" "secret" $s.journalReader.existingSecret "path" "/var/run/secrets/quader/journal-reader" "items" (list (dict "key" $s.journalReader.accessKeyIdKey "path" "access-key-id") (dict "key" $s.journalReader.secretAccessKeyKey "path" "secret-access-key"))) -}}
 {{- end -}}
 {{- if eq .scope "runtime" -}}
 {{- $vkItems := list -}}

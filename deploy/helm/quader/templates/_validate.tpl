@@ -74,6 +74,7 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- $cfg := $v.config -}}
 {{- $ns := .Release.Namespace -}}
 
+{{- include "quader.validateStorageMoved" . -}}
 {{- include "quader.validateNames" . -}}
 
 {{- if not (dig "server" "base_url" "" $cfg) -}}
@@ -85,15 +86,7 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- if not $v.secrets.database.existingSecret -}}
 {{- fail "quader: secrets.database.existingSecret is required; the chart never creates a Secret (example: quader-db-app)" -}}
 {{- end -}}
-{{- if and (not (dig "storage" "s3" "bucket" "" $cfg)) (not (and $v.secrets.s3.existingSecret $v.secrets.s3.bucketKey)) -}}
-{{- fail "quader: config.storage.s3.bucket is required (example: quader-blobs), or name the key of the bucket in the S3 Secret with secrets.s3.existingSecret and secrets.s3.bucketKey (example: S3_BUCKET)" -}}
-{{- end -}}
-{{- if and (or $v.secrets.s3.bucketKey $v.secrets.s3.regionKey $v.secrets.s3.endpointKey) (not $v.secrets.s3.existingSecret) -}}
-{{- fail "quader: secrets.s3.bucketKey, secrets.s3.regionKey and secrets.s3.endpointKey read keys of the S3 Secret and need secrets.s3.existingSecret" -}}
-{{- end -}}
-{{- if and (eq (dig "storage" "s3" "credentials" "source" "" $cfg) "static") (not $v.secrets.s3.existingSecret) -}}
-{{- fail "quader: config.storage.s3.credentials.source: static needs secrets.s3.existingSecret" -}}
-{{- end -}}
+{{- include "quader.validateStorage" . -}}
 {{- if or (not $v.secrets.encryption.existingSecret) (not $v.secrets.encryption.keys) -}}
 {{- fail (printf "quader: secrets.encryption.existingSecret and secrets.encryption.keys are required. The chart never generates the key (a regenerated key would make every sealed value undecryptable). Create the Secret before the first install:\n\n  kubectl -n %s create secret generic quader-encryption-keys \\\n    --from-file=2026-10.key=<(head -c 32 /dev/urandom | base64)\n\nthen set secrets.encryption.existingSecret=quader-encryption-keys and secrets.encryption.keys={2026-10.key}. The file name without .key is the key ID." $ns) -}}
 {{- end -}}
@@ -226,7 +219,7 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- fail (printf "quader: metrics.serviceMonitor.namespace (%s) must be the release namespace (%s) while tls.enabled is true: the Prometheus operator reads the CA Secret of the scrape (ca.crt of the Secret of the kind api) from the namespace of the ServiceMonitor" $v.metrics.serviceMonitor.namespace $ns) -}}
 {{- end -}}
 
-{{- /* The trusted CA bundle (R-HA-043): one source, files to mount, and the object store's CA is either this bundle or secrets.s3CA. */ -}}
+{{- /* The trusted CA bundle (R-HA-043): one source, files to mount, and with useForObjectStore one file, the ca_file of every connection without a ca of its own. */ -}}
 {{- $ca := $v.trustedCA -}}
 {{- if and $ca.existingSecret $ca.existingConfigMap -}}
 {{- fail "quader: trustedCA.existingSecret and trustedCA.existingConfigMap are both set; name one source (example: trustedCA.existingConfigMap: corp-ca-bundle)" -}}
@@ -239,15 +232,12 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- fail "quader: trustedCA.useForObjectStore is true, but trustedCA.existingSecret and trustedCA.existingConfigMap are empty; name the source of the bundle" -}}
 {{- end -}}
 {{- if ne (len $ca.keys) 1 -}}
-{{- fail (printf "quader: trustedCA.useForObjectStore needs exactly one file in trustedCA.keys, because storage.s3.ca_file is one file (trustedCA.keys has %d)" (len $ca.keys)) -}}
-{{- end -}}
-{{- if $v.secrets.s3CA.existingSecret -}}
-{{- fail "quader: trustedCA.useForObjectStore and secrets.s3CA.existingSecret both set storage.s3.ca_file; use one of them" -}}
+{{- fail (printf "quader: trustedCA.useForObjectStore needs exactly one file in trustedCA.keys, because a connection's ca_file is one file (trustedCA.keys has %d)" (len $ca.keys)) -}}
 {{- end -}}
 {{- end -}}
 
-{{- /* Keys the chart manages (R-HA-030): setting one inside config is refused. */ -}}
-{{- $managedPaths := list "storage.spool.dir" "database.username_file" "database.password_file" "database.ssl_root_cert_file" "database.ssl_cert_file" "database.ssl_key_file" "valkey.username_file" "valkey.password_file" "valkey.sentinel.username_file" "valkey.sentinel.password_file" "valkey.tls.ca_file" "valkey.tls.cert_file" "valkey.tls.key_file" "storage.s3.ca_file" "storage.s3.credentials.access_key_id_file" "storage.s3.credentials.secret_access_key_file" "metrics.bearer_token_file" "auth.break_glass.password_file" "secrets.encryption_key_files" "secrets.active_key_id" "server.endpoints" "backup.manual_run" "backup.source" "backup.target.ca_file" "backup.target.credentials.access_key_id_file" "backup.target.credentials.secret_access_key_file" "backup.target.credentials.session_token_file" -}}
+{{- /* Keys the chart manages (R-HA-030): setting one inside config is refused. The *_file keys of a connection's element are checked per element in quader.validateStorage. */ -}}
+{{- $managedPaths := list "storage.spool.dir" "database.username_file" "database.password_file" "database.ssl_root_cert_file" "database.ssl_cert_file" "database.ssl_key_file" "valkey.username_file" "valkey.password_file" "valkey.sentinel.username_file" "valkey.sentinel.password_file" "valkey.tls.ca_file" "valkey.tls.cert_file" "valkey.tls.key_file" "metrics.bearer_token_file" "auth.break_glass.password_file" "secrets.encryption_key_files" "secrets.active_key_id" "server.endpoints" "backup.manual_run" "backup.source" "backup.target.ca_file" "backup.target.credentials.access_key_id_file" "backup.target.credentials.secret_access_key_file" "backup.target.credentials.session_token_file" -}}
 {{- if $t.enabled -}}
 {{- $managedPaths = concat $managedPaths (list "server.tls" "server.ops_tls") -}}
 {{- end -}}

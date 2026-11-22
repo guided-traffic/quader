@@ -501,56 +501,6 @@ func TestEndpoints(t *testing.T) {
 	})
 }
 
-func TestS3ProvisionerSecret(t *testing.T) {
-	set := []string{filepath.Join(chartDir, "ci", "s3-provisioner.yaml")}
-
-	t.Run("R-HA-030 bucket, region and endpoint are read from the provisioner's Secret and the credentials are mounted as files", func(t *testing.T) {
-		_, docs := render(t, set)
-		for _, name := range []string{"quader-api", "quader-packages", "quader-worker"} {
-			pod := at(find(docs, "Deployment", name), "spec", "template", "spec")
-			env := envByName(pod)
-			for v, key := range map[string]string{"QUADER_STORAGE_S3_BUCKET": "S3_BUCKET", "QUADER_STORAGE_S3_REGION": "S3_REGION", "QUADER_STORAGE_S3_ENDPOINT": "S3_ENDPOINT"} {
-				if str(env[v], "valueFrom", "secretKeyRef", "name") != "quader-s3" || str(env[v], "valueFrom", "secretKeyRef", "key") != key {
-					t.Errorf("%s: %s = %v, want key %s of quader-s3", name, v, env[v], key)
-				}
-			}
-			vol := secretVolume(pod, "quader-s3")
-			if vol == nil {
-				t.Fatalf("%s: the credentials are not mounted", name)
-			}
-			keys := map[string]string{}
-			for _, it := range list(vol, "secret", "items") {
-				keys[str(it, "key")] = str(it, "path")
-			}
-			if len(keys) != 2 || keys["AWS_ACCESS_KEY_ID"] != "access-key-id" || keys["AWS_SECRET_ACCESS_KEY"] != "secret-access-key" {
-				t.Errorf("%s: mounted keys = %v, want only the two credentials", name, keys)
-			}
-		}
-		if envByName(at(find(docs, "Job", "quader-migrate"), "spec", "template", "spec"))["QUADER_STORAGE_S3_BUCKET"] != nil {
-			t.Error("the migration Job reads the S3 settings")
-		}
-		s3 := at(configOf(t, docs), "storage", "s3").(map[string]any)
-		if s3["bucket"] != "" || s3["region"] != "" || s3["endpoint"] != "" {
-			t.Errorf("config.storage.s3 = %v, want empty bucket, region and endpoint (the environment carries them)", s3)
-		}
-	})
-
-	t.Run("R-HA-030 without the *Key values the environment carries no S3 setting", func(t *testing.T) {
-		_, docs := render(t, required())
-		for _, v := range []string{"QUADER_STORAGE_S3_BUCKET", "QUADER_STORAGE_S3_REGION", "QUADER_STORAGE_S3_ENDPOINT"} {
-			if envByName(at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec"))[v] != nil {
-				t.Errorf("%s is set without secrets.s3", v)
-			}
-		}
-	})
-
-	t.Run("R-HA-029 the bucket is required unless the Secret carries it, and the keys need the Secret", func(t *testing.T) {
-		renderFails(t, set, []string{"secrets.s3.bucketKey="}, "config.storage.s3.bucket", "bucketKey")
-		renderFails(t, set, []string{"secrets.s3.existingSecret="}, "secrets.s3")
-		renderFails(t, required(), []string{"secrets.s3.regionKey=S3_REGION"}, "secrets.s3.existingSecret")
-	})
-}
-
 // copyDir copies a directory tree.
 func copyDir(t *testing.T, src, dst string) {
 	t.Helper()

@@ -558,20 +558,52 @@ tests:
     alert_rule_test:
       - {eval_time: 12m, alertname: QuaderBlobMissing, exp_alerts: []}
 
+  # --- QuaderBlobCorrupt -----------------------------------------------------------------------------------
+  # No connection holds the blob whole any more (R-STOR-052): counted once, the alert fires at once and clears an hour later.
+  - name: QuaderBlobCorrupt fires when a blob was found corrupt on every copy within the last hour, and clears after it
+    interval: 1m
+    input_series:
+      - {series: 'quader_storage_blobs_damaged_total{namespace="default",status="corrupt",pod="p1"}', values: '0x10 1x200'}
+    alert_rule_test:
+      - {eval_time: 9m, alertname: QuaderBlobCorrupt, exp_alerts: []}
+      - eval_time: 12m
+        alertname: QuaderBlobCorrupt
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations:
+              summary: No connection holds at least one blob whole any more, found within the last hour.
+              description: "Every copy of the blob that a read or the scrub reached had other bytes or another size, so the blob is corrupt (R-STOR-052, R-STOR-027). Downloads of it answer 503 content_unavailable. The replicas log the digest. A remote repository fetches it again from the upstream; a file of a local repository needs its object restored (restore-versions, a backup) or the same content uploaded again. Check who writes to the buckets."
+      - {eval_time: 75m, alertname: QuaderBlobCorrupt, exp_alerts: []}
+
+  - name: QuaderBlobCorrupt stays quiet for a missing blob and for another namespace
+    interval: 1m
+    input_series:
+      - {series: 'quader_storage_blobs_damaged_total{namespace="default",status="missing",pod="p1"}', values: '0x10 1x200'}
+      - {series: 'quader_storage_blobs_damaged_total{namespace="other",status="corrupt",pod="p1"}', values: '0x10 1x200'}
+    alert_rule_test:
+      - {eval_time: 12m, alertname: QuaderBlobCorrupt, exp_alerts: []}
+
   # === R-HA-045: the alerts of the table ======================================================================
   # The Deployments of release quader are quader-api, quader-packages, quader-worker and the pools quader-<role>-<pool>. The
   # series carry the labels of a scrape through the Prometheus operator (namespace, pod).
 
   # Healthy input. The retries are of another kind than connection, the Deployments have two or more replicas, the histograms stay in
   # the first bucket.
-  - name: "a healthy installation: none of the sixteen alerts of the table fires"
+  - name: "a healthy installation: none of the general alerts of the table fires, nor the object-store alerts of two connections"
     interval: 1m
     input_series:
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-api\"}", values: "2x400"}
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-packages\"}", values: "3x400"}
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-worker\"}", values: "2x400"}
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p1\"}", values: "0x400"}
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p2\"}", values: "0x400"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p2\"}", values: "0x400"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"secondary\",pod=\"p2\"}", values: "0x400"}
+      - {series: "quader_storage_reconcile_queue_oldest_seconds{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "30x400"}
+      - {series: "quader_storage_copies{namespace=\"default\",connection=\"secondary\",state=\"present\",pod=\"p1\"}", values: "40x400"}
+      - {series: "quader_storage_copies{namespace=\"default\",connection=\"secondary\",state=\"missing\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_storage_scrub_overdue_copies{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_storage_connection_detached{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x400"}
       - {series: "quader_valkey_available{namespace=\"default\",pod=\"p1\"}", values: "1x400"}
       - {series: "quader_valkey_available{namespace=\"default\",pod=\"p2\"}", values: "1x400"}
       - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p1\"}", values: "3x400"}
@@ -595,7 +627,12 @@ tests:
       - {eval_time: 300m, alertname: QuaderReplicasNotReady, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderObjectStoreConnectionUnreachable, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderStorageReplicationBacklog, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderStorageCopyDamaged, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderStorageScrubBehind, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderStorageConnectionDetached, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderDatabasePoolSaturated, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderJobsStuck, exp_alerts: []}
@@ -673,29 +710,32 @@ tests:
     alert_rule_test:
       - {eval_time: 30m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
 
-  # p3 keeps its circuit closed: the single-replica alert fires after five minutes, the all-replica alert never does.
-  - name: "QuaderObjectStoreUnreachable fires when every replica has the circuit open, the single-replica alert when only some do"
+  # One connection. p3 keeps its circuit closed: the single-replica alert fires after five minutes for the connection, the all-replica
+  # alerts never do.
+  - name: "QuaderObjectStoreUnreachableSingleReplica fires per connection when only some replicas have its circuit open"
     interval: 1m
     input_series:
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p2\"}", values: "0x10 1x50"}
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p3\"}", values: "0x60"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p2\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p3\"}", values: "0x60"}
     alert_rule_test:
       - {eval_time: 40m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
+      - {eval_time: 40m, alertname: QuaderObjectStoreConnectionUnreachable, exp_alerts: []}
       - {eval_time: 12m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
       - eval_time: 30m
         alertname: QuaderObjectStoreUnreachableSingleReplica
         exp_alerts:
-          - exp_labels: {severity: "warning"}
+          - exp_labels: {severity: "warning", connection: "default"}
             exp_annotations:
-              summary: "The circuit of the object store is open on some replicas and closed on others."
-              description: "The store is reachable from part of the replicas, so the cause is on the path of the affected pods (a node, a network policy, DNS, an egress rule), not the store (R-STOR-033, R-HA-010). Compare the pods by the label pod on quader_storage_s3_circuit_open."
+              summary: "The circuit of the object-store connection default is open on some replicas and closed on others."
+              description: "The connection is reachable from part of the replicas, so the cause is on the path of the affected pods (a node, a network policy, DNS, an egress rule), not the store (R-STOR-060, R-HA-010). Compare the pods by the label pod on quader_storage_s3_circuit_open with this connection."
 
-  - name: "QuaderObjectStoreUnreachable fires after two minutes when all replicas have the circuit open, and the single-replica alert stays silent"
+  # One connection, open on every replica: the critical alert, and not the warning of one of several (Q-HA-391).
+  - name: "QuaderObjectStoreUnreachable fires after two minutes when every replica has the circuit of the one connection open, and the warnings stay silent"
     interval: 1m
     input_series:
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
-      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p2\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p2\"}", values: "0x10 1x50"}
     alert_rule_test:
       - {eval_time: 11m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
       - eval_time: 15m
@@ -703,9 +743,125 @@ tests:
         exp_alerts:
           - exp_labels: {severity: "critical"}
             exp_annotations:
-              summary: "Every replica has the circuit of the object store open."
-              description: "Blob reads and writes fail on all replicas (R-STOR-033, R-HA-010). Metadata and cached content that does not need the store still answer. Check the S3 endpoint, its certificate and the credentials in the Secret."
+              summary: "Every replica has the circuit of every object-store connection open."
+              description: "Blob reads and writes fail on all replicas, because no connection answers (R-STOR-060, R-HA-010, Q-HA-391). Metadata and cached content that does not need the store still answer. Check each connection's endpoint, its certificate and the credentials in its Secret; quader_storage_s3_circuit_open names the connection."
       - {eval_time: 30m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
+      - {eval_time: 30m, alertname: QuaderObjectStoreConnectionUnreachable, exp_alerts: []}
+
+  # Two connections: secondary is down on every replica while default answers. The warning names secondary; nothing is critical.
+  - name: "QuaderObjectStoreConnectionUnreachable fires for one of two connections down on every replica, QuaderObjectStoreUnreachable does not"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x60"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p2\"}", values: "0x60"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"secondary\",pod=\"p2\"}", values: "0x10 1x50"}
+    alert_rule_test:
+      - {eval_time: 11m, alertname: QuaderObjectStoreConnectionUnreachable, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderObjectStoreConnectionUnreachable
+        exp_alerts:
+          - exp_labels: {severity: "warning", connection: "secondary"}
+            exp_annotations:
+              summary: "Every replica has the circuit of the object-store connection secondary open, while another connection answers."
+              description: "Uploads and reads go to the other connections; blobs that only this connection holds answer 503, and its gaps queue up for the reconciliation, which copies them once it answers (R-STOR-053, R-STOR-055, R-STOR-056, Q-HA-391). Check the connection's endpoint, its certificate, its credentials and its provider's status. With one connection this alert never fires; QuaderObjectStoreUnreachable does."
+      - {eval_time: 30m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
+      - {eval_time: 30m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
+
+  # Two connections, both down on every replica: the critical alert alone, and of another namespace nothing.
+  - name: "QuaderObjectStoreUnreachable fires when every connection is down on every replica, and the warning of one connection stays silent"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"other\",connection=\"default\",pod=\"p9\"}", values: "0x60"}
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: QuaderObjectStoreUnreachable
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "Every replica has the circuit of every object-store connection open."
+              description: "Blob reads and writes fail on all replicas, because no connection answers (R-STOR-060, R-HA-010, Q-HA-391). Metadata and cached content that does not need the store still answer. Check each connection's endpoint, its certificate and the credentials in its Secret; quader_storage_s3_circuit_open names the connection."
+      - {eval_time: 15m, alertname: QuaderObjectStoreConnectionUnreachable, exp_alerts: []}
+
+  # The reconciliation's backlog per connection (R-STOR-056, Q-HA-393): secondary's oldest gap is two hours old and fires after 30
+  # minutes; tertiary's is as old but it is filling, so it stays silent; default's is a minute old.
+  - name: "QuaderStorageReplicationBacklog fires for a connection whose oldest gap is older than an hour, not for a filling one"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_reconcile_queue_oldest_seconds{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "60x120"}
+      - {series: "quader_storage_reconcile_queue_oldest_seconds{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "7200x120"}
+      - {series: "quader_storage_reconcile_queue_oldest_seconds{namespace=\"default\",connection=\"tertiary\",pod=\"p1\"}", values: "7200x120"}
+      - {series: "quader_storage_connection_filling{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x120"}
+      - {series: "quader_storage_connection_filling{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x120"}
+      - {series: "quader_storage_connection_filling{namespace=\"default\",connection=\"tertiary\",pod=\"p1\"}", values: "1x120"}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderStorageReplicationBacklog, exp_alerts: []}
+      - eval_time: 40m
+        alertname: QuaderStorageReplicationBacklog
+        exp_alerts:
+          - exp_labels: {severity: "warning", connection: "secondary"}
+            exp_annotations:
+              summary: "A blob has waited more than an hour for its copy on the connection secondary."
+              description: "The oldest gap the reconciliation has queued for this connection is older than an hour, and the connection is not filling (R-STOR-056, Q-HA-393). Until it is copied, such a blob lies on fewer connections than configured. Look at the circuit of the connection, the task storage-reconcile, quader_storage_reconcile_failures_total by reason and storage.reconcile.bytes_per_second."
+
+  - name: "QuaderStorageReplicationBacklog stays silent while every gap is younger than an hour"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_reconcile_queue_oldest_seconds{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "3000x120"}
+    alert_rule_test:
+      - {eval_time: 100m, alertname: QuaderStorageReplicationBacklog, exp_alerts: []}
+
+  # A damaged copy not repaired for an hour (R-STOR-055, R-STOR-027): secondary has one missing copy for 90 minutes; default had a
+  # corrupt one for 20 minutes, which the reconciliation repaired.
+  - name: "QuaderStorageCopyDamaged fires for a copy missing or corrupt for an hour, not for one repaired sooner"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_copies{namespace=\"default\",connection=\"secondary\",state=\"missing\",pod=\"p1\"}", values: "0x10 1x100"}
+      - {series: "quader_storage_copies{namespace=\"default\",connection=\"default\",state=\"corrupt\",pod=\"p1\"}", values: "0x10 1x20 0x80"}
+      - {series: "quader_storage_copies{namespace=\"default\",connection=\"default\",state=\"present\",pod=\"p1\"}", values: "50x110"}
+    alert_rule_test:
+      - {eval_time: 60m, alertname: QuaderStorageCopyDamaged, exp_alerts: []}
+      - eval_time: 80m
+        alertname: QuaderStorageCopyDamaged
+        exp_alerts:
+          - exp_labels: {severity: "warning", connection: "secondary"}
+            exp_annotations:
+              summary: "The connection secondary holds a missing or corrupt copy that has not been repaired for an hour."
+              description: "A read or the scrub found a copy gone or with other bytes, and the reconciliation has not rewritten it from another connection (R-STOR-055, R-STOR-027). The blob is still served from its other copies. Check the reconciliation's failures for this connection and whether another connection holds the blob; GET /api/v1/system/storage-connections shows the counts."
+
+  # The scrub behind its period (R-STOR-027): six hours of overdue copies fire; a shorter stretch does not.
+  - name: "QuaderStorageScrubBehind fires when copies stay overdue for six hours, not for a shorter stretch"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_scrub_overdue_copies{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x30 3x500"}
+      - {series: "quader_storage_scrub_overdue_copies{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x60 5x200 0x270"}
+    alert_rule_test:
+      - {eval_time: 300m, alertname: QuaderStorageScrubBehind, exp_alerts: []}
+      - eval_time: 400m
+        alertname: QuaderStorageScrubBehind
+        exp_alerts:
+          - exp_labels: {severity: "warning", connection: "default"}
+            exp_annotations:
+              summary: "Copies on the connection default have not been read whole within its scrub period."
+              description: "The scrub reads every copy once within the connection's scrub_period (R-STOR-027); copies past it may hold damage nobody has seen. Check the hourly scrub task, storage.scrub.run_duration and the connection's scrub_bytes_per_second against its size."
+
+  # A connection removed while it holds copies (R-STOR-051): 15 minutes detached fire; a rolling update that shows it for five does not.
+  - name: "QuaderStorageConnectionDetached fires after 15 minutes detached, not for a short one"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_connection_detached{namespace=\"default\",connection=\"archive\",pod=\"p1\"}", values: "0x5 1x40"}
+      - {series: "quader_storage_connection_detached{namespace=\"default\",connection=\"default\",pod=\"p1\"}", values: "0x5 1x5 0x35"}
+    alert_rule_test:
+      - {eval_time: 15m, alertname: QuaderStorageConnectionDetached, exp_alerts: []}
+      - eval_time: 30m
+        alertname: QuaderStorageConnectionDetached
+        exp_alerts:
+          - exp_labels: {severity: "warning", connection: "archive"}
+            exp_annotations:
+              summary: "The connection archive holds copies but no replica has it in its configuration."
+              description: "Its element was removed from config.storage.connections without a drain (R-STOR-051). Its copies count for no blob, and the blobs only it holds answer 503. Put the element back, drain it with drain true and remove it once it is drained, or forget it with quader admin storage forget-connection."
 
   - name: "QuaderDatabasePoolSaturated fires when the 95th percentile of the request pool wait is above 100 ms for ten minutes, not the control alert"
     interval: 1m
@@ -1125,26 +1281,27 @@ tests:
     alert_rule_test:
       - {eval_time: 20m, alertname: QuaderBackupVerifyFindings, exp_alerts: []}
 
-  - name: "QuaderRevocationJournalBacklog fires when entries wait for shipping for 15 minutes, and not for a short backlog"
+  - name: "QuaderRevocationJournalBacklog fires per connection when entries wait for shipping to it for 15 minutes, and not for a short backlog"
     interval: 1m
     input_series:
-      - {series: "quader_revocation_journal_pending{namespace=\"default\",pod=\"w1\"}", values: "0x5 4x10 0x30 7x40"}
-      - {series: "quader_revocation_journal_pending{namespace=\"default\",pod=\"w2\"}", values: "0x100"}
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",connection=\"secondary\",pod=\"w1\"}", values: "0x5 4x10 0x30 7x40"}
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",connection=\"default\",pod=\"w1\"}", values: "0x100"}
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",connection=\"secondary\",pod=\"w2\"}", values: "0x100"}
     alert_rule_test:
       - {eval_time: 12m, alertname: QuaderRevocationJournalBacklog, exp_alerts: []}
       - {eval_time: 40m, alertname: QuaderRevocationJournalBacklog, exp_alerts: []}
       - eval_time: 65m
         alertname: QuaderRevocationJournalBacklog
         exp_alerts:
-          - exp_labels: {severity: "warning"}
+          - exp_labels: {severity: "warning", connection: "secondary"}
             exp_annotations:
-              summary: "Entries of the revocation journal have waited for shipping to the blob bucket for 15 minutes."
-              description: "The outbox grows while the object store is out and ships afterwards, so a backlog of 15 minutes means the shipper does not write the _journal/ prefix of the blob bucket, or writes slower than entries arrive (R-HA-054). A restore taken now would replay a journal that lacks those entries, and a revocation among them would not be applied again. Check that worker pods are ready, the object store alerts, the shipper's log records and the write access of the credential to the prefix."
+              summary: "Entries of the revocation journal have waited for shipping to an object-store connection for 15 minutes."
+              description: "The outbox grows while a connection is out and ships afterwards, so a backlog of 15 minutes means the shipper does not write the _journal/ prefix of the connection in the label connection, or writes slower than entries arrive (R-HA-054, storage.md R-STOR-059). A restore taken now would replay a journal that lacks those entries, and a revocation among them would not be applied again. Check that worker pods are ready, the object store alerts, the shipper's log records and the write access of the connection's credential to the prefix."
 
   - name: "QuaderRevocationJournalBacklog stays silent with an empty outbox"
     interval: 1m
     input_series:
-      - {series: "quader_revocation_journal_pending{namespace=\"default\",pod=\"w1\"}", values: "0x60"}
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",connection=\"default\",pod=\"w1\"}", values: "0x60"}
     alert_rule_test:
       - {eval_time: 50m, alertname: QuaderRevocationJournalBacklog, exp_alerts: []}
 

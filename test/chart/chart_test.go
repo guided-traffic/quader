@@ -243,12 +243,6 @@ func envByName(pod any) map[string]any {
 	return out
 }
 
-// s3SettingEnv are the variables that read the non-secret S3 settings from the provisioner's
-// Secret (secrets.s3.bucketKey, regionKey, endpointKey).
-var s3SettingEnv = map[string]bool{
-	"QUADER_STORAGE_S3_BUCKET": true, "QUADER_STORAGE_S3_REGION": true, "QUADER_STORAGE_S3_ENDPOINT": true,
-}
-
 func base(file string) string { return filepath.Base(file) }
 
 // eachSet runs fn once per value set as a subtest.
@@ -570,8 +564,8 @@ func TestChart(t *testing.T) {
 			{"base_url empty", []string{"config.server.base_url="}, []string{"config.server.base_url"}},
 			{"database host empty", []string{"config.database.host="}, []string{"config.database.host"}},
 			{"database secret empty", []string{"secrets.database.existingSecret="}, []string{"secrets.database.existingSecret"}},
-			{"bucket empty", []string{"config.storage.s3.bucket="}, []string{"config.storage.s3.bucket"}},
-			{"static s3 without secret", []string{"config.storage.s3.credentials.source=static"}, []string{"config.storage.s3.credentials.source", "secrets.s3.existingSecret"}},
+			{"bucket empty", []string{"config.storage.connections[0].bucket="}, []string{"config.storage.connections[0] (default)", "has no bucket", "bucketKey"}},
+			{"static s3 without secret", []string{"config.storage.connections[0].credentials_source=static"}, []string{"config.storage.connections[0] (default)", "credentials_source: static", "secrets.storageConnections"}},
 			{"encryption secret empty", []string{enc + "="}, []string{enc, "secrets.encryption.keys"}},
 			{"encryption keys empty", []string{"secrets.encryption.keys=null"}, []string{enc, "secrets.encryption.keys"}},
 			{"web below two replicas", []string{"packages.replicaCount=1"}, []string{"packages.replicaCount", "quader-packages"}},
@@ -630,7 +624,7 @@ func TestChart(t *testing.T) {
 	t.Run("R-HA-029 and R-HA-027 without the encryption-key Secret the error prints the creation command", func(t *testing.T) {
 		out, stderr, err := helm(t, "template", "quader", chartDir, "--namespace", "artifacts",
 			"--set", "config.server.base_url=https://quader.example.com",
-			"--set", "config.database.host=db", "--set", "config.storage.s3.bucket=b",
+			"--set", "config.database.host=db", "--set", "config.storage.connections[0].bucket=b",
 			"--set", "config.valkey.sentinel.addresses={a:1,b:1,c:1}", "--set", "config.valkey.sentinel.primary_name=quader",
 			"--set", "secrets.database.existingSecret=db", "--set", "secrets.valkey.existingSecret=vk")
 		if err == nil {
@@ -753,9 +747,8 @@ func TestChart(t *testing.T) {
 					}
 				}
 				for _, e := range list(pod, "containers", "0", "env") {
-					// The one exception: the non-secret settings of an S3 provisioner's Secret
-					// (bucket, region, endpoint) are read from it by secretKeyRef.
-					if at(e, "valueFrom", "secretKeyRef") != nil && !s3SettingEnv[str(e, "name")] {
+					// No exception: a provisioner's bucket, region and endpoint are files too (R-HA-072).
+					if at(e, "valueFrom", "secretKeyRef") != nil {
 						t.Errorf("%s: env %s reads a Secret", name, str(e, "name"))
 					}
 					n := strings.ToLower(str(e, "name"))
@@ -812,23 +805,23 @@ func TestChart(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := map[string][]string{
-			"/var/run/secrets/quader/database/username":        {"database", "username_file"},
-			"/var/run/secrets/quader/database/password":        {"database", "password_file"},
-			"/var/run/secrets/quader/database-ca/ca.crt":       {"database", "ssl_root_cert_file"},
-			"/var/run/secrets/quader/database-client/tls.crt":  {"database", "ssl_cert_file"},
-			"/var/run/secrets/quader/database-client/tls.key":  {"database", "ssl_key_file"},
-			"/var/run/secrets/quader/valkey/username":          {"valkey", "username_file"},
-			"/var/run/secrets/quader/valkey/password":          {"valkey", "password_file"},
-			"/var/run/secrets/quader/valkey-sentinel/password": {"valkey", "sentinel", "password_file"},
-			"/var/run/secrets/quader/valkey-ca/ca.crt":         {"valkey", "tls", "ca_file"},
-			"/var/run/secrets/quader/valkey-client/tls.crt":    {"valkey", "tls", "cert_file"},
-			"/var/run/secrets/quader/valkey-client/tls.key":    {"valkey", "tls", "key_file"},
-			"/var/run/secrets/quader/s3/access-key-id":         {"storage", "s3", "credentials", "access_key_id_file"},
-			"/var/run/secrets/quader/s3/secret-access-key":     {"storage", "s3", "credentials", "secret_access_key_file"},
-			"/var/run/secrets/quader/metrics/token":            {"metrics", "bearer_token_file"},
-			"/var/lib/quader/spool":                            {"storage", "spool", "dir"},
-			"/var/run/secrets/quader/encryption/2026-10.key":   {"secrets", "encryption_key_files", "0"},
-			"/var/run/secrets/quader/encryption/2026-04.key":   {"secrets", "encryption_key_files", "1"},
+			"/var/run/secrets/quader/database/username":            {"database", "username_file"},
+			"/var/run/secrets/quader/database/password":            {"database", "password_file"},
+			"/var/run/secrets/quader/database-ca/ca.crt":           {"database", "ssl_root_cert_file"},
+			"/var/run/secrets/quader/database-client/tls.crt":      {"database", "ssl_cert_file"},
+			"/var/run/secrets/quader/database-client/tls.key":      {"database", "ssl_key_file"},
+			"/var/run/secrets/quader/valkey/username":              {"valkey", "username_file"},
+			"/var/run/secrets/quader/valkey/password":              {"valkey", "password_file"},
+			"/var/run/secrets/quader/valkey-sentinel/password":     {"valkey", "sentinel", "password_file"},
+			"/var/run/secrets/quader/valkey-ca/ca.crt":             {"valkey", "tls", "ca_file"},
+			"/var/run/secrets/quader/valkey-client/tls.crt":        {"valkey", "tls", "cert_file"},
+			"/var/run/secrets/quader/valkey-client/tls.key":        {"valkey", "tls", "key_file"},
+			"/var/run/secrets/quader/s3-default/access-key-id":     {"storage", "connections", "0", "access_key_id_file"},
+			"/var/run/secrets/quader/s3-default/secret-access-key": {"storage", "connections", "0", "secret_access_key_file"},
+			"/var/run/secrets/quader/metrics/token":                {"metrics", "bearer_token_file"},
+			"/var/lib/quader/spool":                                {"storage", "spool", "dir"},
+			"/var/run/secrets/quader/encryption/2026-10.key":       {"secrets", "encryption_key_files", "0"},
+			"/var/run/secrets/quader/encryption/2026-04.key":       {"secrets", "encryption_key_files", "1"},
 		}
 		for value, path := range want {
 			if got := str(cfg, path...); got != value {
@@ -871,7 +864,6 @@ func TestChart(t *testing.T) {
 							if !strings.Contains(name, "-worker") {
 								t.Errorf("%s sets %s, which only a worker Deployment does", name, v)
 							}
-						case "QUADER_STORAGE_S3_BUCKET", "QUADER_STORAGE_S3_REGION", "QUADER_STORAGE_S3_ENDPOINT": // from the S3 Secret
 						case "QUADER_SERVER_SCAN_LISTEN": // the scan listener of the main packages Deployment (R-HA-066)
 							if name != "quader-packages" {
 								t.Errorf("%s sets QUADER_SERVER_SCAN_LISTEN, which only the main packages Deployment does", name)
@@ -1404,10 +1396,7 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 		for _, f := range valueSets {
 			t.Run(base(f), func(t *testing.T) {
 				_, docs := render(t, []string{f})
-				cfgPath := filepath.Join(t.TempDir(), "quader.yaml")
-				if err := os.WriteFile(cfgPath, []byte(str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")), 0o600); err != nil {
-					t.Fatal(err)
-				}
+				rendered := str(find(docs, "ConfigMap", "quader-config"), "data", "quader.yaml")
 				pods := map[string]any{}
 				for _, d := range ofKind(docs, "Deployment") {
 					pods[strings.TrimPrefix(str(d, "metadata", "name"), "quader-")] = at(d, "spec", "template", "spec")
@@ -1417,6 +1406,7 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 				}
 				for name, pod := range pods {
 					t.Run(name, func(t *testing.T) {
+						cfgPath := withObjectStoreFiles(t, rendered, pod)
 						cmd := exec.Command(bin, "admin", "config", "validate", "--config", cfgPath, "--format", "json")
 						cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
 						for n, e := range envByName(pod) {
@@ -1435,15 +1425,6 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 						if args := containerArgs(pod); len(args) == 3 && args[0] == "serve" && args[1] == "--role" {
 							cmd.Env = append(cmd.Env, "QUADER_PROCESS_ROLE="+args[2])
 						}
-						if name == "migrate" {
-							// validate checks the rules of a serving replica, which want the bucket; the
-							// Job itself needs no object store, so take the packages pod's S3 settings.
-							for n := range s3SettingEnv {
-								if e := envByName(pods["packages"])[n]; e != nil {
-									cmd.Env = append(cmd.Env, n+"=test")
-								}
-							}
-						}
 						if out, err := cmd.CombinedOutput(); err != nil {
 							t.Fatalf("quader admin config validate: %v\n%s", err, out)
 						}
@@ -1452,6 +1433,39 @@ func TestRenderedConfigurationPassesTheBinary(t *testing.T) {
 			})
 		}
 	})
+}
+
+// withObjectStoreFiles writes the rendered configuration file for one pod and returns its path. The files of the pod's
+// object-store mounts (the volumes secret-s3-*, R-HA-072) are created under a temporary directory with the content "test", and the
+// file's paths below /var/run/secrets/quader/s3- point there, so that a validator that reads a connection's *_file keys sees what
+// the pod sees: a file it mounts exists, one it does not mount is missing.
+func withObjectStoreFiles(t *testing.T, rendered string, pod any) string {
+	t.Helper()
+	root := t.TempDir()
+	mounts := map[string]string{}
+	for _, m := range list(pod, "containers", "0", "volumeMounts") {
+		mounts[str(m, "name")] = str(m, "mountPath")
+	}
+	for _, v := range list(pod, "volumes") {
+		if !strings.HasPrefix(str(v, "name"), "secret-s3-") || mounts[str(v, "name")] == "" {
+			continue
+		}
+		dir := filepath.Join(root, mounts[str(v, "name")])
+		if err := os.MkdirAll(dir, 0o750); err != nil {
+			t.Fatal(err)
+		}
+		for _, it := range list(v, "secret", "items") {
+			if err := os.WriteFile(filepath.Join(dir, str(it, "path")), []byte("test"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	cfgPath := filepath.Join(root, "quader.yaml")
+	cfg := strings.ReplaceAll(rendered, "/var/run/secrets/quader/s3-", root+"/var/run/secrets/quader/s3-")
+	if err := os.WriteFile(cfgPath, []byte(cfg), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return cfgPath
 }
 
 // pod env as the binary sees it: literal values, the downward API as "test".

@@ -426,7 +426,6 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Scan listener | `QUADER_SERVER_SCAN_LISTEN=:8082`, set by the chart on the main `packages` Deployment while the image scanning or the malware scanning is on | yes (`_vuln.tpl`) |
 | Kind of scanner | `QUADER_PROCESS_SCANNER_KIND=clamav`, set by the chart on `<fullname>-malware-scanner-clamav`, `freshclam` on `<fullname>-malware-updater-freshclam`, and `trivy-db` on the container `database` of `<fullname>-vuln-scanner-trivy`, whose container `quader` runs the default, `trivy` | yes (`malware-scanner-clamav.yaml`, `malware-updater-freshclam.yaml`, `vuln-scanner-trivy.yaml`) |
 | Loader of the image scanner's database | the container `database` of `<fullname>-vuln-scanner-trivy`: `QUADER_SERVER_OPS_LISTEN=:8083` (its operations listener, liveness only), `QUADER_VULNERABILITIES_IMAGES_DATABASE_DIR_BUDGET` from `vulnScannerTrivy.database.sizeLimit`; the volume `trivy-db` at `/var/lib/quader/trivy-db`, each database below `<64 hex digits of its layer's digest>/db/` | yes (`vuln-scanner-trivy.yaml`, [R-HA-070](docs/spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)) |
-| Object-store settings from a Secret | `QUADER_STORAGE_S3_BUCKET`, `QUADER_STORAGE_S3_ENDPOINT`, `QUADER_STORAGE_S3_REGION`, each read from a key of `secrets.s3` when that key is set | yes (`deploy/helm/quader/templates/_endpoints.tpl`) |
 | Dev profile | `QUADER_DEV_HTTP_PORT` (edge port, default `8080`), `QUADER_PROFILE` (`default` or `scatter`) | yes (`deploy/dev/`) |
 | M1 settings | `QUADER_<SECTION>_<KEY>` for `auth`, `authz`, `api`, `repositories`, with nested keys joined by `_`: `QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE`, `QUADER_API_RATE_LIMITS_EXEMPT_ADMINS` (the rule of the configuration override above) | yes |
 
@@ -443,15 +442,19 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Listener client CA mount | `/var/run/secrets/quader/tls-client-ca/ca.crt` (the pods that open :8080: `api`, `packages` and their path pools) | yes |
 | Endpoint certificate mount | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`tls.crt`, `tls.key`; `n` is the position in `tls.certificates`), client CA at `…/<name>/client-ca/ca.crt` | yes (`_endpoints.tpl`) |
 | PostgreSQL CA and client pair | `/var/run/secrets/quader/database-ca/ca.crt`, `/var/run/secrets/quader/database-client/tls.{crt,key}` | yes |
-| Object-store CA | `/var/run/secrets/quader/s3-ca/ca.crt` (`secrets.s3CA`; renders `storage.s3.ca_file`) | yes |
-| Trusted CA bundle | `/etc/quader/ca/<key>` for each file of `trustedCA.keys` (default `ca-bundle.crt`), from a Secret or ConfigMap, in every pod of the release; listed in `proxy.outbound.tls.ca_files` after the operator's own, and with `trustedCA.useForObjectStore` the one file is `storage.s3.ca_file` | yes (`_secrets.tpl`, `_helpers.tpl`) |
+| Object-store connection id | `config.storage.connections[].id`, `^[a-z][a-z0-9-]{0,30}[a-z0-9]$`, `default` for the element without one (at most one); the entry of `secrets.storageConnections` that carries the connection's Secrets has it as `connectionId` | yes (`_storage.tpl`, [R-HA-072](docs/spec/ha-and-helm.md#r-ha-072--the-object-store-connections-in-the-chart)) |
+| Object-store connection volumes | `secret-s3-<id>`, `secret-s3-<id>-location`, `secret-s3-<id>-ca`, `secret-s3-<id>-backup`, `secret-s3-<id>-journal`, one per field of the entry | yes (`_storage.tpl`) |
+| Object-store keys of a connection | `/var/run/secrets/quader/s3-<id>/{access-key-id,secret-access-key}`, and `session-token` with `sessionTokenKey` (the entry's `existingSecret`, with `credentials_source: static`; renders the element's `access_key_id_file`, `secret_access_key_file`, `session_token_file`); `api`, `packages`, `worker`, restore and post-restore pods | yes (`_storage.tpl`) |
+| Object-store location from a provisioner's Secret | `/var/run/secrets/quader/s3-<id>-location/{bucket,region,endpoint}`, one file per `bucketKey`, `regionKey`, `endpointKey` of the entry; renders `bucket_file`, `region_file`, `endpoint_file`; the same pods and the backup pods | yes (`_storage.tpl`) |
+| Object-store CA of a connection | `/var/run/secrets/quader/s3-<id>-ca/ca.crt` (the entry's `ca`; renders the element's `ca_file`); the same pods and the backup pods | yes (`_storage.tpl`) |
+| Trusted CA bundle | `/etc/quader/ca/<key>` for each file of `trustedCA.keys` (default `ca-bundle.crt`), from a Secret or ConfigMap, in every pod of the release; listed in `proxy.outbound.tls.ca_files` after the operator's own, and with `trustedCA.useForObjectStore` the one file is the `ca_file` of every connection without a `ca` of its own | yes (`_secrets.tpl`, `_storage.tpl`) |
 | Break-glass password mount | `/var/run/secrets/quader/break-glass/password` (`secrets.breakGlass`; renders `auth.break_glass.password_file`; `api` pods only) | yes (`_secrets.tpl`) |
 | OIDC client secret mount | `/var/run/secrets/quader/oidc-<providerId>/client-secret` (`secrets.oidc[]`; renders `auth.oidc.providers.<providerId>.client_secret_file`; `api` pods only) | yes |
 | Valkey CA and client pair | `/var/run/secrets/quader/valkey-ca/ca.crt`, `/var/run/secrets/quader/valkey-client/tls.{crt,key}` | yes |
 | Backup target keys | `/var/run/secrets/quader/backup-target/{access-key-id,secret-access-key}`, and `session-token` with `secrets.backupTarget.sessionTokenKey` (`secrets.backupTarget`, with `config.backup.target.credentials.source: static`; renders `backup.target.credentials.*_file`; backup and restore pods only) | yes (`_secrets.tpl`, `_helpers.tpl`) |
 | Backup target CA | `/var/run/secrets/quader/backup-target-ca/ca.crt` (`secrets.backupTargetCA`; renders `backup.target.ca_file`, the target's whole trust store; backup and restore pods only) | yes |
-| Blob read login of the backup | `/var/run/secrets/quader/backup-source/{access-key-id,secret-access-key}` (`secrets.backupSource`, with `config.storage.s3.credentials.source: static` and `backup.enabled`; renders `backup.source`; backup pods only, in place of `secrets.s3`) | yes |
-| Journal reader | `/var/run/secrets/quader/journal-reader/{access-key-id,secret-access-key}` (`secrets.journalReader`, with `journalCredentials.source: static`), named by the credentials file `/etc/quader/restore/credentials.yaml` or `/etc/quader/post-restore/credentials.yaml` (ConfigMap `<fullname>-restore`, `<fullname>-post-restore`); restore and post-restore pods only | yes (`_backup.tpl`) |
+| Read login of the backup per connection | `/var/run/secrets/quader/s3-<id>-backup/{access-key-id,secret-access-key}` (the entry's `backupSource`, required with `credentials_source: static` while `backup.enabled`; renders `backup.source` with the first connection's, the one the backup reads; backup pods only, in place of the connection's runtime keys) | yes (`_storage.tpl`) |
+| Journal reader | `/var/run/secrets/quader/s3-<id>-journal/{access-key-id,secret-access-key}` (the entry's `journalReader`, with `journalCredentials.source: static`); the credentials file `/etc/quader/restore/credentials.yaml` or `/etc/quader/post-restore/credentials.yaml` (ConfigMap `<fullname>-restore`, `<fullname>-post-restore`) names the one of the first connection; restore and post-restore pods only | yes (`_backup.tpl`, `_storage.tpl`) |
 | Kubernetes Service port of an endpoint | `<fullname>-ep-<name>`, port from `endpoints.<name>.port` | yes (`endpoint-services.yaml`) |
 | Metric families | `quader_tls_certificate_expiry_timestamp_seconds`, `quader_tls_reloads_total`, `quader_tls_reload_errors_total`, labels `kind`, `listener`, `name` | yes (`internal/tlsfiles/metrics.go`) |
 
@@ -666,7 +669,7 @@ of at most 30, or 37 if it contains `quader`); the message names that name and w
 | Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port); `<fullname>-vuln-scanner-trivy` (8080, while the image scanning is on), `<fullname>-malware-scanner-clamav` (8080, while the malware scanning is on), `<fullname>-malware-updater-freshclam` (8080, while the updater renders) and `<fullname>-packages-scan` (8082, while either scanning is on), always `ClusterIP` | yes |
 | Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing); `<fullname>-vuln-scanner-trivy` admits 8080 from the worker that claims `vuln`, `<fullname>-malware-scanner-clamav` and `<fullname>-malware-updater-freshclam` 8080 from the worker that claims `malware`, and `<fullname>-packages` 8082 from the pods of both scanners and the updater | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
-| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 48 alerts: 30 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`), the four of the malware scanning while `config.malware.enabled` (`QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable`, `QuaderMalwareBacklog`), the four of the signatures while `config.signatures.enabled` (`QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`, `QuaderSignatureGatePending`), the four of the signing identity while `config.signing.enabled` (`QuaderSigningIdentityExpiring`, `QuaderSigningIdentityExpired`, `QuaderSigningIdentityNotLoaded`, `QuaderSigningBacklog`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
+| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 54 alerts: 36 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreConnectionUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderStorageReplicationBacklog`, `QuaderStorageCopyDamaged`, `QuaderStorageScrubBehind`, `QuaderStorageConnectionDetached`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderBlobCorrupt`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`), the four of the malware scanning while `config.malware.enabled` (`QuaderMalwareFound`, `QuaderMalwareDatabaseStale`, `QuaderMalwareScannerUnavailable`, `QuaderMalwareBacklog`), the four of the signatures while `config.signatures.enabled` (`QuaderSignatureInvalid`, `QuaderSignatureBacklog`, `QuaderSignatureTrustRootStale`, `QuaderSignatureGatePending`), the four of the signing identity while `config.signing.enabled` (`QuaderSigningIdentityExpiring`, `QuaderSigningIdentityExpired`, `QuaderSigningIdentityNotLoaded`, `QuaderSigningBacklog`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
 | Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so `<fullname>-backup` must stay within 52 characters, which every `<fullname>` the chart accepts does; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
 | Restore Job | `<fullname>-restore` with `restore.enabled`, `quader backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/quader/templates/restore.yaml)) |
 | Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `quader/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml)) |
@@ -741,7 +744,7 @@ of at most 30, or 37 if it contains `quader`); the message names that name and w
 | Image scanning's subject | `system:vuln-scanner-trivy`, the name of the unit that reads: the principal of a scan token on the scan listener; the usage store records it as `system`, credential `vuln-scanner-trivy` | read of the one repository its token names while it is active and not disabled, never fill ([system.go](internal/authz/system.go), [subject.go](internal/limits/subject.go)) |
 | Scan token | a registry token of the kind `scan`: claims `s` (`vuln-scanner-trivy`), `sid` (the scan ID the logs carry), `d` (the manifest's digest); endpoint `scan`; lifetime `vulnerabilities.images.pull_timeout` | [registrytoken/scan.go](internal/auth/registrytoken/scan.go) |
 | Scanner's answer header | `Quader-Analyser-Version` on the scanner's answer; `Quader-Error-Code: populate_not_permitted` on the scan listener's refusal of an uncached remote layer | [scanner.go](internal/vuln/scanner/scanner.go), [errors.go](internal/formats/oci/errors.go) |
-| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
+| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreConnectionUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderStorageReplicationBacklog`, `QuaderStorageCopyDamaged`, `QuaderStorageScrubBehind`, `QuaderStorageConnectionDetached`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderVulnerabilityImageScannerUnavailable`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderBlobCorrupt` | the names `metrics.prometheusRule.disabledAlerts` accepts |
 | Tables | `vuln_source_state`, `vuln_advisory`, `vuln_affected`, `vuln_pending_evaluation`, `vuln_kev`, `vuln_claimed_match`, `vuln_finding`, `vuln_finding_event`, `vuln_sync_touched` | migrations 00035 to 00039; `vuln_finding` and `vuln_finding_event` are data in an export, the others transient ([tables_vuln.go](internal/meta/postgres/tables_vuln.go)) |
 
 ### Audit event types
@@ -1067,8 +1070,11 @@ config:
 secrets:
   backupTarget:
     existingSecret: quader-backup-target   # example; keys access-key-id and secret-access-key
-  backupSource:
-    existingSecret: quader-blob-reader     # example; required while config.storage.s3.credentials.source is static: a login that may only read the blob bucket
+  storageConnections:
+    - connectionId: default
+      existingSecret: quader-s3            # example: the connection's static keys
+      backupSource:
+        existingSecret: quader-blob-reader # example; required while the connection's credentials_source is static: a login that may only read its bucket
 ```
 
 ```shell
@@ -1463,7 +1469,7 @@ storage:
     prefix: quader                       # default: letters, digits and !_.*'()/- ; no leading or trailing /
     force_path_style: false             # default; true for SeaweedFS, MinIO and Ceph RGW
     allow_insecure_endpoint: false      # default; needed for an http:// endpoint
-    ca_file: ""                         # default: empty = the outbound trust store (system roots plus proxy.outbound.tls.ca_files); set = the whole trust store of the object-store client. The chart sets it through secrets.s3CA
+    ca_file: ""                         # default: empty = the outbound trust store (system roots plus proxy.outbound.tls.ca_files); set = the whole trust store of the object-store client. The chart sets a connection's ca_file through the ca of its entry of secrets.storageConnections
     storage_class: ""                   # default
     payload_checksum: sha256            # default: sha256 | md5 | none
     startup_check: true                 # default: object-store conformance check before the first readiness
@@ -1730,7 +1736,7 @@ backup:
       kms_key_id: ""                    # default; required with kms
       bucket_key: true                  # default
   source:                               # the credential the backup reads the blob bucket with; it never writes or deletes there
-    separate_credentials: false         # default: false = storage.s3.credentials; the chart sets true with static S3 keys and secrets.backupSource
+    separate_credentials: false         # default: false = the credential of the first storage connection; the chart sets true with the backupSource of the first connection's entry of secrets.storageConnections
     credentials: {source: default}      # default; the keys of backup.target.credentials; static needs access_key_id_file and secret_access_key_file
   database:
     parallel: 2                         # default: export connections besides the snapshot connection
@@ -3206,13 +3212,26 @@ secrets:
     existingSecret: ""                  # default: no client certificate
     certKey: tls.crt                    # default
     keyKey: tls.key                     # default
-  s3:
-    existingSecret: ""                  # default; required with credentials.source static; also the provisioner's Secret when a key below is set
-    accessKeyIdKey: access-key-id       # default; the provisioner writes AWS_ACCESS_KEY_ID
-    secretAccessKeyKey: secret-access-key   # default; the provisioner writes AWS_SECRET_ACCESS_KEY
-    bucketKey: ""                       # default: empty = config.storage.s3.bucket; example: S3_BUCKET (set = QUADER_STORAGE_S3_BUCKET reads it)
-    regionKey: ""                       # default: empty = config.storage.s3.region; example: S3_REGION
-    endpointKey: ""                     # default: empty = config.storage.s3.endpoint; example: S3_ENDPOINT (a host without scheme, reached over https)
+  storageConnections:                   # default: [] (no Secret: workload identity, the bucket in config); one entry per connection of config.storage.connections that needs one (R-HA-072)
+    - connectionId: default             # example: the id of an element of config.storage.connections; required, one entry per connection
+      existingSecret: quader-s3         # example: the static keys (with credentials_source static), or an S3 provisioner's Secret when a *Key is set; api, packages, worker, restore and post-restore pods
+      accessKeyIdKey: access-key-id     # default; a provisioner writes AWS_ACCESS_KEY_ID
+      secretAccessKeyKey: secret-access-key   # default; a provisioner writes AWS_SECRET_ACCESS_KEY
+      sessionTokenKey: ""               # default: empty = no session token; set = /var/run/secrets/quader/s3-<id>/session-token, the element's session_token_file
+      bucketKey: ""                     # default: empty = the element's bucket; example: S3_BUCKET (set = the element's bucket_file, /var/run/secrets/quader/s3-<id>-location/bucket; the element then has no bucket)
+      regionKey: ""                     # default: empty = the element's region; example: S3_REGION (set = region_file)
+      endpointKey: ""                   # default: empty = the element's endpoint; example: S3_ENDPOINT (a host without scheme, reached over https; set = endpoint_file)
+      ca:
+        existingSecret: ""              # default: empty = the outbound trust store, or trustedCA with useForObjectStore; example: internal-truststore. Also in the backup pods
+        key: ca.crt                     # default; mounted at /var/run/secrets/quader/s3-<id>-ca/ca.crt, renders the element's ca_file (the connection's whole trust store)
+      backupSource:
+        existingSecret: ""              # default; required with credentials_source static while backup.enabled; example: quader-blob-reader, a login that may only read this connection (s3:GetObject, s3:ListBucket). Backup pods only, in place of the runtime keys
+        accessKeyIdKey: access-key-id   # default
+        secretAccessKeyKey: secret-access-key   # default
+      journalReader:
+        existingSecret: ""              # default; required for the first connection with journalCredentials.source static of restore or postRestore; example: quader-journal-reader, a login that may list this connection's object versions (s3:ListBucketVersions). Those Jobs only
+        accessKeyIdKey: access-key-id   # default
+        secretAccessKeyKey: secret-access-key   # default
   valkey:
     existingSecret: ""                  # required; example: quader-valkey
     usernameKey: username               # default; empty = the default user, the file is not mounted
@@ -3226,20 +3245,9 @@ secrets:
     accessKeyIdKey: access-key-id       # default
     secretAccessKeyKey: secret-access-key   # default
     sessionTokenKey: ""                 # default: empty = no session token
-  backupSource:
-    existingSecret: ""                  # default; required with backup.enabled and config.storage.s3.credentials.source static; example: quader-blob-reader, a login that may only read the blob bucket (s3:GetObject, s3:ListBucket). Backup pods only, in place of secrets.s3
-    accessKeyIdKey: access-key-id       # default
-    secretAccessKeyKey: secret-access-key   # default
-  journalReader:
-    existingSecret: ""                  # default; required with journalCredentials.source static of restore or postRestore; example: quader-journal-reader, a login that may list the object versions of the blob bucket (s3:ListBucketVersions). Those Jobs only
-    accessKeyIdKey: access-key-id       # default
-    secretAccessKeyKey: secret-access-key   # default
   backupTargetCA:
     existingSecret: ""                  # default: empty = the system trust store; example: quader-backup-target-tls. Renders backup.target.ca_file; backup and restore pods only
     key: ca.crt                         # default
-  s3CA:
-    existingSecret: ""                  # default: empty = the outbound trust store (system roots, config.proxy.outbound.tls.ca_files); example: quader-s3-tls
-    key: ca.crt                         # default; mounted at /var/run/secrets/quader/s3-ca/ca.crt, renders storage.s3.ca_file (the whole trust store of the object-store client)
   valkeyCA:
     existingSecret: ""                  # default: empty = the system roots; example: quader-valkey-ca
     key: ca.crt                         # default
@@ -3270,7 +3278,7 @@ trustedCA:
   existingSecret: ""                    # default: empty = no bundle; at most one of existingSecret and existingConfigMap; example: corp-ca-bundle
   existingConfigMap: ""                 # default; example: corp-ca-bundle (a trust-manager Bundle target)
   keys: [ca-bundle.crt]                 # default; the files of the source that are mounted at /etc/quader/ca/, each a PEM bundle; a plain file name
-  useForObjectStore: false              # default; true also sets storage.s3.ca_file to the one file of keys (exactly one key, not with secrets.s3CA)
+  useForObjectStore: false              # default; true also sets the ca_file of every connection without a ca in secrets.storageConnections to the one file of keys (exactly one key)
 ```
 
 The files are added to the system roots for every outbound TLS connection (upstreams, OIDC issuers, GitLab, webhooks) of every pod of the
@@ -3464,9 +3472,15 @@ config:                                 # rendered to /etc/quader/quader.yaml; c
     tls:
       mode: verify-full                 # default
   storage:
-    s3:
-      bucket: ""                        # required; example: quader-blobs
-      force_path_style: false           # default
+    connections:                        # one to eight; list order = write and read order; a list given here replaces the default whole (storage.md R-STOR-050, R-HA-072)
+      - id: default                     # default; the element without id is default, at most one may leave it out; never changes, never reused
+        bucket: ""                      # required unless the entry of secrets.storageConnections has bucketKey; example: quader-blobs
+        prefix: quader                  # default; fixed once the connection holds data
+        region: ""                      # default: empty; example: eu-central-1
+        endpoint: ""                    # default: empty = AWS resolution; example: object.storage.example.net (a host without scheme means https)
+        force_path_style: false         # default; true for SeaweedFS, MinIO and Ceph RGW
+        credentials_source: default     # default: default | webIdentity | static (the entry's existingSecret)
+        role_arn: ""                    # default; example: arn:aws:iam::123456789012:role/quader-blobs
   metrics:
     auth: none                          # default: none | static
 ```
@@ -3552,7 +3566,7 @@ restore:
   skipRevocationJournal: false          # default; true only when the source's blob bucket is gone: revocations after the snapshot then come back
   extraArgs: []                         # default; appended to quader backup restore; example: [--check], a run of the preconditions only
   journalCredentials:
-    source: runtime                     # default: runtime (the blob store's credential, a plain listing) | default (the Job's workload identity lists object versions) | static (secrets.journalReader)
+    source: runtime                     # default: runtime (the blob store's credential, a plain listing) | default (the Job's workload identity lists object versions) | static (the journalReader of the first connection's entry of secrets.storageConnections)
   backoffLimit: 2                       # default; a drain or an eviction does not count, and every retry resumes the restore
   activeDeadlineSeconds: 0              # default: 0 = not rendered
   terminationGracePeriodSeconds: 60     # default; at least 30
@@ -3591,8 +3605,8 @@ config:
   backup:                               # the keys the chart reads; the whole section is in the configuration reference above
     target:
       bucket: ""                        # default: empty; required with backup.enabled or restore.enabled; example: quader-backups
-      endpoint: ""                      # default: AWS resolution; compared with config.storage.s3.endpoint for the same-bucket rule
-      prefix: quader                     # default; in a shared bucket it must neither contain config.storage.s3.prefix nor lie inside it
+      endpoint: ""                      # default: AWS resolution; compared with the endpoint of every connection for the same-bucket rule
+      prefix: quader                     # default; in a bucket shared with a connection it must neither contain that connection's prefix nor lie inside it
       allow_same_bucket: false          # default
       credentials:
         source: default                 # default: default | webIdentity | static (secrets.backupTarget)
@@ -3601,19 +3615,19 @@ config:
 
 What the render refuses ([_validate_backup.tpl](deploy/helm/quader/templates/_validate_backup.tpl)), each time naming the value:
 `backup.enabled` or `restore.enabled` without `config.backup.target.bucket`; a
-`backup.schedule` outside the dialect of Quader's cron parser; the target in the blob store's bucket on the same endpoint without
-`allow_same_bucket`, or with prefixes that contain each other (the orphan sweep of the blob store would delete the backups);
-`config.backup.target.credentials.source: static` without `secrets.backupTarget`; `backup.enabled` with static S3 keys and no
-`secrets.backupSource`; `restore.enabled` without `restore.backupId`; `restore.enabled` or `postRestore.enabled` with a replica or an
+`backup.schedule` outside the dialect of Quader's cron parser; the target in the bucket of a connection on the same endpoint without
+`allow_same_bucket`, or with prefixes that contain each other (the orphan sweep of that connection would delete the backups);
+`config.backup.target.credentials.source: static` without `secrets.backupTarget`; `backup.enabled` with a connection of
+`credentials_source: static` whose entry of `secrets.storageConnections` has no `backupSource`; `restore.enabled` without `restore.backupId`; `restore.enabled` or `postRestore.enabled` with a replica or an
 autoscaler on any role, pool or endpoint pool; a `postRestore.restoredTo` that is not RFC 3339; `postRestore.enabled`
-together with `restore.enabled`; `journalCredentials.source: static` without `secrets.journalReader`; `skipRevocationJournal` with a
+together with `restore.enabled`; `journalCredentials.source: static` without a `journalReader` in the entry of the first connection; `skipRevocationJournal` with a
 `journalCredentials.source` other than `runtime`.
 
 Security notes ([backup and restore](docs/security/backup-and-restore.md#who-holds-what)):
 
 - **The backup pod** holds the target's credential, the backup's database login (`secrets.databaseBackup`, else the runtime login) and
-  a read-only login of the blob bucket: `secrets.backupSource` with static S3 keys, otherwise the identity of the ServiceAccount
-  `<fullname>-backup`. It never holds the key ring, a Valkey credential or, with static keys, the runtime credential of the blob bucket,
+  a read-only login of each connection: the entry's `backupSource` with static keys, otherwise the identity of the ServiceAccount
+  `<fullname>-backup`. It never holds the key ring, a Valkey credential or, with static keys, the runtime credential of a connection,
   so a compromised backup pod can read the installation's content but cannot write or delete a blob or a journal entry. Give the target
   credential no right to delete object versions, and the target bucket Object Lock where the store offers it: the backup then cannot
   destroy what the lock keeps.

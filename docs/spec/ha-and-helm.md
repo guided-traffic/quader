@@ -886,11 +886,22 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 The chart's side of several object-store connections ([storage.md](storage.md) R-STOR-050; the owner's decision 9 of 2026-11-22:
-connections are kept in the chart as a list, their credentials come from Secrets as today, the admin area only shows them). Specified,
-not built; until then the chart has `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` and `secrets.journalReader`.
+connections are kept in the chart as a list, their credentials come from Secrets as today, the admin area only shows them).
 
-- **The list** is `config.storage.connections`, passed through like every key of `config`; the values file holds one element with the
-  defaults of the plain path, so an installation with one connection sets `bucket` (or a provisioner's key below) and nothing else:
+**Status.** Built in the chart ([_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl), the values, the schema, the alerts;
+`test/chart/storage_test.go`); `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` and `secrets.journalReader` are
+gone and refused with the keys that took their place
+([Q-HA-395](#q-ha-395--the-values-of-the-one-store-are-refused-by-the-templates-with-the-keys-that-took-their-place)). The backup's
+reading per connection and the journal per connection are the rest of package E; until then the chart names the first connection's
+read login and journal reader
+([Q-HA-396](#q-ha-396--until-the-backup-and-the-journal-read-every-connection-the-chart-names-the-first-connections-read-login-and-journal-reader)).
+
+- **The list** is `config.storage.connections`, passed through like every key of `config` with each element's `id` filled in and the
+  `*_file` keys below; the values file holds one element with the defaults of the plain path. A list given in the values replaces it
+  whole, so an element carries only what it sets, and an element without `id` is `default`, as in the binary
+  ([Q-HA-394](#q-ha-394--an-element-without-id-is-default-in-the-chart-as-in-the-binary)): an installation with one connection sets
+  `[{bucket: …}]` (or a provisioner's key below) and nothing else. The schema checks an element against the keys of
+  [storage.md](storage.md) R-STOR-050 ([Q-HA-397](#q-ha-397--the-schema-checks-an-element-against-the-keys-of-r-stor-050)):
 
   ```yaml
   config:
@@ -935,35 +946,55 @@ not built; until then the chart has `config.storage.s3`, `secrets.s3`, `secrets.
   | `existingSecret` with `credentials_source: static` | `api`, `packages`, `worker` and the restore and post-restore Jobs | `/var/run/secrets/quader/s3-<id>/` | `access_key_id_file`, `secret_access_key_file`, `session_token_file` |
   | `bucketKey`, `regionKey`, `endpointKey` | the same pods and the backup pods | `/var/run/secrets/quader/s3-<id>-location/` | `bucket_file`, `region_file`, `endpoint_file` |
   | `ca` | the same pods and the backup pods | `/var/run/secrets/quader/s3-<id>-ca/` | `ca_file` |
-  | `backupSource` | the backup pods only | `/var/run/secrets/quader/s3-<id>-backup/` | `backup.source.connections[]` entry of that connection (R-BAK-030) |
-  | `journalReader` | the post-restore and restore Jobs only | `/var/run/secrets/quader/s3-<id>-journal/` | the connection's entry of the credentials file of `--credentials-file` and `--journal-credentials-file` |
+  | `backupSource` | the backup pods only | `/var/run/secrets/quader/s3-<id>-backup/` | `backup.source.connections[]` entry of that connection (R-BAK-030); until the backup reads every connection, `backup.source.separate_credentials` and `credentials` with the first connection's (Q-HA-396) |
+  | `journalReader` | the post-restore and restore Jobs only, with their `journalCredentials.source: static` | `/var/run/secrets/quader/s3-<id>-journal/` | the credentials file of `--credentials-file` and `--journal-credentials-file` names the first connection's (Q-HA-396) |
 
-  The keys the chart sets join its managed paths: set under `config` for an element that has an entry, they fail the render.
-- **Refusals** (R-HA-029; each names the values):
-  - `config.storage.connections` empty, an element without `id`, an `id` outside `^[a-z][a-z0-9-]{0,30}[a-z0-9]$`, or two elements
-    with one `id`;
-  - an element without `bucket` and without an entry whose `bucketKey` is set;
+  Each field is a volume of its own, `secret-s3-<id>`, `secret-s3-<id>-location`, `secret-s3-<id>-ca`, `secret-s3-<id>-backup`,
+  `secret-s3-<id>-journal`, because the pods that read them differ; a provisioner's location is projected into the backup pods without
+  its credentials. An empty plain `bucket`, `region` or `endpoint` is left out where its file takes its place. The migration Job and the
+  scanner pods mount nothing of a connection.
+
+  The keys the chart sets join its managed paths: set under `config` in that element, they fail the render; the static key files
+  (`access_key_id_file`, `secret_access_key_file`, `session_token_file`) fail in every element, because only an entry provides them
+  ([Q-HA-398](#q-ha-398--what-of-an-element-the-chart-manages-and-an-entry-that-nothing-reads)).
+- **Refusals** (R-HA-029; each names the values and the connection by index and id), checked after the values of before
+  (Q-HA-395):
+  - `config.storage.connections` empty or not a list, more than eight elements, an `id` outside `^[a-z][a-z0-9-]{0,30}[a-z0-9]$`, or
+    two elements with one `id` (two elements without `id` are two of `default`, Q-HA-394);
+  - an element without `bucket` and without an entry whose `bucketKey` is set, and a plain `bucket`, `region` or `endpoint` beside the
+    file that replaces it;
   - `credentials_source: static` without an entry with `existingSecret` for that `id`;
-  - an entry whose `connectionId` names no element;
+  - an entry whose `connectionId` names no element, two entries of one connection, a `bucketKey`, `regionKey`, `endpointKey` or
+    `sessionTokenKey` without `existingSecret`, and an `existingSecret` that nothing reads (neither `credentials_source: static` nor a
+    `*Key`, Q-HA-398);
   - `encrypted: true` on an element until the encryption of stored content is built ("the encryption of stored content is not built,
     storage.md R-STOR-050"); afterwards `encrypted: true` passes through like every key, and the chart refuses only `keyed_names` on an
     element without `encrypted: true` (storage.md R-STOR-075). The chart renders no key and no Secret for the stored content: Quader draws
     the storage keys and keeps them sealed in the database ([Q-HA-415](#q-ha-415--the-chart-carries-no-key-of-the-stored-content));
-  - `drain: true` on every element, or `config.storage.replication.min_copies` above the number of elements without it;
-  - two elements on one endpoint and bucket whose prefixes are equal or contain each other, and the backup target at any element's
-    location (the rule of R-HA-029 for the target, per connection).
+  - `drain: true` on every element, or `config.storage.replication.min_copies` outside 1 to the number of elements without it;
+  - two elements on one endpoint and bucket whose prefixes are equal or contain each other (an empty endpoint compares as the AWS
+    endpoint of its region; an element whose bucket or endpoint comes from a file is the binary's to compare, whose marker of R-STOR-051
+    catches it), and the backup target at any element's location (the rule of R-HA-029 for the target, per connection);
+  - with `backup.enabled`, an element with `credentials_source: static` whose entry has no `backupSource` (R-BAK-030, Q-BAK-64); with a
+    `journalCredentials.source: static` of `restore` or `postRestore`, no `journalReader` in the entry of the first connection.
 - **The PrometheusRule** carries the alerts of [storage.md](storage.md) R-STOR-060 (R-HA-045).
 - The development and test profiles (`deploy/dev`, the stack of `test/integration`) render one connection; the integration case with
-  two connections sets the list itself ([storage.md](storage.md) R-STOR-063).
+  two connections sets the list itself ([storage.md](storage.md) R-STOR-063). The chart's value set `ci/connections.yaml` renders two,
+  one from a provisioner's Secret, in place of the one of the provisioner before, so the render tests of every value set see two
+  connections at no added cost.
 
 Acceptance criteria (chart render tests, about 1 s):
 
 - One element with `bucket` renders a configuration whose `storage.connections` has that element and every pod mounts no S3 Secret;
   with `credentials_source: static` and an entry, the `api`, `packages` and `worker` Deployments mount `/var/run/secrets/quader/s3-default/`
-  and the element names the two files; the backup CronJob does not mount it and mounts the entry's `backupSource` instead.
+  and the element names the two files; the backup CronJob does not mount it and mounts the entry's `backupSource` instead
+  (`TestR_HA_072_OneConnection`).
 - A provisioner entry with `bucketKey: S3_BUCKET` and no `bucket` renders `bucket_file` and passes; without the entry the render fails
-  naming the element.
-- Each refusal above fails the render with the values named.
+  naming the element (`TestR_HA_072_SeveralConnectionsAndAProvisioner`, `TestR_HA_072_Refusals`).
+- Each refusal above fails the render with the values named (`TestR_HA_072_Refusals`); each value of before fails naming its new keys
+  (`TestR_HA_072_MovedValues`, `TestR_HA_072_AnInstallationMoves`).
+- The rendered file passes the binary's own validator for every pod of every value set, with the files of the pod's object-store
+  mounts in place (`TestRenderedConfigurationPassesTheBinary`).
 
 ### R-HA-003 · Replica registry as the coordination view
 Priority: **MVP** · Covers: HA-006, HA-009
@@ -4094,7 +4125,8 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 |---|---|
 | `config.server.base_url` empty | `config.server.base_url` |
 | `config.database.host` or `secrets.database.existingSecret` empty | the value |
-| `config.storage.connections` empty, or an element without `id` or `bucket` (and without a `bucketKey`), and the other refusals of R-HA-072 | the value and the connection |
+| `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` or `secrets.journalReader` set (the values of the one store, checked first, Q-HA-395) | the value and the keys that took its place |
+| `config.storage.connections` empty, two elements with one `id` (an element without one is `default`, Q-HA-394), an element without `bucket` (and without a `bucketKey`), and the other refusals of R-HA-072 | the value and the connection |
 | An element with `credentials_source: static` without an entry of `secrets.storageConnections` with `existingSecret` (R-HA-072) | both |
 | `secrets.encryption.existingSecret` or `secrets.encryption.keys` empty | the value, and the key-creation command of R-HA-027 |
 | `highAvailability.enforce` and fewer than 2 replicas (`replicaCount`, or `autoscaling.minReplicas`) for `api`, `packages`, `worker` or a pool, a disabled PDB, or a missing host spread constraint, one that is not `DoNotSchedule`, or one without `nodeTaintsPolicy: Honor` (R-HA-059 rule 3) | the Deployment and the value |
@@ -4753,15 +4785,15 @@ config:
       failure_threshold: 5
       open_duration: 5s
   storage:                              # storage.md
-    s3:
-      bucket: ""                        # required; example: quader-blobs
-      prefix: quader                   # the default of storage.md
-      region: ""                        # example: eu-central-1
-      endpoint: ""                      # AWS resolution; example: https://minio.quader.svc:9000
-      force_path_style: false           # true for MinIO, SeaweedFS and Ceph RGW
-      credentials:
-        source: default                 # default | webIdentity | static
-        role_arn: ""
+    connections:                        # one to eight (storage.md R-STOR-050, R-HA-072); list order = write and read order; a list in the values replaces this one whole; an element is checked against the keys of R-STOR-050 (Q-HA-397)
+      - id: default                     # an element without id is default, at most one may leave it out (Q-HA-394); never changes, never reused
+        bucket: ""                      # required unless secrets.storageConnections[].bucketKey; example: quader-blobs
+        prefix: quader                 # the default of storage.md; fixed once the connection holds data
+        region: ""                      # example: eu-central-1
+        endpoint: ""                    # AWS resolution; example: https://minio.quader.svc:9000 (a host without scheme means https)
+        force_path_style: false         # true for MinIO, SeaweedFS and Ceph RGW
+        credentials_source: default     # default | webIdentity | static (an entry of secrets.storageConnections with existingSecret)
+        role_arn: ""                    # example (webIdentity): arn:aws:iam::123456789012:role/quader-blobs
     upload:
       max_size: 10GiB                   # must fit the spool
     gc:
@@ -4912,14 +4944,18 @@ secrets:
     existingSecret: ""                  # no client certificate
     certKey: tls.crt
     keyKey: tls.key
-  s3:
-    existingSecret: ""                  # required with credentials.source static; also the Secret of an S3 provisioner when a *Key below is set
-    accessKeyIdKey: access-key-id       # example (provisioner Secret): AWS_ACCESS_KEY_ID
-    secretAccessKeyKey: secret-access-key  # example (provisioner Secret): AWS_SECRET_ACCESS_KEY
-    bucketKey: ""                       # the bucket comes from config.storage.s3.bucket; example (provisioner Secret): S3_BUCKET; set = QUADER_STORAGE_S3_BUCKET reads this key of the Secret
-    regionKey: ""                       # config.storage.s3.region; example (provisioner Secret): S3_REGION; set = QUADER_STORAGE_S3_REGION reads this key
-    endpointKey: ""                     # config.storage.s3.endpoint; example (provisioner Secret): S3_ENDPOINT (a host without scheme, which Quader reaches over https); set = QUADER_STORAGE_S3_ENDPOINT reads this key
-    sessionTokenKey: ""
+  storageConnections: []                # one entry per connection that needs a Secret (R-HA-072); each field a volume /var/run/secrets/quader/s3-<id>[-location|-ca|-backup|-journal]/; the *_file keys it sets must not be set in config (Q-HA-398); example:
+  #  - connectionId: default            # matches config.storage.connections[].id; one entry per connection
+  #    existingSecret: quader-s3        # the static credential (credentials_source static), or an S3 provisioner's Secret when a *Key is set; refused when nothing reads it (Q-HA-398)
+  #    accessKeyIdKey: access-key-id    # example (provisioner Secret): AWS_ACCESS_KEY_ID
+  #    secretAccessKeyKey: secret-access-key
+  #    sessionTokenKey: ""              # empty = no session token
+  #    bucketKey: ""                    # example (provisioner Secret): S3_BUCKET; set = the element's bucket_file, and the element has no bucket
+  #    regionKey: ""                    # example: S3_REGION; set = region_file
+  #    endpointKey: ""                  # example: S3_ENDPOINT (a host without scheme, which Quader reaches over https); set = endpoint_file
+  #    ca: {existingSecret: "", key: ca.crt}               # the connection's ca_file, also in the backup pods; empty = the outbound trust store, or trustedCA with useForObjectStore
+  #    backupSource: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}   # backup pods only; read-only login, required with credentials_source static while backup.enabled (R-BAK-030)
+  #    journalReader: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}  # post-restore and restore Jobs only; lists object versions (R-HA-023); the credentials file names the first connection's (Q-HA-396)
   valkey:
     existingSecret: ""                  # required; example: quader-valkey
     usernameKey: username               # a missing key = the "default" user
@@ -4928,9 +4964,6 @@ secrets:
     existingSecret: ""                  # Sentinels without authentication; example: quader-valkey-sentinel
     usernameKey: ""                     # empty = no Sentinel user, the file is not mounted
     passwordKey: password
-  s3CA:
-    existingSecret: ""                  # empty = the outbound trust store (system roots plus config.proxy.outbound.tls.ca_files); example: quader-s3-tls. Renders storage.s3.ca_file
-    key: ca.crt
   valkeyCA:
     existingSecret: ""                  # empty = system roots plus trustedCA; example: quader-valkey-ca
     key: ca.crt
@@ -4943,14 +4976,6 @@ secrets:
     accessKeyIdKey: access-key-id
     secretAccessKeyKey: secret-access-key
     sessionTokenKey: ""                 # empty = no session token
-  backupSource:
-    existingSecret: ""                  # required with config.storage.s3.credentials.source static and backup.enabled; the backup pods only. A login that may only read the blob bucket (s3:GetObject, s3:ListBucket), so a compromised backup pod cannot write the blobs or the journal (R-BAK-015, Q-HA-160)
-    accessKeyIdKey: access-key-id
-    secretAccessKeyKey: secret-access-key
-  journalReader:
-    existingSecret: ""                  # required with journalCredentials.source static of postRestore or restore; those Jobs only. A login that may list the object versions of the blob bucket (s3:ListBucketVersions), which the runtime credential deliberately lacks (R-HA-023)
-    accessKeyIdKey: access-key-id
-    secretAccessKeyKey: secret-access-key
   backupTargetCA:
     existingSecret: ""                  # empty = the system trust store; the backup and restore pods only; example: quader-backup-target-tls. Renders backup.target.ca_file (Q-HA-146)
     key: ca.crt
@@ -4972,7 +4997,7 @@ trustedCA:
   existingSecret: ""                    # empty = no bundle; at most one of existingSecret and existingConfigMap; example: corp-ca-bundle
   existingConfigMap: ""                 # example: corp-ca-bundle (a trust-manager Bundle target)
   keys: [ca-bundle.crt]                 # the files of the source that are mounted, each a PEM bundle; they are added to config.proxy.outbound.tls.ca_files
-  useForObjectStore: false              # true also sets storage.s3.ca_file to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
+  useForObjectStore: false              # true also sets the ca_file of every connection without its own ca (R-HA-072) to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
 
 # ── Trust anchors of the signatures on artifacts (R-SIG-018) ──────────────────────
 # Who the installation trusts as a signer, beside the shipped anchors and those an administrator adds in the UI. The chart renders
@@ -5217,7 +5242,7 @@ postRestore:
   restoredTo: ""                        # required with enabled, the time t the platform restore went to, RFC 3339; example: "2026-10-28T09:15:00Z"
   skipRevocationJournal: false          # only when the source's bucket is gone (R-BAK-024)
   journalCredentials:
-    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (secrets.journalReader) (Q-HA-150)
+    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (the `journalReader` of each entry of secrets.storageConnections, R-HA-072) (Q-HA-150)
   backoffLimit: 2                       # a retry applies the clean-up again; its steps are safe to repeat
   activeDeadlineSeconds: 0              # 0 = not rendered
   terminationGracePeriodSeconds: 60     # at least 30
@@ -5277,7 +5302,7 @@ restore:
   skipRevocationJournal: false          # only when the source bucket is gone (R-BAK-024, H-37)
   extraArgs: []                         # example: [--check] for a dry run of the preconditions (R-BAK-020)
   journalCredentials:
-    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (secrets.journalReader); anything but runtime keeps a deletion with the runtime credential from hiding a journal entry (R-BAK-015, Q-HA-159)
+    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (the `journalReader` of each entry of secrets.storageConnections, R-HA-072); anything but runtime keeps a deletion with the runtime credential from hiding a journal entry (R-BAK-015, Q-HA-159)
   backoffLimit: 2                       # evictions are not counted, every retry resumes (R-BAK-021)
   activeDeadlineSeconds: 0              # 0 = not rendered
   terminationGracePeriodSeconds: 60     # at least 30; time to stop at the next safe point (Q-HA-147)
@@ -6055,10 +6080,16 @@ mirror mode (R-OPS-046); `QuaderBlobMissing` (severity `critical`, summed over t
 Q-STOR-152); and these sixteen rows of the table below: `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`,
 `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
 `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`,
-`QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping` and `QuaderValkeyPrimaryDisagreement`. The ServiceMonitor is rendered
+`QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping` and `QuaderValkeyPrimaryDisagreement`. The object-store alerts are per
+connection ([storage.md](storage.md) R-STOR-060, R-HA-072): `QuaderObjectStoreUnreachable` for every connection down on every replica,
+`QuaderObjectStoreConnectionUnreachable` for one of several (Q-HA-391), `QuaderObjectStoreUnreachableSingleReplica` per connection,
+`QuaderStorageReplicationBacklog`, `QuaderStorageCopyDamaged`, `QuaderStorageScrubBehind`, `QuaderStorageConnectionDetached` and
+`QuaderBlobCorrupt` beside `QuaderBlobMissing`, each with a rule test that fires and one that stays silent. The ServiceMonitor is rendered
 ([servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml), render test `TestServiceMonitor`). The rule scopes its selectors by
 `namespace`, which every scrape through the Prometheus operator carries. The binary exports every metric these rows read under the name of their
-expression (Q-HA-135).
+expression (Q-HA-135), except the metrics of the alerts of several connections whose package of the build plan has not landed: the queue's
+age and the filling gauge (package C), the scrub's overdue copies (D), the copies per state (F); until then such an alert reads no series
+and stays silent, and the chart test's list `metricsOfLaterPackages` names each with its package.
 
 Every alert of the table is rendered and tested (phase 7): `QuaderBackupCheckFailed` (R-HA-023, the stored report of the task `backup-check`), `QuaderRevocationJournalBacklog` (R-HA-054) and the six alerts of the backup runs, `QuaderBackupStale`, `QuaderBackupFailed`,
 `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage` and `QuaderBackupVerifyFindings`
@@ -6114,7 +6145,7 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 | `QuaderObjectStoreUnreachable` | `min(quader_storage_s3_circuit_open) == 1`: every connection on every replica ([storage.md](storage.md) R-STOR-060; with one connection the expression of before) | 2m | critical |
 | `QuaderObjectStoreConnectionUnreachable` | `min by (connection) (quader_storage_s3_circuit_open) == 1 unless on() (min(quader_storage_s3_circuit_open) == 1)`: one connection on every replica while another answers (R-STOR-060) | 2m | warning |
 | `QuaderObjectStoreUnreachableSingleReplica` | `max by (connection) (quader_storage_s3_circuit_open) == 1 and min by (connection) (quader_storage_s3_circuit_open) == 0`, per connection | 5m | warning |
-| `QuaderStorageReplicationBacklog` | `max by (connection) (quader_storage_reconcile_queue_oldest_seconds) > 3600` for a connection that is not `filling` (R-STOR-056) | 30m | warning |
+| `QuaderStorageReplicationBacklog` | `max by (connection) (quader_storage_reconcile_queue_oldest_seconds) > 3600 unless on (connection) (max by (connection) (quader_storage_connection_filling) == 1)`: not for a connection that is `filling` (R-STOR-056, [Q-HA-393](#q-ha-393--the-replication-backlog-alert-leaves-a-filling-connection-out-by-a-gauge-of-its-own)) | 30m | warning |
 | `QuaderStorageCopyDamaged` | `max by (connection) (quader_storage_copies{state=~"missing\|corrupt"}) > 0`: a damaged copy not repaired (R-STOR-055, R-STOR-027) | 1h | warning |
 | `QuaderStorageScrubBehind` | `max by (connection) (quader_storage_scrub_overdue_copies) > 0` (R-STOR-027) | 6h | warning |
 | `QuaderStorageConnectionDetached` | `max by (connection) (quader_storage_connection_detached) == 1` (R-STOR-051) | 15m | warning |
@@ -12675,6 +12706,114 @@ operations but documents neither targets nor behaviour (a research of 2026-11-22
 | (b) Only Quader's connections | One way | Simpler page | Removes an option that works where the store offers it |
 
 **Choice:** (a). **Applied in the spec:** R-HA-026, [storage.md](storage.md) R-STOR-035 A4.
+
+### Q-HA-393 · The replication backlog alert leaves a filling connection out by a gauge of its own
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-HA-045's row of `QuaderStorageReplicationBacklog` fires "for a connection that is not `filling`", but no metric of
+[storage.md](storage.md) R-STOR-060 says which connection is filling; the state is derived from `storage_connections.filled_at`
+(R-STOR-051). A fill of large blobs keeps its oldest gap older than an hour: the pass queues up to `storage.reconcile.queue_limit`
+(10,000) rows, and 10,000 blobs of 100 MiB *(example)* at `bytes_per_second: 100MiB` take about 2.8 hours.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A gauge `quader_storage_connection_filling{connection}`, 1 while the connection is `filling`, exported from `storage_connections` by every `web` and `worker` replica beside the queue gauges (package C); the alert adds `unless on (connection) (max by (connection) (quader_storage_connection_filling) == 1)` (chosen) | The state from the row that holds it | Names exactly what the row says; an absent gauge removes nothing, so the alert errs towards firing | One family more for package C |
+| (b) One gauge of every state, `quader_storage_connection_state{connection,state}` | A general state metric | Dashboards could use it too | Six series per connection for one clause; the admin area reads the API, not metrics |
+| (c) No clause | The table without its condition | Nothing to export | The warning fires through every fill of an installation with large blobs, and is learnt to be ignored |
+| (d) `quader_storage_connection_fill_ratio < 1` as the sign of filling | An existing gauge | Nothing new | An active connection after an outage has a ratio below 1 as well, so the alert would stay silent for the outage it exists for |
+
+**Choice:** (a). **Applied in the spec:** R-HA-045; [storage.md](storage.md) R-STOR-056 (the gauges of the reconciliation);
+[operations-and-observability.md](operations-and-observability.md) R-OPS-008's table. Code: [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl),
+the rule tests; the chart test's list `metricsOfLaterPackages` holds the name until package C registers it.
+
+### Q-HA-394 · An element without id is default in the chart, as in the binary
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-HA-072 listed "an element without `id`" among the refusals, and R-HA-029's row read the same; [storage.md](storage.md)
+R-STOR-050 says that an element without `id` is `default`, that at most one may leave it out, and gives `[{bucket: quader-blobs}]` as the
+plain path. A list in the values replaces the default list whole, so an operator's element has no `id` unless it is written.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chart applies the binary's rule: an element without `id` is `default`, the rendered element carries `id: default`, two elements without one are refused as two of `default` (chosen) | One rule in chart and binary | The plain path of R-STOR-050, one key, works; chart and binary accept the same lists; the file says what the mount paths say | None found |
+| (b) The chart refuses an element without `id` | Every `id` written | Explicit | The chart refuses what the binary accepts; one more line on the plain path the owner wants simple |
+| (c) The chart passes an element without `id` unchanged | The binary defaults it | The file as given | The chart needs the `id` for the entries and the mounts anyway |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072, R-HA-029. Code: `quader.connectionId` in [_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl).
+
+### Q-HA-395 · The values of the one store are refused by the templates with the keys that took their place
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: an upgrade may carry `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` or `secrets.journalReader`.
+`secrets` is `additionalProperties: false`, so without a declaration Helm's schema check refuses `secrets.s3` first with "additional
+properties 's3' not allowed", which names no new key; `config.storage` is open, so `config.storage.s3` would pass the chart and stop
+the pods at start.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The schema declares the five keys as markers with a description and no type; the first check of the templates refuses each with a sentence that names the keys that took its place (chosen) | A refusal that explains the move | The upgrade stops at helm, before anything is applied, with the new keys spelled out; checked before every other rule, so no consequence of the move (an empty bucket) is reported first | Five removed names stay declared in the schema |
+| (b) Nothing declared | The schema of the new values only | A smaller schema | Helm's message names no new key, and `config.storage.s3` reaches the pods |
+| (c) The chart translates the old values into the list | No action for the operator | Nothing breaks | A migration path, which the rule of the stage before the first stable release forbids |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072, R-HA-029. Code: `quader.validateStorageMoved` in
+[_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl), the markers in [values.schema.json](../../deploy/helm/quader/values.schema.json).
+
+### Q-HA-396 · Until the backup and the journal read every connection, the chart names the first connection's read login and journal reader
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: the backup and the journal replay of the binary read the first connection of `storage.connections` today: the backup takes
+`backup.source.separate_credentials` and `backup.source.credentials` for it (`FirstClient` in
+[internal/config/storage_connections.go](../../internal/config/storage_connections.go), `backup_create.go`), and the credentials file of
+`--credentials-file` and `--journal-credentials-file` holds one credential
+([internal/journal/replay/open.go](../../internal/journal/replay/open.go), `LoadCredentials`). `backup.source.connections` and one
+credential per source connection ([backup-and-restore.md](backup-and-restore.md) R-BAK-030, Q-BAK-64) come with the backup and journal
+part of package E, which follows this one. The entry fields `backupSource` and `journalReader` exist per connection now.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every entry's `backupSource` and `journalReader` is mounted where R-HA-072 says; `backup.source` (`separate_credentials`, `credentials`) and the credentials file name the first connection's, and the render requires them per connection as R-BAK-030 does (chosen) | The values in their final shape, the configuration in the form the binary reads | An installation's values are rewritten once; the rest of E changes only what the chart renders from them | The other connections' logins are mounted and not read until then, as the backup reads only the first connection |
+| (b) Keep `secrets.backupSource` and `secrets.journalReader` until the rest of E | The old values for now | Nothing changes for the backup and the restore | Two rewrites of every installation's values; values R-HA-072 removes |
+| (c) Render `backup.source.connections` and one credential per connection now | The target form | Final | The binary of today refuses both: the key is unknown, the file is read with `KnownFields` |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072. Code: `quader.backupSourceConfig`, `quader.backupConnection` and
+`quader.journalConnection` in [_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl), `quader.journalCredentialsConfigMap` in
+[_backup.tpl](../../deploy/helm/quader/templates/_backup.tpl).
+
+### Q-HA-397 · The schema checks an element against the keys of R-STOR-050
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: `config` is passed to the binary and is open in the chart's schema except for the keys the chart reads; the binary refuses an
+unknown key at start. An element of `config.storage.connections` is the part of `config` an operator writes most often, with keys that
+changed their names (`credentials.source` became `credentials_source`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The items of `config.storage.connections` are `additionalProperties: false` with the keys of R-STOR-050 typed (enums for the modes); a chart test holds the key set equal to the binary's element in `internal/config/schema.json` (chosen) | A typo fails at helm | R-HA-029's trap HA-036 for the keys of the list; drift is a failing test, not a refusal in production | A key added to the element is added in two places, and the test says so |
+| (b) Open items like the rest of `config` | One place | Nothing to keep equal | A typo is a pod that does not start |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072. Code: [values.schema.json](../../deploy/helm/quader/values.schema.json),
+`TestR_HA_072_TheElementSchemaIsTheBinarys` in [storage_test.go](../../test/chart/storage_test.go).
+
+### Q-HA-398 · What of an element the chart manages, and an entry that nothing reads
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-HA-072 says that the keys the chart sets join its managed paths. Open were the static key files of an element without an
+entry, and an entry's `existingSecret` that no field reads: an element without `credentials_source: static` and an entry without a
+`*Key`, the likeliest slip of an installation that moves from `credentials.source: static`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The three key files are refused in every element (secret file paths come from the secrets values, R-HA-030); `ca_file`, `bucket_file`, `region_file`, `endpoint_file` only where the entry or `trustedCA.useForObjectStore` sets them; an `existingSecret` that nothing reads is refused, naming `credentials_source: static` (chosen) | Precise ownership, no silent value | An operator's own CA or bucket file (from `trustedCA` or `extraVolumes`) stays possible; a forgotten `credentials_source: static` fails at the render instead of starting with the SDK's default chain ([H-74](../security/privilege-footprint.md#h-74--the-default-object-store-credential-chain-can-reach-node-metadata)) | An entry kept for later must be removed |
+| (b) Every `*_file` key refused in an element with an entry; an unused `existingSecret` ignored | Coarse | Simple | The fall-back to the default chain is silent |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072. Code: `quader.validateStorage` in
+[_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl).
 
 ### Q-HA-415 · The chart carries no key of the stored content
 

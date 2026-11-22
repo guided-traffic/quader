@@ -143,8 +143,8 @@ Every kind of pod has a pair and a name of its own ([R-HA-063](../spec/ha-and-he
 | `ingress.backendTLS.controller` | `haproxy` | where the backend settings go: `haproxy`, `traefik`, `ingress-nginx` or `manual` |
 | `ingress.backendTLS.verify` | `true` | the controller verifies each backend under its kind's name; Traefik needs `serversTransports.api` and `.packages`, for the Ingress of the default endpoint and of every further endpoint (its own `ingress.backendTLS` merged over this block) |
 | `ingress.backendTLS.caSecret` | `""` | the Secret whose `ca.crt` the controller verifies with; empty is the Secret of the pair the backend serves |
-| `secrets.s3CA.existingSecret`, `key` | `""`, `ca.crt` | mounts the CA of the object store at `/var/run/secrets/quader/s3-ca/` and renders `storage.s3.ca_file` |
-| `trustedCA.existingSecret` or `existingConfigMap`, `keys`, `useForObjectStore` | `""`, `""`, `[ca-bundle.crt]`, `false` | mounts the listed files of a Secret or ConfigMap at `/etc/quader/ca/` in every pod of the release, appends them to `proxy.outbound.tls.ca_files` (after the operator's own), and with `useForObjectStore` makes the one file `storage.s3.ca_file`; refused together with `secrets.s3CA` |
+| `secrets.storageConnections[].ca.existingSecret`, `key` | `""`, `ca.crt` | mounts the CA of that connection at `/var/run/secrets/quader/s3-<id>-ca/` and renders the connection's `ca_file` |
+| `trustedCA.existingSecret` or `existingConfigMap`, `keys`, `useForObjectStore` | `""`, `""`, `[ca-bundle.crt]`, `false` | mounts the listed files of a Secret or ConfigMap at `/etc/quader/ca/` in every pod of the release, appends them to `proxy.outbound.tls.ca_files` (after the operator's own), and with `useForObjectStore` makes the one file the `ca_file` of every connection whose entry has no `ca` |
 
 What the pods get, from [_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl): each pod mounts its own kind's Secret read-only at
 `/var/run/secrets/quader/tls/` with `tls.crt` and `tls.key`, and `ca.crt` where a link verifies with it (the worker, the main `packages`

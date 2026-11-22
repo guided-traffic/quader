@@ -1,10 +1,11 @@
 {{/*
 The alerts of the PrometheusRule (R-HA-045) as a YAML list, before disabledAlerts is applied. Names are
 stable. Rendered: the alerts of the vulnerability scanning (R-VULN-024), the two of the mirror mode (R-OPS-046,
-Q-OPS-160, Q-OPS-171), QuaderBlobMissing (R-HA-024, Q-STOR-152) and
-the sixteen rows of R-HA-045's table whose metrics the binary exports, QuaderBackupCheckFailed (the platform check
-task backup-check, R-HA-023), QuaderRevocationJournalBacklog (R-HA-054) and the six QuaderBackup* alerts of the backup runs
-(R-BAK-014): every alert of the table. The four of the malware scanning (R-MAL-026) render while config.malware.enabled, the three
+Q-OPS-160, Q-OPS-171), QuaderBlobMissing (R-HA-024, Q-STOR-152), QuaderBlobCorrupt and
+the rows of R-HA-045's table: the general ones, the object-store alerts per connection (storage.md R-STOR-060, Q-HA-391, Q-HA-393),
+QuaderBackupCheckFailed (the platform check task backup-check, R-HA-023), QuaderRevocationJournalBacklog (R-HA-054, per
+connection) and the six QuaderBackup* alerts of the backup runs (R-BAK-014): every alert of the table. An alert whose metric a
+package of the several connections has not registered yet stays silent, as every alert does on a series that is absent. The four of the malware scanning (R-MAL-026) render while config.malware.enabled, the three
 of the signatures on artifacts (R-SIG-039) while config.signatures.enabled, the four of the signing identity (R-SIG-057) while config.signing.enabled.
 
 The six alerts of the backup runs are rendered only while backup.enabled is true (Q-HA-17): without the CronJob no run
@@ -52,16 +53,56 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
   labels:
     severity: critical
   annotations:
-    summary: Every replica has the circuit of the object store open.
-    description: Blob reads and writes fail on all replicas (R-STOR-033, R-HA-010). Metadata and cached content that does not need the store still answer. Check the S3 endpoint, its certificate and the credentials in the Secret.
+    summary: Every replica has the circuit of every object-store connection open.
+    description: Blob reads and writes fail on all replicas, because no connection answers (R-STOR-060, R-HA-010, Q-HA-391). Metadata and cached content that does not need the store still answer. Check each connection's endpoint, its certificate and the credentials in its Secret; quader_storage_s3_circuit_open names the connection.
+- alert: QuaderObjectStoreConnectionUnreachable
+  expr: min by (connection) (quader_storage_s3_circuit_open{ {{ $ns }} }) == 1 unless on () (min(quader_storage_s3_circuit_open{ {{ $ns }} }) == 1)
+  for: 2m
+  labels:
+    severity: warning
+  annotations:
+    summary: Every replica has the circuit of the object-store connection {{ "{{ $labels.connection }}" }} open, while another connection answers.
+    description: Uploads and reads go to the other connections; blobs that only this connection holds answer 503, and its gaps queue up for the reconciliation, which copies them once it answers (R-STOR-053, R-STOR-055, R-STOR-056, Q-HA-391). Check the connection's endpoint, its certificate, its credentials and its provider's status. With one connection this alert never fires; QuaderObjectStoreUnreachable does.
 - alert: QuaderObjectStoreUnreachableSingleReplica
-  expr: max(quader_storage_s3_circuit_open{ {{ $ns }} }) == 1 and min(quader_storage_s3_circuit_open{ {{ $ns }} }) == 0
+  expr: max by (connection) (quader_storage_s3_circuit_open{ {{ $ns }} }) == 1 and min by (connection) (quader_storage_s3_circuit_open{ {{ $ns }} }) == 0
   for: 5m
   labels:
     severity: warning
   annotations:
-    summary: The circuit of the object store is open on some replicas and closed on others.
-    description: The store is reachable from part of the replicas, so the cause is on the path of the affected pods (a node, a network policy, DNS, an egress rule), not the store (R-STOR-033, R-HA-010). Compare the pods by the label pod on quader_storage_s3_circuit_open.
+    summary: The circuit of the object-store connection {{ "{{ $labels.connection }}" }} is open on some replicas and closed on others.
+    description: The connection is reachable from part of the replicas, so the cause is on the path of the affected pods (a node, a network policy, DNS, an egress rule), not the store (R-STOR-060, R-HA-010). Compare the pods by the label pod on quader_storage_s3_circuit_open with this connection.
+- alert: QuaderStorageReplicationBacklog
+  expr: max by (connection) (quader_storage_reconcile_queue_oldest_seconds{ {{ $ns }} }) > 3600 unless on (connection) (max by (connection) (quader_storage_connection_filling{ {{ $ns }} }) == 1)
+  for: 30m
+  labels:
+    severity: warning
+  annotations:
+    summary: A blob has waited more than an hour for its copy on the connection {{ "{{ $labels.connection }}" }}.
+    description: The oldest gap the reconciliation has queued for this connection is older than an hour, and the connection is not filling (R-STOR-056, Q-HA-393). Until it is copied, such a blob lies on fewer connections than configured. Look at the circuit of the connection, the task storage-reconcile, quader_storage_reconcile_failures_total by reason and storage.reconcile.bytes_per_second.
+- alert: QuaderStorageCopyDamaged
+  expr: max by (connection) (quader_storage_copies{ {{ $ns }},state=~"missing|corrupt" }) > 0
+  for: 1h
+  labels:
+    severity: warning
+  annotations:
+    summary: The connection {{ "{{ $labels.connection }}" }} holds a missing or corrupt copy that has not been repaired for an hour.
+    description: A read or the scrub found a copy gone or with other bytes, and the reconciliation has not rewritten it from another connection (R-STOR-055, R-STOR-027). The blob is still served from its other copies. Check the reconciliation's failures for this connection and whether another connection holds the blob; GET /api/v1/system/storage-connections shows the counts.
+- alert: QuaderStorageScrubBehind
+  expr: max by (connection) (quader_storage_scrub_overdue_copies{ {{ $ns }} }) > 0
+  for: 6h
+  labels:
+    severity: warning
+  annotations:
+    summary: Copies on the connection {{ "{{ $labels.connection }}" }} have not been read whole within its scrub period.
+    description: The scrub reads every copy once within the connection's scrub_period (R-STOR-027); copies past it may hold damage nobody has seen. Check the hourly scrub task, storage.scrub.run_duration and the connection's scrub_bytes_per_second against its size.
+- alert: QuaderStorageConnectionDetached
+  expr: max by (connection) (quader_storage_connection_detached{ {{ $ns }} }) == 1
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: The connection {{ "{{ $labels.connection }}" }} holds copies but no replica has it in its configuration.
+    description: Its element was removed from config.storage.connections without a drain (R-STOR-051). Its copies count for no blob, and the blobs only it holds answer 503. Put the element back, drain it with drain true and remove it once it is drained, or forget it with quader admin storage forget-connection.
 - alert: QuaderDatabasePoolSaturated
   expr: histogram_quantile(0.95, rate(quader_db_pool_acquire_duration_seconds_bucket{ {{ $ns }},db_pool="request" }[5m])) > 0.1
   for: 10m
@@ -293,6 +334,13 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
   annotations:
     summary: The object store has lost the object of at least one blob within the last hour.
     description: A read found no object behind a blob row and marked the blob missing (R-HA-024, R-STOR-027). The replicas log every such blob with its digest ("the object of a blob is missing from the object store") and every cached item of a remote repository with its repository and path. A remote repository fills its items again from the upstream; a file of a local repository answers 503 content_unavailable until its object is restored or the same content is uploaded again. Check the bucket, its lifecycle rules and who else writes to it.
+- alert: QuaderBlobCorrupt
+  expr: sum(increase(quader_storage_blobs_damaged_total{ {{ $ns }},status="corrupt" }[1h])) > 0
+  labels:
+    severity: critical
+  annotations:
+    summary: No connection holds at least one blob whole any more, found within the last hour.
+    description: Every copy of the blob that a read or the scrub reached had other bytes or another size, so the blob is corrupt (R-STOR-052, R-STOR-027). Downloads of it answer 503 content_unavailable. The replicas log the digest. A remote repository fetches it again from the upstream; a file of a local repository needs its object restored (restore-versions, a backup) or the same content uploaded again. Check who writes to the buckets.
 - alert: QuaderGCStale
   expr: time() - max(quader_gc_last_success_timestamp_seconds{ {{ $ns }} }) > 172800
   for: 1h
@@ -310,13 +358,13 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     summary: A platform protection that the installation declares does not hold.
     description: The task backup-check (R-HA-023) found that the point-in-time recovery of PostgreSQL or the versioning of the blob bucket that backup.recovery_window and backup.object_versioning declare is missing, or that the grace period of the garbage collection does not cover the window. The label check names it (archive_mode, object_versioning, noncurrent_expiry, grace_period); quader admin backup check prints the reason. A check the credential may not read, or that is not declared, has no series and does not fire.
 - alert: QuaderRevocationJournalBacklog
-  expr: max(quader_revocation_journal_pending{ {{ $ns }} }) > 0
+  expr: max by (connection) (quader_revocation_journal_pending{ {{ $ns }} }) > 0
   for: 15m
   labels:
     severity: warning
   annotations:
-    summary: Entries of the revocation journal have waited for shipping to the blob bucket for 15 minutes.
-    description: The outbox grows while the object store is out and ships afterwards, so a backlog of 15 minutes means the shipper does not write the _journal/ prefix of the blob bucket, or writes slower than entries arrive (R-HA-054). A restore taken now would replay a journal that lacks those entries, and a revocation among them would not be applied again. Check that worker pods are ready, the object store alerts, the shipper's log records and the write access of the credential to the prefix.
+    summary: Entries of the revocation journal have waited for shipping to an object-store connection for 15 minutes.
+    description: The outbox grows while a connection is out and ships afterwards, so a backlog of 15 minutes means the shipper does not write the _journal/ prefix of the connection in the label connection, or writes slower than entries arrive (R-HA-054, storage.md R-STOR-059). A restore taken now would replay a journal that lacks those entries, and a revocation among them would not be applied again. Check that worker pods are ready, the object store alerts, the shipper's log records and the write access of the connection's credential to the prefix.
 - alert: QuaderRevocationJournalQuarantined
   expr: sum(increase(quader_revocation_journal_quarantined_total{ {{ $ns }} }[1h])) > 0
   labels:
@@ -412,5 +460,5 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader.rules.names" -}}
-{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderSignatureInvalid" "QuaderSignatureBacklog" "QuaderSignatureTrustRootStale" "QuaderSignatureGatePending" "QuaderSigningIdentityExpiring" "QuaderSigningIdentityExpired" "QuaderSigningIdentityNotLoaded" "QuaderSigningBacklog" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
+{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreConnectionUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderStorageReplicationBacklog" "QuaderStorageCopyDamaged" "QuaderStorageScrubBehind" "QuaderStorageConnectionDetached" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderVulnerabilityImageScannerUnavailable" "QuaderMalwareFound" "QuaderMalwareDatabaseStale" "QuaderMalwareScannerUnavailable" "QuaderMalwareBacklog" "QuaderSignatureInvalid" "QuaderSignatureBacklog" "QuaderSignatureTrustRootStale" "QuaderSignatureGatePending" "QuaderSigningIdentityExpiring" "QuaderSigningIdentityExpired" "QuaderSigningIdentityNotLoaded" "QuaderSigningBacklog" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderBlobCorrupt" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
 {{- end -}}

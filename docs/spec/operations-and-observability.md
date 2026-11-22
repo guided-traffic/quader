@@ -1131,6 +1131,7 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_storage_copies_damaged_total` | counter | `connection`, `status` | Damaged copies detected (storage.md R-STOR-055, R-STOR-027) |
 | `quader_storage_reads_fallen_over_total` | counter | `connection`, `reason` | Reads that left a copy for the next (R-STOR-055) |
 | `quader_storage_reconcile_queue`, `quader_storage_reconcile_queue_oldest_seconds` | gauge | `connection` | The reconciliation's queue and its oldest row, from PostgreSQL (R-STOR-056) |
+| `quader_storage_connection_filling` | gauge | `connection` | 1 while the connection is `filling`, from `storage_connections` (R-STOR-051, R-STOR-056); `QuaderStorageReplicationBacklog` leaves such a connection out ([ha-and-helm.md](ha-and-helm.md) Q-HA-393) |
 | `quader_storage_connection_backlog_blobs`, `quader_storage_connection_backlog_bytes`, `quader_storage_connection_fill_ratio` | gauge | `connection` | From the storage summary (R-STOR-056) |
 | `quader_storage_reconcile_copied_total`, `quader_storage_reconcile_copied_bytes_total` | counter | `connection`, `mode` (`server`, `stream`) | Copies the reconciliation made (R-STOR-056) |
 | `quader_storage_reconcile_failures_total` | counter | `connection`, `reason` | Failed copies (R-STOR-056) |

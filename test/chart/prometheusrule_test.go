@@ -18,7 +18,12 @@ func alertSeverities() []alertSeverity {
 		{"QuaderReplicasNotReady", "critical"},
 		{"QuaderDatabaseUnreachable", "critical"},
 		{"QuaderObjectStoreUnreachable", "critical"},
+		{"QuaderObjectStoreConnectionUnreachable", "warning"},
 		{"QuaderObjectStoreUnreachableSingleReplica", "warning"},
+		{"QuaderStorageReplicationBacklog", "warning"},
+		{"QuaderStorageCopyDamaged", "warning"},
+		{"QuaderStorageScrubBehind", "warning"},
+		{"QuaderStorageConnectionDetached", "warning"},
 		{"QuaderDatabasePoolSaturated", "warning"},
 		{"QuaderControlConnectionWaits", "warning"},
 		{"QuaderJobsStuck", "warning"},
@@ -49,6 +54,7 @@ func alertSeverities() []alertSeverity {
 		{"QuaderMirrorStale", "warning"},
 
 		{"QuaderBlobMissing", "critical"},
+		{"QuaderBlobCorrupt", "critical"},
 		{"QuaderGCStale", "warning"},
 		{"QuaderBackupCheckFailed", "critical"},
 		{"QuaderRevocationJournalBacklog", "warning"},
@@ -138,7 +144,9 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 	t.Run("every alert has an expression, a summary and a description, and a duration only where the table has one", func(t *testing.T) {
 		forOf := map[string]string{
 			"QuaderReplicasNotReady": "5m", "QuaderDatabaseUnreachable": "2m", "QuaderObjectStoreUnreachable": "2m",
-			"QuaderObjectStoreUnreachableSingleReplica": "5m", "QuaderDatabasePoolSaturated": "10m", "QuaderControlConnectionWaits": "5m",
+			"QuaderObjectStoreUnreachableSingleReplica": "5m", "QuaderObjectStoreConnectionUnreachable": "2m",
+			"QuaderStorageReplicationBacklog": "30m", "QuaderStorageCopyDamaged": "1h", "QuaderStorageScrubBehind": "6h",
+			"QuaderStorageConnectionDetached": "15m", "QuaderBlobCorrupt": "", "QuaderDatabasePoolSaturated": "10m", "QuaderControlConnectionWaits": "5m",
 			"QuaderJobsStuck": "5m", "QuaderLeaseLost": "", "QuaderMixedVersions": "2h", "QuaderSpoolNearlyFull": "10m",
 			"QuaderBlobMissing": "", "QuaderGCStale": "1h", "QuaderValkeyUnavailable": "2m", "QuaderValkeyUnavailableSingleReplica": "5m",
 			"QuaderValkeySentinelsDegraded": "5m", "QuaderValkeyFailoverFlapping": "", "QuaderValkeyPrimaryDisagreement": "5m",
@@ -192,8 +200,19 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 		}
 		for name, want := range map[string]string{
 			"QuaderBackupCheckFailed":        `min(quader_backup_check_ok{ namespace="default" }) == 0`,
-			"QuaderRevocationJournalBacklog": `max(quader_revocation_journal_pending{ namespace="default" }) > 0`,
-			"QuaderBackupFailed":             `max(quader_backup_last_failure_timestamp_seconds{ namespace="default" }) > (max(quader_backup_last_success_timestamp_seconds{ namespace="default" }) or vector(0))`,
+			"QuaderRevocationJournalBacklog": `max by (connection) (quader_revocation_journal_pending{ namespace="default" }) > 0`,
+			"QuaderObjectStoreUnreachable":   `min(quader_storage_s3_circuit_open{ namespace="default" }) == 1`,
+			"QuaderObjectStoreConnectionUnreachable": `min by (connection) (quader_storage_s3_circuit_open{ namespace="default" }) == 1 unless on () ` +
+				`(min(quader_storage_s3_circuit_open{ namespace="default" }) == 1)`,
+			"QuaderObjectStoreUnreachableSingleReplica": `max by (connection) (quader_storage_s3_circuit_open{ namespace="default" }) == 1 and ` +
+				`min by (connection) (quader_storage_s3_circuit_open{ namespace="default" }) == 0`,
+			"QuaderStorageReplicationBacklog": `max by (connection) (quader_storage_reconcile_queue_oldest_seconds{ namespace="default" }) > 3600 ` +
+				`unless on (connection) (max by (connection) (quader_storage_connection_filling{ namespace="default" }) == 1)`,
+			"QuaderStorageCopyDamaged":        `max by (connection) (quader_storage_copies{ namespace="default",state=~"missing|corrupt" }) > 0`,
+			"QuaderStorageScrubBehind":        `max by (connection) (quader_storage_scrub_overdue_copies{ namespace="default" }) > 0`,
+			"QuaderStorageConnectionDetached": `max by (connection) (quader_storage_connection_detached{ namespace="default" }) == 1`,
+			"QuaderBlobCorrupt":               `sum(increase(quader_storage_blobs_damaged_total{ namespace="default",status="corrupt" }[1h])) > 0`,
+			"QuaderBackupFailed":              `max(quader_backup_last_failure_timestamp_seconds{ namespace="default" }) > (max(quader_backup_last_success_timestamp_seconds{ namespace="default" }) or vector(0))`,
 		} {
 			if exprs[name] != want {
 				t.Errorf("%s: expr = %q, want %q", name, exprs[name], want)
@@ -216,7 +235,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 		}
 		for _, r := range renderedRules(t) {
 			for _, m := range metricNames(str(r, "expr")) {
-				if strings.HasPrefix(m, "kube_") {
+				if strings.HasPrefix(m, "kube_") || metricsOfLaterPackages[m] != "" {
 					continue
 				}
 				// A histogram's series carry the suffixes _bucket, _count and _sum of the family the code registers.
@@ -257,6 +276,18 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			t.Errorf("%d alerts, want %d", len(got), len(alertSeverities())-3)
 		}
 	})
+}
+
+// metricsOfLaterPackages are the metrics of the object-store alerts (R-HA-045, storage.md R-STOR-060) that a later package of the
+// several connections registers (docs/developer/blob-store.md, "Several connections: the build plan"), by the package. The chart
+// renders their alerts already; an alert on a series that does not exist stays silent. The package that registers a metric removes
+// its line here.
+var metricsOfLaterPackages = map[string]string{
+	"quader_storage_reconcile_queue_oldest_seconds": "C, the reconciliation",
+	"quader_storage_connection_filling":             "C, the reconciliation (Q-HA-393)",
+	"quader_storage_scrub_overdue_copies":           "D, the scrub",
+	"quader_storage_copies":                         "F, the storage summary per connection",
+	"quader_storage_connection_detached":            "the detached state of R-STOR-051, which package A does not export",
 }
 
 // metricNames returns the identifiers of an expression that look like a metric: they start with quader_ or kube_.

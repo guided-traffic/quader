@@ -101,7 +101,7 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 	})
 
 	t.Run("the Secrets of its scope: the owner login, the blob store; no Valkey, no key ring, nothing of the target", func(t *testing.T) {
-		_, d := render(t, required(), postRestoreSets(append(staticTarget(), "secrets.journalReader.existingSecret=quader-journal", "postRestore.journalCredentials.source=static")...)...)
+		_, d := render(t, required(), postRestoreSets(append(staticTarget(), "secrets.storageConnections[0].journalReader.existingSecret=quader-journal", "postRestore.journalCredentials.source=static")...)...)
 		v := secretVolumes(postRestorePod(d))
 		has := func(s string) bool {
 			for _, x := range v {
@@ -145,9 +145,10 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 		if strings.TrimSpace(cm) != "source: default" {
 			t.Errorf("credentials.yaml = %q", cm)
 		}
-		_, d = render(t, required(), postRestoreSets("postRestore.journalCredentials.source=static", "secrets.journalReader.existingSecret=quader-journal")...)
+		_, d = render(t, required(), postRestoreSets("postRestore.journalCredentials.source=static", "secrets.storageConnections[0].connectionId=default",
+			"secrets.storageConnections[0].journalReader.existingSecret=quader-journal")...)
 		cm = str(find(d, "ConfigMap", "quader-post-restore"), "data", "credentials.yaml")
-		for _, want := range []string{"source: static", "access_key_id_file: /var/run/secrets/quader/journal-reader/access-key-id", "secret_access_key_file: /var/run/secrets/quader/journal-reader/secret-access-key"} {
+		for _, want := range []string{"source: static", "access_key_id_file: /var/run/secrets/quader/s3-default-journal/access-key-id", "secret_access_key_file: /var/run/secrets/quader/s3-default-journal/secret-access-key"} {
 			if !strings.Contains(cm, want) {
 				t.Errorf("credentials.yaml lacks %q: %s", want, cm)
 			}
@@ -190,7 +191,7 @@ func TestR_HA_025_PostRestoreJob(t *testing.T) {
 	t.Run("validation names the value", func(t *testing.T) {
 		renderFails(t, required(), []string{"postRestore.enabled=true", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}, "postRestore.restoredTo")
 		renderFails(t, required(), []string{"postRestore.enabled=true", "postRestore.restoredTo=yesterday", "api.replicaCount=0", "packages.replicaCount=0", "worker.replicaCount=0"}, "postRestore.restoredTo", "RFC 3339")
-		renderFails(t, required(), postRestoreSets("postRestore.journalCredentials.source=static"), "postRestore.journalCredentials.source", "secrets.journalReader.existingSecret")
+		renderFails(t, required(), postRestoreSets("postRestore.journalCredentials.source=static"), "postRestore.journalCredentials.source", "journalReader", "connectionId: default")
 		renderFails(t, required(), postRestoreSets("postRestore.skipRevocationJournal=true", "postRestore.journalCredentials.source=default"), "postRestore.skipRevocationJournal", "journalCredentials")
 		renderFails(t, required(), append(restoreSets(), "postRestore.enabled=true", "postRestore.restoredTo="+restoredTo), "postRestore.enabled", "restore.enabled")
 		renderFails(t, required(), postRestoreSets("postRestore.terminationGracePeriodSeconds=5"), "terminationGracePeriodSeconds")
