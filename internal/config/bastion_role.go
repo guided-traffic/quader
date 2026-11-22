@@ -111,6 +111,7 @@ type BastionCache struct {
 	SweepInterval            time.Duration      `yaml:"sweep_interval" default:"5m" validate:"min=10s,max=24h" doc:"How often the eviction sweep runs (R-BAS-031)."`
 	AccessResolution         time.Duration      `yaml:"access_resolution" default:"1h" validate:"min=1s,max=24h" doc:"A served entry's last access is written at most this often (R-BAS-031)."`
 	FillWaitMax              time.Duration      `yaml:"fill_wait_max" default:"10m" validate:"min=30s,max=1h" doc:"How long a replica waits for another replica's fill of the same cache key while that replica keeps extending its fetch lock, sending nothing, before it fetches itself (R-BAS-054); the bucket backend with Valkey only."`
+	EncryptionKeyFile        string             `yaml:"encryption_key_file" default:"" secret:"file" chart:"managed" doc:"File with the cache key (32 random bytes, raw or base64): with it every object of the cache store is encrypted or sealed below a tree named by the key's identifier, and a new key is an empty cache; empty keeps the cache plain (R-BAS-061). Rendered by the chart from secrets.cacheKey; read at start."`
 	Volume                   BastionCacheVolume `yaml:"volume"`
 	Bucket                   BastionCacheBucket `yaml:"bucket"`
 }

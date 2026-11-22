@@ -41,7 +41,8 @@ func sweepLease(src LeaseSource) SweepLease {
 
 func percent(limit, p int64) int64 { return limit * p / 100 }
 
-// SweepOnce is one cycle of R-BAS-031 for this replica: it measures what the backend holds, publishes
+// SweepOnce is one cycle of R-BAS-031 for this replica: in the first hour after the start, and while it still finds
+// some, it deletes the objects of other layouts (R-BAS-061); it measures what the backend holds, publishes
 // quader_bastion_cache_bytes, and evicts by last access in each area above 95 % of its limit down to 85 %. With
 // the bucket backend and Valkey only the replica that holds the sweep lease runs it; without Valkey every
 // replica does, which is safe because a sweep only deletes. With the volume backend each replica sweeps its own
@@ -58,13 +59,16 @@ func (c *Cache) SweepOnce(ctx context.Context, src LeaseSource) error {
 			defer release()
 		}
 	}
+	var errs []error
+	if err := c.sweepOtherLayouts(ctx); err != nil {
+		errs = append(errs, err)
+	}
 	u, err := c.back.Usage(ctx)
 	if err != nil {
-		return err
+		return errors.Join(append(errs, err)...)
 	}
 	c.publish(u)
 	arts, docs := c.limits()
-	var errs []error
 	for _, a := range []struct {
 		area  string
 		limit int64

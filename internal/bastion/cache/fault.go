@@ -59,9 +59,16 @@ func (s *faultStore) putBytes(ctx context.Context, key string, b []byte) error {
 	return s.store.putBytes(ctx, key, b)
 }
 
-func (s *faultStore) get(ctx context.Context, key string, off, n int64) (io.ReadCloser, error) {
+func (s *faultStore) putStream(ctx context.Context, key string, rs io.ReadSeeker, size int64) error {
+	if err := s.f.write(); err != nil {
+		return err
+	}
+	return s.store.putStream(ctx, key, rs, size)
+}
+
+func (s *faultStore) get(ctx context.Context, key string, off, n int64) (io.ReadCloser, int64, error) {
 	if err := s.f.read(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	return s.store.get(ctx, key, off, n)
 }

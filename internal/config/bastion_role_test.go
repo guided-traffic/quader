@@ -196,7 +196,7 @@ func TestR_BAS_046_TheChartManagedKeysAreMarkedInTheSchema(t *testing.T) {
 		"server.tls.min_version": true, "server.tls.reload_interval": true,
 		"server.ops_tls.inherit": true, "server.ops_tls.certificates": true,
 		"bastion.main.token_file": true, "bastion.main.ca_file": true, "bastion.signing_key_file": true,
-		"bastion.cache.volume.dir": true, "bastion.cache.bucket.ca_file": true, "bastion.replicas": true,
+		"bastion.cache.volume.dir": true, "bastion.cache.bucket.ca_file": true, "bastion.replicas": true, "bastion.cache.encryption_key_file": true,
 		"bastion.cache.bucket.credentials.access_key_id_file": true, "bastion.cache.bucket.credentials.secret_access_key_file": true,
 		"valkey.username_file": true, "valkey.password_file": true, "valkey.sentinel.username_file": true, "valkey.sentinel.password_file": true, "valkey.tls.ca_file": true, "tracing.ca_file": true,
 	}

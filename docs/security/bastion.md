@@ -31,7 +31,7 @@ and its permissions in [permissions.md](permissions.md); the rules are in the sp
 | The main installation's answers about callers, keyed by the SHA-256 of the presented token, for at most `bastion.answers.period` (plus the grace period while the main installation is unreachable) | A caller's token beyond the request: never on disk, never in Valkey (R-BAS-019) |
 | Cached artifacts under their SHA-256, shared documents, negative entries, and per-caller documents in memory only (R-BAS-022 to R-BAS-024) | Any credential for the main installation's object store, PostgreSQL or upstream registries (R-BAS-030); the chart does not limit where its pods connect ([H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)) |
 | The signing key for its records in Valkey and the bucket (R-BAS-032) | A right to write Kubernetes Secrets or to issue tokens (R-BAS-006, R-BAS-045) |
-| The cache key, when its chart gives one: every object of its cache store is then encrypted or sealed under keys derived from it (R-BAS-061, specified, not built; [stored-content-visibility.md](stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)) | Any key of the main installation's stored content ([stored-content-keys.md](stored-content-keys.md)) |
+| The cache key, when its chart gives one (`secrets.cacheKey`): every object of its cache store is then an object of the stored format under keys derived from it ([below](#with-a-cache-key), R-BAS-061; [stored-content-visibility.md](stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)) | Any key of the main installation's stored content ([stored-content-keys.md](stored-content-keys.md)) |
 
 Every decision about a caller is the main installation's. A miss is forwarded with the caller's own credential and decided by
 the main installation's own route; a cached artifact is served only after a `full` read answer or a conditional request with the
@@ -230,7 +230,7 @@ served (R-STOR-013's verifying reader): a replaced object aborts the transfer an
 and answers in the bucket and in Valkey are signed with HMAC-SHA-256; write access to either without the key only deletes. With the
 key, it forges (H-387).
 
-What each layer of the cache holds, and what protects it:
+What each layer of the cache holds, and what protects it, without a cache key (the default; with one, [below](#with-a-cache-key)):
 
 | Held | Where | Protected by | What write access without the key does |
 |---|---|---|---|
@@ -247,6 +247,35 @@ The bucket is reached over `https` with the trust bundle of the chart, and its c
 An answer record that Valkey returns is verified by the store (not by the engine) against its kind and key before anything else sees it: a record that is altered,
 unsigned, signed with another key or moved to another key is not returned, is deleted and is counted as `bad_signature` (Q-BAS-93). The
 engine still judges the content with the validity rules of R-BAS-020, so a valid old record cannot outlive the revocations received after it.
+
+### With a cache key
+
+Built ([R-BAS-061](../spec/bastion.md#r-bas-061--the-cache-encrypted-in-the-stored-format), decisions Q-BAS-212 to Q-BAS-215; code
+[crypt.go](../../internal/bastion/cache/crypt.go), [sealed.go](../../internal/bastion/cache/sealed.go),
+[foreign.go](../../internal/bastion/cache/foreign.go)). With `secrets.cacheKey` the replica reads the key file at start, derives a storage key,
+an identifier `bc-<16 hex>` and a name key from it, and keeps every object below `<prefix>/bc-<id>/`. Every object but the empty access
+markers is an object of the stored format of [stored-content-format.md](stored-content-format.md) with a data key of its own, sealed and read
+by `internal/blob/blobcrypt` alone; its record lies in front of the body, because neither backend keeps object metadata (Q-BAS-212). The
+layout family by family is on the [developer page](../developer/bastion.md#the-cache-backends-package-5).
+
+| Held | With a cache key it is | What write access to the store without the cache key does |
+|---|---|---|
+| Artifact and document bytes | encrypted, named by an HMAC of their digest under the name key; read as the copy of their content address, so the record must bind that digest before a byte leaves; then the verifying reader as without a key | Replaces or moves: refused at the record or at the first changed segment, before a byte of it leaves; the object and its entry are deleted and counted in `quader_bastion_cache_corrupt_total`. A range authenticates the segments of its window ([H-451](../spec/bastion.md#h-451--a-ranged-read-of-a-cached-artifact-is-not-verified) narrowed) |
+| Entries | encrypted, their plaintext the object's name and the signed entry, named by an HMAC of the cache key's hash | Moves or rewrites: refused, deleted, counted as `stale`. The binding to the name authenticates an entry also where no signing key is configured, so [H-460](../spec/bastion.md#h-460--without-a-signing-key-the-entries-on-the-volume-are-not-authenticated) is closed while a cache key is set, and pointing an entry at other bytes needs the cache key besides the signing key ([H-387](../spec/bastion.md#h-387--the-signing-key-and-write-access-to-the-bastions-valkey-or-bucket-together-forge-answers-and-entries)) |
+| Access markers | empty objects named by their object's keyed name | Steers the order of eviction as without a key ([H-453](../spec/bastion.md#h-453--objects-and-markers-are-not-signed-a-replaced-object-is-found-only-when-it-is-read-and-markers-steer-eviction)) |
+| The audit spool | encrypted and bound to its name `s/<replica>/<unix ms>` | Deletes events; a forged or moved file is refused, deleted and counted corrupt, so events can no longer be made up through the store (H-386's capability through the bucket); a copy of a genuine file put back is delivered again, as [H-444](../spec/bastion.md#h-444--download-events-spooled-by-a-draining-replica-can-be-delivered-twice)'s duplicates are |
+| An object of another key or another tree put into the tree | refused for its key identifier (`unknown_key` counts as a refusal here: the tree holds only what its key wrote) | Deleted when read |
+
+A holder of the store learns sizes, counts, times, the key's identifier and the replica names of the spool's files
+([H-1318](stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)). The key file is
+read once; no error, log line or metric names a byte of it, and a `sealer` renders its identifier only. With the volume backend the fills in
+progress are spooled on the pod's temporary volume, so the cache volume holds ciphertext only (Q-BAS-214). A new key is a new tree: the old
+one is a miss, and the sweeps of the new replicas' first hour delete it and the plain layout, and a cache without a key deletes every tree
+(Q-BAS-215). What the key does not protect: a taken-over Bastion pod, which holds the key
+([H-1327](../spec/bastion.md#h-1327--a-taken-over-bastion-pod-holds-the-cache-key)); the old tree after a key change until it is swept
+([H-1326](../spec/bastion.md#h-1326--after-a-key-change-the-old-tree-stays-readable-to-a-holder-of-the-old-key-until-the-sweep-has-deleted-it));
+the answers in Valkey, which stay signed only; and the download events a draining replica spooled under the old layout during a key change
+([H-1325](../spec/bastion.md#h-1325--a-change-of-the-cache-key-loses-the-download-events-spooled-under-the-old-layout)).
 
 ## The link to the main installation
 
@@ -422,7 +451,14 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
   replicas, rare: clients renew a token before it expires).
 - [H-1296](../spec/bastion.md#h-1296--a-freshclam-run-through-a-bastion-asks-the-main-installation-once-per-database-for-the-cld-it-never-serves):
   a freshclam run through a Bastion asks the main installation once per database for the `.cld` it never serves (live, a load and not a
-  confidentiality matter).
+  confidentiality matter);
+- [H-1325](../spec/bastion.md#h-1325--a-change-of-the-cache-key-loses-the-download-events-spooled-under-the-old-layout): a change of the
+  cache key loses the download events spooled under the old layout (live only for a key change during an outage of the main installation);
+- [H-1326](../spec/bastion.md#h-1326--after-a-key-change-the-old-tree-stays-readable-to-a-holder-of-the-old-key-until-the-sweep-has-deleted-it):
+  after a key change the old tree stays readable to a holder of the old key until the sweep has deleted it (live after every key change;
+  it matters for a leaked key);
+- [H-1327](../spec/bastion.md#h-1327--a-taken-over-bastion-pod-holds-the-cache-key): a taken-over Bastion pod holds the cache key (live
+  wherever a cache key is set).
 
 This page does not describe the main installation's own mechanisms that the Bastion relies on (the decision point, token
 validation, the revocation journal); their pages and gaps are linked above.

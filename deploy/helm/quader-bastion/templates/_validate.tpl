@@ -58,17 +58,18 @@ generated schema of the role bastion (docs/developer/helm-chart.md, Bastion char
 {{- if lt $spool $maxObject -}}
 {{- fail (printf "quader-bastion: config.bastion.cache.spool_max_bytes (%v bytes) must be at least config.bastion.cache.max_object_bytes (%v bytes): an object up to that size is spooled whole before it is kept; lower max_object_bytes or raise spool_max_bytes" $spool $maxObject) -}}
 {{- end -}}
-{{- if eq $backend "bucket" -}}
+{{- if include "quader-bastion.spoolInTmp" . -}}
 {{- $tmp := include "quader-bastion.tmpSizeLimit" . | include "quader-bastion.bytes" | int64 -}}
 {{- $need := add $spool (include "quader-bastion.tmpHeadroomBytes" . | int64) -}}
 {{- if lt $tmp $need -}}
-{{- fail (printf "quader-bastion: tmp.sizeLimit (%v bytes) must hold config.bastion.cache.spool_max_bytes (%v bytes) plus 256Mi for the rest of /tmp: the bucket backend spools its fills there, and a pod whose emptyDir passes its sizeLimit is evicted. Raise tmp.sizeLimit to at least %vMi (or leave it empty), or lower config.bastion.cache.spool_max_bytes" $tmp $spool (div (add $need 1048575) 1048576)) -}}
+{{- fail (printf "quader-bastion: tmp.sizeLimit (%v bytes) must hold config.bastion.cache.spool_max_bytes (%v bytes) plus 256Mi for the rest of /tmp: the bucket backend, and the volume backend with secrets.cacheKey, spool their fills there, and a pod whose emptyDir passes its sizeLimit is evicted. Raise tmp.sizeLimit to at least %vMi (or leave it empty), or lower config.bastion.cache.spool_max_bytes" $tmp $spool (div (add $need 1048575) 1048576)) -}}
 {{- end -}}
-{{- else if has $v.cacheVolume.type (list "ephemeral" "persistent" "emptyDir") -}}
+{{- end -}}
+{{- if and (eq $backend "volume") (has $v.cacheVolume.type (list "ephemeral" "persistent" "emptyDir")) -}}
 {{- $vol := include "quader-bastion.bytes" $v.cacheVolume.size | int64 -}}
 {{- $cacheMax := include "quader-bastion.bytes" (dig "bastion" "cache" "max_bytes" "20GiB" $cfg) | int64 -}}
 {{- if lt $vol (add $cacheMax $spool) -}}
-{{- fail (printf "quader-bastion: cacheVolume.size (%v bytes) must hold config.bastion.cache.max_bytes (%v bytes) plus the spool config.bastion.cache.spool_max_bytes (%v bytes): with the volume backend the fills in progress are written next to the cache, and a full emptyDir evicts the pod. Raise cacheVolume.size or lower either value" $vol $cacheMax $spool) -}}
+{{- fail (printf "quader-bastion: cacheVolume.size (%v bytes) must hold config.bastion.cache.max_bytes (%v bytes) plus the spool config.bastion.cache.spool_max_bytes (%v bytes): with the volume backend the fills in progress (with secrets.cacheKey their sealed copies) are written next to the cache, and a full emptyDir evicts the pod. Raise cacheVolume.size or lower either value" $vol $cacheMax $spool) -}}
 {{- end -}}
 {{- end -}}
 

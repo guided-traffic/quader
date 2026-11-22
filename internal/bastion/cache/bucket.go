@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,14 +28,10 @@ type bucketStore struct {
 var _ store = (*bucketStore)(nil)
 
 func newBucketStore(c *s3.Client, prefix, tmpRoot string, now time.Time) (*bucketStore, error) {
-	if tmpRoot == "" {
-		tmpRoot = os.TempDir()
+	tmp, err := prepareSpool(tmpRoot, now)
+	if err != nil {
+		return nil, err
 	}
-	tmp := filepath.Join(tmpRoot, "quader-bastion-cache")
-	if err := os.MkdirAll(tmp, 0o750); err != nil {
-		return nil, fmt.Errorf("cache: prepare the spool directory %s: %w", tmp, err)
-	}
-	removeStale(tmp, now)
 	return &bucketStore{c: c, prefix: strings.Trim(prefix, "/"), tmp: tmp}, nil
 }
 
@@ -71,12 +66,29 @@ func (s *bucketStore) putBytes(ctx context.Context, key string, data []byte) err
 	return s.c.PutPlain(ctx, s.full(key), bytes.NewReader(data), int64(len(data)), sum[:])
 }
 
-func (s *bucketStore) get(ctx context.Context, key string, offset, length int64) (io.ReadCloser, error) {
-	rc, _, err := s.c.OpenPlain(ctx, s.full(key), offset, length)
+// putStream uploads the sealed object with the SHA-256 of its stored bytes as the payload checksum: one pass to hash it, a
+// seek to the start, and the pass that sends it (the bytes are the same, R-STOR-080).
+func (s *bucketStore) putStream(ctx context.Context, key string, rs io.ReadSeeker, size int64) error {
+	h := sha256.New()
+	n, err := io.Copy(h, rs)
 	if err != nil {
-		return nil, mapS3(err)
+		return err
 	}
-	return rc, nil
+	if n != size {
+		return fmt.Errorf("cache: the sealed object has %d bytes, not %d", n, size)
+	}
+	if _, err := rs.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	return s.c.PutPlain(ctx, s.full(key), rs, size, h.Sum(nil))
+}
+
+func (s *bucketStore) get(ctx context.Context, key string, offset, length int64) (io.ReadCloser, int64, error) {
+	rc, size, err := s.c.OpenPlain(ctx, s.full(key), offset, length)
+	if err != nil {
+		return nil, 0, mapS3(err)
+	}
+	return rc, size, nil
 }
 
 func (s *bucketStore) stat(ctx context.Context, key string) (int64, time.Time, error) {

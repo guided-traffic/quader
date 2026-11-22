@@ -188,8 +188,11 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [cache/cache.go](../../internal/bastion/cache/cache.go) | the layout, `Backend`, `Entry`, `Usage` |
 | [cache/fault.go](../../internal/bastion/cache/fault.go) | `Fault`: the switch with which a test makes the storage fail (`Options.Fault`); nil in production |
 | [cache/sign.go](../../internal/bastion/cache/sign.go) | `Signer` (Sign, Verify, SignEntry, VerifyEntry), `KeyHash`, the signature domains |
-| [cache/layout.go](../../internal/bastion/cache/layout.go) | the names of the layout, `WithArea`, validation of every name that becomes a path or a key |
-| [cache/core.go](../../internal/bastion/cache/core.go) | `backend`, the one implementation of `Backend` over a `store`: probe, spool, eviction sweep, audit spool, error counting |
+| [cache/layout.go](../../internal/bastion/cache/layout.go) | `layout`: `plainLayout` (R-BAS-030's names) and `sealedLayout` (R-BAS-061's keyed names below the key's tree), `WithArea`, validation of every name that becomes a path or a key |
+| [cache/core.go](../../internal/bastion/cache/core.go) | `backend`, the one implementation of `Backend` over a `store` and a `layout`: probe, spool, eviction sweep, audit spool, error counting; with a key it hands the writes and reads to sealed.go |
+| [cache/crypt.go](../../internal/bastion/cache/crypt.go) | the cache key (R-BAS-061): `openSealer` reads the file by R-ARCH-021's rules, `sealer` (storage key, identifier, name key, keyed names, the key lookup), the record's frame in front of a body (Q-BAS-212), the binding of a plaintext to its name (Q-BAS-213), what counts as a refusal |
+| [cache/sealed.go](../../internal/bastion/cache/sealed.go) | the sealed objects: writes through `blobcrypt.NewSection` and `Wrap`, reads through `Open`, `NewReader` and `NewRangeReader`, the plaintext size of a head |
+| [cache/foreign.go](../../internal/bastion/cache/foreign.go) | the sweep of other layouts: the plain layout and other keys' trees, in a replica's first hour and while found (Q-BAS-215) |
 | [cache/volume.go](../../internal/bastion/cache/volume.go), [cache/bucket.go](../../internal/bastion/cache/bucket.go) | the two stores: a directory, and S3 through `internal/blob/s3` |
 | [cache/verify.go](../../internal/bastion/cache/verify.go), [cache/fill.go](../../internal/bastion/cache/fill.go) | the verifying reader with its hold-back, the `Fill` spool |
 | [cache/store.go](../../internal/bastion/cache/store.go), [cache/sweep.go](../../internal/bastion/cache/sweep.go) | `Cache` (what the engine uses), `New`, `NewVolume`, `NewBucket`, `Options`; `SweepOnce`, `RunSweeper` |
@@ -663,7 +666,7 @@ and `DeleteObject`; the default is the artifact area, and the wrong area is a mi
 | `StoreEntry(ctx, cacheKey, entry)` | signs (HMAC over every field and the cache key) and stores; write the entry after `Commit` |
 | `LookupEntry(ctx, cacheKey)` | `ErrNotFound` is a miss: no entry, a failed signature (entry deleted, `evictions{stale}`), bytes gone (entry deleted, `evictions{missing}`), a size that differs from the entry's (counted corrupt, object deleted); any other error is the backend's: serve a miss |
 | `Open(ctx, cacheKey, entry)` | full read through the verifying reader; the last 64 KiB are released only after the SHA-256 and size matched; a mismatch returns `ErrCorrupt` from `Read`, deletes the object and the entry of the key, counts `quader_bastion_cache_corrupt_total`; a body longer than the entry is refused at once |
-| `OpenRange` | a range, not verified (H-451) |
+| `OpenRange` | a range, not verified against the digest (H-451); with a cache key every segment of its window is authenticated and a refusal deletes the object |
 | `Touch(ctx, entry)` | the access marker, at most once per `access_resolution` per replica and content address; best effort |
 | `SweepOnce(ctx, src)`, `RunSweeper(ctx, src)` | the sweep of R-BAS-031 and its loop; publish `cache_bytes`, count `evictions{size}`; `src` is a `LeaseSource` (`shared.State` is one), which offers the sweep lease only while the replicas share state, so the cache does not import `shared` |
 
@@ -682,11 +685,43 @@ exports them. A cycle measures both areas (one listing each); an area above 95 %
 bucket with Valkey (`st.Shared()`), the replica that wins `shared.SweepLease` for `2 × sweep_interval`; the bucket without Valkey, every
 replica at `sweep_interval ± 20 %`. The forms plug in through `shared.State` (the Valkey form of the server, `shared.NewLocal` in the tests).
 
-**Errors.** Every backend error except a missing key, an invalid name and a cancelled context is counted in
-`quader_bastion_cache_errors_total{op}` (`get`, `put`, `delete`, `list`, `spool`) where it happens, so a caller only has to turn an error
-into a miss. **Audit spool** (package 7): `SpoolWrite(ctx, replica, jsonl)` names the file `audit-spool/<replica>/<unix ms>.jsonl`
+**Errors.** Every backend error except a missing key, an invalid name, a cancelled context and an object the stored format refused is
+counted in `quader_bastion_cache_errors_total{op}` (`get`, `put`, `delete`, `list`, `spool`) where it happens, so a caller only has to turn
+an error into a miss. **Audit spool** (package 7): `SpoolWrite(ctx, replica, jsonl)` names the file `audit-spool/<replica>/<unix ms>.jsonl`
 (raised by a millisecond on a clash in the process); `SpoolList` is oldest first; names that do not match the form are refused or
 skipped, so no input becomes a path.
+
+**With a cache key** (R-BAS-061, package 5 of [stored-content-encryption.md](stored-content-encryption.md); decisions Q-BAS-212 to
+Q-BAS-215). `cache.New` reads `bastion.cache.encryption_key_file` (the chart renders it from `secrets.cacheKey`), derives the storage key,
+the identifier `bc-<16 hex>` and the name key, clears the file's bytes and the base key, and calls `backend.sealWith`: the backend then
+names everything with `sealedLayout` and writes and reads through [sealed.go](../../internal/bastion/cache/sealed.go). Nothing above the
+backend learns of it: `Cache`, the engine and the download buffer see plaintext, plaintext sizes and the same errors. Every sealed byte is
+`internal/blob/blobcrypt`'s (the archtest's scoped allowance for the cache); the cache only frames, names and reads.
+
+| Family | Without a key (R-BAS-030) | With a key, below `<prefix>/bc-<id>/` | Stored as |
+|---|---|---|---|
+| Artifact bytes | `sha256/<h0h1>/<h2h3>/<sha>` | `a/<m0m1>/<m2m3>/<m>`, `m` = HMAC(name key, FMT ‖ " name" ‖ `a` ‖ digest) | frame ‖ the format's body, a data key per object, the content address as the copy's digest |
+| Document bytes | `documents/<h0h1>/<h2h3>/<sha>` | `d/<m0m1>/<m2m3>/<m>`, area `d` | as artifact bytes |
+| Entries | `entries/<k0k1>/<key hash>.json`, signed JSON | `e/<m0m1>/<m>`, area `e` over the key hash | frame ‖ body of `<name>\n<signed entry>`: bound to its name |
+| Access markers | `access/<sha>`, one per content address | `x/<m>`, the `m` of its object (so per area) | empty; the time is the last access |
+| Audit spool | `audit-spool/<replica>/<unix ms>.jsonl` | `s/<replica>/<unix ms>` | frame ‖ body of `<name>\n<jsonl>` |
+| Probe of the first check | `probe/<32 hex>`, plain | `p/<32 hex>` | sealed and bound like a spool file; deleted at once |
+| Spool of fills in progress | `<volume>/tmp` (volume), `/tmp/quader-bastion-cache` (bucket) | `/tmp/quader-bastion-cache` for both (Q-BAS-214); the volume's `tmp/` holds only sealed copies about to be renamed | plaintext, as the main installation's spool |
+
+The frame is `FMT ‖ u8(len(id)) ‖ id ‖ W ‖ C` (182 bytes): `readFrame` builds the record's metadata from it and `blobcrypt.Open` runs
+steps 1 to 6. An artifact's or a document's read passes `Want{Known: true}` with the content address and the plaintext size of the stored
+size, so the wrap must bind that digest before a byte leaves; `NewReader` runs without its own SHA-256 because the verifying reader of
+`Cache.Open` hashes. A range reads up to 227 bytes for the frame, then the stored bytes of its window's segments (`PlanRange`). Entries,
+spool files and the probe are read with `Want{Known: false}` and `NewReader(…, true)`, then `unbind` checks the name. Errors: a refusal of
+the format, a frame that is none, and a plaintext bound to another name (`refused`) are evidence about the object: from `GetObject` and
+`HeadObject` and from `Read` they are `ErrCorrupt` (the cache deletes the object and the entry), from `GetEntry` `ErrBadSignature` (dropped as
+`stale`), from `SpoolRead` the file is deleted, counted corrupt and read as `ErrNotFound`. `Usage` counts stored bytes. The sweep of other
+layouts ([foreign.go](../../internal/bastion/cache/foreign.go)) runs at the start of `SweepOnce`, under the sweep lease where there is one;
+on the volume `list` takes a prefix that is no directory (`bc-`) by reading the parent directory.
+
+The data key of each object is drawn for its write and destroyed after it, and after a reader derived its cipher on a read; the storage key
+and the name key live for the replica's life (H-1327). What the key protects and what it does not is
+[security/bastion.md](../security/bastion.md#integrity-of-what-it-serves).
 
 **Run it.** `go test -race ./internal/bastion/cache`; the bucket tests need the stack (`make integration-up`) and run in
 `make test-integration` or alone with `go test -tags integration ./test/integration/bastioncache` after sourcing
@@ -832,8 +867,11 @@ older one the handshake fails and the role stays unreachable.
 | `make test-integration` (`test/integration/proxy`) | `TestR_BAS_013_UpstreamNotFoundIsMarkedAbsent`: the remote engine marks an upstream 404 and its negative entry, not a cache view miss |
 | `go test ./cmd/quader` | the role's start: another section's key, an http main URL, a missing token file |
 | `go test -race ./internal/bastion/engine ./internal/bastion/link ./internal/bastion/mainclient ./internal/bastion/server` (the review of the engine, the client and the link, Q-BAS-121 to Q-BAS-126) | the path rule against `net/http.ServeMux` ([path_test.go](../../internal/bastion/engine/path_test.go)); a refused token on a forward ([forward_token_test.go](../../internal/bastion/mainclient/forward_token_test.go), `TestR_BAS_006_R_BAS_021_ARefusalOfTheTokenOnAForwardDoesNotMakeTheReplicaUnreachable`); a withdrawal while unreachable ([withdraw_test.go](../../internal/bastion/engine/withdraw_test.go)); the fill without the client, the waiter bound and the pass-through floor ([decouple_test.go](../../internal/bastion/engine/decouple_test.go), [pace_test.go](../../internal/bastion/engine/pace_test.go), and over real sockets with slow readers [slow_clients_test.go](../../internal/bastion/server/slow_clients_test.go)); the `404` oracle ([oracle_test.go](../../internal/bastion/engine/oracle_test.go)); the probe's slot class ([probe_class_test.go](../../internal/bastion/engine/probe_class_test.go)); the mirror of the `304` ([mirror_test.go](../../internal/bastion/engine/mirror_test.go)); the marks of collapsing ([volatile_test.go](../../internal/bastion/engine/volatile_test.go)); the start read, the black-holed call, the burst page and the retained IDs ([pages_test.go](../../internal/bastion/link/pages_test.go), [blackhole_test.go](../../internal/bastion/link/blackhole_test.go), [burst_test.go](../../internal/bastion/engine/burst_test.go), [seen_test.go](../../internal/bastion/answers/seen_test.go)) |
-| `go test -race ./internal/bastion/cache` | the volume backend on a temporary directory, the fill, the sweep and its order, the audit spool, the verifying reader, the signed entries, the first-readiness gate and counted errors |
-| `make test-integration` (`test/integration/bastioncache`) | the bucket backend on the stack's SeaweedFS (S3, TLS), under a prefix of its own in `quader-backups`: two replicas on one bucket, the five operations asserted through a counting transport, eviction of 300 MiB to a 100 MiB limit, two sweepers, a replaced object, a rewritten entry |
+| `go test -race ./internal/bastion/cache` | the volume backend on a temporary directory, the fill, the sweep and its order, the audit spool, the verifying reader, the signed entries, the first-readiness gate and counted errors; with a cache key `TestR_BAS_061_*` in [sealed_test.go](../../internal/bastion/cache/sealed_test.go), below |
+| `make test-integration` (`test/integration/bastioncache`) | the bucket backend on the stack's SeaweedFS (S3, TLS), under a prefix of its own in `quader-backups`: two replicas on one bucket, the five operations asserted through a counting transport, eviction of 300 MiB to a 100 MiB limit, two sweepers, a replaced object, a rewritten entry; with a cache key `TestR_BAS_061_ACacheWithAKeyOnTheBucket` |
+| `go test -race -covermode=atomic -coverpkg=./... ./internal/bastion/cache` (the encrypted cache, R-BAS-061) | measured on 2026-11-22 in the unit job's mode on the development machine, every test on a temporary volume: `TestR_BAS_061_WithAKeyNoObjectHoldsAPlainRunOrANameOfWhatTheCacheKeeps` (a tarball of 512 bytes, a document of 103, two entries, two markers, a spool file; 0.01 s), `…AChangedByteIsRefusedBeforeAByteIsServed` (six cases of 150 to 512 bytes, 0.03 s), `…AnObjectOfAnotherNameFamilyOrKeyIsRefusedAndDeleted` (512 bytes, 0.01 to 0.02 s), `…AHitAfterARestartWithTheSameKeyFileIsServed` (0.01 to 0.02 s), `…ABastionWithAnotherKeyStartsMissesSweepsTheOldTreeAndFillsAgain` (512 bytes, four caches, 0.02 s), `…TheKeyFileAndWhatDerivesFromIt` (the identifier and three keyed names against known answers computed with Python's `hmac` and `hashlib`, independent of the package; under 0.01 s), `…ARangeIsAuthenticatedPerSegmentAndDamageOutsideItsWindowIsNotSeen` (70 KiB, two segments; 0.01 s), `…TheSweepEvictsSealedObjectsByLastAccessWithTheirMarkers` (four of 100 bytes, 0.01 s), `…ConcurrentFillsReadsAndSweepsOfASealedCacheAreRaceFree` (32 of about 200 bytes, 0.07 to 0.08 s). Together 0.2 s of test time; the package's run in that mode grows from 2.2 s to 2.5 s (two runs each, with and without these tests). Every defence of the cache's own was taken out once and at least one of these tests failed: the name binding, the content address against the record, the deletion on a refused segment, `ErrCorrupt` of a refused segment, the own tree in the sweep, the tree rule of the sweep, its window, the key lookup of one identifier, the deletion of a refused spool file, the plaintext size of a head |
+| `make test-integration` (`test/integration/bastioncache`, the encrypted cache) | `TestR_BAS_061_ACacheWithAKeyOnTheBucket`: two replicas with one key, a tarball of 70 KiB and a spool file, a range across the segment boundary, every object below one tree without a run of the plaintext, a changed byte refused, another key's miss, sweep and refill, the sweep of a cache without a key, the five operations; 0.18 s on the stack's SeaweedFS |
+| `make chart-test` (`test/chart`, the cache key) | `TestR_BAS_061_TheCacheKeyIsMountedAndNamedOnlyWithItsSecret`: no mount and no key without `secrets.cacheKey`; with it the directory mount and `bastion.cache.encryption_key_file` with both backends; the volume backend's `tmp` of 2304Mi and its refusal of 1Gi; the managed key refused under `config` (eight renders) |
 | `make test-integration` (`test/integration/postgres`) | `TestBastionMigration`: the three migrations, the constraints, the guards and every query of the Bastion files |
 | `make test-integration` ([test/integration/bastionshared](../../test/integration/bastionshared)) | two replicas against the stack's Valkey with Sentinel and TLS, each test on a key prefix of its own and an injected clock: an answer stored by replica A is found by B and a forged or altered record is ignored (`TestR_BAS_034_…`); the anonymous limit in total over two replicas without Valkey, 1,000 requests in 10 s admitted at most 140 times, 100 misses a minute at most 30 (`TestR_BAS_035_…`); 21 tokens (`TestR_BAS_036_…`); a flood blocked on both replicas for 15 and then 30 minutes (`TestR_BAS_037_…`); the fetch lock and the sweep lease. Valkey unavailable is an address nothing listens on: the tests never stop Valkey or trigger a failover |
 | `go test ./internal/cluster` | `valkey_bastion_test.go`: the Bastion's keys against the in-memory server, the address mapping, `Limiter.Estimate` |

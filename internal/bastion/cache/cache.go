@@ -11,6 +11,10 @@
 //	access/<64 hex>                              empty access markers; the modification time is the last access
 //	audit-spool/<replica>/<unix ms>.jsonl        events a draining replica could not send
 //
+// With a cache key (bastion.cache.encryption_key_file, R-BAS-061) the layout is the sealed one of layout.go below
+// bc-<identifier>/: every object but the empty access markers is an object of the stored format of
+// internal/blob/blobcrypt, its record in front of its body, every name keyed. Nothing above the backend sees it.
+//
 // A fill is spooled to temporary storage and committed under its content address only after its SHA-256 was
 // verified (R-BAS-021); a cache failure after the first readiness turns hits into misses that are passed
 // through, counted in quader_bastion_cache_errors_total, never into failed requests (R-BAS-030).

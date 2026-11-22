@@ -1,7 +1,8 @@
 # What a provider still sees of encrypted content
 
-Status: specified on 2026-11-22, not built ([storage.md](../spec/storage.md) R-STOR-075, R-STOR-086, R-STOR-088;
-[backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061). Until it is built a
+Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-075, R-STOR-086, R-STOR-088;
+[backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061). The Bastion's cache with a key
+is built ([security/bastion.md](bastion.md#with-a-cache-key)); the encrypted connections of the main installation are not, and until they are a
 provider sees every blob in the clear under its SHA-256, as [object-store-connections.md](object-store-connections.md) says.
 
 The perspective of this page is a party that can list and read a bucket but holds no key: the provider and its operators, a principal its
@@ -27,7 +28,7 @@ A copy row in Quader's database names the object; the provider does not see the 
 |---|---|
 | A backup's target | the pool names blobs by digest, the encrypted ones included, beside the database files, which are readable until R-BAK-027 encrypts them (backup-and-restore.md Q-BAK-65) |
 | A plain connection of the same installation | every blob in the clear: encryption is per connection, and a plain connection also serves signed links (R-STOR-088) |
-| A Bastion's cache store with a cache key | object sizes, counts, times, the access markers' times, the key's identifier (R-BAS-061) |
+| A Bastion's cache store with a cache key | object sizes, counts, times, the access markers' times, the key's identifier, the replica's name and time in the name of each file of the audit spool (R-BAS-061) |
 | A Bastion's cache store without a key | everything it holds, as today (the default) |
 
 ## What this does not cover
@@ -83,7 +84,8 @@ Live in every installation with both kinds; it is the owner's choice per connect
 ### H-1318 · The Bastion's cache shows sizes, counts and times, and stays plain without a key
 
 Component: the Bastion's cache store ([bastion.md](../spec/bastion.md) R-BAS-061, R-BAS-030). Subject: what a Bastion holds in the DMZ. With
-a cache key a holder of the cache store learns object sizes (and so plaintext sizes), their number, their times and the access markers' times,
-which the eviction needs; the answers in Valkey stay signed and not encrypted. Without a key, the default, the cache store holds artifacts,
+a cache key a holder of the cache store learns object sizes (and so plaintext sizes, the frame in front of each object adding a fixed 182
+bytes), their number, their times and the access markers' times, which the eviction needs, and from the names of the audit spool's files the
+replicas that spooled and when; the answers in Valkey stay signed and not encrypted. Without a key, the default, the cache store holds artifacts,
 documents, entries naming request paths, and the audit spool of download events in the clear, as today. Live for every Bastion with a cache; a
 key in its chart closes everything but sizes and times.

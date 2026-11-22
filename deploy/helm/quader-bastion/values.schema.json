@@ -541,6 +541,14 @@
                   "x-quader-env": "QUADER_BASTION_CACHE_DOCUMENTS_MAX_BYTES",
                   "x-quader-type": "bytes"
                 },
+                "encryption_key_file": {
+                  "default": "",
+                  "description": "File with the cache key (32 random bytes, raw or base64): with it every object of the cache store is encrypted or sealed below a tree named by the key's identifier, and a new key is an empty cache; empty keeps the cache plain (R-BAS-061). Rendered by the chart from secrets.cacheKey; read at start.",
+                  "type": "string",
+                  "x-quader-chart-managed": true,
+                  "x-quader-env": "QUADER_BASTION_CACHE_ENCRYPTION_KEY_FILE",
+                  "x-quader-secret": "file-only"
+                },
                 "fill_wait_max": {
                   "default": "10m",
                   "description": "How long a replica waits for another replica's fill of the same cache key while that replica keeps extending its fetch lock, sending nothing, before it fetches itself (R-BAS-054); the bucket backend with Valkey only.",
@@ -1525,6 +1533,19 @@
           "additionalProperties": false
         },
         "signingKey": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "cacheKey": {
           "type": "object",
           "properties": {
             "existingSecret": {

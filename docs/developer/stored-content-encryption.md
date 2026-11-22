@@ -1,7 +1,8 @@
 # Encryption of stored content: the build plan
 
-Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built)), nothing
-calls it yet; packages 2 to 6 not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
+Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built));
+package 5, the Bastion's cache, built on 2026-11-22 on it ([below](#package-5-the-bastions-cache-as-built)); nothing of the main
+installation calls the format yet; packages 2, 3, 4 and 6 not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
 R-STOR-091; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072;
 [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring),
@@ -75,6 +76,24 @@ writer and readers. Package 6's offline tool reads a record file (the object's m
 
 A failure of the body is an `*Error` with its reason; a body that ends early is a transport error with `io.ErrUnexpectedEOF` in its chain and
 no reason, which marks nothing; a body longer than the object is `size`. A failed key lookup passes through as it is.
+
+## Package 5: the Bastion's cache as built
+
+[R-BAS-061](../spec/bastion.md#r-bas-061--the-cache-encrypted-in-the-stored-format) in `internal/bastion/cache`
+([crypt.go](../../internal/bastion/cache/crypt.go), [sealed.go](../../internal/bastion/cache/sealed.go),
+[foreign.go](../../internal/bastion/cache/foreign.go), the `sealedLayout` of [layout.go](../../internal/bastion/cache/layout.go)), with
+`bastion.cache.encryption_key_file` in [bastion_role.go](../../internal/config/bastion_role.go) and `secrets.cacheKey` in the chart
+`quader-bastion`. It uses `blobcrypt` as the paragraph above foresees: `NewStorageKey` for the storage key derived from the file, `NewKey`
+and `NewSeed` per object, `NewSection` and `Wrap` to write, `Open`, `NewReader`, `PlanRange` and `NewRangeReader` to read, `ReasonOf` to
+tell a refusal from a transport error. It needed one allowance in the architecture test: the cache may import `internal/blob/blobcrypt`
+(scoped like `internal/blob/s3`, [bastion.go](../../internal/archtest/bastion.go)). Four points the specification left open or could not
+have as written were decided by the builder (Q-BAS-212 to Q-BAS-215): the record lies in front of each object's body, because neither of the
+cache's backends keeps object metadata; entries and the spool's files are objects of the format bound to their names, in place of a seal under
+an entries' key; with a key the volume backend spools its fills on the pod's temporary volume; and when the sweep looks for other layouts.
+The layout family by family, the reads and the errors are on [bastion.md](bastion.md#the-cache-backends-package-5); the tests and their
+measured cost are in that page's [Tests](bastion.md#tests): about 0.2 s of unit tests (the package's run in the unit job's mode grows by
+0.3 s), 0.2 s in the integration area `bastioncache`, eight chart renders, nothing in any end-to-end leg; with 25 formats the cost is the
+same, since no format sees the cache's key.
 
 ## The vectors and their independent check
 

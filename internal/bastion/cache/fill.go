@@ -45,7 +45,7 @@ func (c *Cache) NewFill(kind EntryKind) (*Fill, error) {
 	if kind == EntryDocument {
 		limit = int64(c.cfg.DocumentsMaxBytes)
 	}
-	f, err := os.CreateTemp(c.back.s.tmpDir(), "fill-*")
+	f, err := os.CreateTemp(c.back.spoolDir, "fill-*")
 	if err != nil {
 		return nil, c.back.fail(metrics.OpPut, err)
 	}

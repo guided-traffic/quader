@@ -75,6 +75,8 @@ type rig struct {
 	clock *clock
 	m     *metrics.Metrics
 	cfg   config.BastionCache
+	// podTmp is the pod's temporary directory of a rig opened through New (Options.TempDir).
+	podTmp string
 }
 
 // testConfig has an artifact limit of 1000 bytes and a document limit of 200: max_bytes 1200.

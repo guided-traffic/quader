@@ -21,7 +21,10 @@ const bastionRoot = "internal/bastion"
 //     its Valkey part is the Bastion's, and the Bastion's packages that import it are internal/bastion/shared
 //     and below (a scoped allowance, bastionScoped);
 //   - internal/blob/s3: the S3 client for the bucket backend of the cache (R-BAS-030), for internal/bastion/cache
-//     and below (scoped).
+//     and below (scoped);
+//   - internal/blob/blobcrypt: the stored format of encrypted content, which seals the cache once its chart gives it
+//     a key (R-BAS-061), for internal/bastion/cache and below (scoped). It is a leaf of the standard library (its own
+//     test holds that), so it brings nothing of the main installation into the role.
 //
 // The match is the exact package, so a package that did not exist when the rule was written is refused by
 // default. A new entry names the requirement that justifies it.
@@ -40,8 +43,9 @@ func bastionAllowed() []string {
 // bastionScoped are the allowances that hold for a subtree of the Bastion only.
 func bastionScoped() map[string][]string {
 	return map[string][]string{
-		"internal/cluster": {"internal/bastion/shared"},
-		"internal/blob/s3": {"internal/bastion/cache"},
+		"internal/cluster":        {"internal/bastion/shared"},
+		"internal/blob/s3":        {"internal/bastion/cache"},
+		"internal/blob/blobcrypt": {"internal/bastion/cache"},
 	}
 }
 

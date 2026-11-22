@@ -901,7 +901,8 @@ HPA owns it. The NetworkPolicy holds ingress rules only, as the chart `quader`'s
 
 **Configuration (R-BAS-002).** `quader-bastion.config` merges `config` with the keys the chart manages (managed wins):
 `bastion.main.token_file`, `bastion.main.ca_file` and `bastion.cache.bucket.ca_file` (the one key of `trustedCA`),
-`bastion.signing_key_file`, `bastion.cache.volume.dir` (`/var/cache/quader-bastion`, volume backend), the bucket credential
+`bastion.signing_key_file`, `bastion.cache.encryption_key_file` (`/var/run/secrets/quader/cache-key/key`, only while
+`secrets.cacheKey.existingSecret` is set, R-BAS-061), `bastion.cache.volume.dir` (`/var/cache/quader-bastion`, volume backend), the bucket credential
 files (`source: static`), `bastion.replicas`, `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file`
 (from `secrets.valkeySentinel`; the Sentinels of a Valkey that requires a password need them, found by the end-to-end run) and `valkey.tls.ca_file` (the Valkey CA,
 else the trust bundle) while Valkey is configured, and `server.tls` with the listener pair while `tls.enabled` (`server.ops_tls` keeps
@@ -936,10 +937,12 @@ is no alert, autoscaling bounds and metric, `highAvailability.enforce` (two repl
 
 **The spool and the volumes** ([Q-BAS-131](../spec/bastion.md#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)).
 The binary bounds the bytes of the fills in progress at `config.bastion.cache.spool_max_bytes` (2 GiB); the chart makes the volumes agree.
-`quader-bastion.bytes` reads a size in the forms of both the role (`2GiB`) and Kubernetes (`2Gi`). With the bucket backend the fills are spooled
-into the `tmp` emptyDir: `tmp.sizeLimit` is empty by default and then `spool_max_bytes` plus 256 MiB (`2304Mi`, `quader-bastion.tmpSizeLimit`), and a
-`tmp.sizeLimit` below that fails the render ("evicted" is in the message: an emptyDir over its limit evicts the pod). With the volume backend the
-fills go below `<cache dir>/tmp`, and `cacheVolume.size` must hold `max_bytes` plus the spool; `tmp` stays 1 Gi. `spool_max_bytes` below
+`quader-bastion.bytes` reads a size in the forms of both the role (`2GiB`) and Kubernetes (`2Gi`). With the bucket backend, and with the volume
+backend while `secrets.cacheKey` is set (`quader-bastion.spoolInTmp`, [Q-BAS-214](../spec/bastion.md#q-bas-214--with-a-key-the-volume-backend-spools-its-fills-on-the-pods-temporary-volume)),
+the fills are spooled into the `tmp` emptyDir: `tmp.sizeLimit` is empty by default and then `spool_max_bytes` plus 256 MiB (`2304Mi`,
+`quader-bastion.tmpSizeLimit`), and a `tmp.sizeLimit` below that fails the render ("evicted" is in the message: an emptyDir over its limit evicts
+the pod). With the volume backend without a key the fills go below `<cache dir>/tmp` and `tmp` stays 1 Gi; with a key only the sealed copy of a
+fill is written there before its rename. Either way `cacheVolume.size` must hold `max_bytes` plus the spool. `spool_max_bytes` below
 `max_object_bytes` fails as well. The values `tmp.sizeLimit` and `config.bastion.cache.spool_max_bytes` are in the values block of
 R-BAS-046; change both places.
 
@@ -989,6 +992,7 @@ other chart tests:
 | `TestR_BAS_045_TheClientAddressNeedsTheTrustedProxiesBehindTheIngress` | the render fails without `config.server.trusted_proxies` while the Ingress is on, names the value, passes with the Ingress off and with a list |
 | `TestR_BAS_030_TheSpoolFitsTheTemporaryVolume` | the derived `tmp.sizeLimit` (`2304Mi`), a set one used as written, a volume too small for the spool or the cache refused, a spool below `max_object_bytes` refused |
 | `TestR_BAS_030_CacheVolumeKinds` | persistent gives a StatefulSet with a claim template, ephemeral and `emptyDir`, the bucket backend no volume |
+| `TestR_BAS_061_TheCacheKeyIsMountedAndNamedOnlyWithItsSecret` | without `secrets.cacheKey` no mount and no `bastion.cache.encryption_key_file`; with it the directory mount at `/var/run/secrets/quader/cache-key` and the key file named, with both backends and a key name of the Secret's own; the volume backend's `tmp` of `2304Mi` and the refusal of `1Gi` naming `secrets.cacheKey`; the managed key refused under `config` |
 | `TestR_BAS_033_RouteByPath`, `TestR_BAS_038_EdgeLimitIsWiderThanTheBastionsOwn` | the annotations, the refusals naming both values, a user annotation that collides |
 | `TestR_BAS_047_NetworkPolicy` | ingress peers and ports; in every set `policyTypes: [Ingress]`, no `egress` key, one port per rule, no empty peer list; `networkPolicy.egress` refused by the schema; the ops rule left out without a peer; `enabled: false` renders none |
 | `TestR_BAS_043_PodDisruptionBudgetAndSpreading` | PDB, spread, `highAvailability.enforce`, probes |

@@ -57,7 +57,14 @@ func newBackend(s store, o Options) *backend {
 	if o.Fault != nil {
 		s = &faultStore{store: s, f: o.Fault}
 	}
-	return &backend{s: s, now: o.Now, count: func(op string) { o.Metrics.CacheErrors.WithLabelValues(op).Inc() }}
+	return &backend{
+		s: s, now: o.Now, lay: plainLayout{}, spoolDir: s.tmpDir(),
+		count: func(op string) { o.Metrics.CacheErrors.WithLabelValues(op).Inc() },
+		onRefused: func(key string, err error) {
+			o.Metrics.CacheCorrupt.Inc()
+			o.Logger.Error("a file of the audit spool failed the stored format and was deleted", "object", key, "error", err)
+		},
+	}
 }
 
 // NewVolume returns the backend of a local directory (R-BAS-030).
@@ -115,6 +122,11 @@ type Cache struct {
 	// spool bounds the bytes of the fills in progress (bastion.cache.spool_max_bytes, Q-BAS-131).
 	spool *spoolBudget
 
+	// started is when the cache was built; the sweep of other layouts runs in the sweeps of the first hour after it
+	// and as long as a sweep still finds something (R-BAS-061, Q-BAS-215).
+	started      time.Time
+	foreignFound atomic.Bool
+
 	ready atomic.Bool
 
 	touchMu sync.Mutex
@@ -123,10 +135,16 @@ type Cache struct {
 
 // New opens the backend of cfg.Backend and returns the cache. The signer holds the signing key of
 // bastion.signing_key_file (R-BAS-032); it may be nil only where the configuration allows no key (the volume
-// backend without Valkey), and entries are then stored without a signature (Q-BAS-98). New does not touch the backend's storage beyond preparing directories;
-// [Cache.Ready] is the first check.
+// backend without Valkey), and entries are then stored without a signature (Q-BAS-98). With
+// bastion.cache.encryption_key_file New reads the cache key, and every object the cache writes is encrypted or
+// sealed below the tree of its identifier (R-BAS-061); a key file that cannot be read stops the start. New does not
+// touch the backend's storage beyond preparing directories; [Cache.Ready] is the first check.
 func New(ctx context.Context, cfg config.BastionCache, signer *Signer, o Options) (*Cache, error) {
 	o.fill()
+	seal, err := openSealer(cfg.EncryptionKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("encryption_key_file: %w", err)
+	}
 	var b *backend
 	switch cfg.Backend {
 	case "volume":
@@ -136,12 +154,21 @@ func New(ctx context.Context, cfg config.BastionCache, signer *Signer, o Options
 		}
 		b = newBackend(s, o)
 	case "bucket":
-		var err error
 		if b, err = openBucket(ctx, cfg.Bucket, o); err != nil {
 			return nil, err
 		}
 	default:
 		return nil, fmt.Errorf("cache: unknown backend %q", cfg.Backend)
+	}
+	if seal != nil {
+		spool := b.s.tmpDir() // the bucket's spool is the pod's already
+		if cfg.Backend == "volume" {
+			if spool, err = prepareSpool(o.TempDir, o.Now()); err != nil {
+				return nil, err
+			}
+		}
+		b.sealWith(seal, spool)
+		o.Logger.Info("the cache is encrypted in the stored format", "key_id", seal.id)
 	}
 	return build(b, signer, cfg, o), nil
 }
@@ -150,7 +177,7 @@ func New(ctx context.Context, cfg config.BastionCache, signer *Signer, o Options
 func build(b *backend, signer *Signer, cfg config.BastionCache, o Options) *Cache {
 	c := &Cache{
 		back: b, signer: signer, cfg: cfg, m: o.Metrics, log: o.Logger, now: o.Now, hold: o.HoldBack, touched: map[string]time.Time{},
-		spool: newSpoolBudget(int64(cfg.SpoolMaxBytes)),
+		spool: newSpoolBudget(int64(cfg.SpoolMaxBytes)), started: o.Now(),
 	}
 	arts, docs := c.limits()
 	c.m.CacheCapacity.WithLabelValues(metrics.AreaArtifacts).Set(float64(arts))
@@ -205,13 +232,18 @@ func (c *Cache) DeleteEntry(ctx context.Context, cacheKey string) error {
 }
 
 // LookupEntry finds the entry of a cache key and checks it (R-BAS-031, R-BAS-032). [ErrNotFound] is a miss and
-// covers four cases: no entry; an entry whose signature fails, which is deleted and counted as stale; an entry
-// whose bytes are gone, which is deleted and counted as missing; an entry of another kind than the key's
-// bytes. Any other error is the backend's, already counted in quader_bastion_cache_errors_total, and the caller
-// serves the request as a miss.
+// covers four cases: no entry; an entry whose signature fails, or with a cache key one the stored format refuses,
+// which is deleted and counted as stale; an entry whose bytes are gone, which is deleted and counted as missing;
+// an entry of another kind than the key's bytes. Bytes whose size is not the entry's, or with a cache key not a
+// size of the format, are corrupt: deleted, counted, a miss. Any other error is the backend's, already counted in
+// quader_bastion_cache_errors_total, and the caller serves the request as a miss.
 func (c *Cache) LookupEntry(ctx context.Context, cacheKey string) (Entry, ObjectInfo, error) {
 	kh := KeyHash(cacheKey)
 	rec, err := c.back.GetEntry(ctx, kh)
+	if errors.Is(err, ErrBadSignature) {
+		c.drop(ctx, kh, metrics.EvictStale, "an entry failed the stored format")
+		return Entry{}, ObjectInfo{}, ErrNotFound
+	}
 	if err != nil {
 		return Entry{}, ObjectInfo{}, err
 	}
@@ -226,6 +258,10 @@ func (c *Cache) LookupEntry(ctx context.Context, cacheKey string) (Entry, Object
 	info, err := c.back.HeadObject(WithArea(ctx, e.Kind), e.SHA256)
 	if errors.Is(err, ErrNotFound) {
 		c.drop(ctx, kh, metrics.EvictMissing, "an entry's bytes are gone")
+		return Entry{}, ObjectInfo{}, ErrNotFound
+	}
+	if errors.Is(err, ErrCorrupt) {
+		c.corrupt(ctx, e, kh, err)
 		return Entry{}, ObjectInfo{}, ErrNotFound
 	}
 	if err != nil {
@@ -266,11 +302,16 @@ func (c *Cache) corrupt(ctx context.Context, e Entry, keyHash string, cause erro
 // the hold-back (R-BAS-032): the last 64 KiB are released only when the SHA-256 and size equal the entry's. A
 // mismatch makes Read return [ErrCorrupt] instead of the held bytes, so the caller aborts the transfer; the
 // object and the entry of cacheKey are deleted and quader_bastion_cache_corrupt_total is counted, and the next
-// lookup is a miss. [ErrNotFound] says the bytes are gone; the entry is deleted as in [Cache.LookupEntry].
+// lookup is a miss. [ErrNotFound] says the bytes are gone; the entry is deleted as in [Cache.LookupEntry]. With a
+// cache key every segment is authenticated before its bytes reach the verifying reader, and a record or a segment
+// that the stored format refuses is [ErrCorrupt] as well: before the first byte from Open, later from Read.
 func (c *Cache) Open(ctx context.Context, cacheKey string, e Entry) (io.ReadCloser, error) {
 	rc, err := c.back.GetObject(WithArea(ctx, e.Kind), e.SHA256, 0, -1)
 	if errors.Is(err, ErrNotFound) {
 		c.drop(ctx, KeyHash(cacheKey), metrics.EvictMissing, "an entry's bytes are gone")
+	}
+	if errors.Is(err, ErrCorrupt) {
+		c.corrupt(ctx, e, KeyHash(cacheKey), err)
 	}
 	if err != nil {
 		return nil, err
@@ -281,10 +322,36 @@ func (c *Cache) Open(ctx context.Context, cacheKey string, e Entry) (io.ReadClos
 }
 
 // OpenRange opens length bytes of an entry's object from offset (length -1 is to the end). A range cannot be
-// verified, as in R-STOR-013; the digest of a whole read is checked by the next [Cache.Open] (H-451).
+// verified against the digest, as in R-STOR-013; the digest of a whole read is checked by the next [Cache.Open]
+// (H-451). With a cache key every segment of the window is authenticated before its bytes leave, and a refusal is
+// [ErrCorrupt] and deletes the object (R-BAS-061).
 func (c *Cache) OpenRange(ctx context.Context, e Entry, offset, length int64) (io.ReadCloser, error) {
-	return c.back.GetObject(WithArea(ctx, e.Kind), e.SHA256, offset, length)
+	rc, err := c.back.GetObject(WithArea(ctx, e.Kind), e.SHA256, offset, length)
+	if errors.Is(err, ErrCorrupt) {
+		c.corrupt(ctx, e, "", err)
+	}
+	if err != nil || c.back.seal == nil {
+		return rc, err
+	}
+	return &judgedRange{rc: rc, onCorrupt: func(cause error) { c.corrupt(ctx, e, "", cause) }}, nil
 }
+
+// judgedRange hands the first refusal of a sealed range to onCorrupt.
+type judgedRange struct {
+	rc        io.ReadCloser
+	onCorrupt func(error)
+}
+
+func (j *judgedRange) Read(p []byte) (int, error) {
+	n, err := j.rc.Read(p)
+	if errors.Is(err, ErrCorrupt) && j.onCorrupt != nil {
+		j.onCorrupt(err)
+		j.onCorrupt = nil
+	}
+	return n, err
+}
+
+func (j *judgedRange) Close() error { return j.rc.Close() }
 
 // Touch writes the access marker of an entry's bytes, at most once per bastion.cache.access_resolution per
 // replica and content address (R-BAS-031). It is best effort: a failure is counted and not returned.
@@ -307,7 +374,7 @@ func (c *Cache) Touch(ctx context.Context, e Entry) {
 	}
 	c.touched[e.SHA256] = now
 	c.touchMu.Unlock()
-	if err := c.back.Touch(ctx, e.SHA256); err != nil {
+	if err := c.back.Touch(WithArea(ctx, e.Kind), e.SHA256); err != nil {
 		c.touchMu.Lock()
 		delete(c.touched, e.SHA256)
 		c.touchMu.Unlock()

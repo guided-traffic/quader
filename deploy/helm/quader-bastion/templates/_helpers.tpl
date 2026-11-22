@@ -119,14 +119,24 @@ a plain number, KiB MiB GiB TiB, KB MB GB TB, B, and Ki Mi Gi Ti, K M G T. Anyth
 {{- end -}}
 
 {{/*
+quader-bastion.spoolInTmp: do the fills go to the pod's tmp volume? Renders "true" or nothing. The bucket backend spools
+there; the volume backend does once secrets.cacheKey is set, so that the cache volume holds no plaintext (Q-BAS-214).
+*/}}
+{{- define "quader-bastion.spoolInTmp" -}}
+{{- if or (include "quader-bastion.bucketOn" .) .Values.secrets.cacheKey.existingSecret -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
 quader-bastion.tmpSizeLimit: the sizeLimit of the tmp emptyDir (Q-BAS-131). A set tmp.sizeLimit is used as written; the
-default is 1Gi with the volume backend and, with the bucket backend, which spools its fills into tmp, the spool plus the
-headroom, in whole MiB.
+default is 1Gi where the fills are spooled on the cache volume and, where they are spooled into tmp (the bucket backend, or
+the volume backend with secrets.cacheKey), the spool plus the headroom, in whole MiB.
 */}}
 {{- define "quader-bastion.tmpSizeLimit" -}}
 {{- if .Values.tmp.sizeLimit -}}
 {{- .Values.tmp.sizeLimit -}}
-{{- else if eq (dig "bastion" "cache" "backend" "volume" .Values.config) "bucket" -}}
+{{- else if include "quader-bastion.spoolInTmp" . -}}
 {{- $total := add (include "quader-bastion.spoolBytes" . | int64) (include "quader-bastion.tmpHeadroomBytes" . | int64) -}}
 {{- printf "%dMi" (div (add $total 1048575) 1048576) -}}
 {{- else -}}
@@ -196,6 +206,9 @@ Secret rolls nothing.
 {{- $_ := set $bastion "signing_key_file" "/var/run/secrets/quader/signing-key/key" -}}
 {{- end -}}
 {{- $cache := dict -}}
+{{- if $s.cacheKey.existingSecret -}}
+{{- $_ := set $cache "encryption_key_file" "/var/run/secrets/quader/cache-key/key" -}}
+{{- end -}}
 {{- if include "quader-bastion.bucketOn" . -}}
 {{- $bucket := dict -}}
 {{- if $trust -}}
@@ -255,6 +268,9 @@ and the TLS material), and never become environment variables.
 {{- $out = append $out (dict "name" "main-token" "kind" "secret" "object" $s.mainToken.existingSecret "path" "/var/run/secrets/quader/main-token" "items" (list (dict "key" $s.mainToken.key "path" "token"))) -}}
 {{- if $s.signingKey.existingSecret -}}
 {{- $out = append $out (dict "name" "signing-key" "kind" "secret" "object" $s.signingKey.existingSecret "path" "/var/run/secrets/quader/signing-key" "items" (list (dict "key" $s.signingKey.key "path" "key"))) -}}
+{{- end -}}
+{{- if $s.cacheKey.existingSecret -}}
+{{- $out = append $out (dict "name" "cache-key" "kind" "secret" "object" $s.cacheKey.existingSecret "path" "/var/run/secrets/quader/cache-key" "items" (list (dict "key" $s.cacheKey.key "path" "key"))) -}}
 {{- end -}}
 {{- if and (include "quader-bastion.bucketOn" .) (eq (dig "bastion" "cache" "bucket" "credentials" "source" "static" .Values.config) "static") -}}
 {{- $out = append $out (dict "name" "cache-bucket" "kind" "secret" "object" $s.cacheBucket.existingSecret "path" "/var/run/secrets/quader/cache-bucket" "items" (list (dict "key" $s.cacheBucket.accessKeyIdKey "path" "access-key-id") (dict "key" $s.cacheBucket.secretAccessKeyKey "path" "secret-access-key"))) -}}

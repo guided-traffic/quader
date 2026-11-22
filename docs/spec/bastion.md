@@ -1448,6 +1448,8 @@ chooses the backend (`bastion.cache.backend`):
 - **`volume`**: a local volume per replica, the same layout below `bastion.cache.volume.dir`; generic ephemeral
   (`ReadWriteOnce`, deleted with the pod, the default) or persistent per pod (a StatefulSet with a claim template). No volume is
   shared (INV-13). Without routing by path (R-BAS-033) each replica fills its own copy.
+- With `secrets.cacheKey` both backends keep R-BAS-061's layout below the tree of the key's identifier instead, every object encrypted or
+  sealed, and the volume backend spools its fills on the pod's temporary volume.
 - A fill is spooled to the pod's temporary volume (`tmp`, bucket backend) or to a temporary directory of the cache volume, and
   is written or renamed to its content address only after verification (R-BAS-021). The fills in progress of a replica hold
   together at most `bastion.cache.spool_max_bytes`; a write that would pass it makes that fill unkept (the answer is passed
@@ -1546,37 +1548,56 @@ The owner's decision 13 (a) of 2026-11-22: the Bastion's own cache is encrypted 
 connections once its chart gives it a key; off by default ([storage.md](storage.md) R-STOR-076, R-STOR-077;
 [Q-BAS-210](#q-bas-210--the-cache-key-is-one-file-in-the-bastions-chart-and-the-formats-keys-derive-from-it),
 [Q-BAS-211](#q-bas-211--with-a-cache-key-every-object-of-the-cache-store-is-encrypted-or-sealed-and-named-without-a-digest)). Stage 2
-of the owner's topic; specified, not built. It does not change what the Bastion may read: never the main installation's object store
-(Q-BAS-10); the handover of decision 12 (b) is a later planner's.
+of the owner's topic; built on 2026-11-22 in `internal/bastion/cache` over the format's package `internal/blob/blobcrypt`, which seals every
+byte, with the builder's decisions
+[Q-BAS-212](#q-bas-212--the-record-of-a-cached-object-lies-in-front-of-its-body-in-the-same-object) to
+[Q-BAS-215](#q-bas-215--the-sweep-of-other-layouts-deletes-them-in-a-replicas-first-hour-and-while-it-still-finds-some). It does not change
+what the Bastion may read: never the main installation's object store (Q-BAS-10); the handover of decision 12 (b) is a later planner's.
 
 - **The key.** `secrets.cacheKey` of the Bastion's chart (`existingSecret`, `key`, default empty) is mounted at
-  `/var/run/secrets/quader-bastion/cache-key/` and named by `bastion.cache.encryption_key_file` (managed by the chart): 32 random bytes, raw or
-  base64, the key ring's file rules ([architecture.md](architecture.md) R-ARCH-021). Without it the cache is as R-BAS-030 says. From the file's
-  key `K` derive, with `FMT` = `quader-blob-v1`: the storage key `HKDF(K, "", FMT ‖ " bastion storage")`, the key's identifier `bc-` followed by
-  the hex of the first 8 bytes of `HKDF(K, "", FMT ‖ " bastion key id")`, the name key `HKDF(K, "", FMT ‖ " bastion names")` and the entries'
-  key `HKDF(K, "", FMT ‖ " bastion entries")`. The key is read at start; a new file is a rollout.
+  `/var/run/secrets/quader/cache-key/`, beside the chart's other Secrets, and named by `bastion.cache.encryption_key_file` (managed by the
+  chart): 32 random bytes, raw or base64, the key ring's file rules ([architecture.md](architecture.md) R-ARCH-021). Without it the cache is as
+  R-BAS-030 says. From the file's key `K` derive, with `FMT` = `quader-blob-v1`: the storage key `HKDF(K, "", FMT ‖ " bastion storage")`, the
+  key's identifier `bc-` followed by the hex of the first 8 bytes of `HKDF(K, "", FMT ‖ " bastion key id")` and the name key
+  `HKDF(K, "", FMT ‖ " bastion names")`. The key is read at start: a file that cannot be read or holds no key of the form stops the start, with
+  a message that names the path and the rule and no byte of the file. The file's bytes and `K` are cleared once the keys are derived; the
+  storage key and the name key live in the replica's memory for its life. A new file is a rollout.
 - **What is encrypted.** With a key, every object the Bastion writes into its cache store, bucket or volume, lies below
-  `<prefix>/<key identifier>/`:
-  - artifact bytes and documents in the format of R-STOR-076 with their record (R-STOR-077), a new data key per object, under the names
-    `a/<m0m1>/<m2m3>/<m>` and `d/<m0m1>/<m2m3>/<m>` with `m = HMAC-SHA-256(name key, FMT ‖ " name" ‖ area ‖ digest)` (`area` one byte, `a` or
-    `d`);
-  - entries signed as R-BAS-032 says and then sealed, `nonce ‖ Seal(entries' key, nonce, entry, FMT ‖ " bastion entry" ‖ name)`, under
-    `e/<k0k1>/<hex of HMAC-SHA-256(name key, cache key)>`;
-  - access markers under `x/<m>`, and every object of the audit spool (R-BAS-039) in the format with its record, under
-    `s/<replica>/<unix ms>`.
-- **Reads.** An artifact is read as [storage.md](storage.md) R-STOR-082 says, with R-BAS-032's verification against its content address and
-  hold-back; a ranged read of a cached artifact is authenticated per segment (which narrows
-  [H-451](#h-451--a-ranged-read-of-a-cached-artifact-is-not-verified): still not checked against the digest, but no byte that was not
-  written by the Bastion). A failure of the record, a segment or the digest deletes the object and its entries, as a corrupt object today.
+  `<prefix>/<key identifier>/`, and every one but the empty access markers is an object of the format of R-STOR-076 with its record
+  (R-STOR-077) under a data key of its own. The record lies in front of the body, `FMT ‖ u8(len(id)) ‖ id ‖ W ‖ C` (182 bytes), because
+  neither backend keeps object metadata ([Q-BAS-212](#q-bas-212--the-record-of-a-cached-object-lies-in-front-of-its-body-in-the-same-object)):
+  - artifact bytes and documents under the names `a/<m0m1>/<m2m3>/<m>` and `d/<m0m1>/<m2m3>/<m>` with
+    `m = HMAC-SHA-256(name key, FMT ‖ " name" ‖ area ‖ digest)` (`area` one byte, `a` or `d`);
+  - entries, signed as R-BAS-032 says, as objects whose plaintext is the object's name, a line feed and the signed entry, under
+    `e/<m0m1>/<m>` with `m` the keyed name of area `e` over the SHA-256 of the cache key
+    ([Q-BAS-213](#q-bas-213--entries-and-the-spools-files-are-objects-of-the-format-bound-to-their-names));
+  - access markers, empty, under `x/<m>` with the `m` of their object; every file of the audit spool (R-BAS-039), bound to its name like an
+    entry, under `s/<replica>/<unix ms>`; and the probe of the first readiness check (R-BAS-043), bound likewise under `p/<32 hex>` and
+    deleted at once.
+- **Reads.** An artifact is read as [storage.md](storage.md) R-STOR-082 says, its content address and the size its stored size gives as the
+  copy's digest and size, so that steps 1 to 6 of R-STOR-077 run before the first byte; then R-BAS-032's verification against its content
+  address and hold-back. A ranged read of a cached artifact reads the record, then only the segments of its window, each authenticated
+  (which narrows [H-451](#h-451--a-ranged-read-of-a-cached-artifact-is-not-verified): still not checked against the digest, but no byte that
+  was not written by the Bastion). A refusal of the record, a segment or the digest, for any reason and `unknown_key` included (the tree of
+  an identifier holds only what its key wrote), deletes the object and the entry that found it, as a corrupt object today; an entry or a
+  file of the spool that is refused, or bound to another name, is deleted, the entry as one that fails its signature.
+- **The spool of fills.** With a key the volume backend spools its fills on the pod's temporary volume, as the bucket backend does, and
+  writes only the sealed object to the cache volume; the chart sizes `tmp` for it
+  ([Q-BAS-214](#q-bas-214--with-a-key-the-volume-backend-spools-its-fills-on-the-pods-temporary-volume)).
 - **A new key, a lost key.** A key change gives a new identifier and so an empty tree: every read is a miss until refilled (performance only).
-  The sweep of R-BAS-031 deletes the trees of other identifiers and the plain layout of a cache that ran without a key, in its first runs after
-  the change. A lost key costs the cache, nothing else.
+  The sweep of R-BAS-031 deletes the trees of other identifiers and, with a key, the plain layout of a cache that ran without one; a cache
+  without a key deletes every tree. It does so in each sweep of a replica's first hour after its start and in every later sweep that follows
+  one that still found something, at most 10,000 objects per sweep
+  ([Q-BAS-215](#q-bas-215--the-sweep-of-other-layouts-deletes-them-in-a-replicas-first-hour-and-while-it-still-finds-some)). A lost key
+  costs the cache, nothing else. What a key change leaves open is [H-1325](#h-1325--a-change-of-the-cache-key-loses-the-download-events-spooled-under-the-old-layout)
+  and [H-1326](#h-1326--after-a-key-change-the-old-tree-stays-readable-to-a-holder-of-the-old-key-until-the-sweep-has-deleted-it); what the
+  key does not protect, [H-1327](#h-1327--a-taken-over-bastion-pod-holds-the-cache-key).
 - **What stays in the clear, and why**
   ([H-1318](../security/stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)):
   the number and sizes of objects (which give away the plaintext sizes), their times, and the modification times of the access markers, which
-  the eviction reads by listing (R-BAS-031); the key's identifier; the answers in Valkey, which are signed (R-BAS-032) and short-lived and lie
-  in Valkey, not in the cache store; and the spool of fills in progress on the pod's temporary volume, as the main installation's spool
-  ([storage.md](storage.md) R-STOR-004).
+  the eviction reads by listing (R-BAS-031); the key's identifier; the replica's name and the time in the name of each file of the audit
+  spool; the answers in Valkey, which are signed (R-BAS-032) and short-lived and lie in Valkey, not in the cache store; and the spool of fills
+  in progress on the pod's temporary volume, as the main installation's spool ([storage.md](storage.md) R-STOR-004).
 
 Acceptance criteria (unit, `internal/bastion/cache`, a temporary volume; chart render tests):
 
@@ -1584,6 +1605,11 @@ Acceptance criteria (unit, `internal/bastion/cache`, a temporary volume; chart r
   or the hash of its cache key; a second cache over the same directory serves it; a flipped bit makes the read abort and the entry go.
 - With another key the first read is a miss and the next sweep removes the old tree; without a key the layout is R-BAS-030's.
 - The chart mounts `secrets.cacheKey` into the Bastion's pods and sets `bastion.cache.encryption_key_file` only when `existingSecret` is set.
+
+Built: `TestR_BAS_061_*` in [sealed_test.go](../../internal/bastion/cache/sealed_test.go) (every family of the store, a changed byte, an
+object of another name, family or key, a restart, another key, the key file and its known answers, ranges, the sweep, the race detector),
+`TestR_BAS_061_ACacheWithAKeyOnTheBucket` in [test/integration/bastioncache](../../test/integration/bastioncache/sealed_test.go) and
+`TestR_BAS_061_TheCacheKeyIsMountedAndNamedOnlyWithItsSecret` in [test/chart](../../test/chart/bastion_cachekey_test.go).
 
 ### R-BAS-033 · Routing by path for local volumes
 Priority: **MVP** · Covers: quader-only
@@ -1991,7 +2017,7 @@ A second Helm chart for this instance type (owner, [Q-BAS-5](#q-bas-5--a-second-
 | ServiceAccount | `<fullname>` | `automountServiceAccountToken: false`; no Role, no RoleBinding |
 | ServiceMonitor, PrometheusRule | `<fullname>` | R-BAS-041 |
 
-- It renders no Secret: the Bastion token, the signing key, the bucket and Valkey credentials come from existing Secrets
+- It renders no Secret: the Bastion token, the signing key, the cache key, the bucket and Valkey credentials come from existing Secrets
   (`secrets.*`, created by GitOps, the internal-secrets-operator or the stackit-s3-provisioner).
 - **Validation** (fail at `helm template`): `config.server.base_url` and `config.bastion.main.url` set and `https`;
   `secrets.mainToken.existingSecret` set; `secrets.signingKey.existingSecret` set with the bucket backend or Valkey;
@@ -1999,7 +2025,8 @@ A second Helm chart for this instance type (owner, [Q-BAS-5](#q-bas-5--a-second-
   `edgeLimit` wider than the Bastion's limits (R-BAS-038); `config.server.trusted_proxies` while `ingress.enabled`, because behind
   the Ingress every request arrives from the controller's pods
   ([Q-BAS-130](#q-bas-130--behind-the-ingress-the-chart-requires-the-trusted-proxies)); the spool of fills
-  (`config.bastion.cache.spool_max_bytes`) at least `max_object_bytes`, and a `tmp.sizeLimit` (bucket backend) or
+  (`config.bastion.cache.spool_max_bytes`) at least `max_object_bytes`, and a `tmp.sizeLimit` (bucket backend, and volume backend with
+  `secrets.cacheKey`, [Q-BAS-214](#q-bas-214--with-a-key-the-volume-backend-spools-its-fills-on-the-pods-temporary-volume)) or
   `cacheVolume.size` (volume backend) that holds it ([Q-BAS-131](#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound));
   with `highAvailability.enforce` at least two replicas, a PDB and
   host spreading; a value under `config` that is chart-managed or not in the role's schema; a certificate source for the
@@ -2039,7 +2066,7 @@ Every value of `quader-bastion` with its default. The block below is the chart's
 a value is commented only where its name does not say its meaning, unit, range or consequence, with an `example:` where the
 default is empty (owner, 2026-11-04: no content-free comments). Keys under `config`
 are the Bastion's configuration file (R-BAS-001); the chart-managed keys (`server.tls`, `bastion.main.token_file`,
-`bastion.main.ca_file`, `bastion.signing_key_file`, `bastion.cache.volume.dir`, `bastion.cache.bucket.ca_file`,
+`bastion.main.ca_file`, `bastion.signing_key_file`, `bastion.cache.encryption_key_file`, `bastion.cache.volume.dir`, `bastion.cache.bucket.ca_file`,
 `bastion.cache.bucket.credentials.access_key_id_file` and `secret_access_key_file`, `bastion.replicas`, the Valkey secret files
 `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file` and `valkey.tls.ca_file`) are rendered by the chart and refused when set; the binary
 marks them in its schema (`x-quader-chart-managed`), and so are `server.ops_tls` and `tracing.ca_file`. The schema the chart
@@ -2235,6 +2262,9 @@ secrets:
   signingKey:
     existingSecret: ""                  # required with the bucket backend or Valkey; example: quader-bastion-signing (32 random bytes)
     key: key
+  cacheKey:
+    existingSecret: ""                  # empty = the cache stays plain; example: quader-bastion-cache-key (32 random bytes); a new key empties the cache
+    key: key
   cacheBucket:
     existingSecret: ""                  # required with credentials.source static; example: quader-bastion-s3 (stackit-s3-provisioner)
     accessKeyIdKey: access-key-id
@@ -2296,7 +2326,7 @@ securityContext:
     type: RuntimeDefault
 
 tmp:
-  sizeLimit: ""                         # empty = 1Gi with the volume backend; with the bucket backend (whose fills are spooled here) config.bastion.cache.spool_max_bytes plus 256Mi; example: 3Gi
+  sizeLimit: ""                         # empty = 1Gi with the volume backend; where fills are spooled here (the bucket backend, or the volume backend with secrets.cacheKey) config.bastion.cache.spool_max_bytes plus 256Mi; example: 3Gi
 
 # ── Probes ──────────────────────────────────────────
 probes:
@@ -6980,6 +7010,77 @@ gives away the interest in it.
 
 **Applied in the spec:** R-BAS-061.
 
+### Q-BAS-212 · The record of a cached object lies in front of its body, in the same object
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. Found while building R-BAS-061: R-STOR-077 puts the
+record in the object's metadata, and neither backend of the cache keeps any. The volume is files; the bucket backend writes through the plain
+methods of `internal/blob/s3` ([Q-BAS-89](#q-bas-89--the-bucket-backend-reaches-s3-through-a-plain-adapter-and-fails-fast), R-BAS-030's five
+operations), which carry no user metadata.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The record as a frame in front of the body, `FMT ‖ u8(len(id)) ‖ id ‖ W ‖ C` (182 bytes with a cache key's identifier), read before the body and checked with R-STOR-077's steps in their order (chosen) | One object, one write, one read, the same on the volume and in the bucket | The record cannot drift from its body, the owner's reason for decision 2 (e); the format's body is unchanged; no change to the S3 client | A reader of the main installation's objects (the offline tool) reads a cached object only after cutting the frame; a range costs one small request for the frame before the request for its segments |
+| (b) The record in a second object beside the body | Two objects per artifact | Each object keeps the format's form | Two writes that can drift apart, which decision 2 (e) rejects; two requests per read |
+| (c) Object metadata in the bucket, extended attributes on the volume | R-STOR-077 as written | Cached objects look like the main installation's | The cache's S3 client has no metadata (a change of another package's client and of R-BAS-030's adapter), and not every volume keeps extended attributes |
+
+**Choice:** (a). **Rationale:** the cache is disposable and private to the Bastion, so a frame of its own costs nothing that a second reader
+needs, while it keeps one object per write on both backends. **Applied in the spec:** R-BAS-061; code: `encodeFrame` and `readFrame` in
+[crypt.go](../../internal/bastion/cache/crypt.go), [sealed.go](../../internal/bastion/cache/sealed.go).
+
+### Q-BAS-213 · Entries and the spool's files are objects of the format bound to their names
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-061 sealed the entries under an entries' key
+derived from the cache key, `nonce ‖ Seal(entries' key, nonce, entry, FMT ‖ " bastion entry" ‖ name)` with a random 96-bit nonce per seal,
+and named them `e/<k0k1>/<HMAC-SHA-256(name key, cache key)>`. Found while building: a Bastion writes an entry again at every revalidation (a
+shared document every `metadata_revalidate_after`, one minute by default), so one entries' key seals without a bound over the life of a cache
+key, while random 96-bit nonces under one key are good for 2^32 seals (NIST SP 800-38D §8.3; the format allows a data key 2^31 segments,
+R-STOR-076). The backend names an entry by the SHA-256 of its cache key and never sees the cache key.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every entry, every file of the audit spool and the probe an object of the format with a data key of its own, its plaintext the object's name, a line feed and the payload, so that an object moved to another name or family fails; an entry named by the keyed name of area `e` over the SHA-256 of its cache key, `e/<m0m1>/<m>` (chosen) | One construction for every sealed byte, the format's, whose vectors an independent implementation checked | No bound on the writes under one key (each data key seals one object); an entry is authenticated even without a signing key; one naming function for the three areas | About 280 bytes more per entry (the frame and the final segment) and three derivations per write and read |
+| (b) The seal as specified, under one entries' key | 28 bytes per entry beyond the record | Cheaper | A bound of 2^32 seals under one key that a busy Bastion approaches within the life of its key; a second construction beside the format, checked by no vector |
+| (c) (b) with a key per seal derived from a salt, as the format's wrap does | No bound | Cheaper than (a) | A construction of its own, checked by no vector |
+
+**Choice:** (a). **Rationale:** the cache's own seal would be the one construction of the feature that no independent implementation checked,
+and its bound is reached by the Bastion's normal work; the bytes it saves are not worth either. The entries' key of R-BAS-061 is dropped.
+**Applied in the spec:** R-BAS-061; code: `putSealedBytes` and `readSealedBytes` in [sealed.go](../../internal/bastion/cache/sealed.go),
+`bound`, `unbind` and `sealer.name` in [crypt.go](../../internal/bastion/cache/crypt.go), `sealedLayout` in
+[layout.go](../../internal/bastion/cache/layout.go).
+
+### Q-BAS-214 · With a key, the volume backend spools its fills on the pod's temporary volume
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-061 leaves "the spool of fills in progress
+on the pod's temporary volume" in the clear. The volume backend spooled its fills to `tmp/` of the cache volume so that a fill was committed by
+a rename ([Q-BAS-131](#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)), which
+leaves the plaintext of each fill on the cache volume, a persistent one with `cacheVolume.type: persistent`, and that of an interrupted fill
+until a later start removes it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) With a key, spool to the pod's temporary volume (`/tmp`), write the sealed object to `tmp/` of the cache volume and rename it into place; the chart sizes `tmp` as for the bucket backend (chosen) | The cache volume holds ciphertext only | The commit seals, so it is a copy anyway; what R-BAS-061 says stays in the clear is where it says | The pod's ephemeral storage grows by `spool_max_bytes` (2 GiB by default) |
+| (b) Keep the spool on the cache volume | No chart change | — | Plaintext of fills in progress, and of an interrupted fill, on a volume that may be persistent and backed up with the cluster |
+| (c) Seal the spool as it is written | Nothing plain anywhere | Closes the last plaintext at rest | A key per fill, held in memory for the fill and its followers' reads; the bucket backend's spool lies in the pod already |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-061, R-BAS-030, R-BAS-045, the values reference (`tmp.sizeLimit`); code: `New` in
+[store.go](../../internal/bastion/cache/store.go), `quader-bastion.spoolInTmp` in the chart's
+[_helpers.tpl](../../deploy/helm/quader-bastion/templates/_helpers.tpl).
+
+### Q-BAS-215 · The sweep of other layouts deletes them in a replica's first hour and while it still finds some
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-061 has the sweep delete the trees of other
+identifiers and the plain layout "in its first runs after the change", which leaves open which runs, how much per run, and whether a cache
+without a key deletes the trees a key left. The cache's store lists by prefix only (the plain methods of the S3 client have no delimiter), so
+finding other trees lists everything below `bc-`, the replica's own tree included.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) With a key, the plain layout and the trees of other identifiers; without a key, every tree; in every sweep of a replica's first hour after its start and in each later sweep that follows one that found something; at most 10,000 deletions per sweep, so that the eviction of its own layout is not held back (chosen) | Other layouts appear only while replicas of two configurations run, a rollout | A key that is changed, set or removed leaves nothing behind; the own tree is listed once per sweep only while it matters | What a replica of the old configuration writes after the first hour of every new replica stays until the next start ([H-1326](#h-1326--after-a-key-change-the-old-tree-stays-readable-to-a-holder-of-the-old-key-until-the-sweep-has-deleted-it)); on a shared bucket, while replicas of both configurations run, each deletes what the other fills, which costs refills until the rollout ends (performance only) |
+| (b) In every sweep | Always | Catches every other layout within one interval | Lists the whole own tree every `sweep_interval` for the life of the replica |
+| (c) In the first sweep after the start only | Once | Cheapest | Misses what the old replicas write during the rest of the rollout |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-061; code: [foreign.go](../../internal/bastion/cache/foreign.go).
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -7049,7 +7150,9 @@ Dormant until phase 5b; then live on every Bastion with the bucket backend or Va
 mounts. Whoever holds it and can write the Bastion's Valkey can store a signed `full` answer for a credential of their choice and
 read every cached artifact with it; whoever holds it and can write the bucket can point an entry at bytes of their choice, which
 the Bastion then serves under a URL clients trust. Write access without the key only deletes (performance). What makes it real: a
-compromise of the Bastion's namespace, where the key, the Valkey credentials and the bucket credentials live together.
+compromise of the Bastion's namespace, where the key, the Valkey credentials and the bucket credentials live together. With a cache key
+(R-BAS-061) an entry in the bucket is an object of the stored format bound to its name, so pointing one at other bytes needs the cache key as
+well; the answers in Valkey are signed only.
 
 ### H-388 · Anonymous misses from many addresses take the anonymous share of the budget
 
@@ -7306,7 +7409,9 @@ ranged download is verified. The gap is live for any consumer that calls `OpenRa
 of a whole object; a range is a part of it and cannot be checked against the digest (the carve-out of R-STOR-013). Whoever can write
 the bucket, or the volume of a replica, and replaces a cached object, makes a ranged reader receive the other bytes, where a whole
 read aborts and deletes the object. The package managers the Bastion serves read whole files. What makes it real: a client that
-resumes a download with `Range` after the object was replaced; the next whole read deletes the object.
+resumes a download with `Range` after the object was replaced; the next whole read deletes the object. With a cache key (R-BAS-061) a range
+authenticates every segment it reads and refuses a replaced one, so it never yields bytes the Bastion did not write; it is still not checked
+against the digest, and damage outside its window is not seen.
 
 ### H-452 · The entries of evicted bytes stay until they are read and are not counted in the cache size
 
@@ -7326,7 +7431,9 @@ Dormant until phase 5b; then live on every Bastion. Only entries are signed; the
 are served, and the access markers and modification times that order a sweep carry no signature. A holder of write access to the
 bucket (or of a replica's volume) who replaces an object leaves it until the next read, which aborts and deletes it; one who
 refreshes the markers of worthless objects makes a sweep evict the useful ones instead. Neither lets the Bastion serve other bytes;
-both cost a refill. What makes it real: the compromise of the Bastion's bucket credential (H-387's setting, without the key).
+both cost a refill. What makes it real: the compromise of the Bastion's bucket credential (H-387's setting, without the key). With a cache key
+(R-BAS-061) a replaced object is refused at its record or its first changed segment, before a byte of it leaves; the markers, empty, still
+steer eviction by their times.
 
 ### H-454 · The gauge of blocked addresses counts the blocks a replica knows
 
@@ -7389,7 +7496,8 @@ that a name exists, never a token or a contact.
 
 Stage: R-BAS-032, Q-BAS-98. Subject: which bytes an entry names.
 
-Live on every Bastion with the volume backend and no Valkey that has no `signing_key_file`; dormant otherwise (the bucket and Valkey require the key). The entry names the content address
+Live on every Bastion with the volume backend and no Valkey that has no `signing_key_file` and no cache key; dormant otherwise (the bucket and Valkey require the signing key, and with a
+cache key every entry is an object of the stored format bound to its name, which authenticates it without a signature, R-BAS-061). The entry names the content address
 and the headers of a cached response and is stored as plain JSON. Whoever can write the volume can point an entry at another object of the volume, or change its headers and its
 `validatedAt`, so that a caller receives other cached bytes under the name of the first, or an entry that never expires. The bytes themselves are verified against their content address at every
 read, and a replaced object is detected. What makes it real: write access to the volume of a replica, which is a compromised pod or a mounted volume that something else writes to; the
@@ -7652,3 +7760,39 @@ Bastion forwards each of the three requests of every run (measured on 2026-11-22
 What makes it real: many ClamAV installations behind one Bastion, each checking every hour or more often. What closes it: the
 format's `404` for a database file it never serves noted as missing (`bastionmain.NoteMissing`), so a full reader's Bastion keeps the
 negative entry for `negative_period`.
+
+### H-1325 · A change of the cache key loses the download events spooled under the old layout
+
+Stage: R-BAS-039's audit spool and R-BAS-061. Subject: the download events of cached hits, which reach the main installation's audit trail.
+
+Live during a rollout that changes, sets or removes `secrets.cacheKey` while the main installation cannot be reached. A draining replica of the
+old configuration writes the events it could not send to the audit spool in its own layout; a replica of the new one cannot read a tree of
+another key, and with a key it delivers no plain spool file, because whoever can write the cache store could have written one (Q-BAS-213).
+The sweep of other layouts then deletes them (Q-BAS-215). What makes it real: an outage of the main installation during such a rollout; the
+lost events are missing from the audit as those of [H-391](#h-391--download-events-lost-to-a-full-buffer-a-crash-or-an-ephemeral-spool-are-missing-from-the-audit)
+are. A key change while the main installation is reachable loses nothing.
+
+### H-1326 · After a key change the old tree stays readable to a holder of the old key until the sweep has deleted it
+
+Stage: R-BAS-061, the sweep of other layouts
+([Q-BAS-215](#q-bas-215--the-sweep-of-other-layouts-deletes-them-in-a-replicas-first-hour-and-while-it-still-finds-some)). Subject: what
+the old tree holds.
+
+Live after every change of the cache key; it matters when the key was changed because it leaked. A new key protects nothing already written:
+the old tree stays in the cache store until the replicas of the new key have deleted it, at most 10,000 objects per sweep (one sweep every
+`sweep_interval`, 5 minutes by default), during each replica's first hour and as long as a sweep still finds some; with the bucket backend and
+Valkey one replica sweeps. A replica of the old key that still writes after the first hour of every new replica (a rollout longer than an
+hour, or a second deployment on the same prefix) leaves those objects until the next start. What makes it real: a leaked cache key together
+with read access to the cache store. Emptying the prefix at the provider, or the volume, is the operator's faster step.
+
+### H-1327 · A taken-over Bastion pod holds the cache key
+
+Stage: R-BAS-061, the custody of the cache key. Subject: the content of the cache store.
+
+Live wherever a cache key is set. The key is a mounted file of every replica, and the storage key and name key derived from it live in each
+replica's memory for its life (Go cannot erase an AES key schedule, as for the main installation's storage keys,
+[H-1309](../security/stored-content-keys.md#h-1309--a-replicas-memory-holds-the-storage-keys-for-its-life-and-go-cannot-erase-a-key)).
+Whoever runs code in a Bastion pod, or reads its memory or its mounted Secrets, reads and writes the whole cache store as the Bastion does. The
+key protects the cache against a holder of the store (the bucket's credential, its provider, a copy or a snapshot of a volume), not against
+the pod. What makes it real: a flaw that lets an attacker run code in a Bastion process, which then also holds the callers' credentials in
+transit ([H-386](#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events)).

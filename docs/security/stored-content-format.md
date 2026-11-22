@@ -3,8 +3,10 @@
 Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-048, R-STOR-075 to R-STOR-091;
 [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring));
 the format itself is built ([internal/blob/blobcrypt](../../internal/blob/blobcrypt/doc.go), its vectors checked by an independent
-implementation, [stored-content-encryption.md](../developer/stored-content-encryption.md#the-vectors-and-their-independent-check)), and
-nothing calls it yet. Until the store writes and reads through it no connection is encrypted, and
+implementation, [stored-content-encryption.md](../developer/stored-content-encryption.md#the-vectors-and-their-independent-check)), and the
+Bastion's cache seals with it once its chart gives it a key, its record in front of each object's body rather than in metadata
+([bastion.md](bastion.md#with-a-cache-key), Q-BAS-212). Nothing of the main installation calls it yet: until the store writes and reads
+through it no connection is encrypted, and
 [object-store-connections.md](object-store-connections.md) describes what a reader of a bucket can do: read every blob, and replace one that
 only a full read then finds.
 

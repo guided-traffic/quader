@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -39,6 +40,20 @@ func newVolumeStore(dir string, now func() time.Time) (*volumeStore, error) {
 	}
 	removeStale(v.tmp, now())
 	return v, nil
+}
+
+// prepareSpool returns <tmpRoot>/quader-bastion-cache, the spool of fills in the pod's temporary directory (os.TempDir()
+// for an empty tmpRoot), created and swept of the leftovers of fills that never finished.
+func prepareSpool(tmpRoot string, now time.Time) (string, error) {
+	if tmpRoot == "" {
+		tmpRoot = os.TempDir()
+	}
+	tmp := filepath.Join(tmpRoot, "quader-bastion-cache")
+	if err := os.MkdirAll(tmp, 0o750); err != nil {
+		return "", fmt.Errorf("cache: prepare the spool directory %s: %w", tmp, err)
+	}
+	removeStale(tmp, now)
+	return tmp, nil
 }
 
 // removeStale deletes spooled files of fills that never finished.
@@ -99,6 +114,32 @@ func (v *volumeStore) putBytes(ctx context.Context, key string, data []byte) err
 	return nil
 }
 
+// putStream writes the sealed object to a file of <dir>/tmp and renames it into place, so a reader never sees a partial
+// object; the file holds ciphertext only.
+func (v *volumeStore) putStream(ctx context.Context, key string, rs io.ReadSeeker, size int64) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(v.tmp, "seal-*")
+	if err != nil {
+		return err
+	}
+	n, err := io.Copy(f, rs)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil && n != size {
+		err = fmt.Errorf("cache: the sealed object has %d bytes, not %d", n, size)
+	}
+	if err == nil {
+		err = v.putFile(ctx, key, f.Name(), size, nil)
+	}
+	if err != nil {
+		_ = os.Remove(f.Name())
+	}
+	return err
+}
+
 type fileReader struct {
 	io.Reader
 	f *os.File
@@ -106,27 +147,27 @@ type fileReader struct {
 
 func (r fileReader) Close() error { return r.f.Close() }
 
-func (v *volumeStore) get(ctx context.Context, key string, offset, length int64) (io.ReadCloser, error) {
+func (v *volumeStore) get(ctx context.Context, key string, offset, length int64) (io.ReadCloser, int64, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	f, err := os.Open(v.path(key))
 	if err != nil {
-		return nil, mapFS(err)
-	}
-	if offset == 0 && length < 0 {
-		return f, nil
+		return nil, 0, mapFS(err)
 	}
 	info, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		return nil, err
+		return nil, 0, err
+	}
+	if offset == 0 && length < 0 {
+		return f, info.Size(), nil
 	}
 	n := info.Size() - offset
 	if length >= 0 {
 		n = min(n, length)
 	}
-	return fileReader{Reader: io.NewSectionReader(f, offset, max(n, 0)), f: f}, nil
+	return fileReader{Reader: io.NewSectionReader(f, offset, max(n, 0)), f: f}, info.Size(), nil
 }
 
 func (v *volumeStore) stat(ctx context.Context, key string) (int64, time.Time, error) {
@@ -144,7 +185,30 @@ func (v *volumeStore) stat(ctx context.Context, key string) (int64, time.Time, e
 }
 
 func (v *volumeStore) list(ctx context.Context, prefix string, fn func(string, int64, time.Time) error) error {
-	top := v.path(strings.TrimSuffix(prefix, "/"))
+	if prefix == "" || strings.HasSuffix(prefix, "/") {
+		return v.walk(ctx, v.path(strings.TrimSuffix(prefix, "/")), fn)
+	}
+	// A prefix that is no directory (the trees bc-…, R-BAS-061): the entries of its directory whose names start with it.
+	dir, stem := path.Split(prefix)
+	entries, err := os.ReadDir(v.path(dir))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), stem) {
+			if err := v.walk(ctx, v.path(dir+e.Name()), fn); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// walk calls fn for every regular file below top, top itself included when it is one.
+func (v *volumeStore) walk(ctx context.Context, top string, fn func(string, int64, time.Time) error) error {
 	err := filepath.WalkDir(top, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {

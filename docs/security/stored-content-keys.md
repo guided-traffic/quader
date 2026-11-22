@@ -1,8 +1,9 @@
 # The keys of the stored content: who holds which, and what losing or leaking one costs
 
-Status: specified on 2026-11-22, not built ([storage.md](../spec/storage.md) R-STOR-083 to R-STOR-085, R-STOR-089, R-STOR-090;
+Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-083 to R-STOR-085, R-STOR-089, R-STOR-090;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031;
-[bastion.md](../spec/bastion.md) R-BAS-061). Until it is built the key ring seals the upstream credentials and signing keys only, as
+[bastion.md](../spec/bastion.md) R-BAS-061). The Bastion's cache key is built ([security/bastion.md](bastion.md#with-a-cache-key)); the keys
+of the main installation are not, and until they are the key ring seals the upstream credentials and signing keys only, as
 [data-and-secret-flow.md](data-and-secret-flow.md) describes.
 
 The perspective of this page is the keys of encrypted connections: where each lies, which process opens it, how it rotates, and what its loss
@@ -30,7 +31,7 @@ or its leak costs and needs. The format they protect is [stored-content-format.m
 | A name key | as a storage key | as a storage key | never |
 | A data key | wrapped in its object's record, nowhere else | a writer for one write, a reader for one read | never |
 | An open session's data key | sealed in its `upload_sessions` row | the replica that serves a request of the session | resealed by the rotation like every sealed value |
-| The Bastion's cache key | a Secret of the Bastion's chart | the Bastion's pods | by replacing the file, which empties the cache |
+| The Bastion's cache key | a Secret of the Bastion's chart (`secrets.cacheKey`), mounted as a file; the storage key and name key derived from it in each replica's memory for its life | the Bastion's pods, at start | by replacing the file, which empties the cache; the new replicas' sweeps delete the old tree ([H-1326](../spec/bastion.md#h-1326--after-a-key-change-the-old-tree-stays-readable-to-a-holder-of-the-old-key-until-the-sweep-has-deleted-it)) |
 
 **Who holds nothing:** the backup pods (they copy ciphertext with its record and confirm it by size, R-BAK-031), the scanners (they read
 plaintext through Quader's scan listener), the migration Job, and the Bastion, which holds no key of the main installation; the export holds
@@ -55,7 +56,7 @@ to draw keys over a location that already holds objects.
 | A storage key | the objects it wrapped, unless another connection holds the blob | with read access to the bucket, those objects; with write access, objects that authenticate | a new connection filled with new data keys, the old one drained |
 | A name key | nothing unreadable; new writes on the connection cannot be named | the confirmation of known files by listing | a new connection |
 | A data key | its object | that object, with read access | none short of a new connection |
-| The Bastion's cache key | the cache, which refills | the cache's content, with access to the cache store | a new key |
+| The Bastion's cache key | the cache, which refills | the cache's content, with access to the cache store, until the old tree is swept | a new key; emptying the old tree at the provider is faster than the sweep |
 
 ## What this does not cover
 

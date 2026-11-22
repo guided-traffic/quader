@@ -2289,10 +2289,11 @@ the planner in the owner's absence — put to the owner.
 (R-BAS-030, R-BAS-032). Encryption that ends at the boundary to the DMZ leaves a plain copy in the zone nearest to the internet. A Bastion has no
 database and no key ring; its cache is disposable.
 
-**Decision.** With `secrets.cacheKey` in the Bastion's chart, every object of the cache store is encrypted in the format of ADR-244 or sealed,
-under keys derived from that one file (storage key, key identifier, name key, entries' key), below a tree named by the key's identifier, with
-names that carry no digest and no request path; without it the cache is as before. A new key is a new tree; the sweep removes the old ones
-(R-BAS-061).
+**Decision.** With `secrets.cacheKey` in the Bastion's chart, every object of the cache store but the empty access markers is an object of the
+format of ADR-244 under keys derived from that one file (storage key, key identifier, name key), below a tree named by the key's identifier,
+with names that carry no digest and no request path; without it the cache is as before. A new key is a new tree; the sweep removes the old ones
+(R-BAS-061). Built on 2026-11-22: the record lies in front of each object's body (Q-BAS-212); entries and the spool's files are objects of the
+format bound to their names, in place of the entries' key the planner had derived (Q-BAS-213).
 
 **Consequences.** A holder of the cache store learns sizes, counts and times only (H-1318); a key change costs a refill; the Bastion still
 holds no key of the main installation.
@@ -2302,7 +2303,7 @@ encrypting only artifacts and documents (entry names and the audit spool would s
 
 **Revisit condition:** the handover of decision 12 (b), which gives a Bastion data keys of the main installation.
 
-**Spec:** [bastion.md](spec/bastion.md) R-BAS-061, Q-BAS-210, Q-BAS-211.
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-061, Q-BAS-210 to Q-BAS-215.
 
 ## Design invariants
 
@@ -10817,6 +10818,10 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-API-405](spec/api-and-ui.md#q-api-405--the-connection-shows-its-storage-keys-by-identifier-and-no-operation-changes-them) | The connection shows its storage keys by identifier, and no operation changes them. Decided by the planner | (a) `keyedNames` and `storageKeys[]` read-only; generations, export and import are commands | [ADR-244](#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring) |
 | [Q-BAS-210](spec/bastion.md#q-bas-210--the-cache-key-is-one-file-in-the-bastions-chart-and-the-formats-keys-derive-from-it) | The cache key is one file in the Bastion's chart, and the format's keys derive from it. Decided by the planner | (a) one key file from the Bastion's chart; the format's keys derived from it | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) |
 | [Q-BAS-211](spec/bastion.md#q-bas-211--with-a-cache-key-every-object-of-the-cache-store-is-encrypted-or-sealed-and-named-without-a-digest) | With a cache key, every object of the cache store is encrypted or sealed and named without a digest. Decided by the planner | (a) everything in the cache store encrypted or sealed, every name keyed | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) |
+| [Q-BAS-212](spec/bastion.md#q-bas-212--the-record-of-a-cached-object-lies-in-front-of-its-body-in-the-same-object) | The record of a cached object lies in front of its body, in the same object. Decided by the builder | (a) a frame `FMT ‖ u8(len(id)) ‖ id ‖ W ‖ C` before the body; neither backend keeps object metadata | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) |
+| [Q-BAS-213](spec/bastion.md#q-bas-213--entries-and-the-spools-files-are-objects-of-the-format-bound-to-their-names) | Entries and the spool's files are objects of the format bound to their names. Decided by the builder | (a) one construction, the format's, for every sealed byte; the entries' key dropped; an entry named by the keyed name of its key hash | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) |
+| [Q-BAS-214](spec/bastion.md#q-bas-214--with-a-key-the-volume-backend-spools-its-fills-on-the-pods-temporary-volume) | With a key, the volume backend spools its fills on the pod's temporary volume. Decided by the builder | (a) the pod's `tmp`, sized by the chart; the cache volume holds ciphertext only | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) |
+| [Q-BAS-215](spec/bastion.md#q-bas-215--the-sweep-of-other-layouts-deletes-them-in-a-replicas-first-hour-and-while-it-still-finds-some) | The sweep of other layouts deletes them in a replica's first hour and while it still finds some. Decided by the builder | (a) with a key the plain layout and other trees, without one every tree; the first hour and while found; 10,000 per sweep | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) |
 | [Q-ROAD-1](coverage/roadmap.md#q-road-1--generic-local-repositories-in-m1) | Generic local repositories in M1? | (a) the local class of the generic format is built in M1 as MVP, from a new spec page `formats/generic.md`; remote and virtual generic stay P1 | — |
 | [Q-ROAD-2](coverage/roadmap.md#q-road-2--backup-and-restore-in-the-beta) | Backup and restore in the beta? | (e) Quader's own backup create and restore, the platform layer (R-HA-023, R-HA-025) and the revocation journal (R-HA-054, R-AUTHZ-031) are MVP and gate in M5; their work runs in its own lane from M1 on, and M0 gives every table its export class. Revisited 2026-10-28: was (a), both kept at P1 and the journal after 1.0 | [ADR-094](#adr-094--a-configurable-backup-job-writes-consistent-backups-to-s3), [ADR-078](#adr-078--restores-keep-metadata-and-blobs-consistent-by-ordering-not-by-coordination) |
 | [Q-ROAD-3](coverage/roadmap.md#q-road-3--ecosystems-the-owners-teams-use-after-npm-and-nuget) | Which ecosystems after npm and NuGet? | (a) the P1 format order of the roadmap stands; revisited 2026-10-29: Ansible Galaxy (owner demand) is F0 and P1, ahead of F1 | — |

@@ -114,6 +114,9 @@ func (v *verifyReader) fill() {
 			return
 		default:
 			v.err = err // a transport error: abort, the object is not judged
+			if errors.Is(err, ErrCorrupt) {
+				v.judged(err) // the stored format refused a segment of the object (R-BAS-061)
+			}
 			return
 		}
 	}
@@ -127,11 +130,16 @@ func (v *verifyReader) finish() error {
 		return nil
 	}
 	err := fmt.Errorf("%w: read %d bytes with SHA-256 %s, expected %d bytes with %s", ErrCorrupt, v.total, got, v.size, v.want)
+	v.judged(err)
+	return err
+}
+
+// judged hands a verdict about the object to onCorrupt, once.
+func (v *verifyReader) judged(err error) {
 	if v.onCorrupt != nil {
 		v.onCorrupt(err)
 		v.onCorrupt = nil
 	}
-	return err
 }
 
 // Close closes the source.

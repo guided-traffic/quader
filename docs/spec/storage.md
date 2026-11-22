@@ -3997,7 +3997,8 @@ this section is the specification. His answers that this section carries out
 
 **Status.** The format is built: the package `internal/blob/blobcrypt` holds the codec of R-STOR-076 to R-STOR-079, the tail segments of
 R-STOR-081 and the keyed name of R-STOR-086, with the vector files, their independent check and the fuzz targets of R-STOR-079 and the
-nightly job of R-STOR-091 (package 1 of the developer page); nothing calls it yet. Everything else is specified, not built, and until it is
+nightly job of R-STOR-091 (package 1 of the developer page). The Bastion's cache seals with it once its chart gives it a key
+([bastion.md](bastion.md) R-BAS-061, package 5, built); nothing of the main installation calls it yet. Everything else is specified, not built, and until it is
 built `encrypted: true` is refused at start (R-STOR-050). The rest needs stage 1 on `main` first;
 the order of the packages is on the developer page [stored-content-encryption.md](../developer/stored-content-encryption.md). Its
 security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),

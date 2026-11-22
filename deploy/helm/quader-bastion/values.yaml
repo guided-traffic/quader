@@ -183,6 +183,9 @@ secrets:
   signingKey:
     existingSecret: ""                  # required with the bucket backend or Valkey; example: quader-bastion-signing (32 random bytes)
     key: key
+  cacheKey:
+    existingSecret: ""                  # empty = the cache stays plain; example: quader-bastion-cache-key (32 random bytes); a new key empties the cache
+    key: key
   cacheBucket:
     existingSecret: ""                  # required with credentials.source static; example: quader-bastion-s3 (stackit-s3-provisioner)
     accessKeyIdKey: access-key-id
@@ -244,7 +247,7 @@ securityContext:
     type: RuntimeDefault
 
 tmp:
-  sizeLimit: ""                         # empty = 1Gi with the volume backend; with the bucket backend (whose fills are spooled here) config.bastion.cache.spool_max_bytes plus 256Mi; example: 3Gi
+  sizeLimit: ""                         # empty = 1Gi with the volume backend; where fills are spooled here (the bucket backend, or the volume backend with secrets.cacheKey) config.bastion.cache.spool_max_bytes plus 256Mi; example: 3Gi
 
 # ── Probes ──────────────────────────────────────────
 probes:
