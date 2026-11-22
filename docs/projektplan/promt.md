@@ -573,6 +573,11 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **A hit from a Bastion's cache carries none of the content headers every other answer has** (H-1250, live; read
+  by the builder of the Bastion's package A on 2026-11-22): no `X-Content-Type-Options`, no sandboxing
+  `Content-Security-Policy`, no `Cross-Origin-Resource-Policy`. An artifact is still sent as an attachment, so
+  what is exposed is a document shown by a browser from the Bastion's host, which holds no session and no
+  cookie. Closed by package C, in work, with a test.
 - **The Bastion, read on 2026-11-22 by the planner of "a Bastion serves every format"** (in the code, nothing run):
   (1) the specification said a Bastion serves no Debian, and the code forwards every path below `/api/<format>/`,
   so Debian, Ansible Galaxy and the ClamAV definitions reach clients through a Bastion today, while the feed has
@@ -1647,12 +1652,38 @@ runs are in `git log`; this section holds the current state.
   of its working paper by 10:48, each as the development agent's favourite at that time, two of them changed
   that morning by his own objections ("With the owner", the topic of 2026-11-22). The planner of the second
   stage, encryption, starts when the first stage's specification is on `main`.
-- **In work since 2026-11-22, 10:26: package A of "a Bastion serves every format"** (the two contracts and the
-  kit's nineteenth check; one builder in a worktree). The owner decided it at 09:46 ("With the owner", decided
-  on 2026-11-22): images and Debian were kept from the Bastion by two deferrals of the development agent, not
-  by a decision of his. **Its specification is on `main` since 10:26** (planner 09:52 to 10:25; what it says,
-  its three questions and its build plan are in that entry). Packages B and C follow in parallel when A has
-  landed, D after them.
+- **In work since 2026-11-22, 11:18: packages B and C of "a Bastion serves every format", in parallel** (B the
+  main installation's side; C the Bastion's side, which builds what needs A alone, waits for B on `main`, then
+  runs its integration area and the real clients in containers of its own, with nothing changed on the host).
+  D, the client case on kind and the manual, follows them.
+- **Landed on 2026-11-22 at 11:16: package A of "a Bastion serves every format", the two contracts and the kit's
+  nineteenth check** (a commit of the type `refactor`, so no release; R-BAS-058 is implemented; decisions
+  Q-BAS-181 to Q-BAS-185, gaps H-1249 and H-1250; its builder worked from 10:26 to 11:13). **The format
+  contract:** a format declares the headers a Bastion replays from its cache besides the core's, and the status
+  of a rate limit; the registry declares its four headers, the ClamAV definitions 503; the contract's version
+  stays, because it is an addition. **Check 19 of the kit** holds every answer a Bastion keeps to the declared
+  headers, a download to its length and to an entity tag that is the digest of its body, a document to an
+  entity tag it answers with 304, and a rate limit to the declared status; every format passes, and **five
+  document routes of npm and of the registry carry no entity tag yet** and are exempted with their reason
+  (H-1249). **The interface between Bastion and main installation is at its fourth version** (the handshake's
+  table of formats and the bound repository, the mark of a counted download, a registry token's form): a
+  Bastion of an earlier release does not talk to a main installation of this one, which the commit of package C
+  announces for the release notes. **Outside its directories, named by its builder:** the API description and
+  its generated Go code and UI types (the interface's version stands there), and the count of requirements in
+  the evidence tool's test. **A finding of the landing before it, the development agent's:** that test had failed
+  on `main` since 10:26, because the specification of the Bastion was landed with the links, the check and the
+  regenerated evidence and without the count test (reproduced at 11:14: 1,160 requirements against 1,149
+  expected); no pipeline ran in between, the commits being documents; it is green with this commit, the count
+  test is part of every landing of a specification again, and both planners at work were told. **By the
+  development agent on the rebased commit, each exit 0:** build, the full unit run, generate-check, the evidence
+  regenerated without a difference, links and check, the complexity check, the lint; the UI's install, the
+  API's types regenerated without a difference, the UI tests and lint; the count test on `main` after the
+  merge; the diff holds no name the white-label rule forbids. **Its tests cost** about 2 s of the unit job
+  (1.3 s of it the kit's own test with its four defects), 10 to 100 ms per format in the kit, nothing in the
+  integration or end-to-end legs; with 25 formats 0.25 to 2.5 s. Its builder ran the integration area
+  `bastioniface` under the lock (41 s). **Not verified:** nothing uses the new members at run time yet. **Seen
+  and left:** the kit's check 16 still expects 429 for a refused download limit, which a format with download
+  routes that declares 503 would contradict. Its worktree and branch are removed.
 - **The owner's topic of 2026-11-22, 08:25, is researched and its working paper is with him since 09:02:** the
   encryption and integrity of the stored content, the delivery by signed links, several object stores, a
   Bastion that reads the bucket, and a hierarchy of keys. Four researches ran from 08:30 and ended at
@@ -4049,8 +4080,8 @@ open questions are in the list above**
   about 100 s in the end-to-end leg `oci` (60 of them a Bastion release in the leg), nothing in the Bastion's
   own legs; with 25 formats about half a second of the kit and no further leg. **Build plan, four packages**
   (the developer page of the Bastion): A the two contracts and the kit's check; B the main installation's side
-  and C the Bastion's side, in parallel after A; D the client case on kind and the manual. **In work since
-  10:26: package A.** **Not verified:** any run with a real client; whether the token service sees a Bastion's
+  and C the Bastion's side, in parallel after A; D the client case on kind and the manual. **Package A is
+  landed since 11:16; B and C are in work since 11:18 (run record).** **Not verified:** any run with a real client; whether the token service sees a Bastion's
   host; how the image clients take a challenge without a scope; whether the largest definition file is above
   the bound for documents.
 
