@@ -1663,9 +1663,9 @@ runs are in `git log`; this section holds the current state.
   packages). **Next as agents become free:** the Bastion's package C resumed when B has landed, then the
   reading of the documentation of the object gateway in the owner's cluster, the Bastion's package D, the
   links' package 2.
-- **Package A of the several connections reported at 14:15 and waits for the chart's package, with which it lands
-  in one push** (one commit of the type `feat`, 162 files; its builder worked from 11:41 to 14:14; rebased by the
-  development agent onto `main` at 14:20, with one row of the specification merged by hand and a link repaired
+- **Package A of the several connections reported at 14:03 and waits for the chart's package, with which it lands
+  in one push** (one commit of the type `feat`, 162 files; its builder worked from 11:41 to 14:03; rebased by the
+  development agent onto `main` at 14:04, with one row of the specification merged by hand and a link repaired
   that a renamed heading had broken). **Built:** the configuration as a list of one to eight connections with
   its validation, the single block gone; a client and a guard per connection with the connection as a label of
   the breaker and the metrics; object metadata on the store's interface; the migration with the tables of
