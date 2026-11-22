@@ -596,6 +596,16 @@ records the recorder that tells such a stall apart).
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
 - The 429s of the renders came from the `read` class (`make ui-renders` opens three pages of one user at once); the UI development
   profile admits more. Not verified: restoring many tabs at once may reach the limit.
+- **The query budget's harness failed once under load in the pipeline (2026-11-22, the run of the gate's
+  trace, integration shard b):** the case of a `.nupkg` of the remote member of a virtual NuGet repository
+  ended with "no statement ran per request; the log is not read", although the window held `GetLiveItem`
+  sixty times for thirty requests, which is its budget of two. `testenv.PerRequest` counts a statement only
+  when its runs spread over at least half of the time the thirty requests took; one slow request in the
+  window (the read from the object store, by the log's last lines; read, not shown) makes the time long and
+  the spread short. The same area passed on the same commit in the landing's gates and in the run before.
+  Not caused by the trace, which adds no statement. For the batch: measure the spread against the span of
+  the requests' starts. Not run again by itself: the push of the Bastion's specification, whose code is the
+  same but for a count test, runs the shard again.
 - **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
   `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
@@ -2161,6 +2171,12 @@ runs are in `git log`; this section holds the current state.
   trace has no failed job and its release is not cut yet, so the plan's commits wait. The load is 4. His
   UI's backend is ready on the trace's state. **His installation runs the trace's release since 21:55**
   (the upgrade succeeded; read from the follower at 22:00).
+- **The timer's check at 22:14:** one job of the trace's run failed, integration shard b, in the query
+  budget's area: the harness under load, not the product (section 8); the layout checks still run, and the
+  specification's push waits for them. The stacking and the links' second package both stand with their
+  commits on the top of `main`, clean, and are active; the two builders of the Bastion's packages are
+  active. The load is 31 on 20 cores with the four. His installation and its Bastion run the newest
+  release, ready.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
