@@ -1647,11 +1647,19 @@ runs are in `git log`; this section holds the current state.
   Bastion that serves every format and the storage topic by its stages; the timer of every 30 minutes is set
   again; no measurement against his object storage provider today; the walk through the open questions (16 in
   the list of "With the owner") is for the evening.
+- **In work since 2026-11-22, 11:41: package A of the several connections** (the storage topic's first stage:
+  the configuration as a list, a client and a guard per connection, the copies' table, commit and reads over
+  the copies, the start check per connection; its builder keeps the tree whole for one connection, and the
+  chart's part lands with it). **The first stage's specification is on `main` since 11:39** ("With the owner",
+  the topic of 2026-11-22, has what it says, the planner's three questions for him and the build plan of six
+  packages). **Next as agents become free** (four run: the Bastion's B and C, the links' package 1, this one):
+  the chart's part of package E, then the planner of the second stage (encryption).
 - **In work since 2026-11-22, 11:29: package 1 of the signed links** (the format contract's field and the
   kit's twentieth check). **The third stage's specification is on `main` since 11:28** ("With the owner", the
   topic of 2026-11-22, has what it says, the planner's question for him and the build plan).
 - **In work since 2026-11-22, 10:51: the planners of the storage topic's first and third stage** (several
-  connections with the reconciliation and the scrub; signed links; the third reported at 11:26). The owner answered all fifteen decisions
+  connections with the reconciliation and the scrub; signed links; the third reported at 11:26, the first at
+  11:38; both specifications are on `main`). The owner answered all fifteen decisions
   of its working paper by 10:48, each as the development agent's favourite at that time, two of them changed
   that morning by his own objections ("With the owner", the topic of 2026-11-22). The planner of the second
   stage, encryption, starts when the first stage's specification is on `main`.
@@ -3539,6 +3547,17 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     recommendation: the condition was its own wording in the paper, a speed limit protects Quader's pods, which a
     link's transfer does not pass, and with (a) the switch does next to nothing); (c) the Standard profile loses
     its speed limit.
+19. **A connection taken out of the chart while it holds the only copy of some blobs (Q-STOR-225),** from the planner
+    of the storage topic's first stage on 2026-11-22: (a) it becomes detached, the replicas start, those blobs
+    answer 503, an alert fires, and putting it back restores everything (specified, the planner's
+    recommendation); (b) the rollout is refused; (c) it is forgotten at once.
+20. **Whether draining a connection deletes its copies (Q-STOR-236):** (a) yes, after its checks, and the journal and
+    the marker stay (specified; with (b) switching encryption on would leave the plain copies in place, and the
+    same bucket under another prefix is paid twice); (b) no, the operator deletes them.
+21. **A fresh database that meets a bucket an installation has used (Q-STOR-224),** which a reset of his own
+    installation will meet: (a) refused, with a message that names the object to delete (specified: two
+    installations on one prefix delete each other's data through the collection and the sweep); (b) a warning,
+    and the marker is taken over; (c) no marker.
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
@@ -3811,6 +3830,54 @@ that reads the bucket**
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
   and after the Bastion serves every format.
+  **Stage 1, several connections, is specified on `main` since 11:39** (its planner worked from 10:51 to 11:38; two
+  commits, rebased by the development agent over the third stage's specification and the Bastion's package A:
+  the decisions' page, the security index and the count test merged by hand with both sides kept, the evidence
+  regenerated; links, check, count test and build exit 0, the wording scan clean; its worktree and branch are
+  removed): R-STOR-050 to R-STOR-063, the orphan sweep and the scrub (R-STOR-026, R-STOR-027) rewritten in place,
+  R-HA-072, R-BAK-030, R-UI-196, R-UI-197, Q-STOR-220 to Q-STOR-249, Q-HA-390 to 392, Q-BAK-62 to 64, Q-UI-930 to
+  932, Q-API-385 and 386, ADR-239, the gaps H-1251 to H-1257 on a new security page. **What it says.**
+  *Configuration:* `storage.connections` is a list of one to eight connections and the single block `storage.s3`
+  goes; an element is flat, its identifier defaults to `default` and never changes; the list's order is the
+  order of writes and of reads; a provisioner's Secret reaches a connection through files; `encrypted: true` is
+  refused with a sentence that encryption is not built. A connection's bucket, prefix and `encrypted` are fixed
+  once it holds a copy, and a marker object says which installation and connection a location belongs to.
+  *Copies:* a row per copy of a blob on a connection (present, missing, corrupt, deleting, and when it was last
+  verified), with the object's name, the stored size and the storage key's identifier for the second stage; a
+  blob's content state follows from its copies, so one store's 404 marks that copy and not the blob. *Writes:*
+  an upload is done when the minimum of copies holds it (one by default) and falls over to the next connection
+  within the request; an upload session stays on its connection and answers 503 while that is unreachable.
+  *Reads:* the present copies in order, falling over before the first byte only. *The reconciliation:* one
+  exclusive job of the worker, from a queue and from a pass over all blobs; a server-side copy within an
+  endpoint, a stream that is hashed across providers; it fills a new connection and drains an old one, and a
+  drain deletes a copy only beside a copy verified within its period. *Collection and sweep:* per copy; a delete
+  that could not be sent is handed to that connection's orphan sweep, so one provider's outage holds neither the
+  run nor an uploader; the sweep is built with this stage and adopts objects of live blobs that lack a row. *The
+  scrub:* every copy read whole once in the connection's period (720 hours by default), throttled per
+  connection, unverified copies first; the reconciliation repairs what it finds; the tests that claimed the
+  scrub's requirement for other parts are renamed, so the evidence becomes true. *The start check* runs per
+  connection and establishes what the store supports: a missing required ability refuses the connection, an
+  optional one degrades by a stated rule; **no guarantee rests on a conditional write,** and read-after-write is
+  required for new objects only (his provider's documentation, read that morning). *Readiness:* a replica is
+  ready once one connection that is not draining has passed and none has a configuration error; the metrics
+  keep their names and gain a label; "every connection down" is critical, "one down" a warning. *Backup and
+  restore:* a backup reads one copy per blob, a restore fills the first connection and the reconciliation the
+  rest. *The journal* goes to every connection through the guarded client, which repairs the finding about the
+  plain client. *The admin area:* a fourth tab "Storage" of the system status, read-only, and a line per
+  connection on the dashboard. **The contracts the other stages build on** (R-STOR-062): object metadata on the
+  store's interface, the copy row's name, key identifier and stored size, every size check on the stored size,
+  and a function that names the copies that can serve now. **Three questions of the planner are the owner's,**
+  numbers 19 to 21 of the list above, each specified with its recommendation. **Build plan, six packages** (the
+  developer page of the blob store): A the connections and copies, alone first; then B sessions, collection and
+  sweep, C the reconciliation, D the scrub and the operator commands, E the chart, backup, restore and the
+  journal; F the API, the screens and the manual after C and D. **In work since 11:41: package A.** **Decided
+  by the development agent at the start:** A removes the configuration key the chart renders, so the chart's part
+  of E is built in parallel from the specified shape and lands in one push with A; A keeps every other package's
+  code compiling and behaving as today for one connection. **Its tests cost** (estimates): about 4 s of Go unit
+  tests and 1.5 s of UI tests, 1 s of the chart's, about 20 s in the integration area `blob` (5 s of it the one
+  case against two real buckets), 8 s in `backup`, 2 s in the conformance job, no end-to-end case, nothing that
+  grows with the formats. **Not verified:** anything against an object store, his provider among them (whether
+  its queued delete can reach a later write of the same name is gap H-1255).
   **Stage 3, signed links, is specified on `main` since 11:28** (its planner worked from 10:51 to 11:26; two
   commits, rebased by the development agent over the Bastion's package A, with the developer page of the formats
   and the count test merged by hand and the evidence regenerated; links, check, count test and build exit 0, the

@@ -228,7 +228,7 @@ all four columns green.
   2026-11-22; [R-STOR-014](../spec/storage.md#r-stor-014--delivery-by-signed-links-of-the-object-store-the-installations-switch), specified, its first
   package in work)
 - 🟡 Several object store connections with a reconciliation between them and a scrub that repairs (the owner's decision of 2026-11-22;
-  being specified)
+  [storage.md](../spec/storage.md#several-object-store-connections) R-STOR-050 to R-STOR-063, specified, its first package in work)
 - ⚪ Client-side encryption of the stored content in a format of Quader's own, per connection, with the key ring as the root, a
   storage key per connection and a data key per object (the owner's decisions of 2026-11-22, which replace the import decided on
   2026-11-06; [R-STOR-048](../spec/storage.md#r-stor-048--client-side-encryption-of-stored-content) is rewritten when it is specified, after the
