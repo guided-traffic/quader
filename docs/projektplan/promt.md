@@ -3522,7 +3522,7 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     which learns its repository from the main installation (specified); (b) not offered; (c) the bindings in the
     Bastion's chart.
 17. **A Bastion on his own installation, to see images and Debian served through it** (he reminded on 2026-11-22 at
-    11:24: "Denke dran dass du mir noch Images und Debain über den Bastion schuldest."). His installation runs no
+    11:19: "Denke dran dass du mir noch Images und Debain über den Bastion schuldest."). His installation runs no
     Bastion (read on the cluster and in his deployment repository the same minute), so the feature is proven
     on a kind cluster and with clients in containers, and nothing of it shows on his cluster. (a) the development
     agent adds the Bastion's chart under `apps/quader` once packages B and C are released, and he names a host
