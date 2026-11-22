@@ -135,8 +135,10 @@ Objects Quader writes below `backup.target.prefix`:
 ```text
 <prefix>/
   quader-backup-target.json                     target marker
-  pool/sha256/<h0h1>/<h2h3>/<h0…h63>           shared blob pool, same fan-out as R-STOR-001
+  pool/sha256/<h0h1>/<h2h3>/<h0…h63>           shared blob pool, same fan-out as R-STOR-001: a plain object
+  pool/sha256/<h0h1>/<h2h3>/<h0…h63>.<key id>  an encrypted connection's copy, as stored, wrapped under that storage key (R-BAK-032)
   backups/<backup-id>/db/<table>.copy.zst      one file per exported table
+  backups/<backup-id>/blobs.pending.zst        the provisional blob list while the run copies (R-BAK-032)
   backups/<backup-id>/blobs.idx.zst            blob list
   backups/<backup-id>/manifest.json            written last
 ```
@@ -150,9 +152,11 @@ Objects Quader writes below `backup.target.prefix`:
   never restored, listed only with `--all`, and removed by retention (R-BAK-016).
 - **Immutability.** No Quader command modifies an object under `backups/<id>/` or `pool/`. A pool
   object is written only when the run does not know it to exist; a repeated write carries the
-  same bytes, because the key is the content's SHA-256.
+  same content, because the name is the content's SHA-256 and, for an encrypted copy, the storage key that wraps it (R-BAK-032). A
+  digest has at most one plain pool object and one per storage key.
 - **Blob list.** zstd-compressed UTF-8 text, one line per blob, `<64 lowercase hex> <size in
-  bytes>\n`, sorted ascending by digest, without duplicates.
+  bytes> <pool>\n`, sorted ascending by digest, without duplicates; `<pool>` is `-` for the plain pool object and the storage key's
+  identifier for an encrypted one, so the line names the pool object that holds the blob (R-BAK-032).
 - **Table files.** zstd-compressed PostgreSQL `COPY` text format (tab delimiter, `\N` for null),
   without a header line. The manifest records each file's column list.
 - **Target marker.** `{"format": 1, "installationId": "…", "incarnation": "…", "createdAt": "…",
@@ -228,6 +232,9 @@ Priority: **MVP** · Covers: OPS-032, OPS-034
             "copied": 2114, "copiedBytes": 9123456789,
             "damaged": [{"sha256": "5be0c1d2…", "status": "missing"}]},
   "secrets": {"keyIds": ["2026-10"]},
+  "storageKeys": {"pool": [{"keyId": "sk-archive-1-3f9a0c2e", "objects": 412, "bytes": 9123456789}],
+                  "sealed": ["nk-archive-71be04d9", "sk-archive-1-3f9a0c2e"],
+                  "destroyed": []},
   "encryption": {"sse": "aws:kms", "clientSide": null}
 }
 ```
@@ -244,6 +251,11 @@ Priority: **MVP** · Covers: OPS-032, OPS-034
   never written.
 - `blobs.damaged` lists digests whose source object was missing or had the wrong size during the
   run (R-BAK-006). They are in the blob list but not in the pool.
+- `storageKeys` names the storage keys the backup needs and holds (R-BAK-032): `pool`, counted from the final blob list, the keys its
+  encrypted pool objects are wrapped under, with their objects and bytes; `sealed` and `destroyed`, read from `storage_keys` inside the
+  snapshot, the identifiers its database holds sealed and destroyed ([storage.md](storage.md) R-STOR-097). The run's retention listing
+  copies `pool` and `sealed` of every retained backup (R-BAK-016), which the destruction of a retired connection's keys reads
+  (storage.md R-STOR-100).
 - `source` records where each connection of the source was (no credentials, R-BAK-030) and whether its revocation
   journal was enabled (`backup.revocation_journal.enabled`), so that a restore finds the journal
   it must replay (R-BAK-024).
@@ -461,7 +473,8 @@ included. A referenced row in state `deleting` contradicts R-STOR-024's invarian
 fails with `invariant_violation` and writes no manifest.
 
 **Incremental by digest.** Content addressing makes a blob immutable, so a blob in the pool never
-needs to be copied again.
+needs to be copied again, except an encrypted pool object whose storage key belongs to a connection that drains or is gone (the re-pool of
+R-BAK-032).
 
 1. The *previous backup* is the newest complete backup in the target (any incarnation). Its
    blob list minus its `blobs.damaged` is known to be in the pool, because pool objects are
@@ -471,15 +484,18 @@ needs to be copied again.
    (Q-BAK-54).
 2. The run merges the referenced set (a sorted stream from the snapshot) with the previous list (a
    sorted stream from the target) and produces in one pass:
-   - the new blob list, written to `backups/<id>/blobs.idx.zst`;
-   - the *to-copy set*: referenced digests not in the previous list, bulk-inserted in batches into
-     `backup_blob_pin` on the control connection (R-BAK-007, Q-BAK-17).
+   - the provisional blob list, written to `backups/<id>/blobs.pending.zst`, with the inherited pool of each previous entry and `+` for
+     each digest of the to-copy set; the final `blobs.idx.zst` is written after the copies (R-BAK-032);
+   - the *to-copy set*: referenced digests not in the previous list, and previous entries whose pool object is wrapped under a key of a
+     connection that drains or is gone while a connection that stays holds a present copy (the re-pool, R-BAK-032), bulk-inserted in
+     batches into `backup_blob_pin` on the control connection (R-BAK-007, Q-BAK-17).
    Memory stays bounded; neither list is held in full.
 3. Without a previous backup, the to-copy set is the whole referenced set.
 
 **Copy.** For each pinned digest, `backup.copy.concurrency` at a time, the run writes
 `pool/sha256/<h0h1>/<h2h3>/<hex>`, reading one copy of the blob chosen by R-BAK-030 and the next one when a copy fails (a copy of an
-encrypted connection goes into the pool as stored, with its record, and is confirmed by size: R-BAK-031):
+encrypted connection goes into the pool as stored, with its record, under `pool/sha256/<h0h1>/<h2h3>/<hex>.<key id>`, and is confirmed by
+size: R-BAK-031, R-BAK-032):
 
 - **Server-side copy** (`backup.copy.server_side: auto`, `always`, `never`). `CopyObject` for
   objects up to 5 GiB, `UploadPartCopy` parts of `backup.copy.part_size` above that
@@ -493,15 +509,16 @@ encrypted connection goes into the pool as stored, with its record, and is confi
 - **Streaming copy.** Each part is a ranged `GetObject` from the source, piped into `UploadPart`
   (or one `PutObject` for objects up to `backup.copy.part_size`); no part is buffered in full.
   The run hashes the stream and aborts the upload when the SHA-256 differs from the digest.
-- **Confirmation.** A pin is removed only after the target object exists with the expected size.
+- **Confirmation.** A pin is confirmed only after the target object exists with the expected size, and records the pool object it
+  names (`backup_blob_pin.pool`: `-` or the storage key's identifier, R-BAK-032).
   Where the store reports a full-object SHA-256 checksum for the copy, it MUST equal the digest.
-  Pins are deleted in batches of up to 1,000.
+  The pins stay until the final blob list is written from them, and are deleted with the run (R-BAK-032).
 - **Existing objects.** `backup.copy.check_existing: auto` sends `HeadObject` before each copy only
   when the target holds an incomplete `backups/<id>/` directory newer than the previous backup (a
   resumed attempt finds the objects its predecessor copied). The decision is read from the target,
   not from `backup_run`, which is empty after a restore. `always` checks every time, which avoids
   extra object versions on a versioned target; `never` never checks. A repeated write is harmless
-  either way, because a pool key is its content's digest.
+  either way, because a pool key is its content's digest and, for an encrypted copy, its storage key (R-BAK-032).
 - **Source damage.** A `404` from the source, or a size that differs from `blobs.size`, is checked
   against the source database with `READ COMMITTED`:
   - **A row that is not `ok`.** The snapshot reads `blobs.content_status` with the digest and size. A referenced blob whose status is
@@ -557,8 +574,8 @@ Garbage collection MUST NOT delete a blob that a running `create` still has to c
 3. Insert the to-copy set into `backup_blob_pin` and commit.
 4. In a separate transaction, `UPDATE backup_run SET hold = 'pinned' WHERE id = $1 AND hold =
    'all'`.
-5. Delete each pin after its copy is confirmed (R-BAK-006); set `hold = 'none'` when none is
-   left.
+5. Record each pin's pool object after its copy is confirmed (R-BAK-006); once the final blob list is written from the pins
+   (R-BAK-032), delete them and set `hold = 'none'`. Holding the copied blobs a few minutes longer than their copy is harmless.
 
 **Check in garbage collection** ([storage.md](storage.md) R-STOR-024, cross-page). In the per-blob
 transaction, after the reference check (step 2) and before the state change (step 3), as a
@@ -1216,7 +1233,9 @@ Priority: **MVP** · Covers: OPS-032
   `result`:
   - `retention: {keepLast, keepWithinSeconds}`, as applied;
   - `retained`, the complete backups left after its deletions, each with `backupId`, `snapshotAt`,
-    `quaderVersion`, `schemaStep`, `databaseBytes`, `blobCount`, `blobBytes` and `damaged`.
+    `quaderVersion`, `schemaStep`, `databaseBytes`, `blobCount`, `blobBytes`, `damaged`, and `poolKeyIds` and `sealedKeyIds`, copied
+    from `storageKeys.pool` and `storageKeys.sealed` of that backup's manifest (R-BAK-003); a manifest without `storageKeys` gives
+    `null`, which the destruction of a retired connection's keys counts as unknown ([storage.md](storage.md) R-STOR-100, R-BAK-032).
 
   [api-and-ui.md](api-and-ui.md) R-API-050 shows the newest such record as `storedBackups` and
   `retention` (Q-API-11). A `create` with `--no-prune` skips the pruning phase, takes no retention
@@ -1235,13 +1254,16 @@ Priority: **MVP** · Covers: OPS-032
 Deleting old backups MUST NOT break the shared blobs of newer ones.
 
 1. After the deletions of R-BAK-016, the run lists the complete backups again and merges their
-   blob lists (minus their `blobs.damaged`) into one sorted stream: the *keep set*.
+   blob lists (minus their `blobs.damaged`) into one sorted stream of pool names (the digest, and for an encrypted pool object
+   `.<key id>` after it, R-BAK-032): the *keep set*.
 2. It lists `pool/sha256/` with `ListObjectsV2`, which returns keys in lexicographic order for
    general purpose buckets ([ListObjectsV2](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html)),
-   so the listing and the keep set merge in one pass.
-3. A pool object whose digest is not in the keep set is deleted (`DeleteObjects`, up to 1,000 keys
+   so the listing and the keep set merge in one pass; `.` sorts before every hex digit, so a digest's plain object comes before its
+   encrypted ones and both before the next digest.
+3. A pool object whose pool name is not in the keep set is deleted (`DeleteObjects`, up to 1,000 keys
    per request, or `DeleteObject`).
-4. A key that arrives out of order, or does not match the pool layout, stops the sweep: nothing
+4. A key that arrives out of order, or does not match the pool layout (a digest, optionally followed by `.` and an identifier of a storage
+   key), stops the sweep: nothing
    more is deleted, foreign keys are reported, and the run ends `completed_with_warnings`.
    Directory buckets, which do not list in order, are therefore not supported as targets.
 
@@ -1285,8 +1307,8 @@ without changing them:
 - the manifest parses, has a known `format` and names the target's installation;
 - every table file and the blob list exist, and their SHA-256 and sizes match the manifest
   (downloaded and hashed; table files are small next to the blobs);
-- every digest of the blob list that is not in `blobs.damaged` has a pool object of the listed
-  size (`HeadObject`);
+- every digest of the blob list that is not in `blobs.damaged` has the pool object its line names (R-BAK-032) of the listed
+  size (`HeadObject`; an encrypted one of the stored size `S(L)` of the listed size, R-BAK-031);
 - with `--deep`, every such pool object is downloaded and its SHA-256 recomputed, throttled to
   `--bytes-per-second`; a pool object of an encrypted connection is checked as R-BAK-031 says, fully only
   with `--key-ring <dir>`.
@@ -1641,6 +1663,11 @@ be weaker than a PITR restore.
   ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061) are re-applied to the restored repositories; where a
   part could widen, the repository is disabled and listed `suspended`. A `vuln-rescan` that such an entry enqueues runs when
   the workers start, after the restore.
+- **Destroyed storage keys.** The entries of `system.storage.keys_destroyed` newer than the snapshot destroy the keys the backup brought
+  back, before any replica starts (R-HA-054, [storage.md](storage.md) R-STOR-097,
+  [Q-HA-416](ha-and-helm.md#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore)). With
+  `--skip-revocation-journal`, or with entries a lifecycle rule removed, they stay, and the output says to run
+  `quader admin storage keys destroy` again.
 - Replay is idempotent (R-HA-054), so a resumed restore may replay again.
 - **Journal unavailable.** R-BAK-020 check 8 refuses the restore. `--skip-revocation-journal`
   (chart value `restore.skipRevocationJournal`) is for the disaster in which the source bucket is
@@ -1698,7 +1725,10 @@ the second half of the second criterion below needs the reconciliation (package 
   `READ COMMITTED` once per page of 1,000 pins when the copy reaches it
   ([Q-BAK-70](#q-bak-70--a-backup-reads-the-copies-of-a-page-of-pins-when-it-copies-the-page-not-from-the-snapshot)): first a copy on a
   connection whose normalised endpoint is the target's (a server-side copy, R-BAK-006), verified before not verified, then the others in
-  the order of the connections, a draining connection's last within each group, as a read orders them (storage.md R-STOR-055). A `404`, a
+  the order of the connections, a draining connection's last within each group, as a read orders them (storage.md R-STOR-055). *Amended on
+  2026-11-22 by [Q-BAK-76](#q-bak-76--a-backup-reads-a-draining-connections-copy-after-every-other-copy), specified, not built (package
+  4 of the encryption): a draining connection's copies come after every copy on a connection that does not drain, across both groups, so
+  that the pool takes a blob under a key that stays; they remain the fallback when every other copy fails.* A `404`, a
   size other than the copy's `stored_size`, or a streamed copy whose SHA-256 differs from the digest moves the run to the next copy; only
   when no copy succeeds is the blob damaged in the source (R-BAK-006's rules, `blobs.damaged`: `corrupt` when a copy had another size or
   digest, `missing` otherwise). A connection that does not answer (a timeout, `5xx`, an open circuit) moves the run to the next copy as
@@ -1774,17 +1804,18 @@ What the backup and the restore do with the copies of an encrypted connection ([
 the owner's topic of 2026-11-22). Specified, not built.
 
 - **The pool keeps the copy as stored** ([Q-BAK-65](#q-bak-65--the-pool-keeps-an-encrypted-copy-as-stored-with-its-record-under-the-digests-name)):
-  when R-BAK-030 picks a copy on an encrypted connection, the pool object `pool/sha256/<h0h1>/<h2h3>/<hex>` is that copy's ciphertext with its
-  record. A server-side copy keeps the metadata (`x-amz-metadata-directive: COPY`, the default, which R-BAK-006's copy sends); a streamed copy
+  when R-BAK-030 picks a copy on an encrypted connection, the pool object `pool/sha256/<h0h1>/<h2h3>/<hex>.<key id>` is that copy's
+  ciphertext with its record, named by the digest and by the storage key its record names (R-BAK-032). A server-side copy keeps the metadata (`x-amz-metadata-directive: COPY`, the default, which R-BAK-006's copy sends); a streamed copy
   sets the record it read from the source's `GetObject` on its `PutObject` or `CreateMultipartUpload`. The backup pod opens nothing and needs no
   key: it confirms the copy by its stored size (the copy row's `stored_size`) and the presence of the record's four keys, because it cannot hash
   ciphertext against the digest; its server-side copies of plain blobs were confirmed by size before as well (R-BAK-006). A pool object that
-  already exists for a digest is not copied again, whichever connection it came from (R-BAK-006's incremental rule): the pool can hold a blob
-  as plain bytes or as the ciphertext of any encrypted connection the installation had.
+  already exists for a digest is not copied again (R-BAK-006's incremental rule), unless its storage key belongs to a connection that drains or
+  is gone while a connection that stays holds the blob: then the re-pool copies it again under that connection's name (R-BAK-032). The pool
+  can hold a blob as plain bytes and as the ciphertext of several encrypted connections, each under its own name.
 - **What the pool needs to be read**: the backup's own database snapshot holds `storage_keys` (export class `data`, storage.md R-STOR-083),
-  sealed under the root keys its manifest lists in `secrets.keyIds` (R-BAK-028); storage keys are never deleted, so a backup taken after a
-  connection was drained or forgotten still holds the keys of the pool objects that came from it, and so does every older backup that holds such
-  objects.
+  sealed under the root keys its manifest lists in `secrets.keyIds` (R-BAK-028). A key is destroyed only when no retained backup's pool names
+  it (storage.md R-STOR-100), so every retained backup holds, sealed, the keys of the pool objects it lists, also after their connection was
+  drained or forgotten; its manifest names them in `storageKeys` (R-BAK-003).
 - **A rotated root** changes nothing in a backup: its storage keys stay sealed under the root keys of its time, which escrow keeps for as long
   as a retained backup lists them (R-BAK-028, unchanged).
 - **Verification** ([Q-BAK-66](#q-bak-66--a-deep-verification-without-the-key-ring-checks-the-structure-and-with-it-every-segment)):
@@ -1794,8 +1825,8 @@ the owner's topic of 2026-11-22). Specified, not built.
   backup's storage keys and reads every such object as the scrub does: every segment, the final segment and the digest; a failure is
   `digest_mismatch`.
 - **Restore** (R-BAK-021 step 3 into the first connection with `drain: false`, R-BAK-030). The restore Job holds the key ring (R-BAK-020
-  check 3) and reads the backup's `storage_keys` table file before it writes blobs. Per listed digest, by the pool object and the first
-  connection:
+  check 3) and reads the backup's `storage_keys` table file before it writes blobs. Per listed digest, by the pool object its line names
+  (the storage key's identifier, or `-` for a plain one, R-BAK-032) and the first connection:
 
   | Pool object | First connection | What the restore writes |
   |---|---|---|
@@ -1807,7 +1838,7 @@ the owner's topic of 2026-11-22). Specified, not built.
 
   The fix-up of R-BAK-022 records each copy with its `stored_size` and `storage_key_id`; a connection of the restoring configuration that is
   encrypted and has no key in the backup gets its keys drawn by the restore Job before the first write (storage.md R-STOR-083's rule; its
-  location is empty by check 5). The restored installation's operator exports the storage keys again (storage.md R-STOR-090).
+  location is empty by check 5), and one whose id the backup holds destroyed keys of is refused (storage.md R-STOR-102). The restored installation's operator exports the storage keys again (storage.md R-STOR-090).
 - **What a restore needs** beyond today: nothing new to bring; the key ring it already needs opens the storage keys the backup holds. The
   export of the storage keys is the way back only for a generation drawn after the backup (storage.md R-STOR-085).
 
@@ -1818,6 +1849,55 @@ Acceptance criteria (integration, `test/integration/backup`, one case, PostgreSQ
   makes `verify --deep --key-ring` exit `5` with `digest_mismatch`.
 - A restore into an installation whose first connection has the source's encrypted connection id writes the three objects unchanged (equal
   bytes) and they download; a restore into one whose first connection is another, encrypted id writes three new bodies that download.
+
+### R-BAK-032 · The pool's keys, their record and the re-pool
+Priority: **P1** · Covers: quader-only
+
+Specified, not built (package 4 of [stored-content-encryption.md](../developer/stored-content-encryption.md)). What the backup does so that
+a retired connection's storage keys can be destroyed ([storage.md](storage.md) Q-STOR-309 (b), R-STOR-097 to R-STOR-103): a pool object is
+written once per digest and every later backup inherits it (R-BAK-006), so a blob first pooled from an encrypted connection would name that
+connection's key in every backup for as long as the blob lives, and the destruction, refused while a retained backup names a key
+(storage.md R-STOR-100), would never clear.
+
+1. **Pool names** ([Q-BAK-74](#q-bak-74--an-encrypted-pool-object-is-named-by-its-digest-and-its-key-and-is-copied-again-from-a-connection-that-stays)).
+   A plain pool object stays `pool/sha256/<h0h1>/<h2h3>/<hex>`; an encrypted one is `pool/sha256/<h0h1>/<h2h3>/<hex>.<key id>`, with the
+   identifier of the storage key its record names. A digest has at most one plain object and one per key; older backups keep the object they
+   list, so pool objects stay immutable (R-BAK-002). `.` sorts before every hex digit, so the sweep's ordered merge holds, and its layout check
+   takes the new name (R-BAK-017).
+2. **The blob list names each digest's pool object** ([Q-BAK-75](#q-bak-75--the-blob-list-names-each-digests-pool-object-and-is-written-after-the-copies)):
+   a line is `<64 hex> <size> <pool>\n`, `<pool>` being `-` or the key's identifier (R-BAK-002). The final list is written after the copies:
+   - the merge inside the snapshot writes a provisional list `backups/<id>/blobs.pending.zst`, with the inherited pool of each previous entry
+     and `+` for every digest of the to-copy set;
+   - a confirmed pin records its pool object in `backup_blob_pin.pool` (`-` or a key's identifier); the pins are deleted with the run after
+     the final list is written, not in batches during the copy (R-BAK-006, R-BAK-007);
+   - the final `blobs.idx.zst` is a streaming merge of the provisional list with the pins, ordered by `sha256`; then the provisional object is
+     deleted. The next run, the sweep, `verify` and `restore` read the one final file.
+3. **The re-pool.** An entry inherited from the previous list goes into the to-copy set when both hold:
+   - the connection of its key (read from the identifier with `keys.ParseID`) is not a connection of the run's configuration with
+     `drain: false`;
+   - the snapshot's `blob_copies` holds a `present` copy of the blob on such a connection.
+
+   Otherwise it is inherited as before. The copy itself takes the copies of its page when it reaches it (R-BAK-030, Q-BAK-70); a re-pooled
+   entry for which no copy can be read keeps its inherited pool object in the final list and is not recorded as damaged, because the pool
+   still holds it. Each run's result counts `repooled`, and warns while inherited entries name keys of connections that are gone.
+4. **The copy's order** ([Q-BAK-76](#q-bak-76--a-backup-reads-a-draining-connections-copy-after-every-other-copy)): a draining connection's
+   copies come after every copy on a connection that does not drain (R-BAK-030); they remain the fallback when every other copy fails, and the
+   next run's re-pool takes a blob pooled from one of them again.
+5. **The manifest** gains `storageKeys` (R-BAK-003): `pool`, counted from the final list, and `sealed` and `destroyed`, read from
+   `storage_keys` inside the snapshot. The JSON Schema `internal/backup/format/manifest.schema.json` gains the block.
+6. **The run's result:** every `retained[]` entry gains `poolKeyIds` and `sealedKeyIds`, copied from that backup's manifest; a retained
+   manifest without `storageKeys` gives `null` (R-BAK-016).
+7. **Readers use the line's pool name:** the sweep's keep set is a set of pool names (R-BAK-017), `verify` checks each pool name
+   (R-BAK-019), and the restore takes the key from the line (R-BAK-031).
+
+Acceptance criteria:
+
+- Unit (`internal/backup/format`, `create`): the blob list's pool column round-trips; a merge whose previous entry names a key of a
+  connection with `drain: true` puts the digest into the to-copy set when another connection holds a present copy, and inherits it otherwise;
+  the final list resolves `+` from the pins; the manifest's `storageKeys` counts match the list.
+- Integration (`test/integration/backup`, R-BAK-031's case extended, about 3 s more): after the encrypted connection is drained and removed,
+  the next backup writes the three blobs under the other connection's names, and its result shows the older backup's `poolKeyIds`; after
+  `prune` with `keep_last: 1` no retained entry names the key and the old pool objects are swept.
 
 ## Encryption and keys
 
@@ -2916,7 +2996,9 @@ server-side only from the target's endpoint ([internal/blob/s3/target_copy.go](.
 | (b) Always the first connection | As today | One credential | A blob missing there is "damaged" in the backup although another connection holds it |
 | (c) A connection named for the backup | One setting | Predictable | Breaks when that connection is the one that is down |
 
-**Choice:** (a). **Applied in the spec:** R-BAK-006, R-BAK-030.
+**Choice:** (a). *Amended on 2026-11-22 by
+[Q-BAK-76](#q-bak-76--a-backup-reads-a-draining-connections-copy-after-every-other-copy): a draining connection's copies come after every
+other copy, not only last within their group.* **Applied in the spec:** R-BAK-006, R-BAK-030.
 
 ### Q-BAK-63 · A restore fills the first connection and the reconciliation the others
 
@@ -2961,9 +3043,12 @@ encrypts them (H-48).
 | (c) Plain bytes in the pool | The backup decrypts | Restores need no storage key | The backup pod would hold the key ring and every storage key, which it deliberately never holds |
 
 **Choice:** (a). **Rationale:** a backup that holds no key is the backup's design; the names matter once the database files beside them are
-encrypted. Recommendation to the owner: (a) now, (b) together with R-BAK-027.
+encrypted. Recommendation to the owner: (a) now, (b) together with R-BAK-027. *On 2026-11-22, the evening the development agent gave the owner
+the answer (a), [Q-BAK-74](#q-bak-74--an-encrypted-pool-object-is-named-by-its-digest-and-its-key-and-is-copied-again-from-a-connection-that-stays)
+changed the name of an encrypted pool object to its digest followed by its storage key's identifier, so that a retired connection's keys can
+be destroyed ([storage.md](storage.md) Q-STOR-309 (b)); the pool still names blobs by their digest.*
 
-**Applied in the spec:** R-BAK-031, [storage.md](storage.md) R-STOR-087.
+**Applied in the spec:** R-BAK-031, R-BAK-032, [storage.md](storage.md) R-STOR-087.
 
 ### Q-BAK-66 · A deep verification without the key ring checks the structure, and with it every segment
 
@@ -3061,6 +3146,55 @@ reader needed keys a connection's element does not have.
 **Applied in the spec:** R-BAK-030; [ha-and-helm.md](ha-and-helm.md) R-HA-072. Code: `LoadCredentials` and `CredentialsFile` in
 [open.go](../../internal/journal/replay/open.go), `quader.journalCredentialElements` in
 [_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl).
+
+### Q-BAK-74 · An encrypted pool object is named by its digest and its key, and is copied again from a connection that stays
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built. It touches the answer
+(a) of [Q-BAK-65](#q-bak-65--the-pool-keeps-an-encrypted-copy-as-stored-with-its-record-under-the-digests-name) (the pool keeps the digest's
+name), which the development agent gave the owner on the evening of 2026-11-22: an encrypted pool object's name gains its key's identifier
+after the digest, and the pool still names blobs by their digest.
+
+Context: [storage.md](storage.md) Q-STOR-309 (b) destroys a retired connection's keys once no retained backup's pool names one
+(R-STOR-100). A pool object is written once per digest and every later backup inherits it (R-BAK-006).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) From the drain on, a blob pooled under a departing connection's key is copied again from a connection that stays, under a name of its own per key (chosen) | `pool/sha256/<hex>.<key id>` beside the plain `pool/sha256/<hex>`; the re-pool of R-BAK-032 | The departing key leaves the retained backups once the older ones leave retention; pool objects stay immutable | Bytes copied again, and the pool holds such blobs twice until the older backups leave retention |
+| (b) No re-pool | As today | Nothing to build | The destruction is refused for as long as the blob lives |
+| (c) Overwrite the pool object in place | One object per digest | No second copy | Breaks immutability, and an older backup whose snapshot lacks the new key cannot open the new object |
+
+**Choice:** (a). **Applied in the spec:** R-BAK-002, R-BAK-006, R-BAK-017, R-BAK-031, R-BAK-032.
+
+### Q-BAK-75 · The blob list names each digest's pool object and is written after the copies
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+Context: with two names per digest (Q-BAK-74) the next run's inheritance, the sweep, `verify` and the restore must know which object a
+backup lists. The list is written today during the merge inside the snapshot, before the copies decide which copy, and so which key, a blob
+gets.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The final blob list, written after the copies, its pool column resolved from the pins (chosen) | A provisional list during the run, the final one at its end | One file for every reader | One object write more per run, and the pins live until the run's end |
+| (b) A provisional list plus a separate list of the copies, kept for good | Two files per backup | No rewrite | Every reader merges two files |
+| (c) A summary in the manifest only | Counts per key | Small | Cannot carry the key per digest to the next run's inheritance |
+
+**Choice:** (a). **Applied in the spec:** R-BAK-002, R-BAK-006, R-BAK-007, R-BAK-032.
+
+### Q-BAK-76 · A backup reads a draining connection's copy after every other copy
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built. It amends the order of
+[Q-BAK-62](#q-bak-62--a-backup-reads-one-copy-per-blob-the-one-that-allows-a-server-side-copy-first) as built (a draining connection's
+copy last within each group, R-BAK-030).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A draining connection's copies after every copy on a connection that does not drain; still the fallback when those fail (chosen) | The pool takes a blob under a key that stays | Avoids pooling under a key that is about to be destroyed, and the re-pool that would follow | A server-side copy from a draining connection on the target's endpoint gives way to a stream from another |
+| (b) As built: last within each group | Server-side first | Cheaper where a draining connection shares the target's endpoint | The pool takes blobs under the departing key, which the next runs must copy again |
+
+**Choice:** (a). With the fallback over the copies (R-BAK-030, Q-BAK-71) the draining copy is read when every other copy failed, not only
+when no other is present, so that a backup never records a sound blob as damaged; the re-pool takes such a blob again in a later run.
+**Applied in the spec:** R-BAK-030, R-BAK-032.
 
 ## What this does not cover
 

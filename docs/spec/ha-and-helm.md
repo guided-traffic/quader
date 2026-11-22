@@ -3855,7 +3855,8 @@ where a format page asks for it, a second time, outside PostgreSQL, and `quader 
 re-applies the removals and reservations among the entries newer than *t* (R-HA-025, step 4;
 Q-HA-9). A restore of a Quader backup replays the journal the same way, with *t* the backup's
 snapshot time ([backup-and-restore.md](backup-and-restore.md), R-HA-060). Replay never grants
-access and never deletes content.
+access and never deletes content; it may destroy a storage key that was destroyed after *t*
+([storage.md](storage.md) R-STOR-097, [Q-HA-416](#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore)).
 
 **What is journaled.** Transactional audit events (R-OPS-015) whose entry in the event registry
 (R-OPS-014) declares `journal: revocation`. When the audit writer inserts such an event, it inserts
@@ -3894,6 +3895,19 @@ to this mechanism. At least these events are flagged:
 | `vulnerability.finding.status_changed`, `vulnerability.finding.reopened` when the change sets a download block (`block: set`) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-012, R-VULN-013, R-VULN-026, Q-VULN-48 | Written by a triage, a reopen and every evaluation change that sets a block ([Q-VULN-130](vulnerability-scanning.md#q-vuln-130--every-change-of-the-evaluation-that-sets-a-download-block-records-vulnerabilityfindingstatus_changed-with-block-set-its-cause-and-the-journal-entry)). Block the finding of the journaled ID when it has the entry's repository, package version and advisory, else the finding of the entry's repository, package version and advisory, else a finding the replay creates; `subject unknown` when the restored database holds no such repository of the entry's ecosystem. A stored version's finding is set `blocked` whatever its status; the finding of a version the repository does not store becomes `resolved` with `version_removed` while `blocked`, which the remote miss and a commit count until the ecosystem has synced since the restore; `already in effect` when the finding has that shape ([Q-VULN-114](vulnerability-scanning.md#q-vuln-114--a-replayed-block-sets-blocked-on-the-restored-finding-whatever-its-status-so-a-block-lifted-after-the-restore-point-comes-back), [Q-VULN-115](vulnerability-scanning.md#q-vuln-115--a-replayed-block-names-its-finding-by-id-and-by-its-immutable-package-version-and-writes-the-findings-own-history), [Q-VULN-131](vulnerability-scanning.md#q-vuln-131--a-replayed-block-names-its-repository-and-package-version-creates-the-finding-the-restored-database-lacks-and-leaves-the-shape-both-download-gates-read), [Q-VULN-132](vulnerability-scanning.md#q-vuln-132--a-blocked-finding-whose-version-is-gone-counts-until-its-ecosystem-has-synced-since-the-restore-at-the-remote-miss-and-at-a-commit)). The entry is optional: a change that lifts a block or sets none is not journaled |
 | `package.published`, `package.deleted` (from P1 also the copy and move events of R-STOR-019) of local NuGet repositories | [formats/nuget.md](formats/nuget.md) R-NUGET-033 | Addition of an absent version: write a `reserved` tombstone for the journaled SHA-512; an addition that meets a `reserved` tombstone for other bytes turns it into `removed` and warns ([Q-NUGET-112](formats/nuget.md#q-nuget-112--two-replayed-additions-of-one-version-that-name-different-bytes-leave-its-number-refusing-every-package)). Removal: an absent version's tombstone becomes or is written as `removed`; a present version with the journaled SHA-512 is reported `revived`; never delete |
 
+**Specified, not built: the destruction of storage keys.** `system.storage.keys_destroyed` ([storage.md](storage.md) R-STOR-097,
+R-STOR-099) joins the table above in the change of package 7 that registers the event (the table's events are held to the event registry
+by `TestR_HA_054_EveryListedEventIsFlaggedAndEntryRequired`). Its replay, per identifier of the entry `{connection, keyIds, destroyedAt}`:
+an entry whose connection the restoring installation's configuration names is `skipped` and changes nothing: a configured connection is not
+retired, so the entry is forged or stale; its reason ("connection archive is in this installation's configuration; its keys are not
+destroyed") is the entry's note, which the replay prints as a warning line and lists among its warnings, and the restore goes on
+([Q-HA-417](#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name)). Otherwise: a sealed row is destroyed (`applied`); a destroyed row is
+`already in effect`; no row: a destroyed row is inserted from the identifier with `created_at` = `destroyedAt` (`applied`), so that no later
+import or reuse of the connection id brings the key back; the area `storage_keys` is announced, no audit event is written
+([Q-HA-416](#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore)). Acceptance criterion (unit, the
+handler): four cases: `applied` on a sealed row, `already in effect` on a destroyed row, `applied` with an inserted destroyed row, and an
+entry for a connection of the configuration `skipped` with its note, its keys still sealed.
+
 **Dispatch.** An entry of a format event is dispatched to that format's replay handler, which the
 format page specifies (the two rows above). An entry of a format without a replay handler is
 reported `skipped`. Access entries are replayed by the rules below.
@@ -3928,7 +3942,10 @@ restore does not revive it and it is not journaled.
   MUST be conservative: an emptied include list, for example, is unrestricted under R-AUTHZ-005, so
   removing the last include pattern never counts as narrowing.
 - **Forged entries cannot escalate.** Whoever holds the runtime S3 credential can write journal
-  objects. A removal only removes. Where removing one object can widen what another grants, the
+  objects. A removal only removes; a forged `system.storage.keys_destroyed` does not escalate either, and the replay applies it only to
+  a connection the restoring configuration does not name (Q-HA-417), so at worst it destroys the keys of a connection that is already
+  retired before the operator did, which cuts off a recovery of its leftovers through the offline tool
+  ([H-1375](../security/stored-content-keys.md#h-1375--a-forged-journal-entry-can-destroy-a-retired-connections-keys-at-a-restore-before-the-operator-does)). Where removing one object can widen what another grants, the
   owning page adds a fail-closed step: a disabled CI mapping would let its jobs fall through to the
   next mapping of its tier, so replay suspends those mappings too (R-CI-020, Q-CI-11); a virtual
   member whose claims would leave effect, and a pin rule or a claim that would route a name to
@@ -12858,6 +12875,47 @@ drawn by Quader, lie once sealed in the database and are never handled by an ope
 | (b) A Secret per encrypted connection holding its storage key | Keys in Kubernetes | A key an operator can see | A second place for a key that lies in the database, the drift the owner rejected for the data keys |
 
 **Choice:** (a). **Applied in the spec:** R-HA-072, [storage.md](storage.md) R-STOR-075, R-STOR-083.
+
+### Q-HA-416 · A destruction of storage keys is journaled and replayed after a restore
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+Context: [storage.md](storage.md) Q-STOR-309 (b) lets the operator destroy a retired connection's storage keys (R-STOR-097 to R-STOR-099).
+A restore of a backup taken before the destruction, or a point-in-time restore to before it, loads the keys again. R-HA-054 said "Replay
+never grants access and never deletes content"; [Q-HA-9](#q-ha-9--making-revocations-survive-a-database-restore-h-37) is the development
+agent's, not the owner's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `system.storage.keys_destroyed` carries the journal flag; the replay destroys the keys again, per identifier, before any replica starts (chosen) | A handler of the domain `storage_keys` with three outcomes: a sealed row destroyed (`applied`), a destroyed row (`already in effect`), no row: a destroyed row inserted from the identifier with `created_at` = `destroyedAt` (`applied`) | The journal exists for exactly this, and both restore paths replay it; an inserted row keeps a later import and the connection id from bringing the key back | It bends "never deletes content": a replay may destroy a key that was destroyed after *t*; a journal entry forged with the runtime credential could destroy the keys of a live connection at a restore, which [Q-HA-417](#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name) keeps to connections the restoring configuration does not name ([H-1375](../security/stored-content-keys.md#h-1375--a-forged-journal-entry-can-destroy-a-retired-connections-keys-at-a-restore-before-the-operator-does)) |
+| (b) The keys come back, and the operator runs `destroy` again | No journal entry | Replay stays as it was | Silent: a restore undoes the destruction until someone remembers |
+| (c) The restore reads the `destroyed` lists of newer manifests | From the backup's target | No journal | Covers no point-in-time restore, and no destruction after the newest backup |
+
+**Choice:** (a). The handler announces the area `storage_keys` and writes no audit event, like the other handlers. It is registered from
+`internal/app`, because `internal/blob/keys` lies in the infrastructure layer and may not import `internal/journal`, a domain package
+([layers.go](../../internal/archtest/layers.go)). **Applied in the spec:** R-HA-054; [backup-and-restore.md](backup-and-restore.md)
+R-BAK-024; [storage.md](storage.md) R-STOR-099.
+
+### Q-HA-417 · The replay destroys the keys only of a connection the restoring configuration does not name
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+Context: whoever holds a connection's runtime credential can write journal objects
+([H-553](backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential)). As Q-HA-416 first stood, the
+handler destroyed the keys any entry named: an entry forged with a live connection's identifiers would destroy its keys at the next restore,
+and the blobs only that connection holds would be lost, since an import skips a destroyed key ([storage.md](storage.md) R-STOR-103) and a
+later replay destroys again. Every other forged entry can only revoke or disable. A connection the restoring installation configures is not
+retired, and the command refuses such a connection ([storage.md](storage.md) R-STOR-098), so a genuine entry never names one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Skip an entry whose connection the restoring configuration names: outcome `skipped` with its reason as a warning, the restore goes on (chosen) | One check against the configuration the restore already holds | A forged or stale entry cannot destroy a key Quader still uses; the restore is not held up by an entry anyone with a runtime credential can write | A forged entry can still destroy a retired connection's keys before the operator did ([H-1375](../security/stored-content-keys.md#h-1375--a-forged-journal-entry-can-destroy-a-retired-connections-keys-at-a-restore-before-the-operator-does)) |
+| (b) Refuse the whole replay | A suspicious entry stops the restore | Nothing applied from a journal that holds a forgery | Whoever can write a journal object can block every restore, and the revocations of the same journal are not applied either |
+| (c) Apply everything as Q-HA-416 first stood | No check | Simplest | A forged entry destroys the keys of a live connection, and its blobs are lost |
+
+**Choice:** (a). `skipped` is the replay's word for an entry it does not apply (R-HA-054 "Replay run"); the entry's note carries the
+reason, which the replay prints as a warning line and lists among the summary's warnings. **Applied in the spec:** R-HA-054;
+[storage.md](storage.md) R-STOR-099; [security/stored-content-keys.md](../security/stored-content-keys.md) H-1375.
 
 ## What this does not cover
 

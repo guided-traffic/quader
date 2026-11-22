@@ -55,7 +55,8 @@ can point at a popular artifact. Live on every connection, encrypted or not; no 
 ### H-1314 · The backup's pool names blobs by their digest
 
 Component: the pool of a backup ([backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031, Q-BAK-65). Subject: blobs of encrypted
-connections in a backup. A pool object keeps the ciphertext and the record but is named `pool/sha256/<digest>`, so a reader of the backup's
+connections in a backup. A pool object keeps the ciphertext and the record but is named `pool/sha256/<digest>.<key id>` (R-BAK-032, a name
+that gains the storage key's identifier so that a retired connection's keys can be destroyed, specified, not built), so a reader of the backup's
 target confirms known files by name, which the keyed names hide at the connection. Live for every backup of an installation with an encrypted
 connection; it adds nothing while the database files beside it are readable (H-48), and becomes the leak once R-BAK-027 encrypts them. Naming
 the pool by the copies' keyed names is the owner's open question (Q-BAK-65 (b)).
@@ -72,7 +73,9 @@ Component: the key families other than the blobs ([storage.md](../spec/storage.m
 entries. The journal lies plain on every connection: a provider reads which tokens were revoked and which principals they belonged to, by
 identifier, and when; a holder of a runtime credential can still overwrite an entry
 ([H-553](../spec/backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential)). The marker names the
-installation and the connection; the probes are random. Live on every encrypted connection; the journal holds identifiers, no content.
+installation and the connection; the probes are random. Live on every encrypted connection; the journal holds identifiers, no content. The
+destruction of a retired connection's keys is journaled ([storage.md](../spec/storage.md) R-STOR-099, specified, not built): its entry tells
+every provider of a connection that does not drain which connection's keys were destroyed and when, by identifiers only.
 
 ### H-1317 · A plain connection beside an encrypted one keeps the content in the clear
 

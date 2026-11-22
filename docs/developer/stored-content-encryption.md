@@ -3,14 +3,15 @@
 Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built));
 package 2, the keys, built on 2026-11-22 ([below](#package-2-the-keys-as-built)); package 5, the Bastion's cache, built on 2026-11-22 on the
 format ([below](#package-5-the-bastions-cache-as-built)); no object of the main installation is written or read in the format yet, and no
-connection can be encrypted; packages 3, 4 and 6 not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
-R-STOR-091; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061;
+connection can be encrypted; packages 3, 4 and 6 not built; package 7, the destruction of a retired connection's keys, specified on
+2026-11-22, not built ([below](#package-7-destroying-a-retired-connections-keys-specified)) ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
+R-STOR-091, R-STOR-097 to R-STOR-103; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031, R-BAK-032; [bastion.md](../spec/bastion.md) R-BAS-061;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072;
 [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring),
 [ADR-245](../decisions.md#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart); security pages
 [stored-content-format.md](../security/stored-content-format.md), [stored-content-keys.md](../security/stored-content-keys.md),
 [stored-content-visibility.md](../security/stored-content-visibility.md)). Stage 2 of the owner's topic on the stored content. This page is
-the build plan: the six packages, what each owns, the order against stage 1's packages ([blob-store.md](blob-store.md#several-connections-the-build-plan)),
+the build plan: the seven packages, what each owns, the order against stage 1's packages ([blob-store.md](blob-store.md#several-connections-the-build-plan)),
 the tests and what they cost.
 
 ## What has to be in your head first
@@ -27,7 +28,11 @@ the tests and what they cost.
 - **Storage keys are rows, sealed by the key ring.** Register the sealed columns and the key ring's status, canary, compatibility check and
   re-encrypt task cover them; there is no second mechanism to build for the rotation.
 - **An unknown key is not damage.** Every other failure of the record or a segment marks the copy `corrupt`; `unknown_key` marks nothing,
-  because the export's import can still bring the key back.
+  because the export's import can still bring the key back. A destroyed key is damage: `destroyed_key` marks, because nothing brings that key
+  back (package 7, R-STOR-101).
+- **A key is destroyed only with its whole retired connection, and its row stays.** Nothing destroys a key by itself; the operator's command
+  refuses while anything Quader still serves needs one, the pool of a retained backup included, which is why package 4 names an encrypted
+  pool object by its key and copies it again from a connection that stays (R-STOR-097 to R-STOR-100, R-BAK-032).
 - **No copy of ciphertext between connections.** Every copy into an encrypted connection is new bytes under a new data key; server-side copies
   stay a matter between plain connections.
 
@@ -41,12 +46,14 @@ at the same time are disjoint.
 | **1 · The format and its tools** | nothing; it can start before stage 1 lands | The codec of R-STOR-076 to R-STOR-078: segments, the final segment, `S(L)` and its inverse, the range planner, the nonce derivation of R-STOR-080, the record (encode, decode, wrap, unwrap, commitment), the keyed name of R-STOR-086, the tail segments of R-STOR-081, a reader that runs the checks of R-STOR-077 in their order with named errors; the vector files and the independent check of R-STOR-079 (run once, the result recorded below); the five fuzz targets, the nightly job of R-STOR-091 and its Makefile target | `internal/blob/blobcrypt/` (new), `tools/blobvectors/` (new), the job `fuzz-stored-format` in `.github/workflows/performance.yml`, a Makefile block `fuzz-stored-format` |
 | **2 · The keys** (built, [below](#package-2-the-keys-as-built)) | stage 1's package A (the table `storage_connections`, the connection set, the marker and the start check) | The migration of R-STOR-083 (`storage_keys`, `storage_connections.keyed_names`, `upload_sessions.sealed_data_key` and `sealed_segments`, the stored columns of `upload_session_parts`); the two sealed columns registered; drawing keys at first sight with the refusal over a used location; holding them per replica, the change area `storage_keys` and the re-read for an unknown identifier; `quader admin storage keys export`, `import` and `new-generation` with their audit events (R-STOR-085); `CopyDataKey` and its architecture rule (R-STOR-083; the callers it allows are `internal/blob` and `internal/downloadlinks`, the handover's package, R-STOR-096 and [bastion-handover.md](bastion-handover.md)) | `internal/blob/keys/` (new), the stage's migration and `queries/storage_keys.sql` under `internal/meta/postgres/`, `cmd/quader/admin_storage_keys.go`, `internal/app/wire_storage_keys.go`, the change area in `internal/cluster/areas.go`, the rule in `internal/archtest` |
 | **3 · Encrypted connections in the store, and the sessions** | 1, 2, and stage 1's packages A and B | `encrypted: true` accepted with `keyed_names` and the part-size rule (R-STOR-075); the start check's requirement of `metadata`; the naming function for keyed names; the connection's encrypting writer and decrypting reader: the commit's writes with the record and `HeadObject`'s check, the copy row's `stored_size` and `storage_key_id` (R-STOR-080); whole and ranged reads, the marks, `unknown_key`, the metric (R-STOR-082); the sessions with the sealed data key, the tails, the counter and both finalize paths (R-STOR-081); the conformance pass with an encrypted connection; the integration case of a rotation (R-STOR-084) | `internal/config/storage.go` (stage 2's rules), `internal/blob` (all files but `gc*.go`, `sweep.go` and the packages `blobcrypt`, `keys`, `reconcile`, `scrub`, `verify`), `internal/blob/s3`, `internal/blob/blobtest`, `internal/uploads`, `internal/app/wire_blob.go`, `test/integration/blob/rotation_test.go`, the encrypted pass in `test/integration/blob/conformance_test.go` |
-| **4 · The jobs, the backup and the restore** | 3, and stage 1's packages B (orphan sweep), C (reconciliation), D (scrub, operator check) and E (backup, restore) | The reconciliation's four cases and the spool for streams into an encrypted connection, the scrub's marks and repair, the orphan sweep's reading of the record, the operator check's record (R-STOR-087); the pool with records, `verify --deep` with and without `--key-ring`, the restore's table and its drawing of keys (R-BAK-031); the integration cases of the jobs and of the backup | `internal/blob/reconcile/`, `internal/blob/scrub/`, `internal/blob/sweep.go`, `internal/blob/verify`, `internal/backup`, `cmd/quader/backup_*.go`, `test/integration/blob/encrypted_jobs_test.go`, `test/integration/backup/encrypted_test.go` |
+| **4 · The jobs, the backup and the restore** | 3, and stage 1's packages B (orphan sweep), C (reconciliation), D (scrub, operator check) and E (backup, restore) | The reconciliation's four cases and the spool for streams into an encrypted connection, the scrub's marks and repair, the orphan sweep's reading of the record, the operator check's record (R-STOR-087); the pool with records, `verify --deep` with and without `--key-ring`, the restore's table and its drawing of keys (R-BAK-031); the pool's keys and the re-pool (R-BAK-032): pool names with the key's identifier, the blob list's pool column and its final write after the copies, pins with `pool` kept until the run's end, the manifest's `storageKeys` and its schema, `retained[].poolKeyIds` and `sealedKeyIds`, the re-pool, a draining connection's copies after every other (Q-BAK-76), and the sweep, `verify` and the restore by pool name; the integration cases of the jobs and of the backup | `internal/blob/reconcile/`, `internal/blob/scrub/`, `internal/blob/sweep.go`, `internal/blob/verify`, `internal/backup`, `internal/backup/format` (blob list, manifest, schema), `cmd/quader/backup_*.go`, a migration step for `backup_blob_pin.pool`, `test/integration/blob/encrypted_jobs_test.go`, `test/integration/backup/encrypted_test.go` |
 | **5 · The Bastion's cache** | 1 | R-BAS-061: the encrypted layout below the key's tree, the sealed entries, the audit spool in the format, the sweep of other trees; `bastion.cache.encryption_key_file`; `secrets.cacheKey` in the Bastion's chart and its render tests | `internal/bastion/cache`, `internal/config/bastion_role.go`, `deploy/helm/quader-bastion`, the Bastion's chart tests under `test/chart` |
-| **6 · Offline tool, chart, API and documentation** | 2 and 3, and stage 1's packages E (chart) and F (API, manual) | `quader admin storage offline` (R-STOR-089); the chart's acceptance of `encrypted`, the refusal of `keyed_names` alone and the rule of `QuaderStorageUnknownKey` (R-HA-072, R-HA-045, R-STOR-088); `keyedNames` and `storageKeys[]` in the connections' API (R-STOR-088, Q-API-405); the README's and the manual's sentences of R-STOR-090; this page and the developer pages of the store brought to what runs | `cmd/quader/admin_storage_offline.go`, `deploy/helm/quader` (stage 2's lines), `test/chart` (the main chart's cases), the connections' handler file in `internal/api/v1` and its paths in `api/openapi.yaml`, `README.md`, `docs/manual`, `docs/developer` |
+| **6 · Offline tool, chart, API and documentation** | 2 and 3, and stage 1's packages E (chart) and F (API, manual) | `quader admin storage offline` (R-STOR-089); the chart's acceptance of `encrypted`, the refusal of `keyed_names` alone and the rule of `QuaderStorageUnknownKey` (R-HA-072, R-HA-045, R-STOR-088); `keyedNames` and `storageKeys[]` in the connections' API (R-STOR-088, Q-API-405), with `state: destroyed` and `destroyedAt`; `destroyed_key` in `offline list` (R-STOR-089, R-STOR-103); the README's and the manual's sentences of R-STOR-090; this page and the developer pages of the store brought to what runs | `cmd/quader/admin_storage_offline.go`, `deploy/helm/quader` (stage 2's lines), `test/chart` (the main chart's cases), the connections' handler file in `internal/api/v1` and its paths in `api/openapi.yaml`, `README.md`, `docs/manual`, `docs/developer` |
+| **7 · Destroying a retired connection's keys** (specified, [below](#package-7-destroying-a-retired-connections-keys-specified)) | 2 and 3; it may land before 4, because the backups' check refuses what it cannot read (R-STOR-100) | R-STOR-097 to R-STOR-103: the migration step (`sealed_key` nullable, `destroyed_at`, the state CHECKs, `storage_key_exports`), the walk skipping destroyed rows; the holders and the backups' check read in one transaction; `quader admin storage keys destroy` with its dry run, confirmation, exit codes, text and JSON, the change payload version 2 and the journaled event `system.storage.keys_destroyed`; the holders forgetting and loading over destroyed rows; `destroyed_key` in `blobcrypt` and its mapping in the store's reader, the scrub and the orphan sweep; the destroyed-id rule at start, in `Ensure` and in the restore's drawing; export and import of destroyed rows; the journal's replay handler (ha-and-helm.md R-HA-054, Q-HA-416); the audit registry and labels; the promise and the operator's steps in the README and the manual (R-STOR-090) | the migration step and `queries/storage_keys.sql` under `internal/meta/postgres/`; `internal/blob/keys` (new `destroy.go` and `replay.go`; `holder.go`, `export.go`, `draw.go`, `rows.go`, `keystest`); one reason in `internal/blob/blobcrypt/errors.go`; the mapping of `destroyed_key` in `internal/blob`'s reader (package 3's file, after 3 has landed); the destroyed-id rule in `internal/blob/record.go`; `cmd/quader/admin_storage_keys.go`; the handler's registration in `internal/app/wire_storage_keys.go`; `internal/audit/events_storage.go` and the audit labels with both translation files; `test/integration/blob/storage_keys_test.go`; `README.md`, `docs/manual`, the security pages, this page |
 
 The order: 1 first (now); 2 as soon as stage 1's package A is on `main`; 5 beside 2, after 1; 3 when 1, 2 and stage 1's B have landed; 4 after
-3 and stage 1's C, D and E; 6 after 3 with stage 1's E and F. Package 3 is the one that makes `encrypted: true` accepted; it changes the README
+3 and stage 1's C, D and E; 6 after 3 with stage 1's E and F; 7 after 2 and 3, before or after 4 (until 4 lands, every installation
+with a backup is refused by R-STOR-100's check, because no retained backup records `poolKeyIds` yet). Package 3 is the one that makes `encrypted: true` accepted; it changes the README
 and the manual's pages of R-STOR-090 in the same change if package 6 has not yet landed, so that no release accepts the key without the
 sentence about the lost key ring.
 
@@ -121,7 +128,8 @@ Which encrypted connection gets keyed names is `keyedNames`, true with `encrypte
 **While it runs:** a change of the area `storage_keys` (payload `{"connection": "<id>"}`) marks the connection, and the next `Active` reads its
 rows again; a record that names an identifier the replica does not hold makes `Lookup` read them again, at once after a change and otherwise
 at most once per 10 seconds, and returns nil (`unknown_key`) when they do not hold it. Rows are never deleted, so a held key is never replaced
-or dropped; `Close` destroys every key when the replica stops. `CopyDataKey` finds the present copy on the connection and the blob's size,
+or dropped; `Close` destroys every key when the replica stops. (Package 7 changes this: a change whose payload names destroyed identifiers,
+and a load that finds a destroyed row, destroy and drop the held key, R-STOR-101.) `CopyDataKey` finds the present copy on the connection and the blob's size,
 sends one `HeadObject` and runs `blobcrypt.Open` with the holder's `Lookup`; it marks nothing.
 
 **The commands** (with the runtime database role, like `storage verify`): `export [--connection <id>]` reads the rows and writes
@@ -189,6 +197,44 @@ measured cost are in that page's [Tests](bastion.md#tests): about 0.2 s of unit 
 0.3 s), 0.2 s in the integration area `bastioncache`, eight chart renders, nothing in any end-to-end leg; with 25 formats the cost is the
 same, since no format sees the cache's key.
 
+## Package 7: destroying a retired connection's keys (specified)
+
+[R-STOR-097](../spec/storage.md#r-stor-097--a-destroyed-key) to R-STOR-103, with the decisions Q-STOR-400 to Q-STOR-413, and in the backup
+[R-BAK-032](../spec/backup-and-restore.md#r-bak-032--the-pools-keys-their-record-and-the-re-pool) with Q-BAK-74 to Q-BAK-76 (package 4's
+part), the journal's replay of R-HA-054 with Q-HA-416 and Q-HA-417 (the event joins R-HA-054's table, and with it the test that holds the table to the event registry, when package 7 registers it), and the gaps H-1308 and H-1370 to H-1375 of
+[stored-content-keys.md](../security/stored-content-keys.md#destroying-a-retired-connections-keys)
+([ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable)).
+What the builder reads first, beyond the requirements:
+
+- **The order of the destroying transaction** (R-STOR-099): lock the key rows of both kinds and the `storage_connections` row, run every
+  holder of R-STOR-098 and the backups' check of R-STOR-100, compare the confirmation, then the `UPDATE`, the change, the audit event with its
+  outbox row, the commit. A dry run runs the same reads and writes nothing.
+- **What was read for it on 2026-11-22**, on `main` at the rest of package E:
+  - `retired_at` is set by the reconciliation for a drained connection that no live replica configures (`ReconcileRetire` in
+    [reconcile.sql](../../internal/meta/postgres/queries/reconcile.sql), called from [drain.go](../../internal/blob/reconcile/drain.go)),
+    which deletes the connection's queue rows with it, and by `forget-connection` (`ForgetConnection` in
+    [record.go](../../internal/blob/record.go)).
+  - `StorageConnectionConfiguredLive` ([blob_copies.sql](../../internal/meta/postgres/queries/blob_copies.sql)) reads the replica registry
+    only, so it answers for a connection without a `storage_connections` row as for one with.
+  - `quader backup prune` and `delete` record a run of operation `delete` with `result.retention`
+    ([retention/runner.go](../../internal/backup/retention/runner.go)), which R-STOR-100's check reads.
+  - `CountSealed` counts non-NULL values only ([sealed.go](../../internal/meta/postgres/listq/sealed.go)); `StorageKeysSealedAfter` selects
+    every row today and gains `AND sealed_key IS NOT NULL`.
+  - `internal/blob` (with `internal/blob/keys`) is in the infrastructure layer and `internal/journal` in the domain layer, and a lower layer
+    never imports a higher one ([layers.go](../../internal/archtest/layers.go)); so the replay handler of `system.storage.keys_destroyed` is a
+    function of `internal/blob/keys` that takes a `meta.Tx`, registered with `journal.Register` from
+    [wire_storage_keys.go](../../internal/app/wire_storage_keys.go).
+  - The checks of the migration files are switched off until the first stable release ([database.md](database.md), the job `compat`), so a
+    new step and an edit of `00107` in place would both pass; the specification asks for a new step.
+  - The backup's copy order as built puts a draining connection's copy last within each group (`order` in
+    [copy.go](../../internal/backup/create/copy.go)); Q-BAK-76 moves it behind every other copy (package 4).
+- **The replay handler takes the restoring configuration** (Q-HA-417): an entry whose connection `storage.connections` names is reported
+  `skipped` with its reason as the result's note (printed as a warning line, listed among the summary's warnings) and changes nothing;
+  the restore goes on. Its unit test has four cases: a sealed row destroyed, a destroyed row already in effect, a missing row inserted
+  destroyed, and an entry for a configured connection skipped with its keys still sealed.
+- **Until package 4 lands**, every installation that records a backup run is refused by R-STOR-100's check (no retained backup records
+  `poolKeyIds`), which fails closed; an installation with `backup.enabled: false` and no run passes.
+
 ## The vectors and their independent check
 
 The known answers of [storage.md](../spec/storage.md) R-STOR-076, R-STOR-077 and R-STOR-086 were computed for the specification on 2026-11-22
@@ -221,6 +267,22 @@ outcome.
 R-STOR-091's table: about 2.9 s of Go unit tests, 0.5 s of chart tests, 10 s in the integration area `blob` (a rotation and the jobs), 8 s in
 `backup` (one case), 3 s in `s3-conformance`, nothing in any end-to-end leg, and one nightly job of about 27 minutes for the five fuzz targets.
 With 25 formats the cost is the same: no format sees a connection or a key.
+
+The destruction of keys (package 7) and the pool's keys (package 4), estimated:
+
+| Test | Tier | Data | Run time (estimate) |
+|---|---|---|---|
+| The destruction, the refusals, a second run, forgetting at the change, a load over destroyed rows, `Ensure`'s refusal, export and import of destroyed rows, `activateHighest`, the walk skipping NULL, the backups' check (R-STOR-100's two cases) | unit, `internal/blob/keys` (keystest) | rows only | 0.08 s |
+| The command: dry run, confirmation, exits `0`, `2` and `5`, JSON, audit event, outbox row, change | unit, `cmd/quader` | three keys | 0.05 s |
+| A read that meets `destroyed_key` | unit, `internal/blob` (in-memory store) | objects of 1 KiB | 0.01 s |
+| The journal's replay, its four cases (Q-HA-417's skip of a configured connection among them) | unit, `internal/blob/keys` | rows | 0.02 s |
+| The blob list's pool column, the re-pool's merge, the final list from the pins, the manifest's `storageKeys` (package 4) | unit, `internal/backup/format` and `create` | lists of tens of lines | 0.1 s |
+| `TestR_STOR_097_…`: the CHECKs, a destruction in PostgreSQL with its event, outbox row and change, refused by a copy row and by a `backup_run` listing | integration, `test/integration/blob`, in the database of the keys' case | eight rows | 0.5 s |
+| The re-pool and the prune (package 4, R-BAK-031's case extended) | integration, `test/integration/backup` | three blobs of 1 KiB | +3 s |
+
+The unit job gains about 0.3 s and no package start; the integration shard that runs `blob` about 0.5 s and the one that runs `backup`
+about 3 s; the chart tests (the silent case of `QuaderStorageUnknownKey` on `destroyed_key` is one rule-test row), every end-to-end leg,
+`s3-conformance` and the nightly nothing. With 25 formats the cost is the same, since no format sees a key.
 
 | Fuzz target | Package | What it holds |
 |---|---|---|
@@ -274,3 +336,8 @@ last mark of a tail segment, the segment key's own label, and the refusal of a b
   and whether the self-hosted runner's eight workers reach the local numbers above is not known.
 - That `cipher.AEAD` from `crypto/cipher` may be used by several goroutines at once was not relied on: every `Section` and `Reader` builds its
   own cipher from the key.
+- Package 7 and package 4's pool keys (read, not run): whether the runtime role can run `VACUUM` on `storage_keys` (migration 00001 grants it
+  no `MAINTAIN`, but whether an installation runs migrations and the replicas with the same login, which would own the table, was not read)
+  and how much of a value PostgreSQL leaves readable on disk after vacuum; what writing the final blob list after the copies costs on a first
+  backup of millions of blobs (the ordered scan of the pins), a measurement to take, not a test. Nothing of either was run, and nothing was
+  tried against an object store.

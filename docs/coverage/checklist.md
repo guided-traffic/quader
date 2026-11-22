@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 657 of 1,226 spec requirements are implemented: a passing test names them and no
+**Status.** 657 of 1,234 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 798 specified (506 of them implemented), 1,441 open.
-1,226 spec requirements: 765 cover catalog features, 461 cover none (`quader-only`, [listed at the
+1,234 spec requirements: 772 cover catalog features, 462 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -795,7 +795,7 @@ Catalog page: [storage-and-blobs.md](../features/storage-and-blobs.md) · specif
 | STOR-019 | Direct (synchronous) upload to object storage | MVP | implemented | [R-ARCH-014](../spec/architecture.md) (implemented), [R-STOR-004](../spec/storage.md) (implemented), [R-STOR-005](../spec/storage.md) (implemented) |
 | STOR-020 | Object-store connection and bucket settings | MVP | implemented | [R-STOR-030](../spec/storage.md) (implemented) |
 | STOR-021 | Object-store authentication | MVP | implemented | [R-STOR-031](../spec/storage.md) (implemented) |
-| STOR-022 | Object-store encryption | P1 | specified | [R-STOR-048](../spec/storage.md), [R-STOR-032](../spec/storage.md), [R-STOR-075](../spec/storage.md), [R-STOR-080](../spec/storage.md), [R-STOR-081](../spec/storage.md), [R-STOR-082](../spec/storage.md), [R-STOR-083](../spec/storage.md), [R-STOR-084](../spec/storage.md), [R-STOR-085](../spec/storage.md), [R-STOR-086](../spec/storage.md), [R-STOR-087](../spec/storage.md), [R-STOR-088](../spec/storage.md), [R-STOR-089](../spec/storage.md), [R-STOR-090](../spec/storage.md) |
+| STOR-022 | Object-store encryption | P1 | specified | [R-STOR-048](../spec/storage.md), [R-STOR-032](../spec/storage.md), [R-STOR-075](../spec/storage.md), [R-STOR-080](../spec/storage.md), [R-STOR-081](../spec/storage.md), [R-STOR-082](../spec/storage.md), [R-STOR-083](../spec/storage.md), [R-STOR-084](../spec/storage.md), [R-STOR-085](../spec/storage.md), [R-STOR-086](../spec/storage.md), [R-STOR-087](../spec/storage.md), [R-STOR-088](../spec/storage.md), [R-STOR-089](../spec/storage.md), [R-STOR-090](../spec/storage.md), [R-STOR-097](../spec/storage.md), [R-STOR-098](../spec/storage.md), [R-STOR-099](../spec/storage.md), [R-STOR-100](../spec/storage.md), [R-STOR-101](../spec/storage.md), [R-STOR-102](../spec/storage.md), [R-STOR-103](../spec/storage.md) |
 | STOR-023 | Multipart upload and transfer thresholds | MVP | implemented | [R-STOR-006](../spec/storage.md) (implemented) |
 | STOR-024 | Object-store connection pool, timeouts and transport health | MVP | implemented | [R-STOR-033](../spec/storage.md) (implemented) |
 | STOR-025 | Outbound proxy for object-store traffic | P1 | specified | [R-STOR-034](../spec/storage.md) |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>461 requirements</summary>
+<summary>462 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3121,6 +3121,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAK-024 (implemented) | Revocation journal replay after a restore | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-030 | Backup and restore with several object-store connections | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-031 | Backup and restore of encrypted connections | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
+| R-BAK-032 | The pool's keys, their record and the re-pool | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-027 | Client-side encryption of the database files | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAS-007 (implemented) | Bastions in the main installation's screen, client setup and manual | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-009 (implemented) | The interface version | MVP | [bastion.md](../spec/bastion.md) |

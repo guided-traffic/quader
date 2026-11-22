@@ -766,7 +766,7 @@ follows 00104_signature_releases.
 
 [00107_storage_keys](../../internal/meta/postgres/migrations/00107_storage_keys.sql) is an expand step of package 2 of the encryption of
 stored content ([stored-content-encryption.md](stored-content-encryption.md#package-2-the-keys-as-built), [spec](../spec/storage.md)
-R-STOR-083): `storage_keys`, a row per storage key or name key ever drawn or imported, never deleted, with the key sealed by the key ring under
+R-STOR-083): `storage_keys`, a row per storage key or name key ever drawn or imported, never deleted (a later step of package 7, specified, not built, lets a destroyed key keep its row without its sealed value, R-STOR-097), with the key sealed by the key ring under
 its `key_id` (the sealed column `keys.Column()`); CHECKs that the identifier names the row's kind, connection and generation (Q-STOR-324), a
 unique key per connection, kind and generation and a partial unique index of the active key per connection and kind, which decides two
 replicas that draw at once; no foreign key, since `storage_connections` is transient in a backup and a key outlives its connection. Export

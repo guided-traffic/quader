@@ -105,9 +105,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// several object-store connections of storage.md (R-STOR-050 to R-STOR-063, R-HA-072, R-BAK-030, R-UI-196, R-UI-197). 1205 since the
 		// encryption of stored content (R-STOR-075 to R-STOR-091, R-BAK-031, R-BAS-061, and R-STOR-048 from P2 to P1). 1217 since the
 		// handover per blob to a Bastion (R-BAS-070 to R-BAS-079, R-STOR-095, R-STOR-096, twelve P1 requirements). 1226 since the read
-		// shapes per package at a Bastion (R-BAS-080 to R-BAS-088, nine P1 requirements).
-		if len(m.Reqs) != 1226 || count[prioMVP] != 718 || count[prioP1] != 469 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1226 (718, 469, 39)",
+		// shapes per package at a Bastion (R-BAS-080 to R-BAS-088, nine P1 requirements). 1234 since the destruction of a retired
+		// connection's storage keys (R-STOR-097 to R-STOR-103, R-BAK-032, eight P1 requirements).
+		if len(m.Reqs) != 1234 || count[prioMVP] != 718 || count[prioP1] != 477 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1234 (718, 477, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})
