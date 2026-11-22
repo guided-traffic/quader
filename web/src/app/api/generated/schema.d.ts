@@ -11706,6 +11706,49 @@ export interface components {
             };
             /** Format: date-time */
             serverTime: string;
+            /**
+             * @description One entry per registered format with routes: the facts of the format a Bastion needs before or without a response of
+             *     the main installation (R-BAS-057). A format the table does not name gets no replay headers and the rate-limit status 429.
+             */
+            formats: components["schemas"]["BastionHandshakeFormat"][];
+            /**
+             * @description The qualified name `<projectKey>/<repoKey>` the default endpoint's `host_roots` binds the host of `responseBaseUrl` to
+             *     (R-EP-006, R-BAS-057); absent when it binds none.
+             * @example web/docker-hub
+             */
+            boundRepository?: string;
+        };
+        /** @description A format's facts in the handshake's format table (R-BAS-057, R-BAS-058). */
+        BastionHandshakeFormat: {
+            /**
+             * @description The format's name, the format segment of `/api/<format>/`.
+             * @example oci
+             */
+            id: string;
+            /** @description The one format whose routes the registry root `/v2/` serves (R-BAS-051). */
+            registryRoot: boolean;
+            /**
+             * @description The response headers a cached answer of the format replays besides the core's representation headers, in canonical form.
+             * @example [
+             *       "Docker-Content-Digest",
+             *       "Docker-Distribution-Api-Version",
+             *       "Oci-Filters-Applied",
+             *       "Link"
+             *     ]
+             */
+            replayHeaders: string[];
+            /**
+             * @description The status of a Bastion's own rate-limit refusals on the format's family.
+             * @enum {integer}
+             */
+            rateLimitedStatus: 429 | 503;
+            /**
+             * @description The literal bound-host patterns of the format (R-EP-006), paths from the host root.
+             * @example [
+             *       "/v2/"
+             *     ]
+             */
+            boundPrefixes: string[];
         };
         BastionCheckRequest: {
             /** @description The token string the caller presented, or `null` for an anonymous caller. */

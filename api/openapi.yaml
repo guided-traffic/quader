@@ -13200,7 +13200,7 @@ paths:
         and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
         switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
         API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 3
+      x-quader-bastion-interface: 4
       x-quader-permission:
         bastion: true
       parameters:
@@ -13240,7 +13240,7 @@ paths:
         with the status the caller would receive. It writes no `authz.denied` events. A repository name without a project
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; another
         interface version answers `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 3
+      x-quader-bastion-interface: 4
       x-quader-permission:
         bastion: true
       parameters:
@@ -13290,7 +13290,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 3
+      x-quader-bastion-interface: 4
       x-quader-permission:
         bastion: true
       parameters:
@@ -13340,7 +13340,7 @@ paths:
         asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
         `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
-      x-quader-bastion-interface: 3
+      x-quader-bastion-interface: 4
       x-quader-permission:
         bastion: true
       parameters:
@@ -25780,7 +25780,7 @@ components:
       type: object
       additionalProperties: false
       description: The answer of the handshake (R-BAS-010).
-      required: [interfaceVersion, bastion, installation, responseBaseUrl, anonymousReads, recordDownloads, feed, serverTime]
+      required: [interfaceVersion, bastion, installation, responseBaseUrl, anonymousReads, recordDownloads, feed, serverTime, formats]
       properties:
         interfaceVersion:
           type: integer
@@ -25826,6 +25826,48 @@ components:
         serverTime:
           type: string
           format: date-time
+        formats:
+          type: array
+          description: |
+            One entry per registered format with routes: the facts of the format a Bastion needs before or without a response of
+            the main installation (R-BAS-057). A format the table does not name gets no replay headers and the rate-limit status 429.
+          items:
+            $ref: "#/components/schemas/BastionHandshakeFormat"
+        boundRepository:
+          type: string
+          description: |
+            The qualified name `<projectKey>/<repoKey>` the default endpoint's `host_roots` binds the host of `responseBaseUrl` to
+            (R-EP-006, R-BAS-057); absent when it binds none.
+          example: web/docker-hub
+    BastionHandshakeFormat:
+      type: object
+      additionalProperties: false
+      description: A format's facts in the handshake's format table (R-BAS-057, R-BAS-058).
+      required: [id, registryRoot, replayHeaders, rateLimitedStatus, boundPrefixes]
+      properties:
+        id:
+          type: string
+          description: The format's name, the format segment of `/api/<format>/`.
+          example: oci
+        registryRoot:
+          type: boolean
+          description: The one format whose routes the registry root `/v2/` serves (R-BAS-051).
+        replayHeaders:
+          type: array
+          description: The response headers a cached answer of the format replays besides the core's representation headers, in canonical form.
+          items:
+            type: string
+          example: [Docker-Content-Digest, Docker-Distribution-Api-Version, Oci-Filters-Applied, Link]
+        rateLimitedStatus:
+          type: integer
+          enum: [429, 503]
+          description: The status of a Bastion's own rate-limit refusals on the format's family.
+        boundPrefixes:
+          type: array
+          description: The literal bound-host patterns of the format (R-EP-006), paths from the host root.
+          items:
+            type: string
+          example: ["/v2/"]
     BastionCheckRequest:
       type: object
       additionalProperties: false

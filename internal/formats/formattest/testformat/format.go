@@ -15,6 +15,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -156,7 +158,22 @@ const (
 	// AttestsSignature names a tarball's signature file a subject of Quader's receipt attestation, so that Quader would attest a carrier
 	// of a publisher's signature as an artifact: check 18 (signatures.md R-SIG-044).
 	AttestsSignature Defect = "attests-signature"
+	// DownloadWithoutContentAddress answers the tarball with a strong ETag that names a revision instead of the SHA-256 of its bytes,
+	// so a Bastion can neither keep nor verify it and passes it through on every request: check 19 (bastion.md R-BAS-058).
+	DownloadWithoutContentAddress Defect = "download-without-content-address"
+	// UndeclaredReplayHeader puts a protocol header of the format's own on the package document without declaring it in
+	// catalog.Facts.Bastion.ReplayHeaders, so a Bastion's cached answer would lack what its miss carried: check 19.
+	UndeclaredReplayHeader Defect = "undeclared-replay-header"
+	// DocumentIgnoresConditional answers the documents (the package document and -/all) 200 to If-None-Match with their own ETag,
+	// so every revalidation of a Bastion's copy costs a whole transfer: check 19.
+	DocumentIgnoresConditional Defect = "document-ignores-conditional"
+	// RateLimitedStatusDiffers declares the rate-limit status 503 while WriteError answers a rate limit 429, so a Bastion's own
+	// refusals on the format's family would differ from the format's: check 19.
+	RateLimitedStatusDiffers Defect = "rate-limited-status-differs"
 )
+
+// UndeclaredHeader is the protocol header the defect UndeclaredReplayHeader puts on the package document.
+const UndeclaredHeader = "Tf-Origin"
 
 // Option adjusts the format; it is not a defect.
 type Option string
@@ -298,11 +315,16 @@ func (n names) Normalize(name string) (string, bool) {
 // Descriptor implements formats.Format.
 func (f Format) Descriptor() formats.Descriptor {
 	ttl := 300
+	var bastion catalog.BastionFacts
+	if f.has(string(RateLimitedStatusDiffers)) {
+		bastion.RateLimitedStatus = http.StatusServiceUnavailable
+	}
 	return formats.Descriptor{
 		Facts: catalog.Facts{
 			ID: ID, DisplayName: "Test format", Classes: []formats.Class{formats.Local, formats.Remote, formats.Virtual},
 			Layout: "testfmt", ProtocolBasePath: "/api/testfmt/{project}/{key}/", PatternSubject: formats.SubjectName, PackageNames: true,
 			DefaultMetadataTTLSeconds: &ttl, OwnershipDefault: catalog.OwnershipEnforce, Wiki: f.has(string(WithWiki)),
+			Bastion: bastion,
 		},
 		ContractVersion:  formats.ContractVersion,
 		NoProbe:          "the kit's test format answers no request of its remote class without fetching it; the formats hold their probes in their own tests",
@@ -885,11 +907,45 @@ func (f Format) docGet(ctx context.Context, rq *formats.Request, w http.Response
 	if f.has(string(VaryUserAgent)) {
 		w.Header().Set("Vary", "User-Agent")
 	}
+	if f.has(string(UndeclaredReplayHeader)) {
+		w.Header().Set(UndeclaredHeader, "main")
+	}
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(doc)
+	err = f.writeDocument(w, rq, doc)
 	f.strip(w)
 	return err
 }
+
+// writeDocument writes a document with its validator, the SHA-256 of its bytes as a strong ETag, and answers an If-None-Match
+// that names it 304, as a Bastion revalidates the documents it keeps (bastion.md R-BAS-058). DocumentIgnoresConditional answers
+// 200 all the same.
+func (f Format) writeDocument(w http.ResponseWriter, rq *formats.Request, doc []byte) error {
+	sum := sha256.Sum256(doc)
+	etag := `"` + hex.EncodeToString(sum[:]) + `"`
+	w.Header().Set("ETag", etag)
+	if !f.has(string(DocumentIgnoresConditional)) {
+		for tag := range strings.SplitSeq(rq.Header.Get("If-None-Match"), ",") {
+			if strings.TrimPrefix(strings.TrimSpace(tag), "W/") == etag {
+				w.WriteHeader(http.StatusNotModified)
+				return nil
+			}
+		}
+	}
+	_, err := w.Write(doc)
+	return err
+}
+
+// revisionTag replaces the content address of a download's ETag by a revision at the status line (DownloadWithoutContentAddress).
+type revisionTag struct{ http.ResponseWriter }
+
+func (w revisionTag) WriteHeader(code int) {
+	if code == http.StatusOK {
+		w.Header().Set("ETag", `"1"`)
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w revisionTag) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 func (f Format) tarballGet(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	name := f.norm(rq.Params.Get("package"))
@@ -918,6 +974,9 @@ func (f Format) tarballGet(ctx context.Context, rq *formats.Request, w http.Resp
 		return err
 	}
 	f.strip(w)
+	if f.has(string(DownloadWithoutContentAddress)) {
+		w = revisionTag{w}
+	}
 	err = rq.Host.Items().Serve(ctx, rq, w, it, formats.ServeStored)
 	f.strip(w)
 	return err
@@ -1041,7 +1100,7 @@ func (f Format) all(ctx context.Context, rq *formats.Request, w http.ResponseWri
 	}
 	f.strip(w)
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write([]byte(`{"format":"testfmt"}`))
+	err := f.writeDocument(w, rq, []byte(`{"format":"testfmt"}`))
 	f.strip(w)
 	return err
 }

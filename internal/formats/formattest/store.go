@@ -642,6 +642,22 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 	if err := s.h.f.ServeCheck(ctx, s.h, it.Ref.Repo, it.Ref, mode); err != nil {
 		return err
 	}
+	etag := `"` + hex.EncodeToString(rec.digests.SHA256) + `"`
+	// If-None-Match that names the content address answers 304 without the body, before the admission, as the production Host's
+	// conditionals do (edge.ServeItem, R-STOR-012): a Bastion revalidates what it keeps with it (kit check 19, R-BAS-058).
+	if rq != nil && (rq.Method == http.MethodGet || rq.Method == http.MethodHead) && etagListed(rq.Header.Get("If-None-Match"), etag) {
+		s.h.mu.Lock()
+		s.h.served = true
+		s.h.servedPaths = append(s.h.servedPaths, it.Ref.Path)
+		s.h.mu.Unlock()
+		hd := w.Header()
+		if rec.media != "" && hd.Get("Content-Type") == "" {
+			hd.Set("Content-Type", rec.media)
+		}
+		hd.Set("ETag", etag)
+		w.WriteHeader(http.StatusNotModified)
+		return nil
+	}
 	// The admission of a download, before the status line and before any byte, as the production Host's (R-LIM-021).
 	if a := s.h.opts.Admit; a != nil && rq != nil && rq.Route != nil && rq.Route.Kind == formats.Download && rq.Method == http.MethodGet {
 		if err := a(ctx, rq); err != nil {
@@ -658,13 +674,25 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 		hd.Set("Content-Type", rec.media)
 	}
 	hd.Set("Content-Length", strconv.Itoa(len(rec.data)))
-	hd.Set("ETag", `"`+hex.EncodeToString(rec.digests.SHA256)+`"`)
+	hd.Set("ETag", etag)
 	w.WriteHeader(http.StatusOK)
 	if rq != nil && rq.Method == http.MethodHead {
 		return nil
 	}
 	_, err := w.Write(rec.data)
 	return err
+}
+
+// etagListed reports whether an If-None-Match value names etag, with the weak comparison of RFC 9110 section 13.1.2: "*", or a
+// listed tag equal to etag once a W/ prefix is ignored.
+func etagListed(header, etag string) bool {
+	for tag := range strings.SplitSeq(header, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag == "*" || strings.TrimPrefix(tag, "W/") == strings.TrimPrefix(etag, "W/") {
+			return true
+		}
+	}
+	return false
 }
 
 func (s itemStore) RecordDownload(_ context.Context, _ *formats.Request, it formats.Item) {

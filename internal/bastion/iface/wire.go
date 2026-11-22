@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"strings"
 	"time"
 )
 
@@ -59,6 +61,96 @@ type Handshake struct {
 	Feed HandshakeFeed `json:"feed"`
 	// ServerTime is the main installation's clock.
 	ServerTime time.Time `json:"serverTime"`
+	// Formats are the facts of every registered format with routes that matter to
+	// the Bastion before or without a response of the main installation (R-BAS-057,
+	// Q-BAS-170). The Bastion keeps the table until the next handshake.
+	Formats HandshakeFormats `json:"formats"`
+	// BoundRepository is the qualified name "<projectKey>/<repoKey>" the default
+	// endpoint's host_roots binds the host of [Handshake.ResponseBaseURL] to
+	// (R-EP-006, R-BAS-057, Q-BAS-178), absent when it binds none.
+	BoundRepository string `json:"boundRepository,omitempty"`
+}
+
+// HandshakeFormat is one entry of the handshake's format table (R-BAS-057): the
+// facts the format declares in catalog.Facts, which reach every Bastion as data,
+// so that the Bastion's code holds no knowledge of a format (Q-BAS-179).
+type HandshakeFormat struct {
+	// ID is the format's name, the format segment of /api/<format>/.
+	ID string `json:"id"`
+	// RegistryRoot is true for the one format whose routes the registry root /v2/
+	// serves (R-BAS-051); the Bastion knows the format of a request below /v2/ by it.
+	RegistryRoot bool `json:"registryRoot"`
+	// ReplayHeaders are the headers a cached answer of the format replays besides
+	// the core's representation headers (Q-BAS-171), in canonical form.
+	ReplayHeaders []string `json:"replayHeaders"`
+	// RateLimitedStatus is the status of the Bastion's own rate-limit refusals on
+	// the format's family: 429 or 503 (R-BAS-056, R-BAS-058).
+	RateLimitedStatus int `json:"rateLimitedStatus"`
+	// BoundPrefixes are the literal bound-host patterns of the format (R-EP-006),
+	// paths from the host root: "/v2/" for the registry root.
+	BoundPrefixes []string `json:"boundPrefixes"`
+}
+
+// HandshakeFormats is the handshake's format table.
+type HandshakeFormats []HandshakeFormat
+
+// Lookup returns the entry of the format id, or the defaults of R-BAS-057 for a
+// format the table does not name: no replay headers and the rate-limit status 429.
+func (t HandshakeFormats) Lookup(id string) HandshakeFormat {
+	for _, f := range t {
+		if f.ID == id {
+			return f
+		}
+	}
+	return HandshakeFormat{ID: id, RateLimitedStatus: http.StatusTooManyRequests}
+}
+
+// RegistryRoot returns the entry of the format that declares the registry root;
+// ok is false when the table names none, and the Bastion then serves nothing
+// below /v2/.
+func (t HandshakeFormats) RegistryRoot() (HandshakeFormat, bool) {
+	for _, f := range t {
+		if f.RegistryRoot {
+			return f, true
+		}
+	}
+	return HandshakeFormat{}, false
+}
+
+// Validate checks the table as the Bastion reads it: every entry has an ID, once;
+// at most one declares the registry root; a rate-limit status is 429 or 503; a
+// replay header is a canonical header name without the prefix "Quader-"; a bound
+// prefix starts with "/". The main installation's catalog holds the formats to
+// stricter rules (catalog.BastionFacts); this is what the Bastion relies on.
+func (t HandshakeFormats) Validate() error {
+	seen := map[string]bool{}
+	roots := 0
+	for _, f := range t {
+		switch {
+		case f.ID == "" || seen[f.ID]:
+			return fmt.Errorf("bastion handshake: the format table names %q twice or without an ID", f.ID)
+		case f.RateLimitedStatus != http.StatusTooManyRequests && f.RateLimitedStatus != http.StatusServiceUnavailable:
+			return fmt.Errorf("bastion handshake: format %q has the rate-limit status %d", f.ID, f.RateLimitedStatus)
+		}
+		seen[f.ID] = true
+		if f.RegistryRoot {
+			roots++
+		}
+		for _, h := range f.ReplayHeaders {
+			if h == "" || http.CanonicalHeaderKey(h) != h || strings.ContainsAny(h, " \t\r\n:") || strings.HasPrefix(h, "Quader-") {
+				return fmt.Errorf("bastion handshake: format %q replays the header %q", f.ID, h)
+			}
+		}
+		for _, p := range f.BoundPrefixes {
+			if !strings.HasPrefix(p, "/") {
+				return fmt.Errorf("bastion handshake: format %q has the bound prefix %q", f.ID, p)
+			}
+		}
+	}
+	if roots > 1 {
+		return errors.New("bastion handshake: more than one format declares the registry root")
+	}
+	return nil
 }
 
 // HandshakeBastion identifies the registration and the token in use.

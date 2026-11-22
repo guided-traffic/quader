@@ -80,7 +80,7 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 	}{
 		{
 			"R-ARCH-010 /{package} and /{scope}/{name} without a disambiguating rule fail check 1", testformat.AmbiguousRoutes, formattest.CheckAmbiguity, "ambiguous routes",
-			[]formattest.Check{formattest.CheckHeaders, formattest.CheckNames, formattest.CheckShared},
+			[]formattest.Check{formattest.CheckHeaders, formattest.CheckNames, formattest.CheckShared, formattest.CheckBastion},
 		},
 		{"R-ARCH-010 a Match that cleans the path itself fails check 2", testformat.CleaningMatch, formattest.CheckTraversal, "resolves to route", nil},
 		{"R-ARCH-010 a package document classified as content fails check 3", testformat.ContentMetadata, formattest.CheckClassify, "says content", nil},
@@ -119,9 +119,10 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 		},
 		{"R-AUTHZ-005 a document rendered otherwise on the path that filters it fails check 13", testformat.FiltersDifferently, formattest.CheckAuthzPaths, "when only an unrelated path is refused", nil},
 		{
+			// Check 19 fails with it: a body the format writes itself carries neither Content-Length nor the content address.
 			"R-LIM-036 a format that writes a download's body itself instead of through Host.Serve fails check 16", testformat.WritesOwnDownload,
 			formattest.CheckAdmission, "without the admission of Host.Serve",
-			[]formattest.Check{formattest.CheckMalware},
+			[]formattest.Check{formattest.CheckMalware, formattest.CheckBastion},
 		},
 		{
 			"R-MAL-016 R-MAL-029 a format whose errors lose the headers of the core error fails check 17", testformat.RendersBareErrors,
@@ -140,15 +141,7 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			rep := formattest.Evaluate(testformat.With(c.defect), testformat.Fixture())
-			want := append([]formattest.Check{c.check}, c.also...)
-			slices.Sort(want)
-			if failed := rep.Failed(); !slices.Equal(failed, want) {
-				t.Fatalf("failed checks = %v, want %v:\n%v", failed, want, rep)
-			}
-			if got := strings.Join(rep.Result(c.check).Failures, "\n"); !strings.Contains(got, c.match) {
-				t.Fatalf("failures do not say %q:\n%s", c.match, got)
-			}
+			failsAlone(t, testformat.With(c.defect), testformat.Fixture(), c.check, c.match, c.also...)
 		})
 	}
 	t.Run("R-AUTHZ-005 a format whose paths place files in versions and that names no file of a version fails check 13", func(t *testing.T) {
@@ -166,6 +159,89 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 			t.Fatalf("Validate = %v", err)
 		}
 	})
+}
+
+// failsAlone asserts that the format fails check and the checks of also, no other, and that the failures of check say match.
+func failsAlone(t *testing.T, f formats.Format, fx formattest.Fixture, check formattest.Check, match string, also ...formattest.Check) {
+	t.Helper()
+	rep := formattest.Evaluate(f, fx)
+	want := append([]formattest.Check{check}, also...)
+	slices.Sort(want)
+	if failed := rep.Failed(); !slices.Equal(failed, want) {
+		t.Fatalf("failed checks = %v, want %v:\n%v", failed, want, rep)
+	}
+	if got := strings.Join(rep.Result(check).Failures, "\n"); !strings.Contains(got, match) {
+		t.Fatalf("failures do not say %q:\n%s", match, got)
+	}
+}
+
+// TestR_BAS_058_KitCheck19: each of the four defects of what a format owes a Bastion fails check 19 and no other check, and the
+// fixture's exemptions (NoBastion) hold only with a reason, for a route a Bastion keeps answers of, that a case served and that
+// needs them (Q-BAS-184). That npm, NuGet, OCI, Debian, Ansible Galaxy, the ClamAV definitions and generic pass it is each
+// format's TestR_ARCH_010_Conformance.
+//
+// A defect runs every check but check 6, whose subject (Inspect against crafted inputs of gigabytes, half a second a run under the
+// race detector) none of the four touches; TestR_ARCH_010_TheTestFormatPassesTheKit runs it on the format they vary. An exemption
+// runs check 19 alone. The fixture is built once: its crafted inputs cost most of a second to build under the race detector.
+func TestR_BAS_058_KitCheck19(t *testing.T) {
+	notInspect := slices.DeleteFunc(formattest.Checks(), func(c formattest.Check) bool { return c == formattest.CheckInspect })
+	base := testformat.Fixture()
+	for _, c := range []struct {
+		name   string
+		defect testformat.Defect
+		match  string
+	}{
+		{"a download whose ETag is no content address", testformat.DownloadWithoutContentAddress, `the ETag "\"1\"", which is no content address`},
+		{"a document with a protocol header it does not declare", testformat.UndeclaredReplayHeader, "carries " + testformat.UndeclaredHeader},
+		{"a document that answers its own validator 200", testformat.DocumentIgnoresConditional, "answered 200 to If-None-Match"},
+		{"a format whose rate limit is not the status it declares", testformat.RateLimitedStatusDiffers, "WriteError answers a rate limit 429 and catalog.Facts.Bastion says 503"},
+	} {
+		t.Run("R-BAS-058 "+c.name+" fails check 19 and no other check", func(t *testing.T) {
+			rep := formattest.EvaluateChecks(testformat.With(c.defect), base, notInspect...)
+			if failed := rep.Failed(); !slices.Equal(failed, []formattest.Check{formattest.CheckBastion}) {
+				t.Fatalf("failed checks = %v, want check 19 alone:\n%v", failed, rep)
+			}
+			if got := strings.Join(rep.Result(formattest.CheckBastion).Failures, "\n"); !strings.Contains(got, c.match) {
+				t.Fatalf("failures do not say %q:\n%s", c.match, got)
+			}
+		})
+	}
+	check19 := func(f formats.Format, noBastion map[string]string, edit func(*formattest.Fixture)) formattest.Result {
+		fx := base // a copy; the edits below replace fields, never change what base's fields hold
+		fx.NoBastion = noBastion
+		if edit != nil {
+			edit(&fx)
+		}
+		return formattest.EvaluateChecks(f, fx, formattest.CheckBastion).Result(formattest.CheckBastion)
+	}
+	t.Run("R-BAS-058 a route listed with its reason is exempt from the conditional duty", func(t *testing.T) {
+		if res := check19(testformat.With(testformat.DocumentIgnoresConditional), map[string]string{"tf.doc.get": "not built yet", "tf.all.get": "not built yet"}, nil); !res.Passed() {
+			t.Fatalf("check 19: %v", res)
+		}
+	})
+	noCase := func(fx *formattest.Fixture) {
+		fx.Content = slices.DeleteFunc(slices.Clone(fx.Content), func(c formattest.ContentCase) bool { return c.Path == "-/all" })
+	}
+	for _, c := range []struct {
+		name  string
+		f     formats.Format
+		entry map[string]string
+		edit  func(*formattest.Fixture)
+		match string
+	}{
+		{"an exemption does not cover a header the format does not declare", testformat.With(testformat.UndeclaredReplayHeader), map[string]string{"tf.doc.get": "not built yet"}, nil, "carries " + testformat.UndeclaredHeader},
+		{"an exemption without a reason fails check 19", testformat.New(), map[string]string{"tf.doc.get": ""}, nil, "without a reason"},
+		{"an exemption for a route a Bastion keeps nothing of fails check 19", testformat.New(), map[string]string{"tf.search.get": "a search"}, nil, "no Download, Metadata or Computed route"},
+		{"an exemption for a route whose answers meet both duties fails check 19", testformat.New(), map[string]string{"tf.tarball.get": "stale"}, nil, "whose answers meet the content-address and the conditional duty"},
+		{"an exemption for a route no case served fails check 19", testformat.New(), map[string]string{"tf.all.get": "not built yet"}, noCase, "which no content case served"},
+		{"a document route without a case that served fails check 19", testformat.New(), nil, noCase, `route "tf.all.get" (computed) has no content case a Bastion keeps`},
+	} {
+		t.Run("R-BAS-058 "+c.name, func(t *testing.T) {
+			if got := strings.Join(check19(c.f, c.entry, c.edit).Failures, "\n"); !strings.Contains(got, c.match) {
+				t.Fatalf("check 19 does not say %q:\n%s", c.match, got)
+			}
+		})
+	}
 }
 
 func FuzzR_ARCH_028_Match(f *testing.F) { formattest.FuzzMatch(f, testformat.New()) }

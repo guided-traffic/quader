@@ -298,6 +298,23 @@ func TestR_ARCH_009_IngestAndItems(t *testing.T) {
 			t.Fatal("an item the host did not read was opened")
 		}
 	})
+	t.Run("R-STOR-012 Serve answers If-None-Match with the content address 304 without the body, as the production Host does", func(t *testing.T) {
+		resp, err := h.Serve(ctx, http.MethodGet, "left-pad/-/left-pad-1.0.0.tgz", nil, false)
+		if err != nil || resp.Code != http.StatusOK {
+			t.Fatalf("GET: %v %v", resp, err)
+		}
+		etag := resp.Header().Get("ETag")
+		for _, inm := range []string{etag, "W/" + etag, `"other", ` + etag, "*"} {
+			again, err := h.Serve(ctx, http.MethodGet, "left-pad/-/left-pad-1.0.0.tgz", nil, false, func(r *http.Request) { r.Header.Set("If-None-Match", inm) })
+			if err != nil || again.Code != http.StatusNotModified || again.Body.Len() != 0 || again.Header().Get("ETag") != etag {
+				t.Errorf("If-None-Match %s: %d, %d bytes, ETag %q (%v)", inm, again.Code, again.Body.Len(), again.Header().Get("ETag"), err)
+			}
+		}
+		other, err := h.Serve(ctx, http.MethodGet, "left-pad/-/left-pad-1.0.0.tgz", nil, false, func(r *http.Request) { r.Header.Set("If-None-Match", `"other"`) })
+		if err != nil || other.Code != http.StatusOK || other.Body.Len() == 0 {
+			t.Fatalf("If-None-Match of another tag: %v %v", other, err)
+		}
+	})
 	t.Run("R-ARCH-023 an error before the status line is rendered by the format's WriteError", func(t *testing.T) {
 		resp, err := h.Serve(ctx, http.MethodGet, "no-such/-/no-such-1.0.0.tgz", nil, false)
 		if err != nil || resp.Code != http.StatusNotFound || !strings.Contains(resp.Header().Get("Content-Type"), "json") {

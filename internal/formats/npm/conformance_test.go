@@ -232,6 +232,14 @@ func conformance(t *testing.T) formattest.Fixture {
 			"npm.audit.legacy": "npm 6's audit endpoints answer 501 by design, so npm 6 reports that the registry has no audit (R-NPM-038)",
 			"npm.deferred.get": "an endpoint npm defines and quader does not implement answers 404 by design (R-NPM-043)",
 		},
+		// The documents a Bastion keeps that carry no validator yet: it fetches each whole once per metadata period instead of
+		// revalidating it (bastion.md H-1249).
+		NoBastion: map[string]string{
+			"npm.root":             "the answer of the registry URL is rendered without an ETag (bastion.md H-1249)",
+			"npm.disttags.get":     "the dist-tags are rendered without an ETag (bastion.md H-1249)",
+			"npm.keys.get":         "the keys of a local repository are rendered without an ETag (bastion.md H-1249)",
+			"npm.attestations.get": "the attestations of a version are rendered without an ETag (bastion.md H-1249)",
+		},
 		NoRevision: map[string]string{
 			"npm.unpublish.tarball": "the PUT of the unpublish removed the version with its files; this request changes nothing and answers 200 for a version that is gone",
 			"npm.deferred.put":      "an endpoint npm defines and quader does not implement: it answers 404 and changes nothing",

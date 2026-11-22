@@ -95,6 +95,12 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// Writes pass the ownership check with the image name as the package (R-OCI-006).
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
+			// A Bastion's cached answer replays the registry's own headers (bastion.md R-BAS-053): the digest a HEAD of a tag
+			// resolves, the API version every answer below /v2/ names (R-OCI-003), the filter a referrers list applied and the
+			// Link of the next page of a tags list. Canonical names, as net/http writes them (Q-BAS-182).
+			Bastion: catalog.BastionFacts{
+				ReplayHeaders: []string{"Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"},
+			},
 		},
 		ContractVersion: formats.ContractVersion,
 		// A pull fetches a tag's manifest by the tag or, after a HEAD, by its digest (R-API-079, Q-OCI-222).

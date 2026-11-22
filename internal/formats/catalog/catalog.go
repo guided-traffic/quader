@@ -170,6 +170,11 @@ type Facts struct {
 	// x-quader-classes. [Entry.ValidateSettings] checks a document against it, and
 	// GET /api/v1/formats serves it to the create form.
 	SettingsSchema []byte
+	// Bastion are the facts a Quader Bastion reads of the format in the handshake's format table (bastion.md R-BAS-057,
+	// R-BAS-058, ADR-238): the headers a cached answer replays besides the core's, and the status of a rate limit. The zero
+	// value replays no header of the format's own and answers a rate limit 429. Register refuses facts that break the rules
+	// of [BastionFacts].
+	Bastion BastionFacts
 }
 
 // UpstreamPreset is one well-known public registry of a format's ecosystem (R-REPO-062, Q-REPO-320, Q-REPO-321).
@@ -350,9 +355,9 @@ func Or(r *Registry) *Registry {
 // subject that is neither name nor path, package names without a [Names] (or a
 // [Names] without package names), exposure of versions without [Versioning],
 // exposure dimensions of a format that is not exposable, upstream presets that
-// break the rules of [Facts.UpstreamPresets], a settings schema that does not
-// compile or is no object schema that refuses unknown members, or a registration
-// after [Registry.Freeze].
+// break the rules of [Facts.UpstreamPresets], Bastion facts that break the rules of
+// [BastionFacts], a settings schema that does not compile or is no object schema
+// that refuses unknown members, or a registration after [Registry.Freeze].
 func (r *Registry) Register(e Entry) {
 	if err := check(e); err != nil {
 		panic(fmt.Sprintf("catalog: %v", err))
@@ -387,6 +392,7 @@ func (r *Registry) Register(e Entry) {
 	}
 	e.Classes = append([]Class(nil), e.Classes...)
 	e.UpstreamPresets = clonePresets(e.UpstreamPresets)
+	e.Bastion.ReplayHeaders = slices.Clone(e.Bastion.ReplayHeaders)
 	e.settings = compiled
 	r.by[e.ID] = e
 }
@@ -472,6 +478,9 @@ func check(e Entry) error {
 		return fmt.Errorf("%q is system only and declares the class remote or virtual: only the product writes its repository (R-CLAMAV-001)", e.ID)
 	}
 	if err := checkPresets(e.Facts); err != nil {
+		return err
+	}
+	if err := checkBastion(e.Facts); err != nil {
 		return err
 	}
 	seen := map[Class]bool{}

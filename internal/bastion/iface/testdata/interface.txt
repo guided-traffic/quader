@@ -1,4 +1,4 @@
-interface version 3
+interface version 4
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -25,6 +25,7 @@ const CodePayloadTooLarge = "payload_too_large"
 const CodeRateLimited = "rate_limited"
 const CodeReadOnly = "bastion_read_only"
 const CodeTokenInvalid = "bastion_token_invalid"
+const CountedDownload = "download"
 const FeedContent FeedKind = "content"
 const FeedGrants FeedKind = "grants"
 const FeedPrincipal FeedKind = "principal"
@@ -33,6 +34,7 @@ const FeedToken FeedKind = "token"
 const FilesPrefix = "/files/"
 const HeaderAuthorization = "Quader-Bastion-Authorization"
 const HeaderClass = "Quader-Bastion-Class"
+const HeaderCounted = "Quader-Bastion-Counted"
 const HeaderForwarded = "Forwarded"
 const HeaderForwardedFor = "X-Forwarded-For"
 const HeaderForwardedHost = "X-Forwarded-Host"
@@ -46,6 +48,7 @@ const HeaderReplica = "Quader-Bastion-Replica"
 const HeaderRepository = "Quader-Bastion-Repository"
 const HeaderRoute = "Quader-Bastion-Route"
 const HeaderSubject = "Quader-Bastion-Subject"
+const MaxRegistryTokenBytes = 4096
 const MediaType = "application/json"
 const OperationCheck = "check"
 const OperationDownloads = "downloads"
@@ -64,6 +67,7 @@ const QueryLimit = "limit"
 const ReadFull Read = "full"
 const ReadNone Read = "none"
 const ReadPartial Read = "partial"
+const RegistryTokenPrefix = "qdr_rgt_"
 const RouteReadWithBody = "read-with-body"
 const SubjectAnonymous SubjectKind = "anonymous"
 const SubjectAnonymousRefused SubjectKind = "anonymous_refused"
@@ -78,6 +82,9 @@ func (Class) Valid() bool
 func (Cursor) String() string
 func (Cursor) Synthetic() bool
 func (FeedKind) Valid() bool
+func (HandshakeFormats) Lookup(id string) HandshakeFormat
+func (HandshakeFormats) RegistryRoot() (HandshakeFormat, bool)
+func (HandshakeFormats) Validate() error
 func (Marking) Set(h http.Header)
 func (Read) Valid() bool
 func (Subject) Header() string
@@ -86,6 +93,8 @@ func Marshal(v any) ([]byte, error)
 func ParseCursor(s string) (Cursor, error)
 func ParseMarking(h http.Header) (m Marking, ok bool, err error)
 func ParseSubjectHeader(v string) (Subject, error)
+func RegistryTokenAnonymous(s string) bool
+func RegistryTokenWellFormed(s string) bool
 func StripMarking(h http.Header)
 type CheckAnswer struct
 type CheckAnswer: field Repositories map[string]RepositoryRead `json:"repositories"`
@@ -128,7 +137,9 @@ type FeedKind string
 type Handshake struct
 type Handshake: field AnonymousReads bool `json:"anonymousReads"`
 type Handshake: field Bastion HandshakeBastion `json:"bastion"`
+type Handshake: field BoundRepository string `json:"boundRepository,omitempty"`
 type Handshake: field Feed HandshakeFeed `json:"feed"`
+type Handshake: field Formats HandshakeFormats `json:"formats"`
 type Handshake: field Installation HandshakeInstallation `json:"installation"`
 type Handshake: field InterfaceVersion int `json:"interfaceVersion"`
 type Handshake: field RecordDownloads bool `json:"recordDownloads"`
@@ -140,11 +151,19 @@ type HandshakeBastion: field TokenExpiresAt time.Time `json:"tokenExpiresAt"`
 type HandshakeBastion: field TokenID string `json:"tokenId"`
 type HandshakeFeed struct
 type HandshakeFeed: field Cursor string `json:"cursor"`
+type HandshakeFormat struct
+type HandshakeFormat: field BoundPrefixes []string `json:"boundPrefixes"`
+type HandshakeFormat: field ID string `json:"id"`
+type HandshakeFormat: field RateLimitedStatus int `json:"rateLimitedStatus"`
+type HandshakeFormat: field RegistryRoot bool `json:"registryRoot"`
+type HandshakeFormat: field ReplayHeaders []string `json:"replayHeaders"`
+type HandshakeFormats []HandshakeFormat
 type HandshakeInstallation struct
 type HandshakeInstallation: field BaseURL string `json:"baseUrl"`
 type HandshakeInstallation: field Release string `json:"release"`
 type Marking struct
 type Marking: field Class Class
+type Marking: field Counted bool
 type Marking: field Interface int
 type Marking: field Read Read
 type Marking: field Repository string

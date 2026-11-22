@@ -2641,6 +2641,13 @@ type UploadSession struct {
 // project upstream; no caller creates one (422 format_system_only at /format), GET /api/v1/formats lists it with systemOnly, the catalog
 // refuses it with the class remote or virtual and formats.Validate with a route of the kind Upload. It is an addition: ContractVersion
 // stays 7. The setup templates gain the function trimslash (Q-CLAMAV-16).
+// Facts also gains Bastion (ADR-238, bastion.md R-BAS-058): catalog.BastionFacts{ReplayHeaders []string, RateLimitedStatus int} with
+// the method RateLimited() (429 for 0), the headers a Bastion's cached answer of the format replays besides the core's and the status
+// of a rate limit, which reach every Bastion in the handshake's format table (R-BAS-057). The catalog names the core's headers,
+// catalog.RepresentationHeaders() and catalog.PerRequestHeaders(), refuses a declaration of one of them, of a hop-by-hop header, of
+// Set-Cookie, of a name with the prefix "Quader-" or outside net/http's canonical form, and a status other than 429 or 503 (Q-BAS-181,
+// Q-BAS-182); Facts.BoundPrefixes() is "/v2/" for the format that declares RegistryRoot (Q-BAS-183). Kit check 19 holds a format to
+// them. It is an addition: ContractVersion stays 10.
 
 type PackageStore interface {
 	Package(ctx context.Context, repo RepoRef, name string) (PackageRow, bool, error)

@@ -800,6 +800,9 @@ formats.ViewReadme: value = (repeated, place 2 of its group)
 formats.ViewSummary: value ViewFields = 1 << iota (place 0 of its group)
 formats.Virtual: value = catalog.Virtual
 formats.Volatile: value = (repeated, place 6 of its group)
+catalog.BastionFacts: field RateLimitedStatus int
+catalog.BastionFacts: field ReplayHeaders []string
+catalog.BastionFacts: method RateLimited() int
 catalog.Class: method Valid() bool
 catalog.Class: type string
 catalog.Entry: embedded Facts
@@ -817,6 +820,7 @@ catalog.Exposure: field Packages bool
 catalog.Exposure: field Tags bool
 catalog.Exposure: field Versioning Versioning
 catalog.Exposure: field Versions bool
+catalog.Facts: field Bastion BastionFacts
 catalog.Facts: field Caps bool
 catalog.Facts: field ChecksumAlwaysVerified bool
 catalog.Facts: field ChecksumRequireUnsupported bool
@@ -840,6 +844,7 @@ catalog.Facts: field SettingsSchema []byte
 catalog.Facts: field SystemOnly bool
 catalog.Facts: field UpstreamPresets []UpstreamPreset
 catalog.Facts: field Wiki bool
+catalog.Facts: method BoundPrefixes() []string
 catalog.Facts: method DefaultPreset() (UpstreamPreset, bool)
 catalog.Facts: method PresetFor(string) (UpstreamPreset, bool)
 catalog.Facts: method Supports(Class) bool
@@ -871,6 +876,8 @@ catalog.NewRegistry: func() *Registry
 catalog.Or: func(*Registry) *Registry
 catalog.PackageChanged: func(int64, string) string
 catalog.ParsePackageChanged: func(string) (int64, [32]byte, bool)
+catalog.PerRequestHeaders: func() []string
+catalog.RepresentationHeaders: func() []string
 catalog.ReservedPresetIDs: func() []string
 catalog.FormatAreas: value = []string{MetadataChangedArea}
 catalog.KindArtifact: value RequestKind = "artifact"

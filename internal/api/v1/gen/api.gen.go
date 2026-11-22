@@ -196,6 +196,24 @@ func (e BastionFeedEntryKind) Valid() bool {
 	}
 }
 
+// Defines values for BastionHandshakeFormatRateLimitedStatus.
+const (
+	N429 BastionHandshakeFormatRateLimitedStatus = 429
+	N503 BastionHandshakeFormatRateLimitedStatus = 503
+)
+
+// Valid indicates whether the value is a known member of the BastionHandshakeFormatRateLimitedStatus enum.
+func (e BastionHandshakeFormatRateLimitedStatus) Valid() bool {
+	switch e {
+	case N429:
+		return true
+	case N503:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionRepositoryReadRead.
 const (
 	BastionRepositoryReadReadFull    BastionRepositoryReadRead = "full"
@@ -7545,9 +7563,17 @@ type BastionHandshake struct {
 		TokenExpiresAt time.Time          `json:"tokenExpiresAt"`
 		TokenId        openapi_types.UUID `json:"tokenId"`
 	} `json:"bastion"`
-	Feed struct {
+
+	// BoundRepository The qualified name `<projectKey>/<repoKey>` the default endpoint's `host_roots` binds the host of `responseBaseUrl` to
+	// (R-EP-006, R-BAS-057); absent when it binds none.
+	BoundRepository *string `json:"boundRepository,omitempty"`
+	Feed            struct {
 		Cursor string `json:"cursor"`
 	} `json:"feed"`
+
+	// Formats One entry per registered format with routes: the facts of the format a Bastion needs before or without a response of
+	// the main installation (R-BAS-057). A format the table does not name gets no replay headers and the rate-limit status 429.
+	Formats      []BastionHandshakeFormat `json:"formats"`
 	Installation struct {
 		BaseUrl string `json:"baseUrl"`
 		Release string `json:"release"`
@@ -7557,6 +7583,27 @@ type BastionHandshake struct {
 	ResponseBaseUrl  string    `json:"responseBaseUrl"`
 	ServerTime       time.Time `json:"serverTime"`
 }
+
+// BastionHandshakeFormat A format's facts in the handshake's format table (R-BAS-057, R-BAS-058).
+type BastionHandshakeFormat struct {
+	// BoundPrefixes The literal bound-host patterns of the format (R-EP-006), paths from the host root.
+	BoundPrefixes []string `json:"boundPrefixes"`
+
+	// Id The format's name, the format segment of `/api/<format>/`.
+	Id string `json:"id"`
+
+	// RateLimitedStatus The status of a Bastion's own rate-limit refusals on the format's family.
+	RateLimitedStatus BastionHandshakeFormatRateLimitedStatus `json:"rateLimitedStatus"`
+
+	// RegistryRoot The one format whose routes the registry root `/v2/` serves (R-BAS-051).
+	RegistryRoot bool `json:"registryRoot"`
+
+	// ReplayHeaders The response headers a cached answer of the format replays besides the core's representation headers, in canonical form.
+	ReplayHeaders []string `json:"replayHeaders"`
+}
+
+// BastionHandshakeFormatRateLimitedStatus The status of a Bastion's own rate-limit refusals on the format's family.
+type BastionHandshakeFormatRateLimitedStatus int
 
 // BastionList defines model for BastionList.
 type BastionList struct {

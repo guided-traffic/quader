@@ -8,9 +8,10 @@ suite `make e2e SET=bastion` and `SET=bastion-long` (R-BAS-049, [developer/e2e.m
 [Q-BAS-21](#q-bas-21--internet-exposure-limits-blocking-failed-sign-in-timeouts-and-a-configurable-cache); the record is
 [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta); the development agent's
 decisions are Q-BAS-22 to Q-BAS-131, for the owner's walkthrough. The owner's decision of 2026-11-22 that a Bastion serves every
-format as the main installation does is specified in [Every format](#every-format) (R-BAS-050 to R-BAS-060, Q-BAS-165 to Q-BAS-180,
-H-1242 to H-1248) and not built; it supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, R-BAS-022, R-BAS-029,
-R-BAS-039 and the deferred table said about the formats a Bastion leaves out.
+format as the main installation does is specified in [Every format](#every-format) (R-BAS-050 to R-BAS-060, Q-BAS-165 to Q-BAS-185,
+H-1242 to H-1250); of it the two contracts and kit check 19 are built (R-BAS-058 and the wire of R-BAS-057), the rest is not; it
+supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, R-BAS-022, R-BAS-029, R-BAS-039 and the deferred table
+said about the formats a Bastion leaves out.
 
 This page specifies the Quader Bastion: a second, smaller deployment of Quader that is exposed to the internet, gives external
 parties read access to the content of a main installation with the main installation's own tokens, keeps a cache of what it
@@ -2461,10 +2462,16 @@ and [formats/ansible.md](formats/ansible.md#q-ans-25--no-exposure-rules-no-basti
 Q-ANS-25 by the same reasoning), each argued from the exposure rules of an endpoint, which a Bastion on the default endpoint does not
 meet (Q-BAS-4, Q-BAS-114).
 
-Status: specified on 2026-11-22 by the planner in the owner's absence, not built. The decisions are
+Status: specified on 2026-11-22 by the planner in the owner's absence. Built on 2026-11-22: the two contracts and kit check 19
+(package A of [developer/bastion.md](../developer/bastion.md#work-packages-and-what-they-own)): `catalog.Facts.Bastion` and the core's
+two header lists, check 19 over every format (R-BAS-058), and the interface at version 4 with the handshake's format table and
+bound repository, `Quader-Bastion-Counted` and the registry token's form and anonymous reading (the wire of R-BAS-052, R-BAS-057 and
+R-BAS-059); neither side uses them yet. The decisions are
 [Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-bastion-at-its-own-host-root) to
-[Q-BAS-180](#q-bas-180--the-tests-of-the-feature-each-behaviour-once-at-the-cheapest-tier-and-one-client-case-in-the-formats-own-set),
-the open gaps H-1242 to H-1248 of [What this does not cover](#what-this-does-not-cover), the record
+[Q-BAS-180](#q-bas-180--the-tests-of-the-feature-each-behaviour-once-at-the-cheapest-tier-and-one-client-case-in-the-formats-own-set)
+and the builder's [Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
+to [Q-BAS-185](#q-bas-185--a-registry-tokens-form-is-checked-as-the-token-service-decodes-it-and-the-anonymous-principal-is-its-claim-a),
+the open gaps H-1242 to H-1250 of [What this does not cover](#what-this-does-not-cover), the record
 [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 <details>
@@ -2577,7 +2584,9 @@ Priority: **MVP** · Covers: DIST-025
   holds no key ring, so its syntax is checked by form only: the prefix, base64url, one `.`, base64url, at most 4 KiB; a token outside the
   form answers `401 invalid_token` with the registry's challenge and `error="invalid_token"` without a request and counts as a failed
   authentication (R-BAS-036). Its answers are keyed by the SHA-256 of the string like every token's (R-BAS-019)
-  ([Q-BAS-167](#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial)).
+  ([Q-BAS-167](#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial)). The form is
+  `iface.RegistryTokenWellFormed`, both parts decoded as the token service decodes them
+  ([Q-BAS-185](#q-bas-185--a-registry-tokens-form-is-checked-as-the-token-service-decodes-it-and-the-anonymous-principal-is-its-claim-a)).
 - **Checked by the main installation.** A forward carries it unchanged; the check of R-BAS-011 hands a credential with the prefix
   `qdr_rgt_` to the authentication stage on a path below `/v2/` (`/v2/bastion-check`, served by no route), every other credential on
   `/api/bastion-check` as today, so the stage verifies the MAC, the expiry, the endpoint and the token behind it (R-OCI-005).
@@ -2593,7 +2602,8 @@ Priority: **MVP** · Covers: DIST-025
   principal is dropped from the request: its answers are those of `anonymous` (R-BAS-019), shared by every anonymous caller, and it is
   forwarded without `Authorization`, which the main installation serves as an anonymous request where artifacts are `public` (R-OCI-004
   step 1). Trusting the unverified bit can only lower what is read, because a client can always send no credential. A payload that does
-  not decode is a registry token like any other.
+  not decode is a registry token like any other. The reading is `iface.RegistryTokenAnonymous`: the member `a` true in the claims of
+  payload version 1 (Q-BAS-185).
 - **Its expiry is its own.** The subject the marking and the check report for a registry token carries the registry token's expiry
   (`auth.Credential.ExpiresAt` already is that), so no answer outlives it (R-BAS-020 rule 2). A request with a registry token past the
   expiry the Bastion holds is answered `401` with the registry's challenge and `error="invalid_token"` by the Bastion, and is not counted
@@ -2779,7 +2789,7 @@ Priority: **MVP** · Covers: quader-only
   "formats": [
     {"id": "npm", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 429, "boundPrefixes": []},
     {"id": "oci", "registryRoot": true,
-     "replayHeaders": ["Docker-Content-Digest", "Docker-Distribution-API-Version", "OCI-Filters-Applied", "Link"],
+     "replayHeaders": ["Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"],
      "rateLimitedStatus": 429, "boundPrefixes": ["/v2/"]},
     {"id": "clamav", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 503, "boundPrefixes": []}
   ],
@@ -2789,8 +2799,11 @@ Priority: **MVP** · Covers: quader-only
 
 *(example members, beside those of R-BAS-010)*
 
-- `replayHeaders` and `rateLimitedStatus` are `catalog.Facts.Bastion` of the format (R-BAS-058); `registryRoot` is
-  `catalog.Facts.RegistryRoot`; `boundPrefixes` are the literal bound-host patterns the format declares (endpoints.md R-EP-006). The
+- `replayHeaders` and `rateLimitedStatus` are `catalog.Facts.Bastion` of the format (R-BAS-058; `rateLimitedStatus` is
+  `Bastion.RateLimited()`, 429 where nothing is declared); `registryRoot` is `catalog.Facts.RegistryRoot`; `boundPrefixes` are the
+  literal bound-host patterns of the format (endpoints.md R-EP-006), `catalog.Facts.BoundPrefixes()`, derived from the registry root
+  ([Q-BAS-183](#q-bas-183--the-bound-host-prefixes-are-derived-from-the-registry-root-not-declared)). The interface's types are
+  `iface.HandshakeFormats` and `iface.HandshakeFormat` ([wire.go](../../internal/bastion/iface/wire.go)). The
   Bastion keeps the table until the next handshake; a format the table does not name gets the defaults (no replay headers, `429`).
   The Bastion knows the format of a request from its family: the format segment of `/api/<format>/`, the format whose entry says
   `registryRoot` for `/v2/`, none for `/files/`.
@@ -2821,7 +2834,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 
 | Duty | Why the Bastion needs it | Held by |
 |---|---|---|
-| A `Download` route serves immutable bytes for a path, with `Content-Length` and a strong `ETag` that is a content address (`"<hex>"` or `"sha256:<hex>"`) equal to the SHA-256 of the body | the Bastion keeps an artifact under its content address and verifies it; without one it passes the bytes through on every request | kit check 19 (new) |
+| A `Download` route serves immutable bytes for a path, with `Content-Length` and a strong `ETag` that is a content address (`"<hex>"` or `"sha256:<hex>"`) equal to the SHA-256 of the body | the Bastion keeps an artifact under its content address and verifies it; without one it passes the bytes through on every request | kit check 19 |
 | A `Metadata` or `Computed` document is the same for every reader of the whole repository, or the route is `Volatile` | a shared document is served to every `full` reader | kit check 12 (built) |
 | A document route answers a conditional request with its own validator `304` | the Bastion revalidates documents with conditional requests; a route that ignores them costs a whole transfer per revalidation | kit check 19 |
 | Every response header of a content route is a representation header of the core, a header of the core's own (a request ID, a rate-limit field), or one of `catalog.Facts.Bastion.ReplayHeaders` | a cached answer replays the representation headers and the declared ones, and drops every other | kit check 19 |
@@ -2837,11 +2850,23 @@ The contract a format keeps so that every Bastion serves it without a decision o
   `testformat` defect each (`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`,
   `RateLimitedStatusDiffers`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
   other checks. Runs in every format's `TestR_ARCH_010_Conformance`, without PostgreSQL.
+- **As built** ([Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
+  to [Q-BAS-184](#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason)): the core's
+  representation headers are `catalog.RepresentationHeaders()` (`Content-Type`, `Content-Encoding`, `Content-Language`,
+  `Content-Disposition`, `ETag`, `Last-Modified`, `Cache-Control`, `Expires`, `Vary`, `Repr-Digest` and the content headers of R-ARCH-007,
+  `X-Content-Type-Options`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`), its per-request headers `catalog.PerRequestHeaders()`
+  (`Content-Length`, `Content-Range`, `Accept-Ranges`, `Date`, `Age`, `X-Request-Id`, `X-Quader-Replica`, `Cache-Status`, `Retry-After`,
+  `Quader-Resolved-From`). The header duty judges the `200`, `206` and `304` of `Download`, `Metadata` and `Computed` routes, the answers a
+  Bastion keeps. `Fixture.NoBastion` exempts a route from the content-address and the conditional duty with a reason, never from the header
+  duty; npm's root, dist-tags, keys and attestations and OCI's tags list are listed there with [H-1249](#h-1249--five-documents-of-npm-and-oci-carry-no-validator-so-a-bastion-fetches-them-whole-once-per-metadata-period).
+  Register refuses a declaration that breaks the rules above (`catalog.BastionFacts`); `catalog.Facts.BoundPrefixes()` is `/v2/` for the
+  registry root ([Q-BAS-183](#q-bas-183--the-bound-host-prefixes-are-derived-from-the-registry-root-not-declared)).
 
 Acceptance criteria:
 
-- Unit (`internal/formats/formattest`): each defect fails check 19 and no other check; npm, NuGet, OCI, Debian, Ansible Galaxy, the
-  ClamAV definitions and generic pass it (`TestR_BAS_058_KitCheck19`).
+- Unit (`internal/formats/formattest/testformat`): each defect fails check 19 and no other check (`TestR_BAS_058_KitCheck19`); npm,
+  NuGet, OCI, Debian, Ansible Galaxy, the ClamAV definitions and generic pass it (each format's `TestR_ARCH_010_Conformance`; generic,
+  which has no routes, skips it with its reason).
 
 ### R-BAS-059 · Downloads, usage and audit for every format
 Priority: **MVP** · Covers: RMT-041
@@ -2849,8 +2874,8 @@ Priority: **MVP** · Covers: RMT-041
 The existing rules hold for every format: a hit at the Bastion is not counted at the main installation (usage-and-limits.md R-LIM-001,
 "Later"), and a download the Bastion serves from its cache is reported to the main installation's audit (R-BAS-016, Q-BAS-13).
 
-- **What a download is, is the main installation's.** The marking gains `Quader-Bastion-Counted: download` on a response whose serving
-  counted a download at the main installation (the item store's download recording notes it, as its lookups note `absent`, Q-BAS-70);
+- **What a download is, is the main installation's.** The marking gains `Quader-Bastion-Counted: download` (`iface.Marking.Counted`) on a
+  response whose serving counted a download at the main installation (the item store's download recording notes it, as its lookups note `absent`, Q-BAS-70);
   the Bastion records it on the entry and reports every serve of that entry from its cache, a hit or a check answered `304`
   ([Q-BAS-177](#q-bas-177--a-bastion-reports-a-hit-as-a-download-when-the-main-installation-counted-its-fill-as-one)).
 - **An image.** By the main installation's rule (formats/oci.md Q-OCI-222), a pull of a tag is the download of its manifest by the tag or
@@ -6354,6 +6379,101 @@ owner's of 2026-11-20 ("Tests stay runnable", in the repository's working rules)
 
 **Choice:** (a). **Applied in the spec:** R-BAS-060.
 
+### Q-BAS-181 · The core's representation and per-request headers are two lists of the catalog, and the content headers of R-ARCH-007 are representation headers
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-BAS-058's header duty and Q-BAS-171 speak of "the core's representation headers" and "a header of the core's own (a
+request ID, a rate-limit field)" without listing them. The Bastion keeps ten names in `keepHeader` and drops `X-Quader-Replica`,
+`Cache-Status`, `Set-Cookie` and `X-Request-Id` in `neverReplayed` ([respond.go](../../internal/bastion/engine/respond.go)). The kit, the
+catalog's rule for a declaration and the Bastion need the same lists; the Bastion may not import the catalog (R-BAS-001) and the kit
+may not import the interface (Q-ARCH-216). Read in the code: `keepHeader` does not keep the content headers of R-ARCH-007 that
+`formats.ServeRoute` puts on every content answer, so a hit from a Bastion's cache carries none of them (H-1250).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two functions of the leaf `catalog`: `RepresentationHeaders` (the ten of `keepHeader` and `X-Content-Type-Options`, `Content-Security-Policy`, `Cross-Origin-Resource-Policy`) and `PerRequestHeaders` (`Content-Length`, `Content-Range`, `Accept-Ranges`, `Date`, `Age`, `X-Request-Id`, `X-Quader-Replica`, `Cache-Status`, `Retry-After`, `Quader-Resolved-From`) (chosen) | One place the kit, the catalog and a test of the engine read | A cached answer carries the headers every content answer of the main installation carries; a format cannot declare a header of the core | The engine keeps its list in code, held to the catalog's by a test (a test may import the catalog) |
+| (b) The lists in the interface `iface` | The wire contract both sides import | Nothing to keep in step on the Bastion's side | Neither the kit nor the catalog may import the interface: a second copy |
+| (c) The ten of `keepHeader` as built; the content headers per answer | Nothing changes at the Bastion | No change of the engine | A hit carries no `nosniff`, no sandbox policy and no resource policy (H-1250) |
+
+**Choice:** (a). **Rationale:** the lists are facts about the core that every format meets, and the catalog is the leaf every layer
+reads. The content headers are the same for every caller of a Bastion, since no session cookie reaches the main installation through it
+(R-BAS-021), so replaying them hands no caller another's answer. The builder would revisit (b) if the Bastion's tree were allowed to
+import the catalog.
+
+**Applied in the spec:** R-BAS-053, R-BAS-058; code: `catalog.RepresentationHeaders`, `catalog.PerRequestHeaders`
+([bastion.go](../../internal/formats/catalog/bastion.go)), kit check 19.
+
+### Q-BAS-182 · Header names are declared in net/http's canonical form
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-BAS-058 asks for "canonical header names"; the example of R-BAS-057 spelled `Docker-Distribution-API-Version` and
+`OCI-Filters-Applied`, which net/http writes and compares as `Docker-Distribution-Api-Version` and `Oci-Filters-Applied`. HTTP field
+names compare without regard to case.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The form of `http.CanonicalHeaderKey`; Register refuses another (chosen) | One spelling per name | An exact comparison in the kit, the catalog and the Bastion; the spelling net/http puts on the wire | The table's spelling is not the distribution specification's prose |
+| (b) Any case, folded where compared | The specification's spelling | Readable declarations | Every reader folds; two declarations that differ in case both pass |
+| (c) The specification's spelling, canonicalized when read | Two forms of one name | Readable declarations | The handshake and the code disagree in spelling |
+
+**Choice:** (a); the example of R-BAS-057 follows it. **Applied in the spec:** R-BAS-057, R-BAS-058; code: `checkBastion` in
+[bastion.go](../../internal/formats/catalog/bastion.go), OCI's facts in [format.go](../../internal/formats/oci/format.go).
+
+### Q-BAS-183 · The bound-host prefixes are derived from the registry root, not declared
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-BAS-057's `boundPrefixes` are "the literal bound-host patterns the format declares (R-EP-006)". No format declares any in
+the code: the dispatcher reads the registry root's binding from `catalog.Facts.RegistryRoot` (`Dispatcher.BoundRepository` in
+[registry_target.go](../../internal/api/dispatch/registry_target.go)), and no other format has a bound host.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `catalog.Facts.BoundPrefixes()` is `/v2/` for the format that declares the registry root and empty for every other (chosen) | Derived in the catalog | One source with the dispatcher's routing; nothing declared that could disagree with it | A format with a bound host of its own (Terraform's discovery) adds its declaration then |
+| (b) A declared field `Facts.BoundPrefixes` now | The format states it | Literal | A declaration nothing in the dispatcher reads |
+| (c) The handshake derives the list itself | No contract change | Smallest | The knowledge outside the catalog, where the next format's author does not look |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-057; code: `Facts.BoundPrefixes` in [bastion.go](../../internal/formats/catalog/bastion.go).
+
+### Q-BAS-184 · Kit check 19 judges what a Bastion keeps, and a route is exempt from two duties only, with a reason
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-BAS-058 lists the duties; open were the answers they judge, whether a document without a validator fails, and the form of
+an exemption ("listed in the fixture with its reason"). The check run over the seven formats found five document routes without an
+`ETag`: npm's root, dist-tags, keys and attestations, and OCI's tags list; every `Download` route and every header passed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The header duty judges the `200`, `206` and `304` of `Download`, `Metadata` and `Computed` routes; a `Download` answer needs `Content-Length` and a content address equal to its body's SHA-256; a served document needs an `ETag` and `304` to it; `Fixture.NoBastion` exempts a route from these two duties with a reason, never from the header duty, and refuses a stale entry; the five routes are listed with H-1249 (chosen) | Strict for every format to come | The gap of today is named in the fixtures and in the specification | Five entries in two fixtures until the handlers carry validators |
+| (b) A document without an `ETag` passes; only one that ignores its own fails | Lenient | No entry | A format to come without validators passes: the cost the duty exists to find |
+| (c) The five routes get validators in this package | No exemption | No gap | Format handler code outside the package's directories and scope |
+
+**Choice:** (a). The in-memory host of the kit answers `If-None-Match` with an item's content address `304`, as the production Host does
+(`edge.ServeItem`), so a document a format serves from the item store meets the duty as in production. A format that writes a download
+itself fails check 19 as well as check 16 (`testformat.WritesOwnDownload`). **Applied in the spec:** R-BAS-058; code: kit check 19
+([checks_bastion.go](../../internal/formats/formattest/checks_bastion.go)), `Fixture.NoBastion`.
+
+### Q-BAS-185 · A registry token's form is checked as the token service decodes it, and the anonymous principal is its claim a
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-BAS-052 names the form (the prefix, base64url, one `.`, base64url, at most 4 KiB) and the unverified reading of
+`1:<key id>:<claims>`. Open were how strict base64url is, whether the length of the MAC is checked, and which claim names the anonymous
+principal. The token service writes the member `a` true into the token of a request without a credential
+([token.go](../../internal/auth/registrytoken/token.go)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Both parts decode as base64url without padding and with strict trailing bits, as the token service's `Verify` decodes them; the MAC's length is not checked; the anonymous principal is `a` true in the claims of payload version 1, unknown members ignored (chosen) | `iface.RegistryTokenWellFormed`, `iface.RegistryTokenAnonymous` | What the main installation refuses for its encoding is refused without a request; a new member of the claims does not hide the anonymous claim | The interface reads one member of the token service's own JSON; a test issues tokens with the real encoder to hold the two together |
+| (b) The alphabet only | Simpler | Fewer rules | A value that cannot decode costs the main installation a request |
+| (c) Also the MAC's 43 characters and strictly decoded claims | Closer to `Verify` | Fewer forwarded failures | Every change of the token's MAC or claims becomes a change of the interface |
+
+**Choice:** (a). Trusting the unverified claim can only lower what is read (Q-BAS-168). **Applied in the spec:** R-BAS-052; code:
+[regtoken.go](../../internal/bastion/iface/regtoken.go), `TestQ_BAS_168_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller`.
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -6973,3 +7093,31 @@ on the new binding, so nothing is read that the caller may not read; a `full` an
 the old repository's bytes to a caller who reads it in full until the next handshake. What makes it real: an administrator who moves a
 bound host to another repository while clients pull through the Bastion. What closes it: a `settings` feed entry for a change of
 `host_roots`, which is configuration and journals nothing today.
+
+### H-1249 · Five documents of npm and OCI carry no validator, so a Bastion fetches them whole once per metadata period
+
+Stage: R-BAS-023, the revalidation of a shared document, for npm's routes `npm.root`, `npm.disttags.get`, `npm.keys.get` and
+`npm.attestations.get` and OCI's `oci.tags.list`. Subject: the request and transfer load on the main installation, not a confidentiality
+property.
+
+Live on every Bastion that serves npm; for OCI once a Bastion serves `/v2/` (R-BAS-051). Kit check 19 found that these routes answer
+without an `ETag` (R-BAS-058, [Q-BAS-184](#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason));
+their fixtures list them in `NoBastion` with this gap as the reason. A Bastion keeps such a document as any other, but its revalidation
+after `metadata_revalidate_after` cannot be conditional, so the main installation renders and sends the whole document again: a few
+hundred bytes for the root, the dist-tags and the keys, a few KiB for the attestations of a version, and up to a page of 1,000 names for a
+tags list. The cost is one transfer per document, period and replica, not per caller. What makes it real: many repositories of these
+formats read through a Bastion, where the documents add up. What closes it: an `ETag` and an answer of `If-None-Match` with `304` in each
+of the five handlers, after which their `NoBastion` entries are removed and check 19 holds them.
+
+### H-1250 · A hit from a Bastion's cache carries none of the content headers of R-ARCH-007
+
+Stage: R-BAS-022 and R-BAS-023, the replay of a kept entry (`keepHeader` in
+[respond.go](../../internal/bastion/engine/respond.go)). Subject: a browser that renders an answer of a Bastion's host.
+
+Live on every Bastion today, for every format. A hit carries the representation headers `keepHeader` keeps and not
+`X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox; default-src 'none'` or `Cross-Origin-Resource-Policy`, which every
+content answer of the main installation carries (R-ARCH-007); a miss passes them on. What limits it: every artifact keeps
+`Content-Disposition: attachment`, so a browser saves a package file instead of rendering it; documents carry an explicit `Content-Type`
+of JSON or XML; a Bastion's host has no session and no UI to reach (R-BAS-003). What makes it real: an answer a browser sniffs or renders
+on the Bastion's host, such as a document of a format to come with a type a browser renders. What closes it: the engine replays
+`catalog.RepresentationHeaders()`, which counts the three ([Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)).

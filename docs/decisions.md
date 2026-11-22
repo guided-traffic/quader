@@ -2071,8 +2071,11 @@ signed content between repositories (Q-SIG-211 (c)).
 
 ### ADR-238 · A Bastion serves every format: the registry root, the formats' Bastion facts and the handshake's format table
 
-**Status:** The scope is the owner's decision of 2026-11-22; the design was decided by the planner in the owner's absence and is not
-built. An addition to the format contract and the Bastion interface's version 4.
+**Status:** The scope is the owner's decision of 2026-11-22; the design was decided by the planner in the owner's absence. An addition
+to the format contract (`ContractVersion` stays 10) and the Bastion interface's version 4. Built on 2026-11-22: the two contracts and
+kit check 19 (`catalog.Facts.Bastion`, `catalog.RepresentationHeaders`, `catalog.PerRequestHeaders`, `catalog.Facts.BoundPrefixes`; the
+handshake's `formats` and `boundRepository`, `Quader-Bastion-Counted`, the registry token's form; the builder's decisions Q-BAS-181 to
+Q-BAS-185). The two sides that use them are not built.
 
 **Context.** The owner read that a Bastion serves neither container images nor Debian and decided: "Er soll alles liefern wie die
 Hauptinstanz." Both exclusions were deferrals of the development agent (Q-OCI-23, Q-DEB-26, and Q-ANS-25 for Ansible Galaxy), argued
@@ -2099,7 +2102,7 @@ can defer again).
 **Revisit condition:** a measurement through a Bastion in which the conditional requests of registry tokens matter (then read shapes per
 package, Q-BAS-167 (b)); a format that needs a path family INV-6 does not have.
 
-**Spec:** [bastion.md](spec/bastion.md) R-BAS-050 to R-BAS-060, Q-BAS-165 to Q-BAS-180; [formats/oci.md](spec/formats/oci.md) Q-OCI-23;
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-050 to R-BAS-060, Q-BAS-165 to Q-BAS-185; [formats/oci.md](spec/formats/oci.md) Q-OCI-23;
 [formats/debian.md](spec/formats/debian.md) Q-DEB-26; [formats/ansible.md](spec/formats/ansible.md) Q-ANS-25.
 
 ## Design invariants
@@ -10497,6 +10500,11 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-BAS-178](spec/bastion.md#q-bas-178--a-host-the-main-installation-binds-is-served-by-a-bastion-whose-base-url-is-that-host) | Can a Bastion serve a bound host? Decided by the planner; put to the owner | (a) yes: the handshake names the bound repository; one release per bound host | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
 | [Q-BAS-179](spec/bastion.md#q-bas-179--a-format-to-come-is-served-by-a-bastion-through-its-route-kinds-and-its-declared-facts-without-a-decision-of-its-own) | Does a new format need a decision to be served by a Bastion? Decided by the planner | (a) no: its route kinds, its declared facts and kit check 19 | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
 | [Q-BAS-180](spec/bastion.md#q-bas-180--the-tests-of-the-feature-each-behaviour-once-at-the-cheapest-tier-and-one-client-case-in-the-formats-own-set) | How is the feature tested? Decided by the planner | (a) unit and kit, one integration replay per format with behaviour of its own, one e2e case in the set `oci`, real clients measured once | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
+| [Q-BAS-181](spec/bastion.md#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers) | Which headers are the core's? Decided by the builder | (a) two lists of the catalog; the content headers of R-ARCH-007 are representation headers a cached answer replays | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
+| [Q-BAS-182](spec/bastion.md#q-bas-182--header-names-are-declared-in-nethttps-canonical-form) | In which spelling are header names declared? Decided by the builder | (a) net/http's canonical form | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
+| [Q-BAS-183](spec/bastion.md#q-bas-183--the-bound-host-prefixes-are-derived-from-the-registry-root-not-declared) | Where do a format's bound-host prefixes come from? Decided by the builder | (a) derived from the registry root in the catalog | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
+| [Q-BAS-184](spec/bastion.md#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason) | What does kit check 19 judge, and how is a route exempt? Decided by the builder | (a) the answers a Bastion keeps; `NoBastion` exempts from the content-address and the conditional duty with a reason | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
+| [Q-BAS-185](spec/bastion.md#q-bas-185--a-registry-tokens-form-is-checked-as-the-token-service-decodes-it-and-the-anonymous-principal-is-its-claim-a) | How strictly is a registry token's form checked, and which claim is anonymous? Decided by the builder | (a) both parts decoded as the token service does; the claim `a` of payload version 1 | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
 | [Q-ROAD-1](coverage/roadmap.md#q-road-1--generic-local-repositories-in-m1) | Generic local repositories in M1? | (a) the local class of the generic format is built in M1 as MVP, from a new spec page `formats/generic.md`; remote and virtual generic stay P1 | — |
 | [Q-ROAD-2](coverage/roadmap.md#q-road-2--backup-and-restore-in-the-beta) | Backup and restore in the beta? | (e) Quader's own backup create and restore, the platform layer (R-HA-023, R-HA-025) and the revocation journal (R-HA-054, R-AUTHZ-031) are MVP and gate in M5; their work runs in its own lane from M1 on, and M0 gives every table its export class. Revisited 2026-10-28: was (a), both kept at P1 and the journal after 1.0 | [ADR-094](#adr-094--a-configurable-backup-job-writes-consistent-backups-to-s3), [ADR-078](#adr-078--restores-keep-metadata-and-blobs-consistent-by-ordering-not-by-coordination) |
 | [Q-ROAD-3](coverage/roadmap.md#q-road-3--ecosystems-the-owners-teams-use-after-npm-and-nuget) | Which ecosystems after npm and NuGet? | (a) the P1 format order of the roadmap stands; revisited 2026-10-29: Ansible Galaxy (owner demand) is F0 and P1, ahead of F1 | — |

@@ -35,6 +35,11 @@ const (
 	// HeaderRoute is [RouteReadWithBody] on the 204 answer to a probe of a read
 	// route that takes a body (R-BAS-014).
 	HeaderRoute = "Quader-Bastion-Route"
+	// HeaderCounted is [CountedDownload] on the response whose serving counted a
+	// download at the main installation (R-BAS-059, Q-BAS-177): the Bastion records
+	// it on the entry and reports every serve of that entry from its cache. It is
+	// a member of the [Marking] ([Marking.Counted]).
+	HeaderCounted = "Quader-Bastion-Counted"
 )
 
 // HeaderPrefix starts every header of the interface. The main installation never
@@ -50,6 +55,9 @@ const (
 	// route is a read route that takes a body, so the Bastion forwards the real
 	// request (R-BAS-014).
 	RouteReadWithBody = "read-with-body"
+	// CountedDownload is the value of [HeaderCounted]: serving the response
+	// counted a download (R-BAS-059).
+	CountedDownload = "download"
 	// BearerScheme is the scheme of the Bastion token in [HeaderAuthorization] and
 	// in Authorization on the interface routes.
 	BearerScheme = "Bearer"

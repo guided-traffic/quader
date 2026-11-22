@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"slices"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -49,6 +50,7 @@ const CheckMalware Check = 17
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
 	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware, CheckSignatures,
+	CheckBastion,
 }
 
 // name is the short name of the check.
@@ -88,12 +90,23 @@ func (c Check) name() string {
 		return "malware answers"
 	case CheckSignatures:
 		return "signatures"
+	case CheckBastion:
+		return "bastion"
 	}
 	return "unknown"
 }
 
 // servesDownloads reports whether the check serves the fixture's Download routes, so that a format with one cannot skip it.
 func (c Check) servesDownloads() bool { return c == CheckAdmission || c == CheckMalware }
+
+// judgesRoutes reports whether the check judges every route of a format, so that a format with routes cannot skip it.
+func (c Check) judgesRoutes() bool {
+	switch c {
+	case CheckAmbiguity, CheckHeaders, CheckClassify, CheckShared, CheckAuthzPaths, CheckBastion:
+		return true
+	}
+	return false
+}
 
 // String is the name of the subtest: "R-ARCH-010 check 7 content headers".
 func (c Check) String() string {
@@ -149,6 +162,12 @@ type Fixture struct {
 	// no such route, so the list is where that shows; it refuses an entry for a route
 	// that a content case serves.
 	NoContent map[string]string
+	// NoBastion lists routes of kind Download, Metadata or Computed whose answers cannot meet a duty of check 19 by design, with
+	// the reason: a Download answer without a content address, or a document that cannot answer its own validator with 304. A
+	// Bastion then passes such an answer through, or transfers the document whole on every revalidation (R-BAS-058). The header
+	// duty has no exemption. Check 19 refuses an entry without a reason, for a route no content case served, or for a route whose
+	// answers meet both duties.
+	NoBastion map[string]string
 	// Changes are the writes of check 9: every storage hook and every Upload,
 	// Delete or Admin route that changes package rows.
 	Changes []ChangeCase
@@ -359,6 +378,22 @@ func Evaluate(f formats.Format, fx Fixture) Report {
 	return out
 }
 
+// EvaluateChecks runs the given checks only, in the kit's order, and returns what they found; a check the kit does not run is left
+// out. The kit's own tests use it where a full Evaluate would spend its time on checks the case cannot change (check 6 measures
+// Inspect against crafted inputs of gigabytes).
+func EvaluateChecks(f formats.Format, fx Fixture, checks ...Check) Report {
+	out := make(Report, 0, len(checks))
+	for _, c := range kitChecks {
+		if slices.Contains(checks, c) {
+			out = append(out, runCheck(c, f, fx))
+		}
+	}
+	return out
+}
+
+// Checks returns the checks the kit runs, in order.
+func Checks() []Check { return slices.Clone(kitChecks[:]) }
+
 // Run runs the conformance kit as subtests of t: one per check it runs, named
 // "R-ARCH-010 check N <name>". A format calls it from its own test:
 //
@@ -431,6 +466,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.malware()
 	case CheckSignatures:
 		r.signatures()
+	case CheckBastion:
+		r.bastion()
 	}
 	return res
 }
@@ -470,7 +507,7 @@ func (r *run) skipProblem(c Check, reason string) string {
 	}
 	routes := len(r.f.Routes())
 	switch {
-	case (c == CheckAmbiguity || c == CheckHeaders || c == CheckClassify || c == CheckShared || c == CheckAuthzPaths) && routes > 0:
+	case c.judgesRoutes() && routes > 0:
 		return fmt.Sprintf("%s is skipped (%s) and the format has %d routes", c, reason, routes)
 	case c == CheckRewrite && r.f.Remote() != nil:
 		return fmt.Sprintf("%s is skipped (%s) and the format has a remote adapter", c, reason)

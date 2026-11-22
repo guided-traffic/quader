@@ -123,6 +123,11 @@ func conformance() formattest.Fixture {
 				},
 			},
 		}...),
+		// A document a Bastion keeps that carries no validator yet: it fetches the tags list whole once per metadata period instead
+		// of revalidating it (bastion.md H-1249).
+		NoBastion: map[string]string{
+			routeTagsList: "a page of the tags list is rendered without an ETag (bastion.md H-1249)",
+		},
 		NoRevision: map[string]string{
 			// A blob is no row of the format and no package version: removing one changes what no document renders.
 			routeBlobDelete:  "a blob item is no package row and no row of the format's tables: removing one changes no document the revision keys",

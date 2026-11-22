@@ -99,8 +99,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		for _, r := range m.Reqs {
 			count[r.Priority]++
 		}
-		if len(m.Reqs) != 1149 || count[prioMVP] != 707 || count[prioP1] != 401 || count[prioP2] != 41 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1149 (707, 401, 41)",
+		// 1160 since bastion.md's Every format (R-BAS-050 to R-BAS-060, eleven MVP requirements of 2026-11-22).
+		if len(m.Reqs) != 1160 || count[prioMVP] != 718 || count[prioP1] != 401 || count[prioP2] != 41 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1160 (718, 401, 41)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

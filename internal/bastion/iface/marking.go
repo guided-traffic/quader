@@ -71,11 +71,16 @@ type Marking struct {
 	Subject    Subject
 	// Interface is the main installation's interface version.
 	Interface int
+	// Counted says that serving the response counted a download at the main
+	// installation ([HeaderCounted], R-BAS-059): what a download is stays the main
+	// installation's rule for every format, and the Bastion reports every serve of
+	// such an entry from its cache.
+	Counted bool
 }
 
 // Set writes the marking headers. A marking without a repository (a response
 // that addresses none, class pass) leaves [HeaderRepository] and [HeaderRead]
-// out.
+// out; one that counted no download leaves [HeaderCounted] out.
 func (m Marking) Set(h http.Header) {
 	h.Set(HeaderClass, string(m.Class))
 	if m.Repository != "" {
@@ -86,6 +91,9 @@ func (m Marking) Set(h http.Header) {
 	}
 	h.Set(HeaderSubject, m.Subject.Header())
 	h.Set(HeaderInterface, strconv.Itoa(m.Interface))
+	if m.Counted {
+		h.Set(HeaderCounted, CountedDownload)
+	}
 }
 
 // StripMarking removes every header with [HeaderPrefix] from a response header
@@ -136,6 +144,12 @@ func ParseMarking(h http.Header) (m Marking, ok bool, err error) {
 			return Marking{}, true, fmt.Errorf("%w: %s %q", ErrMarking, HeaderInterface, v)
 		}
 		m.Interface = n
+	}
+	if v := h.Values(HeaderCounted); len(v) > 0 {
+		if len(v) != 1 || v[0] != CountedDownload {
+			return Marking{}, true, fmt.Errorf("%w: %s %q", ErrMarking, HeaderCounted, v)
+		}
+		m.Counted = true
 	}
 	return m, true, nil
 }

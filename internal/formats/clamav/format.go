@@ -64,6 +64,9 @@ func (Format) Descriptor() formats.Descriptor {
 			SystemOnly:       true,
 			PatternSubject:   formats.SubjectPath,
 			PackageNames:     true,
+			// A rate limit answers 503 (R-CLAMAV-005, Rendered below), and so do a Bastion's own refusals of its limits on the
+			// format's family (bastion.md R-BAS-056).
+			Bastion: catalog.BastionFacts{RateLimitedStatus: http.StatusServiceUnavailable},
 		},
 		ContractVersion: formats.ContractVersion,
 		Names:           dbNames{},

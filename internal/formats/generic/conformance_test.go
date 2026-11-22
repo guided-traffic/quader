@@ -38,6 +38,7 @@ func conformance(t testing.TB) formattest.Fixture {
 			formattest.CheckView:       "no package screens: the format has no view adapter, its files are listed by the generic layer",
 			formattest.CheckShared:     "no routes: the documents of /files/ are the generic layer's, listed per caller by R-STOR-017",
 			formattest.CheckAuthzPaths: "no routes: /files/ decides every request on its canonical path (R-EP-014), tested with the generic layer",
+			formattest.CheckBastion:    "no routes: a Bastion keeps what /files/ answers by the marking of the generic layer (R-BAS-013), whose files carry their content address (R-STOR-012)",
 		},
 	}
 }
