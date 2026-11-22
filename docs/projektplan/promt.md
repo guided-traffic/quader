@@ -1652,11 +1652,33 @@ runs are in `git log`; this section holds the current state.
   the copies, the start check per connection; its builder keeps the tree whole for one connection, and the
   chart's part lands with it). **The first stage's specification is on `main` since 11:39** ("With the owner",
   the topic of 2026-11-22, has what it says, the planner's three questions for him and the build plan of six
-  packages). **Next as agents become free** (four run: the Bastion's B and C, the links' package 1, this one):
-  the chart's part of package E, then the planner of the second stage (encryption).
-- **In work since 2026-11-22, 11:29: package 1 of the signed links** (the format contract's field and the
-  kit's twentieth check). **The third stage's specification is on `main` since 11:28** ("With the owner", the
-  topic of 2026-11-22, has what it says, the planner's question for him and the build plan).
+  packages). **Next as agents become free** (four run: the Bastion's B and C, this one, and since 12:02 the
+  chart's part of package E): the planner of the second stage (encryption).
+- **In work since 2026-11-22, 12:02: the chart's part of package E of the several connections** (the list of
+  connections and their Secrets in the chart, what it refuses, the alerts, the development profile; it builds
+  from the specified shape, waits for package A's commit, then runs the chart's gates and proves the profile
+  once on a kind cluster of its own; it lands in one push with A).
+- **Landed on 2026-11-22 at 12:00: package 1 of the signed links, the format contract's declaration and the kit's
+  twentieth check** (a commit of the type `refactor`, no release; R-STOR-071 is implemented; decisions
+  Q-STOR-295 and Q-STOR-296; its builder worked from 11:29 to 11:58). A route of a format says whether every
+  client of the format checks the bytes against a digest, with what it checks against and the evidence; a
+  route that says nothing streams; the registration refuses a declaration on anything but a `GET` of a
+  download and one without its evidence. The kit's check serves every content case of a declaring route
+  again and holds it to the stored blob. Declared: the registry's blob, npm's tarball, Ansible Galaxy's
+  collection artifact; NuGet, Debian, generic and the ClamAV definitions declare nothing. Nothing reads the
+  declaration yet, so every download streams as before. **Two disagreements its builder found in the
+  specification:** a defect of the test format cannot fail the new check alone, because two older checks
+  catch it first (settled by its decision: each defect is tested with the exemption another check grants its
+  route); and the rule "a client family nobody read declares nothing" stands against a table that declares the
+  registry and npm while Podman, CRI-O, the Docker Engine's older pull path, pnpm and Yarn are not shown, so the
+  pages now say that the second package's end-to-end cases show those families before its serve point lands,
+  and a family that accepts altered bytes takes its route's declaration back. **By the development agent on
+  the rebased commit, each exit 0:** build, the full unit run, generate-check, the evidence regenerated without
+  a difference (its one conflict was the generated checklist), links and check, the complexity check, the lint,
+  the count test; the kit over every format after the merge; the diff holds no name the white-label rule
+  forbids. **Its tests cost** about 0.8 s of the unit job, nothing elsewhere. **Not verified:** whether any real
+  client refuses altered bytes, which is the second package's work. Its worktree and branch are removed. The
+  push ended the pipeline run of the Bastion's package A at its long jobs; the new run covers both commits.
 - **In work since 2026-11-22, 10:51: the planners of the storage topic's first and third stage** (several
   connections with the reconciliation and the scrub; signed links; the third reported at 11:26, the first at
   11:38; both specifications are on `main`). The owner answered all fifteen decisions
@@ -3916,8 +3938,8 @@ that reads the bucket**
   altered bytes in the apt clients' end-to-end set (about 15 s, in its own leg), that apt refuses them; it is a
   proof with the real tool, not a behaviour he would choose. **Build plan, three packages** (the developer page
   of the download links): 1 the contract's field and the kit's check; 2 the serve point, the store and the
-  limits, the whole feature behind the API; 3 the API, the settings page and the repository's section. **In work
-  since 11:29: package 1.** Package 2 owns directories the Bastion's package B and the first stage's builders
+  limits, the whole feature behind the API; 3 the API, the settings page and the repository's section. **Package 1
+  is landed since 12:00 (run record).** Package 2 owns directories the Bastion's package B and the first stage's builders
   work in, so it starts when B has landed and the first stage's build plan is known. **Its tests cost**
   (estimates): about 3 s of unit tests, 10 to 20 ms per format in the kit, about 2 s of UI tests, about 3 s in
   the integration area `blob`, one end-to-end case per format that declares (30 s `oci`, 20 s `npm`, 15 s
