@@ -1861,9 +1861,15 @@ runs are in `git log`; this section holds the current state.
   about 0.3 s of the unit job, nothing in the integration or end-to-end legs. **Not verified:** any real client
   through a Bastion (package C); a deployment that runs the role `api` apart (read and a unit test); whether
   `apt update` works through a Bastion today. Its worktree and branch are removed.
-- **Package D of "a Bastion serves every format" reported at 14:42 and is in the landing gates since 14:43** (one
-  commit of the type `test`, 25 files; its builder worked from 13:37 to 14:42; rebased onto `main` by the
-  development agent without a conflict). **Built:** the case of an image through a Bastion in the end-to-end
+- **Landed on 2026-11-22 at 14:50: package D of "a Bastion serves every format", the last of the four. Images,
+  Debian and every other format through a Bastion are built, shown with the real clients and described in the
+  manual** (one commit of the type `test`, 25 files, no release; its builder worked from 13:37 to 14:42; rebased
+  onto `main` by the development agent without a conflict; on the rebased commit build, the full unit run,
+  generate-check, the evidence regenerated without a difference with links, check and the count test, the
+  complexity check, chart lint and the whole of the chart tests, the vet of the end-to-end sources, the web
+  rule check of the manual's pages and the lint exit 0, the wording scan is clean and no line of the evidence
+  record is by hand; its worktree and branch are removed; the owner's UI backend runs on it since 14:51).
+  **Built:** the case of an image through a Bastion in the end-to-end
   set of the registry, which installs a Bastion release of one replica for itself and removes it: `GET /v2/` at
   the Bastion's host answers the Bastion's own `401` with its own realm; Docker logs in and pulls with the
   snippets of the client setup, unchanged, and holds the pushed digest; a second pull takes no artifact's
@@ -1883,10 +1889,10 @@ runs are in `git log`; this section holds the current state.
   the profile dropped the builder's local image tag; green on the rerun with the tag in place; in the pipeline
   the tag is the one the set expects). **Not verified:** the seconds on a runner of the pipeline; the two
   other sets of the registry, which were not run; the images for the other processor architecture.
-  **The order of the pushes, decided by the development agent:** package D is pushed alone, as soon as its
-  gates are through, and its legs of the Bastion and of the registry finish before the several connections
-  are pushed, so that the Bastion's end-to-end set, which the pipeline has not yet run on package C, gets a
-  result that no change of the store can blur.
+  **The order of the pushes, decided by the development agent:** package D was pushed alone, and its legs of
+  the Bastion and of the registry finish before the several connections are pushed, so that the Bastion's
+  end-to-end set, which the pipeline has not yet run on package C, gets a result that no change of the store
+  can blur. **Open until that run has ended:** the Bastion's end-to-end set and the new case in the pipeline.
 - **In work since 14:43: the proof of the development profile for the several connections,** which the chart's
   builder had to leave out for want of memory and resumes now that the other cluster is gone: the profile as
   the end-to-end legs install it, on a kind cluster of its own, with the set of the reference client, and in
@@ -4592,7 +4598,8 @@ open questions are in the list above**
 - **What frees a release once the full gate returns** with the first stable release, when a format's client runs only on its
   own change and in the nightly (said to him on 2026-11-20 as a question for later; a green nightly on the commit is one way).
 
-**Decided by the owner on 2026-11-22, being specified**
+**Decided by the owner on 2026-11-22, built the same day: all four packages are on `main` since 14:50, the first
+three released and on his installation, the last one tests and manual (run record)**
 
 - **A Bastion serves every format as the main installation does** (2026-11-22, 09:46, on reading in the storage
   topic's working paper that a Bastion serves neither images nor Debian): "Wieso liefert der Bastion kein Debian
