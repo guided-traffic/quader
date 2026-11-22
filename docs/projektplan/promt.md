@@ -1921,6 +1921,30 @@ runs are in `git log`; this section holds the current state.
   the code of `main` to tell the two apart. **What the development agent takes from it:** the areas a builder
   did not run are run before its package is called ready, not beside the landing; here they ran, and the
   finding came before the push.
+  **Repaired, reported at 18:08: a download costs one database statement again, with the two tests of the
+  budget unchanged** (one commit of the type `fix`, 12 files; decision Q-STOR-275). The lookup every route
+  that serves a stored item already runs reads the copies of its blob with it, as one array in the same
+  statement, and the blob store takes them instead of asking again; they are exactly as current as the
+  separate read was, which ran in the same request just before the object store was asked, so the read
+  over the copies holds as specified and no state is kept in a process. A cache per replica was weighed and
+  rejected, because for as long as an entry lives a copy that another replica marked damaged would still be
+  served to a ranged read, a deleted copy asked for again and a repaired one not used. One exception: when a
+  recheck finds a missing blob's object back, the item drops the copies it read and the read asks anew.
+  **Statements per download, measured by the budget's tests:** npm, NuGet, Debian and `/files/` cost 1 on
+  `main`, 2 with package A before the repair and 1 now; a remote member of a virtual repository 2, 3 and 2.
+  The registry's blobs and manifests, ranges and a Bastion's forward go through the same lookup and serve
+  point; no budget test covers them, so their 1 is read from the code and not measured. A stored document
+  of the proxy, only when its cache in memory misses, and the internal readers (the malware scan, the
+  inspection, the views of packages) cost one statement per open where they cost none on `main`; the view of
+  a NuGet package cost one per range with package A and costs one per package now. **The overload area
+  passes alone** (load 6 to 10; the burst's 300 downloads all served); because it passed, it was not run on
+  the code of `main`, so **whether its failure at 16:18 came from the extra statement or from the machine is
+  not shown.** Its gates exit 0: build, the full unit run, the budget, the overload, the store's, the files'
+  and the proxy's areas, every format's areas, the Bastion's cache; the Bastion's area failed once beside a
+  load of 60 to 90 (a 401 right after anonymous access was switched on, a setting not yet spread, decided
+  before any lookup) and passed alone. **On the landing stack since 18:10:** the five commits of the several
+  connections on `main` (the Bastion's cache and the handover's specification are in `main` already), the
+  whole of the gates again and ten integration areas that serve downloads.
 - **The landing stack was split at 16:46.** The encryption of the Bastion's cache and the handover's
   specification do not depend on the several connections; they were gated in a worktree of their own on
   `main` and pushed at 16:51 (the entry of their landing). The four commits of the several connections wait
