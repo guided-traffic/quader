@@ -1828,7 +1828,21 @@ runs are in `git log`; this section holds the current state.
   14:16 what has been finished since Friday afternoon** and got the overview in the chat (35 releases since
   Friday noon, by topic, with what is on `main` without effect yet, what is built and not landed, and what is
   not verified); no decision in it.
-- **Package 5 of the encryption, the Bastion's cache, reported at 15:09 and is on the landing stack** (one commit
+- **Landed on 2026-11-22 at 16:51, in one push: package 5 of the encryption, the Bastion's cache, and the
+  specification of the handover per blob to a Bastion** (a commit of the type `feat` and one of documents; on
+  the two commits on `main` build, the full unit run, generate-check, the evidence regenerated without a
+  difference with links, check and the count test, the complexity check, chart lint and the whole of the
+  chart tests, the vet of the end-to-end sources and the lint exit 0, the wording scan is clean, no line of
+  the evidence record is by hand; the Bastion's six integration areas had passed on the whole stack between
+  15:39 and 15:54; the three worktrees and branches are removed; the owner's UI backend runs on it since
+  16:52). The pipeline run of the Bastion's package D had ended in success, whole, before the push. **Its
+  release was cut at 17:05, image and chart were published at 17:12, and the owner's installation runs it,
+  read at 17:14** (the chart's release deployed and ready, six Deployments with every replica ready and
+  updated, no pod that is not running, no restart; his values needed no change). **The timer's check at
+  17:13:** the reconciliation's commit stands moved onto the landing stack with a clean tree and has not
+  reported; the repair of the statement budget, package B and the rest of package E are at work; the long
+  legs of this push's run, the Bastion's among them, run, and no code is pushed before they have ended. What the
+  cache's package is, as its builder reported it at 15:09 (one commit
   of the type `feat`, 36 files; its builder worked from 14:00 to 15:09; rebased onto `main` by the development
   agent without a conflict, with the row of the manual for the new Secret added from its builder's sentence).
   **Built:** the chart's `secrets.cacheKey`, empty unless set, mounted into the pods; the cache reads the file
@@ -1903,10 +1917,10 @@ runs are in `git log`; this section holds the current state.
   the code of `main` to tell the two apart. **What the development agent takes from it:** the areas a builder
   did not run are run before its package is called ready, not beside the landing; here they ran, and the
   finding came before the push.
-- **The landing stack is split at 16:46.** The encryption of the Bastion's cache and the handover's
-  specification do not depend on the several connections; they stand in a worktree of their own on `main`,
-  their gates run, and they are pushed as soon as those are through (the Bastion's integration areas passed
-  on the whole stack at 15:39 to 15:54). The four commits of the several connections wait for the repair.
+- **The landing stack was split at 16:46.** The encryption of the Bastion's cache and the handover's
+  specification do not depend on the several connections; they were gated in a worktree of their own on
+  `main` and pushed at 16:51 (the entry of their landing). The four commits of the several connections wait
+  for the repair of the statement budget, and after this push for the Bastion's end-to-end legs of its run.
 - **In work since 16:44: package B of the several connections** (sessions on their connection, the collection
   per copy with its release, the orphan sweep per connection with the adoption; Q-STOR-260 to 264, H-1265 to
   1268; it closes the gaps package A left, that the collection deletes on the first connection alone) **and
@@ -1966,7 +1980,9 @@ runs are in `git log`; this section holds the current state.
   type) and the legs `ci` and `push` green; the legs of the Bastion, the registry, npm, the vulnerabilities and
   the long access set, the four integration shards and the layout checks run. Builders with a test load: the
   reconciliation, the scrub, the proof of the development profile, and the repair on package A; the handover's
-  planner and the encryption's package 5 have ended.
+  planner and the encryption's package 5 have ended. **At 16:48 the integration areas on the landing stack
+  ended: 19 of 21 passed** (the last three the CI area, TLS and the operator's verify), and the two that
+  failed are the query budget and the overload area, in repair.
 - **Landed on 2026-11-22 at 13:59: package 1 of the encryption, the format and its tools** (a commit of the type
   `refactor`, no release; R-STOR-076 to R-STOR-079; decisions Q-STOR-321 to Q-STOR-323; its builder worked from
   13:02 to 13:53). A package of its own that uses the standard library alone, held by a test: the stored size
