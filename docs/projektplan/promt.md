@@ -1617,15 +1617,41 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
-- **In work since 02:28: the cause of two red runs of `integration (shard b)`.** In two of the three runs that
-  ended since the fourth shard was cut, one test of the area `limits` failed, a different one each time and
-  both about usage rows: at 00:35 the test of section 12 B (one request charged to an address that is none
-  of the test's own), and at 02:16, in the run of the receipt attestations (44967924325), the test that a
-  fetch through a team's virtual repository records that repository ("the usage row … did not happen
-  within 10 s"). Before 23:44 the area had passed in every run of the day. One agent reads both jobs' logs
-  beside the green run's, decides between a fault of the product that one of the night's changes brought,
-  a fault of the tests' isolation that timing now shows, and the runners' load with a fourth stack, tries
-  to reproduce it under the lock within about ten runs, and repairs what it can establish. **The rest of
+- **Landed on 2026-11-22 at 02:54: the cause of two red runs of `integration (shard b)` was a defect of the
+  product, in the usage counting since 2026-11-19, and it is repaired** (a commit of the type `fix`; its
+  agent worked from 02:28 to 02:50). In two of the three runs that ended since the fourth shard was cut,
+  one test of the area `limits` had failed, a different one each time: at 00:35 the test of section 12 B
+  (one request charged to an address that is none of the test's own), and at 02:16, in the run of the
+  receipt attestations (44967924325), the test that a fetch through a team's virtual repository records
+  that repository. **One cause for both, and neither the night's changes nor the fourth shard:** the charge
+  buffer wrote a request's count into the usage store at the first flush after the request was admitted,
+  under the caller and the repository known at that moment. A flush that fell into the few milliseconds
+  before a token request's handler had authenticated its caller put the request under the client's
+  address; one that fell before a virtual repository's member had answered put it under the virtual
+  repository and left the member's row with the bytes and no request. The windows are 5 to 15 ms of a
+  flush every 200 ms, which is the one failure in thirteen runs its first builder had seen and could not
+  reproduce. **A second defect beside it:** the step that moves a token request to its caller made a second
+  charge, so every token request of a registry client was counted twice in the usage overview, and that
+  charge stayed in the replica's buffer for the replica's life (a growth of memory with every token
+  request; on the owner's installation too, since 2026-11-19, on every replica that serves the token
+  route). **Verified by its agent:** both failures came back on the unrepaired code with the pipeline's own
+  messages, the same row and the same byte counts, with the flush forced to a millisecond (for the
+  reproduction alone); the double count at the normal flush (three charged for two requests); new unit
+  tests that put a flush between the steps of one request fail on the unrepaired code. Inferred, because
+  the pipeline's databases are gone: that this is what hit there. Not the tests' isolation (each test's
+  stack has a database of its own) and not the runners' load (the area took 123 and 126 s with three
+  shards, 127 to 130 s with four, and its measured waits are unchanged). **The repair:** a request's count
+  and the limits it met reach the usage store at the flush after it ended, its bytes at every flush as
+  before, and the move to the caller moves the request's own charge. The integration test asserts exactly
+  two requests of the token where its "at least two" had hidden the double count; the developer page of
+  the limits has the rule for test authors (which row a request lands in is tested at the unit tier with a
+  flush between its steps, with exact counts). **By the development agent on the commit as it landed, each
+  exit 0:** build, the full unit run, generate-check, the evidence, links and check, the complexity check,
+  the lint; the area `limits` whole under the lock by its agent (114 s). The owner's UI backend started
+  with it before the push. **Its release was cut at 03:07.** **What the second recurrence taught:** the plan had carried the first
+  failure as an open finding whose cause was not known, with the instruction to print the rows at the next
+  one; the printed row and the replica's log were what made it solvable in twenty minutes. **Not known:**
+  the windows' width on the runners; how much the buffers of long-running replicas had grown. **The rest of
   that run (01:42 to 02:27) is green:** the nine end-to-end legs, among them `oci` with the two cases of the
   real cosign on the pipeline's runner; the layout job in 44.9 minutes; the shards a, c and d in 35.0, 30.5
   and 34.9 minutes, shard b red after 33.4.
@@ -1660,7 +1686,10 @@ runs are in `git log`; this section holds the current state.
   the evidence regenerated without a difference, links and check, the complexity check, the lint, the UI
   tests (1,935) and lint, the layout tests, the build in both languages, the API's types and the
   translation source regenerated without a difference; the diff holds no name the white-label rule
-  forbids; no change of the chart. The owner's UI backend started with it before the push. **Its release was cut at 02:42.** **Its
+  forbids; no change of the chart. The owner's UI backend started with it before the push. **Its release was cut at 02:42,** image
+  and chart were published at 02:48, and **the owner's installation runs it since 02:50** (read on the cluster at
+  02:50: every Deployment ready, no restart, no error line). Its run was stopped at its long jobs by the push
+  of the repair above. **Its
   tests cost** milliseconds of unit tests, about 0.25 s of UI tests, and an estimated 6 s of the layout job
   (two states, 12 pictures; the job stands at 45 of its 75 minutes). **Not verified:** a real receipt
   served as a referrer, and one held back because of an older signature, in a browser (the renders and the
