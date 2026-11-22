@@ -174,6 +174,19 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   in apps/quader commiten."; for the rest of that repository its own rule stands, that an agent asks him before a
   commit). The cluster itself is changed through that repository only. A reset of the installation's content or database, where an upgrade needs one, is not
   tragic at this stage (his words) and is named to him first.
+- **Open questions are decided by the development agent and written down with its answer** (owner, 2026-11-22,
+  20:49, four questions into a walk through twenty-six: "wir machen es wie immer, ich gehe davon aus, dass du
+  selbstständig die richtige entscheidung triffst. Dokumentiere einfach alle Fragen und die von dir gewählte
+  Antwort als deine Antwort. Ändern tun wir es erst wenn mir etwas negativ auffällt."). A question is not
+  collected for him and not put to him one at a time unless he asks for it: it is decided, built, and recorded in
+  section "With the owner" as the question, the options and the answer chosen. An answer that changes something
+  he chose himself is named to him in one line when it is taken. What only he can supply (a fact of his company,
+  a credential, a change of his cluster outside the installation's directory) stays his and is named, not decided.
+  **What he wants to hear, and only that** (the same evening, 20:52, when the development agent wrote that two
+  things followed from its answers without saying which: "Ohh man, also diese zwei Sachen hätte ich sehr gerne
+  gewusst, nicht die 24 anderen völlig irrelevanten."): an answer that changes what he chose or what is built, a
+  correction of something he was told, and what needs an act of his; each in a sentence at the time it arises.
+  A question whose answer is "as built" is not put to him.
 - **A unit that runs a tool carries the tool's name** (owner, 2026-11-21, after he saw the two scanner Deployments on
   his cluster: "Die Deployments quader-scanner und quader-malware-scanner sind mir nicht differenziert genug.
   quader-scanner ist trivy? Dann quader-vuln-scanner-trivy. quader-malware-scanner hätte ich auch lieber
@@ -2116,6 +2129,18 @@ runs are in `git log`; this section holds the current state.
   of the keys exit 0 up to the fifth of six integration areas, the query budget runs; the stacking, the
   links' package and the trace of the writer's read are at work, each active within two minutes; the load
   is 7; his installation and its Bastion run the newest release, ready.
+- **Landed on 2026-11-22 at 20:46: package 2 of the encryption, the keys** (one commit of the type `feat`;
+  moved onto `main` by the development agent without a conflict). The landing's gates ran in the landing
+  worktree from 20:14 to 20:45, twenty-three of them, each exit 0: the build, the vet, the full unit run,
+  the generated code, the evidence's four steps, the complexity, the chart's lint and tests, the API's
+  client and the translation source generated again without a difference, the web's lint and tests, the
+  vet of the end-to-end code, the lint, and the integration areas `blob`, `postgres`, `upstream`,
+  `repository`, `coordination` and the query budget. A connection with `encrypted: true` stays refused.
+  The stacking's builder is told to end its four commits on this commit, the links' builder that its
+  migration stays 00108. **Package 3 of the encryption does not start yet:** it owns the upload sessions
+  and the store's files that package B of the several connections changes, and package B is in the
+  stack that has not landed. Released at 20:59; the plan's commits of the minutes between waited for it.
+  His UI's backend runs on this state since 20:47.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -4329,7 +4354,8 @@ runs are in `git log`; this section holds the current state.
 
 Everything that waits for the owner, one line each, with where the detail is. Put to him one at a time (standing rules).
 
-**The open questions, to be put to him one at a time on the evening of 2026-11-22**
+**The open questions of 2026-11-22: four answered by him that evening, the rest decided by the development agent
+at his word**
 
 He asked on 2026-11-22 at 08:00, away from his desk, to go through the open questions one by one; the first was put
 to him, and at 08:25 he moved the walk to the evening: "Das machen wir doch besser wenn ich heute Abend wieder am
@@ -4552,6 +4578,66 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     recommendation is (a). **To be told to him with it, not a decision of Quader's:** the object gateway of his
     cluster has an address inside the cluster alone, so a Bastion of his reads from it only once his network
     gives the gateway an address the DMZ reaches (the same holds for signed links to clients outside).
+
+**His word on 2026-11-22 at 20:49, after the fourth question:** "Pass auf, wir machen es wie immer, ich gehe davon aus,
+dass du selbstständig die richtige entscheidung triffst. Dokumentiere einfach alle Fragen und die von dir gewählte
+Antwort als deine Antwort. Ändern tun wir es erst wenn mir etwas negativ auffällt." The walk ends with it. Questions 1
+to 4 are his answers (above). **Questions 5 to 26 are answered by the development agent as follows; each stands until
+he objects to what he sees:**
+
+- 5, the image's receipt (Q-SIG-66): **(b), as built.** His own condition that nothing breaks a publisher's
+  signature excludes (a); (c) and (d) give up that a cluster finds the receipt without a way of its own.
+- 6, the time of a receipt (Q-SIG-63): **(a), as built,** no log and no timestamp authority; taken up again when a
+  Sigstore of his own runs.
+- 7, the signing key (Q-SIG-53): **(a), as built,** an ECDSA P-256 key with a code-signing certificate. Whether his
+  company's CA issues one stays a fact only he has; nothing is signed on his installation until it has an
+  identity, and the development agent obtains none by itself.
+- 8, a registry signature for Ansible Galaxy (Q-SIG-68): **(a), as built,** none; the archives get the receipt.
+- 9, what "betrieben" covers: **the three signer ways are built, proven by tests and on a cluster of the
+  development machine, and kept working by the pipeline; that is what the development agent operates.** Signing
+  services on his cluster or in his CI start when he asks for them and gives the installation its identity.
+- 10, a taken-over scanner pod's false detections (H-1181): **(a), as built,** accepted and taken into the security
+  pass before BETA.
+- 11, the binding of a host to a repository of `upstream` at its root: **stays a configuration at start;** a form
+  in the admin area is not built until he asks for it, and an address without the project segment stays advised
+  against (Q-REPO-212).
+- 12, the next lever of the test suite: **the formats' repeated integration tests move into the format contract's
+  kit, before the next format is built;** no fifth shard. The other candidates of the measurement (the fixed cost
+  of a kind leg, the fault scenarios repeated per client, the behaviour repeated inside the formats' legs) stay in
+  section 12 and are taken with that move.
+- 13, what frees a release once the full gate returns: **decided with the first stable release, not before;** the
+  candidate is a green nightly on the commit.
+- 14, image pulls through a Bastion and the miss limit (Q-BAS-167): **(a), as built.**
+- 15, ClamAV installations with a client certificate through a Bastion (Q-BAS-176): **(a), as built,** by his
+  rule that Quader takes no certificate from a header.
+- 16, a Docker Engine's mirror address through a Bastion (Q-BAS-178): **(a), as specified.**
+- 18, a speed limit and signed links (Q-LIM-97): **(b), against what is specified: a speed limit does not stop a
+  link.** The transfer by a link is not slowed, and the budgets of the hour and the day are charged in full when
+  the link is issued. **This is the one answer that changes a condition he chose** (his decision 11 of the working
+  paper, in the paper's wording "für den Aufrufer gilt kein Tempolimit"), and it is told to him as such: with the
+  condition, on a new installation only administrators would get a link, since every built-in profile but
+  Unlimited sets a speed limit, so the switch he decided would do next to nothing; a speed limit protects
+  Quader's pods, which a link's transfer does not pass, and the budgets still bound the volume. The builder of the
+  links' second package is told at 20:52 to build it so and to change the specification in its commit.
+- 19, a connection taken out of the chart with the only copy of some blobs (Q-STOR-225): **(a), as built,** it
+  becomes detached.
+- 20, whether draining deletes the copies (Q-STOR-236): **(a), as specified,** yes, after its checks.
+- 21, a fresh database that meets a used bucket (Q-STOR-224): **(a), as built,** refused with the object to
+  delete named. A reset of his installation meets it and is named to him first, as the standing rule says.
+- 22, whether a storage key can be destroyed (Q-STOR-309): **(a), as specified,** never deleted. A command that
+  destroys a key is not built until an installation needs it. **What he was told on 2026-11-22 is corrected to
+  him with it:** leaving a provider does not make what stays there unreadable by deleting a key, since no key
+  is deleted.
+- 23, a copy between two encrypted connections (Q-STOR-308): **(a), as specified,** always a new data key.
+- 24, object names in a backup's pool (Q-BAK-65): **(a), as specified,** digest names.
+- 25, his cluster's object gateway and signed links: not a decision of Quader's. **The development agent does not
+  switch signed links on at his installation while the gateway is older than 19.2.7,** and the gateway has an
+  address inside the cluster alone, so a client outside could not follow a link anyway. The defect of signed
+  upload links concerns his other uses of that gateway and is his to weigh.
+- 26, a speed limit and a handover to a Bastion (Q-STOR-343): **(a), as specified,** no; the twin of 18.
+
+The blocks of the specification keep their status as decided by the development agent; the three he confirmed
+himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
