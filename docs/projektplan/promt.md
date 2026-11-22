@@ -4626,7 +4626,8 @@ he objects to what he sees:**
   section 12 and are taken with that move.
 - 13, what frees a release once the full gate returns: **decided with the first stable release, not before;** the
   candidate is a green nightly on the commit.
-- 14, image pulls through a Bastion and the miss limit (Q-BAS-167): **(a), as built.**
+- 14, image pulls through a Bastion and the miss limit (Q-BAS-167): **(b), read shapes per package, against what
+  is built** (changed at 21:09, see below; first written here as (a)).
 - 15, ClamAV installations with a client certificate through a Bastion (Q-BAS-176): **(a), as built,** by his
   rule that Quader takes no certificate from a header.
 - 16, a Docker Engine's mirror address through a Bastion (Q-BAS-178): **(a), as specified.**
@@ -4643,10 +4644,9 @@ he objects to what he sees:**
 - 20, whether draining deletes the copies (Q-STOR-236): **(a), as specified,** yes, after its checks.
 - 21, a fresh database that meets a used bucket (Q-STOR-224): **(a), as built,** refused with the object to
   delete named. A reset of his installation meets it and is named to him first, as the standing rule says.
-- 22, whether a storage key can be destroyed (Q-STOR-309): **(a), as specified,** never deleted. A command that
-  destroys a key is not built until an installation needs it. **What he was told on 2026-11-22 is corrected to
-  him with it:** leaving a provider does not make what stays there unreadable by deleting a key, since no key
-  is deleted.
+- 22, whether a storage key can be destroyed (Q-STOR-309): **(b), a command that destroys a retired connection's
+  keys and is refused while a kept backup names one, against what is specified** (changed at 21:09, see below;
+  first written here as (a), with the correction to him that no key is deleted, which held for twenty minutes).
 - 23, a copy between two encrypted connections (Q-STOR-308): **(a), as specified,** always a new data key.
 - 24, object names in a backup's pool (Q-BAK-65): **(a), as specified,** digest names.
 - 25, his cluster's object gateway and signed links: not a decision of Quader's. **The development agent does not
@@ -4654,6 +4654,22 @@ he objects to what he sees:**
   address inside the cluster alone, so a client outside could not follow a link anyway. The defect of signed
   upload links concerns his other uses of that gateway and is his to weigh.
 - 26, a speed limit and a handover to a Bastion (Q-STOR-343): **(a), as specified,** no; the twin of 18.
+
+**His question at 21:09 and what it changed:** "Du hast bei allen deinen Fragen deinen Favoriten gewählt richtig?
+Also nicht 'was schon gebaut wurde' sondern was du als beste option gewählt hättest wollen wir umsetzen." The
+honest answer was no, not everywhere. For most questions what is built is the favourite, because the development
+agent had chosen it itself before it was built. **In two it had written down what is built or specified where it
+holds another option for the better one, and both are changed to the favourite:** 14, where every warm pull of
+an image through a Bastion costs the main installation a request per manifest and blob against the miss limit of
+the client's address, so a cluster behind one address can fail its pulls in a rollout, which is the first use of
+a public Bastion (the block itself kept (b) as "the revisit"); and 22, where the option built leaves out what he
+was told when he decided the topic, that leaving a provider makes what stays there unreadable. 18 had been
+changed to the favourite already. 12, the move of the formats' repeated integration tests into the kit, is the
+favourite and not built yet; it is scheduled before the next format. 11 stays: a bound host needs the chart for
+its ingress and certificate anyway, so the binding in the chart is one place, not a lesser form. 6 stays: a
+timestamp authority is the better form only where one runs, and none does. **In work since 21:11, two planners**
+(they do not count against the four): the read shapes per package for a Bastion, and the destruction of a
+storage key; each returns a design that the development agent turns into the specification, and builders follow.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
