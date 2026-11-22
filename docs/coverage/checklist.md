@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 657 of 1,186 spec requirements are implemented: a passing test names them and no
+**Status.** 657 of 1,205 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 798 specified (506 of them implemented), 1,441 open.
-1,186 spec requirements: 752 cover catalog features, 434 cover none (`quader-only`, [listed at the
+1,205 spec requirements: 765 cover catalog features, 440 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -788,14 +788,14 @@ Catalog page: [storage-and-blobs.md](../features/storage-and-blobs.md) · specif
 | STOR-012 | Health-aware shards and read-only shards | P2 | specified | [R-STOR-050](../spec/storage.md), [R-STOR-051](../spec/storage.md), [R-STOR-055](../spec/storage.md), [R-STOR-060](../spec/storage.md) |
 | STOR-013 | Cross-zone sharding | P2 | open | – |
 | STOR-014 | Cluster-shared node-local stores | P2 | open | – |
-| STOR-015 | Rebalancing and storage optimization | P2 | specified | [R-STOR-056](../spec/storage.md) |
+| STOR-015 | Rebalancing and storage optimization | P2 | specified | [R-STOR-056](../spec/storage.md), [R-STOR-087](../spec/storage.md) |
 | STOR-016 | Asynchronous upload to the persistent store | P2 | open | – |
 | STOR-017 | Retry of store operations | P1 | implemented | [R-STOR-033](../spec/storage.md) (implemented) |
 | STOR-018 | Binary fetch workers for federated repositories | Later | open | – |
 | STOR-019 | Direct (synchronous) upload to object storage | MVP | implemented | [R-ARCH-014](../spec/architecture.md) (implemented), [R-STOR-004](../spec/storage.md) (implemented), [R-STOR-005](../spec/storage.md) (implemented) |
 | STOR-020 | Object-store connection and bucket settings | MVP | implemented | [R-STOR-030](../spec/storage.md) (implemented) |
 | STOR-021 | Object-store authentication | MVP | implemented | [R-STOR-031](../spec/storage.md) (implemented) |
-| STOR-022 | Object-store encryption | P1 | specified | [R-STOR-032](../spec/storage.md) |
+| STOR-022 | Object-store encryption | P1 | specified | [R-STOR-048](../spec/storage.md), [R-STOR-032](../spec/storage.md), [R-STOR-075](../spec/storage.md), [R-STOR-080](../spec/storage.md), [R-STOR-081](../spec/storage.md), [R-STOR-082](../spec/storage.md), [R-STOR-083](../spec/storage.md), [R-STOR-084](../spec/storage.md), [R-STOR-085](../spec/storage.md), [R-STOR-086](../spec/storage.md), [R-STOR-087](../spec/storage.md), [R-STOR-088](../spec/storage.md), [R-STOR-089](../spec/storage.md), [R-STOR-090](../spec/storage.md) |
 | STOR-023 | Multipart upload and transfer thresholds | MVP | implemented | [R-STOR-006](../spec/storage.md) (implemented) |
 | STOR-024 | Object-store connection pool, timeouts and transport health | MVP | implemented | [R-STOR-033](../spec/storage.md) (implemented) |
 | STOR-025 | Outbound proxy for object-store traffic | P1 | specified | [R-STOR-034](../spec/storage.md) |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>434 requirements</summary>
+<summary>440 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3120,6 +3120,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAK-022 (implemented) | State a restore rebuilds or invalidates | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-024 (implemented) | Revocation journal replay after a restore | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-030 | Backup and restore with several object-store connections | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
+| R-BAK-031 | Backup and restore of encrypted connections | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-027 | Client-side encryption of the database files | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAS-007 (implemented) | Bastions in the main installation's screen, client setup and manual | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-009 (implemented) | The interface version | MVP | [bastion.md](../spec/bastion.md) |
@@ -3137,6 +3138,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-030 (implemented) | Cache backends | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-031 (implemented) | Size, eviction by last access and sweeps | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-032 (implemented) | Integrity of cached content | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-061 | The cache encrypted in the stored format | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-033 (implemented) | Routing by path for local volumes | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-034 (implemented) | Optional Valkey | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-035 (implemented) | Per-address rate limits | MVP | [bastion.md](../spec/bastion.md) |
@@ -3377,7 +3379,6 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-071 (implemented) | The format declares whether its clients check a digest | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-073 | What a link counts and records | P1 | [storage.md](../spec/storage.md) |
-| R-STOR-048 | Client-side encryption of stored content | P2 | [storage.md](../spec/storage.md) |
 | R-STOR-027 (implemented) | Integrity scrub | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-049 (implemented) | The storage of a project | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-036 (implemented) | Behavior during an object-store outage | MVP | [storage.md](../spec/storage.md) |
@@ -3389,6 +3390,11 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-STOR-061 | The connections in the API | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-062 | The seams the encryption and the signed links build on | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-063 | The tests of the feature | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-076 | The stored format: segments, the final segment and the stored size | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-077 | The record at the object: the wrapped data key, the key's identifier, the format and the commitment | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-078 | What the format withstands | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-079 | Test vectors, fuzz targets and an independent check of the format | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-091 | The tests of the feature | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-046 | Storage work per role and across replicas | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-047 (implemented) | Storage state in backups and restores | MVP | [storage.md](../spec/storage.md) |
 | R-VULN-014 (implemented) | History and retention | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

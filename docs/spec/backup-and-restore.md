@@ -478,7 +478,8 @@ needs to be copied again.
 3. Without a previous backup, the to-copy set is the whole referenced set.
 
 **Copy.** For each pinned digest, `backup.copy.concurrency` at a time, the run writes
-`pool/sha256/<h0h1>/<h2h3>/<hex>`, reading one copy of the blob chosen by R-BAK-030 and the next one when a copy fails:
+`pool/sha256/<h0h1>/<h2h3>/<hex>`, reading one copy of the blob chosen by R-BAK-030 and the next one when a copy fails (a copy of an
+encrypted connection goes into the pool as stored, with its record, and is confirmed by size: R-BAK-031):
 
 - **Server-side copy** (`backup.copy.server_side: auto`, `always`, `never`). `CopyObject` for
   objects up to 5 GiB, `UploadPartCopy` parts of `backup.copy.part_size` above that
@@ -1287,7 +1288,8 @@ without changing them:
 - every digest of the blob list that is not in `blobs.damaged` has a pool object of the listed
   size (`HeadObject`);
 - with `--deep`, every such pool object is downloaded and its SHA-256 recomputed, throttled to
-  `--bytes-per-second`.
+  `--bytes-per-second`; a pool object of an encrypted connection is checked as R-BAK-031 says, fully only
+  with `--key-ring <dir>`.
 
 Findings are printed one per line (`missing`, `size_mismatch`, `digest_mismatch`,
 `file_checksum_mismatch`) and stored in a `backup_run` row with `operation = 'verify'` when the
@@ -1730,6 +1732,58 @@ Acceptance criteria:
 - A restore into an installation with two connections writes every blob into the first, records a `present` copy row for each there, and
   after one reconciliation run every blob is present on the second (integration, `test/integration/backup`, one case, about 8 s).
 - A restore whose second connection holds a foreign object exits `6` naming check 5 and that connection.
+
+### R-BAK-031 · Backup and restore of encrypted connections
+Priority: **P1** · Covers: quader-only
+
+What the backup and the restore do with the copies of an encrypted connection ([storage.md](storage.md) R-STOR-075 to R-STOR-091, stage 2 of
+the owner's topic of 2026-11-22). Specified, not built.
+
+- **The pool keeps the copy as stored** ([Q-BAK-65](#q-bak-65--the-pool-keeps-an-encrypted-copy-as-stored-with-its-record-under-the-digests-name)):
+  when R-BAK-030 picks a copy on an encrypted connection, the pool object `pool/sha256/<h0h1>/<h2h3>/<hex>` is that copy's ciphertext with its
+  record. A server-side copy keeps the metadata (`x-amz-metadata-directive: COPY`, the default, which R-BAK-006's copy sends); a streamed copy
+  sets the record it read from the source's `GetObject` on its `PutObject` or `CreateMultipartUpload`. The backup pod opens nothing and needs no
+  key: it confirms the copy by its stored size (the copy row's `stored_size`) and the presence of the record's four keys, because it cannot hash
+  ciphertext against the digest; its server-side copies of plain blobs were confirmed by size before as well (R-BAK-006). A pool object that
+  already exists for a digest is not copied again, whichever connection it came from (R-BAK-006's incremental rule): the pool can hold a blob
+  as plain bytes or as the ciphertext of any encrypted connection the installation had.
+- **What the pool needs to be read**: the backup's own database snapshot holds `storage_keys` (export class `data`, storage.md R-STOR-083),
+  sealed under the root keys its manifest lists in `secrets.keyIds` (R-BAK-028); storage keys are never deleted, so a backup taken after a
+  connection was drained or forgotten still holds the keys of the pool objects that came from it, and so does every older backup that holds such
+  objects.
+- **A rotated root** changes nothing in a backup: its storage keys stay sealed under the root keys of its time, which escrow keeps for as long
+  as a retained backup lists them (R-BAK-028, unchanged).
+- **Verification** ([Q-BAK-66](#q-bak-66--a-deep-verification-without-the-key-ring-checks-the-structure-and-with-it-every-segment)):
+  `quader backup verify --deep` downloads a pool object with a record and checks, without a key, that the record has the format's four keys
+  and form, that its key's identifier is a row of the backup's `storage_keys`, and that the size is `S(L)` of the blob list's size; it counts
+  these objects as `not_authenticated` in its report. With `--key-ring <dir>` (the key ring's files, R-ARCH-021's format) it opens the
+  backup's storage keys and reads every such object as the scrub does: every segment, the final segment and the digest; a failure is
+  `digest_mismatch`.
+- **Restore** (R-BAK-021 step 3 into the first connection with `drain: false`, R-BAK-030). The restore Job holds the key ring (R-BAK-020
+  check 3) and reads the backup's `storage_keys` table file before it writes blobs. Per listed digest, by the pool object and the first
+  connection:
+
+  | Pool object | First connection | What the restore writes |
+  |---|---|---|
+  | plain | plain | as R-BAK-030: server-side where the endpoints allow, else streamed and hashed |
+  | plain | encrypted | through the connection's write (storage.md R-STOR-080) with a new data key, streamed from the pool and hashed |
+  | encrypted, its record names a key of this connection id in the backup's `storage_keys` | encrypted (the same connection id) | the object as it is, under the name of that connection's name key: a server-side copy where the endpoints allow, else streamed; confirmed by size and record |
+  | encrypted, a key of another connection | encrypted | decrypted with that key and written with a new data key (storage.md R-STOR-087's rule) |
+  | encrypted | plain | decrypted and streamed, hashed |
+
+  The fix-up of R-BAK-022 records each copy with its `stored_size` and `storage_key_id`; a connection of the restoring configuration that is
+  encrypted and has no key in the backup gets its keys drawn by the restore Job before the first write (storage.md R-STOR-083's rule; its
+  location is empty by check 5). The restored installation's operator exports the storage keys again (storage.md R-STOR-090).
+- **What a restore needs** beyond today: nothing new to bring; the key ring it already needs opens the storage keys the backup holds. The
+  export of the storage keys is the way back only for a generation drawn after the backup (storage.md R-STOR-085).
+
+Acceptance criteria (integration, `test/integration/backup`, one case, PostgreSQL with two in-memory stores, about 8 s):
+
+- An installation with an encrypted connection holding three blobs is backed up: each pool object carries the record and no 16-byte run of its
+  blob; `verify --deep` exits `0` and reports three `not_authenticated`; with `--key-ring` it exits `0` and none; a pool object with a flipped bit
+  makes `verify --deep --key-ring` exit `5` with `digest_mismatch`.
+- A restore into an installation whose first connection has the source's encrypted connection id writes the three objects unchanged (equal
+  bytes) and they download; a restore into one whose first connection is another, encrypted id writes three new bodies that download.
 
 ## Encryption and keys
 
@@ -2855,6 +2909,41 @@ connections each has its own provider and its own credential.
 
 **Choice:** (a). Supersedes the form of Q-BAK-49, whose reason stands. **Applied in the spec:** R-BAK-030,
 [ha-and-helm.md](ha-and-helm.md) R-HA-072.
+
+### Q-BAK-65 · The pool keeps an encrypted copy as stored, with its record, under the digest's name
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. **An open question for the
+owner** (the names in the pool), specified meanwhile with (a).
+
+Context: the backup pod holds no key ring and no key (R-BAK-012, R-BAK-028), and a backup reads one copy per blob, a server-side copy first
+(R-BAK-030). On an encrypted connection with keyed names the provider cannot tell which file an object is; the pool names objects
+`pool/sha256/<hex>` today (R-BAK-006), and the database files of a backup lie in the same target, readable to its readers until R-BAK-027
+encrypts them (H-48).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The pool object is the copy as stored, ciphertext and record, named by the digest as today (chosen) | No key in the backup; server-side copies stay | Deduplication across backups and connections by digest as today; a restore and the offline tool read it with the keys of the backup's own `storage_keys` | A reader of the target confirms stored files by name (H-1314), which the database files beside it tell him anyway until R-BAK-027 is built |
+| (b) As (a), named by the copy's keyed name and connection (`pool/<connection>/keyed/…`) | The backup takes the name from the copy row | No digest in a name, also once R-BAK-027 encrypts the database files | One pool object per blob and connection read; the blob list carries the pool name per digest; a format change of the backup |
+| (c) Plain bytes in the pool | The backup decrypts | Restores need no storage key | The backup pod would hold the key ring and every storage key, which it deliberately never holds |
+
+**Choice:** (a). **Rationale:** a backup that holds no key is the backup's design; the names matter once the database files beside them are
+encrypted. Recommendation to the owner: (a) now, (b) together with R-BAK-027.
+
+**Applied in the spec:** R-BAK-031, [storage.md](storage.md) R-STOR-087.
+
+### Q-BAK-66 · A deep verification without the key ring checks the structure, and with it every segment
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Without a key: the record's form, the key's identifier present in the backup's `storage_keys`, the stored size `S(L)`; with `--key-ring <dir>`: every segment, the final segment and the digest (chosen) | Two depths by what the caller holds | The scheduled verification stays keyless; an operator with the ring proves the pool restorable | A keyless deep verification does not prove the bytes |
+| (b) The deep verification always needs the ring | One depth | Always a full proof | The verification pod would hold the key ring |
+| (c) No verification of encrypted pool objects beyond their size | As a plain `verify` | Nothing to build | `--deep` would say nothing about them |
+
+**Choice:** (a). **Rationale:** what can be checked without a key is checked without one; the proof of the bytes needs the key that opens them.
+
+**Applied in the spec:** R-BAK-019, R-BAK-031.
 
 ## What this does not cover
 

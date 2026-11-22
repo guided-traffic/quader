@@ -8,8 +8,9 @@ Until it is built an installation has one connection, `storage.s3`, and what [pr
 
 The perspective of this page is the stored content once it lies on several object stores: which parties can read it, change it or delete
 it at each store, what Quader believes about a copy (the rows of R-STOR-052) and on what evidence, and what one store's failure, slowness
-or takeover costs the others. Encryption of the stored content is stage 2 and not described here; without it, every party that can read a
-connection's bucket reads every blob.
+or takeover costs the others. Encryption of the stored content is stage 2 and described on its own pages
+([stored-content-format.md](stored-content-format.md), [stored-content-keys.md](stored-content-keys.md),
+[stored-content-visibility.md](stored-content-visibility.md)); without it, every party that can read a connection's bucket reads every blob.
 
 ## The parties
 

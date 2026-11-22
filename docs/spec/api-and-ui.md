@@ -21832,6 +21832,18 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 **Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-027, R-API-040.
 
+### Q-API-405 · The connection shows its storage keys by identifier, and no operation changes them
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That no operator handles a
+storage key is the owner's (2026-11-22, decision 15 and the table of keys he asked for).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/system/storage-connections` shows `keyedNames` and `storageKeys[]` (`id`, `generation`, `state`, `createdAt`, `copies`); generations, export and import are commands of the binary (chosen) | Read-only in the API | An administrator sees which generation wraps how many copies; no key, no sealed value and no way to draw or drop one over HTTP | A new generation needs a shell in a pod |
+| (b) Operations to draw a generation and to export | API and UI | No shell | An export over HTTP puts the sealed keys into a browser and its downloads; a key operation becomes reachable with a session |
+
+**Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-061, R-STOR-083, R-STOR-085, R-STOR-088.
+
 ## What this does not cover
 
 

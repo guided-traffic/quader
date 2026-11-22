@@ -396,3 +396,6 @@ four run at once.
 The tests and their cost are R-STOR-063's table (about 30 s added to CI, nothing per format, no end-to-end leg). Nothing of it needs the
 owner's provider; what only its real bucket can show is a run of `quader admin storage check` against it, which stays not verified until
 someone runs it.
+
+Stage 2, the encryption of stored content per connection, has its own build plan, which starts its packages after the packages of this
+table named there: [stored-content-encryption.md](stored-content-encryption.md).

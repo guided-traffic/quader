@@ -1500,7 +1500,7 @@ and gets no failure-mode guarantees.
 
 ## P2 breadth
 
-P2 covers the remaining 33 catalog formats, plus R-STOR-014, R-STOR-048, R-CI-022 and 892 P2 catalog entries
+P2 covers the remaining 33 catalog formats, plus R-CI-022 and 892 P2 catalog entries
 without a requirement. No milestone numbers yet. Within each family, the order is demand first, then
 closeness to the engines that will exist by then.
 
@@ -1518,8 +1518,10 @@ P2 platform work, roughly in order:
 
 1. Push and pull replication (REPL-001…017), the first step toward multiple sites.
 2. A query language (search entries marked P2).
-3. Presigned download redirects (R-STOR-014, STOR-032…035).
-   Client-side encryption of stored content (R-STOR-048) excludes them for an installation that switches it on.
+3. The remaining entries of download redirects (STOR-034 CDN-signed URLs, STOR-035 the client's choice of the redirect
+   target). The delivery by signed links (R-STOR-014) and the
+   encryption of stored content per connection (R-STOR-048) moved to P1 with the owner's topic of 2026-11-22; an encrypted
+   connection serves no link.
 4. Further storage back ends (STOR-030 Google Cloud Storage, STOR-031 Azure Blob Storage) and
    multi-bucket sharding (STOR-026).
 5. Email notification of expiring tokens (TOK-023, which needs R-OPS-033 from M9).

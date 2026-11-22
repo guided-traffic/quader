@@ -12,7 +12,8 @@ verification, delivery by signed links of the object store as a switch of the in
 listing, delete, copy, move, properties), the trash can, garbage collection that is safe against
 concurrent uploads, the integrity scrub and orphan sweep, quotas and capacity thresholds, retention
 and cleanup policies, the S3 configuration and credential chain, several connections with a copy
-of every blob on each and the reconciliation between them (R-STOR-050 to R-STOR-063), the
+of every blob on each and the reconciliation between them (R-STOR-050 to R-STOR-063), the encryption
+of stored content per connection in a format of Quader's own (R-STOR-048, R-STOR-075 to R-STOR-091), the
 consistency assumptions about the object store, the behavior while the object store is unavailable, which role runs each part
 of the storage work across any number of replicas (R-STOR-046), and what storage contributes to
 Quader's own backup and restore (R-STOR-047). Repository semantics (classes, virtual resolution,
@@ -74,7 +75,8 @@ offer, used throughout this page:
 Priority: **MVP** · Covers: STOR-001
 
 On each connection that holds it (R-STOR-052), a blob MUST be stored as exactly one object whose key is derived only from its
-SHA-256 and that connection's prefix (stage 2 may give an encrypted connection another name, read from the copy row, R-STOR-062):
+SHA-256 and that connection's prefix (on an encrypted connection with keyed names, from an HMAC of the SHA-256 under the connection's
+name key, `<prefix>/keyed/…`, R-STOR-086; every reader takes the name from the copy row, R-STOR-062):
 
 ```text
 <prefix>/sha256/<h0h1>/<h2h3>/<h0…h63>
@@ -97,6 +99,7 @@ starts at `sha256/` (no leading slash).
   | Key family | Content | Lifecycle |
   |---|---|---|
   | `sha256/…` | Blobs | Created by the upload pipeline, deleted only by garbage collection (R-STOR-024) and the orphan sweep (R-STOR-026). |
+  | `keyed/…` | Blobs on an encrypted connection with keyed names, in place of `sha256/` (R-STOR-086) | As `sha256/`. |
   | `_uploads/<session-id>/data`, `_uploads/<session-id>/tail-<writer>` | The S3 multipart upload of a multi-request upload session, and the session's tail of less than one part, one object per request that wrote it (R-STOR-011, P1) | Everything below `_uploads/<session-id>/` is deleted on finalize, abort or expiry; a superseded tail is deleted once its successor is recorded; the orphan sweep removes leftovers (R-STOR-026). |
   | `_probe/<replica-id>` | Startup and conformance probe objects (R-STOR-035) | Deleted after each probe. |
   | `_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json` | Revocation journal entries ([ha-and-helm.md](ha-and-helm.md) R-HA-054), on every connection that is not draining (R-STOR-059) | Written by the shipping job (a re-ship writes identical content); never deleted by Quader; expired only by an operator lifecycle rule. |
@@ -1394,7 +1397,7 @@ the repository that holds the item says `downloadLinks: false`:
   stream ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-041) and is never a link; a remote with
   `cache.storeArtifacts: false` stores nothing and never serves one.
 - **An encrypted connection** serves no link (R-STOR-070 step 12, R-STOR-074). This is what [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content)
-  asks of the encryption; its sentences about `presignedDownloads: true` refer to the member this block removed.
+  asks of the encryption (R-STOR-088).
 
 Acceptance criteria:
 
@@ -1690,93 +1693,50 @@ Acceptance criteria:
   refuses it (`TestR_STOR_071_<Format>ClientsCheckALink`).
 
 ### R-STOR-048 · Client-side encryption of stored content
-Priority: **P2** · Covers: quader-only
+Priority: **P1** · Covers: STOR-022
 
-Decided by the owner on 2026-11-06: Quader will store the content of its blobs encrypted in the object store, in the
-storage format of [s3-encryption-proxy](https://github.com/guided-traffic/s3-encryption-proxy) (s3ep), with s3ep
-imported as a Go module. Not built. This block is the ticket for that work ([FULL.md](../projektplan/FULL.md), block E);
-the points under "Open before it is built" are decided when it is planned.
+Decided by the owner on 2026-11-22 (decisions 1 to 7, 13 and 15 of his working paper on the stored content;
+[ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring)):
+Quader can keep the blobs of a connection encrypted in the object store (`encrypted: true`, off by default), in a format of Quader's own
+after the model of the segment chain of his s3-encryption-proxy, bound to the content and not to the object's name, written in this
+specification with test vectors, fuzzing and an offline tool that reads a blob without a running Quader. This replaces his decision of
+2026-11-06, which imported that proxy's storage format and Go module; nothing of it was built, and its eleven open points are answered by the
+section [Encryption of stored content](#encryption-of-stored-content) (R-STOR-075 to R-STOR-091). Stage 2 of the owner's topic, on the seams
+of stage 1 (R-STOR-062); specified, not built. Raised from P2 to P1 with the topic, as stages 1 and 3 were.
 
-Why: the object store, its operators, its backups and anybody who can read the bucket see only ciphertext, and the key
-encryption key stays with Quader. An object Quader writes is readable through s3ep with the same key and metadata prefix,
-and the other way round, so an operator can read a blob without Quader.
+Why: a provider, its operators and whoever can read or copy a connection's bucket see ciphertext only, under names that do not tell which
+file is stored, while the key stays with Quader; and a changed object fails authentication on every read, ranged reads included, which
+narrows [H-11](#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks) for that connection.
 
-What it means:
+What it means, each in its requirement:
 
-- Quader is always the proxy: every download is decrypted and streamed by Quader. Presigned redirects (R-STOR-014) are
-  refused while it is on. Server-side encryption (R-STOR-032) stays possible beneath it.
-- Each blob has one random 256-bit data key; the content is an AES-256-GCM segment chain closed by a sealed trailer (the
-  plaintext's length and CRC32C). The data key is wrapped by an AES-256 key encryption key and stored in four object
-  metadata keys under a prefix (s3ep's default `s3ep-`).
-- One key encryption key is active and wraps new objects; retired keys only open what they wrapped. A key is base64 of
-  32 random bytes; s3ep's rules refuse a passphrase or a low-entropy value.
-- Every byte handed out is authenticated; a whole-object read is verified when its body ends (the trailer), so the
-  hold-back of R-STOR-013 stays the gate of a complete response. Ranged reads are authenticated per segment, which narrows
-  H-11 for ranged responses.
-- An object that is not in the format is refused, never served.
+- **Per connection.** `encrypted` is a fixed property of a connection (R-STOR-050, R-STOR-051, R-STOR-075); switching it on or off is a new
+  connection that the reconciliation fills (R-STOR-087). An installation can mix plain and encrypted connections.
+- **The format** (R-STOR-076 to R-STOR-079): one random data key per stored object; AES-256-GCM over segments of 64 KiB, each authenticating
+  the format, its index and whether it is the last; a final segment with the plaintext's length and SHA-256; nothing bound to the object's name,
+  so that the finalize of an upload session and the backup's pool keep copying objects without decrypting them.
+- **The record** (R-STOR-077): the data key wrapped under the connection's storage key, bound to the digest, with the key's identifier, the
+  format and a commitment to the data key, in four metadata keys written in the same request as the bytes, and nowhere else.
+- **The keys** (R-STOR-083 to R-STOR-085): the key ring of stored secrets is the root; a storage key per encrypted connection and generation,
+  drawn by Quader and sealed in one row; no level of keys per project or repository; a rotation of the root re-seals rows and touches no
+  object; an export of the sealed storage keys for safekeeping beside the key ring.
+- **Names** (R-STOR-086): on an encrypted connection an HMAC of the digest under a name key, unless the detail `keyed_names` says otherwise.
+- **Every download is decrypted and streamed by Quader**: an encrypted connection serves no signed link (R-STOR-014, R-STOR-088).
+  Server-side encryption (R-STOR-032) stays possible beneath.
+- **Elsewhere**: the writes and reads (R-STOR-080 to R-STOR-082), the jobs (R-STOR-087), the offline tool (R-STOR-089), the backup's pool
+  ([backup-and-restore.md](backup-and-restore.md) R-BAK-031) and the Bastion's cache ([bastion.md](bastion.md) R-BAS-061).
 
-Reference: the owner's sketch `s3enc` of 2026-11-06, glue around s3ep's `pkg/encryption/...`: `New(api,
-Options{ActiveKey, RetiredKeys, MetadataPrefix, PartSize, Concurrency})`, `Put` (streamed, through
-`feature/s3/transfermanager`), `Get`, `GetRange` (a `HEAD` and one ranged `GET` pinned to the entity tag), `Stat` (the
-authenticated length and CRC32C from the last 40 stored bytes), `Copy` (re-encrypts, streamed) and `PlaintextSize`; the
-errors `ErrNotEncrypted`, `ErrUnknownKey`, `ErrKeyMaterialUnreadable`, `ErrCorrupt`, `ErrRangeNotSatisfiable`,
-`ErrReservedMetadata`; unit tests and an interoperability test against a running s3ep. It lives in the s3ep work area,
-not in this repository.
+Why not the proxy's format, as the research of 2026-11-22 found it in the proxy's code at its release 5.4.2: it binds every segment to the
+object's name, so an object copied to another name does not open, which rules out Quader's finalize by a server-side copy and the backup's
+copies unless they decrypt and encrypt again; it carries exactly one wrap per object and its rules forbid more; it commits to no key; and
+its Go interface is declared no compatibility promise. The proxy cannot read Quader's objects, and Quader does not read the proxy's.
 
-Open before it is built, each a decision with the spec edits it causes:
+Acceptance criteria (each requirement of the section has its own; these are the whole):
 
-1. **Where the glue lives.** As a supported package of the s3ep repository that Quader imports, with the
-   interoperability test in s3ep's CI; or as `internal/blob/s3enc` in Quader, pinning s3ep's `pkg/encryption` by
-   pseudo-version (its module path carries no `/v5`, so a release tag cannot be required). s3ep's `pkg/` is not a
-   declared public API, and stored-data compatibility is not owed across its major releases, which favours the first.
-2. **The seam to `blob.ObjectStore`.** s3enc uploads from one stream; Quader drives the multipart calls itself: parts
-   read from the spool with per-part checksums and retries (R-STOR-006), and upload sessions that append parts across
-   requests and replicas (R-STOR-011). Either an encrypting `ObjectStore` that maps Quader's calls onto the segment chain
-   (a retried part must produce the same ciphertext, and a session's chain state, its segment index, running CRC32C and
-   wrapped data key, must live in PostgreSQL so that any replica continues it), or Quader's upload path uses the stream
-   API for an encrypted installation and gives up its own part control there.
-3. **Server-side copies.** The segments are authenticated under the object key, so an object copied to another key
-   cannot be read. That hits the finalize of an upload session (R-STOR-011 copies `_uploads/<session-id>/data` to the
-   content address, "no byte passes through Quader") and the backup copy from `<prefix>/sha256/…` to `pool/sha256/…`
-   ([backup-and-restore.md](backup-and-restore.md)) with its restore. Either re-encrypt, streamed through a replica (one
-   read and one write of the blob, multi-gigabyte blobs included), or bind the segments to a name that does not change
-   with the copy (the content address `sha256/<hex>`), which keeps server-side copies but loses reading through s3ep,
-   which binds the object key.
-4. **Confirming a file.** The object key is the plaintext's SHA-256 (R-STOR-001), so whoever can list the bucket can
-   confirm, without any key, that a known file (a public tarball, a leaked document) is stored. Either accept and
-   document it, or give an encrypted installation keyed object names (a MAC of the digest under a secret of the
-   installation), which changes R-STOR-001, the orphan sweep (R-STOR-026), the scrub (R-STOR-027) and the backup layout.
-5. **Scope.** Installation-wide, or per repository. Blobs are deduplicated across repositories and projects (INV-4), so
-   per repository needs one blob per setting and gives up that deduplication. The other key families of the bucket (the
-   UI's shared asset store, Q-HA-120; the tails of upload sessions) are either encrypted too, or read with the plain
-   client, because s3enc refuses plain objects.
-6. **Switching on and off.** An installation with plain objects cannot read them through s3enc. Before the first stable
-   release a fresh bucket is enough; after it, a resumable worker job that re-encrypts every blob (and one that reverses
-   it), or the switch only on an empty bucket.
-7. **Key custody and rotation.** The key encryption keys come from mounted files and change without a restart, as the
-   TLS certificates do. A retired key stays until every object it wrapped is moved onto the active key; whether s3ep
-   accepts a re-wrap that rewrites only the metadata (a copy of the object onto its own key) is not checked, the
-   alternative is s3enc's re-encrypting `Copy`. Losing the key encryption keys loses every blob, so they are backed up
-   apart from the bucket and its backups, and a restore (R-BAK) needs them.
-8. **Sizes.** A listing reports stored sizes (ciphertext, segment overhead and trailer); the orphan sweep, the storage
-   summary's physical figure (R-STOR-028) and the quotas convert them with `PlaintextSize` or read sizes from
-   PostgreSQL. A project is charged the logical size in any case (Q-STOR-155).
-9. **Cost.** AES-256-GCM on the `packages` pods for every upload and download; a ranged read costs a `HEAD` and a ranged
-   `GET` instead of one `GET`. The throughput targets are measured again with encryption on.
-10. **Dependencies.** The sketch requires newer patch releases of `aws-sdk-go-v2` than Quader pins (`v1.47.8` against
-    `v1.47.5`, `service/s3` `v1.114.9` against `v1.114.6`) and adds `feature/s3/transfermanager` (v0.x): one version of
-    each, raised everywhere.
-11. **The Bastion.** Its cache backend is a store of its own (R-BAS-030); whether it encrypts too.
-
-Acceptance criteria, once built:
-
-- With encryption on, `aws s3api get-object` of a blob returns ciphertext whose metadata carries the four format keys;
-  a download through Quader returns the original bytes (SHA-256 matches); the object read through s3ep with the same key
-  and prefix returns the same bytes, and an object written through s3ep is served by Quader.
-- A blob whose stored bytes were altered fails authentication: the download is aborted (R-STOR-013) and the blob is
-  marked `corrupt`.
-- `presignedDownloads: true` is refused while encryption is on.
-- After a key rotation, objects wrapped by the retired key are still served until they are moved onto the active key.
+- With `encrypted: true`, `aws s3api head-object` of a blob's object shows the four record keys, the object's name is no digest of the blob,
+  and no 16-byte run of the uploaded file appears in the object; a download through Quader returns the original bytes.
+- A blob whose stored bytes were changed fails on a whole and on a ranged read and is marked `corrupt` on that connection.
+- `quader admin storage offline get` with the key ring files and the export reads the blob from the bucket with no database.
 
 ### R-STOR-015 · Download statistics
 Priority: **P1** · Covers: ART-029
@@ -2620,7 +2580,9 @@ missing. Not built until stage 1 (R-STOR-050 to R-STOR-063); today the full coll
   `{connection, prefix}` into the job's `checkpoint` after each prefix. A connection whose circuit is open is skipped and named in the
   result; the others go on.
 - **Each listed object** is looked up by `(connection_id, object_key)` in `blob_copies` and, by the digest its name carries, in
-  `blobs` ([Q-STOR-238](#q-stor-238--the-orphan-sweep-adopts-the-object-of-a-live-blob-and-claims-an-orphan-through-the-blob-row)):
+  `blobs` ([Q-STOR-238](#q-stor-238--the-orphan-sweep-adopts-the-object-of-a-live-blob-and-claims-an-orphan-through-the-blob-row));
+  on an encrypted connection with keyed names, whose names carry no digest, the sweep lists `keyed/` and learns the digest of an object
+  without a copy row from its record (R-STOR-087):
   - **A copy row exists**: a listed size other than `stored_size` marks the copy `corrupt` and queues its repair (R-STOR-056); otherwise
     nothing.
   - **No copy row, the blob `live`**: the object is adopted: one transaction locks the blob `FOR SHARE` (it must still be `live`) and
@@ -3038,9 +3000,9 @@ Priority: **P1** · Covers: STOR-022
 - With `kms`, the credentials need `kms:GenerateDataKey` (writes, multipart) and `kms:Decrypt`
   (reads, multipart completion, presigned downloads).
 - SSE with customer-provided keys is not supported: it would make Quader hold the data key and break
-  presigned redirects. Client-side encryption is planned as
-  [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) (P2, not built), in the format of
-  s3-encryption-proxy.
+  presigned redirects. Client-side encryption is
+  [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) (specified, not built), per connection and
+  in a format of Quader's own (R-STOR-075, R-STOR-076); this mode stays possible beneath it.
 - Changing the mode affects new objects only; existing objects keep their encryption.
 
 Configuration (keys of a connection's element, R-STOR-050; each connection has its own mode):
@@ -3155,7 +3117,7 @@ connections agree in time or order. Operators MUST use stores that satisfy them.
 | A3 | A request whose response has been received is not executed again later, and of two completed writes or deletes of one key the one that completed later wins ("latest wins"). `delete_settle` (R-STOR-024) absorbs in-flight retries up to its length. A store that acknowledges a delete and removes the object's replicas afterwards (the software behind the owner's provider queues a delete it cannot finish within 30 s, same research) meets A3 only if that removal cannot reach a later write of the key; not verified ([H-1255](../security/object-store-connections.md#h-1255--a-store-that-applies-a-delete-after-acknowledging-it-is-not-proven-harmless-to-a-later-write)). |
 | A4 | Each connection is one bucket in one consistency domain, written by one installation (the marker of R-STOR-051). Copies between connections are Quader's own reconciliation (R-STOR-056). A store's replication that lets another site or bucket write or delete keys under a connection's prefix is not supported, also not between two connections of one installation; one-way replication from a connection's bucket to a passive disaster-recovery bucket that is not a connection is ([ha-and-helm.md](ha-and-helm.md) R-HA-026). This replaces "one bucket in one consistency domain" (superseded on 2026-11-22). |
 | A5 | Object `LastModified` comes from the store's clock, which differs from replica clocks by at most a few minutes; `storage.orphans.min_age` and `commit_deadline` keep a margin of hours. |
-| A6 | Concurrent writes to one key carry identical bytes (content addressing), so last-writer-wins is harmless. On several connections each key lies on one connection, so writes to different connections never meet. |
+| A6 | Concurrent writes to one key carry the same content (content addressing), so last-writer-wins is harmless: on a plain connection identical bytes; on an encrypted connection each a whole encryption of that content with its own data key and its record in the same request, so whichever completes later is the object and reads back (A2 keeps record and bytes one object; R-STOR-088). On several connections each key lies on one connection, so writes to different connections never meet. |
 | A7 | No guarantee rests on a conditional write (`If-None-Match`, `If-Match` on `PutObject`, `CopyObject` or `CompleteMultipartUpload`). Stores that refuse them, or accept and ignore them (the software behind the owner's provider documents both, depending on its configuration, same research), are supported. |
 
 - AWS S3 satisfies A1–A2 by documentation. MinIO and Ceph RGW (within one zone) are expected to;
@@ -3172,7 +3134,7 @@ connections agree in time or order. Operators MUST use stores that satisfy them.
   | The configured payload checksum and checksum modes | The probe's `PutObject` and parts carry them | A refusal (`400 InvalidArgument`, `InvalidRequest`, `501 NotImplemented`) is a configuration error naming the connection's `payload_checksum` or `request_checksum_calculation` and the value to try (`md5`, `none`, `when_required`) |
   | The payload checksum is enforced | One `PutObject` with a wrong checksum below `_probe/` | Accepted: `capabilities.payloadChecksumEnforced: false`; the connection's writes are `present` and not verified (R-STOR-052), so the scrub reads them first |
   | `DeleteObjects` | One request over two probe keys, when `batch_delete: true` | A configuration error naming `batch_delete` |
-  | Metadata survives a write; a copy replaces it | A `PutObject` with one metadata key, `HeadObject`, a `CopyObject` onto itself with `REPLACE`, `HeadObject` | Recorded as `capabilities.metadata` and `capabilities.copyReplacesMetadata`; stage 1 needs neither, stage 2 refuses what it cannot do (R-STOR-062) |
+  | Metadata survives a write; a copy replaces it | A `PutObject` with one metadata key, `HeadObject`, a `CopyObject` onto itself with `REPLACE`, `HeadObject` | Recorded as `capabilities.metadata` and `capabilities.copyReplacesMetadata`; a plain connection needs neither; an encrypted connection without `metadata` is a configuration error, and without `copyReplacesMetadata` its sessions' finalize streams (R-STOR-075, R-STOR-081) |
   | A server-side copy from every other connection on the same endpoint | One `CopyObject` of a probe object across the two buckets, with this connection's credential | Recorded per pair; the reconciliation streams between them (R-STOR-056) |
   | A signed link with its overrides (stage 3's link check, R-STOR-074) | As R-STOR-074 says, on every replica that serves downloads, whether or not the rest of the check runs | Optional: the connection serves no link on that replica; nothing else stops |
 
@@ -3265,8 +3227,8 @@ The owner's decisions of 2026-11-22 on the encryption and integrity of the store
 its blobs on several object-store connections at once, so that the outage of one provider does not stop it, and finds a damaged copy
 that nobody downloads. The work comes in three stages (his decision 14): **stage 1**, this section, several connections, the
 reconciliation between them and the scrub; **stage 2**, the encryption of stored content per connection (his decisions 1 to 6, 13
-and 15, specified after this section on top of the seams of R-STOR-062; until then
-[R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) is the older ticket); **stage 3**, the delivery by signed links
+and 15, specified in the section [Encryption of stored content](#encryption-of-stored-content) on top of the seams of R-STOR-062,
+summarized by [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content)); **stage 3**, the delivery by signed links
 (his decision 11, specified beside this section; R-STOR-014). His answers that this section carries out:
 
 | Decision | His answer | Where |
@@ -3313,9 +3275,10 @@ Priority: **P1** · Covers: STOR-011, STOR-012
   with the links' switch (R-STOR-074,
   Q-STOR-281); the links' own keys
   (`storage.s3.presign.*`) are gone.
-- **`encrypted`** is a property of every connection, `false` by default (the owner's decision 6). Stage 1 accepts only `false`; `true`
-  is refused at start with "storage.connections[<n>] (<id>): encrypted: true is not supported yet: the encryption of stored content is
-  not built (storage.md R-STOR-050)".
+- **`encrypted`** is a property of every connection, `false` by default (the owner's decision 6); `true` makes the connection keep its
+  blobs encrypted (R-STOR-075, with its detail `keyed_names`). Until stage 2 is built, `true` is refused at start with
+  "storage.connections[<n>] (<id>): encrypted: true is not supported yet: the encryption of stored content is not built (storage.md
+  R-STOR-050)".
 - **`drain: true`** takes a connection out (R-STOR-051): no upload goes to it, the reconciliation makes sure every blob it holds lies on
   the other connections, and then its copies are deleted.
 - **One connection stays as simple as today.** The plain path is one element with an `id` and a bucket (and, with static keys, one
@@ -3335,7 +3298,7 @@ Validation at start (a violation is a configuration error naming the key and the
    endpoint of its region), whose buckets are equal, and whose prefixes are equal or one contains the other, are refused. The
    connection marker of R-STOR-051 catches the location that two different addresses reach.
 5. The backup target lies at no connection's location (R-BAK-002, extended to every connection).
-6. `encrypted: false` on every element (above).
+6. `encrypted: false` on every element until stage 2 is built (above); then R-STOR-075's rules.
 7. At least one element without `drain: true`, and `storage.replication.min_copies` between 1 and the number of elements without it.
 8. The credential rules of R-STOR-031 (`static` needs both key files) and of R-STOR-032 (`sse_mode: kms` needs `sse_kms_key_id`) per
    element; `scrub_period` at least `24h`, `scrub_bytes_per_second` at least `1MiB`.
@@ -3963,8 +3926,8 @@ Stage 1 leaves exactly this room for stages 2 and 3 and specifies neither
   not the checks.
 - **Reading a copy** goes through one function per connection that returns the blob's bytes and verifies them against the digest
   (identity in stage 1); stage 2 makes it decrypt and authenticate. The scrub, the reconciliation's stream and the backup's stream use it.
-- **`encrypted`** is a fixed property of a connection (R-STOR-050, R-STOR-051); a server-side copy is made in stage 1 only between two
-  connections with `encrypted: false`, and stage 2 says what a copy between encrypted connections needs.
+- **`encrypted`** is a fixed property of a connection (R-STOR-050, R-STOR-051); a server-side copy is made only between two
+  connections with `encrypted: false`: stage 2 writes every copy into an encrypted connection with a new data key (R-STOR-087).
 - **For stage 3** (R-STOR-074, "a connection that is not encrypted, holds a sound copy of the blob, is not failing and passed its link
   check"): `blob.Store.Servable(ctx, digest) ([]Copy, error)` returns the copies a read would try now, in the order of R-STOR-055
   (`present`, configured on this replica, circuit closed), each with its connection's `id`, `object_key` and `stored_size`; the connection
@@ -4008,6 +3971,791 @@ What each pipeline job gains (estimates): the unit job about 4 s (Go) and 1.5 s 
 that runs `blob` about 20 s, the one that runs `storageverify` about 1 s, the one that runs `backup` about 8 s; `s3-conformance` about
 2 s; every end-to-end leg nothing. With 25 formats the cost is the same. Nothing of this needs the owner's provider; what only its real
 bucket can show (R-STOR-035's capabilities there) is a run of `quader admin storage check` against it, not a test.
+
+## Encryption of stored content
+
+Stage 2 of the owner's topic of 2026-11-22 on the stored content: a connection can keep its blobs encrypted by Quader, so that its
+provider, the provider's operators and whoever can read the bucket see ciphertext only, and the key stays with Quader. It builds on the
+seams stage 1 left (R-STOR-062: object metadata on the store's interface, the copy row's name, stored size and key identifier, every size
+check on the stored size, one reader per connection). [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) is the summary;
+this section is the specification. His answers that this section carries out
+([ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring)):
+
+| Decision | His answer | Where |
+|---|---|---|
+| 1 Import or build | (a) A format of Quader's own, after the model of the segment chain of his s3-encryption-proxy, bound to the content and not to the object's name; written in this specification, with test vectors, fuzzing and an offline tool that reads a blob without a running Quader. It replaces his decision of 2026-11-06 (that proxy's format, imported as a Go module) | R-STOR-076 to R-STOR-079, R-STOR-089 |
+| 2 Where the wrapped data key lies | (e) Once, in the object's metadata, written in the same request as the bytes, bound to the digest, under the connection's storage key; the database holds no key of a blob, only the state, the stored size and the storage key's identifier ("Zweimal ablegen heißt doch es könnte auseinander laufen") | R-STOR-077, R-STOR-083 |
+| 3 Keys per project and repository | (a) None; each wrap carries the identifier of its key, so that a level can be added later | R-STOR-077 |
+| 4 The root and its rotation | (a) The existing key ring of stored secrets seals the storage keys as it seals every other secret; its existing rotation is the rotation, and no object is touched by it | R-STOR-083, R-STOR-084 |
+| 5 Object names on an encrypted connection | (a) A keyed MAC of the digest; by his note ("Ggf. optional?") a detail of an encrypted connection, on by default, fixed once the connection holds data | R-STOR-086 |
+| 6 The default of a connection | (a) Not encrypted unless told | R-STOR-075 |
+| 7 Changing a connection | (a) Its properties are fixed once it holds data; switching encryption on or off is a new connection, also the same bucket under another prefix, which the reconciliation fills | R-STOR-087 |
+| 13 The Bastion's cache | (a) Encrypted in the same format once its chart gives it a key; off by default | [bastion.md](bastion.md) R-BAS-061 |
+| 15 Where the storage keys lie | (a) Once: a sealed row of the database per connection and generation, with a command that prints them sealed for safekeeping beside the key ring | R-STOR-083, R-STOR-085 |
+| 12 A Bastion and the main store | (b) A later planner specifies the handover of a short-lived link and the data key of one released blob; this section leaves the room: one function that yields a copy's data key to the main installation's own code | R-STOR-083 |
+
+**Status.** Specified, not built. Until it is built `encrypted: true` is refused at start (R-STOR-050). It needs stage 1 on `main` first;
+the order of the packages is on the developer page [stored-content-encryption.md](../developer/stored-content-encryption.md). Its
+security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
+[stored-content-keys.md](../security/stored-content-keys.md) (the keys and who holds them) and
+[stored-content-visibility.md](../security/stored-content-visibility.md) (what stays visible to a provider).
+
+**The keys, in the owner's terms** (the table he asked for on 2026-11-22):
+
+| Key | How many | Protects | Lies | Comes into being | Changes |
+|---|---|---|---|---|---|
+| The root: his instance key-encryption key, the existing key ring of stored secrets ([architecture.md](architecture.md) R-ARCH-021) | one active, retired ones only to open | the storage keys and name keys, as every other sealed value of the database | as files of the key ring Secret, in the pods `api`, `packages`, `worker` and the restore Job; never in the database, never in a bucket | by the operator, required today | by the existing rotation: a new key, two rollouts, the re-encrypt task, the old key removed (R-STOR-084) |
+| A storage key: a key-encryption key per encrypted connection | one active per encrypted connection; a further generation only on command | the data keys of every object of that connection | sealed under the root in one row of `storage_keys`; opened only in the memory of the pods | drawn by Quader when the connection is first seen; no operator handles it | itself never; its sealing at every rotation of the root |
+| A data key: the key of one stored object | one per object written on a connection | the bytes of that object, in segments of 64 KiB | wrapped under the storage key in the object's metadata, bound to the digest; open only in memory during an upload or a download | drawn by the writer of that object | never |
+| The name key (decision 5) | one per encrypted connection with keyed names | nothing; it turns a digest into the object's name | as a storage key | with the connection's first storage key | never, or every object would get another name |
+
+**Terms of this section.**
+
+| Term | Meaning |
+|---|---|
+| Encrypted connection | A connection with `encrypted: true` (R-STOR-075). |
+| Record | The four metadata keys of an object on an encrypted connection: the format, the storage key's identifier, the wrapped data key and the commitment (R-STOR-077). |
+| Segment | 64 KiB of plaintext sealed with AES-256-GCM, stored with its nonce and tag (R-STOR-076). |
+| Final segment | The last segment of an object, which carries its plaintext length and SHA-256 (R-STOR-076). |
+| Stored size | The size of the object on the connection; on an encrypted connection `S(L)` of the plaintext size `L` (R-STOR-076). |
+
+### R-STOR-075 · An encrypted connection
+Priority: **P1** · Covers: STOR-022
+
+- **`encrypted: true`** on an element of `storage.connections` (R-STOR-050) makes the connection encrypted: every blob object it holds is
+  stored in the format of R-STOR-076 with its record (R-STOR-077), and every staging object of an upload session on it too (R-STOR-081).
+  `false` is the value in the field (the owner's decision 6), and the plain path stays one line; the encrypted one is one more:
+  `storage.connections: [{bucket: quader-blobs, encrypted: true}]`.
+- **`keyed_names`** is the detail of an encrypted connection (decision 5 with his note): `true` by default on an encrypted connection, so
+  that a lister of the bucket cannot confirm that a known file is stored (R-STOR-086); `false` keeps the names of R-STOR-001. On a
+  connection with `encrypted: false` the key is not offered: a value there is refused ("keyed_names is a detail of an encrypted connection;
+  on a connection that is not encrypted the content is readable anyway").
+- **Fixed with the connection.** `encrypted` and `keyed_names` are fixed once the connection holds a copy, as bucket and prefix are
+  (R-STOR-051, [Q-STOR-224](#q-stor-224--bucket-prefix-and-encrypted-are-fixed-endpoint-and-credentials-may-change-and-a-marker-names-the-location));
+  `storage_connections` gains `keyed_names boolean NOT NULL DEFAULT false` (R-STOR-083's migration). Switching encryption on or off is a
+  new connection that the reconciliation fills (decision 7, R-STOR-087).
+- **Nothing more for an operator.** The configuration holds no key and the chart no Secret for it: Quader draws the connection's storage key
+  and name key when it first sees the connection and keeps them sealed in the database (R-STOR-083). What the operator keeps is the key
+  ring, as today, and the export of the storage keys (R-STOR-085, R-STOR-090).
+- **What the store must support** (the start check of R-STOR-035, [Q-STOR-306](#q-stor-306--an-encrypted-connection-needs-metadata-and-without-a-copy-that-replaces-it-the-finalize-streams)):
+  `capabilities.metadata` is required, because the record lives there; an encrypted connection whose store does not keep the metadata of
+  the probe's `PutObject` is refused as a configuration error ("connection archive: the store did not keep the metadata of the probe
+  object; an encrypted connection keeps each object's wrapped data key there (storage.md R-STOR-077)"). `capabilities.copyReplacesMetadata`
+  is optional: without it the finalize of an upload session streams through the replica (R-STOR-081). Everything else is as for any
+  connection.
+- **Part sizes.** While any connection is encrypted, `storage.object_store.multipart.part_size` and `storage.uploads.part_size` are
+  multiples of 64 KiB, so that a part holds whole segments; the defaults (16 MiB) are.
+
+Validation at start, beside R-STOR-050's (each a configuration error naming the key and the connection):
+
+1. `keyed_names` set on an element with `encrypted: false`.
+2. A part size that is not a multiple of 65,536 while an element is encrypted.
+3. `encrypted: true` on a connection whose start check finds no `metadata` capability (above).
+4. The rules against the database: a changed `encrypted` or `keyed_names` while the connection holds a copy (R-STOR-051), and an encrypted
+   connection without keys whose location already holds objects (R-STOR-083).
+
+Configuration (the keys this section adds to an element of R-STOR-050):
+
+```yaml
+storage:
+  connections:
+    - id: archive                       # example
+      bucket: quader-archive            # example
+      encrypted: true                   # default: false (the owner's decision 6)
+      keyed_names: true                 # default with encrypted: true; refused with encrypted: false (R-STOR-086)
+```
+
+Acceptance criteria:
+
+- A table test of the configuration (unit, `internal/config`): `encrypted: true` alone loads with `keyed_names: true`; `keyed_names: false`
+  on a plain element, and `storage.uploads.part_size: 100000` beside an encrypted element, are each refused with the key named.
+- A replica whose encrypted connection's in-memory store drops metadata (the fault hook) exits with the message above; with
+  `encrypted: false` on the same store it starts (unit, `internal/app`).
+
+### R-STOR-076 · The stored format: segments, the final segment and the stored size
+Priority: **P1** · Covers: quader-only
+
+The format `quader-blob-v1` is Quader's own (the owner's decision 1 (a)), specified here so that another implementation can read and write
+it without Quader's code ([Q-STOR-300](#q-stor-300--segments-of-64-kib-under-aes-256-gcm-with-the-nonce-stored-in-each-segment),
+[Q-STOR-302](#q-stor-302--an-object-ends-with-a-final-segment-that-carries-its-length-and-its-sha-256),
+[Q-STOR-305](#q-stor-305--one-object-holds-at-most-4-tib-of-plaintext)). It is modelled on the segment chain of the owner's
+s3-encryption-proxy (a third project's tool, at its release 5.4.2: AES-256-GCM over 64 KiB segments, a random nonce per segment, a sealed
+trailer) and differs from it where Quader needs it to: nothing is bound to the object's name, the end of an object is a marked final segment,
+the record binds the digest, names its key and commits to the data key (R-STOR-077). The proxy cannot read Quader's objects, and Quader does
+not read the proxy's. The code is the package `internal/blob/blobcrypt`, standard library only.
+
+**Notation.** `‖` is concatenation; `u8(x)` one byte, `u64(x)` eight bytes, big-endian; `FMT` the 14 ASCII bytes `quader-blob-v1`;
+`HKDF(ikm, salt, info)` HKDF-SHA-256 ([RFC 5869](https://www.rfc-editor.org/rfc/rfc5869)) with 32 bytes of output, an absent salt being
+the empty string; `Seal(k, n, p, a)` AES-256-GCM ([NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf))
+with key `k`, 12-byte nonce `n`, plaintext `p` and additional data `a`, returning the ciphertext followed by the 16-byte tag.
+
+- **The data key and what derives from it.** Each object has a data key `DEK` of 32 bytes from the operating system's random source,
+  drawn by the writer of that object and used for no other object (R-STOR-080, R-STOR-087). `DEK` itself seals nothing; from it derive
+  the segment key `K_seg = HKDF(DEK, "", FMT ‖ " segments")`, the commitment `C = HKDF(DEK, "", FMT ‖ " commitment")` (R-STOR-077) and the
+  key of an upload session's tails `K_tail = HKDF(DEK, "", FMT ‖ " staging tails")` (R-STOR-081).
+- **Data segments.** A plaintext of `L` bytes is cut into `n = ⌈L / 65,536⌉` data segments: segment `i` (`0 ≤ i < n`) holds the plaintext
+  bytes `[65,536·i, min(65,536·(i+1), L))`, so every data segment but the last holds 65,536 bytes and the last 1 to 65,536. Segment `i` is
+  stored as `N_i ‖ Seal(K_seg, N_i, P_i, FMT ‖ u8(0x00) ‖ u64(i))`, 28 bytes more than its plaintext.
+- **The final segment** follows at index `n`: its plaintext is `T = u64(L) ‖ SHA-256(plaintext)` (40 bytes), stored as
+  `N_n ‖ Seal(K_seg, N_n, T, FMT ‖ u8(0x01) ‖ u64(n))`, 68 bytes. The mark `0x01` says "last": an object ends with exactly one final
+  segment and holds none elsewhere. An empty plaintext is the final segment alone.
+- **What a segment authenticates:** the format's identifier (so its version is authenticated), its index, and whether it is the last; with
+  the data key, the object it belongs to. **Not** the object's name, the bucket or the connection: an object keeps its meaning when it is
+  copied, by the finalize of an upload session (R-STOR-081) and into a backup's pool (backup-and-restore.md R-BAK-031).
+- **Nonces.** 12 bytes stored in front of each segment's ciphertext; a reader takes them as stored and needs no rule for them. A writer
+  MUST NOT seal two different plaintexts, or one plaintext with two different additional data, under one `K_seg` and one nonce; sealing the
+  same plaintext with the same additional data and nonce again (a retry, byte for byte the same) is allowed. Quader's writers derive the
+  nonces from a seed per part (R-STOR-080,
+  [Q-STOR-301](#q-stor-301--a-writer-derives-the-nonces-from-a-seed-per-part-so-that-a-retry-sends-the-same-bytes-without-keeping-them));
+  any other source that keeps the rule is valid.
+- **The object** is `seg_0 ‖ … ‖ seg_{n−1} ‖ final`, with no header: what a reader needs before the first segment comes with the record.
+- **The stored size** is `S(L) = L + 28·⌈L / 65,536⌉ + 68`. The inverse: a size below 68 is not in the format; with `D = S − 68`, `D = 0` is
+  `L = 0`; otherwise `n = ⌈D / 65,564⌉` and `r = D − 65,564·(n − 1)`, and the size is in the format only if `29 ≤ r ≤ 65,564`, with
+  `L = D − 28·n`. A size outside the format is refused before a byte is read.
+
+  | `L` (plaintext) | `S(L)` (stored) |
+  |---|---|
+  | 0 | 68 |
+  | 1 | 97 |
+  | 65,535 | 65,631 |
+  | 65,536 | 65,632 |
+  | 65,537 | 65,661 |
+  | 16 MiB (one part by default) | 16,784,452 |
+  | 100 MiB (the multipart threshold) | 104,902,468 |
+  | 10 GiB (the default upload limit) | 10,742,005,828 |
+  | 4 TiB (the format's limit) | 4,399,925,559,364 |
+
+  Not in the format, for example: 0, 67, 69, 96, 65,633, 65,660. The overhead is 0.043 % plus 68 bytes; a blob of 1 MiB grows by 516 bytes.
+- **Limits.** `L ≤ 2^42` (4 TiB), so an object has at most `2^26` data segments and is at most 5 TiB stored, the largest object an
+  S3 store keeps; a writer refuses more. One data key seals at most `2^31` distinct segments (R-STOR-081 counts them for a session,
+  [Q-STOR-318](#q-stor-318--a-session-counts-the-segments-it-seals-under-its-data-key)), half the `2^32` invocations NIST SP 800-38D §8.3
+  allows one key with random 96-bit nonces (the research of 2026-11-22, topic B.2).
+
+**Known answers.** Computed for this specification on 2026-11-22 by an implementation independent of Quader's code (Python 3.12 with the
+`cryptography` package 38.0.4, written from the text above); they are part of the vector file of R-STOR-079. With `DEK` the bytes `00 01 … 1f`
+and the nonces of R-STOR-080 from the seed `60 61 … 7f`:
+
+- `K_seg` = `3671ce0541d176175bb26410c7f0fc2da1b39c6c2aac6f5e6370a6d8ecab751d`;
+  `C` = `1f85b68c333456650f07544250d71ec2183829bbd73dbe32cead4ecbc7e47733`;
+  `K_tail` = `c1ad0bdb618d3d83b751d1369a6ad44e43b17af56a2f61426198c078b8c87af5`.
+- The empty plaintext is stored as the 68 bytes
+  `0a34ba7650ec909a28eb0538f53f7a84be9ab01ed68575fe09db310b105f9920c9514c8d9c6697e73cd3ad5a6ffa194411d4ecc171d9eb47d7abee250da8fbad07dd2cad`.
+- The plaintext `a` (`L = 1`, SHA-256 `ca978112…48bb`) as the 97 bytes
+  `05c628666f8f6834df05aa27f848cff1e0157ab14ec8c092f5c25a9c72182e548168cd912fdcca99e766a8b8075a85ce9f94df79a3778bef284bd3aa9bfabf3803858b1f077d62b7ffbc5fef76005697ce8f12da2adf7fb2b20f25458434a6de71`.
+- The 65,537 bytes `i mod 251` (SHA-256 `237356e1…529d`) as 65,661 bytes whose SHA-256 is
+  `f547d3127b4c42a11f36ff45996bf301cd35d84bbde6c4d0c22b0beb850ff144`.
+
+Acceptance criteria:
+
+- The known answers above and the vectors of R-STOR-079 reproduce (unit, `internal/blob/blobcrypt`).
+- `S` and its inverse agree on the boundary table, every size in the "not in the format" list is refused, and a writer refuses
+  `L = 2^42 + 1` (unit; the inverse is also a fuzz target, R-STOR-079).
+
+### R-STOR-077 · The record at the object: the wrapped data key, the key's identifier, the format and the commitment
+Priority: **P1** · Covers: quader-only
+
+The data key lies once, at the object, in the same request as the bytes (the owner's decision 2 (e)): as four keys of the object's metadata
+below the prefix `quader-`, which stage 1 reserves for Quader (R-STOR-062). The database keeps no key of a blob; the copy row keeps its state,
+its stored size and the storage key's identifier (`blob_copies.storage_key_id`), which is bookkeeping, never what a read opens
+([Q-STOR-303](#q-stor-303--the-wrap-carries-the-digest-and-the-size-in-its-sealed-plaintext-under-a-key-derived-per-wrap),
+[Q-STOR-304](#q-stor-304--a-commitment-to-the-data-key-in-the-record-checked-before-the-first-segment)).
+
+| Metadata key | Value |
+|---|---|
+| `quader-format` | `quader-blob-v1` |
+| `quader-key` | the identifier of the storage key that wrapped the data key (R-STOR-083), 3 to 64 characters of `[a-z0-9-]`, for example `sk-archive-1-3f9a0c2e` |
+| `quader-wrap` | `W` in base64url without padding ([RFC 4648](https://www.rfc-editor.org/rfc/rfc4648) §5): 116 bytes, 155 characters |
+| `quader-commitment` | `C` in base64url without padding: 32 bytes, 43 characters |
+
+- **The wrap.** `W = salt ‖ nonce ‖ Seal(K_w, nonce, DEK ‖ digest ‖ u64(L), FMT ‖ " wrap" ‖ u8(len(id)) ‖ id)`, where `salt` (16 bytes) and
+  `nonce` (12 bytes) are drawn from the random source for each wrap, `K_w = HKDF(storage key, salt, FMT ‖ " wrap")`, `digest` is the blob's
+  SHA-256 (32 bytes), `L` its plaintext size and `id` the storage key's identifier as in `quader-key`. A key derived per wrap puts no bound of
+  its own on the number of wraps under one storage key: two wraps share a key only if they draw the same salt, which after `2^48` wraps has a
+  probability below `2^-32`.
+- **The binding to the content.** The wrap is bound to the digest and the size through its sealed plaintext, and to its storage key through
+  its additional data: a reader compares the digest and the size it unwraps with those of the copy it reads (the row's `sha256` and the blob's
+  `size`) and refuses a difference. Whoever can only write the bucket cannot make a wrap (he has no storage key), and a genuine wrap of
+  another blob names another digest. The offline tool, which has no database, learns the digest from the wrap (R-STOR-089).
+- **The commitment.** A reader computes `C` from the data key it unwrapped and compares it in constant time with `quader-commitment` before
+  it opens a segment, so that a record can name one data key only, whoever made it.
+- **Size.** The four keys and values take about 290 bytes, well below the 2 KiB stage 1 allows (R-STOR-062) and the user metadata bounds
+  AWS documents (2 KB) and the software behind the owner's provider documents (24 KiB; research of 2026-11-22, not verified at the provider).
+- **Room for another level of keys** (decision 3): each wrap names its key. A later level (a key per project) would add further wraps under
+  further keys (`quader-wrap-2` beside `quader-key-2`); this version writes and reads exactly the four keys and ignores any other key below
+  `quader-`.
+
+**The order in which a reader checks** (each failure has its name; R-STOR-082 says what each one marks):
+
+1. `quader-format` is present and equal to `quader-blob-v1`; otherwise `format`.
+2. `quader-key` names a storage key of this connection (R-STOR-083); a replica that does not hold it reads the rows again once; still
+   unknown, `unknown_key`.
+3. `W` opens under that key; otherwise `record`.
+4. The unwrapped digest and size equal the copy's; otherwise `record`.
+5. `S(L)` equals the copy's `stored_size` and the size or total the store answered; otherwise `size`.
+6. `C` from the data key equals `quader-commitment`; otherwise `commitment`.
+7. The segments in their order, then the final segment (whose `L` and digest must equal the copy's), then on a whole read the SHA-256 of
+   the plaintext; otherwise `segment`, `final` or `digest`.
+
+Steps 1 to 6 come before the first byte; step 7 is the body.
+
+**Known answers** (computed as in R-STOR-076): with the storage key `20 21 … 3f`, the identifier `sk-default-1-0a1b2c3d`, the salt
+`80 81 … 8f`, the wrap's nonce `90 91 … 9b` and the plaintext `a` of R-STOR-076, `quader-wrap` is
+`gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam7m4IyuNMsFf5oiyZvVVCx8bBxSnY5kNUOulc9ByS8wknq4HpO9Zz-lqXOkpDX_rlAAJ5DJCXzMRmCNWG9_7zOuut11EonL3axPC5fq0E9cwuDeQCQ1A6Xs`
+and `quader-commitment` is `H4W2jDM0VmUPB1RCUNcewhg4KbvXPb4yzq1Oy8fkdzM`; the same wrap opened with the identifier
+`sk-default-2-0a1b2c3d` fails.
+
+Acceptance criteria:
+
+- A record written and read back round-trips; the known answers reproduce; the record of every vector is at most 2 KiB (unit,
+  `internal/blob/blobcrypt`).
+- Each mutation of R-STOR-078 that changes the record is refused with the name of the step above (unit).
+
+### R-STOR-078 · What the format withstands
+Priority: **P1** · Covers: quader-only
+
+Each attack of the research's table (s3-encryption-proxy's codec, run against it on 2026-11-22) and of the state of the art (topic B.2),
+with what stops it in this format. The attacker can write the bucket and holds no storage key, unless the row says otherwise.
+
+| Attack | Stopped by | Refused |
+|---|---|---|
+| Truncation at a segment boundary, the final segment cut off | the size (`S(L)` against the stored size and the store's answer); the missing final segment | before the first byte, whole and ranged |
+| Truncation inside a segment, or bytes appended | the size rule (not in the format, or not `S(L)`) | before the first byte |
+| Segments reordered | the index in each segment's additional data | at the first moved segment |
+| A segment dropped | the size; the index | before the first byte |
+| A segment of another object put in | another data key: its tag fails | at that segment |
+| A data segment presented as final, or the final segment as data | the mark in the additional data | at that segment |
+| A whole object put under another blob's name | the wrap's digest is not the copy's | before the first byte |
+| The record of another object put on this body | the wrap's digest is not the copy's; unchecked, the other data key would fail the first segment | before the first byte |
+| A changed record: format, key identifier, wrap or commitment | steps 1, 2 and 3, 3, 6 of R-STOR-077 | before the first byte |
+| A record made under a storage key of another connection or another installation | an identifier this connection does not hold, or a wrap that does not open | before the first byte |
+| The object copied to another connection of the same installation | that connection holds no key of this identifier | before the first byte |
+| A ciphertext that opens under two data keys (key commitment, Albertini and others, USENIX Security 2022) | the commitment: a second data key has another `C` | before the first byte |
+| Parts of two sealings of one upload session spliced (a part sent again with other bytes) | the final segment's SHA-256 and the reader's digest | at the end of a whole read |
+| One bit changed anywhere | the tag of that segment, or of the wrap | at that segment, or before the first byte |
+| An older genuine object of the same content put back (a noncurrent version, `restore-versions`, a restored database) | not stopped, and harmless: the same plaintext under a storage key of this connection that is still trusted, because a leaked storage key is answered by replacing the connection (R-STOR-085) | — |
+
+What the format does not stop is on its security page: damage outside a ranged read's window
+([H-1300](../security/stored-content-format.md#h-1300--a-ranged-read-does-not-see-damage-outside-its-window)), objects written by a holder
+of a storage key ([H-1301](../security/stored-content-format.md#h-1301--a-holder-of-a-storage-key-can-write-objects-that-authenticate)),
+and the plaintext's size ([H-1312](../security/stored-content-visibility.md#h-1312--the-stored-size-gives-away-the-exact-plaintext-size)).
+
+Where a failure surfaces: a failure of steps 1 to 6 comes before the first byte, so the read falls over to another copy (R-STOR-055); a
+failure inside the body comes after earlier segments were released, each of them authenticated, and aborts the response as R-STOR-013 says.
+
+Acceptance criteria:
+
+- One unit test per row (`internal/blob/blobcrypt`), each a mutation of a vector's object or record that is refused with its named reason,
+  and for the last row a test that the older object opens and yields the same plaintext; every test runs in milliseconds.
+
+### R-STOR-079 · Test vectors, fuzz targets and an independent check of the format
+Priority: **P1** · Covers: quader-only
+
+- **The vectors are files of the repository**: `internal/blob/blobcrypt/testdata/vectors.json` and, per case, the stored object
+  `testdata/objects/<case>.bin` and its record `testdata/objects/<case>.record.json`. Each case gives its inputs in hex (data key, storage
+  key, identifier, salt, the wrap's nonce, the seed and, explicitly, every segment's nonce, so that a reader needs no nonce rule), the
+  plaintext as a rule (`i mod 251` over `L` bytes), and the outputs (the record, the stored object's size and SHA-256, the keyed name). Cases:
+  `L` = 0, 1, 65,535, 65,536, 65,537 and 196,609 (three full segments and one byte); a staging tail at session offset 131,072 (R-STOR-081);
+  a keyed name (R-STOR-086); and one negative case per row of R-STOR-078, a mutated object or record with the reason it must fail with. The
+  files together stay below 1 MB.
+- **Captured once, checked independently, never regenerated.** The builder writes them from the first implementation and checks every case
+  once with an implementation independent of it before they are committed: a script `tools/blobvectors/check.py` on Python's `cryptography`,
+  run by hand and not in CI, whose result and date the developer page records. The known answers of R-STOR-076 and R-STOR-077 were computed
+  that way for this specification and must appear in the file unchanged. A change of the format is a new identifier (`quader-blob-v2`) with
+  vectors of its own.
+- **Fuzz targets** in `internal/blob/blobcrypt`, named for what they read: `FuzzPlainSize` (the inverse of `S` never panics and agrees
+  with `S`), `FuzzOpenRecord` (any metadata map yields a data key or one of the named errors), `FuzzReadObject` (any body under a valid
+  record yields the plaintext or a named error, and never releases a byte of a segment that failed), `FuzzReadRange` (any range over a vector
+  object yields exactly the window's bytes or an error, never a byte that was not authenticated) and `FuzzOpenTail` (R-STOR-081's tail
+  objects). Their seeds are the vectors and run in every `go test`; the nightly runs each for five minutes (R-STOR-091,
+  [Q-STOR-319](#q-stor-319--every-behaviour-of-the-encryption-once-at-the-cheapest-tier-and-its-fuzz-targets-in-the-nightly)).
+- **No interoperability test with the proxy**: the formats differ by design (R-STOR-076).
+
+Acceptance criteria:
+
+- `go test ./internal/blob/blobcrypt/` reads every case of the vector file, reproduces the positive ones and refuses the negative ones with
+  their reasons; the five fuzz targets exist and their seed corpora pass.
+- The developer page names the date and the outcome of the independent check, and the commit that adds the vectors names it too.
+
+### R-STOR-080 · Writing to an encrypted connection: one request and Quader's multipart
+Priority: **P1** · Covers: STOR-022
+
+Every write of a blob from a spool goes this way on an encrypted connection: an upload (R-STOR-004 to R-STOR-006), the fill of a remote
+repository (the proxy's artifacts and documents, through `items.Spool` and `blob.Store.CommitAll`), an import (through the target format's
+publish protocol), the generated items of a virtual repository, the shared assets of the UI and the avatars, the commit's repair case, and
+the streams of the reconciliation and of a restore into an encrypted connection (R-STOR-087, backup-and-restore.md R-BAK-031).
+
+- **Per write and connection** a new data key, the connection's active storage key (R-STOR-083) and the name from the connection's naming
+  function (R-STOR-086). With `min_copies` above 1, each encrypted connection gets its own data key.
+- **Nonces from a seed.** The writer draws a 32-byte seed from the random source once per write and derives each segment's nonce as the
+  first 12 bytes of `HMAC-SHA-256(seed, FMT ‖ " nonce" ‖ u8(mark) ‖ u64(i))`, with the segment's mark (`0x00` data, `0x01` final) and index.
+  The spool does not change during the request, so a part encrypted twice is the same bytes twice.
+- **The ciphertext is never kept.** The body of each request is a seekable reader that encrypts its section of the spool as it is read, one
+  segment in memory; the SDK's retry seeks back and gets byte for byte what it sent before (Q-STOR-301).
+- **Payload checksums** (the connection's `payload_checksum`, R-STOR-006) are taken over the stored bytes, so the writer encrypts a part once
+  to hash it and once to send it; `none` skips the first pass. The blob's own SHA-256 cannot be the checksum of the request on an encrypted
+  connection as it is on a plain one.
+- **One request** (a plaintext up to `multipart.threshold`, and the empty blob): one `PutObject` of `S(L)` bytes with the record.
+- **Quader's multipart**: `CreateMultipartUpload` with the record (the digest is known: the spool hashed it); parts of `part_size` plaintext,
+  each stored as its segments; the last part holds the remaining data segments and the final segment; `CompleteMultipartUpload` with each
+  part's checksum; then `HeadObject`, whose size must be `S(L)` and whose `quader-key` must be the one written. Another size or record fails
+  the write as a wrong size does today: the commit falls over to the next connection and the object is left to the orphan sweep (R-STOR-053).
+- **The copy row**: `stored_size = S(L)`, `storage_key_id` the identifier written, `present`, and verified where the connection enforces
+  payload checksums (R-STOR-052): Quader encrypted what it hashed, and the store refused any other bytes.
+- **Cost**: with a payload checksum, AES-256-GCM twice and SHA-256 once more per stored byte; without, AES-256-GCM once. The proxy's codec
+  measured about 4.5 GB/s per core for encryption on an Apple M5 Pro (research of 2026-11-22, its own report); nothing was measured on
+  Quader's hardware.
+
+Acceptance criteria (unit, `internal/blob`, the in-memory store with an encrypted connection and its fault hook):
+
+- An upload of 1 KiB lies on the encrypted connection as 1,120 bytes with the four record keys; its copy row has `stored_size` 1,120 and the
+  storage key's identifier; a download returns the 1 KiB.
+- An upload of 192 KiB with a part size of 64 KiB, whose second `UploadPart` fails once by the fault hook, completes; the bytes of the
+  repeated part equal those of the failed attempt (the fault hook keeps both), and the object reads back.
+- Two uploads of the same content to one connection write two different bodies (each its own data key); the later one is the object, and it
+  reads back (A6 on an encrypted connection, R-STOR-088).
+
+### R-STOR-081 · Upload sessions on an encrypted connection
+Priority: **P1** · Covers: STOR-022
+
+A multi-request upload session (R-STOR-011) stays on its connection (R-STOR-054); on an encrypted one it encrypts each part as it is sent
+and carries its data key between requests in its row
+([Q-STOR-307](#q-stor-307--a-sessions-data-key-is-sealed-in-its-row-and-its-tails-are-sealed-under-a-key-of-their-own)).
+
+- **The data key** is drawn when the session starts and sealed with the key ring into `upload_sessions.sealed_data_key`, a column registered
+  with `internal/secrets` (table `upload_sessions`, primary key `id`, R-ARCH-021), so that any replica that takes the writer claim opens it;
+  nothing of it stays in a replica's memory, spool or Valkey after a request. The re-encrypt task of a rotation reseals it like every sealed
+  value (R-STOR-084).
+- **The staging object** `_uploads/<session-id>/data` is created without a record: its digest is not known yet, and it is never read as a
+  blob.
+- **Parts.** A request's parts are cut from its spool segment as today, each `part_size` of plaintext, and stored as data segments of the blob
+  whose indexes count from the part's offset (`received / 65,536`); the request draws a new seed, so a part that a later request sends again
+  gets other nonces. `upload_session_parts` gains `stored_size` and `stored_sha256`, the size and SHA-256 of the part as sent (on a plain
+  connection equal to `size` and `sha256`); the payload checksum and the completion use them.
+- **Tails.** A tail object `_uploads/<session-id>/tail-<writer>` holds its bytes as tail segments under `K_tail`: segment `j` of a tail object
+  that starts at the session offset `o` is `N ‖ Seal(K_tail, N, P_j, FMT ‖ u8(mark) ‖ u64(o) ‖ u64(j))`, with the mark `0x02` and `0x03` on its
+  last segment, and no final segment. The row keeps the tail's plaintext size and SHA-256 as today; reading a tail back authenticates every
+  segment and then compares size and SHA-256.
+- **Counting.** The claim transaction adds to `upload_sessions.sealed_segments` the number of segments the request may seal
+  (`⌈bytes / 65,536⌉ + 2`); a request that would pass `2^31` answers `409` with the code `session_exhausted` and the session is aborted
+  (Q-STOR-318). A client that sends a blob once never comes near it.
+- **Finalize**, on the session's connection:
+  1. The remaining plaintext (the tails, decrypted) becomes the last data segments, followed by the final segment with `L` and the digest of
+     the session's hash state; without a tail the final segment alone is the last part (68 bytes, which S3 allows as the last part).
+     `CompleteMultipartUpload`, then `HeadObject` of the staging object: `S(L)`.
+  2. Where the connection's capabilities say `copyReplacesMetadata`: the copy to the content name carries the record, a wrap under the active
+     storage key bound to the digest (`CopyObject` with `REPLACE` up to 5 GiB; above, the multipart copy whose `CreateMultipartUpload` carries
+     the record). `HeadObject` confirms size and record; the copy row is `present` and not verified, as stage 1 says (the scrub reads it first).
+  3. Where it does not: the replica streams the staging object into a multipart upload of the content name created with the record, whose parts
+     are the staging parts as stored (their `stored_sha256` as payload checksums) and the last part; it authenticates every segment and hashes
+     the plaintext on the way, and the copy is verified. A mismatch fails the finalize with `503` and leaves the session `assembled`.
+  4. A blob smaller than one part (tails only) is written from its decrypted tails as one request (R-STOR-080), not copied.
+  With `min_copies` above 1, each other connection gets the blob as stage 1 says, an encrypted one through its own write with a new data key
+  (R-STOR-087).
+- **Expiry and abort** as R-STOR-011 and R-STOR-054; the sealed data key goes with the row.
+
+Acceptance criteria (unit, `internal/uploads`, two in-memory stores, parts of 64 KiB):
+
+- A session of three requests (64 KiB; 64 KiB and 10 KiB; 20 KiB) on an encrypted connection finalizes with the right digest; the content
+  object carries the record and reads back; no staging object or tail contains a run of 16 bytes of the input.
+- On a connection whose capabilities say `copyReplacesMetadata: false`, the finalize streams and the copy row is verified.
+- A request whose session's counter would pass the bound (the counter set near it) answers `409 session_exhausted`.
+
+### R-STOR-082 · Reading from an encrypted connection
+Priority: **P1** · Covers: STOR-022
+
+Every read of a copy on an encrypted connection goes through the connection's reader of R-STOR-062 (the identity on a plain connection),
+which decrypts and authenticates; no caller of `blob.Store.Open` sees ciphertext, and none needs a key.
+
+- **A whole read** is one `GetObject`, as today: the record comes with the response's headers, and steps 1 to 6 of R-STOR-077 run before the
+  first byte reaches the caller, so a failure falls over to the next copy (R-STOR-055). Plaintext is released segment by segment, each after
+  its tag; the last `storage.download.hold_back` bytes are held until the final segment has opened with the copy's `L` and digest and the
+  SHA-256 of the plaintext equals the digest (R-STOR-013). A mismatch aborts the response and marks the copy `corrupt`.
+- **`storage.download.verify: false`** skips only the SHA-256 of the plaintext; decryption authenticates every segment and the final segment
+  whatever the setting says, and the final segment's digest is still compared.
+- **A ranged read** ([Q-STOR-317](#q-stor-317--a-ranged-read-is-one-request-for-the-segments-of-its-window)) of the plaintext bytes
+  `[a, b]` reads the data segments `⌊a / 65,536⌋` to `⌊b / 65,536⌋` with one ranged `GetObject` of their stored bytes, and the final segment
+  with them when the window reaches the last data segment; the response's total must equal `stored_size`, steps 1 to 6 run, every segment is
+  authenticated, and only the window's bytes leave. It reads at most two segments more than the window. A ranged read on an encrypted connection
+  therefore never hands out a byte that was not authenticated, where a ranged read on a plain connection serves what the bucket holds (H-11);
+  damage outside the window is not seen ([H-1300](../security/stored-content-format.md#h-1300--a-ranged-read-does-not-see-damage-outside-its-window)).
+- **`HEAD` and conditional requests** of an artifact are answered from the item row as today (R-STOR-012), with no request to the store.
+  `HeadObject` against the store (after a write, the recheck of a missing copy, the operator check, a drain's confirmation) returns the stored
+  size and the record; the size is compared with `stored_size`, the record where R-STOR-087 says.
+- **Readers inside Quader** reach the same path through `blob.Store.Open`: the ranges of NuGet's reader
+  ([wire_nuget_blobs.go](../../internal/app/wire_nuget_blobs.go)), of the format discovery ([discover.go](../../internal/formathost/discover.go))
+  and of item content ([content.go](../../internal/items/content.go)), the signature job's ranges
+  ([blobs.go](../../internal/signatures/job/blobs.go)), and the whole reads of the proxy's documents and of both scanners, which read through
+  Quader's scan listener ([scanread.go](../../internal/malware/scanread/scanread.go), [scanlisten.go](../../internal/api/scanlisten/scanlisten.go)).
+- **Every size check** compares the copy's `stored_size`, as stage 1 made them (R-STOR-062).
+- **What a failure marks.** `record`, `size`, `commitment`, `segment`, `final` and `digest` are evidence about the object: the copy is marked
+  `corrupt` and its repair queued (R-STOR-055); `format` too, because an object without the record on an encrypted connection is not Quader's
+  writing of that blob. `unknown_key` marks nothing ([Q-STOR-311](#q-stor-311--a-record-that-names-an-unknown-storage-key-is-not-damage)): the
+  read falls over and the alert of R-STOR-088 fires. A transport error marks nothing, as today. Every failure counts
+  `quader_storage_encrypted_read_failures_total{connection,reason}` with the step's name as `reason`.
+- **Cost**: the same requests as today; AES-256-GCM per byte read; a ranged read of 512 bytes reads one segment of 65,564 bytes.
+
+Acceptance criteria (unit, `internal/blob`, the in-memory store):
+
+- A whole read of a 196,609-byte blob returns its bytes; a ranged read of the bytes 65,530 to 65,540 asks the store for the stored bytes of
+  segments 0 and 1 only and returns 11 bytes; a ranged read of the last 10 bytes reads segments 2 and 3 and the final segment.
+- Each mutation of R-STOR-078 is refused on a whole and on a ranged read with its reason and marks the copy `corrupt`; a record that names an
+  identifier the replica does not hold falls over to the second copy, marks nothing and counts `unknown_key`.
+- With `storage.download.verify: false`, a flipped bit in the second segment still aborts the read.
+
+### R-STOR-083 · The storage keys and the name keys
+Priority: **P1** · Covers: STOR-022
+
+The storage keys lie once: a sealed row of the database per connection and generation (the owner's decision 15 (a)), sealed by the key ring
+like every other secret of the database (decision 4 (a))
+([Q-STOR-309](#q-stor-309--a-storage-key-is-a-row-with-an-identifier-of-its-own-drawn-at-the-connections-first-start-never-deleted),
+[Q-STOR-310](#q-stor-310--a-replica-holds-the-storage-keys-in-memory-and-reads-the-rows-again-for-an-unknown-identifier)).
+
+```sql
+CREATE TABLE storage_keys (                 -- export class data: every backup holds it (R-STOR-047)
+    key_id        text PRIMARY KEY CHECK (key_id ~ '^(sk-[a-z][a-z0-9-]{0,30}[a-z0-9]-[1-9][0-9]{0,5}|nk-[a-z][a-z0-9-]{0,30}[a-z0-9])-[0-9a-f]{8}$'),
+    connection_id text NOT NULL,             -- no foreign key: storage_connections is transient in a backup, the keys are not
+    kind          text NOT NULL CHECK (kind IN ('storage', 'name')),
+    generation    integer NOT NULL CHECK (generation BETWEEN 1 AND 999999),   -- always 1 for a name key
+    sealed_key    text NOT NULL,             -- the 32 bytes sealed with the key ring: table storage_keys, column sealed_key, row (key_id)
+    state         text NOT NULL CHECK (state IN ('active', 'retired')),     -- active: wraps new objects (storage) or names them (name)
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    retired_at    timestamptz,
+    UNIQUE (connection_id, kind, generation)
+);
+CREATE UNIQUE INDEX storage_keys_active ON storage_keys (connection_id, kind) WHERE state = 'active';
+
+ALTER TABLE storage_connections ADD COLUMN keyed_names boolean NOT NULL DEFAULT false;     -- R-STOR-075
+ALTER TABLE upload_sessions ADD COLUMN sealed_data_key text;                                -- R-STOR-081; sealed, NULL on a plain connection
+ALTER TABLE upload_sessions ADD COLUMN sealed_segments bigint NOT NULL DEFAULT 0;           -- R-STOR-081
+ALTER TABLE upload_session_parts ADD COLUMN stored_size bigint, ADD COLUMN stored_sha256 bytea;  -- R-STOR-081
+```
+
+- **The sealed columns** `storage_keys.sealed_key` (row key `key_id`) and `upload_sessions.sealed_data_key` (row key `id`) are registered with
+  `internal/secrets` ([architecture.md](architecture.md) R-ARCH-021), so the per-key counts, the canary check, the compatibility check of the
+  replicas' rings and the re-encrypt task cover them without a line of their own. A sealed key moved to another row does not open.
+- **Identifiers.** A storage key is `sk-<connection id>-<generation>-<8 random hex>`, a name key `nk-<connection id>-<8 random hex>`: the random
+  part makes a key drawn again for the same connection and generation (after a database was lost) a different identifier, so it never opens an
+  object of its predecessor by mistake.
+- **When keys are drawn.** When a replica first records an encrypted connection without key rows (R-STOR-051's row on first sight, or a row
+  without a copy that turns encrypted), it draws the storage key of generation 1 and, with `keyed_names`, the name key, 32 bytes each from the
+  random source, and inserts them `active` in the same transaction (a replica that loses the race to insert reads the winner's). It refuses to
+  draw when the connection's location already holds an object below `sha256/` or `keyed/` (one listing of each with one key): such objects were
+  written under keys of an earlier database, and the start stops as a configuration error: "connection archive holds objects but the database
+  has no storage keys for it; import the exported storage keys (quader admin storage keys import) or empty the location (storage.md R-STOR-083)".
+- **A further generation** only on command: `quader admin storage keys new-generation --connection <id>` inserts generation `n + 1` `active`
+  and sets generation `n` `retired` in one transaction, writes the audit event `system.storage.key_generation_added` (actor `system:admin`,
+  with the identifiers) and prints the reminder to export (R-STOR-085). New objects are wrapped under it from the moment a replica learns it;
+  older generations keep opening what they wrapped. The name key has no generations.
+- **Never deleted.** Quader deletes no row of `storage_keys`: not when a connection drains, retires or is forgotten (R-STOR-051), because the
+  noncurrent versions of its bucket and the pool of every retained backup can hold objects wrapped by it (backup-and-restore.md R-BAK-031). A
+  row is a few hundred bytes; an installation has a handful.
+- **How a replica holds them.** After the start check of an encrypted connection, a replica reads the connection's rows, opens them with its
+  key ring and keeps the keys in memory for its life, by identifier; nothing else holds them, and their `String` and `LogValue` render
+  identifiers only. The change area `storage_keys` ([architecture.md](architecture.md) R-ARCH-018) brings a new generation within its bound; a
+  record that names an identifier the replica does not hold makes it read the connection's rows again, at most once per 10 seconds per connection.
+  The pods that hold them are those that hold the key ring and build the blob area: `api`, `packages`, `worker` (and `web`, `all` in the
+  development roles) and the restore Job. The backup pods, the scanners and the migration Job hold none.
+- **A data key** is drawn by a writer for one object and held for the request, opened by a reader for one read; neither caches it. The writer
+  overwrites its copy of the key when it is done; Go's AES implementation keeps an expanded key schedule that no code can erase, so the memory
+  of a running pod holds the keys of its current transfers and its storage keys
+  ([H-1309](../security/stored-content-keys.md#h-1309--a-replicas-memory-holds-the-storage-keys-for-its-life-and-go-cannot-erase-a-key)).
+- **The room for the handover** of decision 12 (b) ([Q-STOR-320](#q-stor-320--the-handovers-room-is-one-function-of-the-store-that-nothing-calls-in-this-stage)):
+  `blob.Store.CopyDataKey(ctx, digest, connectionID) (blobcrypt.DataKey, error)` opens the record of the present copy on that connection
+  (one `HeadObject`) and returns the copy's data key with its plaintext size and commitment, after steps 1 to 6 of R-STOR-077. Nothing calls it
+  in this stage; an architecture test (`internal/archtest`) allows calls from `internal/blob` and from the handover's package only, which the
+  later planner names. `DataKey` renders nothing of the key when logged.
+
+Acceptance criteria:
+
+- The first replica that starts with an encrypted connection inserts one storage key and one name key, both sealed; a second replica started
+  at the same moment reads the same rows; a replica whose connection's location holds an object but whose database has no key for it exits
+  with the message above (unit, `internal/blob/keys`, the fake database and the in-memory store).
+- After `quader admin storage keys new-generation --connection archive`, a new upload carries the new identifier, an object of generation 1
+  still reads, and a second replica that has not yet seen the change reads the new object after reading the rows again (unit).
+- The registry test of R-ARCH-021 lists both new sealed columns; a migration test lists no foreign key on `storage_keys`.
+- An architecture test fails for a call of `CopyDataKey` from any other package.
+
+### R-STOR-084 · A rotation of the root
+Priority: **P1** · Covers: STOR-022
+
+The rotation of the owner's instance key is the existing rotation of the key ring (decision 4 (a); [architecture.md](architecture.md)
+R-ARCH-021, [ha-and-helm.md](ha-and-helm.md) R-HA-027). The root seals only the storage keys and name keys, so a rotation re-seals a few
+rows and touches no object.
+
+1. The new key file joins the ring, `active_key_id` unchanged; rollout. Every replica can open values sealed with it.
+2. `active_key_id` names the new key; rollout. New storage keys (a new connection, a new generation) are sealed with it.
+3. `POST /api/v1/system/tasks/secrets-reencrypt/run` reseals every registered value under the active key: the upstream credentials, the
+   signing keys, `storage_keys.sealed_key` and the open sessions' `upload_sessions.sealed_data_key`. The keys inside do not change, so no
+   replica reloads anything and no object is read or written. The task's existing guards hold for the new rows: it answers `409
+   key_ring_incompatible` while a live replica's ring lacks a key that seals one of them.
+4. When `quader admin secrets status` shows no value under the old key, its file is removed; rollout. The start-up canary refuses a replica
+   whose ring cannot open a key that a sealed row still names, the storage keys' rows included.
+5. The operator exports the storage keys again (R-STOR-085): an export made before step 3 opens only with the old key, which escrow then keeps
+   ([H-1306](../security/stored-content-keys.md#h-1306--an-export-opens-only-with-the-root-key-that-sealed-it)). Old backups keep needing the
+   root keys their manifests list, as today (backup-and-restore.md R-BAK-028); their storage keys are sealed under those.
+
+Noncurrent versions in a bucket and pool objects of a backup are wrapped under storage keys, not under the root, so a rotation leaves them
+readable.
+
+Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the stack with an in-memory store, two key files):
+
+- With an encrypted connection holding three blobs, steps 1 to 4 run through the code paths of the task: after step 3 every row of
+  `storage_keys` is sealed under the new key, the entity tags of the three objects are unchanged, the blobs download, and a replica started with
+  only the new key reads them (`TestR_STOR_084_…`).
+
+### R-STOR-085 · Export, import, loss and leak of the keys
+Priority: **P1** · Covers: STOR-022
+
+- **Export** ([Q-STOR-312](#q-stor-312--the-export-is-one-document-of-sealed-rows-and-the-import-adds-missing-rows)):
+  `quader admin storage keys export [--connection <id>]` prints to standard output one JSON document of the rows of `storage_keys`, sealed as
+  they lie; it opens nothing and needs no key ring:
+
+  ```json
+  {"format": "quader-storage-keys-v1", "installationId": "0b7c3f5e-…", "exportedAt": "2026-12-01T09:00:00Z",
+   "rootKeyIds": ["2026-12"],
+   "keys": [{"keyId": "sk-archive-1-3f9a0c2e", "connection": "archive", "kind": "storage", "generation": 1, "state": "active",
+             "createdAt": "2026-11-30T08:00:00Z", "sealed": "v1:2026-12:…"},
+            {"keyId": "nk-archive-71be04d9", "connection": "archive", "kind": "name", "generation": 1, "state": "active",
+             "createdAt": "2026-11-30T08:00:00Z", "sealed": "v1:2026-12:…"}]}
+  ```
+
+  *(example values)*. `rootKeyIds` names the root keys the values are sealed with. The document is kept beside the key ring's escrow copy:
+  with the ring it opens every storage key, without it nothing (R-STOR-090). It runs where `admin storage verify` runs (the database role
+  `web`); `system.storage.keys_exported` is audited.
+- **Import**: `quader admin storage keys import <file>` opens every value with the configured ring (so a wrong ring is refused before
+  anything is written), inserts the rows that are missing, keeps the rows that are equal, and refuses a row whose identifier exists with another
+  value or a file of another installation (`--other-installation` accepts one, for a recovery into a new installation). It is the way back
+  after a database restored to a point before a connection or a generation existed, and the input of the offline tool (R-STOR-089).
+  `system.storage.keys_imported` is audited.
+- **What the loss of each key costs:**
+
+  | Lost | Cost | Answer |
+  |---|---|---|
+  | The key ring (every root key) | Every sealed value, so every storage key, so every blob of every encrypted connection, in its bucket and in every backup; plain connections lose nothing of their blobs | none; the operator's escrow of the ring (R-BAK-028) is the only protection ([H-1305](../security/stored-content-keys.md#h-1305--losing-the-key-ring-loses-every-encrypted-blob)) |
+  | A row of `storage_keys` (a database lost or restored too far back without the export) | The objects wrapped by that key on its connection and in backups' pools; where another connection holds the blob, nothing: the reconciliation repairs from it after the connection is replaced | the export's import; else a new connection filled from the others |
+  | A name key | Nothing is unreadable (reads take the name from the copy row, the record carries the digest); new writes to the connection cannot be named | the export's import; else a new connection |
+  | A record (one object's metadata) | That object: it is `corrupt` | the reconciliation from another connection, a new upload, a refetch (R-STOR-027) |
+  | The Bastion's cache key | Its cache, which refills | a new key (R-BAS-061) |
+
+- **What the leak of each key needs:**
+
+  | Leaked | What its holder can do | Answer |
+  |---|---|---|
+  | The key ring alone | Nothing with the blobs: storage keys lie in the database | the rotation (R-STOR-084) |
+  | The key ring with the database (or a backup) | Open every storage key; with read access to a bucket, every blob there | the rotation, and for each encrypted connection a new one that the reconciliation fills with new data keys, then the old drained |
+  | A storage key | With read access to its bucket, every object it wrapped; with write access, objects that authenticate ([H-1301](../security/stored-content-format.md#h-1301--a-holder-of-a-storage-key-can-write-objects-that-authenticate)) | a new connection (also the same bucket under another prefix) that the reconciliation fills with new data keys, then the old one drained; a new generation alone protects nothing already written ([H-1307](../security/stored-content-keys.md#h-1307--a-leaked-storage-key-is-answered-by-a-refill-that-takes-as-long-as-the-data)) |
+  | A name key | Confirm, by listing the bucket, that a known file is stored | a new connection |
+  | One data key | That one object's content, with read access to the bucket | none short of a new connection; dormant while nothing hands a data key out ([H-1311](../security/stored-content-keys.md#h-1311--a-leaked-data-key-of-one-blob-has-no-answer-short-of-a-new-connection)) |
+
+Acceptance criteria (unit, `cmd/quader` with the fake database):
+
+- `export` prints the rows sealed and `import` of that document into an empty table restores them; an import with a ring that lacks the
+  sealing key exits `2` naming it; an import of a row whose identifier exists with another value exits `2`; an import of a file of another
+  installation exits `2` unless `--other-installation`.
+
+### R-STOR-086 · Keyed object names
+Priority: **P1** · Covers: STOR-022
+
+The owner's decision 5 (a) with his note: on an encrypted connection an object's name is a keyed MAC of the digest, a detail that is on by
+default and fixed once the connection holds data
+([Q-STOR-313](#q-stor-313--keyed-names-lie-below-keyed-and-are-an-hmac-of-the-digest-under-a-name-key-of-the-connection)).
+
+- **The name**: `m = HMAC-SHA-256(name key, FMT ‖ " name" ‖ digest)` over the 32-byte digest, and the object lies at
+  `<prefix>/keyed/<m0m1>/<m2m3>/<64 hex of m>`, in the two-level fan-out of R-STOR-001. With the name key `40 41 … 5f`, the blob `a` of
+  R-STOR-076 lies at `quader/keyed/99/42/9942d541941e3141ba35550ee20b7bbf8c60fb3acc8123325c1b293b0e2922a6` (computed as in R-STOR-076).
+- **Who needs the mapping.** Only a write asks the connection's naming function; every other reader takes the name from the copy row's
+  `object_key` (R-STOR-062): a download, the scrub, the reconciliation's source, collection and a drain. The orphan sweep, which meets
+  objects without a row, reads the record (R-STOR-087); the offline tool computes the name from the digest in the record and compares
+  (R-STOR-089).
+- **What a lister of the bucket still learns**: the number of objects, their stored sizes, which give away the exact plaintext sizes
+  ([H-1312](../security/stored-content-visibility.md#h-1312--the-stored-size-gives-away-the-exact-plaintext-size)), their times of writing,
+  and their entity tags (an MD5 of the ciphertext, or the multipart form); not which public file an object is, as long as the name key does not
+  leak. Without keyed names (`keyed_names: false`) a lister confirms every known file by its digest
+  ([H-1315](../security/stored-content-visibility.md#h-1315--an-encrypted-connection-without-keyed-names-lets-a-lister-confirm-stored-files)).
+- `keyed/` joins the key families of R-STOR-001 and R-STOR-059 on an encrypted connection with keyed names, in place of `sha256/`.
+
+Acceptance criteria:
+
+- The known answer above reproduces; the names of two connections with two name keys differ for one digest; an object listed below `keyed/`
+  is found by `(connection_id, object_key)` (unit, `internal/blob/blobcrypt` and `internal/blob`).
+
+### R-STOR-087 · The reconciliation, the scrub, the orphan sweep and collection on encrypted connections
+Priority: **P1** · Covers: STOR-015, STOR-022
+
+What stage 1's jobs do when a connection is encrypted (decision 7: switching encryption on or off is a new connection that the
+reconciliation fills; [Q-STOR-308](#q-stor-308--a-copy-into-an-encrypted-connection-always-gets-a-new-data-key)).
+
+- **The reconciliation's copies** (R-STOR-056), from a present copy on connection A to connection B:
+
+  | A | B | What the worker does | The copy on B |
+  |---|---|---|---|
+  | plain | plain | as stage 1: a server-side copy within one endpoint, a stream across | as stage 1 |
+  | plain | encrypted | reads A whole through its reader, hashing (a mismatch marks A's copy `corrupt` and tries the next source), into its spool; then writes the spool to B as R-STOR-080 says, with a new data key | `present`, verified where B enforces payload checksums |
+  | encrypted | plain | reads A through its reader (decrypting, authenticating, hashing) and streams the plaintext to B as stage 1 streams | as stage 1's stream |
+  | encrypted | encrypted | as plain to encrypted: decrypted from A, a new data key and new bytes on B, never a copy of A's ciphertext | `present`, verified where B enforces payload checksums |
+
+  A server-side copy is made only between two plain connections (R-STOR-062), so `storage.reconcile.server_side` concerns them alone. The
+  worker's spool bounds the streams into an encrypted connection (R-STOR-004's budget). Switching encryption on is therefore the owner's
+  scenario: a new element with `encrypted: true` (the same bucket under another prefix will do), the reconciliation fills it, the old element
+  gets `drain: true`; while it runs every blob lies twice. Switching it off, and answering a leaked storage key, are the same with the roles
+  exchanged.
+- **The scrub** (R-STOR-027) reads every copy whole through its reader: on an encrypted connection that is steps 1 to 7 of R-STOR-077,
+  every segment, the final segment and the digest. Every named failure but `unknown_key` marks the copy `corrupt` and queues its repair;
+  `unknown_key` leaves it due and counts it. The repair writes the copy anew from another connection's copy, with a new data key on an
+  encrypted connection, under the same name (the name depends on the digest and the name key only).
+- **A drain** (R-STOR-056) deletes the draining connection's objects as stage 1 says; its storage keys stay (R-STOR-083).
+- **The orphan sweep** (R-STOR-026) on an encrypted connection with keyed names lists `<prefix>/keyed/<xx>/`; an object whose name has a copy
+  row is checked as stage 1 says (a listed size other than `stored_size` marks it `corrupt`). An object without a copy row is placed by its
+  record ([Q-STOR-314](#q-stor-314--the-orphan-sweep-reads-the-record-of-an-object-it-cannot-place-and-never-deletes-one-without-a-readable-record)):
+  one `HeadObject`, steps 1 to 3 of R-STOR-077 and the check that the name is the keyed name of the unwrapped digest; then, by that digest,
+  stage 1's rules (adopted `present` and not verified for a live blob, with its `storage_key_id`; claimed through a `deleting` blob row and
+  deleted when no blob row exists and it is older than `min_age`). An object whose record does not open, or whose name is not the keyed name of
+  its digest, is reported as foreign and never deleted. On an encrypted connection without keyed names the sweep lists `sha256/` as stage 1
+  says, and an adoption also opens the record.
+- **Collection** (R-STOR-057) deletes by the copy row's `object_key`; nothing changes.
+- **The operator check** (`quader admin storage verify`, R-STOR-058) also opens the record of each copy on an encrypted connection (one unwrap
+  from the `HeadObject` it sends anyway, no body read): a record that fails steps 1 to 5 is a finding `record` of that copy.
+- **`restore-versions`** (R-HA-025, per connection) makes an older version current again; its record is its own, under a key of the
+  connection that is never deleted, so it reads (R-STOR-078's last row).
+
+Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the stack with two in-memory stores):
+
+- A plain connection with ten blobs and a new encrypted connection: one reconciliation run copies all ten, each object on the encrypted store
+  carries a record and a keyed name, each copy row is verified, and after `drain: true` on the plain one and a run every blob downloads from the
+  encrypted store.
+- Between two encrypted connections the copy's body differs from the source's and both read back.
+- A scrub run over an encrypted copy whose second segment was changed behind Quader's back marks it `corrupt`, and the reconciliation's next run
+  rewrites it from the other connection.
+- The orphan sweep adopts an object below `keyed/` of a live blob without a copy row, reports one whose record names an unknown key, and deletes
+  an object of a blob that has no row after `min_age` (fake clock).
+
+### R-STOR-088 · What an encrypted connection changes elsewhere
+Priority: **P1** · Covers: STOR-022
+
+- **Signed links** (R-STOR-014, R-STOR-070 step 12, R-STOR-074): an encrypted connection never serves a link, because a link would hand out
+  ciphertext; a plain connection that holds a sound copy of the same blob still may
+  ([Q-STOR-291](#q-stor-291--any-connection-that-is-not-encrypted-and-holds-a-sound-copy-serves-the-link)), which is why an installation that
+  keeps a plain connection beside an encrypted one keeps its content in the clear at the plain provider
+  ([H-1317](../security/stored-content-visibility.md#h-1317--a-plain-connection-beside-an-encrypted-one-keeps-the-content-in-the-clear)).
+- **The object store's own encryption** (R-STOR-032) stays possible beneath, per connection (`sse_mode`); it protects the provider's disks,
+  not against the provider.
+- **Assumption A6** (R-STOR-035) changes wording: concurrent writes to one key carry the same content; on a plain connection identical bytes, on
+  an encrypted one each a whole encryption of that content with its own record in the same request, so whichever completes later is the object
+  and reads back (A2 makes the record and the body one object). The conformance check of identical bytes stays a check of the store.
+- **The scanners** (malware and image) read through Quader's scan listener and never from a bucket, so they need no key and see plaintext only
+  as today.
+- **The revocation journal, the probe objects and the marker stay plain** on an encrypted connection
+  ([Q-STOR-315](#q-stor-315--the-journal-the-probes-and-the-marker-stay-plain-on-an-encrypted-connection)): the journal is read by a restore
+  that replaces the database, which holds the storage keys, so a key from that database is the wrong key for it, and it carries identifiers,
+  no content; the probes are random bytes that live for a check; the marker must be read before any key is loaded. What a provider learns from
+  them is on the visibility page
+  ([H-1316](../security/stored-content-visibility.md#h-1316--the-journal-the-marker-and-the-probes-are-plain-on-an-encrypted-connection)).
+- **The API** of the connections (R-STOR-061) shows `keyedNames` and, per connection, its storage keys by identifier, generation, state, creation
+  time and the number of copies that name each (from `blob_copies.storage_key_id`), never a key or a sealed value; no operation of the API
+  creates or changes a key ([Q-API-405](api-and-ui.md#q-api-405--the-connection-shows-its-storage-keys-by-identifier-and-no-operation-changes-them)).
+  The admin tab of R-UI-196 shows `encrypted` already; this stage adds nothing to a screen.
+- **The storage summary** (R-STOR-028) counts a connection's `presentBytes` in stored bytes; the logical figures of repositories and projects
+  and the quotas count plaintext sizes, as before (Q-STOR-155).
+- **The alert** `QuaderStorageUnknownKey` fires, critical, when `quader_storage_encrypted_read_failures_total{reason="unknown_key"}` grows on a
+  connection for 10 minutes: storage keys are missing and copies are unreadable until the export is imported (rendered and tested by
+  [ha-and-helm.md](ha-and-helm.md) R-HA-045 like stage 1's alerts).
+- **Throughput.** The targets of the transfer path are measured again with an encrypted connection once it is built; a measurement, not a test.
+
+Acceptance criteria:
+
+- With an encrypted first connection and a plain second, a download that meets every other condition of R-STOR-070 is linked to the second
+  connection; with only the encrypted one it streams (unit, `internal/formathost`, the stage 3 decision against two in-memory stores).
+- `GET /api/v1/system/storage-connections` of an encrypted connection lists `keyedNames: true` and its storage key's identifier and generation,
+  and no field holds a sealed value (unit, `internal/api/v1`).
+- The rule test of `QuaderStorageUnknownKey`, one firing and one silent (chart tests).
+
+### R-STOR-089 · The offline tool
+Priority: **P1** · Covers: STOR-022
+
+A command of Quader's binary that reads and verifies blobs of an encrypted connection without a database, without Valkey and without a
+running Quader (the owner's decision 1 (a); [Q-STOR-316](#q-stor-316--the-offline-tool-is-a-command-of-the-binary-and-reads-a-bucket-or-a-directory-with-record-files)).
+
+```text
+quader admin storage offline list   --keys <export.json> --key-ring <dir> (--connection-file <element.yaml> | --dir <path>) [--json]
+quader admin storage offline get    --keys <export.json> --key-ring <dir> (--connection-file … | --dir …) <sha256 or object name> --out <file>
+quader admin storage offline verify --keys <export.json> --key-ring <dir> (--connection-file … | --dir …) [--concurrency N] [--json]
+quader admin storage offline pull   --connection-file <element.yaml> --to <dir>
+```
+
+- **What it needs**: the files of the key ring that sealed the export (`--key-ring`, a directory of `*.key` files, the format of R-ARCH-021;
+  only opening, no active key), the export of R-STOR-085 (`--keys`), and read access to the objects: a connection element of R-STOR-050 in a
+  file (endpoint, bucket, prefix, credentials, CA) or a directory written by `pull`.
+- **`list`** walks the objects below the prefix (`keyed/`, `sha256/`, and a backup's `pool/sha256/`), reads each record (one `HeadObject`),
+  opens the wrap with the storage key it names and prints the object name, the stored size, the plaintext size and digest from the wrap, the
+  key's identifier and whether the name is the keyed name of the digest (or the digest itself): `ok`, `name_mismatch`, `record`, `unknown_key`.
+- **`get`** decrypts one blob, found by its digest (the keyed name computed with the name key of the export) or by its object name, checks every
+  segment and the SHA-256, and writes the plaintext; a failure writes nothing and exits `5`.
+- **`verify`** reads every object whole as the scrub does and reports per object; exit `0` when all are sound, `5` with a finding.
+- **`pull`** copies the objects of a connection into a directory together with each record as a file `<object name>.record.json`, because a
+  copy of a bucket by a tool that does not keep metadata loses the records, and with them every data key
+  ([H-1303](../security/stored-content-format.md#h-1303--a-copy-of-an-encrypted-bucket-that-drops-the-metadata-cannot-be-read)).
+- It writes nothing to a bucket. It reads a plain connection too (no record: printed as `plain`, verified against the digest its name carries).
+
+Acceptance criteria (unit, `cmd/quader`, an in-memory store and a temporary directory, kilobytes):
+
+- With three blobs on an encrypted connection, the export and the ring files: `list` prints three `ok` lines with their digests; `get` of one
+  digest writes its bytes; `pull` then `verify --dir` exits `0`; an object with a flipped bit makes `verify` exit `5` and `get` of it write
+  nothing; a ring without the export's root key exits `2` naming it.
+
+### R-STOR-090 · What the operator keeps, and the documentation
+Priority: **P1** · Covers: STOR-022
+
+- **What to keep.** For an encrypted installation the operator keeps, outside the cluster and away from the backup target: the key ring Secret
+  with every retired key that a retained backup or a kept export still names (R-BAK-028, unchanged), and the latest export of the storage keys
+  (R-STOR-085), made again after a connection is added with `encrypted: true`, after a new generation and after each rotation of the root. A
+  bucket and the key ring alone no longer read a blob: the export (or any backup of the database) is the third part, and that is the price of
+  the keys lying once (the owner's decision 15).
+- **The README's** installation step that turns on the backup (step 6, "Keep a copy of the key ring …") gains, when the feature is built:
+  "With an encrypted connection the key ring is also the key to your artifacts: without it every blob of every encrypted connection is lost, in
+  the bucket and in every backup. Keep the export of the storage keys (`quader admin storage keys export`) beside your copy of the key ring, and
+  export again after you add an encrypted connection, draw a new generation or rotate the key ring."
+- **The manual** (administrator's backup page, section "Keep the keys", and the configuration page of the connections) gains the same sentences,
+  the line `encrypted: true` with when to set it ("when the provider of a connection must not read the artifacts"), the cost (no signed links
+  from an encrypted connection, the CPU of encryption, the scrub reading ciphertext), and the warning that a copy of an encrypted bucket made by a
+  tool that drops object metadata cannot be read: `quader admin storage offline pull`, or a copy that keeps metadata
+  ([H-1303](../security/stored-content-format.md#h-1303--a-copy-of-an-encrypted-bucket-that-drops-the-metadata-cannot-be-read)).
+- These edits land with the build of the feature (the documentation rule of the repository: a page describes what runs), not before.
+
+Acceptance criteria:
+
+- The package that makes `encrypted: true` accepted changes the README and the two manual pages in the same change; the manual's build check
+  passes.
+
+### R-STOR-091 · The tests of the feature
+Priority: **P1** · Covers: quader-only
+
+By the repository's rule that tests stay runnable ([Q-STOR-319](#q-stor-319--every-behaviour-of-the-encryption-once-at-the-cheapest-tier-and-its-fuzz-targets-in-the-nightly)):
+every behaviour once, at the cheapest tier that shows it; nothing per format (a format never sees a connection or a key); no end-to-end leg;
+kilobytes.
+
+| Test | Tier | Data | Run time (estimate) |
+|---|---|---|---|
+| Vectors, known answers, every attack of R-STOR-078, `S` and its inverse, nonces, tails, keyed names (R-STOR-076 to R-STOR-079, R-STOR-086) | unit, `internal/blob/blobcrypt` | the vector files, below 1 MB | 0.4 s |
+| Writes, retries, reads whole and ranged, marks, `unknown_key`, A6 (R-STOR-080, R-STOR-082) | unit, `internal/blob`, the in-memory store with an encrypted connection and the fault hook | objects up to 192 KiB | 0.5 s |
+| Sessions: sealed data key, tails, counter, finalize by copy and by stream (R-STOR-081) | unit, `internal/uploads`, two in-memory stores | parts of 64 KiB, below 256 KiB | 0.4 s |
+| Keys: drawing, the refusal over a used location, generations, reload, the handover's architecture test (R-STOR-083) | unit, `internal/blob/keys`, `internal/archtest` | — | 0.2 s |
+| Export and import (R-STOR-085), the offline tool (R-STOR-089) | unit, `cmd/quader` | three objects of 1 KiB | 0.3 s |
+| Configuration and start-check refusals (R-STOR-075); the API's fields (R-STOR-088); the link to the plain copy (R-STOR-088) | unit, `internal/config`, `internal/app`, `internal/api/v1`, `internal/formathost` | — | 0.3 s |
+| The Bastion's encrypted cache (bastion.md R-BAS-061) | unit, `internal/bastion/cache`, a temporary volume | objects of 1 KiB | 0.3 s |
+| Chart: `encrypted` and `keyed_names` accepted, the refusal, the alert's rule ([ha-and-helm.md](ha-and-helm.md) R-HA-072, R-HA-045) | chart render tests | — | 0.5 s |
+| A rotation of the root (R-STOR-084) | integration, `test/integration/blob`, PostgreSQL of the stack, an in-memory store | three objects of 1 KiB | 4 s |
+| The reconciliation on and off and between encrypted connections, the scrub, the orphan sweep (R-STOR-087) | integration, `test/integration/blob`, PostgreSQL with two in-memory stores | ≤ 12 objects of 1 KiB | 6 s |
+| Backup of an encrypted connection, deep verification without and with the ring, restore into the same and into another connection (backup-and-restore.md R-BAK-031) | integration, `test/integration/backup`, one case | three objects of 1 KiB | 8 s |
+| One pass of the conformance checks with an encrypted connection against a real store: a write with the record, a whole and a ranged read, the finalize's copy with the record, the metadata kept by `HeadObject` | the job `s3-conformance` against Silo; the same checks against the in-memory store in the unit tier | probe objects | 3 s added to the job |
+| Fuzz targets of R-STOR-079 | the nightly (`performance.yml`), a job "fuzz the stored format's readers", five minutes per target | generated | about 27 min of one runner, nightly only |
+
+What each pipeline job gains (estimates): the unit job about 2.9 s; the chart test about 0.5 s; the integration shard that runs `blob` about
+10 s and the one that runs `backup` about 8 s; `s3-conformance` about 3 s; every end-to-end leg nothing; the nightly one fuzz job of about
+27 minutes beside its legs. With 25 formats the cost is the same. No fuzz job runs nightly today: the fuzz legs of npm and NuGet run only on a
+dispatch with `closing=true` ([release.yml](../../.github/workflows/release.yml), jobs `fuzz-npm` and `fuzz-nuget`), so this job is the first
+of its kind in the nightly; a dispatch with `closing=true` runs it for 30 minutes per target as those legs do. Nothing of this needs the owner's
+store; whether his in-cluster object gateway keeps the record and replaces it on a copy is what the start check establishes there once the
+release runs (R-STOR-035), not a test.
 
 ## Retention and cleanup
 
@@ -4678,7 +5426,8 @@ storage:
       scrub_period: 720h                 # default
       scrub_bytes_per_second: 50MiB      # default
       drain: false                       # default
-      encrypted: false                   # default; true refused until stage 2
+      encrypted: false                   # default; true refused until stage 2 (R-STOR-075)
+      keyed_names: true                  # default with encrypted: true; refused with encrypted: false (R-STOR-086)
   object_store:                          # every connection's client (R-STOR-033 to R-STOR-035)
     http:
       max_connections: 256               # default (proposed)
@@ -4880,6 +5629,9 @@ connections; each message names the keys.
   With several connections every connection's bucket is such a boundary, at every provider
   that holds one (R-STOR-050); the security page of the connections
   ([object-store-connections.md](../security/object-store-connections.md)) has what that adds.
+  An encrypted connection moves the boundary for content to the key ring: its bucket's readers see
+  ciphertext, and every pod that holds the key ring opens every blob (R-STOR-075, R-STOR-083;
+  [stored-content-keys.md](../security/stored-content-keys.md)).
 - **Credentials.** S3 credentials come from workload identity or from mounted files, never from
   inline configuration (R-STOR-031); the outbound proxy password likewise (R-STOR-034). Static
   keys are the weakest mode and need rotation by the operator.
@@ -7271,6 +8023,349 @@ show is the same content, and what eventual delete consistency can show is a cop
 
 **Applied in the spec:** R-STOR-035, R-STOR-053.
 
+### Q-STOR-300 · Segments of 64 KiB under AES-256-GCM with the nonce stored in each segment
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the format is
+Quader's own, after the model of the proxy's segment chain and bound to the content, is the owner's (2026-11-22, decision 1 (a)).
+
+Context: the proxy seals 64 KiB segments with AES-256-GCM and a random nonce stored per segment; Tink and age derive the nonce from a prefix
+and the index and mark the last segment in it (research of 2026-11-22, topic B.1). A part of an upload session can be sent again by a later
+request with other bytes (R-STOR-011), and a reused nonce with another plaintext loses the authentication of that key (NIST SP 800-38D §8).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 64 KiB segments, AES-256-GCM, a 12-byte nonce stored in front of each segment, from a source the writer chooses (chosen) | 28 bytes per segment | A reader needs no nonce rule; a part sealed again by a later request draws other nonces, so no reuse whatever the client sends; standard library only | 12 bytes per segment more than a derived nonce (0.018 %) |
+| (b) Nonce = a per-object prefix and the index (Tink, age) | No stored nonce | Smallest overhead | A part sent again with other bytes reuses its nonces under the same key: forgery of that object becomes possible |
+| (c) ChaCha20-Poly1305 or AES-GCM-SIV | Another AEAD | GCM-SIV tolerates a reused nonce | Not in Go's standard library (GCM-SIV) or slower without hardware AES on the servers Quader targets; nothing gained over (a) |
+
+**Choice:** (a). **Rationale:** the stored nonce removes the one misuse Quader's own upload path could cause; 64 KiB keeps the proxy's
+measured balance between overhead and the over-read of a range. The planner would revisit the segment size if a measurement shows ranged
+reads of small files dominating.
+
+**Applied in the spec:** R-STOR-076, R-STOR-081.
+
+### Q-STOR-301 · A writer derives the nonces from a seed per part so that a retry sends the same bytes without keeping them
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: Quader sends every part with a payload checksum computed before the request and lets the SDK retry a part by seeking its body back
+(R-STOR-006, [transfer.go](../../internal/blob/transfer.go) `wholeChecksum`); with random nonces per sealing, a retry would send other bytes
+than the checksum describes unless the ciphertext is kept.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Nonces from `HMAC-SHA-256(seed, …)` with a seed drawn per write (per request of a session), the body encrypted on the fly (chosen) | Seek back, encrypt again, same bytes | No ciphertext held: one segment of memory per reader; the checksum and the retry agree | The plaintext is encrypted twice when a payload checksum is wanted |
+| (b) Random nonces, the ciphertext of a part kept in memory | Hash it, send it, keep it for a retry | One encryption | Up to `max_concurrent_parts` × part size (64 × 16 MiB = 1 GiB) of memory per replica |
+| (c) Random nonces, the ciphertext spooled to disk | As (b) on disk | One encryption | A second spool of the size of every upload in flight |
+
+**Choice:** (a). **Rationale:** AES-GCM costs less than the disk or memory that would hold its output; the nonces stay unique because a new
+seed comes with every plaintext the writer did not already seal.
+
+**Applied in the spec:** R-STOR-076, R-STOR-080, R-STOR-081.
+
+### Q-STOR-302 · An object ends with a final segment that carries its length and its SHA-256
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the proxy ends an object with a trailer at index `2^64 − 1` (length and CRC32C) and marks no last segment; the formats that got
+truncation right mark the last segment (research, topic B.4). An upload session learns that a part is the last only at its finalize, after
+the part was sealed and sent.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A final segment at index `n`, marked `0x01`, holding `u64(L)` and the plaintext's SHA-256 (chosen) | Data segments are never the last | Truncation, extension and a moved end fail by mark and index; a session seals it at its finalize; the digest inside lets a reader without a database check the body | 68 bytes per object |
+| (b) The proxy's trailer at `2^64 − 1` with CRC32C | No mark | The proxy's layout | No "last" in any segment's authentication; CRC32C proves less than the digest Quader has anyway |
+| (c) Mark the last data segment | No extra segment | Smallest | A session cannot know the last segment when it seals a full part |
+
+**Choice:** (a). **Rationale:** it is the marked last segment the standards recommend, placed where a session can write it.
+
+**Applied in the spec:** R-STOR-076, R-STOR-081.
+
+### Q-STOR-303 · The wrap carries the digest and the size in its sealed plaintext under a key derived per wrap
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the wrap lies once
+at the object, bound to the digest, under the connection's storage key, is the owner's (2026-11-22, decision 2 (e)).
+
+Context: on a connection with keyed names the object's name does not tell the digest; a reader with a database knows it from the copy row,
+the offline tool without one does not. The proxy's wrap binds nothing (its additional data is a constant) and uses the key directly.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The wrap's plaintext is `DEK ‖ digest ‖ u64(L)`, the additional data names the key, `K_w` is derived from the storage key with a random salt per wrap (chosen) | A reader compares the unwrapped digest with the copy's | The offline tool learns the digest from the record; no bound on wraps per storage key; another blob's wrap names another digest | 40 bytes more in the wrap |
+| (b) The digest in the additional data only | Bound, not carried | Shorter | Opening needs the digest first: the offline tool could not open an object under a keyed name |
+| (c) The digest in a metadata key of its own | Readable by anyone | Simple | Gives the provider the digest that keyed names hide |
+
+**Choice:** (a). **Rationale:** the binding is the same as by additional data (a wrap that names another digest is refused), and it keeps the
+record self-describing for the one reader without a database.
+
+**Applied in the spec:** R-STOR-077, R-STOR-089.
+
+### Q-STOR-304 · A commitment to the data key in the record, checked before the first segment
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: AES-GCM is not key-committing: a ciphertext can be made to open under two keys into two valid files (Albertini and others, 2020/1456).
+The proxy addresses it nowhere. In this stage every copy has its own data key and only Quader makes wraps; the handover of decision 12 (b) and
+a later level of keys per project (decision 3) would let more than one record or reader stand for one body.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `C = HKDF(DEK, "", FMT ‖ " commitment")` in the record, the segment key derived from `DEK` as well, compared before the first segment (chosen) | One record names one data key | AWS's committing suites do the same; cheap (32 bytes, one HKDF); fails before a byte | Binds the record, not the body (H-1302) |
+| (b) No commitment | As the proxy | Nothing to write | The form of the attack the research names stays open for every later reader of a body |
+| (c) The commitment in a header at the start of the body | Binds the body | Every reader of the body sees one commitment | A ranged read away from the start needs a second request for the header |
+
+**Choice:** (a). **Rationale:** it closes the attack wherever a record is read and costs a ranged read nothing; what (c) adds matters only once
+one body carries several records, which no path of this stage creates.
+
+**Applied in the spec:** R-STOR-076, R-STOR-077.
+
+### Q-STOR-305 · One object holds at most 4 TiB of plaintext
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `L ≤ 2^42` (chosen) | At most `2^26` data segments, stored at most 4,399,925,559,364 bytes | Below the 5 TiB an S3 object can hold; far above `storage.upload.max_size` (10 GiB by default) and a multipart upload of 10,000 parts of 16 MiB (156 GiB) | A limit of its own to state |
+| (b) 5 TiB of plaintext, as the proxy | Its limit | The same number as S3 | The stored object would exceed what S3 stores |
+
+**Choice:** (a). **Rationale:** the stored object must fit the store.
+
+**Applied in the spec:** R-STOR-076.
+
+### Q-STOR-306 · An encrypted connection needs metadata, and without a copy that replaces it the finalize streams
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: stage 1's start check records `capabilities.metadata` and `capabilities.copyReplacesMetadata` (R-STOR-035). The software behind the
+owner's provider documents a copy with new metadata; his own installation's object gateway (Ceph, in his cluster) was not researched; nothing
+was run against either.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `metadata` required; without `copyReplacesMetadata` the finalize streams the staging object with the record (chosen) | Refuse what cannot work, degrade what can | The record cannot live anywhere else (decision 2); a store without the copy loses only the server-side finalize | A stream through the replica for every session on such a store |
+| (b) Both required | Refuse more | One path | A store that keeps metadata but cannot replace it on a copy could not be encrypted at all |
+| (c) Neither required, the record kept in an object beside each blob | A second object per blob | Works on any store | Two places for one key, the drift the owner rejected |
+
+**Choice:** (a). **Rationale:** the stage-1 pattern: a missing required ability refuses the connection, an optional one degrades by a stated rule.
+
+**Applied in the spec:** R-STOR-035, R-STOR-075, R-STOR-081.
+
+### Q-STOR-307 · A session's data key is sealed in its row and its tails are sealed under a key of their own
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a session's requests reach any replica (INV-18); its row keeps the hash state between them
+([00054_upload_sessions.sql](../../internal/meta/postgres/migrations/00054_upload_sessions.sql)); its tails are objects of their own, read
+back by the next request (R-STOR-011).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The data key sealed with the key ring in `upload_sessions.sealed_data_key`; tails sealed under `K_tail` with their offset in the additional data (chosen) | Any replica opens it; a tail never passes as a blob segment | Nothing in memory or Valkey between requests; the re-encrypt task covers it; no plaintext tail at the provider | One more sealed column |
+| (b) The data key in the staging object's metadata, wrapped under the storage key | Like a blob's record | No column | A staging object's metadata is set at its creation and cannot change; the provider sees a wrap of an unfinished object |
+| (c) Tails in plaintext | As today | Simplest | Up to one part of plaintext per session lies at the provider |
+
+**Choice:** (a). **Rationale:** the session's state already lives in its row; its key belongs beside it, sealed like every secret there.
+
+**Applied in the spec:** R-STOR-081, R-STOR-083.
+
+### Q-STOR-308 · A copy into an encrypted connection always gets a new data key
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That switching encryption
+on or off is a new connection which the reconciliation fills is the owner's (2026-11-22, decision 7). **An open question for the owner**,
+specified meanwhile with (a).
+
+Context: between two encrypted connections the reconciliation can carry the data key (copy the ciphertext, wrap the key again under the other
+storage key, server-side within one endpoint) or write new bytes. The answer to a leaked storage key is a new connection filled with new data
+keys (R-STOR-085).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) New data key, new bytes for every copy into an encrypted connection (chosen) | Decrypt, encrypt again, through the worker | Each connection's keys protect its copies alone: a leaked storage key never reaches another connection's objects; the leak's answer needs no mode; two providers hold no identical ciphertext | No server-side copy between two encrypted connections on one endpoint |
+| (b) Carry the data key | Same bytes, a new wrap | Server-side copies within one endpoint; less CPU | A leak at one connection exposes the copies on every connection that carried its keys; the leak's answer needs a mode that forbids carrying |
+| (c) Carry by default, new keys on a flag of the connection | Both | Cheap by default | A flag an operator must remember exactly when a key has leaked |
+
+**Choice:** (a). **Rationale:** a server-side copy between encrypted connections arises only when a provider keeps two of them (another prefix,
+the name detail changed); across providers every copy streams anyway. Recommendation to the owner: (a).
+
+**Applied in the spec:** R-STOR-062, R-STOR-087.
+
+### Q-STOR-309 · A storage key is a row with an identifier of its own, drawn at the connection's first start, never deleted
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the storage keys lie
+once, a sealed row per connection and generation with an export command, is the owner's (2026-11-22, decision 15 (a)). **An open question for
+the owner** (whether leaving a provider shall destroy its keys), specified meanwhile with (a).
+
+Context: the working paper said in passing that whoever leaves a provider deletes its storage key, and what stays there becomes unreadable.
+Noncurrent versions of a bucket and the pool of a backup hold objects wrapped by that key (R-BAK-031).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Identifier `sk-<connection>-<generation>-<random>`; drawn when the connection is first recorded; refused over a location that holds objects; never deleted (chosen) | Keys outlive their connection | No restore and no `restore-versions` ever meets an object whose key is gone; a key drawn again after a lost database never opens its predecessor's objects | Leaving a provider leaves ciphertext there that the database and every backup can still open (H-1308) |
+| (b) As (a), and a command destroys a retired connection's keys, refused while a retained backup's run names a key | Crypto-shredding on request | What the paper promised | Backups must record which keys their pool objects name; a refused command when one backup still holds one |
+| (c) Keys deleted when a connection retires | Automatic | Leftovers unreadable at once | A backup's pool objects from that connection become unreadable silently |
+
+**Choice:** (a). **Rationale:** nothing is lost by accident; (b) can follow without a change of the format. Recommendation to the owner: (a)
+now, (b) when an installation must make a provider's leftovers unreadable.
+
+**Applied in the spec:** R-STOR-083, R-STOR-085, backup-and-restore.md R-BAK-031.
+
+### Q-STOR-310 · A replica holds the storage keys in memory and reads the rows again for an unknown identifier
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Opened at start, kept for the replica's life, refreshed by the change area `storage_keys` and by a read of an unknown identifier at most every 10 s per connection (chosen) | No query per read | A new generation reaches every replica within the change areas' bound; a replica that is late reads the rows when it meets the new identifier | Keys in memory for the replica's life (H-1309) |
+| (b) Open a storage key per read | Rows read and opened per request | Nothing kept | A query and an AES open per download |
+| (c) A two-phase activation of a generation, as the key ring's rollout | Every replica confirms before any wraps | Strict | The keys live in the database every replica reads; the lazy read gives the same guarantee without a protocol |
+
+**Choice:** (a). **Rationale:** the rule "every replica can open before any seals" holds because a replica that cannot open reads the shared
+rows; the key ring needs two rollouts only because its keys are files.
+
+**Applied in the spec:** R-STOR-083.
+
+### Q-STOR-311 · A record that names an unknown storage key is not damage
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Fall over, mark nothing, count it, alert critical after 10 minutes (chosen) | A missing key is a configuration fault | The scrub and the reconciliation never overwrite an object that the export's import could still open | A damaged identifier inside a genuine record is not repaired until someone looks |
+| (b) Mark the copy `corrupt` | As any failure | Self-healing | After a database restored too far back, the repair rewrites every object of the lost generation from other copies or loses the blobs whose only copy it was |
+
+**Choice:** (a). **Rationale:** a key that can come back is the one failure a repair must not race.
+
+**Applied in the spec:** R-STOR-077, R-STOR-082, R-STOR-087, R-STOR-088.
+
+### Q-STOR-312 · The export is one document of sealed rows and the import adds missing rows
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) JSON with the sealed values as they lie, the installation and the root key identifiers; the import opens each value first and adds missing rows (chosen) | The ring opens it, nothing else | No key ring needed to export; a wrong ring is refused before a write; useful after a restore to an earlier point and as the offline tool's input | Opens only with the root keys it names (H-1306) |
+| (b) Plain keys, for the operator to keep | Readable alone | Needs no ring | A file that opens every blob by itself, beside the ring or anywhere |
+| (c) No export; backups of the database carry the rows | Nothing new | Nothing to build | Not what the owner chose; no recovery path for a generation drawn after the last backup |
+
+**Choice:** (a). **Rationale:** the owner's words, "printed sealed for safekeeping beside the key ring".
+
+**Applied in the spec:** R-STOR-085, R-STOR-089.
+
+### Q-STOR-313 · Keyed names lie below keyed/ and are an HMAC of the digest under a name key of the connection
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. Keyed names on an encrypted
+connection, on by default and fixed, are the owner's (decision 5 (a) with his note, read and decided by the development agent on 2026-11-22).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `keyed/<m0m1>/<m2m3>/<m>`, `m = HMAC-SHA-256(name key, FMT ‖ " name" ‖ digest)`, a random name key per connection kept like a storage key (chosen) | Another family, the same fan-out | A keyed name never passes for a digest; the orphan sweep tells the families apart | One more key per connection |
+| (b) The name key derived from the storage key | No row | One key less | A new generation would rename every object |
+| (c) The name key derived from the root | No row | One key less | A rotation of the root would rename every object |
+
+**Choice:** (a). **Rationale:** a name must outlive every rotation and generation, so its key is a row of its own that never changes.
+
+**Applied in the spec:** R-STOR-001, R-STOR-086.
+
+### Q-STOR-314 · The orphan sweep reads the record of an object it cannot place and never deletes one without a readable record
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One `HeadObject` and an unwrap for an object without a copy row; adopt or claim by the unwrapped digest; report an unreadable one (chosen) | The record is the map | Exactly the stage-1 rules, with the digest from the record | One request per object without a row (rare: a crashed write, a restore) |
+| (b) Delete what has no row after `min_age` | No record read | Cheap | Deletes the objects of a live blob whose row a restore lost |
+| (c) Keep a table of names | A mapping in the database | No request | A second place for what the copy row already holds |
+
+**Choice:** (a). **Rationale:** Quader always writes the record with the bytes, so an object without a readable record is not Quader's writing.
+
+**Applied in the spec:** R-STOR-026, R-STOR-087.
+
+### Q-STOR-315 · The journal, the probes and the marker stay plain on an encrypted connection
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Plain (chosen) | As stage 1 | The journal is read by a restore that replaces the database where the storage keys lie; the marker is read before any key; the probes live for a check | The provider reads the journal's identifiers (H-1316) |
+| (b) The journal encrypted under the storage key | Sealed entries | Hides identifiers and would authenticate entries against a bucket writer (H-553) | A restore from a backup older than a generation could not read the newest entries, which are the ones the journal exists for |
+
+**Choice:** (a). **Rationale:** the journal's integrity wants a signature under a key outside the database, a topic of its own; encryption under
+a key from the database it replaces would break the one case it is for.
+
+**Applied in the spec:** R-STOR-088.
+
+### Q-STOR-316 · The offline tool is a command of the binary and reads a bucket or a directory with record files
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. An offline tool is the owner's
+(decision 1 (a)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `quader admin storage offline` with `list`, `get`, `verify` and `pull`, from a connection element or a directory written by `pull` (chosen) | One binary | The same codec as the server; no database, no Valkey | A directory copied by another tool without its metadata cannot be read (H-1303) |
+| (b) A separate small binary | Its own release | Smaller | Two artifacts to release and keep in step |
+| (c) Read only from a bucket | No directory mode | Simpler | No way to read a copy kept on a disk |
+
+**Choice:** (a). **Rationale:** the binary already carries the codec and the key ring's file format; `pull` keeps the records with the bytes.
+
+**Applied in the spec:** R-STOR-089.
+
+### Q-STOR-317 · A ranged read is one request for the segments of its window
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One ranged `GetObject` of the window's segments, the final segment with them at the end; the record comes with the answer (chosen) | As many requests as today | No `HEAD`; every byte released is authenticated | Over-reads up to two segments |
+| (b) `HEAD` and a ranged `GET` pinned with `If-Match` (the proxy's library) | Two requests | The total is known before | Twice the requests; the store's answer to the `GET` carries the same information |
+
+**Choice:** (a). **Rationale:** the store sends the metadata and the total with every ranged answer.
+
+**Applied in the spec:** R-STOR-082.
+
+### Q-STOR-318 · A session counts the segments it seals under its data key
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `sealed_segments` in the row, raised in the claim transaction, refused past `2^31` (chosen) | A hard bound | Keeps one key below the NIST bound however often a client sends a part again | One column and one addition per request |
+| (b) No count | Trust the session's age limit | Nothing to build | A client that sends parts again in a loop for the 20 hours a session may live is bounded only by arithmetic, not by a check |
+
+**Choice:** (a). **Rationale:** a bound that is checked costs less than an argument that it cannot be reached.
+
+**Applied in the spec:** R-STOR-076, R-STOR-081.
+
+### Q-STOR-319 · Every behaviour of the encryption once at the cheapest tier, and its fuzz targets in the nightly
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the repository's rule that tests stay runnable (owner, 2026-11-20). No fuzz job runs in the nightly today; the fuzz legs of npm and
+NuGet run only on a dispatch with `closing=true` ([release.yml](../../.github/workflows/release.yml)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Vectors and every attack at the unit tier; one integration case for a rotation, one for the jobs, one in the backup area; one conformance pass with an encrypted connection; a nightly fuzz job, five minutes per target (chosen) | About 2.9 s of unit tests, 18 s of integration, 3 s of conformance per push; 27 minutes nightly | Nothing per format; the readers of an untrusted format are fuzzed every night | A new nightly job |
+| (b) Fuzz only on the closing dispatch, as npm and NuGet | No nightly job | Nothing new in the nightly | The readers of the bytes every encrypted download passes would be fuzzed only at the end of a phase |
+| (c) An end-to-end case per format with encryption on | Real clients | Shows each client | Grows with every format and shows nothing a format can change |
+
+**Choice:** (a). **Rationale:** the format is read on every download of an encrypted connection; its readers deserve the nightly.
+
+**Applied in the spec:** R-STOR-079, R-STOR-091.
+
+### Q-STOR-320 · The handover's room is one function of the store that nothing calls in this stage
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. The handover of a link and a
+data key per released blob to a Bastion is the owner's (decision 12 (b)) and is specified by a later planner.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `blob.Store.CopyDataKey(ctx, digest, connectionID)`, held to its callers by an architecture test (chosen) | One function, no caller | The later planner builds on a tested seam; nothing hands out a key before then | A function without a caller in this stage |
+| (b) Nothing now | — | Less code | The record's reading would be designed twice |
+
+**Choice:** (a). **Rationale:** the owner asked for the room; one function with a guard is the smallest room that can be tested.
+
+**Applied in the spec:** R-STOR-083.
+
 ## What this does not cover
 
 ### H-11 · Object-store principals bypass Quader's authorization and integrity checks
@@ -7282,7 +8377,12 @@ bucket holds, and between two scrub passes altered content can be served this wa
 client-side encryption and no object signature. Live today for every installation; the exposure
 is the set of principals with access to the bucket, which Quader cannot see. Mitigations are
 operational: least-privilege bucket policy, no other principals on the prefix, S3 Object Lock or
-versioning to make replacement detectable and reversible.
+versioning to make replacement detectable and reversible. An encrypted connection (R-STOR-075, specified,
+not built) narrows it for that connection: its readers see ciphertext under keyed names, and a replaced
+object fails authentication on every read, ranged ones included (R-STOR-082); what stays is on the pages
+[stored-content-format.md](../security/stored-content-format.md) and
+[stored-content-visibility.md](../security/stored-content-visibility.md), and the gap stays whole on every
+plain connection.
 
 ### H-12 · Presigned download URLs are bearer capabilities
 

@@ -4711,7 +4711,11 @@ Acceptance criteria:
 Priority: **MVP** · Covers: HA-016, IAM-045
 
 Secrets that Quader stores in PostgreSQL to reach other systems are sealed by `internal/secrets`
-before they are written. Examples are remote upstream credentials and webhook secrets (P1).
+before they are written. Examples are remote upstream credentials and webhook secrets (P1). The key
+ring is also the root of the encryption of stored content: it seals the storage keys and name keys of
+the encrypted connections (`storage_keys.sealed_key`) and the data key of an open upload session on one
+(`upload_sessions.sealed_data_key`), registered like every other sealed column, so that the steps below
+rotate them and no object of a bucket is touched ([storage.md](storage.md) R-STOR-083, R-STOR-084).
 [identity-and-authentication.md](identity-and-authentication.md) and
 [repositories-and-proxy.md](repositories-and-proxy.md) hand this key to this page.
 
@@ -4795,7 +4799,12 @@ before they are written. Examples are remote upstream credentials and webhook se
     loads anything, and refuses with `key ring does not match backup: missing key <id>`
     ([backup-and-restore.md](backup-and-restore.md) R-BAK-020 check 3). A database restored by
     other means without its key ring is refused by the start-up canary above, before any request is
-    served. There is no import path that carries a key.
+    served. There is no import path that carries a key. The export and import of the storage keys
+    ([storage.md](storage.md) R-STOR-085) carry sealed values only, never key ring material, and the
+    import opens each value with the configured ring before it writes.
+  - With an encrypted connection, losing the key ring loses every blob of every encrypted connection,
+    in its bucket and in every backup, not only the sealed credentials ([storage.md](storage.md)
+    R-STOR-085, R-STOR-090).
 
 ```sql
 CREATE TABLE secret_key_canary (

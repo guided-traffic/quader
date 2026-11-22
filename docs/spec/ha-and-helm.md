@@ -945,7 +945,10 @@ not built; until then the chart has `config.storage.s3`, `secrets.s3`, `secrets.
   - an element without `bucket` and without an entry whose `bucketKey` is set;
   - `credentials_source: static` without an entry with `existingSecret` for that `id`;
   - an entry whose `connectionId` names no element;
-  - `encrypted: true` on an element ("the encryption of stored content is not built, storage.md R-STOR-050");
+  - `encrypted: true` on an element until the encryption of stored content is built ("the encryption of stored content is not built,
+    storage.md R-STOR-050"); afterwards `encrypted: true` passes through like every key, and the chart refuses only `keyed_names` on an
+    element without `encrypted: true` (storage.md R-STOR-075). The chart renders no key and no Secret for the stored content: Quader draws
+    the storage keys and keeps them sealed in the database ([Q-HA-415](#q-ha-415--the-chart-carries-no-key-of-the-stored-content));
   - `drain: true` on every element, or `config.storage.replication.min_copies` above the number of elements without it;
   - two elements on one endpoint and bucket whose prefixes are equal or contain each other, and the backup target at any element's
     location (the rule of R-HA-029 for the target, per connection).
@@ -12672,6 +12675,18 @@ operations but documents neither targets nor behaviour (a research of 2026-11-22
 | (b) Only Quader's connections | One way | Simpler page | Removes an option that works where the store offers it |
 
 **Choice:** (a). **Applied in the spec:** R-HA-026, [storage.md](storage.md) R-STOR-035 A4.
+
+### Q-HA-415 · The chart carries no key of the stored content
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the storage keys are
+drawn by Quader, lie once sealed in the database and are never handled by an operator is the owner's (2026-11-22, decisions 4 and 15).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No key, no Secret and no value for the stored content beyond `encrypted` and `keyed_names` in a connection's element (chosen) | The key ring Secret stays the only key the chart mounts | One secret to escrow; nothing an operator can get wrong when he adds an encrypted connection | The chart cannot tell an operator to export the storage keys; the manual and the README do (storage.md R-STOR-090) |
+| (b) A Secret per encrypted connection holding its storage key | Keys in Kubernetes | A key an operator can see | A second place for a key that lies in the database, the drift the owner rejected for the data keys |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072, [storage.md](storage.md) R-STOR-075, R-STOR-083.
 
 ## What this does not cover
 

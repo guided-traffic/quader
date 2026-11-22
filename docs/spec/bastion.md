@@ -1538,6 +1538,52 @@ Acceptance criteria:
   the following one fetch from the main installation.
 - An entry rewritten in the bucket to point at another content address, and an answer written into Valkey by hand, are ignored.
 
+### R-BAS-061 · The cache encrypted in the stored format
+Priority: **P1** · Covers: quader-only
+
+The owner's decision 13 (a) of 2026-11-22: the Bastion's own cache is encrypted in the same format as the main installation's encrypted
+connections once its chart gives it a key; off by default ([storage.md](storage.md) R-STOR-076, R-STOR-077;
+[Q-BAS-210](#q-bas-210--the-cache-key-is-one-file-in-the-bastions-chart-and-the-formats-keys-derive-from-it),
+[Q-BAS-211](#q-bas-211--with-a-cache-key-every-object-of-the-cache-store-is-encrypted-or-sealed-and-named-without-a-digest)). Stage 2
+of the owner's topic; specified, not built. It does not change what the Bastion may read: never the main installation's object store
+(Q-BAS-10); the handover of decision 12 (b) is a later planner's.
+
+- **The key.** `secrets.cacheKey` of the Bastion's chart (`existingSecret`, `key`, default empty) is mounted at
+  `/var/run/secrets/quader-bastion/cache-key/` and named by `bastion.cache.encryption_key_file` (managed by the chart): 32 random bytes, raw or
+  base64, the key ring's file rules ([architecture.md](architecture.md) R-ARCH-021). Without it the cache is as R-BAS-030 says. From the file's
+  key `K` derive, with `FMT` = `quader-blob-v1`: the storage key `HKDF(K, "", FMT ‖ " bastion storage")`, the key's identifier `bc-` followed by
+  the hex of the first 8 bytes of `HKDF(K, "", FMT ‖ " bastion key id")`, the name key `HKDF(K, "", FMT ‖ " bastion names")` and the entries'
+  key `HKDF(K, "", FMT ‖ " bastion entries")`. The key is read at start; a new file is a rollout.
+- **What is encrypted.** With a key, every object the Bastion writes into its cache store, bucket or volume, lies below
+  `<prefix>/<key identifier>/`:
+  - artifact bytes and documents in the format of R-STOR-076 with their record (R-STOR-077), a new data key per object, under the names
+    `a/<m0m1>/<m2m3>/<m>` and `d/<m0m1>/<m2m3>/<m>` with `m = HMAC-SHA-256(name key, FMT ‖ " name" ‖ area ‖ digest)` (`area` one byte, `a` or
+    `d`);
+  - entries signed as R-BAS-032 says and then sealed, `nonce ‖ Seal(entries' key, nonce, entry, FMT ‖ " bastion entry" ‖ name)`, under
+    `e/<k0k1>/<hex of HMAC-SHA-256(name key, cache key)>`;
+  - access markers under `x/<m>`, and every object of the audit spool (R-BAS-039) in the format with its record, under
+    `s/<replica>/<unix ms>`.
+- **Reads.** An artifact is read as [storage.md](storage.md) R-STOR-082 says, with R-BAS-032's verification against its content address and
+  hold-back; a ranged read of a cached artifact is authenticated per segment (which narrows
+  [H-451](#h-451--a-ranged-read-of-a-cached-artifact-is-not-verified): still not checked against the digest, but no byte that was not
+  written by the Bastion). A failure of the record, a segment or the digest deletes the object and its entries, as a corrupt object today.
+- **A new key, a lost key.** A key change gives a new identifier and so an empty tree: every read is a miss until refilled (performance only).
+  The sweep of R-BAS-031 deletes the trees of other identifiers and the plain layout of a cache that ran without a key, in its first runs after
+  the change. A lost key costs the cache, nothing else.
+- **What stays in the clear, and why**
+  ([H-1318](../security/stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)):
+  the number and sizes of objects (which give away the plaintext sizes), their times, and the modification times of the access markers, which
+  the eviction reads by listing (R-BAS-031); the key's identifier; the answers in Valkey, which are signed (R-BAS-032) and short-lived and lie
+  in Valkey, not in the cache store; and the spool of fills in progress on the pod's temporary volume, as the main installation's spool
+  ([storage.md](storage.md) R-STOR-004).
+
+Acceptance criteria (unit, `internal/bastion/cache`, a temporary volume; chart render tests):
+
+- With a key, after a tarball's fill no object below the cache's prefix contains a 16-byte run of the tarball and no name contains its SHA-256
+  or the hash of its cache key; a second cache over the same directory serves it; a flipped bit makes the read abort and the entry go.
+- With another key the first read is a miss and the next sweep removes the old tree; without a key the layout is R-BAS-030's.
+- The chart mounts `secrets.cacheKey` into the Bastion's pods and sets `bastion.cache.encryption_key_file` only when `existingSecret` is set.
+
 ### R-BAS-033 · Routing by path for local volumes
 Priority: **MVP** · Covers: quader-only
 
@@ -6646,6 +6692,41 @@ neither `/api/<format>/` nor `/v2/`. The stage verifies a registry token only on
 
 **Choice:** (a). **Applied in the spec:** R-BAS-011, R-BAS-052; code: `bastionCheckStage` in
 [wire_bastion.go](../../internal/app/wire_bastion.go), `TestQ_BAS_167_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies`.
+
+### Q-BAS-210 · The cache key is one file in the Bastion's chart, and the format's keys derive from it
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the Bastion's cache is
+encrypted in the same format once its chart gives it a key, off by default, is the owner's (2026-11-22, decision 13 (a)).
+
+Context: the Bastion has no database and no key ring (R-BAS-001); the main installation's storage keys lie sealed in its database
+([storage.md](storage.md) R-STOR-083). A lost cache costs a refill, never data.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One 32-byte key file from a Secret of the Bastion's chart; the storage key, the key's identifier, the name key and the entries' key derived from it (chosen) | One secret | Nothing to store or rotate beside the file; a new file is a new key identifier and an empty tree | Replacing the key empties the cache (a refill) |
+| (b) A storage key drawn by the Bastion and kept sealed in its bucket under the file's key | The main installation's hierarchy | A key change without a refill | A key in the bucket it protects, and the volume backend per replica would draw one per pod |
+| (c) The Bastion's signing key used for it | No new Secret | One Secret fewer | One key for two purposes; the signing key is also required without encryption |
+
+**Choice:** (a). **Rationale:** the cache is disposable, so the simplest key that rotates by refilling is the right one.
+
+**Applied in the spec:** R-BAS-061.
+
+### Q-BAS-211 · With a cache key, every object of the cache store is encrypted or sealed and named without a digest
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the cache store holds artifact bytes, documents, signed entries (whose names are a hash of the cache key, so of the request path),
+access markers named by the content address, and the audit spool of download events (R-BAS-030, R-BAS-039).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Artifacts, documents and the audit spool in the format; entries sealed under a derived key; every name a keyed name; only sizes, counts and times stay visible (chosen) | Nothing readable or confirmable in the store | The DMZ's copy reveals neither content, nor which packages are cached, nor who downloaded what | Every object of the store changes its layout when a key is set |
+| (b) Only artifact bytes and documents | The content | Less to change | Entry names confirm which paths are cached; access markers carry digests; the spool carries personal data in the clear |
+
+**Choice:** (a). **Rationale:** an encryption that leaves the list of cached packages and their downloaders readable protects the content and
+gives away the interest in it.
+
+**Applied in the spec:** R-BAS-061.
 
 ## What this does not cover
 

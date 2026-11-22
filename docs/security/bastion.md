@@ -31,6 +31,7 @@ and its permissions in [permissions.md](permissions.md); the rules are in the sp
 | The main installation's answers about callers, keyed by the SHA-256 of the presented token, for at most `bastion.answers.period` (plus the grace period while the main installation is unreachable) | A caller's token beyond the request: never on disk, never in Valkey (R-BAS-019) |
 | Cached artifacts under their SHA-256, shared documents, negative entries, and per-caller documents in memory only (R-BAS-022 to R-BAS-024) | Any credential for the main installation's object store, PostgreSQL or upstream registries (R-BAS-030); the chart does not limit where its pods connect ([H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)) |
 | The signing key for its records in Valkey and the bucket (R-BAS-032) | A right to write Kubernetes Secrets or to issue tokens (R-BAS-006, R-BAS-045) |
+| The cache key, when its chart gives one: every object of its cache store is then encrypted or sealed under keys derived from it (R-BAS-061, specified, not built; [stored-content-visibility.md](stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)) | Any key of the main installation's stored content ([stored-content-keys.md](stored-content-keys.md)) |
 
 Every decision about a caller is the main installation's. A miss is forwarded with the caller's own credential and decided by
 the main installation's own route; a cached artifact is served only after a `full` read answer or a conditional request with the
