@@ -4906,7 +4906,14 @@ for large artifacts, section 8). The commit lands with the Bastion's two package
 23:43** with the decision as Q-HA-417 (an entry for a configured connection is reported as skipped, with its
 note among the replay's warnings, and the restore goes on); it stands as the third commit on the Bastion's
 two in the landing worktree, with the build, the evidence, the links and the tests that read the
-specification through. The writer's worktree and branch are removed.
+specification through. The writer's worktree and branch are removed. **Landed on 2026-11-22 at 23:54, in one
+push of three commits:** the wire of the Bastion's read shapes (a `feat`), the decision point with the kit's
+check and the repair of the repository's read shape (a `fix`), and this specification (documents). The run of
+the stack of four had ended at 23:53 with every job green. Main installation and Bastion speak the
+interface's fifth version from this release on; they are upgraded minutes apart on the owner's cluster, and
+what the Bastion does in between is read after the rollout. The Bastion's P3 is told that its base is on
+`main`. His UI's backend is started again on this state. Released on 2026-11-23 at 00:07; the plan's commits of
+the minutes between waited for it.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
