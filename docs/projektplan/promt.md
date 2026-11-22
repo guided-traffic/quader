@@ -2255,6 +2255,22 @@ runs are in `git log`; this section holds the current state.
   reconciliation's; the two calls of the changed signature; the audit event of a detected damage; and whether
   the reconciliation closes its gap of a failed repair and its scrub the reconciliation's gap of a drain
   that waits).
+  **The scrub stands on the reconciliation, reported at 18:54** (one commit on the reconciliation's; conflicts in
+  the README, the decisions' index, the developer page, four manual pages, the security page and two
+  specifications resolved by its builder with both sides' content kept; every gate exits 0 again, with five
+  integration areas and the web gates, and no test failed beside the other builders' load). **One mark:** its
+  own is gone, the scrub, its repair and its recheck call the reconciliation's, which now returns whether the
+  copy stands marked. **The audit event of a detected damage is built,** with its label and translations.
+  **Three gaps closed by reading the two packages against each other:** a repair the scrub could not finish
+  is retried by the reconciliation from the queue row the mark leaves (H-1270); a drain waits for the stamp
+  the scrub sets, and never-verified copies are the scrub's first work, so a drain beside a copy the store
+  made itself waits about two hours at most (H-1261); the audit event (H-1271). **New, decided by its builder
+  on the development agent's question: a copy marked missing is looked at again once a day,** because the
+  second look right after a mark does not help when a gateway answers 404 for a while, and with one
+  connection the reconciliation deletes the queue row, so a blob nobody reads would have stayed missing
+  after a gateway's incident until an operator rechecked it; a false mark now heals within a day of the store
+  answering rightly, and a copy that is really gone costs one cheap request a day. That removes the risk
+  named for the owner's installation with its one connection.
   What it was at its start:
   (the job with its queue and
   its pass, copies made by the store and copies streamed through Quader, the bound on inserts, drain, retire,
