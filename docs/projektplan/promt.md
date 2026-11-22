@@ -577,11 +577,6 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **A hit from a Bastion's cache carries none of the content headers every other answer has** (H-1250, live; read
-  by the builder of the Bastion's package A on 2026-11-22): no `X-Content-Type-Options`, no sandboxing
-  `Content-Security-Policy`, no `Cross-Origin-Resource-Policy`. An artifact is still sent as an attachment, so
-  what is exposed is a document shown by a browser from the Bastion's host, which holds no session and no
-  cookie. Closed by package C, in work, with a test.
 - **Two commits of 2026-11-22 added a line each to the evidence record by hand** (`docs/coverage/implemented.txt`: the
   kit's check for the Bastion and the declaration for signed links), against the developer page of the evidence,
   which says the pipeline writes that record from the test reports and nobody else does; found by the builder of
@@ -595,8 +590,10 @@ records the recorder that tells such a stall apart).
   no entry for their withdrawals: a deleted Debian package or a removed collection version stays servable from a
   Bastion's cache until its revalidation, up to ten minutes by default (a malware finding has its entry and is
   not affected); (2) the client setup offers a Bastion as the target of an OCI repository, and its snippets get
-  a 404 there. Both are repaired by the packages in work (the feed's entries in package B, the registry's paths
-  in B and C); neither is repaired alone.
+  a 404 there. **Both are repaired on 2026-11-22** (the feed's entries by package B at 12:31, the registry's
+  paths by B and C at 13:35); package D checks the client setup's snippet. A third finding of that day, that a
+  hit from a Bastion's cache carried none of the content headers every other answer has (H-1250), was closed
+  by package C with a test.
 - **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
   checked by the development agent): (1) **the scrub of stored content and the orphan sweep of the content addresses are
   not built** (R-STOR-027, R-STOR-026; no job kind, no list of damaged blobs; the developer page of the blob store says
@@ -1727,12 +1724,48 @@ runs are in `git log`; this section holds the current state.
   lint, the lint; the index rows of the decisions' page merged by hand with both sides kept; the diff holds no
   name the white-label rule forbids; **not run by the development agent: the chart tests, which were red on
   `main` by its own earlier landings (the entry above).** The owner's UI backend started with it at the push.
-  **Its release was held back by that gate** and follows with the run of the push at 13:02. **Its tests cost**
+  **Its release was held back by that gate; it was cut at 13:20** with the run of the push at 13:02, image and
+  chart were published at 13:24, and **the owner's installation runs it since 13:26** (read on the cluster at
+  13:36: every Deployment ready, no restart). **Its tests cost**
   about 0.3 s of the unit job, nothing in the integration or end-to-end legs. **Not verified:** any real client
   through a Bastion (package C); a deployment that runs the role `api` apart (read and a unit test); whether
   `apt update` works through a Bastion today. Its worktree and branch are removed.
-- **Package C of "a Bastion serves every format" is at work again since 12:32** with B's commit: its integration
-  area, the integration tests it planned, and the real clients on a stack of its own.
+- **In work since 2026-11-22, 13:37: package D of "a Bastion serves every format"** (one small case of an image
+  pulled through a Bastion in the end-to-end set of the registry, on a kind cluster of its own; the four manual
+  pages and every other text that says a Bastion serves only some formats).
+- **Landed on 2026-11-22 at 13:35: package C of "a Bastion serves every format", the Bastion's side: images,
+  Debian and every other format are served through a Bastion, shown with the real clients** (a commit of the
+  type `feat`, which announces the interface's fourth version; R-BAS-050 to R-BAS-054, R-BAS-056 and the
+  reporting of R-BAS-059; decisions Q-BAS-195 to Q-BAS-203, gaps H-1295 and H-1296; its builder worked from
+  11:18 to 12:05 and from 12:32 to 13:30). What it built is in the entry of 12:05 below; added since: **two
+  faults that only the real clients and an integration test showed.** `ansible-galaxy` sends its token in a
+  scheme of its own, which the Bastion did not read, so every install with a token was refused (read now, on
+  the formats' paths alone, and kept apart from the same token as a bearer). And neither a forward below the
+  registry root nor the handshake saw the binding of the Bastion's own host, so a bound host could not have
+  worked (one change in the main installation's wiring, named by its builder). **The real clients, each
+  through a Bastion run locally on a stack of the builder's own, with the pinned images and the test CA
+  mounted, nothing changed on the host:** the Docker Engine (a cold pull in 0.21 s with nine forwards, a warm
+  one in 0.21 s with seven conditional requests answered 304 and no artifact byte from the main
+  installation); Podman; crictl with containerd; apt in Debian 13 (update, install, the signature verified)
+  and in Ubuntu 24.04 (warm, nothing asked of the main installation); `ansible-galaxy`; `freshclam` (the
+  largest definition file sent once by the main installation, the next check answered from the cache). **A
+  layer of 286 MiB asked for cold by three clients at once, one of them resuming from its hundred-millionth
+  byte:** the main installation sent the layer once. **The planner's two open points:** the image clients take a
+  challenge without a scope and ask the token service for the scope themselves; the largest definition file is
+  84.9 MiB, above the bound for documents, and takes the spool. **Its gates, each exit 0:** build, the full
+  unit run, generate-check, the evidence, the complexity check, the chart's lint and its tests whole, the lint;
+  under the lock the areas `bastion` (148 s), `bastioncache` and `bastioniface`. **By the development agent on
+  the commit as it landed, each exit 0:** build, the full unit run, generate-check, the evidence regenerated
+  without a difference, links, check and the count test, the complexity check, the chart's lint and its tests
+  whole (with the values line of the specification that came back with the chart's value), the lint; the diff
+  holds no name the white-label rule forbids and no hand-made line of the evidence record. The owner's UI
+  backend started with it at the push. **Its tests cost** about 1 s of the unit job, 0.2 s of the chart's, and
+  25.7 s in the integration area `bastion` (six cases with payloads of a kilobyte), where the planner had
+  estimated 10 s. **Not verified:** a vulnerability block of an image through a Bastion (the integration stack
+  has no findings; a deleted manifest was tested instead); a bound host over a remote repository; the area
+  `bastionshared`. **Gaps it names:** an expired registry token counts as a failed sign-in on a replica that
+  never saw it (H-1295); each run of `freshclam` asks the main installation three times for files that do not
+  exist, because their 404 is not kept (H-1296). Its worktree and branch are removed.
 - **The chart's part of package E of the several connections reported at 12:50 that it is ready and waits for
   A** (one commit of the type `feat` in its worktree, amended at 12:58 to carry the specification's values block
   with the chart). The chart renders the list of connections; each connection's Secrets are one entry matched by
@@ -4435,8 +4468,9 @@ open questions are in the list above**
   about 100 s in the end-to-end leg `oci` (60 of them a Bastion release in the leg), nothing in the Bastion's
   own legs; with 25 formats about half a second of the kit and no further leg. **Build plan, four packages**
   (the developer page of the Bastion): A the two contracts and the kit's check; B the main installation's side
-  and C the Bastion's side, in parallel after A; D the client case on kind and the manual. **Package A is
-  landed since 11:16; B and C are in work since 11:18 (run record).** **Not verified:** any run with a real client; whether the token service sees a Bastion's
+  and C the Bastion's side, in parallel after A; D the client case on kind and the manual. **Packages A, B and C
+  are landed (11:16, 12:31, 13:35; run record): images and Debian are served through a Bastion, shown with the
+  real clients against a Bastion run locally. D is in work since 13:37.** **Not verified:** any run with a real client; whether the token service sees a Bastion's
   host; how the image clients take a challenge without a scope; whether the largest definition file is above
   the bound for documents.
 
