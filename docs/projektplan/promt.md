@@ -4406,7 +4406,7 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     that hangs in its deletion, because its cleanup fails at the same provider; removing it is a change of
     the cluster by hand, which is his. **Told to him at 19:17,** with the line that exempts the challenge's
     path from the rule and the question whether to prepare it there uncommitted; **open with him.** His
-    other public certificates renew from 2026-12-21 over the same way. **The cause, read at his word at 20:00
+    other public certificates renew from 2026-12-21 over the same way. **The cause, read at his word at 20:05
     ("offene Frage zur ACME-Ausnahme vorlegen"):** the certificate authority validates from six remote
     places instead of four since the evening of 2026-11-10 (its announcement and the confirmation in its
     forum); his last certificate was issued that morning, the eighteen before it on 2026-10-22, all with the
@@ -4417,7 +4417,15 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     on 2027-01-20). Not verified: where the six places are (not published) and how many may fail. The
     authority's own advice is the challenge's path open to the world, or the DNS challenge; his DNS issuer's
     access key is refused as invalid, and one of his names is hosted where that issuer cannot write. Put to
-    him at 20:11 as one decision with the exemption of the path as the recommendation. **His rule for his
+    him at 20:11 as one decision with the exemption of the path as the recommendation. **He chose the
+    exemption at 20:12** ("a"). It is written into the checkout of his cluster's base repository,
+    uncommitted, since that repository's rule is that he reviews and commits: a named condition for the
+    challenge's path beside the two that exist, in the snippet that both frontends of the controller carry
+    (read in the running configuration). Checked in the controller's version of the proxy in a container:
+    the configuration is valid, and nine cases answer as they should (an ordinary path from Asia or without
+    a continent 403, the challenge's path 200, a path that only resembles it 403; Europe, North America and
+    a private address 200). Not verified until he has committed it: the certificate's issue, which
+    cert-manager tries again by itself after a wait. **His rule for his
     deployment repositories stands in his global rules for agents since 18:46, at his word** ("Das kommt
     nach …"): every file at once; a Secret he fills as a placeholder `s-<name>.unenc.yml` with the one
     command that encrypts it; no secret value fetched or issued by an agent, the cluster read only and
