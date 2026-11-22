@@ -2039,7 +2039,13 @@ runs are in `git log`; this section holds the current state.
   store is a list of one to eight connections in the configuration and in the chart, each with its
   Secrets, and the chart and the binary refuse the former keys. Released at 19:37, its image and chart published at 19:43; his installation's upgrade was refused by
   the chart until then, with the message that names the new list, and his values were committed and pushed
-  under `apps/quader` at 19:43 (the rewrite, and the bucket claim's comment that named the former key). **The owner's installation needs
+  under `apps/quader` at 19:43 (the rewrite, and the bucket claim's comment that named the former key).
+  **His installation runs the release since 19:46** (read at 19:46 to 19:48: the upgrade succeeded, every
+  pod of the main installation runs the new image, ready and without a restart; a replica's start wrote the
+  audit event of the added connection `default`; the registry's base path answers 401 under the internal
+  name and, through the Bastion, under the public name). The Bastion's pods had taken the release at
+  19:43, three minutes before the main installation, and stayed linked.
+  **The owner's installation needs
   its values rewritten for it** (his one connection `default` and its Secret as the first elements of the
   two lists): rendered against the landed chart with his present values before the push, exit 0. A
   location that holds objects and no marker gets its marker at the first start, with a warning. His UI's
@@ -2062,6 +2068,10 @@ runs are in `git log`; this section holds the current state.
   from Q-STOR-350, gaps from H-1350. The three end-to-end cases are written and the npm leg's is run once
   on a cluster of its own. Its brief asks it to take each defence out once and to say which test caught
   it. Builders with a test load: the keys, the stacking, the links.
+- **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
+  failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
+  about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
+  machine.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
