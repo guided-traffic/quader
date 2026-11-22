@@ -4926,6 +4926,34 @@ installation's; the first logged at 00:13:31 that its interface is 5 and the mai
 00:14:11 that the main installation is reachable, unreachable for 40 s; the second started twenty seconds
 later and reached the main installation at once. Not read: whether a client's request met that replica in
 those seconds.
+**P3 of the Bastion's read shapes, the main installation's side, reported on 2026-11-23 at 00:20** (one commit
+of the type `feat`, moved by its builder onto the top of `main`; it worked from 23:10; every gate exit 0 on
+the same code, the full unit run, the lint and seven integration areas among them, the query budget too).
+Each rights decision of the host notes its package; a response carries a package only when every decision
+named that one. The marking says `full` on the package where the caller reads the repository in full or the
+decision point says so for the package, limited for a registry token to the images its grant may pull and
+never for a grant pinned to one manifest; a document is shared when the repository's or the package's shape
+is full. The check answers each pair in the order asked. The image the OCI handlers decide equals the
+enforcement point's, held through the production mount with tokens of a real signer, on a bound host and
+in the cache view too. Each of seven rules was taken out once and a named test caught it. Decision
+Q-BAS-265 (the read scope has no row for the wiki; the wiki is asked through the host, which is noted);
+gap H-1395, read and not run: an official image on a remote without a namespace prefix is decided under
+two spellings, so its responses carry no package and such pulls gain nothing. The unit job gains about
+0.4 s. **A Bastion of today with the new marking, shown in the integration area:** a narrowed reader's
+document that is now marked shared is kept as the shared entry and served to a full reader with the main
+installation's bytes. **Not verified:** that a marked response costs no statement more, which holds by
+construction (the decision runs on the index in memory) and has no case in the query budget's area; the
+image's equality on manifests, tag lists and referrers (run for blobs). **Its landing's gates run since
+00:20** in the lighter form (without the unit run and the lint, which its builder ran on the same code),
+with the areas `bastion`, `bastioniface`, `bastionreg`, `bastionshared`, `authz` and the query budget; it is
+pushed after the run of the two packages before it has finished its integration shards. **In work since
+00:21, on its commit: P4, the Bastion's side,** the last package: the fourth kind of answer with the
+grant's comparison, the package on a cache entry, the read flow that serves a package's entries on a full
+answer and sends a conditional request and no check where the repository's shape is known, the followers,
+the expiry read from a registry token; the integration assertions, the tightened end-to-end assertion
+with one run of the OCI leg on a cluster of its own, the manual, and the measurement with real clients,
+once. Builders with a test load: the links, package F, the encryption's package 3, the Bastion's P4, and
+the landing's gates.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
