@@ -607,6 +607,9 @@ records the recorder that tells such a stall apart).
   the requests' starts. Not run again by itself: the push of the Bastion's specification, whose code is the
   same but for a count test, runs the shard again. **That run ended at 23:03 with every job green,** the
   shard among them; seen once so far.
+- **A timing check of the Bastion's engine failed once under load (2026-11-22, about 23:35, in a
+  specification writer's full unit run at a load of about 37):** `TestR_BAS_054_LargeArtifacts` in
+  `internal/bastion/engine`; it passed in the next full run. Seen once; for the batch.
 - **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
   `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
@@ -4874,6 +4877,26 @@ package 4; P3 of the Bastion's read shapes, the main installation's side, on the
 and the writer of the specification of a storage key's destruction (documents only), told that the
 backup's pages changed under the design. Builders with a test load: the links, package F, the
 encryption's package 3, the Bastion's P3, and the landing's gates.
+**The specification of a storage key's destruction was written at 23:40** (one commit of the type `docs`;
+its writer worked from 23:11; the evidence's four steps, the chart's tests and the full unit run exit 0, the
+count test with 1,234 requirements): R-STOR-097 to R-STOR-103 and R-BAK-032, Q-STOR-400 to Q-STOR-413,
+Q-BAK-74 to Q-BAK-76 and Q-HA-416 with Q-STOR-309 superseded in place, the gaps H-1370 to H-1375, ADR-255,
+and a row 7 of the encryption's build plan. **Where the design met a `main` it had not seen:** the backup's
+order of copies, as built, puts a draining connection's copy last within its group; the specification moves
+it behind every other copy and keeps it as the last resort, so a sound blob is never recorded as damaged. A
+blob that the re-pool counted on and that cannot be read at the copy keeps its old pool object. The row of
+the journal's table stands beside the table until package 7 registers the event, since a unit test holds
+the table against the code's registry. The replay's handler is registered from the wiring, since the
+store's packages may not import the journal's. Three of the design's unverified points were read and hold
+(the reconciliation sets the retirement, an unrecorded connection is answered alike, a prune records what
+the check reads). **A gap the design had not seen, H-1375,** found by the writer: whoever holds a
+connection's runtime credential can write journal entries, and the replay as designed destroys the keys of
+any connection, also of a live one that alone holds a blob. **Decided by the development agent at 23:42:**
+the replay destroys keys only of a connection the restoring configuration does not name; an entry for a
+configured connection is skipped and reported. What stays of the gap is the early destruction of an
+already retired connection's keys. The writer amends its commit with it. One unit test failed once under a
+load of about 37 in its first full run and passed in the second (a timing check of the Bastion's engine
+for large artifacts, section 8). The commit lands with the Bastion's two packages in one push.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
