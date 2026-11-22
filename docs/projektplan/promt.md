@@ -578,6 +578,13 @@ records the recorder that tells such a stall apart).
   `Content-Security-Policy`, no `Cross-Origin-Resource-Policy`. An artifact is still sent as an attachment, so
   what is exposed is a document shown by a browser from the Bastion's host, which holds no session and no
   cookie. Closed by package C, in work, with a test.
+- **Two commits of 2026-11-22 added a line each to the evidence record by hand** (`docs/coverage/implemented.txt`: the
+  kit's check for the Bastion and the declaration for signed links), against the developer page of the evidence,
+  which says the pipeline writes that record from the test reports and nobody else does; found by the builder of
+  the Bastion's package C, who left the file alone. Both lines are true (their tests exist and pass), so the
+  pipeline's own check holds. The cause is the development agent's wording in the builders' briefs ("the evidence
+  follows the code"); the briefs since 12:05 say that the record is not edited by hand, and the builders at work
+  were told. Nothing to repair in the tree.
 - **The Bastion, read on 2026-11-22 by the planner of "a Bastion serves every format"** (in the code, nothing run):
   (1) the specification said a Bastion serves no Debian, and the code forwards every path below `/api/<format>/`,
   so Debian, Ansible Galaxy and the ClamAV definitions reach clients through a Bastion today, while the feed has
@@ -1652,8 +1659,33 @@ runs are in `git log`; this section holds the current state.
   the copies, the start check per connection; its builder keeps the tree whole for one connection, and the
   chart's part lands with it). **The first stage's specification is on `main` since 11:39** ("With the owner",
   the topic of 2026-11-22, has what it says, the planner's three questions for him and the build plan of six
-  packages). **Next as agents become free** (four run: the Bastion's B and C, this one, and since 12:02 the
-  chart's part of package E): the planner of the second stage (encryption).
+  packages). **Next as agents become free:** the Bastion's package C resumed when B has landed, then the
+  reading of the documentation of the object gateway in the owner's cluster, the Bastion's package D, the
+  links' package 2.
+- **In work since 2026-11-22, 12:06: the planner of the storage topic's second stage, encryption** (the format,
+  the write and read paths under it, the storage keys and their rotation by the key ring, keyed names, what the
+  reconciliation and the scrub do on an encrypted connection, backup and restore, the Bastion's cache, the
+  offline tool; it builds on the first stage's contracts and has a block of identifiers of its own).
+- **Package C of "a Bastion serves every format" reported at 12:05 that it is ready and waits for B** (one commit
+  of the type `feat` in its worktree; every gate that does not need B exits 0: build, the full unit run,
+  generate-check, the evidence, the complexity check, the chart's lint and tests, the lint). **Built:** the
+  registry root as a path family of the Bastion with the registry's error format for its own answers; the
+  token service and the catalog forwarded and never kept; registry tokens checked by their form, an anonymous
+  one counted as no credential, their read shape capped on the Bastion's side too; the handshake's table of
+  formats kept and a broken one refused; **a cached answer now carries the core's content headers and the
+  format's declared ones, which closes H-1250 with a test;** the registry's entity tag counts as a content
+  address; a ranged miss streams from the spool, a second caller follows a running fill, a replica waits for
+  another replica's fill up to a new value of the chart (ten minutes by default); a counted download is
+  reported at every serve. **Two contradictions it found in the specification and corrected with a decision
+  each:** a path below the registry root on a bound host is the bound repository, as the main installation's
+  dispatcher reads it (the criterion had said otherwise); and the rule of the held-back last 64 KiB stood
+  against its own example of a range of one kilobyte. Decisions Q-BAS-195 to Q-BAS-202, one new gap (H-1295: a
+  replica that does not know a registry token's expiry counts an expired one as a failed sign-in). **Depends on
+  B:** it no longer reports an artifact that the main installation did not mark as counted, so B must mark
+  every format's counted downloads (B's builder was told). **Not done until B is on `main`:** its integration
+  area, and every real client (the Docker Engine, podman, crictl, apt in two distributions, ansible-galaxy,
+  freshclam). The development agent resumes it with B's commit. Its tests so far cost about 1 s of the unit job
+  and 0.2 s of the chart's.
 - **In work since 2026-11-22, 12:02: the chart's part of package E of the several connections** (the list of
   connections and their Secrets in the chart, what it refuses, the alerts, the development profile; it builds
   from the specified shape, waits for package A's commit, then runs the chart's gates and proves the profile
