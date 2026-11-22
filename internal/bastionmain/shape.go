@@ -30,6 +30,18 @@ func CapRegistryShape(read iface.Read, granted bool) iface.Read {
 	return read
 }
 
+// CapRegistryPackage is the package shape on the wire of a caller whose shape on the package, as the decision point computes it, is
+// read (R-BAS-080, R-BAS-082, R-BAS-083): full or partial, never none (Q-BAS-243). A caller whose credential carries a registry
+// token's grant (granted) is full only where the grant holds pull on exactly that image name of that repository and is pinned to no
+// manifest (pulls): the decision point computes the shape of the token the registry token was issued for and does not see the grant,
+// so a token granted one image must not be full on another. The marking and the check both apply it.
+func CapRegistryPackage(read iface.Read, granted, pulls bool) iface.Read {
+	if read != iface.ReadFull || (granted && !pulls) {
+		return iface.ReadPartial
+	}
+	return iface.ReadFull
+}
+
 // ShapeResolver computes the read shapes of a subject (R-BAS-012, Q-BAS-28, Q-BAS-51). Work package 3
 // implements it, because the marking asks it on the hot path of every forwarded read; the check operation of
 // work package 2 asks it for a credential it has just validated. Both ask on the index of their request or
@@ -51,4 +63,9 @@ type ShapeResolver interface {
 	// repository for that subject. The answer is computed on idx, so it agrees with every other decision of
 	// the request.
 	Shapes(ctx context.Context, idx *authz.Index, subject authz.Subject, keys []qname.Repo) (map[qname.Repo]Shape, error)
+	// PackageShapes returns the subject's shape on each package of the repository key (R-BAS-080, authz.PackageReacher): full or
+	// partial, never none, with no registry grant applied (CapRegistryPackage). It is computed on idx as Shapes is, in memory,
+	// and is needed only for a subject whose shape on the repository is partial: full there is full on every package, none is
+	// partial on every package.
+	PackageShapes(ctx context.Context, idx *authz.Index, subject authz.Subject, key qname.Repo, pkgs []string) (map[string]iface.Read, error)
 }

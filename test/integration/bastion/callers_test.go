@@ -99,7 +99,7 @@ func TestR_BAS_021_R_BAS_023_R_BAS_024_EveryCallerIsAnsweredAsTheMainInstallatio
 	}
 }
 
-// TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders: a name that does not exist for anyone is answered 404
+// TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders (and R-BAS-082 at a Bastion without answers per package): a name that does not exist for anyone is answered 404
 // from the negative cache after the first request, for a full reader; the same 404 for a partial reader (who
 // may not read a name that exists) is never stored, so it never stands for a hidden package.
 func TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders(t *testing.T) {
@@ -145,6 +145,21 @@ func TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders(t *testing.T) {
 	}
 	if got := r.do(t, "GET", hidden, part); got.Status != http.StatusNotFound {
 		t.Fatalf("hidden package for $PART after $FULL read it: %d", got.Status)
+	}
+	// A package document $PART reads in full is marked shared (R-BAS-082, Q-BAS-244): a Bastion without answers per package keeps
+	// $PART's copy as the shared entry of the document and serves it to $FULL without forwarding the document again, and both get
+	// the main installation's bytes (kit check 21 holds the two renderings equal).
+	doc := "/api/npm/" + npmLocal + "/" + escapeNPM("@acme/sdk")
+	if got, want := r.do(t, "GET", doc, part), w.atBastionHost(doc, part.token); got.Status != http.StatusOK || !bytes.Equal(got.Body, want.Body) {
+		t.Fatalf("$PART's document: %d", got.Status)
+	}
+	filled := w.front.Mark()
+	fullDoc := r.do(t, "GET", doc, full)
+	if n := len(w.front.Forwards(filled, "/api/npm/"+npmLocal+"/@acme")); fullDoc.Status != http.StatusOK || n != 0 {
+		t.Fatalf("$FULL after $PART filled the shared entry: %d, %d forwards of the document", fullDoc.Status, n)
+	}
+	if want := w.atBastionHost(doc, full.token); !bytes.Equal(fullDoc.Body, want.Body) {
+		t.Fatalf("the shared entry $PART filled differs from $FULL's document")
 	}
 	// An expired negative entry asks again.
 	b2 := w.newBastion(t, bastionOptions{Cache: "    negative_period: 1s\n"}).wait()

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -24,18 +25,67 @@ import (
 //     that could not tell (offline, not cached, only-if-cached).
 //   - [NoteCounted] is called, through [CountingWriter], when the core starts an answer whose complete body it counts
 //     as a download (items.Store.Served after edge.ServeItem, the remote engine's streamed miss).
+//   - [NotePackage] is called by every rights decision the host makes for a format (R-BAS-081, Q-BAS-241):
+//     Host.Authorize, whether it allows or refuses, Host.WikiReadable, each path of Host.PathsAllowed in the package
+//     the format's Classify places it in, and each MayRead row of the read scope the host hands out. These are the
+//     decisions the conformance kit's host records for check 21 (R-BAS-086), which holds every format to deciding all
+//     of a response's reads before its status line.
 //
 // A 404 is absent exactly when something was noted missing, nothing unknown, and the caller's read shape of
 // the addressed repository is full, so that no subject-dependent hiding exists to begin with.
 type Absence struct {
 	missing, unknown, counted atomic.Bool
+
+	pkgMu sync.Mutex
+	pkg   string
+	named packageState
 }
+
+// packageState is what the decisions of a request said about its package so far.
+type packageState uint8
+
+const (
+	packageNone    packageState = iota // no decision named a package yet
+	packageOne                         // every decision so far named Absence.pkg
+	packageCleared                     // a decision named no package, or another one: the response belongs to none
+)
 
 // Absent reports whether the lookups of the request amount to "missing for every subject".
 func (a *Absence) Absent() bool { return a != nil && a.missing.Load() && !a.unknown.Load() }
 
 // Counted reports whether the core started an answer of the request that it counts as a download.
 func (a *Absence) Counted() bool { return a != nil && a.counted.Load() }
+
+// Package returns the package of the response (R-BAS-081): P exactly when at least one decision of the request named P,
+// every decision named P, and none named no package; "" otherwise. The marking reads it at the status line, so a decision
+// after it changes nothing on the wire; kit check 21 holds every format to making none.
+func (a *Absence) Package() string {
+	if a == nil {
+		return ""
+	}
+	a.pkgMu.Lock()
+	defer a.pkgMu.Unlock()
+	if a.named != packageOne {
+		return ""
+	}
+	return a.pkg
+}
+
+// notePackage folds one decision's package into the record: a package-less decision, or a second package, clears it for
+// good.
+func (a *Absence) notePackage(pkg string) {
+	a.pkgMu.Lock()
+	defer a.pkgMu.Unlock()
+	switch {
+	case a.named == packageCleared:
+	case pkg == "":
+		a.named, a.pkg = packageCleared, ""
+	case a.named == packageNone:
+		a.named, a.pkg = packageOne, pkg
+	case a.pkg != pkg:
+		a.named, a.pkg = packageCleared, ""
+	}
+}
 
 type absenceKey struct{}
 
@@ -65,6 +115,19 @@ func NoteUnknown(ctx context.Context) {
 		a.unknown.Store(true)
 	}
 }
+
+// NotePackage records the package a rights decision of the request named, as authz.Coordinate.Package carries it; "" for a
+// decision that names no package, which makes the response belong to none (R-BAS-081). It is a no-op on a request that is no
+// recognized Bastion request, so an ordinary request pays a context lookup.
+func NotePackage(ctx context.Context, pkg string) {
+	if a := absenceFrom(ctx); a != nil {
+		a.notePackage(pkg)
+	}
+}
+
+// NotesPackages reports whether the request records the packages of its decisions: a recognized Bastion request. A caller
+// that would compute a package only to note it asks first, so an ordinary request pays nothing for it.
+func NotesPackages(ctx context.Context) bool { return absenceFrom(ctx) != nil }
 
 // NoteCounted records that the core starts an answer of the request whose complete body it counts as a download
 // (R-BAS-059). It is a no-op on a request that is no recognized Bastion request.

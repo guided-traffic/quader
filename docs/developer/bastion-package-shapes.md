@@ -1,7 +1,8 @@
 # Read shapes per package at a Bastion: the build plan
 
-Status: specified on 2026-11-22; **P1 (the wire) and P2 (the decision point and the contract) built on 2026-11-22**, P3 and P4 not built ([bastion.md](../spec/bastion.md#read-shapes-per-package) R-BAS-080 to R-BAS-088,
-Q-BAS-240 to Q-BAS-255 and Q-BAS-260 to Q-BAS-261, the gaps H-1380 to H-1384, H-1390 and H-1242;
+Status: specified on 2026-11-22; **P1 (the wire), P2 (the decision point and the contract) and P3 (the main installation's side) built on
+2026-11-22**, P4 not built ([bastion.md](../spec/bastion.md#read-shapes-per-package) R-BAS-080 to R-BAS-088,
+Q-BAS-240 to Q-BAS-255, Q-BAS-260, Q-BAS-261 and Q-BAS-265, the gaps H-1380 to H-1384, H-1390, H-1395 and H-1242;
 [ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant); security
 perspective [security/bastion.md](../security/bastion.md#read-shapes-per-package)). This page is the build plan: the four packages, what each
 owns, their order, the tests and what they cost, the measurement to run once, and what was not verified.
@@ -53,7 +54,7 @@ start; each package adds "As built" notes to its own blocks only.
 |---|---|---|---|
 | **P1 · The wire** — **built** on 2026-11-22 | nothing | `iface.InterfaceVersion` 5; `HeaderPackage`, `HeaderPackageRead`, `Marking.Package` and `Marking.PackageRead` with `ParseMarking`'s rules (R-BAS-082); `CheckRequest.Packages`, `CheckAnswer.Packages` (R-BAS-083); `RegistryTokenGrant` and, if kept, the `exp` reader of Q-BAS-252; `testdata/interface.txt` regenerated; `maintest` speaks version 5 and can mark packages; the OpenAPI schemas `BastionCheckRequest` and `BastionCheckAnswer` and `x-quader-bastion-interface: 5` on the four operations, with what `make generate` writes; the one line that makes the check answer `packages: []`; the renumbering of R-BAS-073 is in the specification already | `internal/bastion/iface`, `internal/bastion/maintest`, `api/openapi.yaml` and `internal/api/v1/gen`, one line of `internal/api/v1/bastion_check_api.go` |
 | **P2 · The decision point and the contract** — **built** | nothing (beside P1) | `PackageReachOn` and its tests (R-BAS-080); kit check 21, the kit host's recording of `MayRead`, `PathsAllowed`, `WikiReadable` and the status line, `Fixture.OtherPackage` for npm, NuGet, OCI, Debian, Ansible Galaxy and the ClamAV definitions, two `testformat` defects (R-BAS-086); fixes of any format that fails check 21 | `internal/authz` (new `reach_package.go`, `reach_test.go`), `internal/formats/formattest` (new `checks_package.go`, `host.go`, `kit.go`), `testformat`, each format's fixture file, [formats.md](formats.md), the read-shape section of [authorization.md](authorization.md) |
-| **P3 · The main installation's side** | P1 and P2 | `NotePackage` in the `Absence` record; the notes in `Host.Authorize`, `WikiReadable`, `PathsAllowed` and the read scope (R-BAS-081); `ShapeResolver.PackageShapes`; `CapRegistryPackage`; the marking keeps subject and index from `Decided`, computes at the status line, applies the `shared` rule (R-BAS-082); the check's `packages` (R-BAS-083) | `internal/bastionmain` (`absence.go`, `shape.go`, `shape_resolver.go`), `internal/formathost` (`host.go`, `virtual.go`), `internal/api/bastionmark`, `internal/api/v1/bastion_check_api.go`, the marking section of [bastion.md](bastion.md#marking-the-write-probe-and-the-read-shape-package-3) |
+| **P3 · The main installation's side** — **built** on 2026-11-22 | P1 and P2 | `NotePackage` in the `Absence` record; the notes in `Host.Authorize`, `WikiReadable`, `PathsAllowed` and the read scope (R-BAS-081); `ShapeResolver.PackageShapes`; `CapRegistryPackage`; the marking keeps subject and index from `Decided`, computes at the status line, applies the `shared` rule (R-BAS-082); the check's `packages` (R-BAS-083) | `internal/bastionmain` (`absence.go`, `shape.go`, `shape_resolver.go`), `internal/formathost` (`host.go`, `virtual.go`), `internal/api/bastionmark`, `internal/api/v1/bastion_check_api.go`, the marking section of [bastion.md](bastion.md#marking-the-write-probe-and-the-read-shape-package-3) |
 | **P4 · The Bastion's side** | P1 (unit tests); P3 (integration) | `answers.Package` and its feed matching; `shared.AnswerPackage`; `cache.Entry.Package`; recording from markings and checks with the grant comparison (R-BAS-084); the read flow's steps 2 to 5, followers, `storedCheck` (R-BAS-085); the value `package` of the metric label `kind` (R-BAS-040); the integration and OCI end-to-end assertions | `internal/bastion/answers`, `internal/bastion/engine`, `internal/bastion/shared`, `internal/bastion/cache/cache.go` (one field), `internal/bastion/metrics`, `test/integration/bastion`, `test/e2e/oci_bastion_test.go`, the engine section of [bastion.md](bastion.md#the-engine-package-4b), [security/bastion.md](../security/bastion.md), one sizing sentence in `docs/manual/admin/bastion.md` |
 
 The order:
@@ -75,6 +76,15 @@ The order:
 | `RegistryTokenGrant` and `RegistryGrant.Pulls(repository, package)`; `RegistryTokenExpiry` | [iface/regtoken.go](../../internal/bastion/iface/regtoken.go) | P4 compares a `full` package answer with the grant when it records it (Q-BAS-246) and may refuse by the expiry, which closes H-1295 (Q-BAS-252) |
 | A refused pair answers `422` with the field error at `/packages/<i>` ([Q-BAS-255](../spec/bastion.md#q-bas-255--a-checks-package-that-breaks-a-rule-answers-422-as-the-checks-other-field-errors)) | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) | P4: the client treats it as a failed check; `maintest` refuses the same pairs (`maintest.CheckMaxRepositories`, 16) |
 
+### What P3 left for P4
+
+| Piece | Where | What P4 relies on |
+|---|---|---|
+| The two headers on every `200` or `304` of a `Download`, `Metadata` or `Computed` route whose decisions named one package, `Package-Read` limited to a registry token's grant at the main installation | [mark.go](../../internal/api/bastionmark/mark.go) (`marking`, `packageRead`, `classOf`) | a marking whose `Quader-Bastion-Repository` is the request's names the entry's package; `Package-Read: full` never comes for a registry token on an image outside its grant, but the Bastion still compares with the grant it reads (Q-BAS-246) |
+| A document marked `shared` for a caller `partial` on the repository and `full` on the package | `classOf` | the Bastion of today stores it as the shared entry; P4's package answer is what lets that caller hit it without a conditional request |
+| The check's `packages`: one element per pair, in request order, `partial` for a repository read none of, `[]` for an unusable subject | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) (`checkPackages`) | `storedCheck` and the read flow's step 4 can index the answer by position |
+| No package on a response that drew on two packages or on a package-less decision: an official image of a Docker Hub remote without a namespace prefix carries none ([H-1395](../spec/bastion.md#h-1395--an-official-image-of-a-docker-hub-remote-without-a-namespace-prefix-names-two-packages-and-carries-none)) | [absence.go](../../internal/bastionmain/absence.go) | P4's assertions of a warm pull use an image with a namespace, or a remote with a namespace prefix |
+
 ## Tests and what they cost
 
 By the rule "Tests stay runnable" of the repository's working rules: every behaviour once, at the cheapest tier; bytes to kilobytes. Times
@@ -85,13 +95,16 @@ marked [J] are the planner's estimates; each package writes its measured times h
 | Unit, `internal/bastion/iface`, `internal/bastion/mainclient`, `internal/api/v1` | markings and their refusals, the check's bodies and rules, the grant and expiry readers with the real encoder, the interface file; the client against `maintest`; the check's `422` at `/packages/<i>` | P1 | measured: about 0.07 s (iface 0.01 s, mainclient 0.03 s, api/v1 0.01 s after the document the package loads anyway), race detector and atomic coverage | hundreds of bytes |
 | Unit, `internal/authz` | `TestR_BAS_080_PackageShapeAgreesWithTheDecisionPoint` over the reach fixture (26 subjects, 3 endpoints, 16 keys, 4 packages), `TestR_BAS_080_PackageShapes`; `TestR_BAS_012_ShapeAgreesWithTheDecisionPoint` now asks the wiki too, skips a partial reach, stops at the first refutation and asks a version and a path in pairs (`packageReads`) instead of their cross product | P2 | measured in the unit job's mode at a load of 22 to 35: 0.26 s and 0.01 s; the R-BAS-012 test 2.65 s, 6.69 s before on the old fixture, so the package gains about 3.8 s | none; decisions in memory |
 | Kit, every format | check 21; `TestR_BAS_086_KitCheck21` with the two defects and five fixture faults | P2 | measured in the unit job's mode (race detector, atomic coverage) on a host at a load of 45 to 52: npm 0.25 to 0.63 s, NuGet 0.02 s, OCI 0.01 to 0.05 s, Debian 0.13 to 0.16 s, Ansible Galaxy 0.07 to 0.23 s, the ClamAV definitions 0.01 to 0.03 s, testformat 0.05 s, generic skips; `TestR_BAS_086_KitCheck21` 0.66 s beside the fixture check 19's test builds | the fixture's content cases, each seeded once more with one second package |
-| Unit, `internal/api/bastionmark`, `internal/bastionmain`, `internal/formathost`, `internal/api/v1` | the notes, the marking, the grant limit, the image equal to the enforcement point's, the check per package | P3 | about 0.4 s [J] | hundreds of bytes |
+| Unit, `internal/api/bastionmark`, `internal/bastionmain`, `internal/formathost`, `internal/api/v1` | the notes, the marking, the grant limit, the image equal to the enforcement point's, the check per package | P3 | measured in the unit job's mode (race detector, atomic coverage) at a load of 6 to 14: `bastionmain` 0.00 s (three tests), `formathost` 0.00 s, `bastionmark` 0.35 s (the registry root through `registry.Register` with a real signer 0.34 s, the marking 0.01 s), `api/v1` 0.71 s for the first check test, which builds the package's OpenAPI document every test of the package builds anyway, and 0.02 s for the other two; about 0.4 s in all | hundreds of bytes; a blob body of 4 bytes |
+| Integration, areas `bastion` and `bastioniface` | the package headers of the real main installation in `TestR_BAS_013_TheMarkingContractAtTheWire` (the real decision point: `$PART` is `full` on `@acme/sdk` through `npm-local`, `partial` through `npm-all`); a Bastion without answers per package serving `$FULL` the shared entry `$PART` filled (`TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders`); the check's pairs of `$PART` (`TestR_BAS_011_ACheckAnswersTheSubjectAndTheShapes`) | P3 | two to four requests more inside existing tests and worlds, milliseconds | existing |
 | Unit, `internal/bastion/engine`, `internal/bastion/answers` | `TestR_BAS_084_PackageAnswers`, `TestR_BAS_085_AWarmPullWithANewRegistryTokenCostsOneCheck`, `TestR_BAS_085_NoRoundTripTellsACachedPackageFromAnUncachedOne`, the follower and the `content` entry, over `fakeMain` | P4 | about 0.6 s [J] | bytes |
 | Integration, area `bastion` | the changed assertions of the OCI replay (`TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion`: one check and no conditional request on the second pull) and of the npm replay | P4 | about −0.1 s [J] (fewer requests) | existing: two blobs of 1 KiB |
 | End-to-end, set `oci` | the warm assertion of `TestOCI_R_BAS_051_ThroughABastion` tightened to at most one request below `/v2/` besides the token step | P4 | 0 s | existing |
 
 What each pipeline job gains [J]: the unit job about 1.3 s (P2 measured: check 21 over seven formats 0.7 to 1.0 s and `TestR_BAS_086_KitCheck21`
-0.66 s, against 3.8 s fewer in `internal/authz`, so the unit job loses about 2 s); the integration shard that holds the area `bastion` about −0.1 s; e2e `oci` 0 s;
+0.66 s, against 3.8 s fewer in `internal/authz`, so the unit job loses about 2 s; P3 measured about 0.4 s more, most of it the registry root's
+test, since `api/v1` builds its document anyway); the integration shard that holds the area `bastion` about −0.1 s (P3: a few requests more,
+milliseconds); the shard of `bastioniface` one check more (P3); e2e `oci` 0 s;
 `npm`, `bastion`, `bastion-long` and every other leg 0 s; chart and web 0 s. With 25 formats: check 21 about 1 s in all [J]; measured, a
 format costs check 21 what it costs check 19 plus one seed of its second package per content case, 0.01 to 0.6 s, so 2.5 to 3.6 s in all for 25
 formats at the average of the seven (0.10 to 0.15 s); nothing else grows with the number of formats. No new end-to-end case: no client shows anything the replay
@@ -108,12 +121,21 @@ probe, and whether the third forward of the measured warm pull of 2026-11-22 was
 
 - **Request counts.** Derived from reading the read flow and from the measurement of 2026-11-22 on smaller images; not measured for ten
   layers.
+- **A download's one statement with a package shape.** R-ARCH-027: computing the package shape adds no database statement. Shown by
+  construction, not by a test: `PackageReachOn` runs on the request's in-memory index and takes no transaction runner; the area `querybudget`
+  has no case through a recognized Bastion request, and none was added.
+- **What a Bastion of today does with the new marking.** That it keeps a `shared` document a reader of one package filled and serves it to a
+  full reader without forwarding it is run in `TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders`; that the reader of one package
+  keeps sending conditional requests answered `304` is read in [readflow.go](../../internal/bastion/engine/readflow.go) and
+  [forward.go](../../internal/bastion/engine/forward.go) (`onShared`), not asserted.
 - **Decisions before the status line.** Kit check 21 shows it for every content case of the six formats with package names on a local
   repository; the remote and virtual handlers and the routes in `NoContent` were read by a scan for a decision after a write, not run
   ([H-1390](../spec/bastion.md#h-1390--kit-check-21-runs-over-the-local-class-only)).
-- **OCI's package equals the image.** That `Target.Package` equals the enforcement point's `route.Target.Image` for every `/v2/` route, bound
-  hosts and the cache view included; and that the token service names the bound repository in grant entries (read in
-  [token.go](../../internal/api/registry/token.go), lines 159 to 167). Neither was run.
+- **OCI's package equals the image.** Run for the blob route by P3 (`TestR_BAS_081_TheImageTheHandlersAuthorizeIsTheEnforcementPointsImage`:
+  an unbound host, a nested name, a bound host, the cache view of a remote repository, each through `registry.Register` with tokens of a real
+  signer); the manifest, tags-list and referrers routes and the local, remote and virtual handlers other than the local and remote blob were
+  not run. That the token service names the bound repository in grant entries is read in [token.go](../../internal/api/registry/token.go),
+  lines 159 to 167, not run; the test mints the grant with the bound repository itself.
 - **Conditionals and `Authorize`.** That `Host.Authorize` runs on the `304` path of formats that render their own documents; read only for the
   item store ([ingest.go](../../internal/formathost/ingest.go), line 191).
 - **Other formats' packages.** Whether Debian's pool files and the documents of Ansible Galaxy and the ClamAV definitions name a package in
@@ -127,7 +149,8 @@ probe, and whether the third forward of the measured warm pull of 2026-11-22 was
 - **Lenient decoding.** That a replica of the previous release ignores the member `package` of entries
   ([sign.go](../../internal/bastion/cache/sign.go), line 93) and of Valkey records ([answerstore.go](../../internal/bastion/engine/answerstore.go),
   line 145): read, not run.
-- **Cost.** The cost of computing a package shape for each response marked to a `partial` caller; the times marked [J].
+- **Cost.** The cost of computing a package shape for each response marked to a `partial` caller (one `PackageReachOn` of one package at the
+  status line; P2 measured microseconds per call); the times marked [J].
 - **The conservative rule.** Whether a path-pattern grant on a repository, which makes every package of it `partial`, takes the gain away from
   real installations.
 - **The interface version.** That nothing on `main` uses version 5 when P1 lands: held at P1's base `e9dcbfaf0` (version 4, the handover

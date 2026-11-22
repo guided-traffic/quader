@@ -16,9 +16,10 @@ import (
 )
 
 type checkBody struct {
-	Credential    *string  `json:"credential"`
-	ClientAddress string   `json:"clientAddress"`
-	Repositories  []string `json:"repositories"`
+	Credential    *string              `json:"credential"`
+	ClientAddress string               `json:"clientAddress"`
+	Repositories  []string             `json:"repositories"`
+	Packages      []iface.CheckPackage `json:"packages,omitempty"`
 }
 
 func (s *site) check(bst string, cred *string, addr string, repos ...string) (iface.CheckAnswer, reply) {
@@ -55,6 +56,7 @@ func newCheckFixture(t *testing.T, o siteOpts) checkFixture {
 	s.shapes.set(full.ID, "it/npm-all", bastionmain.Shape{Read: iface.ReadFull})
 	s.shapes.set(part.ID, "it/npm-all", bastionmain.Shape{Read: iface.ReadPartial})
 	s.shapes.set(part.ID, "it/npm-partner", bastionmain.Shape{Read: iface.ReadNone, Status: http.StatusForbidden})
+	s.shapes.setPackage(part.ID, "it/npm-all", "@acme/sdk", iface.ReadFull)
 	return f
 }
 
@@ -86,6 +88,16 @@ func TestR_BAS_011_ACheckAnswersTheSubjectAndTheShapes(t *testing.T) {
 	}
 	if ans.Subject.ExpiresAt == nil || !ans.Subject.ExpiresAt.Equal(*f.partRec.ExpiresAt) {
 		t.Errorf("the expiry of $PART = %v, want %v", ans.Subject.ExpiresAt, f.partRec.ExpiresAt)
+	}
+	// The pairs of R-BAS-083, one element each in request order: the package shape where the repository is read in part, partial
+	// where it is read not at all.
+	pairs := []iface.CheckPackage{{Repository: "it/npm-all", Package: "@acme/sdk"}, {Repository: "it/npm-all", Package: "lodash"}, {Repository: "it/npm-partner", Package: "@acme/sdk"}}
+	rp = f.iface(f.bst, http.MethodPost, iface.PathCheck, checkBody{Credential: str(f.part), ClientAddress: "203.0.113.7", Repositories: []string{"it/npm-all", "it/npm-partner"}, Packages: pairs})
+	var withPairs iface.CheckAnswer
+	rp.decode(t, &withPairs)
+	if len(withPairs.Packages) != 3 || withPairs.Packages[0].Read != iface.ReadFull || withPairs.Packages[1].Read != iface.ReadPartial || withPairs.Packages[2].Read != iface.ReadPartial ||
+		withPairs.Packages[2].Repository != "it/npm-partner" {
+		t.Errorf("$PART's pairs: %d %+v", rp.Status, withPairs.Packages)
 	}
 
 	if _, err := f.tokens.Revoke(context.Background(), admin, f.fullRec.ID, "owner"); err != nil {

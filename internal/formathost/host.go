@@ -235,7 +235,8 @@ func coordinate(rq *formats.Request, t formats.Target) authz.Coordinate {
 // WikiReadable implements [formats.Host]: authz.Decider.WikiReadableOn on the request's index (R-AUTHZ-034). It is a
 // question, so nothing is audited or counted, and the repository's include and exclude patterns apply as they do to a read of
 // the package.
-func (h *Host) WikiReadable(_ context.Context, rq *formats.Request, t formats.Target) bool {
+func (h *Host) WikiReadable(ctx context.Context, rq *formats.Request, t formats.Target) bool {
+	bastionmain.NotePackage(ctx, t.Package) // a decision of the response's package (R-BAS-081)
 	c := coordinate(rq, t)
 	c.Actions = []authz.Action{authz.Read}
 	if !h.o.Decider.WikiReadableOn(rq.Index, rq.Subject, c) {
@@ -253,6 +254,7 @@ func (h *Host) WikiReadable(_ context.Context, rq *formats.Request, t formats.Ta
 // is the error of R-AUTHZ-016; a pattern refusal is a missing resource for a read
 // and 403 not_admitted for a write, the order the generic layer keeps.
 func (h *Host) Authorize(ctx context.Context, rq *formats.Request, t formats.Target) error {
+	bastionmain.NotePackage(ctx, t.Package) // allowed or refused, a decision of the response's package (R-BAS-081)
 	c := coordinate(rq, t)
 	d := h.o.Decider.DecideOn(ctx, rq.Index, rq.Subject, c)
 	if !d.Allowed() {
@@ -298,11 +300,27 @@ func (h *Host) PathsAllowed(ctx context.Context, rq *formats.Request, a formats.
 			return info.Package, info.Version
 		}
 	}
+	notePaths(ctx, paths, classify)
 	out, err := h.o.Decider.PathsAllowedOn(ctx, rq.Index, rq.Subject, coordinate(rq, formats.Target{}), a, paths, classify)
 	if err != nil {
 		return nil, err
 	}
 	return h.rules(ctx, rq, a, paths, out, classify)
+}
+
+// notePaths notes each path of a listing decision as a decision of the response's package, in the package classify places it in,
+// none without a classifier (R-BAS-081). Only a recognized Bastion request records them.
+func notePaths(ctx context.Context, paths []string, classify authz.Classifier) {
+	if !bastionmain.NotesPackages(ctx) {
+		return
+	}
+	for _, p := range paths {
+		pkg := ""
+		if classify != nil {
+			pkg, _ = classify(p)
+		}
+		bastionmain.NotePackage(ctx, pkg)
+	}
 }
 
 // rules narrows out (what the decision point allowed, or everything) by the repository's patterns and the refusal of a claimed name.

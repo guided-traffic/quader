@@ -302,6 +302,40 @@ type fakeShapes struct {
 	mu     sync.Mutex
 	shapes map[string]map[string]bastionmain.Shape
 	asked  []authz.Subject
+	// pkgs are the package shapes per subject, by "<repository>|<package>"; any other is partial.
+	pkgs map[string]map[string]iface.Read
+}
+
+func (f *fakeShapes) setPackage(subject, key, pkg string, read iface.Read) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.pkgs == nil {
+		f.pkgs = map[string]map[string]iface.Read{}
+	}
+	if f.pkgs[subject] == nil {
+		f.pkgs[subject] = map[string]iface.Read{}
+	}
+	f.pkgs[subject][key+"|"+pkg] = read
+}
+
+func (f *fakeShapes) PackageShapes(_ context.Context, idx *authz.Index, subject authz.Subject, key qname.Repo, pkgs []string) (map[string]iface.Read, error) {
+	if idx == nil {
+		return nil, errors.New("the check asked for package shapes without the request's index")
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	id := subject.ID
+	if subject.Anonymous {
+		id = ""
+	}
+	out := map[string]iface.Read{}
+	for _, p := range pkgs {
+		out[p] = iface.ReadPartial
+		if r, ok := f.pkgs[id][key.String()+"|"+p]; ok {
+			out[p] = r
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeShapes) set(subject, key string, sh bastionmain.Shape) {

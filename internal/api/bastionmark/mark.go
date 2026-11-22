@@ -90,19 +90,32 @@ type state struct {
 
 	mu      sync.Mutex
 	subject iface.Subject // invalid until the authentication stage accepted a credential
-	// granted is set for a registry token (R-OCI-005): its grant is a ceiling the decision point does not see, so its
-	// read shape is capped at partial (R-BAS-052, Q-BAS-167).
-	granted bool
-	match   *bastionmain.RouteMatch
-	kind    string
-	read    iface.Read
+	// grant is the grant of a registry token (R-OCI-005), nil for every other credential: a ceiling the decision point does
+	// not see, so the read shape is capped at partial (R-BAS-052, Q-BAS-167) and a package shape is full only on an image
+	// the grant holds pull on (R-BAS-082).
+	grant *httpserver.RegistryGrant
+	match *bastionmain.RouteMatch
+	kind  string
+	read  iface.Read
+	// whole is the shape on the repository before the registry cap, "" when none was computed.
+	whole iface.Read
+	// decided holds what Decided was told: the request's context, the subject and the index the request decides on, so that
+	// the package shape is computed at the status line on the same index (R-BAS-082).
+	decided *decision
 	probe   bool // the request was answered as a probe
+}
+
+// decision is the subject and the index of a request's decision, with the request's context.
+type decision struct {
+	ctx context.Context
+	sub authz.Subject
+	idx *authz.Index
 }
 
 // noteCaller is called by the authentication stage with the caller it accepted. The subject of the marking is
 // the token with its principal and expiry, the anonymous caller, or invalid for a credential the Bastion cannot
 // use as one (a session cookie). A registry token is the token it was issued for, with the registry token's own
-// expiry (auth.Credential.ExpiresAt is that, R-BAS-052), and is remembered for the cap of its shape.
+// expiry (auth.Credential.ExpiresAt is that, R-BAS-052), and its grant is remembered for the cap of its shapes.
 func (s *state) noteCaller(p httpserver.Principal) {
 	sub := iface.Subject{Kind: iface.SubjectInvalid}
 	switch {
@@ -112,7 +125,7 @@ func (s *state) noteCaller(p httpserver.Principal) {
 		sub = iface.Subject{Kind: iface.SubjectToken, TokenID: p.Credential.TokenID, PrincipalID: p.ID, ExpiresAt: p.Credential.ExpiresAt}
 	}
 	s.mu.Lock()
-	s.subject, s.granted = sub, p.Credential.Registry != nil
+	s.subject, s.grant = sub, p.Credential.Registry
 	s.mu.Unlock()
 }
 
@@ -196,30 +209,56 @@ func (m *Marker) readOnly(mt bastionmain.RouteMatch) error {
 }
 
 // Decided computes the caller's read shape on the addressed repository (R-BAS-012). The subject and the
-// index are the ones the decision just used, so the shape agrees with the decision of this request.
+// index are the ones the decision just used, so the shape agrees with the decision of this request; both are
+// kept for the shape on the response's package, which is known only at the status line (R-BAS-082).
 func (o *observer) Decided(r *http.Request, d bastionmain.RouteDecision) {
 	st := o.st
 	st.setRoute(d.Match)
 	if st.m.o.Shapes == nil || d.Index == nil {
 		return
 	}
+	st.mu.Lock()
+	st.decided = &decision{ctx: r.Context(), sub: d.Subject, idx: d.Index}
+	st.mu.Unlock()
 	key := d.Match.Repo
 	shapes, err := st.m.o.Shapes.Shapes(r.Context(), d.Index, d.Subject, []qname.Repo{key})
 	if err != nil {
-		// The marking stays without a shape: the response is `pass`, never shared.
+		// The marking stays without a shape: the response is `pass`, never shared, and a package of it is partial.
 		st.m.o.Log.Warn("bastion: the read shape could not be computed", "repository", key.String(), "error", err)
 		return
 	}
 	st.mu.Lock()
-	st.read = bastionmain.CapRegistryShape(shapes[key].Read, st.granted)
+	st.whole = shapes[key].Read
+	st.read = bastionmain.CapRegistryShape(st.whole, st.grant != nil)
 	st.mu.Unlock()
+}
+
+// packageRead is the caller's shape on the response's package pkg of the repository key (R-BAS-080, R-BAS-082): full on every
+// package for a full shape on the repository, partial on every package for none or no shape, and the decision point's package
+// shape, computed on the index the request decided on, for a partial one; a registry token's grant limits it to the images it
+// holds pull on. It runs at the status line, once per response that names a package, outside the state's lock.
+func (m *Marker) packageRead(whole iface.Read, d *decision, grant *httpserver.RegistryGrant, key qname.Repo, pkg string) iface.Read {
+	read := iface.ReadPartial
+	switch {
+	case whole == iface.ReadFull:
+		read = iface.ReadFull
+	case whole == iface.ReadPartial && d != nil:
+		got, err := m.o.Shapes.PackageShapes(d.ctx, d.idx, d.sub, key, []string{pkg})
+		if err != nil {
+			m.o.Log.Warn("bastion: the read shape of a package could not be computed", "repository", key.String(), "error", err)
+			break
+		}
+		read = got[pkg]
+	}
+	return bastionmain.CapRegistryPackage(read, grant != nil, grant.PullsImage(key, pkg))
 }
 
 // marking derives the headers of the response from the state and the response headers h at the status line.
 func (s *state) marking(status int, h http.Header) iface.Marking {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	mk := iface.Marking{Class: iface.ClassPass, Interface: iface.InterfaceVersion, Subject: s.subject}
+	match, kind, probe, read, whole, decided, grant := s.match, s.kind, s.probe, s.read, s.whole, s.decided, s.grant
+	s.mu.Unlock()
 	if status == http.StatusUnauthorized && !insufficientScope(h) {
 		// A rejected credential, or a caller the main installation asks to sign in: either way the credential
 		// is of no use to the Bastion (R-BAS-013). A registry token whose grant lacks the route's action is
@@ -227,38 +266,45 @@ func (s *state) marking(status int, h http.Header) iface.Marking {
 		// names, so the subject the authentication stage accepted stands (R-BAS-052).
 		mk.Subject = iface.Subject{Kind: iface.SubjectInvalid}
 	}
-	if s.match == nil {
+	if match == nil {
 		return mk
 	}
-	mk.Repository = s.match.Repo.String()
-	mk.Read = s.read
-	if s.probe {
+	mk.Repository, mk.Read = match.Repo.String(), read
+	if probe {
 		return mk
 	}
-	switch status {
-	case http.StatusOK, http.StatusNotModified:
+	content := kind == bastionmain.KindDownload || kind == bastionmain.KindMetadata || kind == bastionmain.KindComputed
+	switch {
+	case content && (status == http.StatusOK || status == http.StatusNotModified):
 		// Serving a 200 counted a download when the core's download recording noted it (R-BAS-059); a 304 never does.
 		mk.Counted = status == http.StatusOK && s.absence.Counted()
-		switch s.kind {
-		case bastionmain.KindDownload:
-			mk.Class = iface.ClassArtifact
-		case bastionmain.KindMetadata, bastionmain.KindComputed:
-			switch mk.Read {
-			case iface.ReadFull:
-				mk.Class = iface.ClassShared
-			case iface.ReadPartial, iface.ReadNone:
-				mk.Class = iface.ClassPrivate
-			}
+		// The response's package, when every rights decision of the request named the one package (R-BAS-081), and the
+		// caller's shape on it (R-BAS-082).
+		if pkg := s.absence.Package(); iface.ValidPackage(pkg) {
+			mk.Package, mk.PackageRead = pkg, s.m.packageRead(whole, decided, grant, match.Repo, pkg)
 		}
-	case http.StatusNotFound:
-		switch s.kind {
-		case bastionmain.KindDownload, bastionmain.KindMetadata, bastionmain.KindComputed:
-			if mk.Read == iface.ReadFull && s.absence.Absent() {
-				mk.Class = iface.ClassAbsent
-			}
-		}
+		mk.Class = classOf(kind, mk)
+	case content && status == http.StatusNotFound && mk.Read == iface.ReadFull && s.absence.Absent():
+		// absent stays tied to a full shape on the repository (Q-BAS-243).
+		mk.Class = iface.ClassAbsent
 	}
 	return mk
+}
+
+// classOf is the class of a 200 or 304 of a content route: an artifact for a download; for a document, shared when the caller
+// reads the whole repository or the whole package the document belongs to (Q-BAS-244), private for any other shape, and pass
+// without one.
+func classOf(kind string, mk iface.Marking) iface.Class {
+	if kind == bastionmain.KindDownload {
+		return iface.ClassArtifact
+	}
+	switch {
+	case mk.Read == iface.ReadFull || (mk.Package != "" && mk.PackageRead == iface.ReadFull):
+		return iface.ClassShared
+	case mk.Read == iface.ReadPartial || mk.Read == iface.ReadNone:
+		return iface.ClassPrivate
+	}
+	return iface.ClassPass
 }
 
 // insufficientScope reports whether a 401's challenge says error="insufficient_scope" (RFC 6750 section 3.1): the

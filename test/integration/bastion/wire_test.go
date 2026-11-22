@@ -63,23 +63,28 @@ func TestR_BAS_013_TheMarkingContractAtTheWire(t *testing.T) {
 	w.content()
 	doc := "/api/npm/" + npmAll + "/" + escapeNPM("@acme/sdk")
 	tgz := tarballPath(npmAll, "@acme/sdk", "1.0.0")
+	localDoc := "/api/npm/" + npmLocal + "/" + escapeNPM("@acme/sdk")
+	// pkg and pkgRead are the package headers of R-BAS-082 ("" absent); "*" leaves them unchecked.
 	cases := []struct {
-		name   string
-		path   string
-		tok    string
-		status int
-		class  string
-		read   string
+		name         string
+		path         string
+		tok          string
+		status       int
+		class        string
+		read         string
+		pkg, pkgRead string
 	}{
-		{"tarball $FULL", tgz, w.full.token, 200, "artifact", "full"},
-		{"tarball $PART", tgz, w.part.token, 200, "artifact", "partial"},
-		{"document $FULL", doc, w.full.token, 200, "shared", "full"},
-		{"document $PART", doc, w.part.token, 200, "private", "partial"},
-		{"search", "/api/nuget/" + ngAll + "/v3/search?q=acme", w.full.token, 200, "pass", "full"},
-		{"missing name, local repository, $FULL", "/api/npm/" + npmLocal + "/no-such-package", w.full.token, 404, "absent", "full"},
-		{"a name $PART may not read", "/api/npm/" + npmLocal + "/plain-lib", w.part.token, 404, "pass", "partial"},
-		{"nuget document $FULL", "/api/nuget/" + ngAll + "/v3/flatcontainer/acme.sdk/index.json", w.full.token, 200, "shared", "full"},
-		{"nupkg $FULL", nupkgPath(ngAll, "Acme.Sdk", "1.0.0"), w.full.token, 200, "artifact", "full"},
+		{"tarball $FULL", tgz, w.full.token, 200, "artifact", "full", "@acme/sdk", "full"},
+		{"tarball $PART", tgz, w.part.token, 200, "artifact", "partial", "@acme/sdk", "partial"},
+		{"document $FULL", doc, w.full.token, 200, "shared", "full", "@acme/sdk", "full"},
+		{"document $PART", doc, w.part.token, 200, "private", "partial", "@acme/sdk", "partial"},
+		{"tarball $PART through the local repository", tarballPath(npmLocal, "@acme/sdk", "1.0.0"), w.part.token, 200, "artifact", "partial", "@acme/sdk", "full"},
+		{"document $PART through the local repository", localDoc, w.part.token, 200, "shared", "partial", "@acme/sdk", "full"},
+		{"search", "/api/nuget/" + ngAll + "/v3/search?q=acme", w.full.token, 200, "pass", "full", "", ""},
+		{"missing name, local repository, $FULL", "/api/npm/" + npmLocal + "/no-such-package", w.full.token, 404, "absent", "full", "", ""},
+		{"a name $PART may not read", "/api/npm/" + npmLocal + "/plain-lib", w.part.token, 404, "pass", "partial", "", ""},
+		{"nuget document $FULL", "/api/nuget/" + ngAll + "/v3/flatcontainer/acme.sdk/index.json", w.full.token, 200, "shared", "full", "*", "*"},
+		{"nupkg $FULL", nupkgPath(ngAll, "Acme.Sdk", "1.0.0"), w.full.token, 200, "artifact", "full", "*", "*"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -87,6 +92,9 @@ func TestR_BAS_013_TheMarkingContractAtTheWire(t *testing.T) {
 			m := markOf(h)
 			if status != c.status || m.class != c.class || m.read != c.read {
 				t.Fatalf("status %d, class %q, read %q; want %d, %q, %q", status, m.class, m.read, c.status, c.class, c.read)
+			}
+			if pkg, pkgRead := h.Get(iface.HeaderPackage), h.Get(iface.HeaderPackageRead); c.pkg != "*" && (pkg != c.pkg || pkgRead != c.pkgRead) {
+				t.Fatalf("package %q, package read %q; want %q, %q", pkg, pkgRead, c.pkg, c.pkgRead)
 			}
 			if m.repo == "" || h.Get(iface.HeaderInterface) != itoa(iface.InterfaceVersion) {
 				t.Fatalf("repository %q, interface %q", m.repo, h.Get(iface.HeaderInterface))

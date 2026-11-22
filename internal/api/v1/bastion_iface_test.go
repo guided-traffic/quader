@@ -43,6 +43,22 @@ type fakeShapes struct {
 	shapes map[string]bastionmain.Shape
 	asked  []string
 	err    error
+	// pkgs are the package shapes by repository and package (partial for any other), pkgAsked what the decision point was asked.
+	pkgs     map[string]map[string]iface.Read
+	pkgAsked []string
+	pkgErr   error
+}
+
+func (f *fakeShapes) PackageShapes(_ context.Context, _ *authz.Index, _ authz.Subject, key qname.Repo, pkgs []string) (map[string]iface.Read, error) {
+	out := map[string]iface.Read{}
+	for _, p := range pkgs {
+		f.pkgAsked = append(f.pkgAsked, key.String()+"|"+p)
+		out[p] = iface.ReadPartial
+		if r, ok := f.pkgs[key.String()][p]; ok {
+			out[p] = r
+		}
+	}
+	return out, f.pkgErr
 }
 
 func (f *fakeShapes) Shapes(_ context.Context, _ *authz.Index, _ authz.Subject, keys []qname.Repo) (map[qname.Repo]bastionmain.Shape, error) {
@@ -307,7 +323,7 @@ func TestR_BAS_011_ACheckBodyIsValidated(t *testing.T) {
 
 // TestR_BAS_083_ThePackagesOfACheckAreValidated: a pair whose repository is not named, more pairs than
 // bastions.check.max_repositories, a name of 513 bytes and a pair twice answer 422 with a field error at /packages/<i>
-// (Q-BAS-255); a valid request, and an unusable subject, answer the member packages as [].
+// (Q-BAS-255); a valid request answers one element per pair, and an unusable subject answers the member packages as [].
 func TestR_BAS_083_ThePackagesOfACheckAreValidated(t *testing.T) {
 	var verdict error
 	cs := newCheckSetup(t, func(r *http.Request) (httpserver.Principal, error) {
@@ -338,7 +354,7 @@ func TestR_BAS_083_ThePackagesOfACheckAreValidated(t *testing.T) {
 	}
 	w := cs.post(iface.PathCheck, body(`{"repository":"it/npm-local","package":"@acme/sdk"},{"repository":"it/npm-all","package":"g++"}`))
 	raw := w.Body.String()
-	if ans := decodeCheck(t, w); len(ans.Packages) != 0 || !strings.Contains(raw, `"packages":[]`) {
+	if ans := decodeCheck(t, w); len(ans.Packages) != 2 || !strings.Contains(raw, `"packages":[{"repository":"it/npm-local","package":"@acme/sdk","read":"partial"},{"repository":"it/npm-all","package":"g++","read":"full"}]`) {
 		t.Errorf("a valid request answers %s", raw)
 	}
 	verdict = errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.")

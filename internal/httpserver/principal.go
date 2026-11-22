@@ -187,6 +187,14 @@ func (g *RegistryGrant) Allows(repo qname.Repo, name, action string) bool {
 	return false
 }
 
+// PullsImage reports whether the grant holds pull on the whole image name of the repository: an entry of the name with pull,
+// and no pin to one manifest (a scan token's grant reaches one manifest and its blobs, never the tags of the image). A nil grant
+// holds nothing. The marking and the check of a Bastion limit a caller's shape on a package with it (bastion.md R-BAS-082,
+// R-BAS-083).
+func (g *RegistryGrant) PullsImage(repo qname.Repo, name string) bool {
+	return g != nil && g.Digest == "" && g.Allows(repo, name, "pull")
+}
+
 // Principal is the authenticated caller, or the anonymous one. It is the seam
 // between the authentication stage and the handlers: handlers and the
 // authorization step receive only this and never parse credentials themselves

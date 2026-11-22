@@ -3605,12 +3605,16 @@ Bastion a fourth kind of answer, the caller's shape on one package of a reposito
 - **The format contract** gains kit check 21: what a reader of only the response's package receives equals what a reader of the whole
   repository receives (R-BAS-086). **The interface** takes the next version, 5 (R-BAS-087).
 
-Status: specified on 2026-11-22; the decision point and the format contract (package 2 of the build plan: R-BAS-080, R-BAS-086) built
-on 2026-11-22, the rest not built. The planner's design was read against `main` on 2026-11-22; the build plan is
+Status: specified on 2026-11-22; the wire (package 1 of the build plan: R-BAS-087 and the types of R-BAS-082 and R-BAS-083), the decision
+point and the format contract (package 2: R-BAS-080, R-BAS-086) and the main installation's side (package 3: R-BAS-081 to R-BAS-083) built on
+2026-11-22, the Bastion's side (package 4: R-BAS-084, R-BAS-085) not
+built. The planner's design was read against `main` on 2026-11-22; the build plan is
 [developer/bastion-package-shapes.md](../developer/bastion-package-shapes.md); the decisions are
-[Q-BAS-240](#q-bas-240--what-full-on-a-package-means) to [Q-BAS-254](#q-bas-254--the-tests); the gaps are
+[Q-BAS-240](#q-bas-240--what-full-on-a-package-means) to [Q-BAS-254](#q-bas-254--the-tests), Q-BAS-255, Q-BAS-260, Q-BAS-261 and
+[Q-BAS-265](#q-bas-265--the-read-scope-a-format-meets-has-mayread-rows-only); the gaps are
 [H-1380](#h-1380--changes-the-feed-does-not-carry-reach-registry-token-and-package-narrowed-readers-within-the-revalidation-periods-no-longer-at-their-next-read)
-to [H-1384](#h-1384--the-first-read-of-a-cached-entry-by-a-credential-without-a-shape-answer-costs-two-requests-an-uncached-one-costs-one)
+to [H-1384](#h-1384--the-first-read-of-a-cached-entry-by-a-credential-without-a-shape-answer-costs-two-requests-an-uncached-one-costs-one),
+H-1390, [H-1395](#h-1395--an-official-image-of-a-docker-hub-remote-without-a-namespace-prefix-names-two-packages-and-carries-none)
 and the new text of H-1242; the record is
 [ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant).
 
@@ -3734,7 +3738,8 @@ Priority: **P1** · Covers: quader-only
 - **The core notes the package of every rights decision** of a recognized Bastion request into the request's `Absence` record
   (`bastionmain.NotePackage(ctx, pkg)`), with no format code ([Q-BAS-241](#q-bas-241--how-the-main-installation-learns-a-responses-package)):
   `Host.Authorize`, whether it allows or refuses; `Host.WikiReadable`; each path of `Host.PathsAllowed`, through the format's `Classify`;
-  and each `MayRead` and `MayReadWiki` row of the read scope that `formathost/virtual.go` hands out.
+  and each `MayRead` row of the read scope that `formathost/virtual.go` hands out (a format asks the wiki through `Host.WikiReadable`,
+  [Q-BAS-265](#q-bas-265--the-read-scope-a-format-meets-has-mayread-rows-only)).
 - **The response's package is P** exactly when at least one decision named P, every decision named P, and none named no package. The record
   is read at the status line, as `absent` and `counted` are.
 - **What a format owes** is kit check 21 (R-BAS-086): every decision of a content route before its status line; a response that draws on
@@ -3752,6 +3757,26 @@ Acceptance criteria:
 - Unit (`internal/api/bastionmark`, every format registered), through the dispatcher's registry handler with tokens from the real signer:
   `GET /v2/web/docker-local/app/blobs/sha256:…` is marked `Quader-Bastion-Package: app`, equal to the enforcement point's image, also on a
   bound host; a `/files/` download, npm's root and npm's search carry no package.
+
+*As built on 2026-11-22 (package P3 of [the build plan](../developer/bastion-package-shapes.md)):* `bastionmain.NotePackage` folds each
+decision into the request's `Absence` record and `Absence.Package` applies the rule; a package-less decision or a second package clears the
+record for good ([absence.go](../../internal/bastionmain/absence.go)). The production host notes in `Host.Authorize` (before the decision, so a
+refusal names its package too), `Host.WikiReadable`, each path of `Host.PathsAllowed` (`notePaths`, which classifies only on a recognized
+Bastion request, `bastionmain.NotesPackages`) and the read scope's `MayRead` (likewise only on such a request) ([host.go](../../internal/formathost/host.go),
+[virtual.go](../../internal/formathost/virtual.go)). Two production decisions that check 21 does not reach are noted as well and can only clear
+the package: the serve-time signature gate's write question on the served path (`mayWrite`; the kit's host has no signature gate), and the
+path of OCI's second spelling of a Docker Hub official image on a remote without a namespace prefix (a remote handler,
+[H-1390](#h-1390--kit-check-21-runs-over-the-local-class-only)), which takes the gain away from those images
+([H-1395](#h-1395--an-official-image-of-a-docker-hub-remote-without-a-namespace-prefix-names-two-packages-and-carries-none)). The tests:
+`TestR_BAS_081_TheResponsesPackageIsTheOnePackageEveryDecisionNamed` (`internal/bastionmain`),
+`TestR_BAS_081_TheHostNotesThePackageOfEveryDecision` (`internal/formathost`, the six cases of the criterion and their opposites), and
+`TestR_BAS_081_TheImageTheHandlersAuthorizeIsTheEnforcementPointsImage` (`internal/api/bastionmark`): through `registry.Register`, the real
+authentication stage with a real signer, the dispatcher and the OCI format's own handlers over the production host, a blob read with a token
+granted the image is marked with the image the enforcement point's match names, `full`, on an unbound host, for a nested name, on a host bound
+to the repository and in the cache view of a remote repository; a token granted another image is refused `401 insufficient_scope` without a
+package; npm's root and its `-/v1/search` carry none. `/files/` is not run: `internal/files` and `internal/api/rawfiles` never note, so a
+`/files/` response carries no package by construction, and the marking's side of it is the case "no decision names none" of
+`TestR_BAS_082_TheMarkingPerPackage`.
 
 ### R-BAS-082 · The marking per package
 Priority: **P1** · Covers: quader-only
@@ -3790,6 +3815,20 @@ exactly one spelling on the wire (`%41` for `A` is refused). `Marking.Set` write
 writes `partial` unless `PackageRead` is `full`, so a defect at the writer claims less, never more. `ParseMarking` refuses the five cases
 (`TestR_BAS_082_ParseMarkingRefusesAMalformedPackage`, `TestR_BAS_082_TheMarkingCarriesThePackage`). Nothing writes the headers yet: the
 main installation's marking (P3) and the Bastion's reading of them (P4) are not built.
+
+*As built on 2026-11-22, the main installation's marking (package P3):* `Decided` keeps the request's context, the subject and the index
+beside the repository shape; at the status line `marking` reads `Absence.Package` for a `200` or `304` of a `Download`, `Metadata` or
+`Computed` route that is no probe, and `packageRead` gives `-Package-Read`: `full` for a `full` repository shape, `partial` for `none` or no
+shape, and for a `partial` one `ShapeResolver.PackageShapes` (`authz.Engine.PackageReachOn`, in memory on the kept index, no database
+statement); a registry token is then limited by `bastionmain.CapRegistryPackage` with `httpserver.RegistryGrant.PullsImage`, which also
+refuses a grant pinned to one manifest (a scan token's reaches no image's tags). `classOf` makes a document `shared` on `Read: full` or
+`Package-Read: full`. A name `iface.ValidPackage` refuses gives no package and no `shared` by it
+([mark.go](../../internal/api/bastionmark/mark.go)). `TestR_BAS_082_TheMarkingPerPackage` holds the criterion's cases with the rig's notes
+(a narrowed reader's tarball and document, `304`, `HEAD`, a package read in part, a full reader without a question to the decision point, a
+registry token on its image and on another, two packages, a package-less decision, a `404`, a `206`, a `Volatile` route, a probe, a refusal, a
+repository read none of, a pinned grant, a shape that cannot be computed); `TestR_BAS_082_TheTwoHeadersReachNoOrdinaryCaller` holds the strip.
+The criterion's `web/npm-local` and `web/npm-all` are the rig's `partial` shape with a `full` and a `partial` package shape; the decision
+point's own answer for them is `TestR_BAS_080_PackageShapes`.
 
 ### R-BAS-083 · The check per package
 Priority: **P1** · Covers: quader-only
@@ -3832,6 +3871,18 @@ fake main installation of the Bastion's tests (`maintest`); its codes are `count
 `packages: []` to every check, so nothing changes for a caller until the main installation answers per pair (P3) and the Bastion asks
 (P4) (`TestR_BAS_083_ACheckRequestsPackagesAreValidated`, `TestR_BAS_083_TheCheckCarriesPackages`,
 `TestR_BAS_083_ThePackagesOfACheckAreValidated`). The criterion's answers per pair are P3's.
+
+*As built on 2026-11-22, the answers per pair (package P3):* `checkPackages` in [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go)
+answers one element per pair in request order from the shapes the check computed for its repositories, before the registry cap: `full` for a
+repository read in full, `partial` for one read none of or not known, and for a repository read in part the decision point's package shapes
+(`ShapeResolver.PackageShapes`), asked once per such repository on the check's index; every pair of a registry token is then limited by
+`bastionmain.CapRegistryPackage` with the grant the authentication stage carried (`httpserver.RegistryGrant.PullsImage`). A refusal of the
+decision point to decide is the check's error, as for the shapes. `TestR_BAS_083_ARegistryTokenIsFullOnlyOnTheImagesOfItsGrant` (the real
+authentication stage, a registry token of a real signer granted `web/docker-local/app`, the token behind it `full` on the repository: `[app,
+other]` answers `full`, `partial`, the repository `partial`; the Quader token itself `full` on both) and
+`TestR_BAS_083_TheCheckAnswersEachPairInRequestOrder` (a repository read none of is `partial` although the decision point would say `full` on
+the package; only the repository read in part is asked). The integration area `bastioniface` asserts the pairs of `$PART`
+(`TestR_BAS_011_ACheckAnswersTheSubjectAndTheShapes`).
 
 ### R-BAS-084 · Package answers at the Bastion
 Priority: **P1** · Covers: quader-only
@@ -8199,7 +8250,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A route declaration naming the package parameter, checked by the kit | Explicit per route | Explicit | A declaration per route of every format; the declaration and the actual decision can drift apart |
 | (c) The format's `Classify` of the request path, or the enforcement point's image | No notes | No notes needed | Request paths are not item paths; works for OCI only |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-081.
+**Choice:** (a). **Applied in the spec:** R-BAS-081. *As built on 2026-11-22 (package P3):* `bastionmain.NotePackage` from the four
+places of the host, `Absence.Package` at the status line; the read scope's rows are `MayRead` only
+([Q-BAS-265](#q-bas-265--the-read-scope-a-format-meets-has-mayread-rows-only)).
 
 ### Q-BAS-242 · The wire of the marking
 
@@ -8224,7 +8277,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Three values with a status | A `none` per package refused at the Bastion | Fewer requests for refused readers | Tells which hidden packages the Bastion holds |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-080, R-BAS-082, R-BAS-083. *As built* at the decision point: `PackageReachOn` answers
-`ReachFull` or `ReachPartial` only, and `ReachPartial` for every package of a repository whose reach is `none`.
+`ReachFull` or `ReachPartial` only, and `ReachPartial` for every package of a repository whose reach is `none`. *As built on the wire
+(package P3):* the marking and the check answer `partial` for a repository the caller reads none of without asking the decision point, and
+`bastionmain.CapRegistryPackage` turns any other value into `partial`; `absent` stays tied to `Read: full`.
 
 ### Q-BAS-244 · Documents are shared per package
 
@@ -8240,7 +8295,12 @@ repository to a full read of the repository or of the package the document belon
 **Choice:** (a). **Rationale:** kit check 21 makes the document of a reader of the package identical to the repository reader's, so the
 reason behind Q-BAS-18, that nobody sees another's view, still holds.
 
-**Applied in the spec:** R-BAS-013, R-BAS-023, R-BAS-082; Q-BAS-18 (a dated sentence).
+**Applied in the spec:** R-BAS-013, R-BAS-023, R-BAS-082; Q-BAS-18 (a dated sentence). *As built on 2026-11-22 (package P3):* `classOf` in
+[mark.go](../../internal/api/bastionmark/mark.go). A Bastion whose engine has no answers per package yet (package P4 not built) keeps such a
+document as the shared entry of its key and serves it from the cache only to callers whose shape on the repository is `full`
+(`TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders` in the integration area `bastion`, run); the caller who was `full` on the package
+alone keeps sending a conditional request per read, which the main installation answers `304`, marked `shared`, while the document is
+unchanged (read in `onShared` and `fromEntry`, not run).
 
 ### Q-BAS-245 · When the Bastion asks
 
@@ -8421,6 +8481,23 @@ shape is `full` has no path pattern on the repository (condition 2 of R-BAS-080)
 | (b) `VersionsByPath` true, as for every other `Allow` | The kit's default | Nothing new in the host | Fails NuGet for a caller the marking never calls `full` on a package; the repair would change a validator Q-NUGET-120 chose against leaking hidden versions |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-086 (as built).
+
+### Q-BAS-265 · The read scope a format meets has MayRead rows only
+
+Status: **Decided by the development agent** during the build of R-BAS-081 (package P3) — selected from the options below; the owner sees it
+when it is built.
+
+Context: R-BAS-081 asked the core to note "each `MayRead` and `MayReadWiki` row of the read scope that `formathost/virtual.go` hands out".
+The decision point's read scope (`authz.ReadScope`) has both, but the format contract's (`formats.ReadScope`, the one `virtual.go` hands a
+format) has `Shape`, `MayRead` and `VersionsByPath` only: a format asks whether it may show a wiki through `Host.WikiReadable`
+(R-AUTHZ-034), and the kit's host records exactly `Authorize`, `WikiReadable`, `PathsAllowed` and `MayRead` for check 21.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Note the `MayRead` rows; the wiki is noted where a format asks it, in `Host.WikiReadable` (chosen) | R-BAS-081 names the rows a format can meet | The notes are exactly the decisions check 21 records; no contract change | The requirement's first text named a row that does not exist |
+| (b) Add `MayReadWiki` to `formats.ReadScope` and note it | A wiki row per package in a listing | Mirrors the decision point | A contract member no format uses, and a decision check 21 would not record |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-081; code: `readScope.MayRead` in [virtual.go](../../internal/formathost/virtual.go).
 
 ## What this does not cover
 
@@ -9223,3 +9300,18 @@ and its deferred routes). They were read on 2026-11-22 for a decision after a wr
 handler that renders a document from another package's data, or decides after its status line, without a local twin that a case reaches.
 What would close it: check 21 over the `Remote` and `Merge` fixtures, as check 13 serves them, once the kit's hosts of those classes can
 serve a document whole.
+
+### H-1395 · An official image of a Docker Hub remote without a namespace prefix names two packages and carries none
+
+Stage: R-BAS-081 and R-BAS-082, the package of a response through an OCI remote whose upstream is Docker Hub without a namespace prefix.
+Subject: the requests a pull of such an image costs the main installation, not what a caller may read.
+
+**Read in the code, not run** ([remote_handlers.go](../../internal/formats/oci/remote_handlers.go), `gateRemote` and `otherSpellingOf`). On
+such a remote `nginx` and `library/nginx` are one upstream image, and a read of either is decided twice: `Host.Authorize` on the name the
+client sent and `Host.PathsAllowed` on the path of the other spelling, which the format's `Classify` places in the other package. Two
+packages are named, so the response carries none (R-BAS-081's rule), and a registry token or a narrowed reader pulling an official image
+through such a remote pays a conditional request per artifact, as before R-BAS-080 to R-BAS-088. The rule is right to clear it: the main
+installation refuses a reader who may read one spelling and not the other, so a Bastion must not serve that reader on a package answer of
+one name. Dormant until R-BAS-084 and R-BAS-085 are built; then live for every official Docker Hub image pulled with a registry token
+through such a remote. Images with a namespace (`bitnami/redis`) and remotes with a namespace prefix are not affected. What would close it:
+the format naming one canonical package for both spellings in the targets it authorizes, which changes the grants that match today.

@@ -118,15 +118,42 @@ type shapes struct {
 	err   error
 	asked []string
 	subs  []authz.Subject
+	idx   []*authz.Index
+	// pkgs are the package shapes the decision point answers (partial for any other name), pkgErr its refusal to decide, and
+	// pkgAsked the packages it was asked about with the index it was asked on.
+	pkgs     map[string]iface.Read
+	pkgErr   error
+	pkgAsked []string
+	pkgIdx   []*authz.Index
 }
 
-func (s *shapes) Shapes(_ context.Context, _ *authz.Index, sub authz.Subject, keys []qname.Repo) (map[qname.Repo]bastionmain.Shape, error) {
+func (s *shapes) PackageShapes(_ context.Context, idx *authz.Index, _ authz.Subject, key qname.Repo, pkgs []string) (map[string]iface.Read, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, p := range pkgs {
+		s.pkgAsked = append(s.pkgAsked, key.String()+"|"+p)
+	}
+	s.pkgIdx = append(s.pkgIdx, idx)
+	if s.pkgErr != nil {
+		return nil, s.pkgErr
+	}
+	out := map[string]iface.Read{}
+	for _, p := range pkgs {
+		out[p] = iface.ReadPartial
+		if r, ok := s.pkgs[p]; ok {
+			out[p] = r
+		}
+	}
+	return out, nil
+}
+
+func (s *shapes) Shapes(_ context.Context, idx *authz.Index, sub authz.Subject, keys []qname.Repo) (map[qname.Repo]bastionmain.Shape, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, k := range keys {
 		s.asked = append(s.asked, k.String())
 	}
-	s.subs = append(s.subs, sub)
+	s.subs, s.idx = append(s.subs, sub), append(s.idx, idx)
 	if s.err != nil {
 		return nil, s.err
 	}

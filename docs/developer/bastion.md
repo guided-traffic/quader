@@ -141,7 +141,7 @@ What the Recognize stage decides, in order (Q-BAS-115, Q-BAS-116):
 | [bastionmain/contact.go](../../internal/bastionmain/contact.go) | `Contacts.Record`: the contact upsert, the memory gate, the cap of 256 rows, `bastion.contact`; `Release` |
 | [bastionmain/downloads.go](../../internal/bastionmain/downloads.go) | `Intake.Accept`: the budget of the registration (`EventBudget`; the composition root charges units of 100 events), `artifact.downloaded` per event, `bastion.downloads.dropped` |
 | [api/v1/bastion_services.go](../../internal/api/v1/bastion_services.go) | `BastionServices` (with `Formats`, `BoundRepository` and the feed as `BastionFeedSource`, which `*bastionmain.Feed` implements), `writeInterface`, `BastionPrincipal`, `BastionRouteAuth` |
-| [api/v1/bastion_handshake_api.go](../../internal/api/v1/bastion_handshake_api.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go), [bastion_feed_api.go](../../internal/api/v1/bastion_feed_api.go), [bastion_downloads_api.go](../../internal/api/v1/bastion_downloads_api.go) | the four operations; `BastionFormatTable` builds the handshake's format table (R-BAS-057); the check presents a registry token on `/v2/bastion-check` and caps its shapes (R-BAS-052) |
+| [api/v1/bastion_handshake_api.go](../../internal/api/v1/bastion_handshake_api.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go), [bastion_feed_api.go](../../internal/api/v1/bastion_feed_api.go), [bastion_downloads_api.go](../../internal/api/v1/bastion_downloads_api.go) | the four operations; `BastionFormatTable` builds the handshake's format table (R-BAS-057); the check presents a registry token on `/v2/bastion-check` and caps its shapes (R-BAS-052), and answers its pairs per package in request order (`checkPackages`, R-BAS-083) |
 | [app/wire_bastion.go](../../internal/app/wire_bastion.go) (the `package 2` block) | the Recognize stage, `bastionForwarded` (the re-derivation over `bastions.trusted_proxies`), `bastionEventBudget` (the limiter `bastion.download_events`), `bastionServices` (the table of `formats.List()`, `bastionBoundRepository` = the dispatcher's `BoundRepository`), `bastionCheckStage` (the default endpoint's stage with every family served, Q-BAS-190), the metrics, the throttle; `bastionTokens` and `bastionShapes` are the two accessors packages 1 and 3 fill |
 | [audit/events_bastion_iface.go](../../internal/audit/events_bastion_iface.go) | `bastion.contact`, `bastion.downloads.dropped` |
 | [meta/postgres/queries/bastion_feed_names.sql](../../internal/meta/postgres/queries/bastion_feed_names.sql), [bastion_contact_cap.sql](../../internal/meta/postgres/queries/bastion_contact_cap.sql) | the two statements package 2 added to the contract's files |
@@ -753,12 +753,30 @@ so the subject is right for answers that never reach a route. What happens to on
    `WriteError`); the probe of a read route that takes a body is answered `204` with `Quader-Bastion-Route: read-with-body`. Nothing has
    been decided or read yet.
 2. The decision point allows the request and the repository resolves; the dispatcher calls `Observer.Decided` with the subject and the
-   index of the decision. The stage asks `ShapeResolver` for the caller's shape on the addressed repository, once.
+   index of the decision. The stage asks `ShapeResolver` for the caller's shape on the addressed repository, once, and keeps the request's
+   context, the subject and the index for the package shape of step 4.
 3. The handler runs. The core's lookups note into the request's `Absence`: `NoteMissing` for a package row or an item a local repository does not
    hold and for a remote answer marked `errs.WithAbsent` or a negative document; `NoteUnknown` for a refusal of `Host.Authorize`, a serve-time
-   refusal and any other `NotFound` of the remote engine. A route needs to do nothing.
+   refusal and any other `NotFound` of the remote engine. Every rights decision of the host notes its package (`NotePackage`, below). A route
+   needs to do nothing.
 4. At the status line the stage sets the class from the route kind, the status and the shape (R-BAS-013's table; `absent` needs a `404`, a
-   `full` shape, a missing lookup and no unknown one), the repository, the shape, the subject and the interface version.
+   `full` shape, a missing lookup and no unknown one), the repository, the shape, the subject and the interface version, and, on a `200` or
+   `304` of a content route whose decisions named one package, the two package headers.
+
+**The package of a response (R-BAS-081, R-BAS-082).** `bastionmain.NotePackage(ctx, pkg)` folds one decision into the request's `Absence`;
+`Absence.Package()` is P exactly when at least one decision named P, every one named P and none named no package. The production host notes
+in four places, the decisions the kit's host records for check 21 (`formattest.Host.Decisions()`): `Host.Authorize` (allowed or refused) and
+`Host.WikiReadable` with the target's package, each path of `Host.PathsAllowed` in the package the format's `Classify` gives it (none without a
+format), and each `MayRead` row of the read scope `formathost/virtual.go` hands out; `notePaths` and the read scope ask
+`bastionmain.NotesPackages` once, so an ordinary listing pays nothing per path or row ([host.go](../../internal/formathost/host.go), [virtual.go](../../internal/formathost/virtual.go)).
+The serve-time signature gate's write question (`mayWrite`, a `PathsAllowed` of the served path) notes as well; a note the kit does not record
+can only clear the package, never name another. At the status line `marking` reads the package and, when `iface.ValidPackage` accepts it,
+`packageRead` computes the caller's shape on it: `full` for a `full` shape on the repository, `partial` for `none` or no shape, and for a
+`partial` one `ShapeResolver.PackageShapes` (`authz.Engine.PackageReachOn`, in memory) on the index `Decided` kept; then
+`bastionmain.CapRegistryPackage` with the grant (`httpserver.RegistryGrant.PullsImage`: pull on exactly that image, no manifest pin). A
+document is `shared` when `Read` or `Package-Read` is `full` (`classOf`); `absent` still needs `Read: full`. `/files/` decides through
+`files.Access` and never notes, so its responses carry no package. Adding a rights question to the host for a format: note its package as
+the four do, or a response that draws on it could be marked with a package it was not decided for alone.
 
 `/files/` tells the observer the decision through the caller's `files.Access` (`observedAccess` in [rawfiles/handler.go](../../internal/api/rawfiles/handler.go)):
 the first allowed decision of the service calls `Decided`, so a refused read never gets a shape. A probe reaches the route match through
@@ -779,9 +797,12 @@ request. Do not note a lookup whose empty result is not an answer (an optional r
   `<host of server.base_url>/<projectKey>/<repoKey>`.
 - **The caller of the token service.** The chain does not authenticate `/v2/_token`; the token service calls `bastionmark.NoteCaller` with the caller
   it accepted, so the subject is that token (Q-BAS-187).
-- **A registry token.** `noteCaller` remembers a credential with a grant (`Credential.Registry`), and `Decided` caps its shape with
+- **A registry token.** `noteCaller` remembers a credential's grant (`Credential.Registry`), and `Decided` caps its shape with
   `bastionmain.CapRegistryShape`; the check applies the same function. `authz.Subject` has no member for the grant, so the resolver computes the
-  shape of the token behind the registry token (`TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant`).
+  shape of the token behind the registry token (`TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant`). Its shape on a package is limited to the
+  grant by `bastionmain.CapRegistryPackage`, in the marking and in the check alike; the image the OCI handlers authorize is the enforcement
+  point's `route.Target.Image` on an unbound host, a bound host and in the cache view
+  (`TestR_BAS_081_TheImageTheHandlersAuthorizeIsTheEnforcementPointsImage`, through `registry.Register` with tokens of a real signer).
 - **`insufficient_scope`.** At the status line `marking` reads the response's `WWW-Authenticate`; a `401` that says `error="insufficient_scope"`
   keeps the accepted subject.
 - **Counted.** `Absence` also records `NoteCounted`; `marking` sets `Counted` on a `200` when it was noted. The note is made by

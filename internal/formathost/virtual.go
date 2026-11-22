@@ -7,6 +7,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/items"
@@ -165,11 +166,17 @@ func (r *resolver) ReadScope(ctx context.Context, rq *formats.Request, repos []q
 	if err != nil {
 		return nil, err
 	}
-	return readScope{rs: rs}, nil
+	return readScope{rs: rs, ctx: ctx, notes: bastionmain.NotesPackages(ctx)}, nil
 }
 
-// readScope converts the decision point's shapes to the contract's.
-type readScope struct{ rs authz.ReadScope }
+// readScope converts the decision point's shapes to the contract's. On a recognized Bastion request (notes) each MayRead row is
+// noted in the record of the request's context as a decision of the response's package (R-BAS-081); an ordinary listing pays
+// nothing per row.
+type readScope struct {
+	rs    authz.ReadScope
+	ctx   context.Context
+	notes bool
+}
 
 func (s readScope) Shape(repo qname.Repo) formats.ReadShape {
 	switch s.rs.Shape(repo) {
@@ -182,6 +189,9 @@ func (s readScope) Shape(repo qname.Repo) formats.ReadShape {
 }
 
 func (s readScope) MayRead(repo qname.Repo, pkg, version string) bool {
+	if s.notes {
+		bastionmain.NotePackage(s.ctx, pkg)
+	}
 	return s.rs.MayRead(repo, pkg, version)
 }
 

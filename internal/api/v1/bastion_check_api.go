@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 	"net/netip"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -66,7 +68,6 @@ func (s *Server) BastionCheck(w http.ResponseWriter, r *http.Request, _ gen.Bast
 		httpserver.Problem(w, r, err)
 		return
 	}
-	// No pair is answered yet: the packages of the check (R-BAS-083) are the main installation's side of the read shapes per package.
 	ans := iface.CheckAnswer{Subject: subject, Repositories: map[string]iface.RepositoryRead{}, Packages: iface.PackageReads{}}
 	if subject.Kind != iface.SubjectToken && subject.Kind != iface.SubjectAnonymous {
 		// A subject that cannot be used carries no shapes; the Bastion answers its caller from the kind.
@@ -96,7 +97,50 @@ func (s *Server) BastionCheck(w http.ResponseWriter, r *http.Request, _ gen.Bast
 		sh.Read = bastionmain.CapRegistryShape(sh.Read, p.Credential.Registry != nil)
 		ans.Repositories[text] = repositoryRead(sh, subject.Kind == iface.SubjectAnonymous)
 	}
+	if ans.Packages, err = checkPackages(cctx, b.Shapes, acc.Index(), acc.Subject, shapes, req.Packages, p.Credential.Registry); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	writeInterface(w, r, http.StatusOK, ans)
+}
+
+// checkPackages answers the pairs of a check (R-BAS-083): one element per pair, in request order. A pair whose repository the
+// subject reads in full is full, one whose repository it reads none of (or that is not known) is partial, and the pairs of a
+// repository it reads in part are answered by the decision point's package shapes, asked once per repository on the check's
+// index (R-BAS-080). A registry token's grant limits every pair to the images it holds pull on. checkRequest has validated the
+// pairs: each names one of the request's repositories, whose shape is in shapes.
+func checkPackages(ctx context.Context, res bastionmain.ShapeResolver, idx *authz.Index, sub authz.Subject, shapes map[qname.Repo]bastionmain.Shape,
+	pairs iface.CheckPackages, grant *httpserver.RegistryGrant,
+) (iface.PackageReads, error) {
+	out := make(iface.PackageReads, len(pairs))
+	keys := make([]qname.Repo, len(pairs))
+	ask := map[qname.Repo][]string{}
+	for i, pr := range pairs {
+		keys[i], _ = qname.ParseRepo(pr.Repository)
+		if shapes[keys[i]].Read == iface.ReadPartial {
+			ask[keys[i]] = append(ask[keys[i]], pr.Package)
+		}
+	}
+	got := make(map[qname.Repo]map[string]iface.Read, len(ask))
+	for key, pkgs := range ask {
+		reads, err := res.PackageShapes(ctx, idx, sub, key, pkgs)
+		if err != nil {
+			return nil, err
+		}
+		got[key] = reads
+	}
+	for i, pr := range pairs {
+		read := iface.ReadPartial
+		switch shapes[keys[i]].Read {
+		case iface.ReadFull:
+			read = iface.ReadFull
+		case iface.ReadPartial:
+			read = got[keys[i]][pr.Package]
+		}
+		read = bastionmain.CapRegistryPackage(read, grant != nil, grant.PullsImage(keys[i], pr.Package))
+		out[i] = iface.PackageRead{Repository: pr.Repository, Package: pr.Package, Read: read}
+	}
+	return out, nil
 }
 
 // checkRequest validates the semantics of a check body (R-BAS-011) and returns the client address.
