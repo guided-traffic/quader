@@ -2145,7 +2145,16 @@ runs are in `git log`; this section holds the current state.
   migration stays 00108. **Package 3 of the encryption does not start yet:** it owns the upload sessions
   and the store's files that package B of the several connections changes, and package B is in the
   stack that has not landed. Released at 20:59; the plan's commits of the minutes between waited for it.
-  His UI's backend runs on this state since 20:47.
+  His UI's backend runs on this state since 20:47. **His installation runs the release since 21:06** (read
+  at 21:14: both releases ready, every pod on the new image and running, the Bastion answers from outside
+  with its certificate checked).
+- **The timer's check at 21:14:** the trace's landing gates exit 0 up to the vet of the end-to-end code, the
+  lint and five integration areas are left; the links' second package has a commit and its builder is still
+  at work (the change of the speed limit and the move onto the keys); the stacking has not moved onto the
+  keys yet and is active; the two planners are active. The keys' run has no failed job; its four
+  integration shards, the layout checks and three end-to-end legs run, and the trace is pushed after
+  them. The load is 35 on 20 cores with two builders' gates and the landing's gates at once; no further
+  builder starts.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
