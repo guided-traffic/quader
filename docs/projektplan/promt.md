@@ -1663,6 +1663,38 @@ runs are in `git log`; this section holds the current state.
   packages). **Next as agents become free:** the Bastion's package C resumed when B has landed, then the
   reading of the documentation of the object gateway in the owner's cluster, the Bastion's package D, the
   links' package 2.
+- **Package A of the several connections reported at 14:15 and waits for the chart's package, with which it lands
+  in one push** (one commit of the type `feat`, 162 files; its builder worked from 11:41 to 14:14; rebased by the
+  development agent onto `main` at 14:20, with one row of the specification merged by hand and a link repaired
+  that a renamed heading had broken). **Built:** the configuration as a list of one to eight connections with
+  its validation, the single block gone; a client and a guard per connection with the connection as a label of
+  the breaker and the metrics; object metadata on the store's interface; the migration with the tables of
+  connections, copies and the copy queue, in which the blobs that exist become copies of the connection
+  `default`, bound to its bucket at the first start (its decision Q-STOR-250); the commit writing to the first
+  connections that take it and falling over on a transient error; reads over the copies, falling over before
+  the first byte, a damaged copy marked on its own connection; the fixed properties, the marker and the
+  command that retires a connection; **the start check per connection that records what the store can do,**
+  among it whether a wrong payload checksum is refused and whether a copy onto itself replaces the metadata and
+  keeps the bytes (added from the reading of the owner's object gateway, whose earlier release lost such a
+  copy's data); readiness per connection; the empty hooks for the packages that follow. Decisions Q-STOR-250 to
+  Q-STOR-254, gaps H-1258 to H-1260 (until the reconciliation exists a queued gap is never filled and the
+  collection deletes on the first connection alone; two installations that start for the first time on one
+  empty location at the same moment both pass the marker's check, because the marker is written without a
+  condition). **Its gates:** build, the full unit run, generate-check, the evidence, the complexity check and
+  the lint exit 0; under the lock 24 integration areas pass, among them `blob`, `uploads`, `transfer`, `backup`
+  with a restore end to end, `proxy`, `files`, `postgres`, `upstream`; **the chart's tests fail as expected,**
+  because the chart still renders the old key, which is why it does not land alone: the next release would
+  start no pod. **Not run by its builder, run by the development agent on the rebased commit since 14:05:** the
+  other integration areas (the formats' own, the API, authorization, vulnerabilities, signatures, limits, the
+  Bastion's). **Risks it names:** the marker makes a start over a bucket that another database has used refuse
+  (by design; a reset of the owner's installation or of a development stack over a kept bucket meets it,
+  question 21 of his list); every download now reads the copies' rows once, whose cost is not measured; the
+  shared integration stack keeps one marker object of a test run. **Not verified:** anything on the owner's
+  object gateway; a copy above 5 GiB; a server-side copy between two real buckets (the reconciliation's
+  package).
+- **The chart's package of the several connections is at work again since 14:05** with A's commit: its rebase,
+  the tests that pass the rendered configuration to the binary, and the proof of the development profile on a
+  kind cluster of its own.
 - **In work since 2026-11-22, 14:00: package 5 of the encryption, the Bastion's cache** (everything the cache
   writes to its store sealed in the format under one key file of its chart, off by default; it needs the
   format alone).
