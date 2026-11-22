@@ -20,10 +20,10 @@ regenerated.
 | **Implemented** | **22.6%** (506 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
 | **MVP features covered by spec requirements** | **100%** (395 of 395) | measured from `Covers:` lines |
 | P1 features covered by spec requirements | 67.1% (345 of 514) | measured from `Covers:` lines |
-| In-scope features covered (MVP, P1, P2, Later) | 36.7% (795 of 2,167) | measured from `Covers:` lines |
+| In-scope features covered (MVP, P1, P2, Later) | 36.8% (798 of 2,167) | measured from `Covers:` lines |
 | Catalog features | 2,239 on 60 pages | measured from catalog headings |
-| Spec requirements | 1,168 on 24 pages (718 MVP, 410 P1, 40 P2) | measured from spec headings |
-| Requirements covering no catalog feature | 422 (`quader-only`) | measured from `Covers:` lines |
+| Spec requirements | 1,186 on 24 pages (718 MVP, 428 P1, 40 P2) | measured from spec headings |
+| Requirements covering no catalog feature | 434 (`quader-only`) | measured from `Covers:` lines |
 <!-- coverage-gen:end headline -->
 
 **What the owner constraints of 2026-10-28 changed.** The tables were regenerated on 2026-10-29,
@@ -53,10 +53,10 @@ see [Honesty notes](#honesty-notes).
 |---|---:|---:|---:|---:|---:|---:|
 | **MVP** | 395 | 395 | 0 | 100% | 395 | 353 |
 | **P1** | 514 | 345 | 169 | 67.1% | 68 | 118 |
-| **P2** | 884 | 53 | 831 | 6.0% | 12 | 34 |
+| **P2** | 884 | 56 | 828 | 6.3% | 12 | 34 |
 | **Later** | 374 | 2 | 372 | 0.5% | 0 | 1 |
 | **Out of scope** | 72 | 0 | 72 | 0% | 0 | 0 |
-| **Total** | 2,239 | 795 | 1,444 | 35.5% | 475 | 506 |
+| **Total** | 2,239 | 798 | 1,441 | 35.6% | 475 | 506 |
 <!-- coverage-gen:end priority -->
 
 The column *Covered by an MVP requirement* shows where the spec pulls work forward: 55 P1 features
@@ -84,7 +84,7 @@ Each page name links to that page's section of the checklist.
 | [Authentication providers and human login](checklist.md#authentication-providers-and-human-login-authn) | 44 | 13 | 5 | 25 | 0 | 1 | 18 | 26 |
 | [Access tokens](checklist.md#access-tokens-tok) | 48 | 24 | 3 | 12 | 6 | 3 | 27 | 21 |
 | [OIDC federation for CI systems](checklist.md#oidc-federation-for-ci-systems-cioidc) | 40 | 20 | 9 | 10 | 1 | 0 | 31 | 9 |
-| [Storage and blob providers](checklist.md#storage-and-blob-providers-stor) | 41 | 12 | 7 | 20 | 1 | 1 | 21 | 20 |
+| [Storage and blob providers](checklist.md#storage-and-blob-providers-stor) | 41 | 12 | 7 | 20 | 1 | 1 | 24 | 17 |
 | [Retention, cleanup and archiving](checklist.md#retention-cleanup-and-archiving-ret) | 42 | 0 | 26 | 3 | 11 | 2 | 26 | 16 |
 | [High availability and deployment](checklist.md#high-availability-and-deployment-ha) | 79 | 49 | 14 | 10 | 3 | 3 | 61 | 18 |
 | [Operations, monitoring and configuration](checklist.md#operations-monitoring-and-configuration-ops) | 100 | 17 | 23 | 34 | 1 | 25 | 43 | 57 |

@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 656 of 1,168 spec requirements are implemented: a passing test names them and no
+**Status.** 656 of 1,186 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 795 specified (506 of them implemented), 1,444 open.
-1,168 spec requirements: 746 cover catalog features, 422 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 798 specified (506 of them implemented), 1,441 open.
+1,186 spec requirements: 752 cover catalog features, 434 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -36,7 +36,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Authentication providers and human login](#authentication-providers-and-human-login-authn) | `AUTHN` | 44 | 13 of 13 | 18 | 26 | 14 |
 | [Access tokens](#access-tokens-tok) | `TOK` | 48 | 24 of 24 | 27 | 21 | 26 |
 | [OIDC federation for CI systems](#oidc-federation-for-ci-systems-cioidc) | `CIOIDC` | 40 | 20 of 20 | 31 | 9 | 18 |
-| [Storage and blob providers](#storage-and-blob-providers-stor) | `STOR` | 41 | 12 of 12 | 21 | 20 | 13 |
+| [Storage and blob providers](#storage-and-blob-providers-stor) | `STOR` | 41 | 12 of 12 | 24 | 17 | 13 |
 | [Retention, cleanup and archiving](#retention-cleanup-and-archiving-ret) | `RET` | 42 | – | 26 | 16 | 0 |
 | [High availability and deployment](#high-availability-and-deployment-ha) | `HA` | 79 | 49 of 49 | 61 | 18 | 43 |
 | [Operations, monitoring and configuration](#operations-monitoring-and-configuration-ops) | `OPS` | 100 | 17 of 17 | 43 | 57 | 26 |
@@ -767,10 +767,10 @@ Catalog page: [oidc-ci-integration.md](../features/oidc-ci-integration.md) · sp
 
 ## Storage and blob providers (STOR)
 
-Catalog page: [storage-and-blobs.md](../features/storage-and-blobs.md) · specified by priority: MVP 12 of 12 · P1 7 of 7 · P2 2 of 20 · Later 0 of 1 · Out of scope 0 of 1
+Catalog page: [storage-and-blobs.md](../features/storage-and-blobs.md) · specified by priority: MVP 12 of 12 · P1 7 of 7 · P2 5 of 20 · Later 0 of 1 · Out of scope 0 of 1
 
 <details>
-<summary>41 features: 21 specified, 20 open, 13 implemented</summary>
+<summary>41 features: 24 specified, 17 open, 13 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -784,11 +784,11 @@ Catalog page: [storage-and-blobs.md](../features/storage-and-blobs.md) · specif
 | STOR-008 | Local file-system store | P2 | open | – |
 | STOR-009 | Node-local read cache | P2 | open | – |
 | STOR-010 | Database blob store | P2 | open | – |
-| STOR-011 | Sharded store with redundancy | P2 | open | – |
-| STOR-012 | Health-aware shards and read-only shards | P2 | open | – |
+| STOR-011 | Sharded store with redundancy | P2 | specified | [R-STOR-050](../spec/storage.md), [R-STOR-053](../spec/storage.md) |
+| STOR-012 | Health-aware shards and read-only shards | P2 | specified | [R-STOR-050](../spec/storage.md), [R-STOR-051](../spec/storage.md), [R-STOR-055](../spec/storage.md), [R-STOR-060](../spec/storage.md) |
 | STOR-013 | Cross-zone sharding | P2 | open | – |
 | STOR-014 | Cluster-shared node-local stores | P2 | open | – |
-| STOR-015 | Rebalancing and storage optimization | P2 | open | – |
+| STOR-015 | Rebalancing and storage optimization | P2 | specified | [R-STOR-056](../spec/storage.md) |
 | STOR-016 | Asynchronous upload to the persistent store | P2 | open | – |
 | STOR-017 | Retry of store operations | P1 | implemented | [R-STOR-033](../spec/storage.md) (implemented) |
 | STOR-018 | Binary fetch workers for federated repositories | Later | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>422 requirements</summary>
+<summary>434 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3090,6 +3090,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-194 | The ClamAV definitions: databases, versions and what each holds | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-193 | A system repository is set apart wherever it is shown, and nothing offers what it refuses | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-195 | The registries of this installation in the admin area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-196 | The object-store connections on the tab Storage of System status | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-197 | The object store on the dashboard, one line per connection | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
@@ -3117,6 +3119,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAK-007 (implemented) | Garbage-collection hold | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-022 (implemented) | State a restore rebuilds or invalidates | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-024 (implemented) | Revocation journal replay after a restore | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
+| R-BAK-030 | Backup and restore with several object-store connections | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-027 | Client-side encryption of the database files | P1 | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAS-007 (implemented) | Bastions in the main installation's screen, client setup and manual | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-009 (implemented) | The interface version | MVP | [bastion.md](../spec/bastion.md) |
@@ -3226,6 +3229,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-069 (implemented) | The updater Deployment `malware-updater-freshclam` | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-071 | The signing identity's Secret, in the worker pods only | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
+| R-HA-072 | The object-store connections in the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-056 | Valkey with Sentinel: connection and supported topologies | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-057 | Valkey failover, outage and degraded mode | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-054 (implemented) | Revocation journal in object storage | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3377,6 +3381,14 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-STOR-027 (implemented) | Integrity scrub | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-049 (implemented) | The storage of a project | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-036 (implemented) | Behavior during an object-store outage | MVP | [storage.md](../spec/storage.md) |
+| R-STOR-052 | The copies of a blob | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-054 | An upload session stays on its connection | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-057 | Collection with several connections | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-058 | The operator check of every copy | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-059 | The other key families on several connections | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-061 | The connections in the API | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-062 | The seams the encryption and the signed links build on | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-063 | The tests of the feature | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-046 | Storage work per role and across replicas | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-047 (implemented) | Storage state in backups and restores | MVP | [storage.md](../spec/storage.md) |
 | R-VULN-014 (implemented) | History and retention | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

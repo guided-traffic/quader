@@ -61,11 +61,12 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 	// and after the visibility levels of R-AUTHZ-033 (T-18) covered the P2 entry IAM-062, and after signatures.md (R-SIG-001 to
 	// R-SIG-043, stage 1 of the signatures on artifacts) listed the P1 entries BEYOND-015 and BEYOND-021 and the P2 entries BEYOND-016,
 	// BEYOND-034 and PKG-NPM-024, and after its stage 2 (R-SIG-044 to R-SIG-060, Quader signs) listed the P2 entry PKG-NPM-037, and its
-	// stage 3 (R-SIG-061 to R-SIG-078, the gate per repository) the P2 entry BEYOND-019.
+	// stage 3 (R-SIG-061 to R-SIG-078, the gate per repository) the P2 entry BEYOND-019. Several object-store connections (R-STOR-050 to
+	// R-STOR-063, stage 1 of the stored content) list the P2 entries STOR-011, STOR-012 and STOR-015.
 	want := map[string][2]int{
 		prioMVP:   {395, 395},
 		prioP1:    {514, 345},
-		prioP2:    {884, 53},
+		prioP2:    {884, 56},
 		prioLater: {374, 2},
 		prioOut:   {72, 0},
 	}
@@ -87,11 +88,11 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		if got := len(m.Features); got != 2239 {
 			t.Errorf("catalog entries: got %d, want 2239", got)
 		}
-		if got := m.countSpecified(m.Features); got != 795 {
-			t.Errorf("listed entries: got %d, want 795", got)
+		if got := m.countSpecified(m.Features); got != 798 {
+			t.Errorf("listed entries: got %d, want 798", got)
 		}
-		if got := m.countOpen(m.Features); got != 1444 {
-			t.Errorf("not listed entries: got %d, want 1444", got)
+		if got := m.countOpen(m.Features); got != 1441 {
+			t.Errorf("not listed entries: got %d, want 1441", got)
 		}
 	})
 	t.Run("E0.8 requirement counts", func(t *testing.T) {
@@ -100,9 +101,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 			count[r.Priority]++
 		}
 		// 1160 since bastion.md's Every format (R-BAS-050 to R-BAS-060, eleven MVP requirements of 2026-11-22); 1168 since the
-		// download links of storage.md (R-STOR-070 to R-STOR-074, R-LIM-040, R-UI-200, R-UI-201, and R-STOR-014 from P2 to P1).
-		if len(m.Reqs) != 1168 || count[prioMVP] != 718 || count[prioP1] != 410 || count[prioP2] != 40 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1168 (718, 410, 40)",
+		// download links of storage.md (R-STOR-070 to R-STOR-074, R-LIM-040, R-UI-200, R-UI-201, and R-STOR-014 from P2 to P1). 1186 since the
+		// several object-store connections of storage.md (R-STOR-050 to R-STOR-063, R-HA-072, R-BAK-030, R-UI-196, R-UI-197).
+		if len(m.Reqs) != 1186 || count[prioMVP] != 718 || count[prioP1] != 428 || count[prioP2] != 40 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1186 (718, 428, 40)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})
