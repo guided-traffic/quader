@@ -236,6 +236,14 @@
               "x-quader-env": "QUADER_BASTION_CACHE_DOCUMENTS_MAX_BYTES",
               "x-quader-type": "bytes"
             },
+            "fill_wait_max": {
+              "default": "10m",
+              "description": "How long a replica waits for another replica's fill of the same cache key while that replica keeps extending its fetch lock, sending nothing, before it fetches itself (R-BAS-054); the bucket backend with Valkey only.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_BASTION_CACHE_FILL_WAIT_MAX",
+              "x-quader-type": "duration"
+            },
             "max_bytes": {
               "default": "20GiB",
               "description": "Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031).",

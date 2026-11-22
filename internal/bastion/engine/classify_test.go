@@ -18,8 +18,9 @@ import (
 )
 
 // TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow sends every row of INV-6's path table: only
-// /api/<format>/… and /files/… reach the read flow, the others answer 404 bastion_not_served from the Bastion and
-// the counting double of the main installation records no request.
+// /api/<format>/…, /files/… and the registry root /v2/… (R-BAS-050, R-BAS-051) reach the read flow or the forward, the
+// others answer 404 bastion_not_served from the Bastion (below /v2/ in the distribution's shape, the code in detail)
+// and the counting double of the main installation records no request.
 func TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow(t *testing.T) {
 	rows := []struct {
 		path   string
@@ -41,8 +42,14 @@ func TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow(t *testing.T) {
 		{"/ui/", false},
 		{"/ui/repositories", false},
 		{"/-/npm/v1/oidc/token/exchange/package/x", false},
-		{"/v2/", false},
-		{"/v2/library/alpine/manifests/latest", false},
+		{"/v2/", true},
+		{"/v2/library/alpine/manifests/latest", true},
+		{"/v2/web/docker-local/app/manifests/1", true},
+		{"/v2/_token", true},
+		{"/v2/_catalog", true},
+		{"/v2/web/docker", false},
+		{"/v2/%77eb/docker/app/manifests/1", false},
+		{"/v2/web/docker/../x/manifests/1", false},
 		{"/.well-known/terraform.json", false},
 		{"/", false},
 		{"/healthz", false},
@@ -58,7 +65,11 @@ func TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow(t *testing.T) {
 				}
 				return
 			}
-			if w.Code != http.StatusNotFound || problemCode(w) != "bastion_not_served" {
+			code := problemCode(w)
+			if strings.HasPrefix(row.path, "/v2/") {
+				code = registryDetail(t, w)
+			}
+			if w.Code != http.StatusNotFound || code != "bastion_not_served" {
 				t.Fatalf("%s: %d %s", row.path, w.Code, w.Body)
 			}
 			if n := s.main.count(); n != 0 {

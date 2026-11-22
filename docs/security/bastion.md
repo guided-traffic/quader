@@ -212,6 +212,12 @@ These are properties of [internal/bastion/engine](../../internal/bastion/engine)
 | A document filtered for a caller is kept in memory only, under that caller's key, and validated with a conditional request on every use; a narrowed reader never receives the shared document and never gets a negative entry; the one exception is a reader the main installation itself validated: its `304` to the shared entry's validator proves that the caller's document is those bytes, and they are served without renewing the entry (Q-BAS-107) | `onPrivate`, `fromNegative` | `TestR_BAS_023_APartialReaderNeverReceivesTheSharedDocumentAndTheSharedEntryStaysUntouched`, `TestR_BAS_024_APartialReaderAsksTheMainInstallationEveryTime` |
 | The headers of the interface, the replica header, `Cache-Status`, cookies and the hop-by-hop headers never reach the caller, and the caller's cookie, conditionals, range and forwarded-for headers never reach the main installation | `replayHeader`, `stripRequest` | `TestR_BAS_021_AMissIsForwardedWithTheCallersCredentialAndTheListedHeaders`, `TestR_BAS_021_TheCallerReceivesTheMainInstallationsAnswerWithoutTheInternalHeaders` |
 | A write sends the main installation a probe without body and credential; the upload is not read | `write` | `TestR_BAS_014_AWriteIsProbedWithoutBodyAndCredentialAndTheRefusalIsReplayed` |
+| Below `/v2/` only the core routes and `/v2/<projectKey>/<repoKey>/…` (on a bound host every path, as the main installation reads it) are classified; any other path answers the Bastion's own `404 NAME_UNKNOWN` without a request; the version check without a credential is the Bastion's own `401` | `classifyRegistry`, `versionChallenge` | `TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion`, `TestR_BAS_057_ABoundHostIsClassifiedAsItsRepository` |
+| The token service's answer is passed on and never kept, collapsed or put into an answer; the form of `POST /v2/_token` is read only for its password's syntax and slot class, at most 16 KiB | `passCore`, `onPassOnly`, `stepTokenForm` | `TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion` |
+| The Galaxy clients' `Authorization: Token` is read on `/api/<format>/…` only, checked like any token and forwarded unchanged; its answers are keyed apart from the same token's under Bearer or Basic, so the main installation's refusal of the scheme on one route is never the token's answer on another | `parseCredential` | `TestQ_BAS_203_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily` |
+| A registry token is a credential below `/v2/` only, checked by its form; one that names the anonymous principal is forwarded without `Authorization`; its read shape is recorded at most `partial` whatever the main installation marks; `insufficient_scope` keeps no `invalid` answer and counts nothing | `parseCredential`, `capRead`, `insufficientScope` | `TestR_BAS_052_RegistryTokensAtTheBastion` |
+| A cached answer replays the core's representation headers, the content headers of R-ARCH-007 among them, and the headers its format declares; never a per-request header of the core, a cookie or a header of the interface, whatever a format declares | `keepHeader` | `TestQ_BAS_181_TheEnginesHeaderListsAreTheCatalogs`, `TestR_BAS_022_AHitCarriesTheContentHeadersOfRARCH007`, `TestR_BAS_053_ContainerImagesFollowTheRouteKinds` |
+| A caller of a running fill is served from its spool only after its own permission (a usable `full` answer, a check, or a conditional request answered `304`); the last 64 KiB of what it asked for wait for the commit, and a fill that fails cuts every follower | `followFill`, `streamFill` | `TestR_BAS_054_LargeArtifacts` |
 | The main installation unreachable: cached content for the answers the grace period allows, `503` for everything else, nothing after the grace period; a token past its expiry is refused throughout | `answers.State`, `unreachable` | `TestR_BAS_027_AnswersHeldServeCachedContentForThePeriodAndTheGraceThenNothing`, `TestR_BAS_020_ATokenIsRefusedFromItsExpiryOnAlsoWhileTheMainInstallationIsUnreachable` |
 | Requests to the main installation are bounded: the budget per replica with a share for anonymous callers, held until the response body ends or is closed, the per-address miss limit, one fetch per key | `mainclient.SlotBudget`, `forward`, `miss`, every `resp.Body.Close` | `TestR_BAS_025_MissesNeverPutMoreThanTheBudgetOntoTheMainInstallation`, `TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot`, `TestR_BAS_035_AMissLimitedAddressKeepsGettingItsHits` |
 | Before the first handshake the replica does not know whether anonymous requests are admitted, and answers them `503` rather than admit them or call the access off (Q-BAS-99) | `stepCredentials` | `TestR_BAS_019_AnAnonymousRequestBeforeTheFirstHandshakeIs503` |
@@ -278,10 +284,10 @@ gaps that remain are the H-items in [What this does not cover](#what-this-does-n
 ## Every format, the registry root and large content
 
 The owner's decision of 2026-11-22 that a Bastion serves every format as the main installation does
-([spec/bastion.md](../spec/bastion.md#every-format), R-BAS-050 to R-BAS-060). The main installation's side is built: its backstop admits
-`/v2/`, a registry token's shape is capped at `partial` at the marking and the check, and the marking tells a Bastion when a download was
-counted. The Bastion's side is not, so no request reaches the main installation below `/v2/` through a Bastion yet. What it changes in the
-trust boundary:
+([spec/bastion.md](../spec/bastion.md#every-format), R-BAS-050 to R-BAS-060). Both sides are built. The main installation's side: its
+backstop admits `/v2/`, a registry token's shape is capped at `partial` at the marking and the check, and the marking tells a Bastion when
+a download was counted. The Bastion's side: the rows held by the engine name their tests in the table above, and the Bastion caps a
+registry token's shape itself as well (Q-BAS-198). What it changes in the trust boundary:
 
 | Change | What it means for trust | Held by |
 |---|---|---|
@@ -394,21 +400,29 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 - [H-464](../spec/bastion.md#h-464--a-client-that-sends-accept-encoding-gzip-was-asked-about-at-the-main-installation-on-every-artifact-read-cause-not-found): a client that sends
   `Accept-Encoding: gzip` was asked about at the main installation on every artifact read, cause not found;
 - [H-1242](../spec/bastion.md#h-1242--every-warm-read-with-a-registry-token-costs-the-main-installation-a-conditional-request-per-manifest-and-blob):
-  every warm read with a registry token costs the main installation a conditional request per manifest and blob (dormant until built);
+  every warm read with a registry token costs the main installation a conditional request per manifest and blob (live for every image
+  pulled with a registry token);
 - [H-1243](../spec/bastion.md#h-1243--a-plain-index-path-of-a-debian-remote-without-by-hash-can-disagree-with-the-inrelease-a-bastion-serves):
-  a plain index path of a Debian remote without by-hash can disagree with the `InRelease` a Bastion serves (dormant until built);
+  a plain index path of a Debian remote without by-hash can disagree with the `InRelease` a Bastion serves (live for such remotes);
 - [H-1244](../spec/bastion.md#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer):
-  cold fills of large blobs hold budget slots and spool for their transfer (dormant until images are served);
+  cold fills of large blobs hold budget slots and spool for their transfer (live where large layers are readable through a Bastion);
 - [H-1245](../spec/bastion.md#h-1245--a-caller-on-another-replica-waits-for-a-running-fill-without-a-byte-up-to-fill_wait_max):
-  a caller on another replica waits for a running fill without a byte (dormant until built);
+  a caller on another replica waits for a running fill without a byte (live on the bucket backend with Valkey and several replicas);
 - [H-1246](../spec/bastion.md#h-1246--a-compromised-bastion-can-serve-an-older-genuine-document-of-a-repository): a compromised Bastion
   can serve an older genuine document (live for a taken-over pod);
 - [H-1247](../spec/bastion.md#h-1247--the-certificate-admission-of-the-clamav-definitions-does-not-reach-a-bastion): the certificate
   admission of the ClamAV definitions does not reach a Bastion (a limit of the design);
 - [H-1248](../spec/bastion.md#h-1248--a-binding-changed-at-the-main-installation-reaches-a-bastion-at-its-next-handshake): a binding
-  changed at the main installation reaches a Bastion at its next handshake (dormant until a Bastion serves a bound host);
+  changed at the main installation reaches a Bastion at its next handshake (dormant until a main installation binds a Bastion's host);
 - [H-1290](../spec/bastion.md#h-1290--a-miss-passed-through-during-an-outage-of-the-object-store-is-marked-as-counted): a miss passed
-  through during an outage of the object store is marked as counted (dormant until the Bastion reports counted entries).
+  through during an outage of the object store is marked as counted (live while the object store is unavailable: the Bastion reports
+  counted entries);
+- [H-1295](../spec/bastion.md#h-1295--a-registry-token-past-its-expiry-is-counted-as-a-failed-authentication-on-a-replica-that-does-not-know-its-expiry):
+  a registry token past its expiry is counted as a failed authentication on a replica that does not know its expiry (live with several
+  replicas, rare: clients renew a token before it expires).
+- [H-1296](../spec/bastion.md#h-1296--a-freshclam-run-through-a-bastion-asks-the-main-installation-once-per-database-for-the-cld-it-never-serves):
+  a freshclam run through a Bastion asks the main installation once per database for the `.cld` it never serves (live, a load and not a
+  confidentiality matter).
 
 This page does not describe the main installation's own mechanisms that the Bastion relies on (the decision point, token
 validation, the revocation journal); their pages and gaps are linked above.

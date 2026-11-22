@@ -12,6 +12,19 @@ type call struct {
 	once sync.Once
 	val  any
 	err  error
+	// started is closed when the leader's response became a fill that the waiters follow from its spool instead of
+	// waiting for its end (R-BAS-054, Q-BAS-172); run is the fill, set before started is closed.
+	started   chan struct{}
+	startOnce sync.Once
+	run       *fillRun
+}
+
+// startFill hands the waiters of the call the fill they follow; a second call changes nothing.
+func (c *call) startFill(r *fillRun) {
+	c.startOnce.Do(func() {
+		c.run = r
+		close(c.started)
+	})
 }
 
 // group is a single-flight per key (R-BAS-025): the first caller of a key is the leader and runs the
@@ -31,7 +44,7 @@ func (g *group) join(key string) (*call, bool) {
 	if c, ok := g.calls[key]; ok {
 		return c, false
 	}
-	c := &call{done: make(chan struct{})}
+	c := &call{done: make(chan struct{}), started: make(chan struct{})}
 	g.calls[key] = c
 	return c, true
 }

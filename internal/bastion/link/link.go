@@ -19,6 +19,7 @@ package link
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"net/url"
@@ -127,6 +128,13 @@ type State struct {
 	// BaseURLMismatch and InterfaceMismatch hold while the condition does.
 	BaseURLMismatch   bool
 	InterfaceMismatch bool
+	// Formats is the handshake's format table (R-BAS-057, Q-BAS-170), kept until the next handshake: what the request
+	// flow needs of a format before or without a response of the main installation. Empty before the first handshake
+	// and for a main installation that names no format; Formats.Lookup then gives the defaults.
+	Formats iface.HandshakeFormats
+	// BoundRepository is the repository the main installation binds the Bastion's host to (R-BAS-057, Q-BAS-178),
+	// empty when it binds none.
+	BoundRepository string
 }
 
 // Link is the standing connection of one replica.
@@ -308,6 +316,13 @@ func (l *Link) handshake(ctx context.Context) {
 	ctx, cancel := l.callContext(ctx)
 	defer cancel()
 	hs, err := l.o.Client.Handshake(ctx)
+	if err == nil {
+		// The table is data the request flow acts on; one it cannot rely on is a broken answer, like a body that does
+		// not decode (R-BAS-057).
+		if verr := hs.Formats.Validate(); verr != nil {
+			err = fmt.Errorf("%w: %w", mainclient.ErrBadAnswer, verr)
+		}
+	}
 	if err != nil {
 		l.fail("handshake", err)
 		l.mu.Lock()
@@ -325,6 +340,7 @@ func (l *Link) handshake(ctx context.Context) {
 	l.st.AnonymousReads, l.st.RecordDownloads = hs.AnonymousReads, hs.RecordDownloads
 	l.st.Registration, l.st.TokenID, l.st.TokenExpiresAt = hs.Bastion.Name, hs.Bastion.TokenID, hs.Bastion.TokenExpiresAt
 	l.st.Installation = hs.Installation
+	l.st.Formats, l.st.BoundRepository = hs.Formats, hs.BoundRepository
 	l.st.InterfaceMismatch = false
 	l.nextHandshake = now.Add(l.cfg.HandshakeInterval)
 	mismatch := !sameOrigin(hs.ResponseBaseURL, l.cfg.BaseURL)

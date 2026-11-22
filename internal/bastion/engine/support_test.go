@@ -25,6 +25,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
 	"github.com/guided-traffic/quader/internal/config"
@@ -347,13 +348,18 @@ func (c *testCache) entryRecords() map[string][]byte {
 // The link is the real one (internal/bastion/link) over the double of the main installation, on the test clock:
 // the tests move it through its states the way the main installation would, with the handshake and the feed.
 
-// handshake is the answer of a main installation that admits anonymous requests and records downloads.
+// handshake is the answer of a main installation that admits anonymous requests and records downloads, with the
+// format table of the formats of today (R-BAS-057).
 func handshake() iface.Handshake {
 	return iface.Handshake{
 		InterfaceVersion: iface.InterfaceVersion, ResponseBaseURL: "https://packages.example.com",
-		AnonymousReads: true, RecordDownloads: true, ServerTime: epoch,
+		AnonymousReads: true, RecordDownloads: true, ServerTime: epoch, Formats: formatTable(),
 	}
 }
+
+// formatTable is the handshake's format table as the main installation fills it from catalog.Facts for the formats of
+// today (R-BAS-057), the one maintest sends.
+func formatTable() iface.HandshakeFormats { return maintest.Formats() }
 
 // fakeGuard is a guard double: a verdict per step, and a record of what it was asked.
 type fakeGuard struct {

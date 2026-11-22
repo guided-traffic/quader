@@ -17,7 +17,7 @@ import (
 func (e *engine) read(q *rq) {
 	if q.credAns != nil && q.credAns.Subject.Kind == iface.SubjectInvalid {
 		// A kept invalid answer: the caller costs the main installation one request per period (R-BAS-020).
-		e.refuse(q, errInvalidToken(q.r), metrics.RefusedInvalid)
+		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)
 		return
 	}
 	for attempt := 0; attempt < 2; attempt++ {
@@ -59,7 +59,7 @@ func (e *engine) attempt(q *rq) (again bool) {
 
 // refuseNone answers a read-shape answer none with the stored status, without a request (R-BAS-022).
 func (e *engine) refuseNone(q *rq, shape *answerVal) {
-	e.refuse(q, errShapeNone(q.r, shape.Status), "")
+	e.refuse(q, e.errShapeNone(q, shape.Status), "")
 }
 
 // isFull reports whether the shape answer lets the caller read every cached item of the repository.
@@ -149,12 +149,16 @@ func (e *engine) fromPrivateOrMiss(q *rq) (again bool) {
 	return e.miss(q)
 }
 
-// serveEntry serves a cache entry to a caller the main installation allowed (a hit, or after a check).
+// serveEntry serves a cache entry to a caller the main installation allowed (a hit, or after a check). A serve of an
+// entry whose fill the main installation counted as a download is reported (R-BAS-039, R-BAS-059): what a download
+// is, is the main installation's rule for every format.
 func (e *engine) serveEntry(q *rq, ent cache.Entry, result string) bool {
 	src := e.entrySource(q.ctx(), q.cacheKey, ent)
 	class := metrics.ClassShared
 	if ent.Kind == cache.EntryArtifact {
 		class = metrics.ClassArtifact
+	}
+	if ent.Counted {
 		src.download = func(q *rq) { e.downloadEvent(q, ent.Repository, ent.SHA256) }
 	}
 	if !e.serveSource(q, src) {
@@ -252,10 +256,10 @@ func (e *engine) applyCheck(q *rq, r checkResult) (*answerVal, bool) {
 	shape := e.recordCheck(q.ctx(), q.cred, q.repo, q.addr, r)
 	switch sub.Kind {
 	case iface.SubjectInvalid:
-		e.refuse(q, errInvalidToken(q.r), metrics.RefusedInvalid)
+		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)
 		return nil, true
 	case iface.SubjectAnonymousRefused:
-		e.refuse(q, errCredentialsRequired(q.r), metrics.RefusedInvalid)
+		e.refuse(q, e.errCredentialsRequired(q), metrics.RefusedInvalid)
 		return nil, true
 	case iface.SubjectThrottled:
 		after := time.Second
@@ -339,6 +343,7 @@ func (e *engine) miss(q *rq) (again bool) {
 		// Another replica fetches the key: wait for it, then decide again.
 		return e.waitRemote(q)
 	}
+	q.call = c // a fill of the answer is handed to the waiters of this flight (R-BAS-054)
 	e.forward(q, mainclient.KindForward, "", nil)
 	return false
 }
@@ -354,22 +359,46 @@ func (e *engine) leftEntry(q *rq) bool {
 	return ok
 }
 
-// waitLeader waits for the fetch another request of this replica leads for the same cache key. A wait that
-// outlasts collapseWait is not extended and not turned into a request of its own, which would multiply the load
-// on a main installation that is slow: it answers 503 bastion_busy with Retry-After, and the retry finds the
-// entry or joins the fetch again (R-BAS-025, Q-BAS-123).
+// waitLeader waits for the fetch another request of this replica leads for the same cache key. Once the leader's
+// answer became a fill of the request's cache key, the request follows the fill from its spool on its own permission
+// and does not wait for its end (R-BAS-054, Q-BAS-172). A wait for the leader's answer that outlasts collapseWait is
+// not extended and not turned into a request of its own, which would multiply the load on a main installation that is
+// slow: it answers 503 bastion_busy with Retry-After, and the retry finds the entry or joins the fetch again
+// (R-BAS-025, Q-BAS-123).
 func (e *engine) waitLeader(q *rq, c *call) (again bool) {
 	t := time.NewTimer(e.collapseWait)
 	defer t.Stop()
-	select {
-	case <-c.done:
-		return true
-	case <-q.ctx().Done():
-		q.finish(metrics.ClassPass, metrics.ResultError)
-		return false
-	case <-t.C:
-		e.refuse(q, errBusy(), metrics.RefusedBusy)
-		return false
+	started := c.started
+	for {
+		select {
+		case <-c.done:
+			return true
+		case <-started:
+			// The fill's bytes answer the request only when they are the variant of its own cache key.
+			started = nil
+			e.computeKey(q)
+			e.learnVaryFromCache(q.ctx(), q)
+			if c.run.key != q.cacheKey {
+				continue
+			}
+			if !e.followFill(q, c.run) {
+				return false
+			}
+			// The fill was gone, or the caller may not follow it: decide again once the flight ended.
+			select {
+			case <-c.done:
+				return true
+			case <-q.ctx().Done():
+				q.finish(metrics.ClassPass, metrics.ResultError)
+				return false
+			}
+		case <-q.ctx().Done():
+			q.finish(metrics.ClassPass, metrics.ResultError)
+			return false
+		case <-t.C:
+			e.refuse(q, errBusy(), metrics.RefusedBusy)
+			return false
+		}
 	}
 }
 
@@ -421,13 +450,16 @@ func (e *engine) remoteCollapsing() bool {
 	return e.cfg.Cache.Backend == "bucket" && e.d.Shared != nil && e.d.Shared.Flights != nil && e.d.Shared.Shared != nil && e.d.Shared.Shared()
 }
 
-// remoteWaitMax is how long a replica waits for another replica's fetch: the lifetime of the lock.
+// remoteWaitMax is how long a replica waits for another replica's fetch when bastion.cache.fill_wait_max is not set:
+// the lifetime of the lock.
 const remoteWaitMax = 30 * time.Second
 
-// waitRemote waits until the fetch lock of the key is free, then reports true so the request is decided
-// again; after remoteWaitMax it fetches itself.
+// waitRemote waits until the fetch lock of the key is free, then reports true so the request is decided again: a hit
+// once the other replica's fill committed. The holder extends its lock while its fill runs (cluster.FlightLock), so
+// the wait lasts as long as the fill, sending nothing, up to bastion.cache.fill_wait_max; then the replica fetches
+// itself (R-BAS-054, H-1245). A lock whose holder is gone expires and is free.
 func (e *engine) waitRemote(q *rq) (again bool) {
-	deadline := time.NewTimer(remoteWaitMax)
+	deadline := time.NewTimer(e.fillWaitMax)
 	defer deadline.Stop()
 	tick := time.NewTicker(100 * time.Millisecond)
 	defer tick.Stop()

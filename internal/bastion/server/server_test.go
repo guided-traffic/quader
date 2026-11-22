@@ -162,7 +162,7 @@ func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *t
 		code   string
 	}{
 		"/api/v1/system/ping": {404, iface.CodeNotServed}, "/ui/": {404, iface.CodeNotServed}, "/auth/oidc/corp/start": {404, iface.CodeNotServed},
-		"/": {404, iface.CodeNotServed}, "/v2/": {404, iface.CodeNotServed}, "/.well-known/x": {404, iface.CodeNotServed},
+		"/": {404, iface.CodeNotServed}, "/.well-known/x": {404, iface.CodeNotServed},
 		"/api/npm/web/npm-all/lodash": {503, "main_unreachable"}, "/files/web/raw/x": {503, "main_unreachable"},
 	} {
 		code, header, body := get(t, client+path)
@@ -176,6 +176,11 @@ func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *t
 		if header.Get("Cache-Control") != "no-store" {
 			t.Errorf("GET %s: Cache-Control %q", path, header.Get("Cache-Control"))
 		}
+	}
+	// The registry root is a family of the Bastion: its version check without a credential is the Bastion's own 401 in the
+	// distribution's shape, before any handshake (R-BAS-051).
+	if code, header, _ := get(t, client+"/v2/"); code != 401 || header.Get("Docker-Distribution-Api-Version") != "registry/2.0" || header.Get("Cache-Control") != "no-store" {
+		t.Errorf("GET /v2/ = %d %v", code, header)
 	}
 	// Another host is not this Bastion's (R-BAS-018 step 1).
 	req, _ := http.NewRequest(http.MethodGet, client+"/api/npm/web/npm-all/lodash", nil)

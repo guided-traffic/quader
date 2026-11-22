@@ -113,6 +113,8 @@ type engine struct {
 	baseHost  string
 	trusted   []netip.Prefix
 	forwarded bool // server.forwarded_header is "forwarded"
+	// realm and service are the registry root's challenge on the Bastion's own base URL (R-BAS-051).
+	realm, service string
 
 	answers  *answerStore
 	neg      *lruCache[*negEntry]
@@ -120,6 +122,9 @@ type engine struct {
 	vary     *lruCache[[]string]
 	volatile *lruCache[time.Time]
 	probes   *lruCache[*probeRec]
+	// expiries holds the expiry the main installation reported for a registry token, by credential key: a request with
+	// the token past it is refused without a request and without a count (R-BAS-052).
+	expiries *lruCache[time.Time]
 
 	checks, probeFlights, fetches *group
 
@@ -130,6 +135,11 @@ type engine struct {
 	paceGrace    time.Duration
 	paceMinRate  int64
 	paceChunk    time.Duration
+	// docMemory is the memory bound of a document (R-BAS-021): a shared document above it is spooled by its content
+	// address (Q-BAS-173), anything else above it passed through. fillWaitMax is bastion.cache.fill_wait_max
+	// (R-BAS-054). Tests lower both.
+	docMemory   int64
+	fillWaitMax time.Duration
 
 	mu       sync.Mutex
 	cancel   context.CancelFunc
@@ -156,6 +166,7 @@ const (
 	volatileEntries = 10000
 	varyEntries     = 20000
 	probeEntries    = 20000
+	expiryEntries   = 100000
 )
 
 func newFlow(d Deps) (*engine, error) {
@@ -174,7 +185,13 @@ func newFlow(d Deps) (*engine, error) {
 		forwarded: d.Config.Server.ForwardedHeader == "forwarded",
 		checks:    newGroup(), probeFlights: newGroup(), fetches: newGroup(),
 		collapseWait: collapseWaitMax, fillStall: fillStallMax, paceGrace: paceGraceMax, paceMinRate: paceMinRate, paceChunk: paceChunkMax,
+		docMemory: maxDocumentBytes, fillWaitMax: d.Config.Bastion.Cache.FillWaitMax,
 	}
+	if e.fillWaitMax <= 0 {
+		e.fillWaitMax = remoteWaitMax
+	}
+	base := strings.TrimSuffix(d.Config.Server.BaseURL, "/")
+	e.realm, e.service = base+"/v2/_token", u.Host
 	if e.nowFunc == nil {
 		e.nowFunc = time.Now
 	}
@@ -194,6 +211,7 @@ func newFlow(d Deps) (*engine, error) {
 	e.vary = newLRU[[]string](varyEntries, 0, nil)
 	e.volatile = newLRU[time.Time](volatileEntries, 0, nil)
 	e.probes = newLRU[*probeRec](probeEntries, 0, nil)
+	e.expiries = newLRU[time.Time](expiryEntries, 0, nil)
 	return e, nil
 }
 
@@ -279,4 +297,5 @@ func (e *engine) janitor() {
 	e.d.Link.Feed().Prune(answers.PruneCutoff(now, e.cfg.Answers.Period, e.cfg.Answers.GracePeriod))
 	e.volatile.retain(func(_ string, t time.Time) bool { return now.Before(t) })
 	e.probes.retain(func(_ string, p *probeRec) bool { return now.Before(p.until) })
+	e.expiries.retain(func(_ string, t time.Time) bool { return now.Before(t.Add(time.Hour)) })
 }

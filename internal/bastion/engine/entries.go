@@ -157,7 +157,7 @@ func (e *engine) withdrawn(ent cache.Entry) bool {
 // entry and fails the read with cache.ErrCorrupt (R-BAS-032).
 func (e *engine) entrySource(ctx context.Context, key string, ent cache.Entry) *source {
 	return &source{
-		size: ent.Size, header: ent.Header, etag: entryETag(ent),
+		size: ent.Size, header: ent.Header, etag: entryETag(ent), lastModified: ent.Header.Get("Last-Modified"),
 		open: func(c context.Context) (io.ReadCloser, error) {
 			rc, err := e.d.Cache.Open(c, key, ent)
 			if err != nil {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -22,12 +23,12 @@ const (
 	retryBusy        = time.Second
 )
 
-func errInvalidToken(r *http.Request) *errs.Error {
-	return errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.", errs.WithChallenge(challenge(r)))
+func (e *engine) errInvalidToken(q *rq) *errs.Error {
+	return errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.", errs.WithChallenge(e.challenge(q, true)))
 }
 
-func errCredentialsRequired(r *http.Request) *errs.Error {
-	return errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "The request carries no credential and anonymous access is off.", errs.WithChallenge(challenge(r)))
+func (e *engine) errCredentialsRequired(q *rq) *errs.Error {
+	return errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "The request carries no credential and anonymous access is off.", errs.WithChallenge(e.challenge(q, false)))
 }
 
 func errUnreachable() *errs.Error {
@@ -40,10 +41,10 @@ func errBusy() *errs.Error {
 
 // errShapeNone is the refusal of a read-shape answer none: the status the main installation said the caller
 // would receive (R-BAS-011, R-BAS-022).
-func errShapeNone(r *http.Request, status int) *errs.Error {
+func (e *engine) errShapeNone(q *rq, status int) *errs.Error {
 	switch status {
 	case http.StatusUnauthorized:
-		return errCredentialsRequired(r)
+		return e.errCredentialsRequired(q)
 	case http.StatusForbidden:
 		return errs.E(errs.Forbidden, errs.CodeForbidden, "The credential is valid but the operation is not permitted.")
 	}
@@ -60,6 +61,16 @@ func (e *engine) refuse(q *rq, err *errs.Error, reason string) {
 		e.d.Metrics.Refused.WithLabelValues(reason).Inc()
 	}
 	q.w.Header().Set("Cache-Control", "no-store")
+	e.problem(q, err)
+}
+
+// problem writes one of the Bastion's own answers in the shape of the request's family: below the registry root the
+// distribution's (Q-BAS-169), everywhere else the problem details of R-BAS-029.
+func (e *engine) problem(q *rq, err *errs.Error) {
+	if q.fam == familyRegistry {
+		writeRegistryError(q.w, q.r, err)
+		return
+	}
 	httpserver.Problem(q.w, q.r, err)
 }
 
@@ -71,9 +82,9 @@ func (e *engine) fail(q *rq, err error) {
 	var timeout net.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &timeout) && timeout.Timeout()):
-		httpserver.Problem(q.w, q.r, errs.E(errs.UpstreamTimeout, errs.CodeMainTimeout, "The main installation did not answer in time."))
+		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeMainTimeout, "The main installation did not answer in time."))
 	default:
-		httpserver.Problem(q.w, q.r, errs.E(errs.UpstreamFailed, errs.CodeMainFailed, "The main installation did not answer."))
+		e.problem(q, errs.E(errs.UpstreamFailed, errs.CodeMainFailed, "The main installation did not answer."))
 	}
 }
 
@@ -109,9 +120,13 @@ func hopByHop(name string) bool {
 	return false
 }
 
-// neverReplayed reports a response header that is dropped whatever the main installation sent: the replica
-// header, the cache state (Q-BAS-40), cookies (R-BAS-003) and the main installation's request ID. The headers of
-// the interface (Quader-Bastion-*) are dropped by their prefix.
+// neverReplayed reports a response header that is dropped whatever the main installation sent, also from an answer
+// passed through: the replica header, the cache state (Q-BAS-40), cookies (R-BAS-003) and the main installation's
+// request ID. The headers of the interface (Quader-Bastion-*) are dropped by their prefix. Each is a per-request
+// header of the core (catalog.PerRequestHeaders) or Set-Cookie; the other per-request headers are the framing of the
+// one answer passed through (Content-Length, Content-Range, Accept-Ranges, Date, Age), its Retry-After and the member
+// of a virtual repository that answered it (Quader-Resolved-From), which a cached answer never replays because
+// [keepHeader] keeps the representation headers only (TestQ_BAS_181_TheEnginesHeaderListsAreTheCatalogs).
 func neverReplayed(name string) bool {
 	switch name {
 	case "X-Quader-Replica", "Cache-Status", "Set-Cookie", "X-Request-Id":
@@ -139,16 +154,42 @@ func replayHeader(src http.Header) http.Header {
 	return out
 }
 
-// keepHeader selects the response headers a cache entry replays (R-BAS-022): representation metadata and the
-// validators, never a header of the interface, a cookie or a hop-by-hop header.
-func keepHeader(src http.Header) http.Header {
+// representationHeaders are the core's representation headers (catalog.RepresentationHeaders, Q-BAS-181): the
+// representation metadata and validators of RFC 9110 and the content headers of R-ARCH-007 that every content answer
+// of the main installation carries. The engine holds the list itself because the Bastion's code imports no format
+// package (R-BAS-001); a test holds it equal to the catalog's.
+func representationHeaders() []string {
+	return []string{
+		"Content-Type", "Content-Encoding", "Content-Language", "Content-Disposition", "Etag", "Last-Modified", "Cache-Control",
+		"Expires", "Vary", "Repr-Digest",
+		"X-Content-Type-Options", "Content-Security-Policy", "Cross-Origin-Resource-Policy",
+	}
+}
+
+// perRequestHeaders are the core's per-request headers (catalog.PerRequestHeaders, Q-BAS-181): they belong to one answer
+// and a cached answer never replays them, whatever a format declares. A test holds the list equal to the catalog's.
+func perRequestHeaders() []string {
+	return []string{
+		"Content-Length", "Content-Range", "Accept-Ranges", "Date", "Age",
+		"X-Request-Id", "X-Quader-Replica", "Cache-Status", "Retry-After", "Quader-Resolved-From",
+	}
+}
+
+// keepHeader selects the response headers a cache entry replays (R-BAS-022, R-BAS-053): the core's representation
+// headers and the headers the format of the request declares in the handshake's table (Q-BAS-171), never a header of
+// the interface, a per-request header of the core, a cookie or a hop-by-hop header, which the main installation's
+// catalog refuses as a declaration and the Bastion drops all the same.
+func keepHeader(src http.Header, declared []string) http.Header {
 	out := http.Header{}
-	for _, k := range []string{
-		"Content-Type", "Content-Encoding", "Content-Language", "Content-Disposition", "Etag", "Cache-Control", "Expires",
-		"Last-Modified", "Vary", "Repr-Digest",
-	} {
-		if vs := src.Values(k); len(vs) > 0 {
-			out[k] = append([]string(nil), vs...)
+	perRequest := perRequestHeaders()
+	for _, list := range [][]string{representationHeaders(), declared} {
+		for _, k := range list {
+			if hopByHop(k) || neverReplayed(k) || strings.HasPrefix(k, "Quader-") || slices.Contains(perRequest, k) {
+				continue
+			}
+			if vs := src.Values(k); len(vs) > 0 {
+				out[k] = append([]string(nil), vs...)
+			}
 		}
 	}
 	return out

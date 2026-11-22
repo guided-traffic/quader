@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"slices"
 	"time"
 
@@ -185,6 +186,14 @@ func (a *App) bastionForwarded(rt *endpointRuntime) (func(*http.Request) context
 			return ctx // not a listed Bastion egress: what the request forwards does not count
 		}
 		info := res.Resolve(r)
+		if !rt.ep.ChecksHost() && info.BaseURL != rt.cfg.BaseURL {
+			// An endpoint without a host set binds by the request's own host (R-EP-006), which for a Bastion's forward is the main
+			// installation's; the Bastion's host is the one of the response base URL the request resolved to, and its binding is
+			// the one the request reaches and the handshake names (R-BAS-057, Q-BAS-178).
+			if u, err := url.Parse(info.BaseURL); err == nil && u.Hostname() != "" {
+				info.RootRepository = rt.ep.HostRoot(u.Hostname())
+			}
+		}
 		annotate(r, info)
 		return httpserver.WithResolved(ctx, info)
 	}, nil

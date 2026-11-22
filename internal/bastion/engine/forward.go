@@ -17,13 +17,16 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
-// maxDocumentBytes is the largest document the Bastion keeps (R-BAS-021).
+// maxDocumentBytes is the memory bound of a document (R-BAS-021): a shared document above it is spooled by its
+// content address (Q-BAS-173), any other answer above it passed through.
 const maxDocumentBytes = 64 << 20
 
-// baseline is what a conditional request validated: the cache entry, or the caller's private copy.
+// baseline is what a conditional request validated: the cache entry, the caller's private copy, or a fill that runs
+// on this replica and that the caller follows once the main installation said 304 (R-BAS-054).
 type baseline struct {
 	ent  *cache.Entry
 	priv *privDoc
+	run  *fillRun
 }
 
 // forward sends the caller's request to the main installation with the caller's credential and handles the
@@ -119,6 +122,11 @@ func (e *engine) forwardRequest(q *rq) *http.Request {
 	fr := q.r.Clone(q.ctx())
 	fr.Header = q.r.Header.Clone()
 	stripRequest(fr.Header)
+	if q.cred.dropped {
+		// An anonymous registry token is the anonymous caller: the main installation serves the request without a
+		// credential where the artifacts are public (R-BAS-052, Q-BAS-168).
+		fr.Header.Del("Authorization")
+	}
 	fr.Body, fr.ContentLength = nil, 0
 	return fr
 }
@@ -137,6 +145,10 @@ func (e *engine) process(q *rq, resp *mainclient.Response, sent time.Time, bl *b
 	}
 	m := resp.Marking
 	e.recordAnswers(q, resp, sent)
+	if q.passOnly {
+		e.onPassOnly(q, resp)
+		return
+	}
 	if m.Class == iface.ClassArtifact || m.Class == iface.ClassShared {
 		// The Vary of the response decides the cache key everything below is kept under.
 		e.learnVary(q, resp.Header)
@@ -169,16 +181,23 @@ func (e *engine) recordAnswers(q *rq, resp *mainclient.Response, sent time.Time)
 		q.subject = sub
 		if !q.cred.anonymous {
 			e.answers.put(ctx, answers.Credential, q.cred.key, &answerVal{Answer: answerBase(answers.Credential, sent, sub, ""), Subject: sub})
+			e.noteRegistryToken(q.cred, sub)
 		}
 	case iface.SubjectInvalid:
+		if insufficientScope(resp.Status, resp.Header) {
+			// The registry's insufficient_scope says nothing about the credential: replayed, no answer kept, no failed
+			// authentication counted (R-BAS-052).
+			break
+		}
 		e.keepInvalid(q, sent)
 	}
-	if m.Read.Valid() && m.Repository == q.repo && (sub.Kind == iface.SubjectToken || sub.Kind == iface.SubjectAnonymous) {
+	if m.Read.Valid() && q.repo != "" && m.Repository == q.repo && (sub.Kind == iface.SubjectToken || sub.Kind == iface.SubjectAnonymous) {
+		read := capRead(q.cred, m.Read)
 		status := 0
-		if m.Read == iface.ReadNone {
+		if read == iface.ReadNone {
 			status = resp.Status
 		}
-		e.answers.put(ctx, answers.Shape, shapeKey(q.cred.key, q.repo), &answerVal{Answer: answerBase(answers.Shape, sent, sub, q.repo), Read: m.Read, Status: status})
+		e.answers.put(ctx, answers.Shape, shapeKey(q.cred.key, q.repo), &answerVal{Answer: answerBase(answers.Shape, sent, sub, q.repo), Read: read, Status: status})
 	}
 }
 
@@ -331,7 +350,7 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 		}
 		return
 	}
-	limit := min(maxDocumentBytes, int64(e.cfg.Cache.PrivateDocumentsMaxBytes))
+	limit := min(e.docMemory, int64(e.cfg.Cache.PrivateDocumentsMaxBytes))
 	if q.r.Method != http.MethodGet || resp.Status != http.StatusOK || limit <= 0 {
 		e.passThrough(q, resp, nil, metrics.ClassPrivate, metrics.ResultMiss)
 		return
@@ -365,6 +384,7 @@ func (e *engine) onShared(q *rq, resp *mainclient.Response, sent time.Time, bl *
 		_ = resp.Body.Close() // the slot is free while the cached bytes are served
 		ent := *bl.ent
 		ent.ValidatedAt = sent
+		ent.Counted = ent.Counted || resp.Marking.Counted
 		_ = e.saveEntry(q.ctx(), q.cacheKey, ent)
 		if !e.serveEntry(q, ent, metrics.ResultChecked) {
 			e.forward(q, mainclient.KindForward, "", nil)
@@ -387,9 +407,15 @@ func (e *engine) onShared(q *rq, resp *mainclient.Response, sent time.Time, bl *
 		e.passThrough(q, resp, nil, metrics.ClassShared, metrics.ResultMiss)
 		return
 	}
-	limit := min(maxDocumentBytes, int64(e.cfg.Cache.DocumentsMaxBytes))
+	limit := min(e.docMemory, int64(e.cfg.Cache.DocumentsMaxBytes))
 	body, rest, whole := readBounded(resp.Body, limit)
 	if !whole {
+		if sha, size := e.spoolable(resp); sha != "" {
+			// Above the memory bound with a content address: filled through the spool like an artifact, kept in the
+			// documents' area and revalidated like a document (Q-BAS-173).
+			e.fillSpool(q, resp, body, sha, size, sent, cache.EntryDocument)
+			return
+		}
 		e.markVolatile(q.cacheKey)
 		e.passThroughRest(q, resp, body, rest, metrics.ClassShared)
 		return
@@ -403,6 +429,19 @@ func (e *engine) onShared(q *rq, resp *mainclient.Response, sent time.Time, bl *
 	e.serveBuffered(q, resp, body, metrics.ClassShared)
 }
 
+// spoolable returns the content address and the length of a shared document above the memory bound that can be filled
+// through the spool (Q-BAS-173): a strong ETag that is a content address, a Content-Length within max_object_bytes and
+// within documents_max_bytes (the cache's bound of a document), and a Vary the Bastion can key on. sha is empty for any
+// other.
+func (e *engine) spoolable(resp *mainclient.Response) (sha string, size int64) {
+	size = contentLength(resp.Header)
+	limit := min(int64(e.cfg.Cache.MaxObjectBytes), int64(e.cfg.Cache.DocumentsMaxBytes))
+	if _, keep := varyNames(resp.Header); !keep || size < 0 || size > limit {
+		return "", 0
+	}
+	return contentAddress(resp.Header.Get("Etag")), size
+}
+
 // storeDocument writes a shared document through a cache fill and its entry; a failure of the backend, counted
 // by the cache, only means it is not kept (R-BAS-030).
 func (e *engine) storeDocument(q *rq, key string, resp *mainclient.Response, body []byte, sent time.Time) {
@@ -411,16 +450,20 @@ func (e *engine) storeDocument(q *rq, key string, resp *mainclient.Response, bod
 	if err != nil {
 		return
 	}
-	h := keepHeader(resp.Header)
+	h := keepHeader(resp.Header, q.facts.ReplayHeaders)
 	_ = e.saveEntry(ctx, key, cache.Entry{
 		Kind: cache.EntryDocument, SHA256: sha, Size: int64(len(body)), Header: h, Repository: resp.Marking.Repository,
-		Status: resp.Status, ValidatedAt: sent,
+		Status: resp.Status, ValidatedAt: sent, Counted: resp.Marking.Counted,
 	})
 }
 
-// contentAddress reads the SHA-256 of an artifact's strong ETag (R-STOR-012: ETag "<sha256 hex>").
+// contentAddress reads the SHA-256 of a strong ETag that is a content address (R-STOR-012: ETag "<sha256 hex>"; the
+// registry's "sha256:<hex>", R-BAS-053). A weak validator is none.
 func contentAddress(etag string) string {
-	etag = strings.Trim(etag, `"`)
+	if strings.HasPrefix(etag, "W/") {
+		return ""
+	}
+	etag = strings.TrimPrefix(strings.Trim(etag, `"`), "sha256:")
 	if len(etag) != 64 {
 		return ""
 	}

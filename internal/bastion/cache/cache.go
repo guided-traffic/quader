@@ -72,6 +72,9 @@ type Entry struct {
 	Status int `json:"status"`
 	// ValidatedAt is the time the main installation last answered 200 or 304 for the entry.
 	ValidatedAt time.Time `json:"validatedAt"`
+	// Counted is true when the main installation's marking said that serving the response counted a download
+	// (Quader-Bastion-Counted, R-BAS-059): every serve of the entry from the cache is then reported (R-BAS-039).
+	Counted bool `json:"counted,omitempty"`
 }
 
 // ObjectInfo describes stored bytes.

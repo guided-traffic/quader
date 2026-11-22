@@ -37,10 +37,18 @@ type rq struct {
 
 	hasAuth bool
 	cred    credential
+	// credOK is false for a credential the Bastion refuses itself (parseCredential), read once the family is known.
+	credOK  bool
 	credAns *answerVal
 	subject iface.Subject
+	// form is the body of POST /v2/_token, read before the limits: its password is the credential (R-BAS-051).
+	form []byte
 
 	format, repo string
+	fam          family
+	core         string
+	facts        iface.HandshakeFormat
+	classified   bool
 	target       string
 	baseKey      string
 	cacheKey     string
@@ -52,9 +60,14 @@ type rq struct {
 	limiter               string
 
 	// flight is the flight this request leads, nil if it leads none; hold is the context of the request to the
-	// main installation, which a fill takes over from the request (Q-BAS-123).
+	// main installation, which a fill takes over from the request (Q-BAS-123). call is the flight's call, through
+	// which the waiters of the flight follow a fill (R-BAS-054).
 	flight *handle
 	hold   *mainHold
+	call   *call
+	// passOnly is set for a core route of the registry root: its answer is passed on and nothing of it is kept or
+	// collapsed (R-BAS-051).
+	passOnly bool
 }
 
 // countingWriter counts the body bytes served by their source (quader_bastion_bytes_served_total).
@@ -97,14 +110,23 @@ func (q *rq) finish(class, result string) {
 func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	q := e.newRq(w, r)
 	defer q.end()
-	if !e.stepHost(q) || !e.stepBlocked(q) || !e.stepPath(q) || !e.stepLimits(q) {
+	if !e.stepHost(q) || !e.stepBlocked(q) || !e.stepPath(q) || !e.stepTokenForm(q) || !e.stepLimits(q) {
 		return
 	}
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
-		if e.stepCredentials(q) {
-			e.read(q)
+		if q.core == coreVersion && !q.hasAuth {
+			e.versionChallenge(q)
+			return
 		}
+		if !e.stepCredentials(q) {
+			return
+		}
+		if q.core != "" {
+			e.passCore(q)
+			return
+		}
+		e.read(q)
 	case http.MethodOptions:
 		e.refuse(q, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "A Bastion serves GET and HEAD.", errs.WithAllow(http.MethodGet, http.MethodHead)), metrics.RefusedNotServed)
 	default:
@@ -259,16 +281,45 @@ func (e *engine) stepBlocked(q *rq) bool {
 	return e.admit(q, e.d.Guard.Blocked(q.ctx(), q.addr))
 }
 
-// stepPath is step 3: only /api/<format>/<projectKey>/<repoKey>/… and /files/<projectKey>/<repoKey>/… are served
-// (R-BAS-003).
+// stepPath is step 3: only /api/<format>/<projectKey>/<repoKey>/…, /files/<projectKey>/<repoKey>/…, the registry root
+// /v2/… and a bound host's prefixes are served (R-BAS-003, R-BAS-050, R-BAS-051, R-BAS-057). Below /v2/ a path that is
+// not served answers 404 NAME_UNKNOWN in the distribution's shape. The credential of the request is read once the
+// family is known, because a registry token is a credential below /v2/ only (R-BAS-052).
 func (e *engine) stepPath(q *rq) bool {
-	format, repo, ok := classifyPath(q.r.URL.EscapedPath())
+	c, ok := e.classifyRq(q)
 	if !ok {
+		q.fam = c.fam
 		e.refuse(q, errs.E(errs.NotFound, errs.CodeBastionNotServed, "This path is not served by a Bastion."), metrics.RefusedNotServed)
 		return false
 	}
-	q.format, q.repo = format, repo
+	q.cred, q.credOK = parseCredential(q.r.Header, q.fam)
+	// An anonymous registry token is no credential: the request takes the anonymous limits and slots (Q-BAS-168).
+	q.hasAuth = q.hasAuth && !q.cred.dropped
 	return true
+}
+
+// classifyRq classifies the request's path once and keeps the result on the request.
+func (e *engine) classifyRq(q *rq) (pathClass, bool) {
+	c, ok := e.classify(q.r.URL.EscapedPath())
+	if ok {
+		q.classified = true
+		q.fam, q.core, q.format, q.repo, q.facts = c.fam, c.core, c.format, c.repo, c.facts
+	}
+	return c, ok
+}
+
+// factsOf returns the format facts of the request, classifying its path when an earlier step refuses before step 3:
+// the block list's refusal takes the status of the format's rate limit too (R-BAS-056).
+func (e *engine) factsOf(q *rq) iface.HandshakeFormat {
+	if q.classified {
+		return q.facts
+	}
+	c, ok := e.classify(q.r.URL.EscapedPath())
+	q.fam = c.fam
+	if !ok {
+		return iface.HandshakeFormats(nil).Lookup(c.format)
+	}
+	return c.facts
 }
 
 // classifyPath reads the family, the format and the qualified repository name "<projectKey>/<repoKey>" from the
@@ -301,14 +352,18 @@ func (e *engine) stepLimits(q *rq) bool {
 // installation admits anonymous requests; the failed-authentication timeout for a credential the Bastion has
 // no usable answer for.
 func (e *engine) stepCredentials(q *rq) bool {
-	c, ok := parseCredential(q.r.Header)
+	c, ok := q.cred, q.credOK
 	if !ok {
-		q.cred = c
 		e.d.Guard.FailedAuth(q.ctx(), q.addr)
-		e.refuse(q, errInvalidToken(q.r), metrics.RefusedInvalid)
+		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)
 		return false
 	}
-	q.cred = c
+	if c.registry && !c.anonymous && e.registryTokenExpired(c.key) {
+		// The end of a registry token's life, which a client answers with a new token request: no request, and no
+		// failed authentication (R-BAS-052).
+		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)
+		return false
+	}
 	if c.anonymous {
 		st := e.d.Link.State()
 		switch {
@@ -317,7 +372,7 @@ func (e *engine) stepCredentials(q *rq) bool {
 			e.unreachable(q)
 			return false
 		case !st.AnonymousReads:
-			e.refuse(q, errCredentialsRequired(q.r), metrics.RefusedInvalid)
+			e.refuse(q, e.errCredentialsRequired(q), metrics.RefusedInvalid)
 			return false
 		}
 		return true
@@ -344,16 +399,21 @@ func (e *engine) refuseVerdict(q *rq, v guard.Verdict) {
 	if v.Quiet {
 		markQuiet(q.ctx())
 	}
-	// Every refusal of the guard is a 429 (guard.Verdict.Status says so); the problem class carries it.
+	// Every refusal of the guard is a 429 (guard.Verdict.Status says so), or the status the format declares for a rate
+	// limit on its family: 503 for a format whose clients take a 429 badly (R-BAS-056, R-BAS-058).
 	code := v.Code
 	if code == "" {
 		code = iface.CodeRateLimited
+	}
+	kind := errs.RateLimited
+	if e.factsOf(q).RateLimitedStatus == http.StatusServiceUnavailable {
+		kind = errs.Unavailable
 	}
 	name, quota, window := e.policyOf(v.Reason, q.cred.anonymous || !q.hasAuth)
 	retry := int64((v.RetryAfter + time.Second - 1) / time.Second)
 	retry = max(retry, 1)
 	q.limiter = name
-	err := errs.E(errs.RateLimited, code, "Too many requests; retry after the period in the Retry-After header.",
+	err := errs.E(kind, code, "Too many requests; retry after the period in the Retry-After header.",
 		errs.WithRetryAfter(v.RetryAfter),
 		errs.WithHeader("RateLimit-Policy", `"`+name+`";q=`+strconv.Itoa(quota)+";w="+strconv.Itoa(window)),
 		errs.WithHeader("RateLimit", `"`+name+`";r=0;t=`+strconv.FormatInt(retry, 10)))

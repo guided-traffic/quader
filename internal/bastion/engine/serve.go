@@ -13,7 +13,6 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/errs"
-	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // withheldTail is R-REPO-041's withheld tail towards the client: the last 64 KiB of what the caller receives
@@ -24,11 +23,13 @@ import (
 const withheldTail = 64 << 10
 
 // source is a representation the engine serves with the semantics of RFC 9110: a cache entry's bytes, a
-// private copy, or a fill that was committed.
+// private copy, or a document held in memory.
 type source struct {
 	size   int64
 	header http.Header
 	etag   string
+	// lastModified is the representation's Last-Modified, which answers If-Modified-Since (R-BAS-056).
+	lastModified string
 	// open returns the whole representation from its start.
 	open func(ctx context.Context) (io.ReadCloser, error)
 	// download is set for an artifact: a 200 or 206 served from the cache is a download event (R-BAS-016).
@@ -40,32 +41,75 @@ type source struct {
 // bytesSource is a representation held in memory.
 func bytesSource(header http.Header, body []byte) *source {
 	return &source{
-		size: int64(len(body)), header: header, etag: header.Get("Etag"),
+		size: int64(len(body)), header: header, etag: header.Get("Etag"), lastModified: header.Get("Last-Modified"),
 		open: func(context.Context) (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil },
 	}
 }
 
-// serveSource answers the request from a source: If-None-Match, Range with If-Range, HEAD (RFC 9110). It
-// returns false, with nothing written, when the bytes cannot be opened, so the caller treats the entry as gone.
+// plan is how a request is answered from a representation (RFC 9110 sections 13 and 14): 304, 416, or the bytes
+// [start, end], partial for a 206.
+type plan struct {
+	notModified, unsat, partial bool
+	start, end                  int64
+}
+
+// planFor decides a request against a representation's validator, date and length: If-None-Match, or without it
+// If-Modified-Since on GET and HEAD (R-BAS-022, R-BAS-056), both before Range with If-Range (RFC 9110 section 13.2.2).
+func planFor(r *http.Request, etag, lastModified string, size int64) plan {
+	if inm := r.Header.Get("If-None-Match"); inm != "" {
+		if etag != "" && etagMatches(inm, etag) {
+			return plan{notModified: true}
+		}
+	} else if notModifiedSince(r, lastModified) {
+		return plan{notModified: true}
+	}
+	start, end, partial, unsat := parseRange(r.Header.Get("Range"), r.Header.Get("If-Range"), etag, size)
+	return plan{unsat: unsat, partial: partial, start: start, end: end}
+}
+
+// notModifiedSince reports whether a GET or HEAD carries If-Modified-Since and the representation's Last-Modified is
+// not after it (RFC 9110 section 13.1.3): freshclam's check of a container is answered 304 from the entry (R-BAS-056).
+func notModifiedSince(r *http.Request, lastModified string) bool {
+	ims := r.Header.Get("If-Modified-Since")
+	if ims == "" || lastModified == "" || (r.Method != http.MethodGet && r.Method != http.MethodHead) {
+		return false
+	}
+	since, err := http.ParseTime(ims)
+	if err != nil {
+		return false
+	}
+	lm, err := http.ParseTime(lastModified)
+	return err == nil && !lm.After(since)
+}
+
+// rangeNotSatisfiable answers 416 with the length of the representation.
+func (e *engine) rangeNotSatisfiable(q *rq, size int64) {
+	q.w.Header().Set("Content-Range", "bytes */"+strconv.FormatInt(size, 10))
+	q.w.Header().Set("Cache-Control", "no-store")
+	e.problem(q, errs.E(errs.RangeNotSatisfiable, errs.CodeRangeNotSatisfiable, "The range lies beyond the end of the representation."))
+}
+
+// serveSource answers the request from a source: If-None-Match, If-Modified-Since, Range with If-Range, HEAD (RFC
+// 9110). It returns false, with nothing written, when the bytes cannot be opened, so the caller treats the entry as
+// gone.
 func (e *engine) serveSource(q *rq, src *source) bool {
 	hdr := http.Header{}
 	for k, vs := range src.header {
 		hdr[k] = append([]string(nil), vs...)
 	}
 	hdr.Set("Accept-Ranges", "bytes")
-	if inm := q.r.Header.Get("If-None-Match"); inm != "" && src.etag != "" && etagMatches(inm, src.etag) {
+	p := planFor(q.r, src.etag, src.lastModified, src.size)
+	switch {
+	case p.notModified:
 		e.notModified(q, hdr)
 		return true
-	}
-	start, end, partial, unsat := parseRange(q.r.Header.Get("Range"), q.r.Header.Get("If-Range"), src.etag, src.size)
-	if unsat {
-		q.w.Header().Set("Content-Range", "bytes */"+strconv.FormatInt(src.size, 10))
-		q.w.Header().Set("Cache-Control", "no-store")
-		httpserver.Problem(q.w, q.r, errs.E(errs.RangeNotSatisfiable, errs.CodeRangeNotSatisfiable, "The range lies beyond the end of the representation."))
+	case p.unsat:
+		e.rangeNotSatisfiable(q, src.size)
 		return true
 	}
+	start, end := p.start, p.end
 	status, length := http.StatusOK, src.size
-	if partial {
+	if p.partial {
 		status, length = http.StatusPartialContent, end-start+1
 		hdr.Set("Content-Range", "bytes "+strconv.FormatInt(start, 10)+"-"+strconv.FormatInt(end, 10)+"/"+strconv.FormatInt(src.size, 10))
 	}
@@ -98,10 +142,11 @@ func copyHeader(dst, src http.Header) {
 	}
 }
 
-// notModified answers 304 with the headers RFC 9110 section 15.4.5 asks for.
+// notModified answers 304 with the headers RFC 9110 section 15.4.5 asks for, and the Last-Modified a client that sent
+// If-Modified-Since compares again.
 func (e *engine) notModified(q *rq, hdr http.Header) {
 	h := q.w.Header()
-	for _, k := range []string{"Etag", "Cache-Control", "Expires", "Vary"} {
+	for _, k := range []string{"Etag", "Cache-Control", "Expires", "Vary", "Last-Modified"} {
 		if vs := hdr.Values(k); len(vs) > 0 {
 			h[k] = append([]string(nil), vs...)
 		}
@@ -212,8 +257,9 @@ func (e *engine) streamVerified(q *rq, r io.Reader, src *source, start, end int6
 	return err == nil
 }
 
-// downloadEvent adds the event of an artifact served from the cache to the download buffer (R-BAS-016): a hit,
-// or a check answered 304.
+// downloadEvent adds the event of an answer served from the cache to the download buffer (R-BAS-016, R-BAS-039): a
+// hit, a check answered 304 or a caller that followed a fill, of an entry whose fill the main installation counted as
+// a download (R-BAS-059).
 func (e *engine) downloadEvent(q *rq, repo, sha string) {
 	if q.r.Method != http.MethodGet {
 		return

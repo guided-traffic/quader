@@ -70,11 +70,13 @@ func (e *engine) recordCheck(ctx context.Context, cred credential, repo, addr st
 	}
 	if !cred.anonymous {
 		e.answers.put(ctx, answers.Credential, cred.key, &answerVal{Answer: answerBase(answers.Credential, r.sentAt, sub, ""), Subject: sub})
+		e.noteRegistryToken(cred, sub)
 	}
 	rr := r.answer.Repositories[repo]
 	if !rr.Read.Valid() {
 		rr = iface.RepositoryRead{Read: iface.ReadNone, Status: 404}
 	}
+	rr.Read = capRead(cred, rr.Read)
 	shape := &answerVal{Answer: answerBase(answers.Shape, r.sentAt, sub, repo), Read: rr.Read, Status: rr.Status}
 	e.answers.put(ctx, answers.Shape, shapeKey(cred.key, repo), shape)
 	return shape

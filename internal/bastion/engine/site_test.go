@@ -163,7 +163,10 @@ func (s *site) doFn(f mainclient.Forward) (*mainclient.Response, error) {
 			out = append([]byte(nil), body...)
 			out[len(out)-1] ^= 0xff
 		}
-		return resp(http.StatusOK, marking(iface.ClassArtifact, r.read, repo, sub), hdr, string(out)), nil
+		// Serving an artifact counts a download at the main installation (R-BAS-059).
+		mk := marking(iface.ClassArtifact, r.read, repo, sub)
+		mk.Counted = true
+		return resp(http.StatusOK, mk, hdr, string(out)), nil
 	case isDoc:
 		class, etag, content := iface.ClassShared, `"d`+itoa(rev)+`"`, doc
 		if r.read != iface.ReadFull {

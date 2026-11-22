@@ -87,6 +87,11 @@ type worldOptions struct {
 	Endpoints string
 	// NoRecordDownloads leaves audit.record_downloads at its default (off).
 	NoRecordDownloads bool
+	// Role is the main replica's role (default web); a Debian test needs all, which builds the indexes.
+	Role string
+	// Seed adds repositories, principals and policies before the main replica starts, because its grant index is built
+	// from what exists then.
+	Seed func(w *world)
 }
 
 func newWorld(t *testing.T, o worldOptions) *world {
@@ -162,8 +167,11 @@ func newWorld(t *testing.T, o worldOptions) *world {
 	all := []string{npmAll, npmLocal, npmRemote, ngAll, ngLocal, ngRemote}
 	st.Policy("full-read", []string{"read"}, all, testenv.Person{ID: w.full.pid, Name: "acme-full", Kind: "service_account"})
 	w.partPolicies()
+	if o.Seed != nil {
+		o.Seed(w)
+	}
 
-	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints})
+	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints, Role: o.Role})
 	w.front = newFront(t, dir, w.main.Addr("default"))
 
 	w.registerBastion("partners")

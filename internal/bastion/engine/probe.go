@@ -43,6 +43,11 @@ func (e *engine) write(q *rq) {
 	if e.replayProbe(q, key) {
 		return
 	}
+	if q.form != nil && !e.stepCredentials(q) {
+		// The token service's form: its password is refused before anything is sent when it is malformed, and a
+		// credential the Bastion has no answer for meets the failed-authentication timeout first (R-BAS-051).
+		return
+	}
 	if !e.d.Link.Reachable() {
 		e.unreachable(q)
 		return
@@ -159,7 +164,7 @@ func (e *engine) probeClass(q *rq) mainclient.Class {
 // forwardWithBody forwards the real request of a read route that takes a body, after a 204 probe (R-BAS-014):
 // the caller's credential and the body, at most max_forwarded_body. The answer is pass: nothing is kept.
 func (e *engine) forwardWithBody(q *rq) {
-	if !e.stepCredentials(q) {
+	if q.form == nil && !e.stepCredentials(q) {
 		return
 	}
 	limit := int64(e.cfg.Main.MaxForwardedBody)
@@ -194,6 +199,9 @@ func (e *engine) forwardWithBody(q *rq) {
 // requestBody returns the caller's body for the real request: streamed when its length is known, held in
 // memory up to the limit when it is not (H-448).
 func (e *engine) requestBody(q *rq, limit int64) (r io.Reader, length int64, ok bool) {
+	if q.form != nil {
+		return bytes.NewReader(q.form), int64(len(q.form)), true
+	}
 	if q.r.ContentLength >= 0 {
 		return io.LimitReader(q.r.Body, q.r.ContentLength), q.r.ContentLength, true
 	}

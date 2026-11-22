@@ -262,7 +262,8 @@ func (f *front) Artifacts(mark int) []rec {
 }
 
 func isArtifactPath(p string) bool {
-	return strings.HasSuffix(p, ".tgz") || strings.HasSuffix(p, ".nupkg")
+	return strings.HasSuffix(p, ".tgz") || strings.HasSuffix(p, ".nupkg") || strings.HasSuffix(p, ".deb") ||
+		strings.Contains(p, "/blobs/sha256:") || strings.Contains(p, "/manifests/sha256:") || strings.Contains(p, "/by-hash/")
 }
 
 func kindOf(r *http.Request) string {

@@ -7,7 +7,8 @@
 // version check (400 bastion_interface_mismatch), the handshake with the response base URL derived from the
 // forwarded headers of R-BAS-017, the feed with its lookback, entry IDs, paging and reset (R-BAS-015), the
 // downloads intake, and the recording of every request the Bastion sent. What it does not model: users,
-// policies, repositories, formats. The check answer and the forwarded answer are functions the test sets.
+// policies, repositories, formats. The check answer and the forwarded answer are functions the test sets, and so are
+// the handshake's format table and bound repository (R-BAS-057), which are data of the main installation's formats.
 package maintest
 
 import (
@@ -67,6 +68,8 @@ type Main struct {
 	calls         map[string]int
 	resetNext     bool
 	downloadsFail int
+	formats       iface.HandshakeFormats
+	bound         string
 
 	headers map[string]http.Header
 
@@ -99,6 +102,7 @@ func New(t testing.TB) *Main {
 	m := &Main{
 		t: t, version: iface.InterfaceVersion, now: time.Now, tokens: map[string]*regToken{}, byID: map[string]*regToken{},
 		honoured: true, record: true, forced: map[string]int{}, replicas: map[string]time.Time{}, calls: map[string]int{}, headers: map[string]http.Header{},
+		formats: Formats(),
 	}
 	m.forward = m.defaultForward
 	m.check = func(iface.CheckRequest) iface.CheckAnswer { return iface.CheckAnswer{} }
@@ -222,6 +226,29 @@ func (m *Main) SetAnonymous(on bool) { m.lock(func() { m.anonymous = on }) }
 
 // SetRecordDownloads sets recordDownloads of the handshake.
 func (m *Main) SetRecordDownloads(on bool) { m.lock(func() { m.record = on }) }
+
+// SetFormats sets the handshake's format table (R-BAS-057); the default is [Formats].
+func (m *Main) SetFormats(t iface.HandshakeFormats) { m.lock(func() { m.formats = t }) }
+
+// SetBoundRepository sets the handshake's boundRepository (R-BAS-057): the repository the main installation binds the
+// Bastion's host to; empty binds none, the default.
+func (m *Main) SetBoundRepository(repo string) { m.lock(func() { m.bound = repo }) }
+
+// Formats is the format table a main installation of today sends, filled from the formats' catalog.Facts in the order of
+// the IDs (R-BAS-057):
+// OCI with the registry root, its four replay headers and the bound prefix /v2/; the ClamAV definitions with 503 for a
+// rate limit; npm, NuGet, Debian and Ansible Galaxy with the defaults. Generic has no routes and no entry.
+func Formats() iface.HandshakeFormats {
+	plain := func(id string) iface.HandshakeFormat {
+		return iface.HandshakeFormat{ID: id, ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{}}
+	}
+	oci := plain("oci")
+	oci.RegistryRoot, oci.BoundPrefixes = true, []string{"/v2/"}
+	oci.ReplayHeaders = []string{"Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"}
+	clamav := plain("clamav")
+	clamav.RateLimitedStatus = http.StatusServiceUnavailable
+	return iface.HandshakeFormats{plain("ansible"), clamav, plain("deb"), plain("npm"), plain("nuget"), oci}
+}
 
 // SetDelay makes every request wait before it is answered.
 func (m *Main) SetDelay(d time.Duration) { m.lock(func() { m.delay = d }) }
@@ -459,6 +486,8 @@ func (m *Main) handshake(w http.ResponseWriter, r *http.Request, rt *regToken) {
 		RecordDownloads:  m.record,
 		Feed:             iface.HandshakeFeed{Cursor: m.cursorLocked().String()},
 		ServerTime:       m.now().UTC(),
+		Formats:          m.formats,
+		BoundRepository:  m.bound,
 	}
 	m.mu.Unlock()
 	m.writeJSON(w, hs)
