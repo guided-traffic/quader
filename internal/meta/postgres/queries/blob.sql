@@ -57,10 +57,11 @@ SELECT sha256, enqueued_at FROM blob_gc_queue
  ORDER BY sha256 LIMIT @batch;
 
 -- name: RecordBlobsDeleted :many
--- Step (5).
+-- Step (5), for a blob without a copy row left (R-STOR-057).
 UPDATE blobs SET object_deleted_at = now()
  WHERE sha256 = ANY(@digests::bytea[]) AND state = 'deleting' AND object_deleted_at IS NULL
-RETURNING size;
+   AND NOT EXISTS (SELECT 1 FROM blob_copies c WHERE c.sha256 = blobs.sha256)
+RETURNING sha256, size;
 
 -- name: DropBlobRows :exec
 -- Step (6), with the blob's copy and queue rows, which carry no foreign key to blobs (R-STOR-052): a queue row is found by its

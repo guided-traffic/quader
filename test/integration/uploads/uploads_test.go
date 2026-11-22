@@ -50,7 +50,7 @@ func newReplica(tb testing.TB, e *s3Env, p *pgEnv, mutate func(*config.Storage))
 	if err != nil {
 		tb.Fatal(err)
 	}
-	svc, err := uploads.New(uploads.Options{DB: p.db, Objects: e.raw, Spool: store.Spool(), Storage: cfg, Log: quiet})
+	svc, err := uploads.New(uploads.Options{DB: p.db, Connections: conns, Spool: store.Spool(), Storage: cfg, Log: quiet})
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -441,8 +441,8 @@ func TestR_STOR_011_ARequestOfAnotherPrincipalRepositoryOrBindingAnswers404(t *t
 	}
 }
 
-func collector(r *replica, w *world, up config.StorageUploads) *blob.Collector {
-	return blob.NewCollector(r.cfg.GC, r.cfg.Connections[0].KeyPrefix(), w.e.raw, w.p.db, blob.WithCollectorLogger(quiet), blob.WithUploadSessions(up))
+func collector(r *replica, w *world, up config.StorageUploads, opts ...blob.CollectorOption) *blob.Collector {
+	return blob.NewCollector(r.cfg, r.store.Connections(), w.p.db, append([]blob.CollectorOption{blob.WithCollectorLogger(quiet), blob.WithUploadSessions(up)}, opts...)...)
 }
 
 // A session idle for longer than session_ttl, and an open session older than session_max_age, are aborted by the next collection
@@ -500,8 +500,11 @@ func TestR_STOR_011_TheCollectionRunExpiresAbandonedSessions(t *testing.T) {
 	w.nothingStaged(t)
 }
 
-// The full sweep removes the staging objects and multipart uploads that no session stands for, and nothing else.
-func TestR_STOR_011_TheSweepRemovesWhatNoSessionStandsFor(t *testing.T) {
+// The orphan sweep's staging step removes the staging objects and multipart uploads that no session stands for, and nothing else, against
+// the stack's bucket: its listings with a delimiter and a continuation token and its paged listing of multipart uploads are the S3 adapter's
+// (R-STOR-026, Q-STOR-263). The step's cases are the blob area's (test/integration/blob/sweep_test.go); here a clock ahead of the
+// maximum ages stands in for the wait.
+func TestR_STOR_026_TheSweepRemovesWhatNoSessionStandsForInTheBucket(t *testing.T) {
 	w := newWorld(t)
 	r := newReplica(t, w.e, w.p, nil)
 	ctx := context.Background()
@@ -518,22 +521,20 @@ func TestR_STOR_011_TheSweepRemovesWhatNoSessionStandsFor(t *testing.T) {
 	if err := w.e.raw.Put(ctx, foreign, bytes.NewReader([]byte("x")), 1, blob.Checksum{}, nil); err != nil {
 		t.Fatal(err)
 	}
-	// the maximum age is short, so that what is planted is older than it when the session below starts, which is younger
-	up := config.StorageUploads{SessionTTL: time.Hour, SessionMaxAge: 40 * time.Second}
-	time.Sleep(41 * time.Second)
 	live, err := r.svc.Start(ctx, w.p.repo, w.sc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.append(w.sc, live.ID, 0, random(7*mib)); err != nil {
+	if _, err := r.append(w.sc, live.ID, 0, random(10)); err != nil { // a tail, no multipart upload: the clock below ages it too
 		t.Fatal(err)
 	}
 
-	res, err := collector(r, w, up).Run(ctx, blob.RunOptions{Mode: blob.GCFull})
+	ahead := func() time.Time { return time.Now().Add(r.cfg.Orphans.MultipartMaxAge + time.Hour) }
+	res, err := collector(r, w, r.cfg.Uploads, blob.WithCollectorClock(ahead)).Sweep(ctx, blob.SweepOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.UploadObjectsDeleted != 1 || res.UploadsAborted != 1 {
+	if len(res.Connections) != 1 || res.Connections[0].StagingDeleted != 1 || res.Connections[0].MultipartAborted != 1 || res.Connections[0].ForeignKeys != 1 {
 		t.Fatalf("result = %+v", res)
 	}
 	if k := w.e.keys(t, blob.SessionPrefix(w.e.prefix, ghost)); len(k) != 0 {

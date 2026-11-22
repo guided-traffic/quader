@@ -464,23 +464,29 @@ func (q *Queries) LockBlobUpdate(ctx context.Context, sha256 []byte) ([]LockBlob
 const recordBlobsDeleted = `-- name: RecordBlobsDeleted :many
 UPDATE blobs SET object_deleted_at = now()
  WHERE sha256 = ANY($1::bytea[]) AND state = 'deleting' AND object_deleted_at IS NULL
-RETURNING size
+   AND NOT EXISTS (SELECT 1 FROM blob_copies c WHERE c.sha256 = blobs.sha256)
+RETURNING sha256, size
 `
 
-// Step (5).
-func (q *Queries) RecordBlobsDeleted(ctx context.Context, digests [][]byte) ([]int64, error) {
+type RecordBlobsDeletedRow struct {
+	Sha256 []byte
+	Size   int64
+}
+
+// Step (5), for a blob without a copy row left (R-STOR-057).
+func (q *Queries) RecordBlobsDeleted(ctx context.Context, digests [][]byte) ([]RecordBlobsDeletedRow, error) {
 	rows, err := q.db.Query(ctx, recordBlobsDeleted, digests)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []int64{}
+	items := []RecordBlobsDeletedRow{}
 	for rows.Next() {
-		var size int64
-		if err := rows.Scan(&size); err != nil {
+		var i RecordBlobsDeletedRow
+		if err := rows.Scan(&i.Sha256, &i.Size); err != nil {
 			return nil, err
 		}
-		items = append(items, size)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

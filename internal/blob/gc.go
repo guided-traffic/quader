@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"slices"
 	"sync"
 	"time"
 
@@ -45,16 +46,18 @@ type GCResult struct {
 	BytesReclaimed int64 `json:"bytesReclaimed"`
 	Errors         int   `json:"errors"`
 	Paused         bool  `json:"paused,omitempty"`
+	// CopiesReleased is the copies whose delete was never sent, because their connection is not configured on this replica or its
+	// circuit was open while another connection was writable: their rows went, and the objects are their connection's orphans
+	// (R-STOR-057, Q-STOR-237, Q-STOR-260).
+	CopiesReleased int `json:"copiesReleased,omitempty"`
 	// HoldSkipped is a run that found a valid global hold of a running backup before it claimed its candidates and ended
 	// without them (R-BAK-007 "Skipping a run").
 	HoldSkipped bool `json:"holdSkipped,omitempty"`
 	// The session step of the run (R-STOR-011 Expiry): sessions aborted for their idle time or age (a dry run counts those it would
-	// abort), sessions whose objects and row were removed, the unknown sessions' staging objects deleted and the multipart
-	// uploads of the staging area aborted by a full sweep.
+	// abort), and sessions whose row went, with their objects or, past the maximum age on a connection that cannot be asked, without
+	// them (R-STOR-054). What no session stands for in a staging area is the orphan sweep's (R-STOR-026).
 	UploadSessionsAborted int `json:"uploadSessionsAborted,omitempty"`
 	UploadSessionsCleaned int `json:"uploadSessionsCleaned,omitempty"`
-	UploadObjectsDeleted  int `json:"uploadObjectsDeleted,omitempty"`
-	UploadsAborted        int `json:"uploadsAborted,omitempty"`
 }
 
 // RunOptions are the parameters of one run.
@@ -71,23 +74,23 @@ type RunOptions struct {
 	Draining <-chan struct{}
 }
 
-// Collector deletes blobs that no reference uses (R-STOR-024). It is safe to run
-// on any number of workers at once: its correctness rests on the row locks of
-// the per-blob protocol, and the exclusive job key only avoids duplicate work.
+// Collector deletes blobs that no reference uses (R-STOR-024), every copy on its own connection (R-STOR-057), and runs the orphan
+// sweep of every connection (R-STOR-026, sweep.go). It is safe to run on any number of workers at once: its correctness rests on
+// the row locks of the per-blob protocol, and the exclusive job key only avoids duplicate work.
 type Collector struct {
 	db      DB
-	objects ObjectStore
-	prefix  string
+	conns   *Connections
+	storage config.Storage // the storage section: storage.orphans, storage.uploads and upload.commit_deadline for the sweep
 	cfg     config.StorageGC
 	log     *slog.Logger
 	metrics *Metrics
 	now     func() time.Time
 	poll    time.Duration
 	// uploads, when set, makes the run expire and clean up the upload sessions (WithUploadSessions).
-	uploads                *config.StorageUploads
-	sweepPages, sweepBatch int
-	// batchDelete is the connection's batch_delete: deletes go as DeleteObjects (Q-STOR-222, WithBatchDelete).
-	batchDelete bool
+	uploads *config.StorageUploads
+	// installation is the id of this installation, which a connection's marker must name before the orphan sweep acts there
+	// (WithInstallation, Q-STOR-262); empty compares the marker's connection only.
+	installation string
 
 	// Paused reports the deletion pause of R-HA-025. The default reads the
 	// system_state key deletions_paused_at.
@@ -114,21 +117,23 @@ func WithCollectorClock(now func() time.Time) CollectorOption {
 	return func(c *Collector) { c.now = now }
 }
 
+// WithInstallation sets the id of this installation: the orphan sweep walks a connection only while its marker <prefix>/_connection
+// is absent or names this installation and that connection (R-STOR-051, Q-STOR-262).
+func WithInstallation(id string) CollectorOption { return func(c *Collector) { c.installation = id } }
+
 // WithCollectorPoll sets how often the end of a run looks for rows to settle.
 func WithCollectorPoll(d time.Duration) CollectorOption { return func(c *Collector) { c.poll = d } }
 
-// WithBatchDelete sets whether deletes go as DeleteObjects: the batch_delete of the connection the collector deletes on
-// (Q-STOR-222); true by default.
-func WithBatchDelete(on bool) CollectorOption { return func(c *Collector) { c.batchDelete = on } }
-
-// NewCollector builds a collector. prefix is the prefix of the connection it deletes on.
-func NewCollector(cfg config.StorageGC, prefix string, objects ObjectStore, db DB, opts ...CollectorOption) *Collector {
-	c := &Collector{db: db, objects: objects, prefix: prefix, cfg: cfg, log: slog.Default(), now: time.Now, batchDelete: true}
+// NewCollector builds a collector over the replica's connections: it deletes each copy of a blob on the copy's connection, with
+// DeleteObjects where that connection's batch_delete is true (Q-STOR-222). cfg is the storage section: collection reads storage.gc,
+// the orphan sweep storage.orphans, storage.uploads and storage.upload.commit_deadline.
+func NewCollector(cfg config.Storage, conns *Connections, db DB, opts ...CollectorOption) *Collector {
+	c := &Collector{db: db, conns: conns, storage: cfg, cfg: cfg.GC, log: slog.Default(), now: time.Now}
 	for _, o := range opts {
 		o(c)
 	}
 	if c.poll <= 0 {
-		c.poll = max(10*time.Millisecond, min(250*time.Millisecond, cfg.DeleteSettle/10))
+		c.poll = max(10*time.Millisecond, min(250*time.Millisecond, cfg.GC.DeleteSettle/10))
 	}
 	c.Paused = c.defaultPaused
 	return c
@@ -167,15 +172,23 @@ type candidate struct {
 	seen   *time.Time
 }
 
-// run is the state of one Run.
+// run is the state of one Run, and of the deletions of one orphan sweep (sweep.go).
 type run struct {
 	// sessionStart is when the session step of this run began (inBudget).
 	sessionStart time.Time
 	c            *Collector
 	opts         RunOptions
 	res          GCResult
-	claimed      map[Digest]claim // claimed by this run, object not yet deleted
-	pending      []Digest         // object deleted, object_deleted_at not yet recorded
+	claimed      map[Digest]claim // claimed by this run, not every copy deleted yet
+	pending      []copyGone       // copies deleted or released, their rows and object_deleted_at not yet recorded
+	attempted    []Digest         // the claimed blobs whose deletes ran, for step (5)
+}
+
+// copyGone is a copy that step (4) is done with: its object deleted, or released because its delete was never sent (Q-STOR-237).
+type copyGone struct {
+	d        Digest
+	conn     string
+	released bool
 }
 
 // Run performs one collection run (R-STOR-024, R-STOR-025): it finishes
@@ -504,6 +517,9 @@ func (r *run) claim(ctx context.Context, cand candidate, refs *postgres.BlobRefs
 		if err := qs.ClaimBlob(ctx, cand.digest.Bytes()); err != nil {
 			return err
 		}
+		if err := qs.ClaimBlobCopies(ctx, cand.digest.Bytes()); err != nil {
+			return err
+		}
 		out = outClaimed
 		return dequeue()
 	})
@@ -516,10 +532,10 @@ func (r *run) claim(ctx context.Context, cand candidate, refs *postgres.BlobRefs
 	return out, size, start, nil
 }
 
-// deleteObjects is steps (4) and (5) for the digests claimed in this batch.
+// deleteObjects is steps (4) and (5) for the digests claimed in this batch, each copy on its connection (R-STOR-057).
 // The hand-over rule: a row this run claimed is deleted only while less than
 // handover_delay - delete_settle has passed on the run's own clock since the
-// reading before its claim, and the call gets that instant as its deadline.
+// reading before its claim, and the calls get that instant as their deadline.
 func (r *run) deleteObjects(ctx context.Context, digests []Digest) error {
 	if len(digests) == 0 {
 		return nil
@@ -542,10 +558,15 @@ func (r *run) deleteObjects(ctx context.Context, digests []Digest) error {
 	if err := r.fault("delete:before"); err != nil {
 		return err
 	}
+	copies, err := r.c.collectCopies(ctx, digests)
+	if err != nil {
+		return fmt.Errorf("read the copies of the claimed blobs: %w", err)
+	}
+	r.attempted = append(r.attempted, digests...)
 	dctx, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
-	done, err := r.c.removeObjects(dctx, digests, &r.res)
-	r.pending = append(r.pending, done...)
+	gone, err := r.c.removeCopies(dctx, copies, &r.res)
+	r.pending = append(r.pending, gone...)
 	if err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -561,42 +582,88 @@ func (r *run) deleteObjects(ctx context.Context, digests []Digest) error {
 	return r.record(ctx)
 }
 
-// record is step (5) for the deletes that succeeded.
+// record ends step (4) and records step (5) for the copies that are done: their rows go, and a blob without a copy row left gets
+// object_deleted_at. A blob with a copy whose delete had no known outcome keeps its claim; finalize hands it over.
 func (r *run) record(ctx context.Context) error {
-	if len(r.pending) == 0 {
+	if len(r.pending) == 0 && len(r.attempted) == 0 {
 		return nil
 	}
-	bytes, err := r.c.recordDeleted(ctx, r.pending)
+	recorded, released, bytes, err := r.c.recordDeleted(ctx, r.pending, r.attempted)
 	if err != nil {
 		return err
 	}
-	r.res.Deleted += len(r.pending)
+	r.res.Deleted += len(recorded)
 	r.res.BytesReclaimed += bytes
-	for _, d := range r.pending {
+	r.res.CopiesReleased += released
+	for _, d := range recorded {
 		delete(r.claimed, d)
 	}
-	r.pending = r.pending[:0]
+	r.pending, r.attempted = r.pending[:0], r.attempted[:0]
 	return r.fault("record:after")
 }
 
-func (c *Collector) recordDeleted(ctx context.Context, digests []Digest) (int64, error) {
-	var total int64
-	err := c.db.InTx(ctx, func(tx meta.Tx) error {
-		total = 0
+// recordDeleted deletes the rows of the copies that are done and records step (5) for the blobs among attempted without a copy
+// row left. It returns those blobs, the number of copies it released and the bytes reclaimed.
+func (c *Collector) recordDeleted(ctx context.Context, gone []copyGone, attempted []Digest) (recorded []Digest, released int, total int64, err error) {
+	byConn := map[string]int{}
+	err = c.db.InTx(ctx, func(tx meta.Tx) error {
+		recorded, total = recorded[:0], 0
+		clear(byConn)
 		qs, err := queries(tx)
 		if err != nil {
 			return err
 		}
-		sizes, err := qs.RecordBlobsDeleted(ctx, digestBytes(digests))
+		if err := deleteGoneCopies(ctx, qs, gone, byConn); err != nil {
+			return err
+		}
+		if len(attempted) == 0 {
+			return nil
+		}
+		rows, err := qs.RecordBlobsDeleted(ctx, digestBytes(attempted))
 		if err != nil {
 			return err
 		}
-		for _, size := range sizes {
-			total += size
+		for _, row := range rows {
+			var d Digest
+			copy(d[:], row.Sha256)
+			recorded = append(recorded, d)
+			total += row.Size
 		}
 		return nil
 	})
-	return total, err
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	for conn, n := range byConn {
+		released += n
+		c.metrics.copiesReleased(conn, n)
+	}
+	return recorded, released, total, nil
+}
+
+// deleteGoneCopies deletes the copy rows of gone in one statement and counts the released ones it deleted per connection.
+func deleteGoneCopies(ctx context.Context, qs *q.Queries, gone []copyGone, released map[string]int) error {
+	if len(gone) == 0 {
+		return nil
+	}
+	digests, conns := make([][]byte, len(gone)), make([]string, len(gone))
+	wasReleased := map[string]bool{}
+	for i, g := range gone {
+		digests[i], conns[i] = g.d.Bytes(), g.conn
+		if g.released {
+			wasReleased[string(g.d[:])+"/"+g.conn] = true
+		}
+	}
+	rows, err := qs.DeleteCollectedCopies(ctx, q.DeleteCollectedCopiesParams{Digests: digests, Connections: conns})
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if wasReleased[string(row.Sha256)+"/"+row.ConnectionID] {
+			released[row.ConnectionID]++
+		}
+	}
+	return nil
 }
 
 func digestBytes(ds []Digest) [][]byte {
@@ -607,71 +674,243 @@ func digestBytes(ds []Digest) [][]byte {
 	return out
 }
 
-// removeObjects sends the deletes of step (4) and returns the digests whose
-// delete succeeded. A key that is already gone counts as success. Errors of
-// single objects are counted in res.Errors; an error that stops the run (the
-// context, an open circuit) is returned.
-func (c *Collector) removeObjects(ctx context.Context, digests []Digest, res *GCResult) (done []Digest, err error) {
-	if c.batchDelete {
-		for len(digests) > 0 {
-			n := min(len(digests), 1000)
-			chunk := digests[:n]
-			digests = digests[n:]
-			keys := make([]string, n)
-			for i, d := range chunk {
-				keys[i] = Key(c.prefix, d)
-			}
-			failed, derr := c.objects.DeleteMany(ctx, keys)
-			if derr != nil {
-				if stopsRun(ctx, derr) {
-					return done, derr
-				}
-				res.Errors += n
-				c.log.Warn("batch delete failed", "keys", n, "error", derr)
-				continue
-			}
-			bad := map[string]bool{}
-			for _, f := range failed {
-				bad[f.Key] = true
-			}
-			res.Errors += len(failed)
-			for i, d := range chunk {
-				if !bad[keys[i]] {
-					done = append(done, d)
-				}
-			}
+// claimedCopy is a copy row of a claimed blob that step (4) deletes.
+type claimedCopy struct {
+	d    Digest
+	conn string
+	key  string
+}
+
+// collectCopies reads the copy rows of claimed blobs (step 4) in every state: a copy a drain claimed before collection claimed
+// the blob is deleted as well, which is harmless (R-STOR-056).
+func (c *Collector) collectCopies(ctx context.Context, digests []Digest) ([]claimedCopy, error) {
+	var out []claimedCopy
+	err := c.db.InTx(ctx, func(tx meta.Tx) error {
+		out = out[:0]
+		qs, err := queries(tx)
+		if err != nil {
+			return err
 		}
-		return done, nil
+		rows, err := qs.CollectCopies(ctx, digestBytes(digests))
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			var d Digest
+			copy(d[:], row.Sha256)
+			out = append(out, claimedCopy{d: d, conn: row.ConnectionID, key: row.ObjectKey})
+		}
+		return nil
+	})
+	return out, err
+}
+
+// removeCopies sends the deletes of step (4), one connection's copies together and the connections at once, and returns the
+// copies it is done with: a delete that succeeded (a key that is gone counts), and a copy released without a request because its
+// connection is not configured on this replica or its circuit is open while another connection is writable (Q-STOR-237,
+// Q-STOR-260). A delete whose outcome is unknown keeps its row and is counted in res.Errors; a later run repeats it under the
+// hand-over rules. An error that stops the run (the context, every circuit open) is returned.
+func (c *Collector) removeCopies(ctx context.Context, copies []claimedCopy, res *GCResult) ([]copyGone, error) {
+	byConn := map[string][]claimedCopy{}
+	var ids []string
+	for _, cp := range copies {
+		if _, ok := byConn[cp.conn]; !ok {
+			ids = append(ids, cp.conn)
+		}
+		byConn[cp.conn] = append(byConn[cp.conn], cp)
 	}
+	slices.Sort(ids)
 	var (
 		mu       sync.Mutex
 		wg       sync.WaitGroup
+		gone     []copyGone
 		firstErr error
+		down     error // no connection is writable: the run stops its object-store phase, as with one store
+	)
+	for _, id := range ids {
+		group := byConn[id]
+		conn, ok := c.conns.Get(id)
+		if !ok {
+			mu.Lock()
+			gone = append(gone, released(group)...)
+			mu.Unlock()
+			continue
+		}
+		if after, rejecting := conn.Rejecting(); rejecting {
+			if !c.releasable(conn) {
+				down = &circuitOpenError{retry: after}
+				continue
+			}
+			mu.Lock()
+			gone = append(gone, released(group)...)
+			mu.Unlock()
+			continue
+		}
+		wg.Add(1)
+		go func(conn *Connection, group []claimedCopy) {
+			defer wg.Done()
+			out := c.deleteOn(ctx, conn, group)
+			stop := out.stop
+			if errors.Is(stop, ErrCircuitOpen) && ctx.Err() == nil && c.releasable(conn) {
+				// the circuit opened before these were sent: no request for them can arrive late
+				for _, g := range out.unsent {
+					g.released = true
+					out.done = append(out.done, g)
+				}
+				stop = nil
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			gone = append(gone, out.done...)
+			res.Errors += out.unknown
+			if stop != nil && firstErr == nil {
+				firstErr = stop
+			}
+		}(conn, group)
+	}
+	wg.Wait()
+	if firstErr == nil {
+		firstErr = down
+	}
+	return gone, firstErr
+}
+
+func released(group []claimedCopy) []copyGone {
+	out := make([]copyGone, len(group))
+	for i, cp := range group {
+		out[i] = copyGone{d: cp.d, conn: cp.conn, released: true}
+	}
+	return out
+}
+
+// releasable reports whether a copy on conn, whose circuit is open, may be released (Q-STOR-260): only while another connection of
+// this replica is writable. With every circuit open, as with the one connection of a plain installation when it is down, no
+// uploader could store the content anyway, and a release would only leave deleted content for the sweep; the run stops instead.
+func (c *Collector) releasable(conn *Connection) bool {
+	for _, w := range c.conns.Writable() {
+		if w != conn {
+			return true
+		}
+	}
+	return false
+}
+
+// deleted is what the deletes on one connection came to: the copies done (deleted, or gone already), the copies whose delete was
+// never sent because the circuit refused it or the run stopped first, the number of deletes whose outcome is unknown or that the store
+// refused (their rows stay), and the error that stopped the deletes (the context, an open circuit).
+type deleted struct {
+	done, unsent []copyGone
+	unknown      int
+	stop         error
+}
+
+// deleteOn deletes the objects of one connection's copies: DeleteObjects in chunks of 1,000 where the connection's batch_delete is
+// true, else delete_concurrency parallel DeleteObject.
+func (c *Collector) deleteOn(ctx context.Context, conn *Connection, group []claimedCopy) deleted {
+	if conn.BatchDelete() {
+		return c.deleteBatches(ctx, conn, group)
+	}
+	var (
+		out deleted
+		mu  sync.Mutex
+		wg  sync.WaitGroup
 	)
 	sem := make(chan struct{}, max(1, c.cfg.DeleteConcurrency))
-	for _, d := range digests {
+	for _, cp := range group {
+		g := copyGone{d: cp.d, conn: cp.conn}
+		mu.Lock()
+		stopped := out.stop != nil || ctx.Err() != nil
+		if stopped {
+			out.unsent = append(out.unsent, g)
+			if out.stop == nil {
+				out.stop = ctx.Err()
+			}
+		}
+		mu.Unlock()
+		if stopped {
+			continue
+		}
 		sem <- struct{}{}
 		wg.Add(1)
-		go func(d Digest) {
+		go func(cp claimedCopy, g copyGone) {
 			defer func() { <-sem; wg.Done() }()
-			derr := c.objects.Delete(ctx, Key(c.prefix, d))
+			derr := conn.Objects().Delete(ctx, cp.key)
 			mu.Lock()
 			defer mu.Unlock()
 			switch {
 			case derr == nil || errors.Is(derr, ErrNotFound):
-				done = append(done, d)
+				out.done = append(out.done, g)
+			case errors.Is(derr, ErrCircuitOpen):
+				out.unsent = append(out.unsent, g) // the guard refused it before a request left
+				if out.stop == nil {
+					out.stop = derr
+				}
 			case stopsRun(ctx, derr):
-				if firstErr == nil {
-					firstErr = derr
+				out.unknown++
+				if out.stop == nil {
+					out.stop = derr
 				}
 			default:
-				res.Errors++
-				c.log.Warn("delete failed", "sha256", d.Hex(), "error", derr)
+				out.unknown++
+				c.log.Warn("delete failed", "connection", conn.ID(), "sha256", cp.d.Hex(), "error", derr)
 			}
-		}(d)
+		}(cp, g)
 	}
 	wg.Wait()
-	return done, firstErr
+	return out
+}
+
+// deleteBatches is deleteOn with DeleteObjects.
+func (c *Collector) deleteBatches(ctx context.Context, conn *Connection, group []claimedCopy) deleted {
+	var out deleted
+	for len(group) > 0 {
+		n := min(len(group), 1000)
+		chunk := group[:n]
+		group = group[n:]
+		keys := make([]string, n)
+		for i, cp := range chunk {
+			keys[i] = cp.key
+		}
+		bad, derr := conn.Objects().DeleteMany(ctx, keys)
+		switch {
+		case derr == nil:
+		case errors.Is(derr, ErrCircuitOpen):
+			out.unsent = append(out.unsent, notGone(chunk)...)
+			out.unsent = append(out.unsent, notGone(group)...)
+			out.stop = derr
+			return out
+		case stopsRun(ctx, derr):
+			out.unknown += n
+			out.unsent = append(out.unsent, notGone(group)...)
+			out.stop = derr
+			return out
+		default:
+			out.unknown += n
+			c.log.Warn("batch delete failed", "connection", conn.ID(), "keys", n, "error", derr)
+			continue
+		}
+		refused := map[string]bool{}
+		for _, f := range bad {
+			refused[f.Key] = true
+		}
+		for i, cp := range chunk {
+			if refused[keys[i]] {
+				out.unknown++
+				c.log.Warn("the store did not delete an object", "connection", conn.ID(), "key", keys[i])
+				continue
+			}
+			out.done = append(out.done, copyGone{d: cp.d, conn: cp.conn})
+		}
+	}
+	return out
+}
+
+func notGone(group []claimedCopy) []copyGone {
+	out := make([]copyGone, len(group))
+	for i, cp := range group {
+		out[i] = copyGone{d: cp.d, conn: cp.conn}
+	}
+	return out
 }
 
 // stopsRun reports an error that ends the run instead of one candidate.

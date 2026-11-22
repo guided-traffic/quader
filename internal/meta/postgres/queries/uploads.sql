@@ -36,9 +36,15 @@ SELECT id::text AS id, repo_id, addressed_repo_id, COALESCE(binding, '')::text A
        COALESCE(writer::text, '')::text AS writer, COALESCE(item_id, 0)::bigint AS item_id,
        (writer IS NOT NULL AND writer_until > now())::bool AS claimed, digest, state,
        (created_at < now() - make_interval(secs => sqlc.arg(max_age_seconds)::float8))::bool AS too_old,
-       (SELECT count(*) FROM upload_session_parts p WHERE p.session_id = s.id)::bigint AS parts
+       (SELECT count(*) FROM upload_session_parts p WHERE p.session_id = s.id)::bigint AS parts, connection_id
 FROM upload_sessions s
 WHERE id = sqlc.arg(id)::text::uuid;
+
+-- name: UploadMoveSession :execrows
+-- A session that has written nothing moves to another connection at its first write when its own is not writable (R-STOR-054),
+-- under the claim of the request that writes. Zero rows is a request that lost its claim or a session that has written meanwhile.
+UPDATE upload_sessions SET connection_id = sqlc.arg(connection_id)::text, last_activity_at = now()
+ WHERE id = sqlc.arg(id)::text::uuid AND state = 'open' AND writer = sqlc.arg(writer)::text::uuid AND received = 0 AND s3_upload_id = '';
 
 -- name: UploadClaim :execrows
 -- The claim of R-STOR-011 step 2: one writer at a time, only on an open session that is not past its maximum age, and only when
@@ -164,13 +170,18 @@ SELECT count(*)::bigint FROM upload_sessions
 
 -- name: UploadListAborted :many
 -- The aborted sessions whose objects may still be in the bucket, oldest first (the index on state and last_activity_at orders them). A
--- session that staged nothing (received 0) or whose objects the request that ended it removed (cleaned) is the bulk delete's.
-SELECT id::text AS id, s3_upload_id, state FROM upload_sessions
+-- session that staged nothing (received 0) or whose objects the request that ended it removed (cleaned) is the bulk delete's. The
+-- connection is the session's (R-STOR-054); too_old says that the row may go without its objects when that connection cannot be asked.
+SELECT id::text AS id, s3_upload_id, state, connection_id,
+       (created_at < now() - make_interval(secs => sqlc.arg(max_age_seconds)::float8))::bool AS too_old
+  FROM upload_sessions
  WHERE state = 'aborted' AND NOT cleaned AND received > 0 ORDER BY last_activity_at LIMIT sqlc.arg(max_rows)::int;
 
 -- name: UploadListDone :many
--- The finished sessions whose replay window has passed and whose objects the request did not remove.
-SELECT id::text AS id, s3_upload_id, state FROM upload_sessions
+-- The finished sessions whose replay window has passed and whose objects the request did not remove, as UploadListAborted.
+SELECT id::text AS id, s3_upload_id, state, connection_id,
+       (created_at < now() - make_interval(secs => sqlc.arg(max_age_seconds)::float8))::bool AS too_old
+  FROM upload_sessions
  WHERE state = 'done' AND NOT cleaned AND received > 0 AND last_activity_at < now() - make_interval(secs => sqlc.arg(window_seconds)::float8)
  ORDER BY last_activity_at LIMIT sqlc.arg(max_rows)::int;
 
@@ -196,20 +207,12 @@ UPDATE upload_sessions SET last_activity_at = now() WHERE id = sqlc.arg(id)::tex
 DELETE FROM upload_sessions WHERE id = sqlc.arg(id)::text::uuid AND state IN ('done', 'aborted');
 
 -- name: UploadKnownSessions :many
--- Which of the ids have a row that still stands for live objects: the sweep removes the staging objects of the others.
-SELECT id::text AS id, s3_upload_id, state FROM upload_sessions WHERE id = ANY(sqlc.arg(ids)::text[]::uuid[]);
+-- The rows of the session ids that have one, with their connection: the orphan sweep removes the staging objects of the others, of the
+-- sessions that are over and of those pinned to another connection (R-STOR-026).
+SELECT id::text AS id, s3_upload_id, state, connection_id FROM upload_sessions WHERE id = ANY(sqlc.arg(ids)::text[]::uuid[]);
 
 -- name: UploadRenewCompleting :execrows
 -- The renewal of the short claim of a finalize's tail step, before the segments are read and before the last part is sent. Zero rows is
 -- a continuation whose claim ran out and was taken (or released) meanwhile.
 UPDATE upload_sessions SET writer_until = now() + make_interval(secs => sqlc.arg(lease_seconds)::float8), last_activity_at = now()
  WHERE id = sqlc.arg(id)::text::uuid AND state = 'completing' AND writer = sqlc.arg(writer)::text::uuid;
-
--- name: UploadSweepCursorGet :one
--- Where the sweep of the staging area stopped in an earlier run (a JSON text; empty when it finished or never ran), so that successive
--- runs go on instead of starting at the first session again.
-SELECT COALESCE((SELECT value #>> '{}' FROM system_state WHERE key = 'upload_sweep_cursor'), '')::text;
-
--- name: UploadSweepCursorSet :exec
-INSERT INTO system_state (key, value) VALUES ('upload_sweep_cursor', to_jsonb(sqlc.arg(cursor)::text))
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();

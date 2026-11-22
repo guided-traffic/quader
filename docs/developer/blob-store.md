@@ -3,8 +3,8 @@
 Content-addressed storage on one to eight S3-compatible object-store connections: [internal/blob](../../internal/blob/) (everything that
 does not depend on an S3 client), [internal/blob/s3](../../internal/blob/s3/) (the AWS SDK adapter, the only package that imports
 the SDK), [internal/blob/blobtest](../../internal/blob/blobtest/) (an in-memory store with fault injection for tests).
-Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024, R-STOR-025, R-STOR-027, R-STOR-030 to R-STOR-035, R-STOR-046,
-R-STOR-050 to R-STOR-053, R-STOR-055, R-STOR-056, R-STOR-058, R-STOR-060, R-STOR-062.
+Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024 to R-STOR-027, R-STOR-030 to R-STOR-035, R-STOR-046, R-STOR-050 to
+R-STOR-058, R-STOR-060, R-STOR-062.
 The row is the authority on whether a blob exists; a row per copy (`blob_copies`) says on which connection its object lies, under which
 name and size, and what is known about it; the object is the content. Nothing in this tree uses Valkey or a
 session-level advisory lock (R-STOR-046, enforced by [internal/archtest](../../internal/archtest/)). The first caller of `Ingest`,
@@ -25,10 +25,11 @@ the verifying reader or a range.
 | [store.go](../../internal/blob/store.go), [commit.go](../../internal/blob/commit.go) | `Store`, `Ingest`, `Commit` (the commit protocol), `Lookup` |
 | [transfer.go](../../internal/blob/transfer.go) | single `PutObject` or multipart from the spool file, part sizing, abort |
 | [staged.go](../../internal/blob/staged.go), [spool_segment.go](../../internal/blob/spool_segment.go) | the staging area of the upload sessions: `SessionKey`, `Staged` (a blob that is in the bucket already, committed by a server-side copy), `Spool.IngestSegment` (one part of a request, behind the recorded tail, through the session's hash functions) |
-| [gc_uploads.go](../../internal/blob/gc_uploads.go) | the session step of a collection run: expiry, `RemoveSession`, the sweep of `_uploads/` |
+| [gc_uploads.go](../../internal/blob/gc_uploads.go) | the session step of a collection run: expiry, `RemoveSession`, the cleaning of each session on its own connection (R-STOR-054) |
+| [sweep.go](../../internal/blob/sweep.go) | the orphan sweep (R-STOR-026): `Collector.Sweep`, `SweepOptions`, `SweepResult`, `SweepCursor`, `SweepJobArgs` and its `Validate`, the walk, the adoption, the mark, the claim of an orphan, the staging step |
 | [download.go](../../internal/blob/download.go) | `Store.Open` over the copies and the verifying reader (hold-back, the copy's stored size), the mark of a copy a connection does not have (`copyGone`) and the recheck of a missing blob (`RecheckMissing`) |
 | [guard.go](../../internal/blob/guard.go) | `Guard`: circuit breaker and request metrics with the label `connection` around any `ObjectStore`, one per connection; `Circuit`, the guarded `Presign` and `CopyFrom` |
-| [gc.go](../../internal/blob/gc.go), [gcjob.go](../../internal/blob/gcjob.go) | `Collector` (per-blob protocol, hand-over, pause, hold, fault hook) and the job adapter |
+| [gc.go](../../internal/blob/gc.go), [gcjob.go](../../internal/blob/gcjob.go) | `Collector` (per-blob protocol, step (4) per copy with the release, hand-over, pause, hold, fault hook) and the job adapters `RunJob` and `RunSweepJob` |
 | [usagefold.go](../../internal/blob/usagefold.go) | `UsageFolder`: the fold loop of the usage counters (R-STOR-003) and its `Fold` iteration |
 | [conformance.go](../../internal/blob/conformance.go) | startup check, conformance checks (with the capability checks), `AwaitStartupCheck` |
 | [sql.go](../../internal/blob/sql.go), [tables.go](../../internal/blob/tables.go), [metrics.go](../../internal/blob/metrics.go), [errors.go](../../internal/blob/errors.go) | the `DB` interface, the `Rows` seam (`WithRows`) and its sqlc implementation, export-class registration, metric families, `errs` mapping |
@@ -46,7 +47,7 @@ the verifying reader or a range.
 
 `blob.Key("quader", d)` is `quader/sha256/<h0h1>/<h2h3>/<hex>`; with an empty prefix the key starts at `sha256/`. The
 function takes a 32-byte digest and nothing else, so no repository, path or user input reaches a key. `ParseKey` is its
-inverse and refuses every key that does not follow the layout exactly (the orphan sweep will report those as foreign).
+inverse and refuses every key that does not follow the layout exactly (the orphan sweep reports those as foreign).
 
 `Spool.Ingest` computes SHA-256, SHA-1, MD5 and SHA-512 and the size in one pass over the body (one `Read` loop fanning
 out to four hash states and the spool file). SHA-512 is computed for every upload (Q-STOR-2). SHA-256 is the identity;
@@ -253,8 +254,18 @@ on the connection `conn`: `Commit` and `CommitAll` take it like any spooled body
 (`putStaged`: the copy to the content address on that connection, then a size check; its copy row is `present` and not verified, so the
 scrub reads it first), which a deduplication hit never runs. With `min_copies` above 1 the content object is then streamed through the
 spool, hashed against the session's digests, to the next writable connections. If the staging object is gone the commit fails with
-`ErrStagingGone`. A staged body has no reader (its `Reader` fails) and no spool budget. Until package B pins each session
-(R-STOR-054), the service starts every session on the first connection without drain (`uploads.Options.Connection`).
+`ErrStagingGone`. A staged body has no reader (its `Reader` fails) and no spool budget.
+
+**Sessions on their connection** (R-STOR-054). `uploads.Options.Connections` is the replica's ordered set. `Service.Start` records
+`upload_sessions.connection_id` without asking a store: the first writable connection, or the first without drain when none is
+writable (`startConnection`, [Q-STOR-264](../spec/storage.md#q-stor-264--a-session-starts-on-the-first-writable-connection-without-asking-the-store-and-moves-at-its-first-write-while-it-has-written-nothing)).
+Every request reads the connection from the row: `Service.connection` answers `503` with the circuit's `Retry-After` while that
+connection is not configured on the replica or its circuit is open, and the session stays as it is; `Service.writable`, called under the
+writing request's claim, moves a session that has written nothing (`received = 0`, no upload id, no tail) to the first writable
+connection first (`UploadMoveSession`, conditional on the writer token). The `pin` of a request carries the connection's client, prefix
+and payload checksum to every object call (parts, tails, completion, the empty or merged staging object, the removal), and the finalize
+hands the session's connection to `blob.Staged`, so the commit's server-side copy runs there; with `min_copies` above 1 `putStaged`
+streams the content object to the next writable connections.
 `Spool.IngestSegment(ctx, prefix, body, n, tee)` reads at most `n` bytes into a `*Spooled` (memory below the spool's threshold, a spool file
 above it, its budget reserved as the bytes arrive), the bytes of `prefix` first (the recorded tail, which the session's hash state has seen
 already) and then `body`, each byte of which goes through `tee` before it is kept; the result carries the segment's SHA-256 and MD5, the
@@ -262,18 +273,21 @@ payload checksums of a part.
 
 ## Garbage collection (R-STOR-024, R-STOR-025)
 
-`blob.NewCollector(cfg.GC, prefix, objects, db, blob.WithBatchDelete(conn.BatchDelete()))`, built on the first connection without drain
-(collection per copy is package B's, R-STOR-057; until then it deletes there only, and the drop of a blob row in step 6 takes its copy and
-queue rows, `DropBlobRows`); `Run(ctx, RunOptions{Mode, DryRun, Cursor, Checkpoint})` returns a
-`GCResult` (`dryRun, trashPurged, candidates, kept, held, deleted, bytesReclaimed, errors, paused`, and the counters of the
-session step: `uploadSessionsAborted, uploadSessionsCleaned, uploadObjectsDeleted, uploadsAborted`). A run:
+`blob.NewCollector(cfg, conns, db, opts...)` takes the storage section and the replica's ordered set of connections; one collector per
+worker deletes every copy on its own connection (R-STOR-057) and runs the orphan sweep ([below](#orphan-sweep-r-stor-026)).
+`Run(ctx, RunOptions{Mode, DryRun, Cursor, Checkpoint})` returns a `GCResult` (`dryRun, trashPurged, candidates, kept, held, deleted,
+bytesReclaimed, errors, paused, copiesReleased`, and the counters of the session step: `uploadSessionsAborted, uploadSessionsCleaned`). A run:
 
 0. with `WithUploadSessions(cfg.Uploads)` set, runs the session step ([gc_uploads.go](../../internal/blob/gc_uploads.go)): it aborts the
    sessions that are idle for `session_ttl` or (open ones) older than `session_max_age`, removes the multipart upload and the objects of the
-   aborted ones and, once their idle time has passed, of the finished ones, deletes their rows, and in a full sweep removes what no session row
-   stands for below `<prefix>/_uploads/` ([Q-STOR-170](../spec/storage.md#q-stor-170--the-collection-run-aborts-a-live-session-for-its-idle-time-and-an-open-one-for-its-age),
-   [Q-STOR-172](../spec/storage.md#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own)).
-   The step takes at most 25 batches of 200 per run, lists the staging area in pages (the optional `MultipartPager` of the store, 500 uploads at a time), re-reads the deletion pause before every batch, keeps the position of the staging sweep in `system_state` (`upload_sweep_cursor`) so that successive runs progress, and counts the sessions it expires in `quader_storage_upload_sessions_total{outcome="expired"}` ([Q-STOR-173](../spec/storage.md#q-stor-173--the-sessions-are-counted-by-quader_storage_upload_sessions_total-not-by-an-oci-metric)).
+   aborted ones and, once their idle time has passed, of the finished ones, each on the session's own connection (`cleanSession`), and
+   deletes their rows ([Q-STOR-170](../spec/storage.md#q-stor-170--the-collection-run-aborts-a-live-session-for-its-idle-time-and-an-open-one-for-its-age)).
+   A session whose connection the replica does not configure, or whose circuit is open, keeps its row and goes to the back of the line,
+   unless it is older than `session_max_age`: then its row goes and the orphan sweep of that connection removes its objects (R-STOR-054).
+   The step goes on batch after batch of 200 for two minutes each, re-reads the deletion pause before every batch, stops at a batch in
+   which nothing moved, and counts the sessions it expires in `quader_storage_upload_sessions_total{outcome="expired"}` ([Q-STOR-173](../spec/storage.md#q-stor-173--the-sessions-are-counted-by-quader_storage_upload_sessions_total-not-by-an-oci-metric)).
+   What no session row stands for in a staging area is the orphan sweep's
+   ([Q-STOR-263](../spec/storage.md#q-stor-263--the-staging-sweep-moves-from-the-full-collection-to-the-orphan-sweep-per-connection-without-a-cursor-of-its-own)).
    A failure of the step is counted in `errors` and logged; it does not stop the blob collection below it. A dry run counts the sessions it
    would abort and changes nothing;
 1. reads the deletion pause (`system_state` key `deletions_paused_at`; see below) and ends with `paused: true` if set;
@@ -285,10 +299,19 @@ session step: `uploadSessionsAborted, uploadSessionsCleaned, uploadObjectsDelete
    full: live blobs older than the grace period, anti-joined against every table with a foreign key to `blobs`, read
    from `pg_constraint` once per batch, resuming after `Cursor`; a table added by a migration during one batch is
    seen from the next batch on) and runs the per-blob protocol, one transaction each: `FOR UPDATE`,
-   then a separate reference-check statement, then `UPDATE … 'deleting'` and the queue delete guarded by `$seen`;
-4. deletes the claimed objects (`DeleteObjects` when `batch_delete`, else `delete_concurrency` parallel `DeleteObject`)
-   only while less than `handover_delay − delete_settle` has passed on the collector's own clock since the reading
-   before the earliest claim, with that instant as the call's deadline; records `object_deleted_at`;
+   then a separate reference-check statement, then `UPDATE … 'deleting'` of the blob and of its copy rows (`ClaimBlobCopies`) and the
+   queue delete guarded by `$seen`;
+4. reads the copy rows of the claimed blobs (`CollectCopies`: only of blobs in state `deleting`; a `deleting` copy of a live blob is a
+   drain's claim, R-STOR-056) and deletes each object on its connection, the connections at once (`removeCopies`): `DeleteObjects` in
+   chunks of 1,000 where the connection's `batch_delete` is true, else `delete_concurrency` parallel `DeleteObject` (`deleteOn`), only
+   while less than `handover_delay − delete_settle` has passed on the collector's own clock since the reading before the earliest claim,
+   with that instant as the calls' deadline. A copy on a connection the replica does not configure, or whose circuit is open (or whose
+   guard refused the request before it left) while another connection is writable, is released: its row goes without a request, the
+   object is an orphan of its connection, counted in `copiesReleased` and `quader_gc_copies_released_total{connection}` (Q-STOR-237,
+   [Q-STOR-260](../spec/storage.md#q-stor-260--collection-releases-a-copy-on-an-open-circuit-only-while-another-connection-is-writable));
+   while no connection is writable the run stops as one store's open circuit did. A delete whose outcome is unknown keeps its row (counted
+   in `errors`); the blob stays claimed and is handed over. `recordDeleted` then deletes the rows of the copies done
+   (`DeleteCollectedCopies`) and records `object_deleted_at` for the blobs without a copy row left (`RecordBlobsDeleted`);
 5. waits up to `delete_settle` (plus two polls) to drop the rows it deleted; the wait ends with a pass that started after its deadline
    ([Q-STOR-216](../spec/storage.md#q-stor-216--the-settle-wait-of-a-collection-run-ends-with-a-pass-that-started-after-its-deadline)).
    When `RunOptions.Draining` closes (the job's `Run.Draining()`, the replica's shutdown), the wait ends with `blob.ErrHandedOver`
@@ -307,8 +330,8 @@ points, `claim:before|locked|checked|committed`, `delete:before|after`, `record:
 a non-nil error ends the run at once as a process kill would, with `errors.Is(err, blob.ErrFault)`).
 
 Not in this package yet: the trash purge that R-STOR-025 puts at the start of a run (its package does not exist; the job handler calls
-it before `Run` and puts the count in `trashPurged`) and the orphan sweep of `sha256/` (R-STOR-026; its pass over `_uploads/` is the
-session step). The scrub (R-STOR-027) is the package [internal/blob/scrub](../../internal/blob/scrub/) ([below](#the-scrub-r-stor-027)).
+it before `Run` and puts the count in `trashPurged`). The scrub (R-STOR-027) is the package
+[internal/blob/scrub](../../internal/blob/scrub/) ([below](#the-scrub-r-stor-027)).
 
 ### Job registration
 
@@ -316,7 +339,60 @@ session step). The scrub (R-STOR-027) is the package [internal/blob/scrub](../..
 takes the narrow `JobRun` interface (`*jobs.Run` implements it) so that this infrastructure package does not import the
 domain package `internal/jobs`. The kinds and tasks are registered where both are visible, as
 `jobs.RegisterCoordinationKinds` does for the cluster: the comment at the top of gcjob.go shows the four
-registrations (`gc` and `gc-full`, queue `maintenance`, exclusive, both tasks with dedup key `gc`).
+registrations (`gc` and `gc-full`, queue `maintenance`, exclusive, both tasks with dedup key `gc`). `RunSweepJob` is the body of the
+kind `orphan-sweep`, registered with its task in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go) (queue `maintenance`,
+exclusive under its own name, `Mutating`, schedule `maintenance.tasks.orphan-sweep`, by default `0 5 * * 6`); its handler turns
+`ErrHandedOver` into `jobs.ErrReleased` as the collection's does. The API decodes a trigger's parameters into
+`blob.NewSweepJobArgs(cfg.Storage)` ([wire_api.go](../../internal/app/wire_api.go) `TaskArgs`), whose `Validate` the generic task
+trigger calls ([services.go](../../internal/api/v1/services.go) `decodeTaskParams`): a `minAge` not above twice `commit_deadline` or an
+unknown `connection` answers `422`.
+
+## Orphan sweep (R-STOR-026)
+
+`Collector.Sweep(ctx, SweepOptions{DryRun, MinAge, Connection, Cursor, Checkpoint, Draining})` in [sweep.go](../../internal/blob/sweep.go)
+walks the connections of the worker in list order (or the one named), each from the cursor on, on top of a collection `run`: the claims,
+step (4) per copy, the record, the settle wait and the hand-over at the end are the collector's.
+
+1. **Refusals first.** A `minAge` not above twice `storage.upload.commit_deadline` ends the run before any call. A connection whose
+   circuit is open is skipped (`circuit_open`); one whose marker `<prefix>/_connection` names another connection or installation
+   (`WithInstallation`, set from the system facts in `wireBlob`) is skipped (`foreign_marker`); one whose store fails during the walk is
+   named `unavailable` with what was done, and the walk goes on with the next.
+2. **Foreign keys.** A walk that starts at a connection's beginning lists `<prefix>/` and `<prefix>/sha256/` with the delimiter `/` and
+   reports what lies outside the families of R-STOR-059 (`sha256/`, `_uploads/`, `_probe/`, `_journal/`, the marker) and every entry of
+   `sha256/` that is no two-digit prefix; the log names the first 20 per connection, `foreignKeys` counts them all.
+3. **The 256 prefixes.** Each `<prefix>/sha256/<h0h1>/` is listed in pages of 1,000 (`listAll`, continuation tokens); a name that
+   `ParseKey` refuses is foreign; the others of a page are looked up in one statement (`SweepLookup`: the copy by `(connection_id,
+   object_key)`, the blob by the digest). Then per object (`page`):
+   - a `present` copy whose listed size is not its `stored_size` is marked `corrupt` with a queued repair once a `HeadObject` confirmed the
+     size (`mark`, `markCopy`); a `deleting` copy row of a live blob is a drain's and left;
+   - a live blob without a copy row is adopted (`adopt`) under the mark's lock (`LockBlobForMark`, `SweepAdoptCopy`): `present` and not
+     verified, or `corrupt` with a queued repair when the confirmed size differs; the blob's content state is re-derived; nothing is
+     adopted on a connection with `drain: true` ([Q-STOR-262](../spec/storage.md#q-stor-262--the-sweep-acts-on-evidence-a-listing-alone-does-not-give));
+   - a blob in state `deleting` is collection's or an earlier claim's;
+   - no blob row and `LastModified` older than the cutoff (now minus `minAge`; an object without a time is left): `orphansFound`; then,
+     unless the run is a dry run or saw the pause, `claim` (`SweepClaimOrphan`: a `deleting` blob row with zero digests and the listed size,
+     and the object's copy row `deleting`, in one statement; zero means the row exists and the object is the next run's), and the page's
+     claims go through `deleteObjects` under the hand-over deadline; `orphansDeleted` and `bytesReclaimed` are what that recorded.
+   After each prefix one pass of `finishEligible` drops the rows whose delete has settled, so an upload of such content waits
+   `delete_settle`, not the rest of the walk; the cursor `{connection, prefix}` is saved.
+4. **The staging step** (`staging`, [Q-STOR-263](../spec/storage.md#q-stor-263--the-staging-sweep-moves-from-the-full-collection-to-the-orphan-sweep-per-connection-without-a-cursor-of-its-own)):
+   the multipart uploads below the whole prefix initiated before now minus `storage.orphans.multipart_max_age` are aborted (paged when
+   the store is a `MultipartPager`); below `_uploads/`, a directory that is no canonical session id is foreign, and the objects of a session
+   without a row, over (`done`, `aborted`) or pinned to another connection (`UploadKnownSessions`) are deleted once older than
+   `session_max_age`, as are the leftover objects below `_probe/` (`stagingDeleted`). Then the cursor `{connection, "staging"}`.
+5. **The deletion pause** is read before every prefix (`readPause`): once seen, the run deletes and aborts nothing more, still adopts and
+   marks, saves no further checkpoint and ends with `paused: true`
+   ([Q-STOR-261](../spec/storage.md#q-stor-261--under-the-deletion-pause-the-sweep-walks-on-adopting-and-marking-and-a-resume-starts-where-it-stopped-deleting)).
+6. **The end.** Unless it is a dry run or paused, the settle wait of a collection run; `finalize` records what succeeded and hands the
+   other claims over. The result carries `dryRun`, `paused`, `resumedFrom`, `errors`, one entry per connection walked
+   (`SweepConnectionResult`) and the skipped connections (`SweepSkip{connection, reason}`).
+
+`RunSweepJob(ctx, args, run)` decodes `SweepJobArgs` (`dryRun`, `resume` true by default, `minAge`, `connection`), continues from the
+checkpoint of an earlier attempt of the same job, or, with `resume`, from `SweepResumePoint`: the checkpoint of the latest `orphan-sweep`
+job with the same `connection` and `dryRun` that ended `cancelled`, `failed` or paused, if it ended after the latest one that walked to its
+end. The sweep counts no metric of its own (R-STOR-026 names none): its result is the record. Its end sets `quader_gc_deleting_rows` as a
+collection run's does; `quader_gc_deleted_blobs_total` and `quader_gc_reclaimed_bytes_total` count collection runs only, and a copy it marks
+counts in `quader_storage_copies_damaged_total{connection,status}`.
 
 ## Usage fold (R-STOR-003)
 
@@ -582,7 +658,10 @@ walk, Q-STOR-259).
 | integration | [reconcile_test.go](../../test/integration/blob/reconcile_test.go) | PostgreSQL of the stack with in-memory stores: the catch-up after an open circuit without spent attempts, the fill of a connection added to twenty blobs, the drain with a blob only the first holds, an unverified survivor, the deletion pause, the event, the retirement, and the insert bound (about 3.7 s, four databases, at most twenty objects of 1 KiB) |
 | integration | [connections_s3_test.go](../../test/integration/blob/connections_s3_test.go) | two real buckets of the stack's SeaweedFS: the routing, a server-side and a streamed copy between them, the metadata a cross-bucket copy keeps, a read that falls over and the reconciliation's repair (about 1.1 s, one database, three objects of 1 KiB) |
 | unit | [internal/blob/scrub](../../internal/blob/scrub/scrub_test.go), [internal/api/v1](../../internal/api/v1/storage_damaged_api_test.go), [internal/app](../../internal/app/wire_storage_scrub_test.go) | the scrub with two or three in-memory stores, a fake ledger and a fake clock: a replaced copy marked and repaired, a deleted one with nothing to repair from, a store answering 503 that changes nothing, the throttle (4 KiB at 1 KiB/s take four seconds of the clock), the run's duration, a drain and an open circuit, a run named for one connection, the multipart repair, a read-back that does not match, a damaged source, a draining connection; a copy marked missing read again (whole again, still gone); the recheck; the list and the recheck over HTTP against the document; the audit event of a detection (R-STOR-027) |
-| integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object; the records of the connections against PostgreSQL with in-memory stores ([connections_test.go](../../test/integration/blob/connections_test.go): fixed properties, detached, forget, the bind of the migration's row, the copy and queue rows of a commit and their drop, R-STOR-051, R-STOR-052); the scrub against PostgreSQL with in-memory stores ([scrub_test.go](../../test/integration/blob/scrub_test.go): the repair and its record, a missing blob listed and healed by an upload, the order of the due copies, the overdue gauge, a copy marked missing a day ago read again, the recheck and a stale identity, R-STOR-027) |
+| integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object; the records of the connections against PostgreSQL with in-memory stores ([connections_test.go](../../test/integration/blob/connections_test.go): fixed properties, detached, forget, the bind of the migration's row, the copy and queue rows of a commit and their drop, R-STOR-051, R-STOR-052); the scrub against PostgreSQL with in-memory stores ([scrub_test.go](../../test/integration/blob/scrub_test.go): the repair and its record, a missing blob listed and healed by an upload, the order of the due copies, the overdue gauge, a copy marked missing a day ago read again, the recheck and a stale identity, R-STOR-027); collection per copy with two in-memory stores behind guards ([gc_copies_test.go](../../test/integration/blob/gc_copies_test.go): both copies collected, the release on an open circuit with an upload of the same content meanwhile and the sweep afterwards, a delete of unknown outcome finished by the next run while the reconciliation and the scrub pass over the copy it claimed, every circuit open, the session step per connection; R-STOR-057, R-STOR-054); the orphan sweep ([sweep_test.go](../../test/integration/blob/sweep_test.go): dry run and removal after `min_age`, a foreign name, the adoption and none on a draining connection, a corrupt copy confirmed by a second look, the resume at `7f`, an open circuit, a foreign marker, the deletion pause, the staging step; R-STOR-026) |
+| unit | [internal/blob](../../internal/blob/sweep_test.go), [internal/api/v1](../../internal/api/v1/services_test.go) | the orphan sweep's parameters and their `422`, the refusal of a `minAge` at the bound, the shape of its result and of `copiesReleased` (R-STOR-026, R-STOR-057) |
+| unit | [internal/uploads](../../internal/uploads/connections_test.go) | sessions on their connection with two in-memory stores behind guards and the commit protocol over rows in memory: the first connection recorded, parts and tails there only, the content object there and a queue row for the second; a `503` with `Retry-After` while the connection fails and the same session finishing after it; the move of a session that has written nothing; a start while the first is not writable (R-STOR-054) |
+| integration | [test/integration/uploads](../../test/integration/uploads/uploads_test.go) | the sweep's staging step against the stack's bucket, with a clock ahead of the maximum ages (`TestR_STOR_026_TheSweepRemovesWhatNoSessionStandsForInTheBucket`) |
 
 `make test` runs the unit tier, `make test-integration` the integration tier (`QUADER_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
 unit fake (`fakedb_test.go`) simulates only the table operations the commit protocol and the download path use; the real locking
@@ -601,17 +680,18 @@ Stage 1 of the owner's topic on the stored content ([storage.md](../spec/storage
 R-STOR-063, R-STOR-026, R-STOR-027; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-restore.md](../spec/backup-and-restore.md)
 R-BAK-030; [api-and-ui.md](../spec/api-and-ui.md) R-UI-196, R-UI-197;
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)).
-The sections above describe what is built: packages A and C. The build comes in six packages; each is a whole feature for one builder, the
-directories (or, inside `internal/app` and `internal/api/v1`, the files) of packages that run at the same time are disjoint, and at most
-four run at once. Package A left the hooks of B, C and D in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go),
+The sections above describe what is built: packages A, B, C and D. The build comes in six packages; each is a whole feature for one
+builder, the directories (or, inside `internal/app` and `internal/api/v1`, the files) of packages that run at the same time are disjoint,
+and at most four run at once. Package A left the hooks of B, C and D in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go),
 [wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go) and [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go):
 `register<X>(r *jobs.Registry)`, called by `jobRegistry`, and `wire<X>(ctx, blobArea) error`, called at the end of `wireBlob`; packages C
-and D filled those of the reconciliation and the scrub, B's do nothing yet.
+and D filled those of the reconciliation and the scrub. B's registers the kind and the task `orphan-sweep`; its `wire` has nothing to
+build, the sweep runs on the collector of `wireBlob`.
 
 | Package | After | What it builds | Owns |
 |---|---|---|---|
 | **A · Connections and copies** | — | The configuration (`storage.connections`, `storage.object_store`, `storage.replication`, `storage.reconcile`, `storage.scrub`; `storage.s3` removed) and its validation (R-STOR-050); one client and one guard per connection, the ordered set with its naming function and `Servable` (R-STOR-062); object metadata on the interface, the S3 adapter and `blobtest`; the migrations (`storage_connections`, `blob_copies`, `blob_copy_queue`, `revocation_outbox_shipped`, `upload_sessions.connection_id`; `deep_checked_at` and `blobs_check` dropped); the commit writing copy rows and queue rows (R-STOR-053); reads over the copies (R-STOR-055); the fixed properties, the marker and `forget-connection` (R-STOR-051); the start check and the conformance check per connection with the capabilities (R-STOR-035); the breaker, the metrics with `connection`, readiness and the replica registry's object-store view (R-STOR-060); every size check on `stored_size`; empty registration files for B, C and D in `internal/app` | `internal/config`, `internal/blob` (all files but `gc*.go` and the new packages of B to D), `internal/blob/s3`, `internal/blob/blobtest`, `internal/meta/postgres/migrations` and `queries`, `internal/app/wire_blob.go`, `internal/app/wire_jobs.go`, `internal/cluster/replica_registry.go`, `cmd/quader/admin_storage.go` (`check`) |
-| **B · Sessions, collection, orphan sweep** | A | Sessions on their connection (R-STOR-054); collection per copy with the release (R-STOR-057); the orphan sweep per connection with the adoption (R-STOR-026) | `internal/uploads`, `internal/blob/gc.go`, `gc_uploads.go`, `gcjob.go`, `internal/blob/sweep.go` (new), `internal/app/wire_storage_sweep.go`, `test/integration/blob/gc_*`, `sweep_test.go` |
+| **B · Sessions, collection, orphan sweep** (built) | A | Sessions on their connection (R-STOR-054); collection per copy with the release (R-STOR-057); the orphan sweep per connection with the adoption, the marker's check and the staging step (R-STOR-026); decisions Q-STOR-260 to Q-STOR-264 | `internal/uploads`, `internal/blob/gc.go`, `gc_uploads.go`, `gcjob.go`, `internal/blob/sweep.go` (new), `internal/app/wire_storage_sweep.go`, `test/integration/blob/gc_*`, `sweep_test.go` |
 | **C · Reconciliation** (built) | A | The job with queue, pass, server-side and streamed copies, insert bound, drain, retire, journal pass and its metrics (R-STOR-056); the integration case against two real buckets (R-STOR-063) | `internal/blob/reconcile/` (new), `internal/app/wire_storage_reconcile.go`, `test/integration/blob/reconcile_test.go`, `connections_s3_test.go` |
 | **D · Scrub, damaged blobs, operator commands** (built, [above](#the-scrub-r-stor-027)) | A | The scrub per copy with repair (R-STOR-027); the damaged-blobs API with its two scopes; `admin storage verify` and `restore-versions` per connection (R-STOR-058); the renames that make R-STOR-027's evidence true (Q-STOR-240) | `internal/blob/scrub/` (new), `internal/blob/verify`, `internal/blob/restoreversions`, `internal/app/wire_storage_scrub.go`, `internal/api/v1` (the damaged-blobs files and their paths in `openapi.yaml`), `cmd/quader/admin_storage*.go` (but `check`), `cmd/quader/admin_restoreversions.go`, the five test files that name R-STOR-027, `docs/coverage/implemented.txt`, `test/integration/storageverify` |
 | **E · Chart, backup and restore, journal** | A | The chart's list and Secrets with the refusals and the alerts (R-HA-072, R-HA-045); the backup reading one copy per blob and the restore into the first connection with its fix-up (R-BAK-030); the journal shipped per connection through the guards and replayed from every connection (R-STOR-059); the development profile and the integration stack's `QUADER_STORAGE_CONNECTIONS` | `deploy/helm/quader`, `test/chart`, `deploy/dev`, `test/integration/testenv`, `internal/backup`, `internal/journal`, `internal/app/wire_journal.go`, `internal/app/wire_backup_check.go`, `cmd/quader/backup_*.go`, `admin_postrestore.go`, `admin_backupcheck.go`, `test/integration/backup` |

@@ -1,6 +1,7 @@
 package uploads
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -53,13 +54,12 @@ type ObjectStore = blob.ObjectStore
 type Options struct {
 	// DB runs the service's transactions on the main pool.
 	DB blob.DB
-	// Objects is the client of the connection the sessions start on (Connection).
-	Objects ObjectStore
-	// Connection is the id of the connection the sessions start on and stay on (R-STOR-054); empty is default.
-	Connection string
+	// Connections is the replica's ordered set of object-store connections: a session starts on the first writable one, records it
+	// and stays on it (R-STOR-054).
+	Connections *blob.Connections
 	// Spool holds the segment of a part while it is sent.
 	Spool *blob.Spool
-	// Storage is the storage section: the prefix, the payload checksum, the maximum upload size and storage.uploads.
+	// Storage is the storage section: the maximum upload size, storage.uploads and the circuit breaker's open duration.
 	Storage config.Storage
 	// Metrics counts the sessions by how they ended (quader_storage_upload_sessions_total); nil counts nothing.
 	Metrics *blob.Metrics
@@ -68,16 +68,16 @@ type Options struct {
 
 // Service is the session service of one replica. It holds no state of a session: every call reads the row.
 type Service struct {
-	rows      rows
-	objects   ObjectStore
-	spool     *blob.Spool
-	cfg       config.StorageUploads
-	prefix    string
-	conn      string // the connection the sessions start on
-	algorithm string
-	maxSize   int64
-	log       *slog.Logger
-	metrics   *blob.Metrics
+	rows    rows
+	conns   *blob.Connections
+	spool   *blob.Spool
+	cfg     config.StorageUploads
+	maxSize int64
+	// retry is the Retry-After of a session whose connection this replica does not configure: the circuit's open duration, as for
+	// one whose circuit is open (R-STOR-054).
+	retry   time.Duration
+	log     *slog.Logger
+	metrics *blob.Metrics
 
 	// Fault is a test hook called at named points of a request. A non-nil error ends the request at once as if the process had been
 	// killed there: no release of the claim, no clean-up. The error is returned wrapped in [blob.ErrFault]. A hook may also block,
@@ -87,25 +87,10 @@ type Service struct {
 
 // New builds the service over PostgreSQL.
 func New(o Options) (*Service, error) {
-	if o.DB == nil || o.Objects == nil || o.Spool == nil {
-		return nil, errors.New("uploads: the service needs a database, an object store and a spool")
+	if o.DB == nil || o.Connections == nil || o.Spool == nil {
+		return nil, errors.New("uploads: the service needs a database, the object-store connections and a spool")
 	}
-	return newService(pgRows{db: o.DB, conn: sessionConnection(o).ID}, o), nil
-}
-
-// sessionConnection is the element of the connection the sessions start on (Options.Connection, default when empty), with its
-// defaults (storage.md R-STOR-054).
-func sessionConnection(o Options) config.StorageConnection {
-	id := o.Connection
-	if id == "" {
-		id = config.DefaultConnectionID
-	}
-	for _, c := range o.Storage.Connections {
-		if c = c.WithDefaults(); c.ID == id {
-			return c
-		}
-	}
-	return config.StorageConnection{ID: id}.WithDefaults()
+	return newService(pgRows{db: o.DB}, o), nil
 }
 
 func newService(r rows, o Options) *Service {
@@ -113,15 +98,110 @@ func newService(r rows, o Options) *Service {
 	if log == nil {
 		log = slog.Default()
 	}
-	conn := sessionConnection(o)
-	algorithm := conn.PayloadChecksum
-	if algorithm == "none" {
-		algorithm = ""
-	}
+	retry := max(5*time.Second, (o.Storage.ObjectStore.CircuitBreaker.OpenDuration+time.Second-1)/time.Second*time.Second)
 	return &Service{
-		rows: r, objects: o.Objects, spool: o.Spool, cfg: o.Storage.Uploads, prefix: conn.KeyPrefix(), conn: conn.ID, algorithm: algorithm,
-		maxSize: int64(o.Storage.Upload.MaxSize), log: log, metrics: o.Metrics,
+		rows: r, conns: o.Connections, spool: o.Spool, cfg: o.Storage.Uploads, maxSize: int64(o.Storage.Upload.MaxSize), retry: retry,
+		log: log, metrics: o.Metrics,
 	}
+}
+
+// pin is the connection a session lives on (R-STOR-054): its multipart upload, its tails and the server-side copy of its finalize
+// are there, because a multipart upload exists in one store only and a server-side copy stays inside one.
+type pin struct {
+	conn      *blob.Connection
+	algorithm string // the payload checksum of its writes, empty for none
+}
+
+func pinOf(c *blob.Connection) pin {
+	a := c.PayloadChecksum()
+	if a == "none" {
+		a = ""
+	}
+	return pin{conn: c, algorithm: a}
+}
+
+func (p pin) objects() ObjectStore { return p.conn.Objects() }
+
+func (p pin) dataKey(id uuid.UUID) string {
+	return blob.SessionKey(p.conn.Prefix(), id.String(), "data")
+}
+
+func (p pin) tailKey(id uuid.UUID, writer string) string {
+	return blob.SessionKey(p.conn.Prefix(), id.String(), "tail-"+writer)
+}
+
+// checksumOf is the payload checksum of a segment written to the session's connection (R-STOR-006).
+func (p pin) checksumOf(seg *blob.Spooled) blob.Checksum {
+	switch p.algorithm {
+	case "sha256":
+		return blob.Checksum{Algorithm: "sha256", Value: bytes.Clone(seg.SHA256[:])}
+	case "md5":
+		return blob.Checksum{Algorithm: "md5", Value: bytes.Clone(seg.MD5[:])}
+	}
+	return blob.Checksum{}
+}
+
+// unreachable is the answer to a request of a session whose connection cannot be asked (R-STOR-054): 503 with the Retry-After of the
+// connection's circuit; the session stays as it is, and a client that keeps retrying continues once the connection is back.
+func unreachable(conn string, after time.Duration) error {
+	return errs.E(errs.Unavailable, errs.CodeObjectStoreUnavail,
+		"The object-store connection of this upload is unavailable; retry, or start the upload again.", errs.WithRetryAfter(after),
+		errs.WithCause(fmt.Errorf("the connection %q of the upload session is not writable on this replica", conn)))
+}
+
+// connection is the connection of a session that a request may use now: configured on this replica and its circuit closed; else the
+// 503 of unreachable.
+func (s *Service) connection(r row) (pin, error) {
+	c, ok := s.conns.Get(r.Conn)
+	if !ok {
+		return pin{}, unreachable(r.Conn, s.retry)
+	}
+	if after, rejecting := c.Rejecting(); rejecting {
+		return pin{}, unreachable(r.Conn, after)
+	}
+	return pinOf(c), nil
+}
+
+// writable is the connection a request that holds the claim writes to: the session's, or, for a session that has not written an
+// object yet whose connection is not writable, the first writable one, to which the session moves (R-STOR-054). r is updated.
+func (s *Service) writable(ctx context.Context, r *row, writer string) (pin, error) {
+	p, err := s.connection(*r)
+	if r.Received != 0 || r.UploadID != "" || len(r.Tails) != 0 {
+		// a session that has written stays where its objects are, also on a connection that drains meanwhile, and waits while that
+		// connection cannot be asked
+		return p, err
+	}
+	if err == nil && !p.conn.Drain() {
+		return p, nil
+	}
+	next := s.conns.Writable()
+	if len(next) == 0 {
+		if err == nil {
+			err = unreachable(r.Conn, s.retry) // its connection drains and no other takes uploads now
+		}
+		return pin{}, err
+	}
+	rctx, cancel := recordCtx(ctx)
+	merr := s.rows.move(rctx, r.ID, writer, next[0].ID())
+	cancel()
+	if merr != nil {
+		return pin{}, merr
+	}
+	s.log.Info("an upload session moves to another connection before its first write", "session", r.ID, "from", r.Conn, "to", next[0].ID())
+	r.Conn = next[0].ID()
+	return pinOf(next[0]), nil
+}
+
+// startConnection is the connection a session starts on: the first writable one, or, when none is writable, the first that takes
+// uploads at all, which the session leaves at its first write if it is still not writable then (R-STOR-054). A start touches no store.
+func (s *Service) startConnection() string {
+	if w := s.conns.Writable(); len(w) > 0 {
+		return w[0].ID()
+	}
+	if t := s.conns.Targets(); len(t) > 0 {
+		return t[0].ID()
+	}
+	return s.conns.First().ID()
 }
 
 // PartSize is the size of the parts a session started now cuts the blob into (storage.uploads.part_size).
@@ -150,12 +230,6 @@ func (s *Service) fault(point string) error {
 		return fmt.Errorf("%w at %s: %w", blob.ErrFault, point, err)
 	}
 	return nil
-}
-
-func (s *Service) dataKey(id uuid.UUID) string { return blob.SessionKey(s.prefix, id.String(), "data") }
-
-func (s *Service) tailKey(id uuid.UUID, writer string) string {
-	return blob.SessionKey(s.prefix, id.String(), "tail-"+writer)
 }
 
 // canonicalPrincipal is the stored form of a principal id: the lower-case UUID text, empty for none.
@@ -193,7 +267,7 @@ func (s *Service) Start(ctx context.Context, target int64, sc Scope) (Session, e
 	// is started and never continued leaves nothing for the store to keep (Q-STOR-174).
 	r := row{
 		ID: uuid.New(), RepoID: target, AddressedID: sc.Addressed, Binding: sc.Binding, Principal: principal, HashState: hs,
-		PartSize: s.PartSize(), State: StateOpen,
+		PartSize: s.PartSize(), State: StateOpen, Conn: s.startConnection(),
 	}
 	started, err := s.rows.insert(ctx, r, s.cfg.MaxOpenSessions)
 	if err != nil {
@@ -291,12 +365,18 @@ func (s *Service) Abort(ctx context.Context, id uuid.UUID, sc Scope) error {
 	return nil
 }
 
-// cleanup removes the staging objects of a session that is over, with a context of its own because the request's may be what
-// ended. A failure is logged: the collection run removes what is left (R-STOR-011 Expiry).
+// cleanup removes the staging objects of a session that is over from its connection, with a context of its own because the request's
+// may be what ended. A failure, and a connection that cannot be asked, is logged: the collection run removes what is left (R-STOR-011
+// Expiry, R-STOR-054).
 func (s *Service) cleanup(ctx context.Context, r row) bool {
+	p, err := s.connection(r)
+	if err != nil {
+		s.log.Warn("the connection of an ended upload session cannot be asked; the collection run removes its objects", "session", r.ID, "connection", r.Conn)
+		return false
+	}
 	cctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
-	if err := blob.RemoveSession(cctx, s.objects, s.prefix, r.ID.String(), r.UploadID); err != nil {
+	if err := blob.RemoveSession(cctx, p.objects(), p.conn.Prefix(), r.ID.String(), r.UploadID); err != nil {
 		s.log.Warn("could not remove the staging objects of an upload session; the collection run will", "session", r.ID, "error", err)
 		return false
 	}

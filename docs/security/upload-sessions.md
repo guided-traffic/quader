@@ -106,11 +106,15 @@ object ([H-591](#h-591--the-staging-object-is-copied-without-being-read-back)).
 The run (R-STOR-025) aborts the sessions without a recorded request for `storage.uploads.session_ttl` and the open ones older than
 `storage.uploads.session_max_age`, removes the multipart upload and the objects of the aborted sessions that the request which ended them did not already clean and, once the replay window of a repeated closing request (15 minutes) has passed, of the finished ones, and then their rows; a session that staged nothing, or whose request removed the objects, is deleted in bulk without a call to the store
 ([gc_uploads.go](../../internal/blob/gc_uploads.go), [Q-STOR-170](../spec/storage.md#q-stor-170--the-collection-run-aborts-a-live-session-for-its-idle-time-and-an-open-one-for-its-age)).
-A full sweep also removes what no session row stands for, if it is older than `session_max_age`
-([Q-STOR-172](../spec/storage.md#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own)):
-the objects and multipart uploads of an id without a row, and the multipart upload of a session that is over or whose upload is another.
-A directory below `_uploads/` that is not a UUID in its canonical form (lower case, hyphenated) is logged and never deleted. The expiry and the cleaning each have a time budget of two minutes per run; the sweep takes at most 25 pages per run, lists the staging area in pages, saves where it stopped so that the next run goes on from there, and re-reads the deletion pause before every batch: while it is set nothing
-is aborted or removed. Every request checks the age at its claim, and the renewals before the tail is read and before each part refuse a session past it, so a session cannot be continued past `session_max_age` (by more than the request that is running) however long the runs are delayed or paused.
+Each session's objects are removed on the session's own connection (R-STOR-054); a session whose connection cannot be asked keeps its row
+until it answers, unless it is older than `session_max_age`, when the row goes and the orphan sweep removes its objects there.
+The orphan sweep (R-STOR-026, weekly by default) removes, on every connection, what no live session of that connection stands for once it
+is older than `session_max_age`, and aborts every multipart upload below the connection's prefix older than
+`storage.orphans.multipart_max_age`
+([Q-STOR-263](../spec/storage.md#q-stor-263--the-staging-sweep-moves-from-the-full-collection-to-the-orphan-sweep-per-connection-without-a-cursor-of-its-own)):
+the objects of an id without a row, of a session that is over, and of a session pinned to another connection.
+A directory below `_uploads/` that is not a UUID in its canonical form (lower case, hyphenated) is reported and never deleted. The expiry and the cleaning each have a time budget of two minutes per run and re-read the deletion pause before every batch: while it is set nothing
+is aborted or removed, and the sweep deletes and aborts nothing either. Every request checks the age at its claim, and the renewals before the tail is read and before each part refuse a session past it, so a session cannot be continued past `session_max_age` (by more than the request that is running) however long the runs are delayed or paused.
 
 `session_max_age` is below `storage.orphans.multipart_max_age`, and startup refuses a configuration where it is not
 ([config/storage.go](../../internal/config/storage.go)); it refuses `writer_lease` at or above `session_ttl` as well, which would let the
@@ -177,13 +181,13 @@ job is not in this gap: its session and its cap are keyed on its token, which ea
 endpoint allows anonymous writes; live where it does. The same anonymous caller could push the same bytes under its own session anyway,
 and could fill the repository with them.
 
-### H-593 · The staged bytes of a deleted repository's sessions outlive it until the next full sweep
+### H-593 · The staged bytes of a deleted repository's sessions outlive it until the next orphan sweep
 
-Component: `upload_sessions.repo_id` and `addressed_repo_id` with `ON DELETE CASCADE`, and the full sweep of the collection run. Subject: the
-operator. Deleting a repository deletes the rows of its sessions with it; the multipart upload and the objects they staged have no row any
-more and are removed by the next full sweep (`gc-full`, weekly by default) once they are older than `session_max_age`. Until then the
-bucket holds up to the staged bytes of the sessions that were open. Live for every installation that deletes a repository with open
-sessions.
+Component: `upload_sessions.repo_id` and `addressed_repo_id` with `ON DELETE CASCADE`, and the staging step of the orphan sweep
+(R-STOR-026). Subject: the operator. Deleting a repository deletes the rows of its sessions with it; the objects they staged have no row
+any more and are removed by the next orphan sweep (`orphan-sweep`, weekly by default) on each session's connection once they are older
+than `session_max_age`, their multipart uploads once older than `storage.orphans.multipart_max_age`. Until then the bucket holds up to the
+staged bytes of the sessions that were open. Live for every installation that deletes a repository with open sessions.
 
 ### H-594 · A merge of the tail segments reads up to a part for the bytes of one request
 

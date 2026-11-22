@@ -13991,7 +13991,7 @@ type TaskList struct {
 // TaskName defines model for TaskName.
 type TaskName = string
 
-// TaskRunRequest The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`).
+// TaskRunRequest The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`, the orphan sweep `orphan-sweep` takes `dryRun`, `resume`, `minAge` and `connection`).
 type TaskRunRequest map[string]interface{}
 
 // TechnicalToken A technical token (R-AUTH-045): a named line of `qdr_sat_` secrets of a service account with a stable ID, the subject of its

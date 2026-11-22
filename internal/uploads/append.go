@@ -70,7 +70,12 @@ func (s *Service) Append(ctx context.Context, id uuid.UUID, sc Scope, offset int
 	}
 
 	st := &streamState{received: r.Received}
-	res, err := s.stream(ctx, r, writer, body, limit, st)
+	p, err := s.writable(ctx, &r, writer)
+	if err != nil {
+		held = !errors.Is(err, errLostClaim)
+		return s.failed(ctx, r, st, err)
+	}
+	res, err := s.stream(ctx, p, r, writer, body, limit, st)
 	if err != nil {
 		held = !errors.Is(err, errLostClaim)
 		return s.failed(ctx, r, st, err)
@@ -89,12 +94,12 @@ func (s *Service) Append(ctx context.Context, id uuid.UUID, sc Scope, offset int
 		held = !lost
 		if lost { // certainly not recorded: the tail object this request wrote is the only thing that refers to it. Any other error may
 			// be a COMMIT that landed, and the object is then the recorded one: it is left to the end of the session.
-			s.removeObjects(ctx, res.newObjects)
+			s.removeObjects(ctx, p, res.newObjects)
 		}
 		return s.failed(ctx, r, st, err)
 	}
 	held = false
-	s.removeObjects(ctx, res.oldObjects)
+	s.removeObjects(ctx, p, res.oldObjects)
 	return res.e.Received, nil
 }
 
@@ -188,7 +193,7 @@ type streamed struct {
 // segments (which are read here, once), sent as the next part and recorded; whatever the body leaves, fewer bytes than are missing for
 // a part, is written as one more tail segment and nothing is read back. Each byte is therefore written once and read once, and the
 // spool holds no more than the request's own bytes plus the tail of the part it completes.
-func (s *Service) stream(ctx context.Context, r row, writer string, body io.Reader, limit int64, st *streamState) (streamed, error) {
+func (s *Service) stream(ctx context.Context, p pin, r row, writer string, body io.Reader, limit int64, st *streamState) (streamed, error) {
 	h, err := restoreHashes(r.HashState)
 	if err != nil {
 		return streamed{}, errs.E(errs.Internal, errs.CodeInternal, "The upload session has no valid hash state.", errs.WithCause(err))
@@ -228,11 +233,11 @@ func (s *Service) stream(ctx context.Context, r row, writer string, body io.Read
 			if !changed {
 				return unchanged, nil
 			}
-			return s.endOfBody(ctx, r, writer, h, seg, tails, tailSize)
+			return s.endOfBody(ctx, p, r, writer, h, seg, tails, tailSize)
 		}
 		changed = true
 		if seg.Size < room {
-			return s.endOfBody(ctx, r, writer, h, seg, tails, tailSize)
+			return s.endOfBody(ctx, p, r, writer, h, seg, tails, tailSize)
 		}
 
 		// the segment completes a part
@@ -242,7 +247,7 @@ func (s *Service) stream(ctx context.Context, r row, writer string, body io.Read
 		}
 		part := seg
 		if len(tails) > 0 {
-			joined, jerr := s.joinTails(ctx, r, tails, seg, s.renewer(r.ID, writer))
+			joined, jerr := s.joinTails(ctx, p, r, tails, seg, s.renewer(r.ID, writer))
 			_ = seg.Close()
 			if jerr != nil {
 				if errors.Is(jerr, errTailGone) {
@@ -252,7 +257,7 @@ func (s *Service) stream(ctx context.Context, r row, writer string, body io.Read
 			}
 			part = joined
 		}
-		p, created, serr := s.sendPart(ctx, r.ID, uploadID, number, part, s.renewer(r.ID, writer))
+		pt, created, serr := s.sendPart(ctx, p, r.ID, uploadID, number, part, s.renewer(r.ID, writer))
 		_ = part.Close()
 		if serr != nil {
 			return streamed{}, serr
@@ -265,11 +270,11 @@ func (s *Service) stream(ctx context.Context, r row, writer string, body io.Read
 			return streamed{}, errs.E(errs.Internal, errs.CodeInternal, "", errs.WithCause(merr))
 		}
 		rctx, cancel := recordCtx(ctx)
-		err = s.rows.recordPart(rctx, r.ID, writer, h.n, hs, s.cfg.WriterLease, p, created)
+		err = s.rows.recordPart(rctx, r.ID, writer, h.n, hs, s.cfg.WriterLease, pt, created)
 		cancel()
 		if err != nil {
 			if errors.Is(err, errLostClaim) { // certainly not recorded: the upload this request created belongs to nobody
-				s.abortUpload(ctx, r.ID, created)
+				s.abortUpload(ctx, p, r.ID, created)
 			}
 			return streamed{}, err
 		}
@@ -280,7 +285,7 @@ func (s *Service) stream(ctx context.Context, r row, writer string, body io.Read
 		number++
 		// the recorded tail is inside the part now
 		for _, t := range tails {
-			s.removeObject(ctx, s.tailKey(r.ID, t.Writer))
+			s.removeObject(ctx, p, p.tailKey(r.ID, t.Writer))
 		}
 		tails, tailSize = nil, 0
 	}
@@ -288,7 +293,7 @@ func (s *Service) stream(ctx context.Context, r row, writer string, body io.Read
 
 // endOfBody writes what the body left as one more tail segment (step 4), or, when the tail has as many segments as it may, merges the
 // tail and the bytes into one segment. seg may be empty: the body ended at a part boundary. The record is the caller's.
-func (s *Service) endOfBody(ctx context.Context, r row, writer string, h *hashes, seg *blob.Spooled, tails []tailSeg, tailSize int64) (streamed, error) {
+func (s *Service) endOfBody(ctx context.Context, p pin, r row, writer string, h *hashes, seg *blob.Spooled, tails []tailSeg, tailSize int64) (streamed, error) {
 	defer seg.Close()
 	if err := s.fault("append.body_ended"); err != nil {
 		return streamed{}, err
@@ -299,14 +304,14 @@ func (s *Service) endOfBody(ctx context.Context, r row, writer string, h *hashes
 	}
 	out := streamed{h: h, changed: true, e: end{Received: h.n, HashState: hs, TailSize: tailSize}}
 	if seg.Size > 0 {
-		key := s.tailKey(r.ID, writer)
+		key := p.tailKey(r.ID, writer)
 		write, next := seg, 1
 		if n := len(tails); n < maxTailSegments {
 			if n > 0 {
 				next = tails[n-1].Seq + 1
 			}
 		} else {
-			merged, jerr := s.joinTails(ctx, r, tails, seg, s.renewer(r.ID, writer))
+			merged, jerr := s.joinTails(ctx, p, r, tails, seg, s.renewer(r.ID, writer))
 			if jerr != nil {
 				if errors.Is(jerr, errTailGone) {
 					jerr = s.tailLost(ctx, r, jerr)
@@ -317,10 +322,10 @@ func (s *Service) endOfBody(ctx context.Context, r row, writer string, h *hashes
 			write = merged
 			out.e.ReplaceTails = true
 			for _, t := range tails {
-				out.oldObjects = append(out.oldObjects, s.tailKey(r.ID, t.Writer))
+				out.oldObjects = append(out.oldObjects, p.tailKey(r.ID, t.Writer))
 			}
 		}
-		if err := s.objects.Put(ctx, key, write.Reader(), write.Size, s.checksumOf(write), nil); err != nil {
+		if err := p.objects().Put(ctx, key, write.Reader(), write.Size, p.checksumOf(write), nil); err != nil {
 			return streamed{}, blob.MapStoreError(err)
 		}
 		out.newObjects = []string{key}
@@ -339,7 +344,7 @@ func (s *Service) endOfBody(ctx context.Context, r row, writer string, h *hashes
 
 // joinTails reads the recorded tail segments, each checked against its size and SHA-256, followed by extra (which may be nil), into
 // one spooled body of at most a part. It is the only place the segments are read.
-func (s *Service) joinTails(ctx context.Context, r row, tails []tailSeg, extra *blob.Spooled, renew func(context.Context) error) (*blob.Spooled, error) {
+func (s *Service) joinTails(ctx context.Context, p pin, r row, tails []tailSeg, extra *blob.Spooled, renew func(context.Context) error) (*blob.Spooled, error) {
 	// The claim is extended before the segments are read: a request whose body arrived slowly may have lost it, and the request that took
 	// the session may have removed the segments since (they are inside the part it completed). Such a request must stop with errLostClaim,
 	// never conclude that the session is damaged.
@@ -348,7 +353,7 @@ func (s *Service) joinTails(ctx context.Context, r row, tails []tailSeg, extra *
 			return nil, err
 		}
 	}
-	src := &segReader{ctx: ctx, s: s, id: r.ID, tails: tails}
+	src := &segReader{ctx: ctx, p: p, id: r.ID, tails: tails}
 	defer src.Close()
 	var body io.Reader
 	if extra != nil {
@@ -389,17 +394,6 @@ func extraSize(b *blob.Spooled) int64 {
 	return b.Size
 }
 
-// checksumOf is the payload checksum of a segment (R-STOR-006).
-func (s *Service) checksumOf(seg *blob.Spooled) blob.Checksum {
-	switch s.algorithm {
-	case "sha256":
-		return blob.Checksum{Algorithm: "sha256", Value: bytes.Clone(seg.SHA256[:])}
-	case "md5":
-		return blob.Checksum{Algorithm: "md5", Value: bytes.Clone(seg.MD5[:])}
-	}
-	return blob.Checksum{}
-}
-
 // partDeadline is the longest a part upload may take: below the lease the claim was renewed to right before, so that no upload of a
 // part outlives the claim it was started under (a stale writer's part would otherwise land after the recorded one).
 func (s *Service) partDeadline() time.Duration { return s.cfg.WriterLease - s.cfg.WriterLease/4 }
@@ -407,7 +401,7 @@ func (s *Service) partDeadline() time.Duration { return s.cfg.WriterLease - s.cf
 // sendPart sends a full segment as the part with the given number. The multipart upload is created here, with the first part, and its
 // id returned as created for the record. With renew the claim is extended right before the upload, and a request that lost it sends
 // nothing (errLostClaim); a finalize that took the short claim of its step has just done that.
-func (s *Service) sendPart(ctx context.Context, id uuid.UUID, uploadID string, number int, seg *blob.Spooled, renew func(context.Context) error) (p part, created string, err error) {
+func (s *Service) sendPart(ctx context.Context, p pin, id uuid.UUID, uploadID string, number int, seg *blob.Spooled, renew func(context.Context) error) (sent part, created string, err error) {
 	// The claim is checked before anything is created: a request that lost it creates no upload that nobody would record or abort.
 	if renew != nil {
 		if err := renew(ctx); err != nil {
@@ -415,14 +409,14 @@ func (s *Service) sendPart(ctx context.Context, id uuid.UUID, uploadID string, n
 		}
 	}
 	if uploadID == "" {
-		created, err = s.objects.CreateMultipart(ctx, s.dataKey(id), s.algorithm, nil)
+		created, err = p.objects().CreateMultipart(ctx, p.dataKey(id), p.algorithm, nil)
 		if err != nil {
 			return part{}, "", blob.MapStoreError(err)
 		}
 		uploadID = created
 		defer func() {
 			if err != nil { // nothing records the upload that was just created: it is aborted here, the sweep is the second line
-				s.abortUpload(ctx, id, created)
+				s.abortUpload(ctx, p, id, created)
 				created = ""
 			}
 		}()
@@ -434,7 +428,7 @@ func (s *Service) sendPart(ctx context.Context, id uuid.UUID, uploadID string, n
 	}
 	pctx, cancel := context.WithTimeout(ctx, s.partDeadline())
 	defer cancel()
-	up, err := s.objects.UploadPart(pctx, s.dataKey(id), uploadID, number, seg.Reader(), seg.Size, s.checksumOf(seg))
+	up, err := p.objects().UploadPart(pctx, p.dataKey(id), uploadID, number, seg.Reader(), seg.Size, p.checksumOf(seg))
 	if err != nil {
 		return part{}, "", blob.MapStoreError(err)
 	}
@@ -442,13 +436,13 @@ func (s *Service) sendPart(ctx context.Context, id uuid.UUID, uploadID string, n
 }
 
 // abortUpload aborts a multipart upload of the session that no record names, with a context of its own.
-func (s *Service) abortUpload(ctx context.Context, id uuid.UUID, uploadID string) {
+func (s *Service) abortUpload(ctx context.Context, p pin, id uuid.UUID, uploadID string) {
 	if uploadID == "" {
 		return
 	}
 	actx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
-	if err := s.objects.AbortMultipart(actx, s.dataKey(id), uploadID); err != nil && !blob.IsNoSuchUpload(err) {
+	if err := p.objects().AbortMultipart(actx, p.dataKey(id), uploadID); err != nil && !blob.IsNoSuchUpload(err) {
 		s.log.Warn("could not abort a multipart upload that no session records; the sweep will", "session", id, "error", err)
 	}
 }
@@ -470,20 +464,20 @@ func (s *Service) completingRenewer(id uuid.UUID, writer string) func(context.Co
 }
 
 // removeObject deletes a staging object after the record that makes it unnecessary; a failure is left to the collection run.
-func (s *Service) removeObject(ctx context.Context, key string) {
+func (s *Service) removeObject(ctx context.Context, p pin, key string) {
 	if key == "" {
 		return
 	}
 	dctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
-	if err := s.objects.Delete(dctx, key); err != nil {
+	if err := p.objects().Delete(dctx, key); err != nil {
 		s.log.Warn("could not delete a superseded staging object; the collection run will", "key", key, "error", err)
 	}
 }
 
-func (s *Service) removeObjects(ctx context.Context, keys []string) {
+func (s *Service) removeObjects(ctx context.Context, p pin, keys []string) {
 	for _, k := range keys {
-		s.removeObject(ctx, k)
+		s.removeObject(ctx, p, k)
 	}
 }
 
@@ -520,7 +514,7 @@ func (t *tailReader) Read(p []byte) (int, error) {
 // segReader reads the tail segments one after the other, opening each object when the one before it has ended.
 type segReader struct {
 	ctx   context.Context
-	s     *Service
+	p     pin
 	id    uuid.UUID
 	tails []tailSeg
 	cur   *tailReader
@@ -535,7 +529,7 @@ func (g *segReader) Read(p []byte) (int, error) {
 			}
 			t := g.tails[0]
 			g.tails = g.tails[1:]
-			rc, _, err := g.s.objects.Get(g.ctx, g.s.tailKey(g.id, t.Writer), nil)
+			rc, _, err := g.p.objects().Get(g.ctx, g.p.tailKey(g.id, t.Writer), nil)
 			if err != nil {
 				if errors.Is(err, blob.ErrNotFound) {
 					return 0, errTailGone

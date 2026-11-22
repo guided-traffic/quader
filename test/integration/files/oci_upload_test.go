@@ -119,7 +119,7 @@ func (f *uploadFixture) addReplica(t *testing.T, name string, i int) {
 			}
 			cfg := f.e.s3.cfg
 			cfg.Uploads.PartSize = partSize
-			svc, err := uploads.New(uploads.Options{DB: r.db, Objects: r.obj, Spool: r.blobs.Spool(), Storage: cfg, Log: quiet})
+			svc, err := uploads.New(uploads.Options{DB: r.db, Connections: r.blobs.Connections(), Spool: r.blobs.Spool(), Storage: cfg, Log: quiet})
 			if err != nil {
 				t.Fatal(err)
 			}

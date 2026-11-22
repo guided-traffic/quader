@@ -146,7 +146,7 @@ func newInstall(t *testing.T) *install {
 	if err := in.store.RecordConnections(ctx); err != nil {
 		t.Fatal(err)
 	}
-	in.coll = blob.NewCollector(storage.GC, in.s3cfg.Prefix, in.obj, in.web, blob.WithCollectorLogger(quiet))
+	in.coll = blob.NewCollector(storage, conns, in.web, blob.WithCollectorLogger(quiet))
 	return in
 }
 

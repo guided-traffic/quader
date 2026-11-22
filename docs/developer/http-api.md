@@ -532,7 +532,8 @@ share one database and one Valkey.
 - **Tasks** ([tasks_api.go](../../internal/api/v1/tasks_api.go)): `jobs.Registry.ResolveTasks` merges the registered tasks with
   `maintenance.tasks`. A manual-only task (`jobs.TaskSpec.ManualOnly`) has no schedule and no `maintenance.tasks` entry
   (an entry stops start-up and names the key). `POST …/run` checks the optional parameters against the type the task
-  declares in `Services.TaskArgs` (`blob.GCJobArgs` for `gc` and `gc-full`), enqueues in a transaction with the
+  declares in `Services.TaskArgs` (`blob.GCJobArgs` for `gc` and `gc-full`, `blob.NewSweepJobArgs` for `orphan-sweep`) and, when that type
+  has a `Validate` method, its bounds (a `422` with the field, the orphan sweep's `minAge` and `connection`), enqueues in a transaction with the
   `system.task_triggered` event, and answers `409` with the existing job when the exclusive key (`gc` for both collection
   tasks) is held. A `web` replica only enqueues; the integration test `TestGarbageCollectionTrigger` shows the run on the
   `worker`.

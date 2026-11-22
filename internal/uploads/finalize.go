@@ -94,8 +94,15 @@ func (s *Service) closeOpen(ctx context.Context, r row, sc Scope, offset int64, 
 		return row{}, err
 	}
 	st := &streamState{received: r.Received}
+	p, err := s.writable(ctx, &r, writer)
+	if err != nil {
+		held = !errors.Is(err, errLostClaim)
+		var rcv int64
+		rcv, err = s.failed(ctx, r, st, err)
+		return row{Received: rcv}, err
+	}
 	var res streamed
-	res, err = s.stream(ctx, r, writer, last, limit, st)
+	res, err = s.stream(ctx, p, r, writer, last, limit, st)
 	if err != nil {
 		held = !errors.Is(err, errLostClaim)
 		var rcv int64
@@ -117,14 +124,14 @@ func (s *Service) closeOpen(ctx context.Context, r row, sc Scope, offset int64, 
 		lost := errors.Is(err, errLostClaim)
 		held = !lost
 		if lost { // see Append: only a record that certainly failed lets the request delete what it wrote
-			s.removeObjects(ctx, res.newObjects)
+			s.removeObjects(ctx, p, res.newObjects)
 		}
 		var rcv int64
 		rcv, err = s.failed(ctx, r, st, err)
 		return row{Received: rcv}, err // the count the 416 of a lost claim reports
 	}
 	held = false
-	s.removeObjects(ctx, res.oldObjects)
+	s.removeObjects(ctx, p, res.oldObjects)
 	if !match {
 		return row{}, digestInvalid()
 	}
@@ -142,9 +149,15 @@ func (s *Service) closeOpen(ctx context.Context, r row, sc Scope, offset int64, 
 }
 
 // complete runs the steps after the digest was recorded: the staging object (completing), the commit (assembled), the removal of
-// the staging objects (done). Each is recorded before the next starts and each is idempotent (R-STOR-011 Finalize).
+// the staging objects (done). Each is recorded before the next starts and each is idempotent (R-STOR-011 Finalize). Every step runs on
+// the session's connection, and the commit's object write is the server-side copy there (R-STOR-054); while that connection cannot
+// be asked the finalize answers 503 and the session stays as it is.
 func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Result, error) {
-	key, r, err := s.assemble(ctx, r)
+	p, err := s.connection(r)
+	if err != nil {
+		return Result{}, err
+	}
+	key, r, err := s.assemble(ctx, p, r)
 	if errors.Is(err, errDone) {
 		// another request of this finalize committed; a continuation that put objects after its cleanup (a merge of segments) removes them
 		if s.cleanup(ctx, r) {
@@ -168,7 +181,7 @@ func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Resul
 		item = itemID
 		return s.rows.markDone(ctx, tx, r.ID, itemID)
 	}
-	switch err = commit(ctx, blob.Staged(s.conn, d, key), markDone); {
+	switch err = commit(ctx, blob.Staged(p.conn.ID(), d, key), markDone); {
 	case err == nil:
 	case errors.Is(err, errAborted):
 		return Result{}, unknown()
@@ -203,10 +216,10 @@ func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Resul
 
 // assemble brings a completing session to assembled and returns the key of its staging object (step 2 of a finalize). An assembled
 // session already has one; a session that is done is errDone, with the row.
-func (s *Service) assemble(ctx context.Context, r row) (string, row, error) {
+func (s *Service) assemble(ctx context.Context, p pin, r row) (string, row, error) {
 	for range 3 {
 		if r.State == StateCompleting {
-			err := s.completeUpload(ctx, r)
+			err := s.completeUpload(ctx, p, r)
 			if errors.Is(err, errStale) {
 				cur, found, gerr := s.rows.get(ctx, r.ID, s.cfg.SessionMaxAge)
 				if gerr != nil {
@@ -247,9 +260,9 @@ func (s *Service) assemble(ctx context.Context, r row) (string, row, error) {
 			return "", row{}, err
 		}
 		if len(parts) == 0 && len(r.Tails) == 1 {
-			return s.tailKey(r.ID, r.Tails[0].Writer), r, nil // a blob of less than one part is its single tail segment
+			return p.tailKey(r.ID, r.Tails[0].Writer), r, nil // a blob of less than one part is its single tail segment
 		}
-		return s.dataKey(r.ID), r, nil
+		return p.dataKey(r.ID), r, nil
 	}
 	return "", row{}, errs.E(errs.Unavailable, errs.CodeUnavailable, "The upload could not be completed; retry.", errs.WithRetryAfter(2*time.Second))
 }
@@ -257,7 +270,7 @@ func (s *Service) assemble(ctx context.Context, r row) (string, row, error) {
 // completeUpload is the state completing: the tail becomes the last part and the multipart upload is completed; a blob of less
 // than one part has no multipart upload, and its single tail segment, or the merge of its segments, or an empty object, is the
 // staging object.
-func (s *Service) completeUpload(ctx context.Context, r row) error {
+func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 	if err := s.fault("finalize.completing"); err != nil {
 		return err
 	}
@@ -266,10 +279,10 @@ func (s *Service) completeUpload(ctx context.Context, r row) error {
 		return err
 	}
 	if len(parts) == 0 {
-		return s.completeSmall(ctx, r)
+		return s.completeSmall(ctx, p, r)
 	}
 	if r.TailSize > 0 {
-		if r, err = s.tailAsPart(ctx, r); err != nil {
+		if r, err = s.tailAsPart(ctx, p, r); err != nil {
 			return err
 		}
 		if parts, err = s.rows.parts(ctx, r.ID); err != nil {
@@ -277,13 +290,13 @@ func (s *Service) completeUpload(ctx context.Context, r row) error {
 		}
 	}
 	cp := make([]blob.Part, len(parts))
-	for i, p := range parts {
-		cp[i] = blob.Part{Number: p.Number, ETag: p.ETag, Size: p.Size}
-		if s.algorithm == "sha256" {
-			cp[i].Checksum = blob.Checksum{Algorithm: "sha256", Value: p.SHA256}
+	for i, pt := range parts {
+		cp[i] = blob.Part{Number: pt.Number, ETag: pt.ETag, Size: pt.Size}
+		if p.algorithm == "sha256" {
+			cp[i].Checksum = blob.Checksum{Algorithm: "sha256", Value: pt.SHA256}
 		}
 	}
-	err = s.objects.CompleteMultipart(ctx, s.dataKey(r.ID), r.UploadID, cp)
+	err = p.objects().CompleteMultipart(ctx, p.dataKey(r.ID), r.UploadID, cp)
 	switch {
 	case err == nil:
 	case blob.IsNoSuchUpload(err):
@@ -303,7 +316,7 @@ func (s *Service) completeUpload(ctx context.Context, r row) error {
 	default:
 		return blob.MapStoreError(err)
 	}
-	info, err := s.objects.Head(ctx, s.dataKey(r.ID))
+	info, err := p.objects().Head(ctx, p.dataKey(r.ID))
 	if err != nil {
 		if !errors.Is(err, blob.ErrNotFound) {
 			return blob.MapStoreError(err)
@@ -326,10 +339,10 @@ func (s *Service) completeUpload(ctx context.Context, r row) error {
 
 // completeSmall prepares the staging object of a blob that has no part: nothing (one segment is the object), the merge of several
 // segments, or an empty object.
-func (s *Service) completeSmall(ctx context.Context, r row) error {
+func (s *Service) completeSmall(ctx context.Context, p pin, r row) error {
 	if r.UploadID != "" {
 		// an upload that was created and never recorded is not this session's; one that was recorded has a part
-		if err := s.objects.AbortMultipart(ctx, s.dataKey(r.ID), r.UploadID); err != nil && !blob.IsNoSuchUpload(err) {
+		if err := p.objects().AbortMultipart(ctx, p.dataKey(r.ID), r.UploadID); err != nil && !blob.IsNoSuchUpload(err) {
 			return blob.MapStoreError(err)
 		}
 	}
@@ -339,12 +352,12 @@ func (s *Service) completeSmall(ctx context.Context, r row) error {
 	case 0:
 		empty := sha256.Sum256(nil)
 		var sum blob.Checksum
-		if s.algorithm == "sha256" {
+		if p.algorithm == "sha256" {
 			sum = blob.Checksum{Algorithm: "sha256", Value: empty[:]}
 		}
-		return blob.MapStoreError(s.objects.Put(ctx, s.dataKey(r.ID), bytes.NewReader(nil), 0, sum, nil))
+		return blob.MapStoreError(p.objects().Put(ctx, p.dataKey(r.ID), bytes.NewReader(nil), 0, sum, nil))
 	}
-	merged, err := s.joinTails(ctx, r, r.Tails, nil, nil)
+	merged, err := s.joinTails(ctx, p, r, r.Tails, nil, nil)
 	if err != nil {
 		if errors.Is(err, errTailGone) {
 			// This continuation holds no claim. The segments are gone because another one finished and cleaned up (the session moved on),
@@ -361,13 +374,13 @@ func (s *Service) completeSmall(ctx context.Context, r row) error {
 		return err
 	}
 	defer merged.Close()
-	return blob.MapStoreError(s.objects.Put(ctx, s.dataKey(r.ID), merged.Reader(), merged.Size, s.checksumOf(merged), nil))
+	return blob.MapStoreError(p.objects().Put(ctx, p.dataKey(r.ID), merged.Reader(), merged.Size, p.checksumOf(merged), nil))
 }
 
 // tailAsPart sends the recorded tail, its segments joined, as the last part. One continuation does it under a short claim of its own
 // (another one waits for the release or the lease and is told to retry), so that the part is uploaded once and its ETag is the one
 // the session records. It returns the session as it stands afterwards.
-func (s *Service) tailAsPart(ctx context.Context, r row) (row, error) {
+func (s *Service) tailAsPart(ctx context.Context, p pin, r row) (row, error) {
 	writer := uuid.New().String()
 	rctx, cancel := recordCtx(ctx)
 	ok, err := s.rows.claimCompleting(rctx, r.ID, writer, s.cfg.WriterLease)
@@ -402,7 +415,7 @@ func (s *Service) tailAsPart(ctx context.Context, r row) (row, error) {
 	if cur.TailSize == 0 {
 		return cur, nil
 	}
-	joined, err := s.joinTails(ctx, cur, cur.Tails, nil, s.completingRenewer(cur.ID, writer))
+	joined, err := s.joinTails(ctx, p, cur, cur.Tails, nil, s.completingRenewer(cur.ID, writer))
 	if err != nil {
 		if errors.Is(err, errLostClaim) { // another continuation took the step, or the session moved on
 			return row{}, errStale
@@ -421,7 +434,7 @@ func (s *Service) tailAsPart(ctx context.Context, r row) (row, error) {
 	if n := len(parts); n > 0 {
 		number = parts[n-1].Number + 1
 	}
-	p, _, err := s.sendPart(ctx, cur.ID, cur.UploadID, number, joined, s.completingRenewer(cur.ID, writer))
+	sent, _, err := s.sendPart(ctx, p, cur.ID, cur.UploadID, number, joined, s.completingRenewer(cur.ID, writer))
 	if err != nil {
 		if errors.Is(err, errLostClaim) {
 			return row{}, errStale
@@ -429,7 +442,7 @@ func (s *Service) tailAsPart(ctx context.Context, r row) (row, error) {
 		return row{}, err
 	}
 	rctx, cancel = recordCtx(ctx)
-	err = s.rows.completeTail(rctx, cur.ID, writer, p)
+	err = s.rows.completeTail(rctx, cur.ID, writer, sent)
 	cancel()
 	if err != nil {
 		if errors.Is(err, errLostClaim) {
@@ -440,7 +453,7 @@ func (s *Service) tailAsPart(ctx context.Context, r row) (row, error) {
 	}
 	clean = true
 	for _, t := range cur.Tails {
-		s.removeObject(ctx, s.tailKey(cur.ID, t.Writer))
+		s.removeObject(ctx, p, p.tailKey(cur.ID, t.Writer))
 	}
 	out, _, err := s.rows.get(ctx, cur.ID, s.cfg.SessionMaxAge)
 	return out, err

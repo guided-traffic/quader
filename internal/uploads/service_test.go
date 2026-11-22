@@ -64,7 +64,22 @@ func (f *fixture) replica() *Service {
 	if f.wrap != nil {
 		objects = f.wrap(f.obj)
 	}
-	return newService(f.rows, Options{Objects: objects, Spool: sp, Storage: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	return newService(f.rows, Options{Connections: oneConnection(f.t, cfg, objects), Spool: sp, Storage: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
+}
+
+// oneConnection is the set of the one connection of cfg, reached through objects.
+func oneConnection(t *testing.T, cfg config.Storage, objects ObjectStore) *blob.Connections {
+	t.Helper()
+	conns, err := blob.NewConnections(blob.NewConnection(cfg.Connections[0], objects))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return conns
+}
+
+// tailKey is the key of a tail object of a session on the fixture's one connection.
+func (f *fixture) tailKey(id uuid.UUID, writer string) string {
+	return blob.SessionKey(f.prefix, id.String(), "tail-"+writer)
 }
 
 // commit is the CommitFunc of a replica without a database: the object write of the commit protocol, the server-side copy of a
@@ -554,7 +569,7 @@ func TestR_STOR_011_ATailThatIsNotTheRecordedOneFailsTheSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, _, _ := f.rows.get(context.Background(), sess.ID, time.Hour)
-	f.obj.Set(s.tailKey(sess.ID, r.Tails[0].Writer), random(5), time.Now())
+	f.obj.Set(f.tailKey(sess.ID, r.Tails[0].Writer), random(5), time.Now())
 	if _, err := f.append(s, sess.ID, 5, random(30)); errKind(err) != errs.Internal {
 		t.Fatalf("append over a damaged tail: %v", err)
 	}

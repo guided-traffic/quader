@@ -181,6 +181,8 @@ func (a *App) apiServices() v1.Services {
 			"gc-full": func() any { return &blob.GCJobArgs{} },
 			// The scrub takes {"connection": "<id>"} (R-STOR-027).
 			TaskScrub: func() any { return &scrub.Args{} },
+			// {"dryRun", "resume", "minAge", "connection"}; a minAge not above twice commit_deadline answers 422 (R-STOR-026)
+			blob.SweepTask: func() any { return blob.NewSweepJobArgs(a.cfg.Storage) },
 			// The manual run of the OSV sync takes {"acceptShrink": true} (R-VULN-004).
 			vuln.TaskSyncOSV:     func() any { return &vuln.SyncArgs{} },
 			vuln.TaskSyncOSVFull: func() any { return &vuln.SyncArgs{} },

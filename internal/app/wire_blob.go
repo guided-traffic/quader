@@ -108,19 +108,19 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 
 	area := blobArea{store: store, storageKeys: skeys}
 	// The upload sessions (R-STOR-011): a replica that accepts uploads continues any session; the collection run of a worker
-	// expires them. A session starts and stays on the first connection that takes uploads (R-STOR-054).
+	// expires them. A session starts on the first writable connection and stays on it (R-STOR-054).
 	first := conns.Targets()[0]
 	svc, err := uploads.New(uploads.Options{
-		DB: db, Objects: first.Objects(), Connection: first.ID(), Spool: store.Spool(), Storage: cfg, Metrics: bm, Log: a.log.With("component", "uploads"),
+		DB: db, Connections: conns, Spool: store.Spool(), Storage: cfg, Metrics: bm, Log: a.log.With("component", "uploads"),
 	})
 	if err != nil {
 		return blobArea{}, err
 	}
 	a.uploads = svc
 	if a.sub.JobLoops {
-		// collection deletes on the connection the commits write first; the copies on the others are package B's (R-STOR-057)
-		area.gc = blob.NewCollector(cfg.GC, first.Prefix(), first.Objects(), db, blob.WithCollectorLogger(log), blob.WithCollectorMetrics(bm),
-			blob.WithUploadSessions(cfg.Uploads), blob.WithBatchDelete(first.BatchDelete()))
+		// collection deletes every copy on its connection (R-STOR-057); the same collector runs the orphan sweep (R-STOR-026)
+		area.gc = blob.NewCollector(cfg, conns, db, blob.WithCollectorLogger(log), blob.WithCollectorMetrics(bm), blob.WithUploadSessions(cfg.Uploads),
+			blob.WithInstallation(opts.Installation))
 		a.gc.set(area.gc)
 		a.wireJournalShipper(clients[first.ID()], first.Prefix(), pg.db)
 		a.wireBackupCheck(clients[first.ID()])

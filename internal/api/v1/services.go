@@ -133,6 +133,11 @@ func decodeTaskParams(body []byte, r *http.Request, proto func() any) (json.RawM
 	if err := StrictUnmarshal(body, target); err != nil {
 		return nil, err
 	}
+	if v, ok := target.(interface{ Validate() error }); ok { // a task's own bounds (the orphan sweep's minAge, R-STOR-026): 422
+		if err := v.Validate(); err != nil {
+			return nil, err
+		}
+	}
 	if proto == nil {
 		if m := *target.(*map[string]json.RawMessage); len(m) > 0 {
 			for k := range m {

@@ -29,6 +29,7 @@ type Metrics struct {
 	gcHeld      prometheus.Counter
 	gcDeleting  prometheus.Gauge
 	gcLastOK    *prometheus.GaugeVec // no series until a run succeeded
+	gcReleased  *prometheus.CounterVec
 
 	damaged         *prometheus.CounterVec
 	copiesDamaged   *prometheus.CounterVec
@@ -56,6 +57,7 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 		gcHeld:      m.NewCounterVec("quader_gc_candidates_held_total", "Candidates kept by a backup hold.").WithLabelValues(),
 		gcDeleting:  m.NewGaugeVec("quader_gc_deleting_rows", "Blob rows in state deleting at the end of the last run.").WithLabelValues(),
 		gcLastOK:    m.NewGaugeVec("quader_gc_last_success_timestamp_seconds", "End of the last garbage-collection run of this replica that was neither a dry run, nor paused, nor failed; absent until one has ended."),
+		gcReleased:  m.NewCounterVec("quader_gc_copies_released_total", "Copies whose delete collection never sent, left to the orphan sweep of their connection, by connection (R-STOR-057).", "connection"),
 
 		damaged:         m.NewCounterVec("quader_storage_blobs_damaged_total", "Blobs marked damaged by a detection, by new status.", "status"),
 		copiesDamaged:   m.NewCounterVec("quader_storage_copies_damaged_total", "Copies of blobs marked damaged by a detection, by connection and new status (R-STOR-055).", "connection", "status"),
@@ -162,6 +164,13 @@ func (m *Metrics) setSpoolUsed(used int64) {
 func (m *Metrics) gcSucceeded(at time.Time) {
 	if m != nil {
 		m.gcLastOK.WithLabelValues().Set(float64(at.UnixNano()) / 1e9)
+	}
+}
+
+// copiesReleased counts the copies of one connection that collection released (R-STOR-057).
+func (m *Metrics) copiesReleased(conn string, n int) {
+	if m != nil && n > 0 {
+		m.gcReleased.WithLabelValues(conn).Add(float64(n))
 	}
 }
 

@@ -1050,9 +1050,9 @@ the clean-up. `session_max_age` MUST be shorter than `storage.orphans.multipart_
 the bucket's lifecycle rule (R-STOR-006). Startup refuses a value not below `multipart_max_age`;
 keeping the lifecycle rule at one day or longer is the operator's part, because the permissions of
 R-STOR-031 do not let Quader read it. The orphan sweep (R-STOR-026) removes what an aborted run
-left: until it is a task of its own, the full collection sweep (`gc-full`) does, for the staging
-area, with `session_max_age` as the age
-([Q-STOR-172](#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own)).
+left, on each connection, with `session_max_age` as the age of the staging objects and
+`storage.orphans.multipart_max_age` as that of the multipart uploads
+([Q-STOR-263](#q-stor-263--the-staging-sweep-moves-from-the-full-collection-to-the-orphan-sweep-per-connection-without-a-cursor-of-its-own)).
 
 ```sql
 CREATE TABLE upload_sessions (
@@ -2405,6 +2405,8 @@ SELECT EXISTS (SELECT 1 FROM backup_run r
 -- (3) only when (1) returned state = 'live', (2) returned false and (2b) returned false
 --     now() is the transaction's start: the claim time of the hand-over rules below
 UPDATE blobs SET state = 'deleting', state_changed_at = now() WHERE sha256 = $1;
+--     and its copies with it (R-STOR-057); a copy a drain claimed keeps its claim time
+UPDATE blob_copies SET state = 'deleting', state_changed_at = now() WHERE sha256 = $1 AND state <> 'deleting';
 --     also when (2) found a reference or (1) found no 'live' row; not when (2b) held it;
 --     only the entry the candidate query read, never one a later release wrote
 DELETE FROM blob_gc_queue WHERE sha256 = $1 AND enqueued_at = $seen;
@@ -2564,7 +2566,7 @@ Metrics (the `quader_gc_*` family of
 [operations-and-observability.md](operations-and-observability.md) R-OPS-008):
 `quader_gc_deleted_blobs_total`, `quader_gc_reclaimed_bytes_total`,
 `quader_gc_candidates_kept_total`, `quader_gc_candidates_held_total` (kept by a backup hold,
-R-BAK-007), `quader_gc_deleting_rows`.
+R-BAK-007), `quader_gc_deleting_rows`, `quader_gc_copies_released_total{connection}` (R-STOR-057).
 
 Acceptance criteria:
 
@@ -2690,52 +2692,72 @@ Acceptance criteria:
 Priority: **P1** · Covers: STOR-038, OPS-067
 
 The reverse check: walk each connection and remove the objects no row stands for, or adopt the object of a live blob whose copy row is
-missing. Not built until stage 1 (R-STOR-050 to R-STOR-063); today the full collection sweep removes what no session stands for below
-`_uploads/` (Q-STOR-172), and nothing walks `sha256/`.
+missing. *Built* (package B of stage 1): [sweep.go](../../internal/blob/sweep.go) (`Collector.Sweep`), the job adapter `RunSweepJob`
+([gcjob.go](../../internal/blob/gcjob.go)), the registration in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go), the
+statements in [sweep.sql](../../internal/meta/postgres/queries/sweep.sql).
 
 - **Per connection.** The sweep lists `<prefix>/sha256/<h0h1>/` of each connection in the worker's configuration with `drain: false`
   or `drain: true` (256 top-level prefixes each, `ListObjectsV2`), connection after connection in list order, and checkpoints
-  `{connection, prefix}` into the job's `checkpoint` after each prefix. A connection whose circuit is open is skipped and named in the
-  result; the others go on.
+  `{connection, prefix}` into the job's `checkpoint` after each prefix, and `{connection, "staging"}` after the connection's staging area.
+  A connection whose circuit is open is skipped and named in the result (`circuit_open`); one whose store fails during the walk is named
+  with what was done (`unavailable`); the others go on. Before it walks a connection the sweep reads its marker (R-STOR-051): a marker that
+  names another connection or installation leaves the connection alone (`foreign_marker`), so the sweep never adopts or deletes in a
+  location that is not this installation's
+  ([Q-STOR-262](#q-stor-262--the-sweep-acts-on-evidence-a-listing-alone-does-not-give)). An absent marker is no such evidence.
 - **Each listed object** is looked up by `(connection_id, object_key)` in `blob_copies` and, by the digest its name carries, in
   `blobs` ([Q-STOR-238](#q-stor-238--the-orphan-sweep-adopts-the-object-of-a-live-blob-and-claims-an-orphan-through-the-blob-row));
   on an encrypted connection with keyed names, whose names carry no digest, the sweep lists `keyed/` and learns the digest of an object
   without a copy row from its record (R-STOR-087):
-  - **A copy row exists**: a listed size other than `stored_size` marks the copy `corrupt` and queues its repair (R-STOR-056); otherwise
-    nothing.
-  - **No copy row, the blob `live`**: the object is adopted: one transaction locks the blob `FOR SHARE` (it must still be `live`) and
-    inserts the copy row `present` and not verified, or `corrupt` with a queued repair when the listed size differs from `blobs.size`.
-    This is how an object written by a commit that lost its round, by a reconciliation run that crashed before its row, or after a
-    point-in-time restore of the database, is counted again.
+  - **A copy row exists**: a listed size other than `stored_size` of a `present` copy, confirmed by a `HeadObject`, marks the copy
+    `corrupt` and queues its repair (R-STOR-056); otherwise nothing. A copy row in state `deleting` of a live blob is a drain's claim and
+    is left to it.
+  - **No copy row, the blob `live`**: the object is adopted: one transaction locks the blob as a mark does (`FOR NO KEY UPDATE`,
+    R-STOR-052; it must still be `live`), inserts the copy row `present` and not verified, or `corrupt` with a queued repair when its size,
+    confirmed by a `HeadObject`, differs from `blobs.size`, and re-derives the blob's content state, so a blob that no connection held
+    whole is whole again. This is how an object written by a commit that lost its round, by a reconciliation run that crashed before its
+    row, or after a point-in-time restore of the database, is counted again. On a connection with `drain: true` nothing is adopted: an
+    object a drain deleted may still be listed by a store that applies deletes late, and the drain needs no copy there (Q-STOR-262).
   - **No copy row, the blob `deleting`**: skipped; collection or a drain owns it.
-  - **No blob row**, and `LastModified` older than the run's `minAge` (default `storage.orphans.min_age`): the sweep MUST claim the digest
-    by inserting a `deleting` blob row (`INSERT … ON CONFLICT DO NOTHING`; the digest columns other than `sha256` are zero bytes of their
-    length and `size` is the listed size, never read for a `deleting` row, which never counts in the physical totals, R-STOR-003) before
-    it deletes the object on that connection, then follow steps (4)–(6) of R-STOR-024 with its hand-over rules. An uploader that wrote
+  - **No blob row**, and `LastModified` older than the run's `minAge` (default `storage.orphans.min_age`; an object whose store gives no
+    time is left): the sweep MUST claim the digest by inserting a `deleting` blob row (`INSERT … ON CONFLICT DO NOTHING`; the digest
+    columns other than `sha256` are zero bytes of their length and `size` is the listed size, never read for a `deleting` row, which never
+    counts in the physical totals, R-STOR-003), and in the same statement the copy row of the object in state `deleting`, before it deletes
+    the object on that connection, then follow steps (4)–(6) of R-STOR-024 with its hand-over rules; the copy row lets collection's step
+    (4) finish a delete that a sweep left (R-STOR-057). The rows whose delete has settled are dropped after each prefix. An uploader that wrote
     the same object concurrently finds the `deleting` row and writes again after it is gone (R-STOR-005); the commit deadline keeps freshly
     written objects out of reach of `min_age`. An insert that did nothing (the row exists) leaves the object for the next run. The sweep
     needs no backup-hold check: it deletes only objects without a blob row, and a backup's snapshot references none of them
     ([backup-and-restore.md](backup-and-restore.md) R-BAK-007).
-- The sweep honours the deletion pause of R-STOR-024 before every prefix: while it is set, the sweep deletes nothing and ends with
-  `result.paused: true`, and a later run resumes at the checkpoint. Adoptions and marks are not deletions and continue.
+- The sweep honours the deletion pause of R-STOR-024 before every prefix: once it is set, the sweep deletes and aborts nothing for the
+  rest of the run, walks on, ends with `result.paused: true` and saves no checkpoint past the last prefix it walked before the pause, so
+  that a later run with `resume: true` continues there. Adoptions and marks are not deletions and continue
+  ([Q-STOR-261](#q-stor-261--under-the-deletion-pause-the-sweep-walks-on-adopting-and-marking-and-a-resume-starts-where-it-stopped-deleting)).
 - Keys below `<prefix>/sha256/` that do not match the layout, and any other key below `<prefix>/` outside the families of R-STOR-059, are
-  reported and never deleted.
+  reported (the log names the first 20 per connection, `foreignKeys` counts all) and never deleted.
 - **The staging area per connection.** The sweep also aborts multipart uploads below each connection's `<prefix>/` initiated longer than
   `storage.orphans.multipart_max_age` ago, and deletes the objects below `_uploads/` of sessions that are aborted, done, unknown or pinned
-  to another connection (R-STOR-011, R-STOR-054) and older than `storage.uploads.session_max_age`. An open session's multipart upload is
-  never that old, because `session_max_age` is shorter than `multipart_max_age`. A store that documents no lifecycle rule to abort
-  incomplete uploads (the owner's provider lists none, a research of 2026-11-22, not verified here) relies on this step.
+  to another connection (R-STOR-011, R-STOR-054), and the leftover probe objects below `_probe/`, older than
+  `storage.uploads.session_max_age`. An open session's multipart upload is never that old, because `session_max_age` is shorter than
+  `multipart_max_age`. A store that documents no lifecycle rule to abort incomplete uploads (the owner's provider lists none, a research
+  of 2026-11-22, not verified here) relies on this step. It replaces the pass the full collection sweep made over the first connection's
+  `_uploads/` until the sweep was a task of its own
+  ([Q-STOR-263](#q-stor-263--the-staging-sweep-moves-from-the-full-collection-to-the-orphan-sweep-per-connection-without-a-cursor-of-its-own)).
 - The sweep is the task `orphan-sweep` of the shared task framework (Q-STOR-10; R-OPS-019). Trigger:
   `POST /api/v1/system/tasks/orphan-sweep/run` with `{"dryRun": false, "resume": true, "minAge": "24h", "connection": ""}` (all members
   optional; the values shown are the defaults, `minAge` defaulting to `storage.orphans.min_age`, an empty `connection` meaning every one)
   → `202 {"job": {…}}`, `409` with the active job. Observation and stop through `/api/v1/system/jobs/{id}` and
-  `/api/v1/system/jobs/{id}/cancel`. The job `result` carries, per connection, `prefixesDone`, `prefixesTotal`, `objectsSeen`,
-  `orphansFound`, `orphansDeleted`, `bytesReclaimed`, `adopted`, `copiesMarked`, `multipartAborted` and `foreignKeys`, and the skipped
-  connections. Permission: system administrator.
-- `resume: true` starts at the checkpoint of the most recent `orphan-sweep` job that ended `cancelled` or `failed`, if it is newer than
-  the most recent completed one; otherwise the sweep starts at prefix `00` of the first connection. Scheduled runs use `resume: true`.
+  `/api/v1/system/jobs/{id}/cancel`. The job `result` carries `dryRun`, `paused`, `resumedFrom` (the cursor it started after), `errors`,
+  per connection `prefixesDone`, `prefixesTotal`, `objectsSeen`, `orphansFound`, `orphansDeleted`, `bytesReclaimed`, `adopted`,
+  `copiesMarked`, `multipartAborted`, `stagingDeleted` (Q-STOR-263) and `foreignKeys`, and the skipped connections as `{connection,
+  reason}`. A dry run counts what it would adopt, mark, delete and abort and changes nothing. Permission: system administrator. The kind
+  is exclusive under its own name: a sweep may run beside a collection run, both resting on the row locks of R-STOR-024.
+- `resume: true` starts at the checkpoint of the most recent `orphan-sweep` job with the same `connection` and `dryRun` that ended
+  `cancelled`, `failed` or paused, if it is newer than the most recent one with those arguments that walked to its end; otherwise the
+  sweep starts at prefix `00` of the first connection. Scheduled runs use `resume: true`. An attempt that the framework retries or a drain
+  hands to another worker continues from its own checkpoint first.
 - A `minAge` not greater than twice `storage.upload.commit_deadline` is rejected with `422`: a shorter age could reach objects whose
-  uploader has not yet inserted their row (R-STOR-005).
+  uploader has not yet inserted their row (R-STOR-005). A `connection` that `storage.connections` does not name is rejected with `422`
+  as well. The run refuses such a `minAge` itself, for a job that reached the table another way.
 
 Configuration:
 
@@ -2749,7 +2771,7 @@ maintenance:
     orphan-sweep: {enabled: true, schedule: "0 5 * * 6"}   # default (proposed): Saturdays 05:00 UTC
 ```
 
-Acceptance criteria (integration, PostgreSQL with two in-memory stores, a fake clock):
+Acceptance criteria (integration, PostgreSQL with two in-memory stores, a fake clock; `TestR_STOR_026_OrphanSweep`):
 
 - An object put under `quader/sha256/00/00/<64 hex>` on the second connection, with no blob row, is reported by a dry run and removed by
   a sweep once older than `min_age`; an object with a non-hex name under `sha256/` is only reported.
@@ -2758,7 +2780,8 @@ Acceptance criteria (integration, PostgreSQL with two in-memory stores, a fake c
 - A sweep cancelled at prefix `7f` of the second connection and triggered again with `resume: true` continues there without re-listing
   the first connection or earlier prefixes.
 - With the first store's circuit open, the sweep walks the second connection and names the first as skipped.
-- `POST …/tasks/orphan-sweep/run` with `{"minAge": "1h"}` and the default `commit_deadline` of 1h answers `422`.
+- `POST …/tasks/orphan-sweep/run` with `{"minAge": "1h"}` and the default `commit_deadline` of 1h answers `422` (unit,
+  `internal/blob` `TestR_STOR_026_TheParametersOfTheOrphanSweep` and `internal/api/v1` `TestTaskParameters`).
 
 ### R-STOR-027 · Integrity scrub
 Priority: **P1** · Covers: quader-only
@@ -3394,17 +3417,16 @@ Built (package A): the configuration and its validation (R-STOR-050); the record
 (R-STOR-051); the copies and the derived content state (R-STOR-052); the commit over the connections with its copy and queue rows
 (R-STOR-053); the reads over the copies (R-STOR-055); the start check and the conformance check per connection with the capabilities
 (R-STOR-035); the breaker, the metrics with `connection`, the readiness and the registry's object-store view (R-STOR-060); the seams of
-R-STOR-062. Built (package C): the reconciliation with its queue, its pass, the server-side and the streamed copies, the drain, the
-retirement, the journal pass and its metrics (R-STOR-056). Built (package D): the scrub with its repair, the gauge of the overdue copies,
-the audit event of a detection, the list of damaged blobs and the recheck (R-STOR-027), the operator check and `restore-versions` per
-connection (R-STOR-058). Built (the chart's part of package E): the chart's list (R-HA-072). Not built: sessions on their connection,
-collection per copy and the orphan sweep (package B: R-STOR-054, R-STOR-057, R-STOR-026), the backup and restore per connection and the
-journal per connection (package E: R-BAK-030, R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built,
-collection deletes on the first connection only
-([H-1259](../security/object-store-connections.md#h-1259--until-collection-works-per-copy-it-deletes-on-the-first-connection-only)), and
-the backup reads the first connection only
+R-STOR-062. Built (package B): sessions on their connection (R-STOR-054), collection per copy with the release (R-STOR-057) and the
+orphan sweep per connection with the adoption (R-STOR-026), with the decisions Q-STOR-260 to Q-STOR-264. Built (package C): the
+reconciliation with its queue, its pass, the server-side and the streamed copies, the drain, the retirement, the journal pass and its
+metrics (R-STOR-056). Built (package D): the scrub with its repair, the gauge of the overdue copies, the audit event of a detection, the
+list of damaged blobs and the recheck (R-STOR-027), the operator check and `restore-versions` per connection (R-STOR-058). Built (the
+chart's part of package E): the chart's list (R-HA-072). Not built: the backup and restore per connection and the journal per connection
+(package E: R-BAK-030, R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built, the backup reads the first
+connection only
 ([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads));
-one connection behaves as before this section.
+one connection behaves as before this section, except that the orphan sweep now walks its `sha256/` too.
 
 **What "several connections" is not.** Every connection that is not draining holds every blob (a mirror kept by Quader), unlike the
 sharded stores of the catalog that spread blobs over sub-stores for capacity (STOR-013, STOR-026, and the parked "sharding over several
@@ -3744,14 +3766,21 @@ Acceptance criteria (unit, `internal/blob` with two in-memory stores and the fak
 ### R-STOR-054 · An upload session stays on its connection
 Priority: **P1** · Covers: quader-only
 
+*Built* (package B): [internal/uploads](../../internal/uploads/) (`Service.writable`, `Service.connection`, `pin`), the session step in
+[gc_uploads.go](../../internal/blob/gc_uploads.go).
+
 - A multi-request upload session (R-STOR-011) is pinned to one connection, recorded in `upload_sessions.connection_id`: the first
-  writable connection when the session starts. Its multipart upload `_uploads/<session-id>/data`, its tail segments and the server-side
-  copy of its finalize live on that connection, because a multipart upload exists in one store only and a server-side copy stays inside
-  one ([Q-STOR-231](#q-stor-231--a-session-stays-on-its-connection-and-answers-503-while-it-is-unreachable)).
+  writable connection when the session starts, or, when none is writable then, the first without `drain: true`; the start asks no store
+  ([Q-STOR-264](#q-stor-264--a-session-starts-on-the-first-writable-connection-without-asking-the-store-and-moves-at-its-first-write-while-it-has-written-nothing)).
+  Its multipart upload `_uploads/<session-id>/data`, its tail segments and the server-side copy of its finalize live on that connection,
+  because a multipart upload exists in one store only and a server-side copy stays inside one
+  ([Q-STOR-231](#q-stor-231--a-session-stays-on-its-connection-and-answers-503-while-it-is-unreachable)).
 - A session that has not yet written an object (`received = 0`) moves to the next writable connection when its connection is not
-  writable at its first write.
-- **When its connection fails.** A request of a session whose connection is unreachable or whose circuit is open answers `503` with
-  `Retry-After` (`storage.object_store.circuit_breaker.open_duration`), and the session stays as it is; a client that keeps retrying
+  writable at its first write (its circuit open on the replica, `drain: true`, or not configured there); the move is recorded under the
+  writing request's claim.
+- **When its connection fails.** A request of a session whose connection is unreachable, whose circuit is open or which this replica
+  does not configure answers `503` with `Retry-After` (`storage.object_store.circuit_breaker.open_duration`), and the session stays as it
+  is; a session that has written stays also on a connection that is given `drain: true` meanwhile; a client that keeps retrying
   continues once the connection is back, and one that gives up starts a new upload, which goes to a writable connection. The abandoned
   session expires by `storage.uploads.session_ttl` (R-STOR-011); its objects are removed on its connection when that connection is
   reachable again, or by the orphan sweep there (R-STOR-026).
@@ -3764,13 +3793,15 @@ Priority: **P1** · Covers: quader-only
   is unreachable keeps its row until the connection answers, unless the row is older than `storage.uploads.session_max_age`, when the row
   goes and the orphan sweep removes its objects.
 
-Acceptance criteria (unit, `internal/uploads` with two in-memory stores):
+Acceptance criteria (unit, `internal/uploads` with two in-memory stores; `TestR_STOR_054_AnUploadSessionStaysOnItsConnection`):
 
 - A session started while both stores are reachable records the first connection; its parts and tails lie only there; finalize writes
   the content object there and queues the second.
 - With the first store failing after the session's first part, the next `PATCH` answers `503` with `Retry-After`; after the fault is
   lifted the same session continues and finalizes with the right digest.
 - A session whose first request meets the first store failing, before any object, lies on the second store.
+- The session step removes a session's objects on its own connection; on a connection whose circuit is open a session keeps its row,
+  unless it is older than `session_max_age` (integration, `TestR_STOR_054_TheSessionStepWorksOnEachSessionsConnection`).
 
 ### R-STOR-055 · Reads over the copies
 Priority: **P1** · Covers: STOR-012
@@ -3928,29 +3959,39 @@ Priority: **P1** · Covers: quader-only
 R-STOR-024's per-blob protocol stays; its step (4) deletes every copy, and one connection's outage stops neither the run nor an
 uploader for long.
 
-- **Step (4) per copy.** After the claim (step 3), the run reads the blob's copy rows and deletes each object on its connection, with
+*Built* (package B): [gc.go](../../internal/blob/gc.go) (`deleteObjects`, `removeCopies`, `deleteOn`, `recordDeleted`), the statements
+`ClaimBlobCopies`, `CollectCopies`, `DeleteCollectedCopies` ([sweep.sql](../../internal/meta/postgres/queries/sweep.sql)) and
+`RecordBlobsDeleted` ([blob.sql](../../internal/meta/postgres/queries/blob.sql)).
+
+- **Step (4) per copy.** The claim (step 3) sets the blob's copy rows `deleting` in its transaction (a copy a drain claimed keeps its
+  claim time). After it, the run reads the blob's copy rows and deletes each object on its connection, the connections at once, with
   `DeleteObjects` per connection when its `batch_delete` is true, under the hand-over deadline of R-STOR-024; each successful delete
   deletes its copy row. `object_deleted_at` (step 5) is set when the blob has no copy row left; step (6) drops the blob row and its queue
-  rows after `delete_settle`.
+  rows after `delete_settle`. A copy row in state `deleting` of a blob that is `live` is a drain's claim (R-STOR-056); collection reads the
+  copies of the blobs in state `deleting` only, and finishing a drain's delete of a blob it claimed afterwards is harmless.
 - **A copy whose delete was never sent is released** ([Q-STOR-237](#q-stor-237--collection-releases-a-copy-whose-delete-was-never-sent-to-the-orphan-sweep-of-its-connection)):
-  when the copy's connection is not in this replica's configuration, or its circuit is open, the row is deleted without a request; the
-  object becomes an orphan of that connection, which its orphan sweep removes (R-STOR-026), and
-  `quader_gc_copies_released_total{connection}` counts it. A delete whose outcome is unknown (a timeout, a transient error after the request
-  left) keeps its row and the blob `deleting`, and a later run repeats it under the hand-over rules, as for one store. An upload of the same
-  content therefore waits for a `deleting` row (R-STOR-005) no longer than for one store, whatever the state of the other connections.
-- **One connection's open circuit stops nothing else**: the run goes on with the other connections and blobs (today an open circuit ends
-  the run, [internal/blob/gc.go](../../internal/blob/gc.go) `stopsRun`).
+  when the copy's connection is not in this replica's configuration, or its circuit is open (the guard refused the request before it
+  left) while another connection of the replica is writable, the row is deleted without a request; the object becomes an orphan of that
+  connection, which its orphan sweep removes (R-STOR-026), and `quader_gc_copies_released_total{connection}` and the result's
+  `copiesReleased` count it. A delete whose outcome is unknown (a timeout, a transient error after the request left) keeps its row and the
+  blob `deleting`, and a later run repeats it under the hand-over rules, as for one store. An upload of the same content therefore waits
+  for a `deleting` row (R-STOR-005) no longer than for one store, whatever the state of the other connections.
+- **One connection's open circuit stops nothing else**: the run goes on with the other connections and blobs. While no connection of
+  the replica is writable (every circuit open, as with the one connection of a plain installation when it is down), the run releases
+  nothing and stops its object-store phase as one store's open circuit always did; its claims are handed over
+  ([Q-STOR-260](#q-stor-260--collection-releases-a-copy-on-an-open-circuit-only-while-another-connection-is-writable)).
 - The session step works per session on its connection (R-STOR-054).
 - The orphan that a release leaves is deleted content that stays in the bucket of the connection that was down until its sweep runs
   ([H-1254](../security/object-store-connections.md#h-1254--deleted-content-outlives-its-deletion-on-a-connection-that-was-unreachable)).
 
-Acceptance criteria (integration, PostgreSQL with two in-memory stores):
+Acceptance criteria (integration, PostgreSQL with two in-memory stores; `TestR_STOR_057_CollectionWithSeveralConnections`):
 
 - An unreferenced blob on both connections is collected: both objects are gone, then the rows.
 - With the second store's circuit open, the collection deletes the first object, releases the second copy, drops the blob row after
   `delete_settle`, and an upload of the same content started meanwhile answers `201`; the orphan sweep of the second connection removes the
-  released object after `min_age` (fake clock).
+  released object after `min_age` (fake clock), and adopts the released object of the content uploaded again.
 - A fault that times out the second store's delete keeps the blob `deleting`; the next run deletes it.
+- With every circuit open the run stops and releases nothing.
 
 ### R-STOR-058 · The operator check of every copy
 Priority: **P1** · Covers: quader-only
@@ -7412,9 +7453,12 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** the age is `session_max_age`, not `multipart_max_age`: an object of an id without a row can only be a session that is over or never started, and a session's row is recorded before any object of it exists (the multipart upload is created with the first part, and recorded with it within `recordTimeout`), so an object or an upload older than `session_max_age` that no row names is not a session that is starting: the cutoff on the object's own age is what keeps the sweep out of the reach of one that is. The development agent would revisit this when the orphan sweep is built: the pass moves there unchanged.
 
-**Applied:** R-STOR-011 *Expiry*; `internal/blob/gc_uploads.go` (`sweepUploads`). Tests: `TestR_STOR_011_TheSweepRemovesWhatNoSessionStandsFor` (integration).
+**Applied:** R-STOR-011 *Expiry*. Superseded by [Q-STOR-263](#q-stor-263--the-staging-sweep-moves-from-the-full-collection-to-the-orphan-sweep-per-connection-without-a-cursor-of-its-own)
+since the orphan sweep is a task of its own: the pass moved there, per connection, and the cursor in `system_state` went with the page limit
+it served.
 
-The expiry and the cleaning go on batch after batch (200 rows) for a time budget of two minutes each per run, and the staging sweep takes at most 25 pages per run; the sweep lists the multipart uploads of the staging area 500 at a time when the store pages (`blob.MultipartPager`), and re-read the deletion pause before every batch; a backlog is the next run's, and a pause set during the step ends it. The sweep saves where it stopped (`system_state` key `upload_sweep_cursor`) and the next run goes on from there, so that live sessions at the start of the listing do not use every run's pages; when both listings are done the cursor is cleared.
+The expiry and the cleaning go on batch after batch (200 rows) for a time budget of two minutes each per run, re-read the deletion pause
+before every batch, and stop at a batch in which nothing moved; a backlog is the next run's, and a pause set during the step ends it.
 
 ### Q-STOR-173 · The sessions are counted by `quader_storage_upload_sessions_total`, not by an OCI metric
 
@@ -8456,6 +8500,98 @@ cannot finish is worse than one that waits. A copy claimed for deletion whose bl
 only of a blob it claimed (R-STOR-057).
 
 **Applied in the spec:** R-STOR-051 (the states' columns), R-STOR-056 (draining); code: [drain.go](../../internal/blob/reconcile/drain.go).
+### Q-STOR-260 · Collection releases a copy on an open circuit only while another connection is writable
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-057 releases a copy whose connection's circuit is open, so that an upload of the same content does not wait for another
+provider's outage (Q-STOR-237). It names no exception for the case in which no connection is writable, which is every outage of the one
+connection of a plain installation (the owner's has one, on an object gateway of his provider).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Release on an open circuit only while another connection of the replica is writable; with every circuit open the run stops its object-store phase and hands its claims over, as one store's open circuit always did (chosen) | The release serves the uploader it was made for | One connection behaves as before; an outage of every store leaves no orphans to sweep | While every store is down, the claimed blobs wait for their stores, as they did |
+| (b) Release on every open circuit | The rule as written | One rule | With one connection, every outage turns the run's candidates into orphans that stay until the weekly sweep (H-1254 for one connection), although no uploader could store the content meanwhile |
+| (c) Never release; keep the row until the connection answers | Exact | Nothing left behind | The wait for uploaders that Q-STOR-237 removed |
+
+**Choice:** (a). **Rationale:** an upload needs a writable connection; while there is none, releasing gains no uploader anything and costs
+deleted content a week in the bucket. A request the guard refused before it left is released as well while another connection is
+writable: no late delete can come of it. The builder would revisit this if a store's circuit flaps so that releases and stops alternate.
+
+**Applied in the spec:** R-STOR-057; code: `Collector.releasable`, `removeCopies` ([gc.go](../../internal/blob/gc.go)).
+
+### Q-STOR-261 · Under the deletion pause the sweep walks on, adopting and marking, and a resume starts where it stopped deleting
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-026 says both that a sweep under the deletion pause "deletes nothing and ends with `result.paused: true`, and a later run
+resumes at the checkpoint" and that "adoptions and marks are not deletions and continue"; its resume rule names only jobs that ended
+`cancelled` or `failed`, and a paused run ends as a job that succeeded.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The run walks on adopting and marking, deletes and aborts nothing once it saw the pause, saves no checkpoint past the prefix before it, and `resume: true` takes the checkpoint of a run that ended paused as it takes that of a cancelled one (chosen) | Both sentences hold | A restore drill under the pause gets its copies counted again by the adoption; the deletions that were held back are made by the next run from where they stopped | A resumed run lists the paused stretch once more |
+| (b) The run stops at the pause | Stop and resume | Simple | Adoptions and marks wait for the end of the pause, against the rule's last sentence |
+| (c) Walk on and start the next run at the beginning | No resume after a pause | No change to the resume rule | The deletions held back wait for a whole walk |
+
+**Choice:** (a). **Rationale:** the pause is about deletions; what restores the copies of a restored database is exactly what should go on.
+The resume also matches the arguments (`connection`, `dryRun`), so that a dry run never sets where a real run starts. The builder would
+revisit this when a pause is shown to last so long that the repeated listing matters.
+
+**Applied in the spec:** R-STOR-026; code: `sweep.readPause`, `sweep.checkpoint` ([sweep.go](../../internal/blob/sweep.go)),
+`SweepResumePoint` ([sweep.sql](../../internal/meta/postgres/queries/sweep.sql)).
+
+### Q-STOR-262 · The sweep acts on evidence a listing alone does not give
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: one provider applies overwrites and deletes with a delay (R-STOR-035 A3, Q-STOR-249), so a listing can show an object whose
+delete was acknowledged; the owner's object gateway documents queued deletes. R-STOR-026 adopts an object of a live blob on every
+connection, marks a copy by its listed size, locks an adoption `FOR SHARE`, and reads no marker.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No adoption on a connection with `drain: true`; a size it acts on (a mark, a corrupt adoption) confirmed by a `HeadObject`; an adoption under the mark's lock that re-derives the content state; the connection's marker read first and a foreign one ends the walk there (chosen) | Every act rests on a second piece of evidence | A drain's own delete, still listed, is not taken back as a copy; a stale listing marks nothing; an adopted copy heals a blob no connection held whole; another installation's objects are never adopted or deleted | One `HeadObject` per mismatch and one `GetObject` per connection and run |
+| (b) As written | Fewer requests | Simplest | A drain that deleted a copy may find it adopted again and never reach `drained`; a blob marked missing stays missing after its object was adopted; a sweep deletes in a location whose marker another installation wrote |
+| (c) A second listing of every prefix | Two looks at everything | Strongest against a stale listing | Doubles the cost of a walk for a case a `HeadObject` covers |
+
+**Choice:** (a). **Rationale:** the deletions rest on the blob row and `min_age` already (R-STOR-026); what a listing alone decided was
+the adoption and the mark, and those get their second look here. The adoption takes `FOR NO KEY UPDATE` instead of `FOR SHARE` because it
+changes the blob's content state, as every statement that changes a copy does (R-STOR-052). An object that a store still lists after its
+delete can be adopted on a connection that is not draining: [H-1265](../security/object-store-connections.md#h-1265--the-orphan-sweep-can-adopt-an-object-that-a-store-still-lists-after-its-delete).
+
+**Applied in the spec:** R-STOR-026; code: `sweep.page`, `sweep.mark`, `sweep.adopt`, `sweep.foreignMarker` ([sweep.go](../../internal/blob/sweep.go)),
+`WithInstallation`.
+
+### Q-STOR-263 · The staging sweep moves from the full collection to the orphan sweep, per connection, without a cursor of its own
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. It supersedes
+[Q-STOR-172](#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own),
+which said the pass moves into the sweep once it exists.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The orphan sweep's staging step, after each connection's 256 prefixes: multipart uploads below the whole prefix older than `multipart_max_age` aborted, objects of sessions over, unknown or pinned to another connection and leftover probes older than `session_max_age` deleted, counted in `stagingDeleted`; the job's checkpoint is the progress, the page limit and the `system_state` cursor go (chosen) | One pass per connection | Every connection's staging area has a remover; the multipart uploads of a commit's crashed blob write below `sha256/` are aborted too; one checkpoint | A drain during the step repeats the step |
+| (b) Keep it in `gc-full`, per connection | Two walkers | No change of task | Two passes over the same prefixes, one with a cursor of its own |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-011 *Expiry*, R-STOR-026; code: `sweep.staging` ([sweep.go](../../internal/blob/sweep.go));
+the session step keeps the rows ([gc_uploads.go](../../internal/blob/gc_uploads.go)).
+
+### Q-STOR-264 · A session starts on the first writable connection without asking the store, and moves at its first write while it has written nothing
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-054 pins a session to "the first writable connection when the session starts" and moves one that has written nothing
+"at its first write"; it does not say what a start does while no connection is writable. A start costs a row and nothing in the bucket
+(Q-STOR-174).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The start records the first writable connection, or the first without `drain: true` when none is writable, and asks no store; the first write moves the session to the first writable connection while its own is not writable (chosen) | Starts never fail on the store | A start stays a row; a client that starts during an outage gets its `503` at the first chunk, where it retries | A session can start on a connection that is down |
+| (b) The start answers `503` while no connection is writable | Fail early | The client learns at once | A start, which needs no store, fails for the store's sake |
+| (c) The start probes the first connection | Fresh evidence | Finds a store that failed without opening its circuit | A request to the store per start |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-054; code: `Service.startConnection`, `Service.writable` ([service.go](../../internal/uploads/service.go)).
 ### Q-STOR-265 · The scrub replaces a copy it found damaged in the same run and reads back what it wrote before the copy counts
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it. It changes a sentence of R-STOR-027,

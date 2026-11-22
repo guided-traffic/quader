@@ -51,6 +51,8 @@ type row struct {
 	// TooOld says that the session is older than the maximum age.
 	TooOld bool
 	Parts  int
+	// Conn is the id of the connection the session lives on (upload_sessions.connection_id, R-STOR-054).
+	Conn string
 }
 
 // tailSeg is one recorded segment of the tail: the object tail-<Writer>, written by the request of that claim token (Q-STOR-174).
@@ -120,13 +122,15 @@ type rows interface {
 	deleteCleaned(ctx context.Context, id uuid.UUID) error
 	// abort ends a live session; it reports whether it was live.
 	abort(ctx context.Context, id uuid.UUID) (live bool, uploadID string, err error)
+	// move records another connection for an open session that has written nothing, conditional on the writer token
+	// (R-STOR-054); errLostClaim if the request does not hold the claim any more or the session has written meanwhile.
+	move(ctx context.Context, id uuid.UUID, writer, conn string) error
 }
 
 var errAborted = errors.New("the upload session was aborted")
 
 type pgRows struct {
-	db   blob.DB
-	conn string // the connection a new session records (upload_sessions.connection_id)
+	db blob.DB
 }
 
 var _ rows = pgRows{}
@@ -164,7 +168,7 @@ func (p pgRows) insert(ctx context.Context, r row, maxOpen int) (started bool, e
 		}
 		n, err := qs.UploadInsertSession(ctx, q.UploadInsertSessionParams{
 			ID: r.ID.String(), RepoID: r.RepoID, AddressedRepoID: r.AddressedID, Binding: r.Binding, PrincipalID: r.Principal,
-			HashState: r.HashState, PartSize: r.PartSize, S3UploadID: r.UploadID, MaxOpen: int64(maxOpen), ConnectionID: p.conn,
+			HashState: r.HashState, PartSize: r.PartSize, S3UploadID: r.UploadID, MaxOpen: int64(maxOpen), ConnectionID: r.Conn,
 		})
 		started = n > 0
 		return err
@@ -180,7 +184,7 @@ func fromRow(g q.UploadGetSessionRow) (row, error) {
 	return row{
 		ID: id, RepoID: g.RepoID, AddressedID: g.AddressedRepoID, Binding: g.Binding, Principal: g.PrincipalID, Received: g.Received,
 		HashState: g.HashState, PartSize: g.PartSize, UploadID: g.S3UploadID, TailSize: g.TailSize, Writer: g.Writer, ItemID: g.ItemID,
-		Claimed: g.Claimed, Digest: g.Digest, State: State(g.State), TooOld: g.TooOld, Parts: int(g.Parts),
+		Claimed: g.Claimed, Digest: g.Digest, State: State(g.State), TooOld: g.TooOld, Parts: int(g.Parts), Conn: g.ConnectionID,
 	}, nil
 }
 
@@ -391,6 +395,19 @@ func (p pgRows) deleteCleaned(ctx context.Context, id uuid.UUID) error {
 	return p.do(ctx, func(qs *q.Queries) error {
 		_, err := qs.UploadDeleteCleaned(ctx, id.String())
 		return err
+	})
+}
+
+func (p pgRows) move(ctx context.Context, id uuid.UUID, writer, conn string) error {
+	return p.do(ctx, func(qs *q.Queries) error {
+		n, err := qs.UploadMoveSession(ctx, q.UploadMoveSessionParams{ID: id.String(), Writer: writer, ConnectionID: conn})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return errLostClaim
+		}
+		return nil
 	})
 }
 

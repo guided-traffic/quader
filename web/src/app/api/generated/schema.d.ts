@@ -7826,7 +7826,7 @@ export interface components {
         /** @enum {string} */
         JobState: "queued" | "running" | "succeeded" | "failed" | "cancelling" | "cancelled";
         TaskName: string;
-        /** @description The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`). */
+        /** @description The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`, the orphan sweep `orphan-sweep` takes `dryRun`, `resume`, `minAge` and `connection`). */
         TaskRunRequest: {
             [key: string]: unknown;
         };

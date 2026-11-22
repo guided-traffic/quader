@@ -215,7 +215,7 @@ func TestR_STOR_051_AConnectionsLifeAndItsFixedProperties(t *testing.T) {
 		if _, err := p.admin.Exec(ctx, `UPDATE blobs SET state = 'deleting', object_deleted_at = now() - interval '1 hour' WHERE sha256 = $1`, d.Bytes()); err != nil {
 			t.Fatal(err)
 		}
-		c := blob.NewCollector(blobtest.Storage(t, t.TempDir()).GC, "quader", blobtest.New(), p.db, blob.WithCollectorLogger(quiet))
+		c := blob.NewCollector(blobtest.Storage(t, t.TempDir()), blob.SingleConnection("quader", blobtest.New()), p.db, blob.WithCollectorLogger(quiet))
 		if _, err := c.Run(ctx, blob.RunOptions{Mode: blob.GCIncremental}); err != nil {
 			t.Fatal(err)
 		}

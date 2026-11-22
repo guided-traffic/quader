@@ -51,6 +51,11 @@ func TestR_ARCH_027_ADebianDownloadCostsOneStatement(t *testing.T) {
 	if byHash == "" {
 		t.Fatal("the Release lists no Packages.gz")
 	}
+	// The replica of the role all enqueues the latest slot of every task at its first tick, the weekly orphan sweep among them, which
+	// walks the 256 prefixes of the connection with a pause check, a finish of the settled deletes and a checkpoint each (storage.md
+	// R-STOR-026): within the window of the downloads that rhythm passes for statements of every download. The window starts once
+	// that run has ended.
+	awaitFirstRun(t, e, "orphan-sweep")
 
 	for _, rt := range []struct {
 		name, path string
@@ -72,5 +77,17 @@ func TestR_ARCH_027_ADebianDownloadCostsOneStatement(t *testing.T) {
 				t.Errorf("a download runs %d statements (%s), the budget of R-ARCH-027 is %d", total, describe(got), rt.budget)
 			}
 		})
+	}
+}
+
+// awaitFirstRun waits until the run of a task that the scheduler's first tick enqueued has ended, at most two minutes.
+func awaitFirstRun(t *testing.T, e *env, task string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Minute)
+	for e.st.Number(`SELECT count(*) FROM job WHERE task = $1 AND state IN ('succeeded', 'failed', 'cancelled')`, task) == 0 {
+		if time.Now().After(deadline) {
+			t.Fatalf("the first run of the task %s did not end within two minutes", task)
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
 }

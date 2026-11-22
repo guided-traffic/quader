@@ -160,8 +160,8 @@ func (e *s3Env) newStore(tb testing.TB, cfg config.Storage, objects blob.ObjectS
 
 // collector builds a collector on this env's connection.
 func collector(cfg config.Storage, objects blob.ObjectStore, db blob.DB, opts ...blob.CollectorOption) *blob.Collector {
-	c := cfg.Connections[0]
-	return blob.NewCollector(cfg.GC, c.KeyPrefix(), objects, db, append([]blob.CollectorOption{blob.WithBatchDelete(c.BatchDeletes())}, opts...)...)
+	conns, _ := blob.NewConnections(blob.NewConnection(cfg.Connections[0], objects)) // one element: never refused
+	return blob.NewCollector(cfg, conns, db, opts...)
 }
 
 // newClient builds a client for another configuration of the same store.

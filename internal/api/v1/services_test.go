@@ -1,9 +1,13 @@
 package v1
 
 import (
+	"errors"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func TestRingsCompatible(t *testing.T) {
@@ -150,6 +154,28 @@ func TestTaskParameters(t *testing.T) {
 			t.Fatal("a parameter of a task that takes none was accepted")
 		}
 	})
+	t.Run("R-STOR-026 a parameter the task's own check refuses answers 422 with its field", func(t *testing.T) {
+		err := do(`{"minAge":"1h"}`, func() any { return &boundedArgs{} })
+		var e *errs.Error
+		if !errors.As(err, &e) || e.Status() != http.StatusUnprocessableEntity || len(e.Fields) != 1 || e.Fields[0].Pointer != "/minAge" {
+			t.Fatalf("got %v", err)
+		}
+		if err := do(`{"minAge":"3h"}`, func() any { return &boundedArgs{} }); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+// boundedArgs has a check of its own, as the orphan sweep's parameters do (blob.SweepJobArgs).
+type boundedArgs struct {
+	MinAge string `json:"minAge"`
+}
+
+func (a *boundedArgs) Validate() error {
+	if a.MinAge == "1h" {
+		return errs.E(errs.Invalid, errs.CodeValidation, "invalid", errs.WithFields(errs.FieldError{Pointer: "/minAge", Code: "too_short"}))
+	}
+	return nil
 }
 
 func TestEveryOperationCanBeRateLimited(t *testing.T) {

@@ -5,9 +5,10 @@ R-STOR-035; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-resto
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)),
 partly built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection, the
 reconciliation that copies every blob to every connection, fills a new one and drains an old one, the scrub with its repair and the
-operator check per connection ([storage.md](../spec/storage.md#several-object-store-connections), the status there). Collection per copy,
-the orphan sweep, the backup per connection and the journal per connection are not built; H-1259 and H-1262 below are what that costs an
-installation with two connections today. What [privilege-footprint.md](privilege-footprint.md) and
+operator check per connection, sessions on their connection, collection per copy and the orphan sweep per connection
+([storage.md](../spec/storage.md#several-object-store-connections), the status there). The backup per connection and the journal per
+connection are not built; H-1262 below is what that costs an installation with two connections today. What
+[privilege-footprint.md](privilege-footprint.md) and
 [transport-encryption.md](transport-encryption.md) say of the object store holds for each connection.
 
 The perspective of this page is the stored content once it lies on several object stores: which parties can read it, change it or delete
@@ -48,7 +49,7 @@ or takeover costs the others. Encryption of the stored content is stage 2 and de
 
 | Belief | Evidence | Where |
 |---|---|---|
-| A copy exists (`present`) | the store's answer to the write that made it, a size from `HeadObject` after a multipart or a copy, or an object found by the orphan sweep (adoption) | R-STOR-052, R-STOR-026 |
+| A copy exists (`present`) | the store's answer to the write that made it, a size from `HeadObject` after a multipart or a copy, or an object of a live blob the orphan sweep found on a connection without `drain: true` whose marker is absent or names this installation (adoption, Q-STOR-262) | R-STOR-052, R-STOR-026 |
 | A copy is the blob (`verified_at`) | Quader hashed what it wrote and the store refused a wrong payload checksum (the start check establishes whether it does, R-STOR-035), or a read to the end matched the digest | R-STOR-052, R-STOR-055, R-STOR-027 |
 | A copy is damaged | only evidence about the object: "no such object", a wrong size, a read to its end with another digest; never a timeout or an open circuit | R-STOR-055, R-STOR-027 |
 | A location belongs to this connection | the marker `_connection` names this installation and this id | R-STOR-051 |
@@ -119,13 +120,18 @@ Component: collection's release of a copy whose delete was never sent (R-STOR-05
 deleted artifacts, including content deleted because it must not be kept (a leaked secret uploaded by mistake). A released copy stays in
 its bucket until that connection's orphan sweep removes it: after `storage.orphans.min_age` (24 hours) at the next weekly run, so up to
 about eight days after the deletion; a detached connection's objects stay until the connection is configured again or emptied by its
-operator, because `forget-connection` deletes no object. Live whenever a connection is unreachable during a collection run, or removed
-while it holds copies. What makes it matter is content whose removal is a legal or security duty; the operator then runs the sweep by hand
-(`POST /api/v1/system/tasks/orphan-sweep/run` with `minAge`) once the connection answers, or removes the objects at the provider.
+operator, because `forget-connection` deletes no object and the sweep walks only the connections a worker configures. Live whenever a
+connection's circuit is open during a collection run while another connection is writable, or a connection is removed while it holds
+copies; dormant with one connection, whose outage stops collection instead of releasing
+([Q-STOR-260](../spec/storage.md#q-stor-260--collection-releases-a-copy-on-an-open-circuit-only-while-another-connection-is-writable)).
+`quader_gc_copies_released_total{connection}` counts the releases. What makes it matter is content whose removal is a legal or security
+duty; the operator then runs the sweep by hand (`POST /api/v1/system/tasks/orphan-sweep/run` with `minAge` and `connection`) once the
+connection answers, or removes the objects at the provider.
 
 ### H-1255 · A store that applies a delete after acknowledging it is not proven harmless to a later write
 
-Component: assumption A3 of R-STOR-035, per connection. Subject: a blob deleted by collection and uploaded again soon after. The software
+Component: assumption A3 of R-STOR-035, per connection, for the deletes of collection and of the orphan sweep (R-STOR-057, R-STOR-026).
+Subject: a blob deleted by collection, or an orphan deleted by the sweep, and uploaded again soon after. The software
 behind the owner's provider documents that a delete whose copies cannot be removed within 30 seconds is queued and acknowledged (research
 of 2026-11-22). If such a queued removal could reach an object written under the same key after the acknowledgement, a re-uploaded blob
 would lose its object while its copy row says `present`. The consequence is bounded: the next read falls over and marks the copy
@@ -141,15 +147,6 @@ before. Bytes of the same length replaced at the survivor since its last verific
 deletes the only good copy, and the blob is `corrupt` when it is next read. Live during a drain, and only together with a write into the
 surviving bucket by another party or a silent corruption of the same length there. Reading the survivor whole before each deletion would
 close it at the price of reading every blob once more per drain.
-
-### H-1259 · Until collection works per copy, it deletes on the first connection only
-
-Component: collection (R-STOR-024), which deletes a claimed blob's object on the connection the commits write first, and drops the blob
-row with all its copy rows; per-copy collection (R-STOR-057) and the orphan sweep (R-STOR-026) are not built. Subject: deleted content,
-including content whose removal is a duty. With two connections, an object a commit wrote to the second connection (min_copies above 1,
-or a fall-over during an outage of the first) stays in the second bucket after its blob is collected, without a row that names it, and no
-sweep finds it. Live in an installation that configures two connections before package B lands; dormant with one connection. Mitigation
-until then: one connection, or a lifecycle rule or a manual removal at the second provider.
 
 ### H-1269 · A copy that read back whole may still be served stale by a store that applies overwrites late
 
@@ -169,9 +166,23 @@ Component: the marker `_connection` (R-STOR-051), which the start check reads an
 offer `If-None-Match` reliably (the specification lets nothing rest on it). Subject: the rule that a location belongs to one installation.
 Two installations whose first starts on the same empty location overlap both find no marker, both write one, and both pass; the marker
 written last names its installation, and the other installation refuses the connection at its next start. Until then both write blobs
-below one prefix, and the collection of each may delete objects the other references. Live only for two installations configured with the
-same bucket and prefix whose first starts overlap within the start check (seconds); dormant otherwise. The location rule of one
-installation (R-STOR-050 rule 4) does not see another installation's configuration.
+below one prefix, and the collection of each may delete objects the other references. The orphan sweep (R-STOR-026) of the installation
+whose marker stands deletes the other's objects too, as orphans without a blob row, once they are older than `storage.orphans.min_age`;
+the sweep of the other one reads the marker that names another installation and leaves the location alone (Q-STOR-262). Live only for two
+installations configured with the same bucket and prefix whose first starts overlap within the start check (seconds); dormant otherwise.
+The location rule of one installation (R-STOR-050 rule 4) does not see another installation's configuration.
+
+### H-1265 · The orphan sweep can adopt an object that a store still lists after its delete
+
+Component: the adoption of the orphan sweep (R-STOR-026, Q-STOR-262) on a connection without `drain: true`. Subject: the copy rows of a
+blob that was collected and uploaded again while one of its connections was not written. A store that applies deletes late (the software
+behind the owner's provider queues a delete it cannot finish within 30 s, research of 2026-11-22) can still list the old object of such a
+blob on a connection that the new upload did not write; the sweep finds a live blob without a copy row there and adopts the object, which
+then disappears. The copy row says `present` until the next read falls over and marks it `missing` (R-STOR-055) or the scrub reads it
+(R-STOR-027); the reconciliation then writes it again from the copy the upload made. No content is lost and no wrong content is served
+(a read of the vanished object falls over to the next copy before its first byte). Live with two or more connections at a provider that applies deletes late,
+for a blob collected and uploaded again between two sweeps; dormant with one connection, where the new upload writes the same key on the
+one connection. A `HeadObject` before each adoption would not close it: a store that lists a deleted object may answer for it as well.
 
 ### H-1257 · A holder of a connection's credential can keep replicas from starting through its marker
 

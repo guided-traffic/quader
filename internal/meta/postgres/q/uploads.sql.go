@@ -236,7 +236,7 @@ SELECT id::text AS id, repo_id, addressed_repo_id, COALESCE(binding, '')::text A
        COALESCE(writer::text, '')::text AS writer, COALESCE(item_id, 0)::bigint AS item_id,
        (writer IS NOT NULL AND writer_until > now())::bool AS claimed, digest, state,
        (created_at < now() - make_interval(secs => $1::float8))::bool AS too_old,
-       (SELECT count(*) FROM upload_session_parts p WHERE p.session_id = s.id)::bigint AS parts
+       (SELECT count(*) FROM upload_session_parts p WHERE p.session_id = s.id)::bigint AS parts, connection_id
 FROM upload_sessions s
 WHERE id = $2::text::uuid
 `
@@ -264,6 +264,7 @@ type UploadGetSessionRow struct {
 	State           string
 	TooOld          bool
 	Parts           int64
+	ConnectionID    string
 }
 
 // The row of a session as a request judges it: the scope columns, the recorded state and whether another request holds an
@@ -289,6 +290,7 @@ func (q *Queries) UploadGetSession(ctx context.Context, arg UploadGetSessionPara
 		&i.State,
 		&i.TooOld,
 		&i.Parts,
+		&i.ConnectionID,
 	)
 	return i, err
 }
@@ -400,16 +402,18 @@ func (q *Queries) UploadInsertTail(ctx context.Context, arg UploadInsertTailPara
 }
 
 const uploadKnownSessions = `-- name: UploadKnownSessions :many
-SELECT id::text AS id, s3_upload_id, state FROM upload_sessions WHERE id = ANY($1::text[]::uuid[])
+SELECT id::text AS id, s3_upload_id, state, connection_id FROM upload_sessions WHERE id = ANY($1::text[]::uuid[])
 `
 
 type UploadKnownSessionsRow struct {
-	ID         string
-	S3UploadID string
-	State      string
+	ID           string
+	S3UploadID   string
+	State        string
+	ConnectionID string
 }
 
-// Which of the ids have a row that still stands for live objects: the sweep removes the staging objects of the others.
+// The rows of the session ids that have one, with their connection: the orphan sweep removes the staging objects of the others, of the
+// sessions that are over and of those pinned to another connection (R-STOR-026).
 func (q *Queries) UploadKnownSessions(ctx context.Context, ids []string) ([]UploadKnownSessionsRow, error) {
 	rows, err := q.db.Query(ctx, uploadKnownSessions, ids)
 	if err != nil {
@@ -419,7 +423,12 @@ func (q *Queries) UploadKnownSessions(ctx context.Context, ids []string) ([]Uplo
 	items := []UploadKnownSessionsRow{}
 	for rows.Next() {
 		var i UploadKnownSessionsRow
-		if err := rows.Scan(&i.ID, &i.S3UploadID, &i.State); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.S3UploadID,
+			&i.State,
+			&i.ConnectionID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -431,20 +440,30 @@ func (q *Queries) UploadKnownSessions(ctx context.Context, ids []string) ([]Uplo
 }
 
 const uploadListAborted = `-- name: UploadListAborted :many
-SELECT id::text AS id, s3_upload_id, state FROM upload_sessions
- WHERE state = 'aborted' AND NOT cleaned AND received > 0 ORDER BY last_activity_at LIMIT $1::int
+SELECT id::text AS id, s3_upload_id, state, connection_id,
+       (created_at < now() - make_interval(secs => $1::float8))::bool AS too_old
+  FROM upload_sessions
+ WHERE state = 'aborted' AND NOT cleaned AND received > 0 ORDER BY last_activity_at LIMIT $2::int
 `
 
+type UploadListAbortedParams struct {
+	MaxAgeSeconds float64
+	MaxRows       int32
+}
+
 type UploadListAbortedRow struct {
-	ID         string
-	S3UploadID string
-	State      string
+	ID           string
+	S3UploadID   string
+	State        string
+	ConnectionID string
+	TooOld       bool
 }
 
 // The aborted sessions whose objects may still be in the bucket, oldest first (the index on state and last_activity_at orders them). A
-// session that staged nothing (received 0) or whose objects the request that ended it removed (cleaned) is the bulk delete's.
-func (q *Queries) UploadListAborted(ctx context.Context, maxRows int32) ([]UploadListAbortedRow, error) {
-	rows, err := q.db.Query(ctx, uploadListAborted, maxRows)
+// session that staged nothing (received 0) or whose objects the request that ended it removed (cleaned) is the bulk delete's. The
+// connection is the session's (R-STOR-054); too_old says that the row may go without its objects when that connection cannot be asked.
+func (q *Queries) UploadListAborted(ctx context.Context, arg UploadListAbortedParams) ([]UploadListAbortedRow, error) {
+	rows, err := q.db.Query(ctx, uploadListAborted, arg.MaxAgeSeconds, arg.MaxRows)
 	if err != nil {
 		return nil, err
 	}
@@ -452,7 +471,13 @@ func (q *Queries) UploadListAborted(ctx context.Context, maxRows int32) ([]Uploa
 	items := []UploadListAbortedRow{}
 	for rows.Next() {
 		var i UploadListAbortedRow
-		if err := rows.Scan(&i.ID, &i.S3UploadID, &i.State); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.S3UploadID,
+			&i.State,
+			&i.ConnectionID,
+			&i.TooOld,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -464,25 +489,30 @@ func (q *Queries) UploadListAborted(ctx context.Context, maxRows int32) ([]Uploa
 }
 
 const uploadListDone = `-- name: UploadListDone :many
-SELECT id::text AS id, s3_upload_id, state FROM upload_sessions
- WHERE state = 'done' AND NOT cleaned AND received > 0 AND last_activity_at < now() - make_interval(secs => $1::float8)
- ORDER BY last_activity_at LIMIT $2::int
+SELECT id::text AS id, s3_upload_id, state, connection_id,
+       (created_at < now() - make_interval(secs => $1::float8))::bool AS too_old
+  FROM upload_sessions
+ WHERE state = 'done' AND NOT cleaned AND received > 0 AND last_activity_at < now() - make_interval(secs => $2::float8)
+ ORDER BY last_activity_at LIMIT $3::int
 `
 
 type UploadListDoneParams struct {
+	MaxAgeSeconds float64
 	WindowSeconds float64
 	MaxRows       int32
 }
 
 type UploadListDoneRow struct {
-	ID         string
-	S3UploadID string
-	State      string
+	ID           string
+	S3UploadID   string
+	State        string
+	ConnectionID string
+	TooOld       bool
 }
 
-// The finished sessions whose replay window has passed and whose objects the request did not remove.
+// The finished sessions whose replay window has passed and whose objects the request did not remove, as UploadListAborted.
 func (q *Queries) UploadListDone(ctx context.Context, arg UploadListDoneParams) ([]UploadListDoneRow, error) {
-	rows, err := q.db.Query(ctx, uploadListDone, arg.WindowSeconds, arg.MaxRows)
+	rows, err := q.db.Query(ctx, uploadListDone, arg.MaxAgeSeconds, arg.WindowSeconds, arg.MaxRows)
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +520,13 @@ func (q *Queries) UploadListDone(ctx context.Context, arg UploadListDoneParams) 
 	items := []UploadListDoneRow{}
 	for rows.Next() {
 		var i UploadListDoneRow
-		if err := rows.Scan(&i.ID, &i.S3UploadID, &i.State); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.S3UploadID,
+			&i.State,
+			&i.ConnectionID,
+			&i.TooOld,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -623,6 +659,27 @@ type UploadMarkDoneParams struct {
 // the record and not by a second commit.
 func (q *Queries) UploadMarkDone(ctx context.Context, arg UploadMarkDoneParams) (int64, error) {
 	result, err := q.db.Exec(ctx, uploadMarkDone, arg.ItemID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const uploadMoveSession = `-- name: UploadMoveSession :execrows
+UPDATE upload_sessions SET connection_id = $1::text, last_activity_at = now()
+ WHERE id = $2::text::uuid AND state = 'open' AND writer = $3::text::uuid AND received = 0 AND s3_upload_id = ''
+`
+
+type UploadMoveSessionParams struct {
+	ConnectionID string
+	ID           string
+	Writer       string
+}
+
+// A session that has written nothing moves to another connection at its first write when its own is not writable (R-STOR-054),
+// under the claim of the request that writes. Zero rows is a request that lost its claim or a session that has written meanwhile.
+func (q *Queries) UploadMoveSession(ctx context.Context, arg UploadMoveSessionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, uploadMoveSession, arg.ConnectionID, arg.ID, arg.Writer)
 	if err != nil {
 		return 0, err
 	}
@@ -781,27 +838,4 @@ func (q *Queries) UploadSetAssembled(ctx context.Context, id string) (int64, err
 		return 0, err
 	}
 	return result.RowsAffected(), nil
-}
-
-const uploadSweepCursorGet = `-- name: UploadSweepCursorGet :one
-SELECT COALESCE((SELECT value #>> '{}' FROM system_state WHERE key = 'upload_sweep_cursor'), '')::text
-`
-
-// Where the sweep of the staging area stopped in an earlier run (a JSON text; empty when it finished or never ran), so that successive
-// runs go on instead of starting at the first session again.
-func (q *Queries) UploadSweepCursorGet(ctx context.Context) (string, error) {
-	row := q.db.QueryRow(ctx, uploadSweepCursorGet)
-	var column_1 string
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
-const uploadSweepCursorSet = `-- name: UploadSweepCursorSet :exec
-INSERT INTO system_state (key, value) VALUES ('upload_sweep_cursor', to_jsonb($1::text))
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
-`
-
-func (q *Queries) UploadSweepCursorSet(ctx context.Context, cursor string) error {
-	_, err := q.db.Exec(ctx, uploadSweepCursorSet, cursor)
-	return err
 }

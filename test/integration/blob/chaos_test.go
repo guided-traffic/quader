@@ -12,6 +12,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -138,8 +139,10 @@ func TestGCKilledAtRandomPoints(t *testing.T) {
 			}
 			cfg := up.cfg
 			batch := rng.IntN(2) == 0
+			cfg.Connections = slices.Clone(cfg.Connections)
+			cfg.Connections[0].BatchDelete = &batch
 			// A fresh collector is a fresh process: it knows none of its predecessor's claims.
-			c := collector(cfg, up.obj, p.db, blob.WithCollectorLogger(quiet), blob.WithBatchDelete(batch))
+			c := collector(cfg, up.obj, p.db, blob.WithCollectorLogger(quiet))
 			rctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 			stopAt, mode := 1+rng.IntN(30), rng.IntN(3)
 			var calls atomic.Int32

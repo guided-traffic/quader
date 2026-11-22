@@ -31,7 +31,10 @@ A remote hit whose package document is expired, or was validated before a restor
 The first-request measurement of `TestR_ARCH_027_ADocumentOfACallerWithPathPatternsCostsOneStatement` (a document after a write) does not use the log:
 it starts the replica with `testenv.RequestTransactions` and reads the statements of the one request by its `X-Request-Id`, so a statement of the replica's
 own loops (the readiness check reads `system_state` twice) never falls into the count. The log window stays where a test counts many identical requests
-and tolerates a lost line (`perRequestAs`).
+and tolerates a lost line (`perRequestAs`). A replica of the role `all`, the one of `TestR_ARCH_027_ADebianDownloadCostsOneStatement`
+([deb_test.go](../../test/integration/querybudget/deb_test.go)), runs the latest slot of every task at its first tick; the test waits until the run of the
+orphan sweep has ended before its window, because the sweep's pause check, finish and checkpoint per prefix of the connection (storage.md R-STOR-026)
+would pass the window's nine-in-ten rule as statements of every download (`awaitFirstRun`).
 
 ## How the one statement is built
 

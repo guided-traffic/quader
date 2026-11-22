@@ -288,6 +288,27 @@ func (m *memRows) abort(_ context.Context, id uuid.UUID) (bool, string, error) {
 	return true, s.UploadID, nil
 }
 
+func (m *memRows) move(_ context.Context, id uuid.UUID, writer, conn string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.holder(id, writer)
+	if !ok || s.Received != 0 || s.UploadID != "" {
+		return errLostClaim
+	}
+	s.Conn, s.activity = conn, m.now
+	return nil
+}
+
+// conn is the recorded connection of a session, for assertions.
+func (m *memRows) conn(id uuid.UUID) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if s, ok := m.sessions[id]; ok {
+		return s.Conn
+	}
+	return ""
+}
+
 // state is the recorded state of a session, for assertions.
 // stateGone is the state of a session whose row was deleted.
 const stateGone State = ""

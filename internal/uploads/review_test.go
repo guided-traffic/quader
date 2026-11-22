@@ -284,7 +284,7 @@ func TestR_STOR_011_ATailObjectLongerThanRecordedFailsAtOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, _, _ := f.rows.get(context.Background(), sess.ID, time.Hour)
-	f.obj.Set(s.tailKey(sess.ID, r.Tails[0].Writer), random(5*testPart), time.Now())
+	f.obj.Set(f.tailKey(sess.ID, r.Tails[0].Writer), random(5*testPart), time.Now())
 	if _, err := f.append(s, sess.ID, 5, random(30)); errKind(err) != errs.Internal {
 		t.Fatalf("err = %v", err)
 	}
@@ -314,7 +314,7 @@ func TestR_STOR_011_SessionsAreCountedByHowTheyEnded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := newService(f.rows, Options{Objects: f.obj, Spool: sp, Storage: cfg, Metrics: m})
+	s := newService(f.rows, Options{Connections: oneConnection(t, cfg, f.obj), Spool: sp, Storage: cfg, Metrics: m})
 	count := func(outcome string) float64 { return metricValue(t, m, outcome) }
 
 	done, _ := s.Start(context.Background(), 3, f.sc)

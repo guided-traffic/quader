@@ -303,7 +303,8 @@ unset on a replica with a client listener (R-OPS-005: URLs then come from the re
 Before serving, `freezeRegistries` freezes the sealed columns, the revision columns and the table registry; the job
 registry ([wire_jobs.go](../../internal/app/wire_jobs.go)) is frozen where it is built: the kinds other packages put in
 `jobs.Default`, the coordination kinds, and `gc` / `gc-full` with their tasks (schedules from `maintenance.tasks`,
-fallback `*/30 * * * *` and `0 2 * * 0`, dedup key `gc`). It is a registry per replica, not `jobs.Default` itself, so
+fallback `*/30 * * * *` and `0 2 * * 0`, dedup key `gc`), the storage tasks of the several connections (`orphan-sweep`,
+[wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go)) and the other domains' kinds. It is a registry per replica, not `jobs.Default` itself, so
 several replicas in one test process do not collide.
 
 Readiness: `startup`, `database`, `schema`, `invalidation`, `outbound` gate; `tls` (when a listener serves TLS) gates the
