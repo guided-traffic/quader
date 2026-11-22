@@ -278,10 +278,11 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request, caller files.Calle
 		h.index(w, r, caller, key, p)
 		return
 	}
-	// A file of /files/ is a download of the generic format's protocol (R-LIM-007): admitted before its status line.
+	// A file of /files/ is a download of the generic format's protocol (R-LIM-007): admitted before its status line. Through
+	// a Bastion the status line of an answer Served counts carries Quader-Bastion-Counted (R-BAS-059, Q-BAS-186).
 	charge := limits.FromContext(r.Context())
 	charge.Served(res.Item.RepoID)
-	if err := edge.ServeItem(w, r, res.Item,
+	if err := edge.ServeItem(bastionmain.CountingWriter(r, w), r, res.Item,
 		func(rng *items.Range) (io.ReadCloser, error) { return h.svc.Open(r.Context(), res.Item, rng) },
 		edge.ServeOptions{
 			Admit:  func() error { return charge.Admit(r.Context()) },

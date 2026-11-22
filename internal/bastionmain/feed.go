@@ -58,6 +58,8 @@ func feedActions() []string {
 		eventRepositoryMoved, eventProjectMemberRemoved, eventProjectMemberChanged,
 		audit.EventRepositoryDisabled, eventRepositoryDeleted, audit.EventRepositoryNarrowed, eventClaimsChanged,
 		audit.EventNPMUnpublish, audit.EventPackageDeleted,
+		audit.EventOCIManifestDeleted, audit.EventDebPackageDeleted, audit.EventDebCoordinatesRemoved,
+		audit.EventDebSigningKeyPromoted, audit.EventDebSigningKeyRetired, audit.EventAnsibleVersionDeleted,
 		audit.EventVulnFindingStatusChanged, audit.EventVulnFindingReopened,
 		audit.EventMalwareFound, audit.EventMalwareReleaseWithdrawn,
 		audit.EventSignatureReleaseWithdrawn, audit.EventSignatureAnchorRemoved, audit.EventSignatureAnchorUpdated,
@@ -75,13 +77,7 @@ func noFeedEntry() map[string]string {
 	return map[string]string{
 		"authz.ownership.removed":          "bounds who may publish a package name (R-AUTHZ-018); a read is never decided by ownership",
 		"authz.ownership.released":         "bounds who may publish a package name (R-AUTHZ-018); a read is never decided by ownership",
-		audit.EventOCIManifestDeleted:      "withdraws an OCI manifest, and a Bastion does not serve /v2/ (Q-OCI-23)",
-		audit.EventDebPackageDeleted:       "withholds a Debian package file, and a Bastion does not serve the Debian format (Q-DEB-26)",
-		audit.EventDebCoordinatesRemoved:   "narrows where a Debian package is listed, and a Bastion does not serve the Debian format (Q-DEB-26)",
-		audit.EventDebSigningKeyPromoted:   "changes the key that signs a Debian repository's indexes, and a Bastion does not serve the Debian format (Q-DEB-26)",
-		audit.EventDebSigningKeyRetired:    "withdraws a Debian signing key, and a Bastion does not serve the Debian format (Q-DEB-26)",
-		audit.EventAnsibleVersionDeleted:   "withholds the number of a deleted Ansible Galaxy version, and a Bastion does not serve the Ansible Galaxy format (Q-ANS-25)",
-		audit.EventAnsibleTombstoneCleared: "frees the number of a deleted Ansible Galaxy version, and a Bastion does not serve the Ansible Galaxy format (Q-ANS-25)",
+		audit.EventAnsibleTombstoneCleared: "frees the number of a deleted Ansible Galaxy version, which widens what may be published and changes no byte a Bastion holds (Q-BAS-175)",
 		audit.EventPackagePublished:        "reserves the version numbers a publish took (R-HA-054); a Bastion never publishes",
 		audit.EventProjectDeleted:          "a project is deleted only when it holds no repository and no service account, and its policies are deleted before it, each journaled as authz.policy.deleted (grants)",
 		audit.EventBastionDisabled:         "a registration is no caller a Bastion answers; the Bastion learns of its own disable from 401 bastion_token_invalid on its next call (R-BAS-006, Q-BAS-145)",
@@ -196,6 +192,15 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		eventClaimsChanged:                  mapRepository,
 		audit.EventNPMUnpublish:             mapWithdrawal,
 		audit.EventPackageDeleted:           mapWithdrawal,
+		// The withdrawals of the formats a Bastion serves since every format reaches it (R-BAS-050, R-BAS-055, Q-BAS-175): a deleted
+		// manifest (and the tags and children its cascade took), a withheld Debian package file, a package taken out of a suite, a new
+		// primary key and a withdrawn key, and a deleted Galaxy version each change which bytes a URL of the repository is answered with.
+		audit.EventOCIManifestDeleted:       mapWithdrawal,
+		audit.EventDebPackageDeleted:        mapWithdrawal,
+		audit.EventDebCoordinatesRemoved:    mapWithdrawal,
+		audit.EventDebSigningKeyPromoted:    mapWithdrawal,
+		audit.EventDebSigningKeyRetired:     mapWithdrawal,
+		audit.EventAnsibleVersionDeleted:    mapWithdrawal,
 		audit.EventVulnFindingReopened:      mapBlock,
 		audit.EventVulnFindingStatusChanged: mapBlock,
 		audit.EventMalwareFound:             mapBlob,
@@ -339,6 +344,18 @@ func mapExternal(ev FeedEvent, d *detailsDoc, _ string) []rawEntry {
 
 func mapRepository(ev FeedEvent, d *detailsDoc, _ string) []rawEntry {
 	return repositoryEntries(ev, d.Added, grantsEntry())
+}
+
+// withdrawal reports whether an action is mapped by [mapWithdrawal] from the event's repository: one that names none yields no
+// entry, which the feed logs.
+func withdrawal(action string) bool {
+	switch action {
+	case audit.EventNPMUnpublish, audit.EventPackageDeleted, audit.EventSignatureReleaseWithdrawn,
+		audit.EventOCIManifestDeleted, audit.EventDebPackageDeleted, audit.EventDebCoordinatesRemoved,
+		audit.EventDebSigningKeyPromoted, audit.EventDebSigningKeyRetired, audit.EventAnsibleVersionDeleted:
+		return true
+	}
+	return false
 }
 
 // mapWithdrawal: a withdrawal without a repository yields none (the caller logs it).
@@ -603,7 +620,7 @@ func (f *Feed) read(ctx context.Context, qs *q.Queries, cur iface.Cursor, limit 
 	mapped := make([][]rawEntry, len(events))
 	for i, ev := range events {
 		mapped[i] = mapEvent(ev, f.o.Endpoint)
-		if i >= nBehind && len(mapped[i]) == 0 && (ev.Action == audit.EventNPMUnpublish || ev.Action == audit.EventPackageDeleted) {
+		if i >= nBehind && len(mapped[i]) == 0 && withdrawal(ev.Action) {
 			f.o.Log.Warn("a withdrawal event names no repository; it yields no feed entry", "event_id", ev.ID, "action", ev.Action)
 		}
 	}

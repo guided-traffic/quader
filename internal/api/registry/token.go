@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/api/bastionmark"
 	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/api/registry/route"
 	"github.com/guided-traffic/quader/internal/audit"
@@ -142,6 +143,14 @@ func (h *Token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			charge.Retarget(r.Context(), anonymous)
 		}
 	}()
+	// Through a Bastion the marking learns the route before the form is read or the credential authenticated: the probe of
+	// a POST is answered 204 there, and the real request follows with its form (R-BAS-051).
+	if handled, err := tellRoute(w, r, h.o.Format, route.NameToken, http.MethodGet, http.MethodPost); err != nil || handled {
+		if err != nil {
+			h.o.WriteError(w, r, err)
+		}
+		return
+	}
 	tr, err := h.read(w, r)
 	if err != nil {
 		h.refuse(w, r, err)
@@ -173,6 +182,8 @@ func (h *Token) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	charged = true
+	// The chain did not authenticate this route; through a Bastion the marking states the caller the service accepted.
+	bastionmark.NoteCaller(r.Context(), p)
 	admin := h.o.IsAdministrator != nil && h.o.IsAdministrator(r, p)
 	charge.Retarget(r.Context(), httplimit.CallerOf(r, p, admin))
 	r = r.WithContext(httpserver.WithPrincipal(r.Context(), p))

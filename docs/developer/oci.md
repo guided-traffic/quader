@@ -238,7 +238,9 @@ stored: in a remote the platforms arrive later, one per client pull. `Describe` 
 **What a pull counts** (`VersionFetch: FetchDocument`, R-API-079, Q-OCI-222): the package view counts a tag's downloads on the tag item and the item
 of its manifest under `<name>/_manifests/<digest>` (a pull by digest). A remote tag has no item: `remoteManifestGet` answers it from the metadata
 entry and `recordTagFetch` counts the `GET` (not a `HEAD`, not a `304`) on the manifest item the fill entered beside it, through
-`ItemStore.RecordDownload`. `oci_remote_tags` (migration 00079) lists a remote tag once that item has a download, or the repository is a mirror.
+`ItemStore.RecordDownload`, before `writeStoredDocument` writes the `200`, so that the host's note of the count reaches the marking of a
+Bastion's forward ([bastion.md](../spec/bastion.md) R-BAS-059, Q-BAS-186). `oci_remote_tags` (migration 00079) lists a remote tag once
+that item has a download, or the repository is a mirror.
 
 ## Upload sessions (R-STOR-011)
 

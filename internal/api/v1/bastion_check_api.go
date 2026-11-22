@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
@@ -26,6 +27,11 @@ import (
 // switch of R-AUTH-037, the session cookie and the API-key header play no part) and no rule of the
 // management API's bridge.
 const bastionCheckPath = "/api/bastion-check"
+
+// bastionRegistryCheckPath is the path a registry token is handed to the stage on: one below the registry root, where the
+// stage verifies a registry token (its MAC, expiry, endpoint and the token behind it, R-OCI-005) and nowhere else. No route
+// serves it (R-BAS-052).
+const bastionRegistryCheckPath = "/v2/bastion-check"
 
 // maxCredentialLen bounds the credential a check may carry; every token is far shorter.
 const maxCredentialLen = 8192
@@ -84,7 +90,10 @@ func (s *Server) BastionCheck(w http.ResponseWriter, r *http.Request, _ gen.Bast
 		return
 	}
 	for i, text := range req.Repositories {
-		ans.Repositories[text] = repositoryRead(shapes[names[i]], subject.Kind == iface.SubjectAnonymous)
+		sh := shapes[names[i]]
+		// A registry token's grant is a ceiling the decision point does not see: its shape is at most partial (R-BAS-052).
+		sh.Read = bastionmain.CapRegistryShape(sh.Read, p.Credential.Registry != nil)
+		ans.Repositories[text] = repositoryRead(sh, subject.Kind == iface.SubjectAnonymous)
 	}
 	writeInterface(w, r, http.StatusOK, ans)
 }
@@ -116,13 +125,18 @@ func (s *Server) checkRequest(req iface.CheckRequest) (netip.Addr, error) {
 // checkSubject runs the caller's credential through the authentication stage as a direct request from the
 // caller's address would be run, and turns the verdict into the subject of the answer. The failed-credential
 // throttle and the token.rejected event apply to that address (R-AUTH-038). Only a failure of the stage's own
-// stores is an error of the operation.
+// stores is an error of the operation. A registry token is presented on a path below the registry root, the one
+// place the stage accepts it; its subject is the token it was issued for, with the registry token's own expiry
+// (R-BAS-052).
 func (s *Server) checkSubject(r *http.Request, req iface.CheckRequest, addr netip.Addr) (iface.Subject, httpserver.Principal, error) {
 	cr := r.Clone(httpserver.WithClient(r.Context(), addr))
 	cr.Method, cr.URL.Path, cr.URL.RawPath, cr.URL.RawQuery = http.MethodGet, bastionCheckPath, "", ""
 	cr.Header, cr.Body = http.Header{}, http.NoBody
 	if req.Credential != nil {
 		cr.Header.Set("Authorization", "Bearer "+*req.Credential)
+		if strings.HasPrefix(*req.Credential, iface.RegistryTokenPrefix) {
+			cr.URL.Path = bastionRegistryCheckPath
+		}
 	}
 	p, err := s.o.Bastion.Authenticate(cr)
 	if err == nil {

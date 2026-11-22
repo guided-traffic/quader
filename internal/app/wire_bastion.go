@@ -14,7 +14,9 @@ import (
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The wiring of the main installation's side of the quader Bastion (docs/developer/bastion.md, R-BAS-004 to
@@ -58,7 +60,8 @@ func (a *App) bastionStages(rt *endpointRuntime) (bastionmain.Stages, error) {
 	// >>> package 3
 	if shapes := a.bastionShapes(); shapes != nil {
 		st.Mark = bastionmark.New(bastionmark.Options{
-			Shapes: shapes, MainURL: a.cfg.Server.BaseURL, Metrics: a.bastionMetrics(), Log: a.log.With("component", "bastion"),
+			Shapes: shapes, MainURL: a.cfg.Server.BaseURL, RegistryRoot: bastionRegistryRoot(formats.List()),
+			Metrics: a.bastionMetrics(), Log: a.log.With("component", "bastion"),
 		}).Stage()
 	}
 	// <<< package 3
@@ -102,6 +105,17 @@ func (a *App) bastionShapes() bastionmain.ShapeResolver {
 		return nil
 	}
 	return bastionmain.NewShapeResolver(eng)
+}
+
+// bastionRegistryRoot is the ID of the format with routes that declares the registry root, "" when none is registered:
+// a refused write of it names the image prefix of its repository (R-BAS-051).
+func bastionRegistryRoot(fs []formats.Format) string {
+	for _, f := range fs {
+		if d := f.Descriptor(); d.RegistryRoot && len(f.Routes()) > 0 {
+			return string(d.ID)
+		}
+	}
+	return ""
 }
 
 // bastionMetrics returns the metrics of the main installation's side, registered once: the Mark stage counts
@@ -238,7 +252,7 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		AnonymousReads: func(ctx context.Context) bool {
 			return rt.cfg.Anonymous && a.anonymousReads(ctx, true)
 		},
-		Authenticate: a.credentialStage(rt),
+		Authenticate: a.bastionCheckStage(rt),
 		Shapes:       a.bastionShapes(),
 		Feed: bastionmain.NewFeed(bastionmain.FeedOptions{
 			DB: in.db, Lookback: cfg.Bastions.Feed.Lookback, MaxPage: cfg.Bastions.Feed.MaxPage, Endpoint: rt.cfg.Name, Log: a.log,
@@ -248,7 +262,40 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 			DB: in.db, Audit: rec, MaxBatch: cfg.Bastions.Downloads.MaxBatch, MaxAge: cfg.Bastions.Downloads.MaxAge, Record: cfg.Audit.RecordDownloads,
 			Events: a.bastionEventBudget(),
 		}),
+		// The handshake's format table (R-BAS-057) and the binding of the Bastion's host as the match of /v2/ reads it.
+		Formats:         v1.BastionFormatTable(formats.List()),
+		BoundRepository: a.bastionBoundRepository(),
 	}
+}
+
+// bastionCheckStage is the authentication stage the check runs a caller's credential through (R-BAS-011, Q-BAS-66): the
+// default endpoint's stage with its rules, recording nothing in the request log (Q-BAS-119), except that the check's own
+// paths count as served whatever this process's role serves. The check hands a credential to the stage on a package path
+// (/api/bastion-check) or, for a registry token, below the registry root (/v2/bastion-check, R-BAS-052), so that it is
+// decided as the Bastion's forward of the caller's request is decided by a replica that serves the package families; on a
+// replica of the role api, which serves the interface but not those families, the rule of Q-ARCH-302 would otherwise read
+// the path as unknown, and the stage verifies a registry token only on a path below /v2/.
+func (a *App) bastionCheckStage(rt *endpointRuntime) func(*http.Request) (httpserver.Principal, error) {
+	rules := a.credentialRules(rt)
+	rules.Served = nil // every family is served: the check's paths are no routes of this process
+	stage := a.authStage().stage
+	return withMinEpoch(func(r *http.Request) (httpserver.Principal, error) {
+		res, err := stage.Authenticate(r, rules)
+		if err != nil {
+			return httpserver.Principal{}, err
+		}
+		return principalFromResult(res), nil
+	})
+}
+
+// bastionBoundRepository is the dispatcher's reading of the binding of a request's host root (R-EP-006, R-OCI-029), which
+// the handshake names as the Bastion's bound repository (R-BAS-057); nil on a replica without a format host.
+func (a *App) bastionBoundRepository() func(*http.Request) (qname.Repo, bool, error) {
+	disp := part[formatHostArea](a.parts).disp
+	if disp == nil {
+		return nil
+	}
+	return disp.BoundRepository
 }
 
 // <<< package 2

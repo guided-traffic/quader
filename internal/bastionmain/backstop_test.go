@@ -53,6 +53,49 @@ func TestR_BAS_014_AForwardReachesOnlyThePackageFamilies(t *testing.T) {
 	}
 }
 
+// TestQ_BAS_165_TheMainInstallationForwardsTheRegistryRoot is the main installation's side of R-BAS-051: the backstop
+// admits the registry root as a family a Bastion forwards - a repository route, the three core routes, the root without
+// its slash and a segment the router decodes to v2 - and still refuses the management API however it is spelled, and a
+// /v2 whose encoded slash the router keeps in one segment. Named by the decision until the Bastion's side (package C of
+// Every format) proves the requirement.
+func TestQ_BAS_165_TheMainInstallationForwardsTheRegistryRoot(t *testing.T) {
+	admitted := []string{
+		"/v2/web/docker/app/manifests/1", "/v2/web/docker-local/app/blobs/uploads/", "/v2/_token", "/v2/_catalog", "/v2/", "/v2",
+		"/%76%32/_token", "/v2/library/alpine/manifests/3",
+	}
+	for _, path := range admitted {
+		if !forwardablePath(routingSegments(path)) {
+			t.Errorf("%s: not admitted", path)
+		}
+		r := forwarded(path, iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version())
+		w, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
+		if seen == nil {
+			t.Errorf("%s: a forward of the registry root was refused: %d %s", path, w.Code, w.Body)
+			continue
+		}
+		if rec, _ := RecognitionFrom(seen.Context()); rec.Route || rec.Bastion != "partners" {
+			t.Errorf("%s: recognition %+v", path, rec)
+		}
+	}
+	for _, path := range []string{"/api/%76%31/tokens", "/api/v1/tokens", "/v2%2Fweb/docker/app/manifests/1", "/v3/x", "/v"} {
+		if forwardablePath(routingSegments(path)) {
+			t.Errorf("%s: admitted", path)
+		}
+	}
+	t.Run("the probe of a registry write is recognized as a probe", func(t *testing.T) {
+		r := forwarded("/v2/web/docker-local/app/blobs/uploads/", iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version(),
+			iface.HeaderProbe, iface.ProbeValue)
+		r.Method = http.MethodPost
+		_, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
+		if seen == nil {
+			t.Fatal("the probe was refused")
+		}
+		if rec, _ := RecognitionFrom(seen.Context()); !rec.Probe {
+			t.Fatalf("recognition %+v", rec)
+		}
+	})
+}
+
 // TestR_BAS_008_AnInterfaceCallCarriesNoQuaderBastionAuthorization: the interface accepts the Bastion token in
 // Authorization only on a request without Quader-Bastion-Authorization (Q-BAS-115). With that header the request is
 // a forward, also when its path decodes to an interface route, and a forward never reaches an interface handler;

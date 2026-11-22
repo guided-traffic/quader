@@ -428,8 +428,9 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 		admit = func() error { return charge.Admit(ctx) }
 	}
 	// An object that cannot be opened is returned unwritten: the format's dispatcher answers it, and the remote engine
-	// first fills the item of a remote repository again when its object is missing (R-STOR-027).
-	return edge.ServeItem(w, rq.Request, row,
+	// first fills the item of a remote repository again when its object is missing (R-STOR-027). Through a Bastion the
+	// status line of an answer this serve counts carries Quader-Bastion-Counted (R-BAS-059, Q-BAS-186).
+	return edge.ServeItem(bastionmain.CountingWriter(rq.Request, w), rq.Request, row,
 		func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) },
 		edge.ServeOptions{
 			Admit:  admit,
@@ -444,7 +445,9 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 }
 
 // RecordDownload implements [formats.ItemStore]: the download statistics, the repository's activity and the audit event of a
-// download the format answered itself (R-STOR-015, R-API-079). An item that cannot be read is not counted.
+// download the format answers itself (R-STOR-015, R-API-079). An item that cannot be read is not counted. Through a Bastion the
+// count is noted for the marking (R-BAS-059, Q-BAS-186), which reaches the answer when the format records the download before its
+// status line, as OCI's remote tag does.
 func (s itemStore) RecordDownload(ctx context.Context, rq *formats.Request, it formats.Item) {
 	if systemRead(rq) {
 		return // the image scanning's pull counts no download (system_read.go)
@@ -453,6 +456,7 @@ func (s itemStore) RecordDownload(ctx context.Context, rq *formats.Request, it f
 	if err != nil {
 		return
 	}
+	bastionmain.NoteCounted(ctx)
 	s.h.o.Items.Served(ctx, items.ServedEvent{
 		Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
 		Endpoint: rq.Subject.Endpoint, CountStats: true,

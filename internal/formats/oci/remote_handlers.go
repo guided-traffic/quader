@@ -195,10 +195,12 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 	if err != nil {
 		return err
 	}
+	// The download is counted before the answer's status line, so that the host's note of it travels with the answer (a Bastion
+	// reports the hits of what the main installation counted, R-BAS-059); the bytes are in memory, and a 200 follows.
+	recordTagFetch(ctx, rq, name, doc.Digest)
 	if err := writeStoredDocument(rq, w, doc, body); err != nil {
 		return err
 	}
-	recordTagFetch(ctx, rq, name, doc.Digest)
 	f.probeTag(ctx, rq, name, ref, doc.Digest, body)
 	refreshSignatures(ctx, rq, name, ref, doc)
 	return nil
@@ -226,7 +228,7 @@ func revalidatedUnchanged(s formats.CacheStatus) bool {
 	return !s.Hit && !s.Stored && !s.Negative && strings.Contains(s.Header, "fwd=stale")
 }
 
-// recordTagFetch counts the GET of a tag that writeStoredDocument answered with the manifest as a download of the tag (R-API-079,
+// recordTagFetch counts the GET of a tag that writeStoredDocument answers with the manifest as a download of the tag (R-API-079,
 // Q-OCI-222): the tag's document is a metadata entry and no item, so the download is counted on the item that holds the same manifest
 // under its digest, which the fill entered beside the tag (R-OCI-022) and which a pull by digest is counted on as well. A HEAD and a
 // 304 are not downloads (R-STOR-015); a manifest whose item is not stored any more is not counted.

@@ -17,6 +17,19 @@ type Shape struct {
 	Status int
 }
 
+// CapRegistryShape is the read shape of a caller whose credential carries a registry token's grant (granted): at most
+// partial (R-BAS-052, Q-BAS-167). The grant names image names and never a whole repository, and the decision point that
+// computes the shape does not see it - authz.Subject has no member for it, so the shape is the one of the token the
+// registry token was issued for - while the enforcement point in front of /v2/ checks it per request (Q-OCI-56). A full
+// shape would let a token granted one image read every cached image of the repository from a Bastion. The marking and
+// the check both apply it.
+func CapRegistryShape(read iface.Read, granted bool) iface.Read {
+	if granted && read == iface.ReadFull {
+		return iface.ReadPartial
+	}
+	return read
+}
+
 // ShapeResolver computes the read shapes of a subject (R-BAS-012, Q-BAS-28, Q-BAS-51). Work package 3
 // implements it, because the marking asks it on the hot path of every forwarded read; the check operation of
 // work package 2 asks it for a credential it has just validated. Both ask on the index of their request or

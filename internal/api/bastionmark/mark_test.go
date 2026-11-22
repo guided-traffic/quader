@@ -141,7 +141,7 @@ func (s *shapes) Shapes(_ context.Context, _ *authz.Index, sub authz.Subject, ke
 // stages.
 const (
 	hRecognize = "X-Test-Recognize" // "forward", "probe" or "route"
-	hCred      = "X-Test-Cred"      // "token", "token-no-expiry", "anon", "session", "bad"
+	hCred      = "X-Test-Cred"      // "token", "token-no-expiry", "anon", "session", "bad", "registry", "registry-anon"
 )
 
 var expiry = time.Unix(1_900_000_000, 0).UTC()
@@ -231,6 +231,19 @@ func newRig(t *testing.T, fs ...formats.Format) *rig {
 				}, nil
 			case "bad":
 				return httpserver.Principal{}, errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.")
+			case "registry":
+				// A registry token of the token t-1 (R-OCI-005): the principal and token of t-1, the registry token's own expiry
+				// and its grant, which the decision point does not see.
+				exp := registryExpiry
+				return httpserver.Principal{
+					Kind: httpserver.KindUser, ID: "p-1", Name: "alice",
+					Credential: httpserver.Credential{Method: httpserver.MethodBearer, TokenID: "t-1", ExpiresAt: &exp, Registry: registryGrant()},
+				}, nil
+			case "registry-anon":
+				p := httpserver.AnonymousPrincipal()
+				exp := registryExpiry
+				p.Credential = httpserver.Credential{Method: httpserver.MethodBearer, ExpiresAt: &exp, Registry: registryGrant()}
+				return p, nil
 			}
 			return httpserver.AnonymousPrincipal(), nil
 		},

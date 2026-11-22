@@ -134,7 +134,9 @@ func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Pa
 			Endpoint: rq.Subject.Endpoint, CountStats: true,
 		})
 	}
-	err = r.e.Artifact(ctx, preq, w, rq.Request)
+	// The first answer of a miss is a download counted once its body is complete (Streamed above), and a hit is the item
+	// store's serve: through a Bastion the status line of either carries Quader-Bastion-Counted (R-BAS-059, Q-BAS-186).
+	err = r.e.Artifact(ctx, preq, bastionmain.CountingWriter(rq.Request, w), rq.Request)
 	noteRemote(rq, err)
 	return err
 }

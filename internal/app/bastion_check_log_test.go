@@ -35,7 +35,7 @@ func TestR_BAS_008_TheCheckLeavesTheRequestLogLineOfTheRegistration(t *testing.T
 	a := &App{cfg: &config.Config{}, parts: &wiring{}}
 	a.parts.put(reflect.ValueOf(authArea{stage: callerStage{}}))
 	rt := &endpointRuntime{cfg: config.ResolvedEndpoint{Name: "default", Default: true}}
-	check := a.credentialStage(rt) // what bastionServices hands the check as BastionServices.Authenticate
+	check := a.bastionCheckStage(rt) // what bastionServices hands the check as BastionServices.Authenticate
 
 	var buf bytes.Buffer
 	log := slog.New(slog.NewJSONHandler(&buf, nil))

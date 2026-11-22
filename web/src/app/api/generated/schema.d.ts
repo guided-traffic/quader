@@ -11713,7 +11713,8 @@ export interface components {
             formats: components["schemas"]["BastionHandshakeFormat"][];
             /**
              * @description The qualified name `<projectKey>/<repoKey>` the default endpoint's `host_roots` binds the host of `responseBaseUrl` to
-             *     (R-EP-006, R-BAS-057); absent when it binds none.
+             *     (R-EP-006, R-BAS-057), named as the registry root reads the binding: only a repository that exists and is of the format that
+             *     declares the registry root (Q-BAS-188); absent otherwise.
              * @example web/docker-hub
              */
             boundRepository?: string;

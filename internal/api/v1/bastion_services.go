@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // BastionServices are what the four operations of the Bastion interface need (R-BAS-010, R-BAS-011, R-BAS-015,
@@ -32,10 +33,27 @@ type BastionServices struct {
 	Authenticate func(*http.Request) (httpserver.Principal, error)
 	// Shapes computes the read shapes (work package 3).
 	Shapes bastionmain.ShapeResolver
-	// Feed, Contacts and Downloads are the revocation feed, the last-contact recorder and the download intake.
-	Feed      *bastionmain.Feed
+	// Feed, Contacts and Downloads are the revocation feed (*bastionmain.Feed), the last-contact recorder and the download
+	// intake.
+	Feed      BastionFeedSource
 	Contacts  *bastionmain.Contacts
 	Downloads *bastionmain.Intake
+	// Formats is the handshake's format table (R-BAS-057), [BastionFormatTable] of the registered formats; nil answers an
+	// empty table.
+	Formats iface.HandshakeFormats
+	// BoundRepository is the dispatcher's reading of the binding of the request's host root (dispatch.Dispatcher
+	// .BoundRepository): the repository of the format that declares the registry root which host_roots binds the host to,
+	// false for an unbound host (R-EP-006, R-BAS-057, Q-BAS-188). Nil binds nothing.
+	BoundRepository func(*http.Request) (qname.Repo, bool, error)
+}
+
+// BastionFeedSource is what the handshake and the feed operation read of the revocation feed (R-BAS-010, R-BAS-015):
+// *bastionmain.Feed implements it over PostgreSQL.
+type BastionFeedSource interface {
+	// Position is the feed position of a handshake.
+	Position(ctx context.Context) (string, error)
+	// Read answers one feed request.
+	Read(ctx context.Context, after string, limit int) (iface.FeedAnswer, error)
 }
 
 // writeInterface answers an operation of the interface: the body is the wire form of the type
@@ -75,8 +93,9 @@ func BastionPrincipal(rec bastionmain.Recognition) httpserver.Principal {
 // A recognized write probe (R-BAS-014) is admitted as the anonymous caller for routing only, whatever the
 // anonymous switches say: it carries no credential of a caller by design, and the marking stage answers it at
 // the route match - 403 bastion_read_only or 204 - before any decision, handler or body read (Q-BAS-118). The
-// recognition stage admits a forward only below /api/<format>/ and /files/, whose routes all tell the marking
-// stage their kind first, so a probe reaches no handler. Every other request is the stage's. admitted, when
+// recognition stage admits a forward only below /api/<format>/, /files/ and the registry root /v2/, whose routes all
+// tell the marking stage their kind first (the registry's version check answers GET and HEAD only and decides
+// nothing), so a probe reaches no handler. Every other request is the stage's. admitted, when
 // set, is told of the registration on an interface route (the request log names it).
 func BastionRouteAuth(stage func(*http.Request) (httpserver.Principal, error), admitted func(*http.Request, httpserver.Principal)) func(*http.Request) (httpserver.Principal, error) {
 	return func(r *http.Request) (httpserver.Principal, error) {

@@ -78,9 +78,9 @@ const maxReplicaName = 253
 //     a verdict on the token.
 //   - A request with a valid token whose Quader-Bastion-Interface is missing or not [iface.InterfaceVersion]
 //     answers 400 bastion_interface_mismatch with the member interfaceVersion, and is served in no other way.
-//   - A forward whose path is not one of the package clients' families (/api/<format>/ and /files/, decoded as
-//     the router decodes it) answers 404 not_found: a Bastion forwards nothing else, and no other route runs
-//     for it, with the caller's credential or without one (R-BAS-014, Q-BAS-115).
+//   - A forward whose path is not one of the package clients' families (/api/<format>/, /files/ and the registry
+//     root /v2/, decoded as the router decodes it) answers 404 not_found: a Bastion forwards nothing else, and no
+//     other route runs for it, with the caller's credential or without one (R-BAS-014, R-BAS-051, Q-BAS-115).
 //   - Otherwise the request carries a [Recognition]; every answer to it has Quader-Bastion-Interface. On an
 //     interface route the validated token is taken out of Authorization, so no later stage sees it; on a
 //     forwarded request Quader-Bastion-Authorization is taken out of the request the stages behind receive
@@ -196,16 +196,20 @@ func interfacePath(segs []string) bool {
 	return len(segs) >= 4 && segs[0] == "api" && segs[1] == "v1" && segs[2] == "bastion"
 }
 
-// forwardablePath reports whether the routing segments lie in a family a Bastion forwards: /files/… or
-// /api/<format>/…, where <format> is any segment but v1 (R-BAS-003, R-BAS-014). Every route of these families
-// tells the marking stage its kind before it decides or reads a body (the format dispatcher, the raw file
-// handler); no route of any other family does.
+// forwardablePath reports whether the routing segments lie in a family a Bastion forwards: /files/…,
+// /api/<format>/…, where <format> is any segment but v1, and the registry root /v2 and /v2/… (R-BAS-003, R-BAS-014,
+// R-BAS-051). Every route of these families tells the marking stage its kind before it decides or reads a body (the
+// format dispatcher, below /v2/ through its registry handler, the raw file handler, the registry's token service and
+// catalog); the registry's version check answers GET and HEAD only and decides nothing. No route of any other family
+// does.
 func forwardablePath(segs []string) bool {
 	switch {
 	case len(segs) >= 2 && segs[0] == "files":
 		return true
 	case len(segs) >= 2 && segs[0] == "api":
 		return segs[1] != "" && segs[1] != "v1"
+	case len(segs) >= 1 && segs[0] == "v2":
+		return true
 	}
 	return false
 }

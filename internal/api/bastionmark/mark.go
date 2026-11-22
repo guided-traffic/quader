@@ -1,23 +1,27 @@
 // Package bastionmark is the Mark stage of the Bastion chain on the main installation (R-BAS-013, R-BAS-014,
-// Q-BAS-52, Q-BAS-70): for a request that carries a bastionmain.Recognition it installs the
+// R-BAS-052, R-BAS-059, Q-BAS-52, Q-BAS-70): for a request that carries a bastionmain.Recognition it installs the
 // bastionmain.RouteObserver, refuses the writes a Bastion token must never make, and adds the marking headers
 // at the status line; for every other request it strips every iface.HeaderPrefix header from the response, so
 // that an ordinary caller never learns its own shape. No format code is involved: the stage knows the route
-// from the observer calls of the dispatcher and of the raw file handler, the shape from the
-// bastionmain.ShapeResolver, and what the lookups found from the bastionmain.Absence record.
+// from the observer calls of the dispatcher, of the raw file handler and of the registry's token service and
+// catalog, the shape from the bastionmain.ShapeResolver, and what the lookups and the download recording found
+// from the bastionmain.Absence record.
 //
 // It is an edge package because it reads the caller the authentication stage found (httpserver.Principal).
 package bastionmark
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/guided-traffic/quader/internal/qname"
 
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
@@ -37,6 +41,11 @@ type Options struct {
 	// MainURL is the main installation's own base URL (server.base_url), which a refused write names so that
 	// the client knows where to publish (R-BAS-014). Empty leaves the URLs out of the detail.
 	MainURL string
+	// RegistryRoot is the ID of the format that declares the registry root ("oci", catalog.Facts.RegistryRoot): a refused
+	// write of it names the main installation's image prefix of the repository, "<host>/<projectKey>/<repoKey>", which is
+	// what a client pushes to, instead of a protocol base path (R-BAS-051). Empty names a protocol base path for every
+	// format.
+	RegistryRoot string
 	// Metrics counts the forwarded requests by registration and class; nil counts nothing.
 	Metrics *bastionmain.Metrics
 	// Log receives what the stage cannot say on the wire; nil discards it.
@@ -81,6 +90,9 @@ type state struct {
 
 	mu      sync.Mutex
 	subject iface.Subject // invalid until the authentication stage accepted a credential
+	// granted is set for a registry token (R-OCI-005): its grant is a ceiling the decision point does not see, so its
+	// read shape is capped at partial (R-BAS-052, Q-BAS-167).
+	granted bool
 	match   *bastionmain.RouteMatch
 	kind    string
 	read    iface.Read
@@ -89,7 +101,8 @@ type state struct {
 
 // noteCaller is called by the authentication stage with the caller it accepted. The subject of the marking is
 // the token with its principal and expiry, the anonymous caller, or invalid for a credential the Bastion cannot
-// use as one (a session cookie).
+// use as one (a session cookie). A registry token is the token it was issued for, with the registry token's own
+// expiry (auth.Credential.ExpiresAt is that, R-BAS-052), and is remembered for the cap of its shape.
 func (s *state) noteCaller(p httpserver.Principal) {
 	sub := iface.Subject{Kind: iface.SubjectInvalid}
 	switch {
@@ -99,8 +112,20 @@ func (s *state) noteCaller(p httpserver.Principal) {
 		sub = iface.Subject{Kind: iface.SubjectToken, TokenID: p.Credential.TokenID, PrincipalID: p.ID, ExpiresAt: p.Credential.ExpiresAt}
 	}
 	s.mu.Lock()
-	s.subject = sub
+	s.subject, s.granted = sub, p.Credential.Registry != nil
 	s.mu.Unlock()
+}
+
+// NoteCaller tells the marking of a recognized Bastion request who the caller of a route turned out to be when the route
+// authenticates the credential of its request itself and not the chain's authentication stage: the registry's token
+// service, which presents the Basic credential or the form's password of a token request to the stage on its own
+// (R-OCI-004, R-BAS-051). The marking then states that caller (Q-BAS-187), as it states the caller the chain's stage
+// accepted on every other route; a refusal of the token service is a 401 and invalid like every other. It is a no-op on a
+// request that is no recognized Bastion request.
+func NoteCaller(ctx context.Context, p httpserver.Principal) {
+	if o, ok := bastionmain.ObserverFrom(ctx).(*observer); ok {
+		o.st.noteCaller(p)
+	}
 }
 
 func (s *state) setRoute(mt bastionmain.RouteMatch) {
@@ -156,8 +181,14 @@ func (m *Marker) readOnly(mt bastionmain.RouteMatch) error {
 	detail := "This is a read-only Bastion; publish to the main installation."
 	if base := strings.TrimRight(m.o.MainURL, "/"); base != "" && !mt.Repo.IsZero() {
 		target := base + qname.ProtocolBase("/api/"+mt.Format+"/{project}/{key}/", mt.Repo)
-		if mt.Format == bastionmain.FormatFiles {
+		switch {
+		case mt.Format == bastionmain.FormatFiles:
 			target = base + qname.FilesBase(mt.Repo)
+		case mt.Format != "" && mt.Format == m.o.RegistryRoot:
+			// An image is pushed to a name below the host, not to a URL (R-OCI-001): quader.example.com/web/docker-local.
+			if u, err := url.Parse(base); err == nil && u.Host != "" {
+				target = u.Host + "/" + mt.Repo.String()
+			}
 		}
 		detail = "This is a read-only Bastion of " + base + "; publish to " + target
 	}
@@ -180,18 +211,20 @@ func (o *observer) Decided(r *http.Request, d bastionmain.RouteDecision) {
 		return
 	}
 	st.mu.Lock()
-	st.read = shapes[key].Read
+	st.read = bastionmain.CapRegistryShape(shapes[key].Read, st.granted)
 	st.mu.Unlock()
 }
 
-// marking derives the headers of the response from the state at the status line.
-func (s *state) marking(status int) iface.Marking {
+// marking derives the headers of the response from the state and the response headers h at the status line.
+func (s *state) marking(status int, h http.Header) iface.Marking {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	mk := iface.Marking{Class: iface.ClassPass, Interface: iface.InterfaceVersion, Subject: s.subject}
-	if status == http.StatusUnauthorized {
+	if status == http.StatusUnauthorized && !insufficientScope(h) {
 		// A rejected credential, or a caller the main installation asks to sign in: either way the credential
-		// is of no use to the Bastion (R-BAS-013).
+		// is of no use to the Bastion (R-BAS-013). A registry token whose grant lacks the route's action is
+		// another matter: the credential is valid and the client fetches a token for the scope the challenge
+		// names, so the subject the authentication stage accepted stands (R-BAS-052).
 		mk.Subject = iface.Subject{Kind: iface.SubjectInvalid}
 	}
 	if s.match == nil {
@@ -204,6 +237,8 @@ func (s *state) marking(status int) iface.Marking {
 	}
 	switch status {
 	case http.StatusOK, http.StatusNotModified:
+		// Serving a 200 counted a download when the core's download recording noted it (R-BAS-059); a 304 never does.
+		mk.Counted = status == http.StatusOK && s.absence.Counted()
 		switch s.kind {
 		case bastionmain.KindDownload:
 			mk.Class = iface.ClassArtifact
@@ -224,6 +259,17 @@ func (s *state) marking(status int) iface.Marking {
 		}
 	}
 	return mk
+}
+
+// insufficientScope reports whether a 401's challenge says error="insufficient_scope" (RFC 6750 section 3.1): the
+// enforcement point's refusal of a registry token whose grant lacks the route's action (R-OCI-004).
+func insufficientScope(h http.Header) bool {
+	for _, v := range h.Values("WWW-Authenticate") {
+		if strings.Contains(strings.ToLower(v), `error="`+registrytoken.ErrorInsufficientScope+`"`) {
+			return true
+		}
+	}
+	return false
 }
 
 // markWriter adds the marking at the status line.
@@ -255,7 +301,7 @@ func (w *markWriter) mark(code int) {
 		h.Set(iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion))
 		return
 	}
-	mk := w.st.marking(code)
+	mk := w.st.marking(code, h)
 	mk.Set(h)
 	if mt := w.st.m.o.Metrics; mt != nil && mt.Forwarded != nil {
 		class := string(mk.Class)

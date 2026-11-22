@@ -129,6 +129,14 @@ func TestR_BAS_015_TheMappingTableOfTheFeed(t *testing.T) {
 		{"npm.unpublish names the repository", FeedEvent{Action: audit.EventNPMUnpublish, Repository: "web/npm-local"}, []rawEntry{{kind: iface.FeedContent, repository: "web/npm-local"}}},
 		{"package.deleted names the repository", FeedEvent{Action: audit.EventPackageDeleted, Repository: "web/nuget-local"}, []rawEntry{{kind: iface.FeedContent, repository: "web/nuget-local"}}},
 		{"a withdrawal without a repository yields no entry", FeedEvent{Action: audit.EventPackageDeleted}, nil},
+		{"oci.manifest.deleted names the repository", FeedEvent{Action: audit.EventOCIManifestDeleted, Repository: "web/docker-local"}, []rawEntry{{kind: iface.FeedContent, repository: "web/docker-local"}}},
+		{"deb.package.deleted names the repository", FeedEvent{Action: audit.EventDebPackageDeleted, Repository: "web/apt"}, []rawEntry{{kind: iface.FeedContent, repository: "web/apt"}}},
+		{"deb.coordinates.removed names the repository", FeedEvent{Action: audit.EventDebCoordinatesRemoved, Repository: "web/apt"}, []rawEntry{{kind: iface.FeedContent, repository: "web/apt"}}},
+		{"deb.signing_key.promoted names the repository", FeedEvent{Action: audit.EventDebSigningKeyPromoted, Repository: "web/apt"}, []rawEntry{{kind: iface.FeedContent, repository: "web/apt"}}},
+		{"deb.signing_key.retired names the repository", FeedEvent{Action: audit.EventDebSigningKeyRetired, Repository: "web/apt"}, []rawEntry{{kind: iface.FeedContent, repository: "web/apt"}}},
+		{"ansible.version.deleted names the repository", FeedEvent{Action: audit.EventAnsibleVersionDeleted, Repository: "web/galaxy"}, []rawEntry{{kind: iface.FeedContent, repository: "web/galaxy"}}},
+		{"a deleted manifest without a repository yields no entry", FeedEvent{Action: audit.EventOCIManifestDeleted}, nil},
+		{"ansible.tombstone.cleared frees a number and yields none", FeedEvent{Action: audit.EventAnsibleTombstoneCleared, Repository: "web/galaxy"}, nil},
 		{"repository.disabled drops every answer", FeedEvent{Action: audit.EventRepositoryDisabled, Repository: "web/npm-local"}, []rawEntry{{kind: iface.FeedGrants}}},
 		{"repository.deleted drops every answer", FeedEvent{Action: "repository.deleted", Repository: "web/npm-local"}, []rawEntry{{kind: iface.FeedGrants}}},
 		{"bastion.disabled concerns no caller", FeedEvent{Action: audit.EventBastionDisabled, ResourceID: u1}, nil},
@@ -232,6 +240,18 @@ func TestR_BAS_015_EveryJournaledEventIsClassified(t *testing.T) {
 	if !slices.Contains(FeedActions(), audit.EventNPMUnpublish) {
 		t.Error("npm.unpublish is not in the feed")
 	}
+	// Every format a Bastion serves has its withdrawals in the feed (R-BAS-055, Q-BAS-175); the number a tombstone frees is none.
+	for _, name := range []string{
+		audit.EventOCIManifestDeleted, audit.EventDebPackageDeleted, audit.EventDebCoordinatesRemoved,
+		audit.EventDebSigningKeyPromoted, audit.EventDebSigningKeyRetired, audit.EventAnsibleVersionDeleted,
+	} {
+		if !slices.Contains(FeedActions(), name) || !withdrawal(name) {
+			t.Errorf("%s is not read by the feed as a withdrawal of its repository", name)
+		}
+	}
+	if _, listed := none[audit.EventAnsibleTombstoneCleared]; !listed {
+		t.Error("ansible.tombstone.cleared is not listed with its reason")
+	}
 }
 
 // TestR_BAS_015_MovingARepositoryDropsEveryPermissionAnswer: a repository that moves leaves its project's roles and
@@ -267,13 +287,21 @@ func TestR_BAS_015_AMemberLosingARoleDropsEveryPermissionAnswer(t *testing.T) {
 }
 
 // TestR_BAS_015_ContentEntriesCarryQualifiedNames: the repository of a withdrawal event is the qualified name the
-// audit row holds, and the entry lists it and every virtual repository over it by qualified name.
+// audit row holds, and the entry lists it and every virtual repository over it by qualified name; a withheld Debian
+// package names the virtual repositories over its repository as an npm unpublish does (R-BAS-055).
 func TestR_BAS_015_ContentEntriesCarryQualifiedNames(t *testing.T) {
 	ev := FeedEvent{ID: "0192f2a0-0000-7000-8000-000000000003", Action: audit.EventNPMUnpublish, Repository: "web/npm-local"}
-	l := lookups{closure: map[string][]string{"web/npm-local": {"web/npm-local", "data/npm-all", "web/npm-all"}}}
+	l := lookups{closure: map[string][]string{
+		"web/npm-local": {"web/npm-local", "data/npm-all", "web/npm-all"},
+		"web/apt":       {"web/apt", "web/apt-all"},
+	}}
 	got := l.entries(ev, mapEvent(ev, "default"))
 	if len(got) != 1 || got[0].Kind != iface.FeedContent || !reflect.DeepEqual(got[0].Repositories, []string{"web/npm-local", "data/npm-all", "web/npm-all"}) {
 		t.Errorf("entries = %+v", got)
+	}
+	deb := FeedEvent{ID: "0192f2a0-0000-7000-8000-000000000004", Action: audit.EventDebPackageDeleted, Repository: "web/apt"}
+	if got := l.entries(deb, mapEvent(deb, "default")); len(got) != 1 || got[0].ID != deb.ID || !reflect.DeepEqual(got[0].Repositories, []string{"web/apt", "web/apt-all"}) {
+		t.Errorf("deb.package.deleted: entries = %+v", got)
 	}
 }
 

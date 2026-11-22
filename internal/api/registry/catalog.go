@@ -86,6 +86,13 @@ func (h *Catalog) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			errs.WithAllow(http.MethodGet, http.MethodHead)))
 		return
 	}
+	// Through a Bastion the marking learns the route before anything is decided: a Volatile read, kept nowhere (R-BAS-051).
+	if handled, err := tellRoute(w, r, h.o.Format, route.NameCatalog, http.MethodGet, http.MethodHead); err != nil || handled {
+		if err != nil {
+			h.o.WriteError(w, r, err)
+		}
+		return
+	}
 	n, last, err := catalogPage(r)
 	if err != nil {
 		h.o.WriteError(w, r, err)
