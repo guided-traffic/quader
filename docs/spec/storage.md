@@ -3743,7 +3743,9 @@ Priority: **P1** · Covers: STOR-012
 - **Order.** A read (a download, a range, an internal reader of [R-STOR-013](#r-stor-013--download-integrity-verification)) takes the
   copies of the blob in state `present` whose connection is in this replica's configuration, in list order, a `draining` connection's
   last, and leaves out a connection whose circuit is open on this replica. With no such copy it answers `503 content_unavailable` with
-  `Retry-After` and marks nothing.
+  `Retry-After` and marks nothing. A download takes the copies from its item lookup, which reads them with the item, so that it costs the
+  one statement of [architecture.md](architecture.md) R-ARCH-027
+  ([Q-STOR-275](#q-stor-275--a-download-takes-its-blobs-copies-from-its-item-lookup)); a reader without an item reads them itself.
 - **Falling over.** A copy is left for the next one, before the first byte reached the client, when its connection answers "no such
   object", a transient error, an open circuit or a `Content-Length` other than `stored_size`. A failure after the first byte aborts the
   response as R-STOR-013 says, and the client's retry or resume (`Range` with `If-Range`, R-STOR-012) takes the next copy
@@ -8250,6 +8252,32 @@ check` report results without an exit code.
 
 **Choice:** (a). **Applied in the spec:** R-STOR-035, R-STOR-055, R-STOR-061; code: `blob.Capabilities`, `blob/metrics.go`,
 [storage_connections.go](../../cmd/quader/storage_connections.go).
+
+### Q-STOR-275 · A download takes its blob's copies from its item lookup
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-055 has a read take the blob's present copies in an order; the first build read them with a statement of their own
+(`BlobCopies`) before it asked the object store. [architecture.md](architecture.md) R-ARCH-027 allows a local download one statement,
+the item lookup, and the budget tests of `test/integration/querybudget` measured two (`GetLiveItem`, `BlobCopies`), three for the remote
+member of a virtual repository. Every route that serves a stored item reads it with the one lookup `GetLiveItem`
+([files.sql](../../internal/meta/postgres/queries/files.sql)): the downloads of every format, `/files/`, the registry's blobs and
+manifests, ranges, the remote hit and the tiers of a virtual repository, the requests a Bastion forwards.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The item lookup reads the copy rows of the item's blob as one JSON array (a lateral join on `blob_copies` and `storage_connections`), the item carries them, and `blob.Store.Open` takes them (`OpenOptions.Copies`, `CopiesRead`) instead of reading them (chosen) | One join more in a statement every download runs; the copies are those of the same snapshot as the item and its blob | A download costs the one statement of R-ARCH-027 on every route that reads its item with the lookup; the copies are exactly as current as with a separate read just before the object store is asked, so R-STOR-055 holds unchanged; no state in the process | The statement every download runs grows by an index scan of the blob's copies (one to eight rows); a reader that builds its item another way still asks for the copies itself |
+| (b) A cache of the copies per blob in each replica | No statement on a hit | No change of the lookup | Wrong for as long as it lives: a copy another replica marked missing or corrupt is tried again (a corrupt copy would be served to a range, H-11, where a fresh read leaves it out), a copy collection or a drain deleted is asked for, a new copy after a repair is not used; a change area for every mark would cost a write per mark and still leave a window |
+| (c) Exempt the read of the copies from the count, or raise the budget | Nothing to build | — | Breaks R-ARCH-027 and its tests; the budget is the product's, not the build's |
+
+**Choice:** (a). **Rationale:** the copies are a fact about the item's blob, which the lookup reads already; a separate read gave the
+read nothing a join does not, and a cache would give it less than R-STOR-055 promises. Where a read changes the facts itself before it
+serves (the recheck of a missing blob, Q-STOR-153, which sets a copy present), the item drops the copies it read and `Open` reads them
+again. Internal readers that hold no item (the NuGet view's ranged reads, the scans, the proxy's stored documents on a miss of their cache)
+read the copies once per blob with `Store.Copies`; the NuGet view's reader reads them once for all its ranges.
+
+**Applied in the spec:** R-STOR-055; code: `GetLiveItem`, `items.Item.Copies`, `blob.ParseCopies`, `blob.OpenOptions`
+([download.go](../../internal/blob/download.go)).
 
 ### Q-STOR-300 · Segments of 64 KiB under AES-256-GCM with the nonce stored in each segment
 

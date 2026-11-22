@@ -89,7 +89,8 @@ func (s *Store) Usable(ctx context.Context, it Item) (Item, error) {
 	if err == nil || it.ContentStatus != "missing" || !s.blobs.RecheckMissing(ctx, it.Digest, it.Size) {
 		return it, err
 	}
-	it.ContentStatus = "ok"
+	// The recheck set a copy present that the lookup read as missing: Open reads the copies again (Q-STOR-275).
+	it.ContentStatus, it.Copies, it.CopiesRead = "ok", nil, false
 	return it, nil
 }
 
@@ -108,7 +109,7 @@ type Range struct{ Offset, Length int64 }
 // verifying reader of R-STOR-013, or the byte range as stored (ranged reads
 // cannot be verified, H-11). An object that is missing is 503 content_unavailable.
 func (s *Store) Open(ctx context.Context, it Item, rng *Range) (io.ReadCloser, error) {
-	var o blob.OpenOptions
+	o := blob.OpenOptions{Copies: it.Copies, CopiesRead: it.CopiesRead}
 	if rng != nil {
 		o.Range = &blob.ByteRange{Offset: rng.Offset, Length: rng.Length}
 	}

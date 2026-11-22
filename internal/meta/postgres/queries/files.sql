@@ -24,6 +24,10 @@
 --
 -- The verdict of the malware scanning (malware-scanning.md R-MAL-013, Q-MAL-23) is read here as well: the row of malware_scan and
 -- the release of the item's blob, both keyed by the digest, so the gate costs no statement more. A blob without a row is pending.
+--
+-- blob_copies is the copy rows of the item's blob as one JSON array (storage.md R-STOR-055, Q-STOR-275), so that the read of the
+-- stored bytes takes its copies from this statement and asks PostgreSQL nothing more (blob.ParseCopies reads the array; its keys
+-- are those of the statement BlobCopies). A folder has none: '[]'.
 SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.media_type,
        i.declared_sha256, i.declared_sha512, i.declared_sha1, i.declared_md5, i.declared_mismatch,
        i.explicit_folder, i.generated, i.upstream_url,
@@ -86,9 +90,19 @@ SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.
        COALESCE(mr.state, '')::text AS malware_release_state,
        COALESCE(mr.released_by::text, '')::text AS malware_released_by,
        COALESCE(CASE mp2.kind WHEN 'ci_mapping' THEN 'ci' ELSE mp2.kind END || ':' || mp2.name, '')::text AS malware_released_by_name,
-       mr.released_at AS malware_released_at
+       mr.released_at AS malware_released_at,
+       COALESCE(bc.copies, '[]')::text AS blob_copies
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
+  LEFT JOIN LATERAL (
+        SELECT jsonb_agg(jsonb_build_object(
+                   'connection', c.connection_id, 'objectKey', c.object_key, 'storedSize', c.stored_size,
+                   'storageKeyId', COALESCE(c.storage_key_id, ''), 'state', c.state,
+                   'verifiedAt', c.verified_at, 'checkedAt', c.checked_at, 'retired', sc.retired_at IS NOT NULL)
+                 ORDER BY c.connection_id) AS copies
+          FROM blob_copies c
+          JOIN storage_connections sc ON sc.id = c.connection_id
+         WHERE c.sha256 = i.blob_sha256) AS bc ON true
   LEFT JOIN malware_scan ms ON ms.sha256 = i.blob_sha256
   LEFT JOIN malware_release mr ON mr.sha256 = i.blob_sha256
   LEFT JOIN principal mp2 ON mp2.id = mr.released_by

@@ -19,6 +19,11 @@ type OpenOptions struct {
 	// Verify verifies a full read even when storage.download.verify is off: a caller whose bytes reach a browser as
 	// code of quader's origin, the shared asset store of the UI (Q-UI-143), never serves an object it has not checked.
 	Verify bool
+	// Copies are the blob's copy rows as the caller read them with a statement of its own, the item lookup of a download
+	// (R-ARCH-027, Q-STOR-275), when CopiesRead is set; Open then asks PostgreSQL nothing. Without CopiesRead Open reads them
+	// (Store.Copies).
+	Copies     []Copy
+	CopiesRead bool
 }
 
 // Open opens the content of a blob for reading. size is the blob row's size.
@@ -45,10 +50,17 @@ type OpenOptions struct {
 // The reader is charged to the memory of the request of ctx (WithMemory) from
 // before the object store is asked until it is closed: DownloadCost of the
 // object, or RangeCost of the range.
+//
+// The copies are o.Copies when the caller read them with its own statement (o.CopiesRead, Q-STOR-275): a download takes them
+// from its item lookup, so that it costs that one statement (R-ARCH-027). They are as current as that statement, as a separate
+// read just before the object store was asked was; what changed since is what a read meets anyway and falls over on.
 func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (io.ReadCloser, error) {
-	copies, err := s.Copies(ctx, d)
-	if err != nil {
-		return nil, err
+	copies := o.Copies
+	if !o.CopiesRead {
+		var err error
+		if copies, err = s.Copies(ctx, d); err != nil {
+			return nil, err
+		}
 	}
 	undo := func() {}
 	if s.memory != nil {

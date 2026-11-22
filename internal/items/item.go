@@ -63,6 +63,11 @@ type Item struct {
 	// Malware is the verdict of the malware scanning on the item's blob and its release, read in the lookup (R-MAL-013,
 	// Q-MAL-23); the zero value is a blob without a row, which is pending. A folder has none.
 	Malware malware.Verdict
+	// Copies are the copy rows of the item's blob, read in the lookup when CopiesRead is set (storage.md R-STOR-055,
+	// Q-STOR-275): Open hands them to the blob store, so that a download costs the lookup alone (R-ARCH-027). An item built
+	// another way has none read, and Open then asks for them.
+	Copies     []blob.Copy
+	CopiesRead bool
 }
 
 // itemFrom converts the row of GetLiveItem.
@@ -101,6 +106,10 @@ func itemFrom(repoKey qname.Repo, key servefacts.Key, r q.GetLiveItemRow) Item {
 	it.SHA1, it.MD5, it.SHA512 = r.BlobSha1, r.BlobMd5, r.BlobSha512
 	it.ContentStatus = r.ContentStatus.String
 	it.Malware = malwareVerdict(it.Digest, r)
+	// An array the store cannot read leaves the copies unread; Open then asks for them with a statement of its own.
+	if cs, err := blob.ParseCopies(r.BlobCopies); err == nil {
+		it.Copies, it.CopiesRead = cs, true
+	}
 	return it
 }
 

@@ -38,6 +38,8 @@ type fakeDB struct {
 	now func() time.Time
 	// stamps counts the statements that stamped a copy verified.
 	stamps int
+	// copyReads counts the statements that read a blob's copies (Q-STOR-275).
+	copyReads int
 }
 
 type fakeRow struct {
@@ -191,6 +193,7 @@ func (f *fakeDB) ClaimRecheck(_ context.Context, _ meta.Tx, d blob.Digest, inter
 }
 
 func (f *fakeDB) Copies(_ context.Context, _ meta.Tx, d blob.Digest) ([]blob.Copy, error) {
+	f.copyReads++
 	var out []blob.Copy
 	for _, cp := range f.copies[d] {
 		c := *cp

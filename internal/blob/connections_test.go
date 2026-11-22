@@ -229,6 +229,50 @@ func TestR_STOR_055_ReadsOverTheCopies(t *testing.T) {
 		}
 		return x, d
 	}
+	t.Run("R-STOR-055 Q-STOR-275 copies the caller read with its own statement are taken as given: the download asks PostgreSQL nothing, and falls over on what they no longer say", func(t *testing.T) {
+		x, d := both(t)
+		copies, err := x.store.Copies(context.Background(), d)
+		if err != nil || len(copies) != 2 {
+			t.Fatalf("copies %+v, %v", copies, err)
+		}
+		reads := func() int { x.db.mu.Lock(); defer x.db.mu.Unlock(); return x.db.copyReads }
+		download := func() {
+			t.Helper()
+			r, err := x.store.Open(context.Background(), d, int64(len(data)), blob.OpenOptions{Copies: copies, CopiesRead: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := io.ReadAll(r)
+			_ = r.Close()
+			if err != nil || !bytes.Equal(got, data) {
+				t.Fatalf("download: %v", err)
+			}
+		}
+		before := reads()
+		download()
+		if n := reads() - before; n != 0 {
+			t.Fatalf("the download read the copies %d times", n)
+		}
+		if err := x.a.Delete(context.Background(), key(d)); err != nil { // gone since the lookup read the copies
+			t.Fatal(err)
+		}
+		download() // the stale copy is left for the second, and marked
+		if cp, _ := x.db.copyOf(d, "primary"); cp.State != blob.CopyMissing {
+			t.Fatalf("first copy %+v", cp)
+		}
+	})
+	t.Run("R-STOR-055 Q-STOR-275 the copies of an item lookup are read from its JSON array, a timestamp of PostgreSQL and null as written", func(t *testing.T) {
+		cs, err := blob.ParseCopies(`[{"connection": "primary", "objectKey": "quader/sha256/ab/cd/x", "storedSize": 3, "storageKeyId": "", "state": "present",
+			"verifiedAt": "2026-11-22T10:00:00.123456+00:00", "checkedAt": null, "retired": false},
+			{"connection": "old", "objectKey": "k", "storedSize": 3, "storageKeyId": "", "state": "missing", "verifiedAt": null, "checkedAt": null, "retired": true}]`)
+		if err != nil || len(cs) != 2 || cs[0].Connection != "primary" || cs[0].ObjectKey != "quader/sha256/ab/cd/x" || cs[0].StoredSize != 3 ||
+			cs[0].State != blob.CopyPresent || cs[0].VerifiedAt.IsZero() || !cs[0].CheckedAt.IsZero() || !cs[1].Retired {
+			t.Fatalf("%+v, %v", cs, err)
+		}
+		if cs, err := blob.ParseCopies("[]"); err != nil || len(cs) != 0 {
+			t.Fatalf("no copies: %+v, %v", cs, err)
+		}
+	})
 	t.Run("R-STOR-055 the object deleted from the first store: the download is served whole from the second, the first copy is missing and queued, the blob ok", func(t *testing.T) {
 		x, d := both(t)
 		if err := x.a.Delete(context.Background(), key(d)); err != nil {

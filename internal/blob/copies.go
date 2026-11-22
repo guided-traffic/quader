@@ -2,6 +2,8 @@ package blob
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/meta"
@@ -81,6 +83,38 @@ type copyWrite struct {
 	storedSize int64
 	verified   bool
 	at         time.Time // the end of the write
+}
+
+// ParseCopies reads the copy rows of a blob that a statement of another package aggregated as one JSON array, the item
+// lookup of a download (files.sql GetLiveItem, Q-STOR-275): one object per copy with the keys connection, objectKey,
+// storedSize, storageKeyId, state, verifiedAt and checkedAt (null when never) and retired. An empty array is a blob without
+// copies.
+func ParseCopies(data string) ([]Copy, error) {
+	var rows []struct {
+		Connection   string     `json:"connection"`
+		ObjectKey    string     `json:"objectKey"`
+		StoredSize   int64      `json:"storedSize"`
+		StorageKeyID string     `json:"storageKeyId"`
+		State        string     `json:"state"`
+		VerifiedAt   *time.Time `json:"verifiedAt"`
+		CheckedAt    *time.Time `json:"checkedAt"`
+		Retired      bool       `json:"retired"`
+	}
+	if err := json.Unmarshal([]byte(data), &rows); err != nil {
+		return nil, fmt.Errorf("blob: the copies of an item lookup: %w", err)
+	}
+	out := make([]Copy, 0, len(rows))
+	for _, r := range rows {
+		c := Copy{Connection: r.Connection, ObjectKey: r.ObjectKey, StoredSize: r.StoredSize, StorageKeyID: r.StorageKeyID, State: r.State, Retired: r.Retired}
+		if r.VerifiedAt != nil {
+			c.VerifiedAt = *r.VerifiedAt
+		}
+		if r.CheckedAt != nil {
+			c.CheckedAt = *r.CheckedAt
+		}
+		out = append(out, c)
+	}
+	return out, nil
 }
 
 // Copies returns the copy rows of a blob (an empty list when it has none).

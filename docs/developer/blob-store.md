@@ -18,7 +18,7 @@ the verifying reader or a range.
 | [key.go](../../internal/blob/key.go) | `Digest`, `Key(prefix, digest)`, `ParseKey`, `Digests` (the four digests and the size) |
 | [objects.go](../../internal/blob/objects.go) | `ObjectStore` interface (with `Metadata` on `Put`, `CreateMultipart`, `Copy`, `Head`, `Get`), `BucketCopier` (a copy from another bucket of one endpoint), `StoreError` and its kinds, `ErrNotFound`, `ErrCircuitOpen` |
 | [connections.go](../../internal/blob/connections.go) | `Connection` (one element: its client, prefix, naming function `ObjectKey`, `Drain`, `Encrypted`, `Capabilities`, `Verifies`, `Read`, guarded `Presign`, `LinkCheck`), `Connections` (the ordered set: `List`, `Get`, `First`, `Targets`, `Writable`, the read order) |
-| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `Store.Servable`, the marks of a copy (`markCopy`, `copyBack`), the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
+| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `ParseCopies` (the copies of an item lookup), `Store.Servable`, the marks of a copy (`markCopy`, `copyBack`), the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
 | [record.go](../../internal/blob/record.go) | `Store.RecordConnections` (first sight, fixed properties, retired ids, the bind of the migration's row), `RecordCapabilities`, `HoldsCopies`, `ForgetConnection`, `Refusal` |
 | [startcheck.go](../../internal/blob/startcheck.go) | `CheckConnection` (the start check of one connection with the marker and the capabilities), `AwaitConnections` (the first readiness of R-STOR-060), `MarkerKey` |
 | [spool.go](../../internal/blob/spool.go) | `Spool`: admission, the budget, spool files, the single hashing pass, cleanup |
@@ -182,7 +182,12 @@ Gaps against the specification, all visible at construction (nothing is silently
 
 ## Download verification (R-STOR-013, Q-STOR-6)
 
-`Store.Open(ctx, digest, size, OpenOptions)` reads the blob's copies (one indexed lookup) and returns a reader of the first copy that
+`Store.Open(ctx, digest, size, OpenOptions)` takes the blob's copies from `OpenOptions.Copies` when the caller read them
+(`CopiesRead`), else reads them (`Store.Copies`, one indexed lookup). A download reads them with its item lookup: `GetLiveItem`
+([files.sql](../../internal/meta/postgres/queries/files.sql)) aggregates the copy rows of the item's blob into the JSON column
+`blob_copies`, `items.Item` carries them parsed (`blob.ParseCopies`), `items.Store.Open` hands them on, and `items.Store.Usable` drops them
+after a recheck that set a copy present, so every route that reads its item with the lookup costs that one statement (R-ARCH-027,
+Q-STOR-275). The NuGet view's ranged reader reads them once for all its ranges. `Open` returns a reader of the first copy that
 answers (R-STOR-055): the `present` copies on connections this replica configures, in list order, a draining connection's last, a
 connection with an open circuit left out. A copy is left for the next before the first byte when its connection answers "no such object",
 fails transiently or answers with a size other than the copy's `stored_size`; after the first byte a failure aborts the response. With no
