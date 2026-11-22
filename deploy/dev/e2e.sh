@@ -78,9 +78,10 @@
 #                       (QUADER_POOLER=1), no client pods; the cluster stays in the pooler overlay until the next `make dev-up`
 #                       (CI: job e2e-vuln, nightly)
 #   e2e.sh oci          the OCI acceptance tests (every TestOCI... but TestOCIClosing... and TestOCILong...): the counting OCI test upstream and three
-#                       client pods, each with the Docker Engine (Buildx) and Podman in a privileged pod of the namespace quader-e2e-clients; the scatter
-#                       profile; login, push and pull through local, remote (pull-through and mirror), virtual and bound-host repositories, multi-platform
-#                       images, an image pull secret, the setup snippets; CI: job e2e-oci
+#                       client pods, each with the Docker Engine (Buildx) and Podman in a privileged pod of the namespace quader-e2e-clients; the profile
+#                       oci (the scatter profile with the main installation's side of the set's Bastion); login, push and pull through local, remote
+#                       (pull-through and mirror), virtual and bound-host repositories, multi-platform images, an image pull secret, the setup snippets,
+#                       an image through a Bastion (bastion.sh install oci); CI: job e2e-oci
 #   e2e.sh oci-closing  TestOCIClosing...: the additions of the run that closes the phase (CI: job e2e-oci, closing=true)
 #   e2e.sh oci-long     TestOCILong...: a push whose upload is cut by the drain of a packages pod (R-OCI-011, R-HA-052) and the drain of the node of the process that runs an OCI
 #                       mirror's pass (R-REPO-058); nightly, dispatch, locally
@@ -245,9 +246,11 @@ case "$set_name" in
   # The OCI acceptance tests (R-OCI-035, docs/developer/e2e.md#the-oci-tests): the counting OCI test upstream, three client pods (the Docker Engine with
   # Buildx and Podman in the namespace quader-e2e-clients, one per packages replica), the scatter profile. CI runs `oci` as the job e2e-oci on every change
   # that touches the format or the registry root; the closing and nightly tests (TestOCIClosing..., TestOCILong...) are sets of their own.
+  # The set `oci` runs in the profile oci: the scatter profile with the main installation's side of the one Bastion its case
+  # TestOCI_R_BAS_051_ThroughABastion installs (R-BAS-060, docs/developer/e2e.md#the-bastion-case-of-the-set-oci).
   oci-clients) run='^TestOCIClients$'; OCI_CLIENTS=1 ;;
   oci-clients-down) OCI_CLIENTS=down ;;
-  oci) run='^TestOCI'; skip='^TestOCI(Closing|Long)'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; OCI_COSIGN=1; export QUADER_E2E_OCISTUB=1 ;;
+  oci) run='^TestOCI'; skip='^TestOCI(Closing|Long)'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; OCI_COSIGN=1; export QUADER_E2E_OCISTUB=1 QUADER_E2E_SCATTER_PROFILE=oci ;;
   oci-closing) run='^TestOCIClosing'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_OCISTUB=1 QUADER_E2E_OCI_CLOSING=1 ;;
   oci-long) run='^TestOCILong'; OCI_CLIENTS=1; OCI_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_OCISTUB=1 ;;
   # <<< T16 oci
@@ -712,6 +715,11 @@ fi
 # node's own address, and the dev CA for that host in /etc/containerd/certs.d (hosts.toml; kind's containerd reads that directory, config_path). The
 # image reference of the row is localhost:<edge port>/..., the token realm of the registry is https://localhost:<edge port>/v2/_token, and both
 # resolve on the node to the forwarder.
+#
+# The host of the set's Bastion (OCI_BASTION_HOST, bastion.sh install oci) is a registry host like localhost:<edge port>: the client pods name it in
+# their host aliases (deploy/dev/oci-clients.yaml) and trust the dev CA for it, and the node resolves it to its forwarder (a line of /etc/hosts) and
+# trusts the dev CA for it in /etc/containerd/certs.d, so a pod's image pulls through the Bastion (TestOCI_R_BAS_051_ThroughABastion).
+OCI_BASTION_HOST="bastion-oci.quader.localhost"
 OCI_CLIENTS_NS="quader-e2e-clients"
 OCI_CLIENTS_LABEL="app.kubernetes.io/component=e2e-oci-client"
 OCI_CLIENTS_PREFIX="quader-e2e-oci-"
@@ -742,10 +750,14 @@ oci_node_setup() {
   docker exec "$node" sh -c 'if [ -s /run/quader-fwd.pid ]; then kill "$(cat /run/quader-fwd.pid)" 2>/dev/null || true; fi; rm -f /usr/local/bin/quader-fwd'
   docker cp "$OUT/oci-node/fwd" "$node:/usr/local/bin/quader-fwd" >/dev/null
   docker exec -d "$node" sh -c "echo \$\$ >/run/quader-fwd.pid; exec /usr/local/bin/quader-fwd -listen 127.0.0.1:$EDGE_PORT -to $node_ip:30443 >/var/log/quader-fwd.log 2>&1"
-  docker exec "$node" mkdir -p "/etc/containerd/certs.d/$host"
-  docker cp "$CA_FILE" "$node:/etc/containerd/certs.d/$host/ca.crt" >/dev/null
-  printf 'server = "https://%s"\n\n[host."https://%s"]\n  capabilities = ["pull", "resolve"]\n  ca = "/etc/containerd/certs.d/%s/ca.crt"\n' "$host" "$host" "$host" \
-    | docker exec -i "$node" sh -c "cat >'/etc/containerd/certs.d/$host/hosts.toml'"
+  # the Bastion's host is the forwarder too: the edge routes it by its name (SNI and Host) to the Bastion's Ingress
+  docker exec "$node" sh -c "grep -q ' $OCI_BASTION_HOST\$' /etc/hosts || echo '127.0.0.1 $OCI_BASTION_HOST' >>/etc/hosts"
+  for host in "localhost:$EDGE_PORT" "$OCI_BASTION_HOST:$EDGE_PORT"; do
+    docker exec "$node" mkdir -p "/etc/containerd/certs.d/$host"
+    docker cp "$CA_FILE" "$node:/etc/containerd/certs.d/$host/ca.crt" >/dev/null
+    printf 'server = "https://%s"\n\n[host."https://%s"]\n  capabilities = ["pull", "resolve"]\n  ca = "/etc/containerd/certs.d/%s/ca.crt"\n' "$host" "$host" "$host" \
+      | docker exec -i "$node" sh -c "cat >'/etc/containerd/certs.d/$host/hosts.toml'"
+  done
 }
 
 # oci_cosign_node copies the pinned cosign binary (test/e2e/ociclients/Dockerfile.cosign) to /opt/quader-e2e-cosign on the control-plane
@@ -762,8 +774,8 @@ oci_cosign_node() {
 # oci_render_pod <name> prints the manifest of one client pod with the variables of deploy/dev/oci-clients.yaml replaced.
 oci_render_pod() {
   sed -e "s|\${POD}|$1|g" -e "s|\${DOCKER_IMAGE}|$OCI_DOCKER_IMAGE|g" -e "s|\${PODMAN_IMAGE}|$OCI_PODMAN_IMAGE|g" -e "s|\${EDGE_PORT}|$EDGE_PORT|g" \
-    -e "s|\${TARGET}|$OCI_TARGET|g" -e "s|\${REGISTRY_HOSTS}|localhost:$EDGE_PORT oci-mirror.quader.localhost:$EDGE_PORT|g" \
-    -e "s|\${ENGINE_MIRROR}|https://oci-mirror.quader.localhost:$EDGE_PORT|g" "$DEV_DIR/oci-clients.yaml"
+    -e "s|\${TARGET}|$OCI_TARGET|g" -e "s|\${REGISTRY_HOSTS}|localhost:$EDGE_PORT oci-mirror.quader.localhost:$EDGE_PORT $OCI_BASTION_HOST:$EDGE_PORT|g" \
+    -e "s|\${BASTION_HOST}|$OCI_BASTION_HOST|g" -e "s|\${ENGINE_MIRROR}|https://oci-mirror.quader.localhost:$EDGE_PORT|g" "$DEV_DIR/oci-clients.yaml"
 }
 
 oci_clients_up() {

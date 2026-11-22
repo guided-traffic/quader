@@ -48,15 +48,15 @@ REFERENCE=npm
 # format's: its package (internal/formats/<format>) and its data port (internal/formatdata/<format>) hold its protocol and its
 # tables; a file of a shared package under internal/ or cmd/ whose name carries the format's name as a word (its configuration,
 # audit events, wiring, admin command, importer, backup fix-up, queries and migrations) exists for that format only; its counting
-# test upstream (test/<format>stub) and the manifests that start the upstream and the client pods serve its set only; its e2e
-# tests are named <format>_ and its client images live in their own directory. Per format besides: npm's client matrix image is
-# test/e2e/clients; NuGet's golden vectors (tools/nugetvectors) and its reference solution (perf/nuget) are NuGet's; OCI's API
-# is the registry root (internal/api/registry) with its token service (internal/auth/registrytoken), their wiring and audit event;
-# Debian alone signs with OpenPGP (internal/openpgp: every importer is Debian code); Ansible's leg is the one format leg that runs
-# a browser journey (web/e2e/ansible-docs, TestAnsibleDocsJourney), so what that journey runs on is Ansible's among the format legs
-# (the base Playwright config, its global setup and support, the tsconfig of web/e2e, the web workspace's package files and Node.js
-# pin, which the leg installs) and so are the screens it opens, the files of web/src named ansible-* (spec files are unit tests and
-# do not match).
+# test upstream (test/<format>stub) and the manifests that start the upstream, the client pods and, for OCI, the one Bastion of its
+# set serve its set only; its e2e tests are named <format>_ and its client images live in their own directory. Per format besides:
+# npm's client matrix image is test/e2e/clients; NuGet's golden vectors (tools/nugetvectors) and its reference solution (perf/nuget)
+# are NuGet's; OCI's API is the registry root (internal/api/registry) with its token service (internal/auth/registrytoken), their
+# wiring and audit event; Debian alone signs with OpenPGP (internal/openpgp: every importer is Debian code); Ansible's leg is the
+# one format leg that runs a browser journey (web/e2e/ansible-docs, TestAnsibleDocsJourney), so what that journey runs on is
+# Ansible's among the format legs (the base Playwright config, its global setup and support, the tsconfig of web/e2e, the web
+# workspace's package files and Node.js pin, which the leg installs) and so are the screens it opens, the files of web/src named
+# ansible-* (spec files are unit tests and do not match).
 format_paths() {
   case $1 in
     npm)
@@ -93,7 +93,7 @@ EOF
 ^internal/app/wire_registry\.go$
 ^internal/audit/events_registry_token\.go$
 ^test/ocistub/
-^deploy/dev/(ocistub|oci-clients)\.yaml$
+^deploy/dev/(ocistub|oci-clients|oci-bastion|oci-bastion-chart)\.yaml$
 ^test/e2e/oci_
 ^test/e2e/ociclients/
 EOF

@@ -4,17 +4,36 @@ How to run a read-only, internet-facing cache of your installation for clients o
 
 ## What a Bastion is
 
-A Bastion is the same Quader image started as `quader serve --role bastion`, installed with its own chart, `quader-bastion`, in its own namespace or cluster. It has no database and no web interface, and it serves only the package and file paths of your repositories (`/api/<format>/<repository>/…` and `/files/<repository>/…`); every other path answers `404` with the code `bastion_not_served`. It holds no repository list and no permissions. For every read it asks the main installation whether the caller may read the repository, with the caller's own token, and serves the bytes from its cache when the answer is yes. A write through a Bastion is refused with `403` `bastion_read_only`.
+A Bastion is the same Quader image started as `quader serve --role bastion`, installed with its own chart, `quader-bastion`, in its own namespace or cluster. It has no database and no web interface. It serves what clients read from your repositories, for every format, as the main installation's own address serves it: the package paths (`/api/<format>/<repository>/…`: npm, NuGet, Debian (APT), Ansible Galaxy and the ClamAV definitions), the raw files (`/files/<repository>/…`) and the container registry at the root of its own address (`/v2/…`), so that an image is pulled as `<Bastion host>/<project>/<repository>/<image>:<tag>`. Every other path answers `404` with the code `bastion_not_served`. It holds no repository list and no permissions. For every read it asks the main installation whether the caller may read the repository, with the caller's own token, and serves the bytes from its cache when the answer is yes. A write through a Bastion is refused with `403` `bastion_read_only`.
 
 | | The main installation | The Bastion |
 |---|---|---|
 | Holds | repositories, permissions, tokens, the audit trail | a cache of artifacts and metadata, and short-lived answers of the main installation |
-| Serves | everything | reads of packages and files |
+| Serves | everything | reads of packages, images and files, for every format |
 | Sign-in | all methods | the caller's token (personal, service-account or CI token) |
 | Needs | PostgreSQL, the object store | the main installation, a cache volume or a bucket; Valkey is optional |
 | Reachable from | your network and the endpoints you configured | the internet, through its own ingress |
 
 The Bastion has a credential of its own, a token of the type `bst` (prefix `qdr_bst_`) that belongs to a registration on the main installation. The token lets the Bastion ask whether a caller may read a repository, read the feed of revocations and report downloads. It reads no package and cannot issue a token, change a setting or read the audit trail. Several Bastions may exist, each with a registration of its own; at most `bastions.max_registrations` (default `16`) can be registered.
+
+### What a client names
+
+A client names the Bastion's address where it would name the main installation's; the page **Set up client** of a repository renders every format's snippets for a Bastion ([Install through a Bastion](../user/client-setup.md#install-through-a-bastion)). For a Bastion at `https://packages.example.com` *(example)*:
+
+| Client | What it names *(example repositories of the project `web`)* |
+|---|---|
+| npm, pnpm, Yarn | `https://packages.example.com/api/npm/web/npm-all/`; npm also `replace-registry-host=always` |
+| `dotnet`, `nuget` | the service index `https://packages.example.com/api/nuget/web/nuget-all/v3/index.json` |
+| Docker, Podman, Kubernetes | `docker login packages.example.com/web/docker-local`, the image `packages.example.com/web/docker-local/myapp:1.0`, an image pull secret for `packages.example.com/web/docker-local` |
+| APT | the source `https://packages.example.com/api/deb/web/apt/`, its key `signing-key.asc` read through the Bastion, the token in `/etc/apt/auth.conf.d/` for that address |
+| `ansible-galaxy` | the server `https://packages.example.com/api/ansible/web/galaxy/` |
+| freshclam | `PrivateMirror https://packages.example.com/api/clamav/upstream/clamav` |
+
+Signed content passes unchanged: APT verifies the release files with the repository's key, and an image client checks each layer, and each manifest it names by digest, against that digest, as at the main installation. Downloads of every format count in the main installation's audit trail as described under [What the Bastion does not do](#what-the-bastion-does-not-do).
+
+### A Docker Engine mirror through a Bastion
+
+A Docker Engine reads Docker Hub images through a mirror at the root of a host ([The Docker Engine mirror on a bound host](container-repositories.md#the-docker-engine-mirror-on-a-bound-host)). A Bastion serves such a mirror when its `config.server.base_url` is a host that the main installation binds to the repository: list the Bastion's host in `endpoints.default.hostRoots` of the chart `quader`, for example `{mirror.example.com: web/docker-hub}` *(example)*, and point the engines at `https://mirror.example.com`. The host is already a host of the main installation's default endpoint through `server.additional_base_urls`. One Bastion serves one bound host; a second bound host is a second release of the chart. A binding you change on the main installation reaches the Bastion at its next handshake (`bastion.main.handshake_interval`, default `1m`).
 
 ## What you need
 
@@ -153,7 +172,8 @@ metrics:
 | Choice | What it changes |
 |---|---|
 | `config.bastion.cache.backend: bucket` | The cache lives in an object-store bucket that every replica reads and fills. The bucket and its credentials Secret are yours; the chart creates neither |
-| `tmp.sizeLimit` and `config.bastion.cache.spool_max_bytes` | A fill is written to temporary storage while it streams, and each replica holds at most `spool_max_bytes` (default `2GiB`, at least `bastion.cache.max_object_bytes`) of them at once; a fill that would pass it is passed through and not cached. With the bucket backend the chart sizes the pod's `/tmp` from it, `spool_max_bytes` plus 256 MiB (2304 MiB by default), and refuses a smaller `tmp.sizeLimit`, because a pod whose temporary volume passes its limit is evicted. With the volume backend `cacheVolume.size` must hold `bastion.cache.max_bytes` plus the spool. Raise the spool, and `max_object_bytes` with it, if you want artifacts of several GiB cached, and give the nodes the storage |
+| `tmp.sizeLimit` and `config.bastion.cache.spool_max_bytes` | A fill is written to temporary storage while it streams, and each replica holds at most `spool_max_bytes` (default `2GiB`, at least `bastion.cache.max_object_bytes`) of them at once; a fill that would pass it is passed through and not cached. With the bucket backend the chart sizes the pod's `/tmp` from it, `spool_max_bytes` plus 256 MiB (2304 MiB by default), and refuses a smaller `tmp.sizeLimit`, because a pod whose temporary volume passes its limit is evicted. With the volume backend `cacheVolume.size` must hold `bastion.cache.max_bytes` plus the spool. Container images bring the largest artifacts: a layer above `max_object_bytes` (default `2GiB`) is passed through on every request. Raise the spool, and `max_object_bytes` with it, if you want artifacts of several GiB cached, and give the nodes the storage. A client that asks for a range of an artifact that is not cached gets its bytes as the fill passes them, the last 64 KiB once the fill is verified, and a second client of the same artifact on the same replica follows the running fill instead of fetching it again |
+| `config.bastion.cache.fill_wait_max` | With the bucket backend and Valkey, a replica whose request finds another replica filling the same artifact waits for that fill, sending nothing to its client, up to this time (default `10m`, 30 s to 1 h), and then fetches the artifact itself. A client that gives up before the first byte retries and waits again; with the volume backend and `cacheVolume.routeByPath`, every request for a path reaches one replica and follows its fill |
 | `config.valkey.mode: sentinel` | Valkey holds the shared limits, the block list, the fetch coordination and the main installation's answers. It is optional: losing it costs speed, never correctness (the replicas fall back to their own state). Standalone Valkey is for development and refused while `highAvailability.enforce` is on |
 | `secrets.valkey`, `secrets.valkeySentinel`, `secrets.valkeyCA` | The user and password of Valkey, the user and password of its Sentinels (`valkey.sentinel.username_file`, `valkey.sentinel.password_file`) and the CA that signed their certificates. A Valkey whose Sentinels require a password needs `secrets.valkeySentinel`; without it the Bastion logs `valkey sentinel authentication is not configured` and cannot reach the Sentinels, so it runs with its own state per replica. Set `usernameKey: ""` for the default user |
 | `secrets.signingKey` | Required with the bucket backend or Valkey. Records in the bucket and in Valkey are signed with it, so whoever can write there without the key cannot make the Bastion serve other bytes. Replacing the Secret makes every record unverifiable and costs one refill |
@@ -219,10 +239,12 @@ A Bastion that is no longer needed is removed with `helm uninstall`, and its reg
 
 ## What the Bastion does not do
 
-- It is read-only. Publishing, changing tags and unpublishing are done on the main installation.
+- It is read-only. Publishing, pushing images, changing tags and unpublishing are done on the main installation.
 - A new version, or a security fix, reaches a Bastion cache after its metadata period (`bastion.cache.metadata_revalidate_after`, default `1m`; artifacts after `artifact_revalidate_after`, default `10m`).
 - A token revoked on the main installation is dropped at the Bastion through the feed within seconds; while the main installation is unreachable, it can read on from the cache for up to the grace period.
-- Download counts and the audit trail of the main installation include what the Bastion serves from its cache, reported in batches. A registration may report `bastions.downloads.events_per_second` downloads a second (default `200`, bursts up to `events_burst`, `2000`); beyond that the main installation answers `429` and the Bastion sends the batch again later. What the Bastion's buffer cannot hold meanwhile is recorded as a `bastion.downloads.dropped` event.
+- Download counts and the audit trail of the main installation include what the Bastion serves from its cache, reported in batches, for every format by the main installation's own rule of what a download is (a pull of an image is the download of its manifest and its layers, a `HEAD` is none). A registration may report `bastions.downloads.events_per_second` downloads a second (default `200`, bursts up to `events_burst`, `2000`); beyond that the main installation answers `429` and the Bastion sends the batch again later. What the Bastion's buffer cannot hold meanwhile is recorded as a `bastion.downloads.dropped` event.
+- An image client takes a new registry token for every pull, and the Bastion asks the main installation about each manifest and layer for such a token: a warm pull of an image of ten layers costs the main installation about twelve conditional requests, one per manifest and layer, each answered without a transfer, besides the token request and the tag's manifest, and as many of the client address's misses a minute at the Bastion (`bastion.limits.misses.authenticated_per_minute`, default `300`). Many nodes behind one address that pull at once can reach that limit and get `429`, which image clients retry; for such an address raise the limit or list it in `bastion.blocking.exempt_cidrs`.
+- A ClamAV installation that the main installation admits by its client certificate alone cannot update through a Bastion: the Bastion serves the ClamAV definitions to the anonymous caller while the repository is public and **ClamAV definition updates** is on, and to a token that may read it. On the definitions the Bastion's own refusals (its limits, its block list and its failed-sign-in timeout) are `503` with `Retry-After`, the status the format uses for a rate limit, never `429`.
 - The ops listener serves its metrics without sign-in; the chart's network policy admits it only from the monitoring namespace.
 
 See also [Endpoints and exposure rules](endpoints.md) for the other way to open an installation to outside clients, [Managing tokens](tokens.md) and [Monitoring and operations](operations.md).

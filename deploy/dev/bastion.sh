@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
-# The e2e Bastions (R-BAS-049, docs/developer/e2e.md#the-bastion-tests): the chart quader-bastion, twice, in a second
-# namespace of the dev cluster, in front of the main installation of the `bastion` profile (QUADER_PROFILE=bastion up.sh):
+# The e2e Bastions: the chart quader-bastion in a second namespace of the dev cluster. The set bastion (R-BAS-049,
+# docs/developer/e2e.md#the-bastion-tests) installs two, in front of the main installation of the `bastion` profile
+# (QUADER_PROFILE=bastion up.sh); the set oci (R-BAS-060, docs/developer/e2e.md#the-bastion-case-of-the-set-oci) installs one, in front of
+# the main installation of the profile `oci`:
 #
 #   bastion-volume  host bastion-volume.quader.localhost:<edge port>, registration `partners`, the volume backend, no Valkey
 #   bastion-bucket  host bastion-bucket.quader.localhost:<edge port>, registration `partners-bucket`, a SeaweedFS bucket
 #                   and the Valkey of the namespace (bastion.yaml)
+#   bastion-oci     host bastion-oci.quader.localhost:<edge port>, registration `partners-oci`, one replica, the volume backend on an
+#                   emptyDir, no Valkey (oci-bastion.yaml, oci-bastion-chart.yaml)
 #
 #   bastion.sh infra              the namespace, the dev CA and the bucket credentials copied into it, the Valkey, the
 #                                 certificates, the signing key, the bucket; idempotent
-#   bastion.sh install <volume|bucket>
+#   bastion.sh infra oci          the namespace, the dev CA and its trust bundle, the edge certificate of bastion-oci: what the Bastion of the
+#                                 set oci needs and nothing more; idempotent
+#   bastion.sh install <volume|bucket|oci>
 #                                 helm upgrade --install of one release and wait until its replicas are ready. The token Secret
 #                                 (bastion-token-<variant>) must exist: the e2e test creates the registration and the token
-#                                 through the management API and writes the Secret (test/e2e/bastion_env_test.go)
+#                                 through the management API and writes the Secret (test/e2e/bastion_env_test.go, oci_bastion_test.go)
 #   bastion.sh status             the releases and pods
-#   bastion.sh down               uninstall both releases and delete the namespace
+#   bastion.sh down               uninstall the releases and delete the namespace
 #
 # Environment: QUADER_E2E_BASTION_NAMESPACE (default quader-bastion), QUADER_IMAGE (default guidedtraffic/quader:dev, as up.sh),
 # QUADER_BASTION_HELM_EXTRA (extra arguments of the helm upgrade, the mismatch scenario sets the image tag), QUADER_DEV_HTTP_PORT.
@@ -41,8 +47,8 @@ copy_secret() {
     | kubectl --context "$CTX" apply -f - >/dev/null
 }
 
-infra() {
-  require_cluster
+# infra_base: the namespace and the dev CA with its trust bundle, which every e2e Bastion needs.
+infra_base() {
   log "namespace $BNS"
   kubectl --context "$CTX" apply -f - >/dev/null <<NSYAML
 apiVersion: v1
@@ -56,10 +62,25 @@ metadata:
     app.kubernetes.io/part-of: quader-dev
 NSYAML
 
-  # The dev CA signs for this namespace too (the Issuer of bastion.yaml reads it). A development key, copied on purpose.
+  # The dev CA signs for this namespace too (the Issuer of bastion.yaml and of oci-bastion.yaml reads it). A development key, copied on purpose.
   copy_secret quader-dev-ca quader-dev-ca kubernetes.io/tls tls.crt:tls.crt tls.key:tls.key ca.crt:ca.crt
   # The trust of the Bastion (trustedCA): the dev CA as one bundle file.
   copy_secret quader-dev-ca bastion-ca-bundle Opaque ca.crt:ca-bundle.crt
+}
+
+# infra_oci: what the Bastion of the set oci needs besides: the Issuer and the edge certificate of its host (oci-bastion.yaml).
+infra_oci() {
+  require_cluster
+  local start; start="$(date +%s)"
+  infra_base
+  render_b "$DEV_DIR/oci-bastion.yaml" | kubectl --context "$CTX" apply -f - >/dev/null
+  bn wait --for=condition=Ready certificate/bastion-oci-edge-tls --timeout=3m >/dev/null
+  log "infra of the Bastion of the set oci ready in $(elapsed "$start")"
+}
+
+infra() {
+  require_cluster
+  infra_base
   # The bucket credentials: the identity of the dev SeaweedFS (secrets.yaml), copied.
   copy_secret quader-s3 bastion-s3 Opaque access-key-id:access-key-id secret-access-key:secret-access-key
 
@@ -82,8 +103,12 @@ NSYAML
 }
 
 install() {
-  local variant="$1"
-  case "$variant" in volume|bucket) ;; *) die "install: volume or bucket, not '$variant'" ;; esac
+  local variant="$1" values
+  case "$variant" in
+    volume|bucket) values="$DEV_DIR/bastion-chart-$variant.yaml" ;;
+    oci) values="$DEV_DIR/oci-bastion-chart.yaml" ;;
+    *) die "install: volume, bucket or oci, not '$variant'" ;;
+  esac
   bn get secret "bastion-token-$variant" >/dev/null 2>&1 || die "Secret bastion-token-$variant is missing; the e2e test creates it from the registration's token"
   local probe="[" sep="" c
   for c in $(docker network inspect kind -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' 2>/dev/null || true); do probe="$probe$sep\"$c\""; sep=","; done
@@ -93,7 +118,7 @@ install() {
   log "helm upgrade --install bastion-$variant ($BNS)"
   # shellcheck disable=SC2086
   helm --kube-context "$CTX" upgrade --install "bastion-$variant" "$REPO_ROOT/deploy/helm/quader-bastion" -n "$BNS" \
-    -f "$DEV_DIR/bastion-chart-common.yaml" -f "$DEV_DIR/bastion-chart-$variant.yaml" \
+    -f "$DEV_DIR/bastion-chart-common.yaml" -f "$values" \
     --set "config.server.base_url=https://bastion-$variant.quader.localhost:$EDGE_PORT" \
     --set-json "networkPolicy.ingress.probeCIDRs=$probe" \
     --set-string "podAnnotations.quader-dev/image-id=$image_id" \
@@ -102,13 +127,18 @@ install() {
 }
 
 case "${1:-}" in
-  infra) infra ;;
+  infra)
+    case "${2:-}" in
+      "") infra ;;
+      oci) infra_oci ;;
+      *) die "infra: nothing or oci, not '${2:-}'" ;;
+    esac ;;
   install) install "${2:-}" ;;
   status) helm --kube-context "$CTX" ls -n "$BNS"; bn get pods -o wide ;;
   down)
-    for v in volume bucket; do helm --kube-context "$CTX" -n "$BNS" uninstall "bastion-$v" >/dev/null 2>&1 || true; done
+    for v in volume bucket oci; do helm --kube-context "$CTX" -n "$BNS" uninstall "bastion-$v" >/dev/null 2>&1 || true; done
     kn delete job quader-s3-bastion-bucket --ignore-not-found >/dev/null
     kubectl --context "$CTX" delete namespace "$BNS" --ignore-not-found --wait=true >/dev/null
     log "the e2e Bastions are removed" ;;
-  *) die "usage: bastion.sh infra | install <volume|bucket> | status | down" ;;
+  *) die "usage: bastion.sh infra [oci] | install <volume|bucket|oci> | status | down" ;;
 esac

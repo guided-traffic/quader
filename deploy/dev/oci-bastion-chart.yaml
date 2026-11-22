@@ -1,0 +1,26 @@
+# The one Bastion of the e2e set oci (R-BAS-060, TestOCI_R_BAS_051_ThroughABastion): release bastion-oci, registration `partners-oci`, layered
+# after bastion-chart-common.yaml by bastion.sh install oci. The host is bastion-oci.quader.localhost on the dev edge; bastion.sh passes the base
+# URL (it carries the edge port). The case pulls an image of a few KiB through it, so it is the cheapest release that serves: one replica, the
+# volume backend on an emptyDir, no Valkey, no signing key, no PodDisruptionBudget, and no minimum ready time before helm's wait ends.
+fullnameOverride: bastion-oci
+highAvailability:
+  enforce: false
+replicaCount: 1
+minReadySeconds: 0
+podDisruptionBudget:
+  enabled: false
+config:
+  bastion:
+    cache:
+      backend: volume
+cacheVolume:
+  type: emptyDir                 # no claim to provision; the cache goes with the pod, as it does with the ephemeral volume
+secrets:
+  mainToken:
+    existingSecret: bastion-token-oci
+tls:
+  existingSecret: ""
+ingress:
+  tls:
+    - secretName: bastion-oci-edge-tls
+      hosts: [bastion-oci.quader.localhost]

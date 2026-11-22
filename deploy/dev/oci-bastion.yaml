@@ -1,0 +1,31 @@
+# The namespace-scoped parts of the one Bastion of the e2e set oci (R-BAS-060, deploy/dev/bastion.sh infra oci), applied to the namespace
+# ${BASTION_NS} (the Pod Security Standard restricted): what the release bastion-oci needs around it and nothing more. The two Bastions of the
+# set bastion need the rest of bastion.yaml (their Valkey, the signing key, the bucket); this one has the volume backend, no Valkey and no key.
+#
+#   Issuer quader-dev-ca            the dev CA again, in this namespace: it signs the pod's listener certificate (chart tls.certManager) and the
+#                                  edge certificate below. bastion.sh copies the CA's Secret here first (a dev profile shortcut: the CA key is a
+#                                  development key). The same object as in bastion.yaml, so either file may be applied first.
+#   Certificate bastion-oci-edge-tls  the edge's certificate for the Bastion's host (ingress.tls of oci-bastion-chart.yaml)
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: quader-dev-ca
+  namespace: ${BASTION_NS}
+spec:
+  ca:
+    secretName: quader-dev-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: bastion-oci-edge-tls
+  namespace: ${BASTION_NS}
+spec:
+  secretName: bastion-oci-edge-tls
+  commonName: bastion-oci.quader.localhost
+  duration: 2160h
+  renewBefore: 720h
+  privateKey: {algorithm: ECDSA, size: 256}
+  usages: [digital signature, key encipherment, server auth]
+  dnsNames: [bastion-oci.quader.localhost]
+  issuerRef: {name: quader-dev-ca, kind: Issuer, group: cert-manager.io}

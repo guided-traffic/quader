@@ -14,6 +14,8 @@ The format **Debian (APT)** serves APT repositories in the Debian repository for
 
 How users configure APT, upload, install and what they see of a key rotation is in [Debian packages with APT](../user/apt-packages.md). The route family is `packages`; every repository of every project is reached on the same host, and no host binding is needed.
 
+A [Quader Bastion](bastion.md) serves every Debian repository at its own address, `https://<Bastion host>/api/deb/<projectKey>/<key>/`, for clients outside your network. It passes the signed release files through unchanged, so APT verifies them with the same key; it keeps the release files and indexes for its metadata period (`bastion.cache.metadata_revalidate_after`, default `1m`) and the by-hash and pool files as artifacts. Every release Quader writes announces `Acquire-By-Hash`, so an `apt-get update` through a Bastion reads exactly the indexes its `InRelease` names. Only a remote repository whose upstream announces no by-hash, and a flat repository, can show a client an index of another generation than its `InRelease` within that period; APT then keeps its previous list until its next update. A deleted or withheld package, a package removed from a suite and a promoted or retired signing key reach the Bastion through its feed within seconds.
+
 ## Create a repository
 
 Create it like any other ([Managing repositories](repositories.md#create-a-repository)): choose the tile **Debian (APT)**, then the class. Or through the API:
@@ -220,7 +222,7 @@ The complete reference is in the [full reference](https://github.com/guided-traf
 - **No `Valid-Until`** in Quader's own releases: a party between a client and Quader that keeps serving the generation the client already holds can keep it on old packages (it cannot roll the client back). TLS to Quader prevents that.
 - **No snapshots** of a suite, and no copy or move of a Debian package between repositories.
 - **Signing keys stay in Quader**; there is no external key service or HSM.
-- **Endpoints with exposure rules** and **the Quader Bastion** do not serve Debian repositories; use an endpoint with `exposure: all`.
+- **Endpoints with exposure rules** do not serve Debian repositories; use an endpoint with `exposure: all`, or a [Quader Bastion](bastion.md), which serves them as the main installation does.
 - **No mirror of a flat repository**; flat upstreams are served by pull-through.
 - **No vulnerability matching** of Debian packages.
 - The metric `quader_deb_remote_parse_total` of the parse runs is not counted yet.

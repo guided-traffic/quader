@@ -1,7 +1,7 @@
-# Chart values shared by the two e2e Bastions (R-BAS-049, deploy/dev/bastion.sh): the chart quader-bastion in front of the
+# Chart values shared by the e2e Bastions (R-BAS-049, R-BAS-060, deploy/dev/bastion.sh): the chart quader-bastion in front of the
 # main installation of the dev profile, over TLS on every connection. The per-release values (host, token Secret, cache
-# backend) are in bastion-chart-volume.yaml and bastion-chart-bucket.yaml; bastion.sh adds the Docker network ranges as
-# networkPolicy.ingress.probeCIDRs and the image ID as a pod annotation.
+# backend) are in bastion-chart-volume.yaml and bastion-chart-bucket.yaml for the set bastion and in oci-bastion-chart.yaml for the
+# set oci; bastion.sh adds the Docker network ranges as networkPolicy.ingress.probeCIDRs and the image ID as a pod annotation.
 image:
   registry: docker.io
   repository: guidedtraffic/quader

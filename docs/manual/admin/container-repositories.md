@@ -126,6 +126,8 @@ A Docker Engine pulls Docker Hub images through a mirror listed in `registry-mir
 
 On the bound host, `/v2/<name>/…` is the registry of that one repository with the image name as sent, the token service and the version check are the host's own, and token scopes name the image without a prefix; the catalog lists the names of the bound repository only. A binding to a repository that does not exist, or that is not an OCI repository, is no binding: the host then serves `/v2/<projectKey>/<repoKey>/…` as any other. The engine uses the mirror for pulls of Docker Hub images only; a push goes to the registry the reference names.
 
+A [Quader Bastion](bastion.md#a-docker-engine-mirror-through-a-bastion) whose address is the bound host serves the mirror the same way, for engines outside your network.
+
 Not verified in this version: whether a Docker Engine presents the credential of a `docker login` to a mirror (the end-to-end row of the Docker Engine mirror reads anonymously). A bound repository that anonymous readers may read, on an endpoint that admits anonymous requests, needs no credential.
 
 ## Configuration
@@ -147,7 +149,7 @@ A manifest that was deleted after the restore point may have been deleted on pur
 
 ## Not supported in this version
 
-- **Endpoints with exposure rules** do not serve container images: the format has no exposure adapter yet. Use an endpoint with `exposure: all` for registry clients.
+- **Endpoints with exposure rules** do not serve container images: the format has no exposure adapter yet. Use an endpoint with `exposure: all` for registry clients, or a [Quader Bastion](bastion.md), which serves the registry at the root of its own address.
 - **Blob downloads are not redirected** to the object store; every layer is streamed by a replica.
 - **No retention of untagged manifests.** A manifest a moved tag left behind stays until somebody deletes it.
 - **Mirrors** copy no referrers and do not read an index inside an index; a tag whose manifest is refused (Docker schema 1) is skipped without a record in the status.

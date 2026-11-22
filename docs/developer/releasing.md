@@ -188,7 +188,7 @@ lists.
 | its package | `internal/formats/<format>/` | its protocol, handlers and guide |
 | its data port | `internal/formatdata/<format>/` | its tables and jobs |
 | its files in shared packages | a file under `internal/` or `cmd/` whose name carries the format's name as a word (`internal/config/oci.go`, `internal/audit/events_npm.go`, `internal/app/wire_deb_index.go`, `internal/importer/ansible.go`, `internal/api/v1/deb_keys.go`, `internal/backup/fixup/nuget.go`, `cmd/quader/admin_oci.go`, `internal/meta/postgres/queries/deb_local.sql`, the migrations named after it) | they exist for that format only |
-| its test upstream and manifests | `test/<format>stub/`, `deploy/dev/<format>stub.yaml`, and the client manifests `deploy/dev/oci-clients.yaml`, `apt-clients.yaml`, `ansible-clients.yaml` | they serve its set only |
+| its test upstream and manifests | `test/<format>stub/`, `deploy/dev/<format>stub.yaml`, the client manifests `deploy/dev/oci-clients.yaml`, `apt-clients.yaml`, `ansible-clients.yaml`, and the manifest and chart values of the one Bastion of the set `oci`, `deploy/dev/oci-bastion.yaml` and `oci-bastion-chart.yaml` | they serve its set only |
 | its e2e tests and client images | `test/e2e/<format>_`, and `test/e2e/clients/` (npm, without `clients/fwd`), `nugetclients/`, `ociclients/`, `aptclients/`, `ansibleclients/` | its set runs them, no other |
 | its part of release.yml | the lines of its job `e2e-<format>` and the comment above it | the leg itself |
 | its pins | the lines of `tools/versions.env` that set `E2E_CLIENTS_*` (npm), `E2E_NUGETCLIENTS_*`, `NUGETVECTORS_*`, `NUGET_VERSIONING_*` (NuGet), `E2E_OCICLIENTS_*`, `E2E_APTCLIENTS_*` (Debian), `E2E_ANSIBLECLIENTS_*`, with the comment above each | its client images and vectors |

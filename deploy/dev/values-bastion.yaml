@@ -1,5 +1,6 @@
 # The `bastion` e2e profile (R-BAS-049), layered after values-dev.yaml by up.sh when QUADER_PROFILE=bastion: the settings the
-# main installation needs for the Bastions of deploy/dev/bastion.sh (R-BAS-017, R-BAS-010).
+# main installation needs for the Bastions of deploy/dev/bastion.sh (R-BAS-017, R-BAS-010). The profile `oci` (R-BAS-060) layers it after
+# values-scatter.yaml for the one Bastion of the set oci, with that Bastion's base URL in place of the two below.
 #
 # bastions.trusted_proxies: the Bastion's pods call the main endpoint directly from the pod range of whichever worker node they
 # run on, and send the address of the real caller in X-Forwarded-For and Forwarded and their own host. The main installation

@@ -22,6 +22,9 @@
 #   QUADER_PROFILE=bastion the `bastion` e2e profile (R-BAS-049): the main installation trusts the pod range as a proxy
 #                          and lists the base URLs of the e2e Bastions (values-bastion.yaml, deploy/dev/bastion.sh).
 #                          Run up.sh again without it to switch back.
+#   QUADER_PROFILE=oci     the `oci` e2e profile (R-BAS-060): the scatter profile with the main installation's side of the one Bastion
+#                          of the set oci, the pod range trusted as a proxy and that Bastion's base URL listed (values-scatter.yaml,
+#                          values-bastion.yaml, deploy/dev/bastion.sh install oci). Run up.sh again without it to switch back.
 #   QUADER_PROFILE=backup  the `backup` e2e profile (R-BAK-029): garbage collection with a grace period of 0s, so that the consistency
 #                          scenario of the backup suite collects what it deletes at once (values-backup.yaml).
 #                          Run up.sh again without it to switch back.
@@ -61,7 +64,7 @@ SKIP_RELEASE="${QUADER_SKIP_RELEASE:-0}"
 POOLER="${QUADER_POOLER:-0}"
 PITR="${QUADER_PITR:-0}"
 PROFILE="${QUADER_PROFILE:-default}"
-case "$PROFILE" in default|scatter|bastion|vuln|backup|edge|alerts|drain) ;; *) die "QUADER_PROFILE must be default, scatter, bastion, vuln, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
+case "$PROFILE" in default|scatter|bastion|oci|vuln|backup|edge|alerts|drain) ;; *) die "QUADER_PROFILE must be default, scatter, bastion, oci, vuln, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
 IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
 LOGS="$STATE_DIR/logs"
 START="$(date +%s)"

@@ -50,6 +50,10 @@ printf 'machine %s\nlogin %s\npassword %s\n' quader.example.com/api/deb/web/deb-
 
 Reading the index needs the read permission on the repository without a package restriction: an index lists every package of a suite, so a token narrowed to some package names can download those package files but cannot use the repository as an APT source (`404` on `dists/<suite>/InRelease`).
 
+### Through a Bastion
+
+When an administrator runs a [Bastion](client-setup.md#install-through-a-bastion) for clients outside your network, the page **Set up client** renders the same files for it under **Install from**: the source, the download of `signing-key.asc` and the line of the credential file name the Bastion's address, for example `https://packages.example.com/api/deb/web/deb-local/`, and the token is the same. The Bastion passes the signed files through unchanged, so the key is the repository's own and APT verifies as it does here. A new package reaches the Bastion's index within its metadata period (one minute by default). Uploading goes to this installation only.
+
 ### Your own certificate authority
 
 When Quader is served with a certificate of your own authority, APT must trust it: name the CA certificate in `Acquire::https::CAInfo` (a file below `/etc/apt/apt.conf.d/`) or install it in the system store. Without it `apt-get update` ends in a certificate error. Do not turn the peer verification off instead.
@@ -189,5 +193,5 @@ Give the `X-Request-Id` of the answer to an administrator when you need help ([E
 
 - Source packages cannot be uploaded; `deb-src` lines work only through a remote repository.
 - `dput` uploads of a signed `.changes` file, `.udeb` installer packages and debug-symbol packages are not supported.
-- An endpoint with exposure rules (a customer endpoint) does not serve Debian repositories, and neither does the Quader Bastion.
+- An endpoint with exposure rules (a customer endpoint) does not serve Debian repositories. A Quader Bastion does, at its own address ([Through a Bastion](#through-a-bastion)).
 - Quader does not match Debian packages against vulnerability data.

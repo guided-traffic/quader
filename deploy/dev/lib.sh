@@ -290,6 +290,10 @@ release_values() {
   # The Bastions' base URLs (deploy/dev/bastion.sh) carry the edge port the cluster was created with.
   [ "$profile" = "bastion" ] && RELEASE_VALUES+=(-f "$dir/values-bastion.yaml" \
     --set-json "config.server.additional_base_urls=[\"https://quader-api.quader.svc:8080\",\"https://quader-packages.quader.svc:8080\",\"https://bastion-volume.quader.localhost:$EDGE_PORT\",\"https://bastion-bucket.quader.localhost:$EDGE_PORT\"]")
+  # The profile oci of the set oci (R-BAS-060): the scatter profile with the main installation's side of the one Bastion of that set
+  # (bastion.sh install oci), so the set needs no second switch for its Bastion case.
+  [ "$profile" = "oci" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml" -f "$dir/values-bastion.yaml" \
+    --set-json "config.server.additional_base_urls=[\"https://quader-api.quader.svc:8080\",\"https://quader-packages.quader.svc:8080\",\"https://bastion-oci.quader.localhost:$EDGE_PORT\"]")
   return 0
 }
 

@@ -17,7 +17,9 @@
 # cosign below).
 #   ${EDGE_PORT}        the port of the edge (QUADER_DEV_HTTP_PORT), the forwarder's listener and the port of every registry host
 #   ${TARGET}           host:port the forwarder relays to (the in-cluster HAProxy Ingress)
-#   ${REGISTRY_HOSTS}   the registry hosts the clients trust the dev CA for: localhost:<port> and the bound host of the Docker Engine mirror
+#   ${REGISTRY_HOSTS}   the registry hosts the clients trust the dev CA for: localhost:<port>, the bound host of the Docker Engine mirror and the
+#                       host of the set's Bastion
+#   ${BASTION_HOST}     bastion-oci.quader.localhost, the host of the Bastion the case TestOCI_R_BAS_051_ThroughABastion installs (bastion.sh install oci)
 #   ${ENGINE_MIRROR}    https://oci-mirror.quader.localhost:<port>, the registry-mirrors entry of the daemon
 apiVersion: v1
 kind: Namespace
@@ -46,10 +48,11 @@ spec:
   tolerations: [{ key: node-role.kubernetes.io/control-plane, operator: Exists, effect: NoSchedule }]
   automountServiceAccountToken: false
   enableServiceLinks: false
-  # the bound host of the Docker Engine mirror is the forwarder as well (localhost is in the pod already)
+  # the bound host of the Docker Engine mirror and the Bastion's host are the forwarder as well (localhost is in the pod already); the edge
+  # routes each by its name
   hostAliases:
     - ip: 127.0.0.1
-      hostnames: [oci-mirror.quader.localhost]
+      hostnames: [oci-mirror.quader.localhost, "${BASTION_HOST}"]
   containers:
     - name: docker
       image: ${DOCKER_IMAGE}

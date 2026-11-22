@@ -1095,3 +1095,17 @@ Every shard keeps 12 to 14 minutes below its limit of 45 and about 11 to 13 belo
 </details>
 
 Not measured here: the real minutes of the four shards (the pipeline's first run with them shows them); whether the `self-hosted` pool starts a fourth integration job at once beside the other jobs of a push (in this run every job started within 15 s of the run's start); a second sample of the package times (one run, so a package's spread between runs is not known here; the two runs of section 3.2 differ per package by up to about 15 %, more where tests changed between them).
+
+## 9. A case added after the measurement: an image through a Bastion (2026-11-22)
+
+Measured once, locally, not on a runner: the case `TestOCI_R_BAS_051_ThroughABastion` of the set `oci`
+([R-BAS-060](../spec/bastion.md#r-bas-060--tests-of-the-feature-and-what-they-cost), [e2e.md](e2e.md#the-bastion-case-of-the-set-oci)), on a kind cluster of the dev
+profile on an arm64 workstation (Docker Desktop, 20 CPUs), run alone twice in a row (`QUADER_E2E_RUN`) and once inside a run of the whole set, [V] from the test's own log line and the `go test -json` report.
+
+| Leg | What it adds | Seconds the leg gains [V] | Data |
+|---|---|---:|---|
+| `e2e (oci)` | one Bastion release (one replica, the volume backend on an emptyDir, installed beside the build and push of the image), `docker login`, a cold and a warm `docker pull`, a `podman pull`, a Kubernetes pod's pull | 16.7 and 16.4 alone (the release ready after 5.6 and 5.5); 16.7 inside a run of the whole set | an image of two files of 3 and 5 KiB |
+| every other leg | nothing: no further client image, no further Bastion, no profile switch (the set's own switch installs the profile `oci`) | 0 | none |
+
+The planner's estimate was about 100 s, 60 of them the release [J in R-BAS-060]. Not measured: the seconds on a runner of the `large` class, where the release and
+the pulls may take longer than on the workstation; the first run of the leg in CI shows them.

@@ -9,8 +9,8 @@ suite `make e2e SET=bastion` and `SET=bastion-long` (R-BAS-049, [developer/e2e.m
 [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta); the development agent's
 decisions are Q-BAS-22 to Q-BAS-131, for the owner's walkthrough. The owner's decision of 2026-11-22 that a Bastion serves every
 format as the main installation does is specified in [Every format](#every-format) (R-BAS-050 to R-BAS-060, Q-BAS-165 to Q-BAS-190,
-Q-BAS-195 to Q-BAS-203, H-1242 to H-1249, H-1290, H-1295, H-1296); of it the two contracts and kit check 19 (R-BAS-058 and the wire of
-R-BAS-057), the main installation's side and the Bastion's side are built, the client case on kind is not; it
+Q-BAS-195 to Q-BAS-207, H-1242 to H-1249, H-1290, H-1295, H-1296) and built: the two contracts and kit check 19 (R-BAS-058 and the wire of
+R-BAS-057), the main installation's side, the Bastion's side, and the client case on kind with the manual (R-BAS-060); it
 supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, R-BAS-022, R-BAS-029, R-BAS-039 and the deferred table
 said about the formats a Bastion leaves out.
 
@@ -2530,7 +2530,11 @@ distribution's error shape, registry tokens, the content address `"sha256:<hex>"
 the format's declared ones, `If-Modified-Since` from an entry, the format's rate-limit status, the format table and the bound repository
 on the link, ranged misses that stream and callers that follow a running fill, the wait for another replica's fill up to
 `bastion.cache.fill_wait_max`, shared documents above the memory bound spooled by their content address, and the report of every serve
-of an entry the main installation counted (R-BAS-050 to R-BAS-054, R-BAS-056, R-BAS-057, R-BAS-059's reporting). The
+of an entry the main installation counted (R-BAS-050 to R-BAS-054, R-BAS-056, R-BAS-057, R-BAS-059's reporting). Built the same day, the
+client case on kind and the manual (package D, R-BAS-060): `TestOCI_R_BAS_051_ThroughABastion` in the set `oci` pulls an image through a Bastion
+release of the leg with Docker, Podman and a pod's kubelet, and the manual says that a Bastion serves every format
+([Q-BAS-204](#q-bas-204--the-set-oci-runs-in-a-profile-of-its-own-that-carries-the-main-installations-side-of-its-bastion) to
+[Q-BAS-207](#q-bas-207--the-case-runs-on-a-push-that-changes-ocis-own-paths-and-in-the-nightly)). The
 main side's tests carry the decisions' IDs, not the requirements' (a test named by a requirement would have counted it as implemented
 before the Bastion's side). Two
 points the table below left unverified were established by the builder with a test: the shape resolver cannot see a registry token's
@@ -2541,7 +2545,9 @@ grant (`authz.Subject` has no member for it, `TestQ_BAS_167_TheDecisionPointDoes
 and the builders' [Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
 to [Q-BAS-190](#q-bas-190--the-checks-paths-count-as-served-on-every-replica)
 and [Q-BAS-195](#q-bas-195--on-a-bound-host-every-path-below-v2-but-the-core-routes-is-the-bound-repository-as-the-main-installation-reads-it)
-to [Q-BAS-203](#q-bas-203--the-galaxy-clients-scheme-token-is-a-credential-of-the-protocol-family-keyed-apart),
+to [Q-BAS-203](#q-bas-203--the-galaxy-clients-scheme-token-is-a-credential-of-the-protocol-family-keyed-apart) and package D's
+[Q-BAS-204](#q-bas-204--the-set-oci-runs-in-a-profile-of-its-own-that-carries-the-main-installations-side-of-its-bastion) to
+[Q-BAS-207](#q-bas-207--the-case-runs-on-a-push-that-changes-ocis-own-paths-and-in-the-nightly),
 the open gaps H-1242 to H-1249, H-1290, H-1295 and H-1296 of [What this does not cover](#what-this-does-not-cover), the record
 [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
@@ -3068,12 +3074,12 @@ The run times are estimates of the planner (marked [J]); the builder records the
 | unit, `internal/bastionmain`, `internal/api/bastionmark`, `internal/api/v1` | the backstop, the token route's kind, the shape cap, `insufficient_scope`, the check below `/v2/`, the feed mappings, the handshake's table, the counted marking | none | under 1 s |
 | kit, every format | check 19 (R-BAS-058) | the fixture's content cases | about 20 ms per format |
 | integration, area `bastion` | one replay per format with Bastion behaviour of its own: OCI (R-BAS-051, R-BAS-053, a blocked image, R-BAS-059), Debian (R-BAS-055), the ClamAV definitions (R-BAS-056); once, format-independent: the bound host (R-BAS-057) | an image of two blobs of 1 KiB; a package of 1 KiB; containers of a few hundred bytes | about 4 s, 3 s, 1 s and 2 s: about 10 s |
-| e2e, set `oci` (on a push that changes the format's code or the Bastion, and nightly) | one case `TestOCI_R_BAS_051_ThroughABastion`: `docker login`, a cold and a warm `docker pull`, a `podman pull`, and a Kubernetes pod whose image comes through the Bastion, of a `FROM scratch` image of two layers of a few KiB, through one Bastion release (volume backend, one replica, no Valkey) installed in the leg | a few KiB | about 40 s and about 60 s for the Bastion's release [J] |
+| e2e, set `oci` (on a push that changes the format's code or the Bastion, and nightly; *superseded in place on 2026-11-22 by [Q-BAS-207](#q-bas-207--the-case-runs-on-a-push-that-changes-ocis-own-paths-and-in-the-nightly): on a push that changes OCI's own paths, and nightly; a change of the Bastion alone does not start it*) | one case `TestOCI_R_BAS_051_ThroughABastion`: `docker login`, a cold and a warm `docker pull`, a `podman pull`, and a Kubernetes pod whose image comes through the Bastion, of a `FROM scratch` image of two layers of a few KiB, through one Bastion release (volume backend, one replica, no Valkey) installed in the leg | a few KiB | about 40 s and about 60 s for the Bastion's release [J]; *measured on 2026-11-22: 16.7 s and 16.4 s in all, the release ready after about 5.5 s ([developer/e2e.md](../developer/e2e.md#the-bastion-case-of-the-set-oci))* |
 | measurement, once before landing (not a test) | `docker`, `podman`, `crictl pull` through a Bastion; `apt-get update` and `apt-get install` in Debian 13 and Ubuntu 24.04; `ansible-galaxy collection install`; `freshclam` 1.5.5: each against a local Bastion, the numbers written on developer/bastion.md | real clients | minutes, once |
 
 - **What each leg gains** [J]: the unit job about 4 s; the integration shard that holds the area `bastion` about 10 s (139 s now,
-  [test-cost.md](../developer/test-cost.md)); e2e `oci` about 100 s; e2e `bastion` and `bastion-long` nothing, since they load no
-  further client image; e2e `deb`, `ansible`, `npm` and `nuget` nothing.
+  [test-cost.md](../developer/test-cost.md)); e2e `oci` about 100 s (measured: about 17 s, [test-cost.md](../developer/test-cost.md#9-a-case-added-after-the-measurement-an-image-through-a-bastion-2026-11-22));
+  e2e `bastion` and `bastion-long` nothing, since they load no further client image; e2e `deb`, `ansible`, `npm` and `nuget` nothing.
 - **With 25 formats** [J]: kit check 19 about 0.5 s in all; an integration replay only for a format with Bastion behaviour of its own (a
   family, a token flow, a refusal status, a header of its own), assumed eight of 25 at about 3 s, about 25 s; an e2e case only for a
   format whose client meets a Bastion differently from what the replay shows (the token flow and the node's runtime of OCI, a bound host
@@ -3083,6 +3089,13 @@ The run times are estimates of the planner (marked [J]); the builder records the
 Acceptance criteria:
 
 - The tests named in R-BAS-050 to R-BAS-059 pass in their tiers, and the e2e case of the set `oci` passes on the kind cluster.
+  *As built (package D):* `TestOCI_R_BAS_051_ThroughABastion` ([oci_bastion_test.go](../../test/e2e/oci_bastion_test.go)) runs the clients
+  with the snippets the client setup renders for the Bastion; a warm pull is judged by the main installation's request log (no artifact
+  answered with bytes) and, for Docker, by the Bastion's `quader_bastion_bytes_served_total{source="cache"}`; the kubelet's pull by its event
+  `Pulled` and the digest the node's containerd holds
+  ([Q-BAS-206](#q-bas-206--the-case-pulls-with-the-snippets-of-the-client-setup-and-judges-a-warm-pull-by-what-the-main-installation-sent)).
+  No Debian case runs on kind: the apt leg holds no Bastion release, and APT meets a Bastion with nothing the integration replay does not
+  show ([developer/e2e.md](../developer/e2e.md#the-bastion-case-of-the-set-oci)).
 
 ## Deferred
 
@@ -6875,6 +6888,62 @@ collection was installable through a Bastion with a token.
 **Choice:** (a). The builder would revisit (b) with the next change of the interface. **Applied in the spec:** R-BAS-050, R-BAS-019;
 code: `authorization` and `parseCredential` in [credential.go](../../internal/bastion/engine/credential.go),
 `TestQ_BAS_203_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily`.
+
+### Q-BAS-204 · The set oci runs in a profile of its own that carries the main installation's side of its Bastion
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-060 installs a Bastion release in the
+leg of the set `oci`, whose main installation runs in the `scatter` profile; a Bastion needs the main installation to trust the address it
+forwards from (`bastions.trusted_proxies`) and to list its base URL and the Service names it calls (`server.additional_base_urls`, R-BAS-017).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A profile `oci`: the `scatter` profile with `values-bastion.yaml` and the Bastion's base URL; the set exports `QUADER_E2E_SCATTER_PROFILE=oci`, so the one switch the set makes installs it (chosen) | `release_values` in `deploy/dev/lib.sh`, `up.sh`, `release-values.sh` | No second switch of the main installation; nothing changes for another set | One profile more in three scripts |
+| (b) The Bastion's settings in `values-scatter.yaml` | Every scatter set carries them | No new profile | The sets npm, NuGet, Debian, Ansible and the access tests trust the pod range for Bastion tokens and list a host none of them uses |
+| (c) The case switches to the profile `bastion` and back | Two upgrades of the main installation in the case | No new profile | Each switch rolls the serving pods, and the profile `bastion` is not the scatter profile the rest of the set needs |
+
+**Choice:** (a). **Applied in:** R-BAS-060; [developer/e2e.md](../developer/e2e.md#the-bastion-case-of-the-set-oci).
+
+### Q-BAS-205 · The Bastion of the set oci is one replica of the volume backend on an emptyDir, installed and removed by its case
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-060 names one release with the volume
+backend, one replica and no Valkey, and asks for it as cheap as it can be.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bastion.sh install oci`: one replica, the volume backend on an emptyDir, no Valkey, no PodDisruptionBudget, `minReadySeconds: 0`, the namespace holding only the dev CA and the edge certificate; the case installs it beside the build and push of its image and uninstalls it at its end (chosen) | `deploy/dev/oci-bastion.yaml`, `oci-bastion-chart.yaml` | Ready about 5 s after the install started (measured): no claim to provision, no minimum ready time; every run installs the release as CI does | A second Bastion layout in `deploy/dev` beside the two of the set `bastion` |
+| (b) The Bastions of the set `bastion` (`bastion.sh infra`) | Two releases, a Valkey of five pods, a bucket | One layout | Minutes of set-up for what images do not need |
+| (c) The chart's defaults | Two replicas, an ephemeral volume per pod | Closer to an installation | A claim per pod, a PodDisruptionBudget and 10 s of minimum ready time; the second replica adds nothing the case asserts (the wait across replicas is a unit test, R-BAS-054) |
+
+**Choice:** (a). The case waits after the release is ready until the edge routes the Bastion's host to it: HAProxy Ingress takes a new
+Ingress into its configuration a moment after the pod is ready, and a run that did not wait met the edge's default certificate. **Applied
+in:** R-BAS-060.
+
+### Q-BAS-206 · The case pulls with the snippets of the client setup and judges a warm pull by what the main installation sent
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-060 names the clients of the case and
+not how it tells that a warm pull came from the Bastion's cache, nor whether the pod must run its image.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The clients run the snippets of `client-setup?bastion=<name>` unchanged; a warm pull passes when the main installation's request log holds no artifact (a blob or a manifest by digest) answered with bytes to the Bastion's pod, and the Docker pull also when `quader_bastion_bytes_served_total{source="cache"}` rose by the blobs' bytes; the kubelet's pull is its event `Pulled` and the digest the node's containerd holds, of an image of two files without a program (chosen) | `TestOCI_R_BAS_051_ThroughABastion` | The snippets for a Bastion are checked by the clients they are written for; the main installation's own record says what it sent, whatever the Bastion counts; the image stays a few KiB | A pod that runs the image is not shown |
+| (b) The pod runs the image, as `TestOCIKubernetes` does | A binary in the image | The pod's start is shown | The image grows to the binary's MiBs, against "a few KiB" |
+| (c) Docker alone | One client | About 6 s less | The node's runtime, the main case of images (Q-BAS-180), is left to the replay |
+
+**Choice:** (a). **Applied in:** R-BAS-060.
+
+### Q-BAS-207 · The case runs on a push that changes OCI's own paths and in the nightly
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-060 runs the case "on a push that changes
+the format's code or the Bastion"; the owner's rule of 2026-11-20 runs a format's leg on a push only when that format's own code changed,
+and a change of shared code the reference leg npm (the repository's working rules, Q-ARCH-540).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The leg `oci` by its own list: OCI's paths, the case's test file (`test/e2e/oci_`) and its Bastion's manifest and values (`deploy/dev/oci-bastion.yaml`, `oci-bastion-chart.yaml`, added to OCI's list of `.github/scripts/e2e-legs.sh`), and the nightly (chosen) | A change of the Bastion runs npm and the set `bastion` | The owner's rule as it stands; the set `bastion` judges every change of the Bastion with npm and NuGet clients | What only an image client shows of a change of the Bastion, beyond the integration replays of docker and containerd, is found in the nightly |
+| (b) The Bastion's paths also on OCI's list | A change of the Bastion runs oci instead of npm | The case on every Bastion change | A format's leg on code that is not the format's, against the owner's rule |
+
+**Choice:** (a). It supersedes the parenthetical of R-BAS-060's table row. **Applied in:** R-BAS-060, `.github/scripts/e2e-legs.sh`,
+[developer/releasing.md](../developer/releasing.md#which-e2e-legs-a-change-runs).
 
 ### Q-BAS-210 · The cache key is one file in the Bastion's chart, and the format's keys derive from it
 

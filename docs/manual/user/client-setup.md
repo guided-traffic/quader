@@ -250,12 +250,14 @@ malware scan uses, and its **Set up client** page shows the guide of `freshclam`
 
 ## Install through a Bastion
 
-An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The Quader Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages from the same repositories, named by the same project and repository keys; only the address differs.
+An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The Quader Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages and pull the same images from the same repositories, named by the same project and repository keys, for every format; only the address differs.
 
 When an administrator has registered a Bastion and it has reported its address, the page **Set up client** offers it under **More options**, **Install from**, next to **This installation**. Choose it and the snippets and the address in the header use the Bastion's address, for example `https://packages.example.com/api/npm/web/npm-all/`. Without that permission the choice is not shown; an administrator can send you a link to the page that already names the Bastion (`…/setup?bastion=<name>`).
 
-- **Read only.** The page has no **Publish** step for a Bastion, and its banner says why. Publish, change dist-tags and unpublish on this installation.
+- **Read only.** The page has no **Publish** step for a Bastion, and its banner says why. Publish, push images, change dist-tags and unpublish on this installation.
 - **npm** gets one more line in the configure snippet, `replace-registry-host=always`. It makes npm fetch every package from the address in `registry=`, also when a lockfile written against another host names that host, so one lockfile works through this installation and through the Bastion.
+- **Images.** For an OCI repository the snippets sign in to the Bastion's host and name the images on it, for example `docker login packages.example.com/web/docker-local` and `docker pull packages.example.com/web/docker-local/myapp:1.0`; Podman's are the same with `podman`. The Kubernetes snippet creates an image pull secret for the same prefix, so a pod whose image names it pulls through the Bastion. An image keeps its digest, so a reference by digest works at both addresses.
+- **Debian, Ansible Galaxy and the ClamAV definitions.** The APT source, the download of its key and the line of the credential file name the Bastion's address; `ansible-galaxy` gets it as its server, freshclam as `PrivateMirror`.
 - **The guide** describes this installation, so the page shows none for a Bastion; choose **This installation** to read it.
 - **A Bastion answers `409` on the page** (`bastion_base_url_unknown`) while it has not reported an address yet or the address is not listed in `server.additional_base_urls` of this installation; tell your administrator.
 

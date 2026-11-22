@@ -53,8 +53,9 @@ deploy/dev/valkey-credential.sh  break|fix: change the default user's password o
 deploy/dev/valkey-stop.sh   stop Valkey and the Sentinels until valkey-start.sh (the M1 tests hold the outage themselves)
 deploy/dev/s3-stop.sh       scale the object store to 0 until s3-start.sh (its objects stay on the volume); s3-outage.sh is stop, sleep, start (TestHASuite_ObjectStoreOutage)
 deploy/dev/valkey-cli.sh    valkey-cli against the current primary (FLUSHALL of E1.11, CLIENT PAUSE of E1.8)
-deploy/dev/bastion.sh       the e2e Bastions of R-BAS-049: infra, install <volume|bucket>, status, down (the Bastion tests, below)
-deploy/dev/bastion*.yaml    their manifests and chart values; values-bastion.yaml is the main installation's `bastion` profile
+deploy/dev/bastion.sh       the e2e Bastions of R-BAS-049 and the one of the set oci (R-BAS-060): infra [oci], install <volume|bucket|oci>, status, down (the Bastion tests and the Bastion case of the set oci, below)
+deploy/dev/bastion*.yaml    their manifests and chart values; values-bastion.yaml is the main installation's `bastion` profile and, after values-scatter.yaml, its profile `oci`
+deploy/dev/oci-bastion.yaml, oci-bastion-chart.yaml  the edge certificate and the chart values of the Bastion of the set oci (one replica, the volume backend on an emptyDir)
 deploy/dev/restore-ns.sh    the second installation of the restore drill (namespace quader-restore): infra, install <backup id>, serve, down; restore-ns.yaml and values-restore.yaml are its manifests and chart values, values-restore-vuln.yaml the overlay of `QUADER_RESTORE_PROFILE=vuln` (the backup tests and the vulnerability tests, below)
 deploy/dev/pitr.sh, pitr.yaml, pitr-restore.yaml  the platform layer of R-HA-023 and the new cluster of the point-in-time drill (QUADER_PITR=1, below)
 deploy/dev/values-backup.yaml  the profile `backup`: garbage collection without a grace period (QUADER_PROFILE=backup)
@@ -116,6 +117,7 @@ test/e2e/                   the Go tests, build tag `e2e`, package e2e
   oci_remote_test.go        pull-through, six concurrent pulls on three replicas, the mirror with the upstream stopped (TestOCIRemote, TestOCIRemoteMirror)
   oci_virtual_test.go       pull and push through a virtual repository (TestOCIVirtual)
   oci_engine_test.go        the Docker Engine mirror of a bound host (TestOCIEngineMirror), a Kubernetes pod with an image pull secret (TestOCIKubernetes)
+  oci_bastion_test.go       the client case of R-BAS-060: an image pulled through a Bastion by docker, podman and the kubelet (TestOCI_R_BAS_051_ThroughABastion)
   oci_snippets_test.go      the rendered setup snippets run by the clients (TestOCISnippets)
   oci_closing_test.go       the closing run: Valkey stopped, the read-only subset against Docker Hub (TestOCIClosing, TestOCIClosingPublic)
   oci_long_test.go          the long set oci-long: the drain of the pod that receives a 300 MiB push (TestOCILong_R_OCI_011_...)
@@ -204,7 +206,7 @@ make nuget-clients-image     # only build the NuGet clients image into the local
 make nuget-clients-smoke     # the image like a pod against the counting NuGet test upstream, without a cluster
 make nuget-reference-check   # perf/nuget/reference against a regeneration (no cluster, no Docker)
 make e2e SET=oci-clients     # build the OCI clients images, start the Docker Engine and Podman pods of the namespace quader-e2e-clients, run the smoke test (the pods stay up)
-make e2e SET=oci             # every TestOCI... but the closing and long names: login, push and pull through local, remote, mirror, virtual and bound-host repositories with docker and podman, Buildx, the Kubernetes pull, the setup snippets (CI job e2e-oci, when the push changes OCI's own paths; nightly job format-oci); three client pods and the counting OCI test upstream
+make e2e SET=oci             # every TestOCI... but the closing and long names: login, push and pull through local, remote, mirror, virtual and bound-host repositories with docker and podman, Buildx, the Kubernetes pull, the setup snippets, an image through a Bastion (CI job e2e-oci, when the push changes OCI's own paths; nightly job format-oci); three client pods, the counting OCI test upstream and the profile oci
 make e2e SET=oci-closing     # the additions of the closing run (TestOCIClosing: Valkey stopped; TestOCIClosingPublic: the read-only subset against Docker Hub; exports QUADER_E2E_OCI_CLOSING=1); CI leg of a closing dispatch
 make e2e SET=oci-long        # TestOCILong: the drain of the pod that receives a push of a 300 MiB layer (CI: job e2e-oci of the nightly workflow)
 make oci-clients-image       # only build the two OCI clients images into the local Docker
@@ -310,6 +312,7 @@ What a new format adds, in its own set (`e2e (<format>)`):
 |---|---|---|
 | Download limits | `Test<Format>Limits_R_LIM_020_…`: its client against a repository of the case whose rule (`limitRule` in [limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go)) refuses the client's next request (`requestsPerSecond` 1, burst 1) and, where it downloads, its next download (`cachedBytesPerHour` 1 after a document); in Enforce; what it prints, whether it retries, its exit status (`noteRefusal`, the artifact `limits-clients.json`), which is a row of the manual's table | the figures, Audit, the subjects, the block, the ceiling: the integration set |
 | A probe starts the download (W-25) | only if a command of its real client sends a probe without fetching the content itself; one case with the smallest artifact | the path through a virtual repository (once, in the OCI set), the charge, the switch, the budget |
+| A Bastion (R-BAS-060) | only if its client meets a Bastion differently from the integration replays (a token flow, a node's runtime, a bound host): one case in its own set with a Bastion release of its own, as OCI's ([The Bastion case of the set oci](#the-bastion-case-of-the-set-oci), about 17 s with the release) | the families, the marking, the cache and the format's facts: unit tests, kit check 19 and the integration replays of `test/integration/bastion` |
 
 The cases of the download limits today, all in Enforce, measured locally on `linux/arm64` on 2026-11-20, each set run with only its
 new cases (`QUADER_E2E_RUN`), so the seconds include the fixture the full set builds anyway:
@@ -2925,8 +2928,9 @@ What the real clients do that a unit test would not guess:
 
 ## The OCI tests
 
-The e2e tier of [R-OCI-035](../spec/formats/oci.md#r-oci-035--test-suites), T-16 WP11. The suite's own fixture is `ociFx` ([oci_env_test.go](../../test/e2e/oci_env_test.go)): it switches to the `scatter`
-profile (three `packages` replicas, every request to another one, R-OCI-032), creates `oci-e2e` (authentication required) and `oci-e2e-open` (anonymous `read`), a publisher service account and its
+The e2e tier of [R-OCI-035](../spec/formats/oci.md#r-oci-035--test-suites), T-16 WP11. The suite's own fixture is `ociFx` ([oci_env_test.go](../../test/e2e/oci_env_test.go)): it switches to the profile
+`oci`, which is the `scatter` profile (three `packages` replicas, every request to another one, R-OCI-032) with the main installation's side of the set's Bastion
+([below](#the-bastion-case-of-the-set-oci); the set exports `QUADER_E2E_SCATTER_PROFILE=oci`), creates `oci-e2e` (authentication required) and `oci-e2e-open` (anonymous `read`), a publisher service account and its
 token. A test that needs a remote, a virtual repository or a local repository of its own creates it (`upstreamRepos`: local, remote over the counting OCI test upstream and virtual with the local as
 deployment target; deleted with the test), so the cache a test starts with is empty and no tag of an earlier run is in the way (a moved tag is refused without `overwrite`). Image names and tags carry the run.
 
@@ -2939,12 +2943,60 @@ deployment target; deleted with the test), so the cache a test starts with is em
 | `TestOCIVirtual` | R-OCI-027, R-OCI-028 | a virtual repository over a local member (the deployment target) and a remote: a tag the local member has is served from it and the upstream is not asked; a tag only the remote has is pulled through the virtual repository; `docker push` through it stores the image in the target; an image built on a base layer the remote's cache holds is pushed without uploading the base (`Layer already exists`); the tags list is the union; a delete answers 405 `UNSUPPORTED` |
 | `TestOCIEngineMirror` | R-OCI-029, R-EP-007 | the Docker Engine of the pod, with `registry-mirrors` naming the bound host, pulls `app:1` (Docker Hub's `library/app`) through the repository `oci-engine-mirror`; the upstream records one manifest `GET`; `GET /v2/e2e/oci-engine-mirror/library/app/manifests/1` on the bound host is `404 NAME_UNKNOWN` |
 | `TestOCIKubernetes` | R-OCI-004, R-OCI-030 | a pod whose image is in a virtual repository: without an image pull secret the kubelet reports `ErrImagePull` or `ImagePullBackOff`; with the secret that the unchanged snippet `docker.kubernetes.configure` of the setup API creates, the pod runs the image, and its `imageID` carries the digest of the push |
+| `TestOCI_R_BAS_051_ThroughABastion` | R-BAS-050 to R-BAS-053, R-BAS-060 | an image of two files of 3 and 5 KiB pushed to `oci-e2e`, pulled through the set's Bastion with the snippets the setup API renders for it (`bastion=partners-oci`): `docker login` and a cold `docker pull` for which the main installation sends each artifact once, a warm `docker pull`, a `podman pull` and a Kubernetes pod with the image pull secret of the snippet, each warm pull without an artifact's bytes from the main installation ([below](#the-bastion-case-of-the-set-oci)) |
 | `TestOCISnippets` | R-OCI-030 | the `configure`, the `publish` (`docker.publish`, `docker.publish.buildx`, `podman.publish`) and the `install` snippet the setup API renders for a local repository (`credentials=env`), run unchanged by `sh -c`: login, push, and on a second pod login and pull; the pulled digest is the pushed one |
 | `TestOCIMirror_R_REPO_055_APassRunsWhileClientsPull` | R-REPO-055, R-OCI-026 | set `oci`: a pass of an OCI mirror (catalog, `library/*` and 1,000 tags of `bulk/tags`, each manifest held 100 ms) runs in a process of the pool while `docker` and `podman` on three pods pull `library/alpine:3`, `library/busybox:latest` and `library/nginx:1` through the same remote; every pull succeeds, the upstream never holds more than 8 + 3 − 1 + 2 requests open, the pass ends `complete` |
 | `TestOCILong_R_REPO_058_DrainOfTheNodeOfAMirrorPass` | R-REPO-058, R-OCI-026 | set `oci-long`: the node of the pool process that runs a pass of 400 tags (each manifest held 300 ms) is drained while `docker` pulls through the remote; the pass ends `complete` in the other process, and at most `concurrency` manifests were served twice |
 | `TestOCILong_R_OCI_011_DrainOfThePodThatReceivesAPush` | R-OCI-011, R-HA-052 | set `oci-long`: `docker push` of an image with a 300 MiB layer, the client pod's forwarder pinned to one packages pod; once the session has received 48 MiB the pod's node is drained and the forwarder released to the edge; the push exits 0, the pulled image has the pushed digest, and after the abandoned session is aged past `session_ttl` and a collection run (`POST /api/v1/system/tasks/gc/run`) the bucket holds no multipart upload (`aws s3api list-multipart-uploads`, a Job) |
 | `TestOCIClosing` | R-OCI-032 | set `oci-closing`, the closing run (`QUADER_E2E_OCI_CLOSING=1`): with Valkey stopped, `docker push` and `docker pull` through local, remote and virtual repositories, and six concurrent pulls on three replicas that cost one to three upstream requests per layer (one per replica) |
 | `TestOCIClosingPublic` | R-OCI-025, R-OCI-026, R-OCI-035 | the read-only subset against Docker Hub: a pull-through remote of `https://registry-1.docker.io/` pulls `library/busybox:latest` anonymously (as `busybox` and `library/busybox`, one cached copy), and a mirror with `tags: ["latest"]` of `library/busybox` stores it. Docker Hub's request count is not observable from outside, and the test does not assert the six manifest `GET` requests of R-OCI-035 |
+
+### The Bastion case of the set oci
+
+[R-BAS-060](../spec/bastion.md#r-bas-060--tests-of-the-feature-and-what-they-cost)'s client case: the clients the set has already pull an image through a Bastion,
+the way the integration replays of `test/integration/bastion` cannot show it (Docker's sign-in through the token service at the Bastion's host, a pod's image pull
+secret, the node's containerd). Decisions [Q-BAS-204](../spec/bastion.md#q-bas-204--the-set-oci-runs-in-a-profile-of-its-own-that-carries-the-main-installations-side-of-its-bastion)
+to [Q-BAS-207](../spec/bastion.md#q-bas-207--the-case-runs-on-a-push-that-changes-ocis-own-paths-and-in-the-nightly).
+
+| Piece | Where | What it does |
+|---|---|---|
+| The profile `oci` | `release_values` in [lib.sh](../../deploy/dev/lib.sh), [up.sh](../../deploy/dev/up.sh), [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) | the `scatter` profile with `bastions.trusted_proxies` the pod range and `server.additional_base_urls` the two Service names the Bastion calls and `https://bastion-oci.quader.localhost:<edge port>`; the set's one profile switch (`ociFx`) installs it, so the case adds none |
+| The namespace's parts | `bastion.sh infra oci`, [oci-bastion.yaml](../../deploy/dev/oci-bastion.yaml) | the namespace `quader-bastion`, the dev CA and its trust bundle, the Issuer and the edge certificate of `bastion-oci.quader.localhost`; no Valkey, no signing key, no bucket |
+| The release | `bastion.sh install oci`, [bastion-chart-common.yaml](../../deploy/dev/bastion-chart-common.yaml) and [oci-bastion-chart.yaml](../../deploy/dev/oci-bastion-chart.yaml) | `bastion-oci`, registration `partners-oci`, token Secret `bastion-token-oci`: one replica, the volume backend on an emptyDir, no Valkey, no PodDisruptionBudget, no minimum ready time; installed by the case beside the build and push of its image, removed with `helm uninstall` at its end (`QUADER_E2E_BASTION_KEEP=1` keeps it) |
+| The Bastion's host | marker `T16 oci-clients` of [e2e.sh](../../deploy/dev/e2e.sh), [oci-clients.yaml](../../deploy/dev/oci-clients.yaml) | the client pods name the host in their host aliases (their forwarder) and trust the dev CA for `<host>:<edge port>`; the control-plane node resolves it to its forwarder (a line of `/etc/hosts`) and trusts the dev CA for it in `/etc/containerd/certs.d` |
+| The case | [oci_bastion_test.go](../../test/e2e/oci_bastion_test.go) | the registration and the token through the management API (`registerBastion` of the Bastion harness), the wait for the replica, its contact and the edge, the snippets of `client-setup?bastion=partners-oci`, what the main installation was asked (`mainLog`, by the Bastion pod's address) |
+
+What it asserts, in four subtests on one image (two files of 3 and 5 KiB `FROM scratch`, pushed by `docker` to `oci-e2e`):
+
+| Subtest | What it asserts |
+|---|---|
+| before the subtests | the replica is ready and has made contact, and `GET /v2/` at the Bastion's host through the edge is the Bastion's own `401` with `Bearer realm="https://bastion-oci.quader.localhost:<edge port>/v2/_token"` and `Docker-Distribution-API-Version`. HAProxy Ingress routes a new Ingress a moment after its pod is ready; a run that did not wait met the edge's default certificate (`docker login` reported `EOF` on its plain-HTTP retry). The snippets of `docker` and `podman` for the Bastion name its image prefix `bastion-oci.quader.localhost:<edge port>/e2e/oci-e2e`, its registry URL, and no publish snippet |
+| R-BAS-060 R-BAS-052 cold | `docker.configure.shell` signs in through the Bastion (the version check, the token service with Basic), `docker.install` pulls; the client holds the digest of the push; the main installation sent each artifact (a blob or a manifest by digest) once, at least three |
+| R-BAS-060 R-BAS-053 warm | after `docker system prune`, `docker.install` again: no artifact answered `200`, `206` or with bytes by the main installation (each one a conditional request answered `304`, H-1242), and `quader_bastion_bytes_served_total{source="cache"}` rose by at least the bytes of the blobs the cold pull filled |
+| R-BAS-060 podman | `podman.configure.shell` and `podman.install`: the digest of the push, no artifact's bytes from the main installation |
+| R-BAS-060 Kubernetes | the unchanged snippet `docker.configure.kubernetes` creates the image pull secret for the Bastion's prefix; a pod on the control-plane node names the image on the Bastion's host; the kubelet's event `Pulled`, the node's containerd holds the digest of the push (`crictl inspecti`), no artifact's bytes from the main installation. The image holds no program, so the container does not start, which is not the case's question (Q-BAS-206) |
+
+**Measured** (local kind cluster `bas-d`, Docker Desktop on an arm64 workstation with 20 CPUs, 2026-11-22, `QUADER_E2E_RUN='^TestOCI_R_BAS_051_ThroughABastion$'`, the
+seconds after the set's fixture): two runs in a row took 16.7 s and 16.4 s (the release ready, its image built and pushed beside it, after 5.6 s and 5.5 s;
+the cold pull 2.5 s and 2.6 s, the warm pull 2.8 s and 2.4 s, Podman 2.5 s, the kubelet 3.2 s); the whole test with the fixture, whose profile switch the set makes anyway,
+33.4 s and 34.1 s. In a run of the whole set, where an earlier test had built the fixture, the test took 16.7 s. The main installation answered the warm `docker pull` 12 requests (7 of them the artifacts' conditional requests, `304`), the `podman pull` 8 (4) and
+the kubelet's pull 15 (5). The planner's estimate was about 100 s, 60 of them the release; the release is ready in about 5 s because the image is on the nodes already,
+the emptyDir needs no claim and nothing waits for a minimum ready time.
+
+**What the leg gains:** the seconds above, about 17, in `e2e (oci)` alone, on a push that changes OCI's own paths and in the nightly job `format-oci`; the profile
+switch, the client pods and the node's setup are the set's own and grow by nothing measurable. No other leg gains anything: the sets `bastion` and `bastion-long` load
+no further client and install no further Bastion, and the sets `deb`, `ansible`, `npm` and `nuget` hold no Bastion case. With 25 formats it stays one case, unless
+another format's client meets a Bastion differently from the replays (R-BAS-060).
+
+**Not covered by the case:**
+
+- Debian through a Bastion on kind. The apt leg holds no Bastion release, and APT meets a Bastion with nothing the replay `TestR_BAS_055_DebianThroughABastion` does not
+  show (signed files passed unchanged, by-hash files, `If-Modified-Since`; no token flow, no node runtime); APT 3.0.4 and 2.8.3 were measured once through a Bastion
+  ([bastion.md](bastion.md#the-real-clients-through-a-bastion)). A case there would add a second leg that installs a Bastion and a second profile.
+- The bucket backend, Valkey and several replicas for images: the wait for another replica's fill and a second caller following a running fill are unit tests
+  (R-BAS-054); routing by path is the set `bastion`'s.
+- A pod that runs an image pulled through a Bastion, and the Docker Engine mirror through a Bastion (the bound host, R-BAS-057, an integration test).
+- The audit of the downloads a Bastion served from its cache for an image (R-BAS-059, an integration test).
 
 ### Running it
 
