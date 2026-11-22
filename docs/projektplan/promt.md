@@ -1861,9 +1861,37 @@ runs are in `git log`; this section holds the current state.
   about 0.3 s of the unit job, nothing in the integration or end-to-end legs. **Not verified:** any real client
   through a Bastion (package C); a deployment that runs the role `api` apart (read and a unit test); whether
   `apt update` works through a Bastion today. Its worktree and branch are removed.
-- **In work since 2026-11-22, 13:37: package D of "a Bastion serves every format"** (one small case of an image
-  pulled through a Bastion in the end-to-end set of the registry, on a kind cluster of its own; the four manual
-  pages and every other text that says a Bastion serves only some formats).
+- **Package D of "a Bastion serves every format" reported at 14:42 and is in the landing gates since 14:43** (one
+  commit of the type `test`, 25 files; its builder worked from 13:37 to 14:42; rebased onto `main` by the
+  development agent without a conflict). **Built:** the case of an image through a Bastion in the end-to-end
+  set of the registry, which installs a Bastion release of one replica for itself and removes it: `GET /v2/` at
+  the Bastion's host answers the Bastion's own `401` with its own realm; Docker logs in and pulls with the
+  snippets of the client setup, unchanged, and holds the pushed digest; a second pull takes no artifact's
+  bytes from the main installation (seven conditional requests answered `304`) and the Bastion's counter of
+  bytes from its cache rises; Podman pulls the same digest; a pod on the cluster pulls with the unchanged
+  pull Secret, the kubelet reports the pull and the node holds the digest. **The case takes about 17 seconds**
+  (measured four times, twice on the commit; the planner had estimated 100), which is what the leg of the
+  registry gains, and no other leg gains anything; it runs on a push that changes the registry's own paths
+  and in the nightly (its decision Q-BAS-207, by the owner's rule of 2026-11-20). **The manual says now that a
+  Bastion serves every format:** the Bastion's page of the administrator (what each client names, a mirror of
+  the Docker Engine through a Bastion, the sizing for image layers), the two pages of APT, the client setup,
+  the two pages of container images, and the README's line on the forwarded paths. No Debian case on a
+  cluster: the replay at the integration tier shows what APT meets at a Bastion, and a second leg with a
+  Bastion would cost more than it shows. Decisions Q-BAS-204 to Q-BAS-207, no new gap. **Its gates:** build,
+  the full unit run, generate-check, the evidence, chart lint and tests, the lint exit 0; the case twice green
+  on the commit. **A red test in its one run of the whole set was its own environment** (a test that switches
+  the profile dropped the builder's local image tag; green on the rerun with the tag in place; in the pipeline
+  the tag is the one the set expects). **Not verified:** the seconds on a runner of the pipeline; the two
+  other sets of the registry, which were not run; the images for the other processor architecture.
+  **The order of the pushes, decided by the development agent:** package D is pushed alone, as soon as its
+  gates are through, and its legs of the Bastion and of the registry finish before the several connections
+  are pushed, so that the Bastion's end-to-end set, which the pipeline has not yet run on package C, gets a
+  result that no change of the store can blur.
+- **In work since 14:43: the proof of the development profile for the several connections,** which the chart's
+  builder had to leave out for want of memory and resumes now that the other cluster is gone: the profile as
+  the end-to-end legs install it, on a kind cluster of its own, with the set of the reference client, and in
+  the running installation the rendered connections, the mounts, the marker and what the start check recorded.
+  The several connections are not pushed before it has reported.
 - **Landed on 2026-11-22 at 13:35: package C of "a Bastion serves every format", the Bastion's side: images,
   Debian and every other format are served through a Bastion, shown with the real clients** (a commit of the
   type `feat`, which announces the interface's fourth version; R-BAS-050 to R-BAS-054, R-BAS-056 and the
