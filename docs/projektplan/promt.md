@@ -1666,7 +1666,14 @@ runs are in `git log`; this section holds the current state.
   packages). **Next as agents become free:** the Bastion's package C resumed when B has landed, then the
   reading of the documentation of the object gateway in the owner's cluster, the Bastion's package D, the
   links' package 2.
-- **The second stage's specification, encryption, is on `main` since 13:03** (its planner worked from 12:06 to
+- **In work since 2026-11-22, 13:03: package 1 of the encryption, the format and its tools** (the codec, the
+  record, the keyed name, a reader that runs its checks in order, the vector files checked against a second
+  implementation, five fuzz targets with a nightly job; a new package that nothing calls yet), **and a reading
+  of the documentation of the object gateway that the owner's cluster runs** (what it supports of metadata, a
+  copy that replaces it, checksums, conditional writes, consistency, signed links; nothing is called). Four
+  agents run: these two, the Bastion's package C and the first stage's package A; the chart's package waits
+  for A.
+- **The second stage's specification, encryption, is on `main` since 13:02** (its planner worked from 12:06 to
   12:49; "With the owner", the topic of 2026-11-22, has what it says, its three questions for him and its build
   plan of six packages; its first package, the format with its vectors and fuzz targets, needs nothing of the
   first stage and starts when an agent is free).
@@ -1720,7 +1727,7 @@ runs are in `git log`; this section holds the current state.
   lint, the lint; the index rows of the decisions' page merged by hand with both sides kept; the diff holds no
   name the white-label rule forbids; **not run by the development agent: the chart tests, which were red on
   `main` by its own earlier landings (the entry above).** The owner's UI backend started with it at the push.
-  **Its release was held back by that gate** and follows with the run of the push at 13:03. **Its tests cost**
+  **Its release was held back by that gate** and follows with the run of the push at 13:02. **Its tests cost**
   about 0.3 s of the unit job, nothing in the integration or end-to-end legs. **Not verified:** any real client
   through a Bastion (package C); a deployment that runs the role `api` apart (read and a unit test); whether
   `apt update` works through a Bastion today. Its worktree and branch are removed.
@@ -3979,7 +3986,7 @@ that reads the bucket**
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
   and after the Bastion serves every format.
-  **Stage 2, encryption, is specified on `main` since 13:03** (its planner worked from 12:06 to 12:49; one commit,
+  **Stage 2, encryption, is specified on `main` since 13:02** (its planner worked from 12:06 to 12:49; one commit,
   rebased twice by the development agent, with the Bastion's decision blocks merged by hand; on the rebased
   commit the whole of the chart tests, the full unit run, the evidence regenerated without a difference, links,
   check and the count test exit 0, the wording scan clean; its worktree and branch are removed): R-STOR-048
