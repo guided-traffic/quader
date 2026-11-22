@@ -274,6 +274,23 @@ gaps that remain are the H-items in [What this does not cover](#what-this-does-n
 | B3, B7, B8, B11: the link | a half-read start counted as the start of the history; a burst page of 1,000 entries cost 1,000 passes over the answers; a black-holed call held the tick for `response_header_timeout`; IDs forgotten before the feed stopped re-sending ([Q-BAS-126](../spec/bastion.md#q-bas-126--the-link-applies-a-page-as-a-unit-ends-the-start-read-at-the-end-of-the-feed-and-bounds-each-call), [Q-BAS-152](../spec/bastion.md#q-bas-152--the-id-of-an-applied-entry-is-kept-until-a-read-behind-which-it-lies-no-longer-returns-it)) | see the decision | `TestR_BAS_026_TheHistoryStartsOnlyWhenTheStartReadReachedItsEnd`, `TestR_BAS_026_AFeedPageOfAThousandEntriesIsAppliedAgainstTwoHundredThousandAnswersWithinTheBound`, `TestR_BAS_027_ACallThatTheMainInstallationNeverAnswersIsCutAtUnreachableAfter`, `TestR_BAS_026_AnAppliedIDIsKeptWhileTheFeedSendsItsEntry`, `TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain` |
 | B1 (mirror): a `304` marked `shared` against the caller's private copy | the caller, who sent no condition, received an empty `304` | the copy's bytes answer as a `200` | `TestR_BAS_023_A304SharedAgainstThePrivateCopyAnswersTheCallerWithTheCopysBytes` |
 
+## Every format, the registry root and large content
+
+Specified, not built: the owner's decision of 2026-11-22 that a Bastion serves every format as the main installation does
+([spec/bastion.md](../spec/bastion.md#every-format), R-BAS-050 to R-BAS-060). What it changes in the trust boundary:
+
+| Change | What it means for trust | Held by |
+|---|---|---|
+| `/v2/…` is served at the Bastion's host root | One more path family reaches the read flow. It is classified as the main installation's router reads it (an encoded or dot segment of the family, the project or the key is refused), and the main installation's backstop admits it as a forwarded family; nothing else below the host root is served | R-BAS-051, Q-BAS-121, Q-BAS-165 |
+| The registry's token flow passes through the Bastion | A client's Quader token reaches the Bastion in the Basic header or the form of a token request, and the registry token the main installation issues passes back through it. That is the trust the Bastion already holds for every caller's credential in transit; the token's answer is never kept, collapsed or logged, and the Bastion holds no key to issue or verify a registry token | R-BAS-051, Q-BAS-166 |
+| A registry token is a credential the Bastion cannot verify | Its form is checked and every decision about it is the main installation's (a forward, the check presented below `/v2/`). Its read shape is capped at `partial`: the decision point does not see the grant, so an uncapped `full` would let a token granted one image read every cached image of its repository from the Bastion. Without the cap that is live; the cap is a requirement, not a gap | R-BAS-052, Q-BAS-167 |
+| The Bastion reads an anonymous registry token's payload without verifying it | The one bit it uses, "anonymous", can only lower what is read: the request is forwarded without a credential, which any client may send | R-BAS-052, Q-BAS-168 |
+| `401 insufficient_scope` is no longer `invalid` | A client that reuses a token for another image is not counted toward the failed-authentication timeout of its address; every other `401` still is | R-BAS-052 |
+| Signed Debian indexes pass through | The Bastion cannot forge an `InRelease`; clients verify it with the key of their source line. It can serve an older genuine one ([H-1246](../spec/bastion.md#h-1246--a-compromised-bastion-can-serve-an-older-genuine-document-of-a-repository)) | R-BAS-055 |
+| The ClamAV definitions without certificates | No certificate is verified at a Bastion and none is vouched for to the main installation; the certificate subject stays where TLS ends at Quader | R-BAS-056, Q-BAS-176 |
+| Larger content | Gigabyte layers make the existing bounds matter more: a fill holds a budget slot and spool for its transfer, a caller of a running fill follows the spool after its own permission check, never on another's | R-BAS-054, Q-BAS-172 |
+| A format's facts and a bound host come from the handshake | What headers are replayed, which status a refusal takes and which repository a bound host names are the main installation's statements over the Bastion token's channel, not the Bastion's configuration | R-BAS-057, Q-BAS-170, Q-BAS-178 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
@@ -369,7 +386,21 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 - [H-474](../spec/bastion.md#h-474--the-sliding-estimate-of-a-limit-admits-more-than-the-limit-in-a-minute-that-spans-a-boundary): the sliding
   estimate of a limit admits more than the limit in a minute that spans a boundary;
 - [H-464](../spec/bastion.md#h-464--a-client-that-sends-accept-encoding-gzip-was-asked-about-at-the-main-installation-on-every-artifact-read-cause-not-found): a client that sends
-  `Accept-Encoding: gzip` was asked about at the main installation on every artifact read, cause not found.
+  `Accept-Encoding: gzip` was asked about at the main installation on every artifact read, cause not found;
+- [H-1242](../spec/bastion.md#h-1242--every-warm-read-with-a-registry-token-costs-the-main-installation-a-conditional-request-per-manifest-and-blob):
+  every warm read with a registry token costs the main installation a conditional request per manifest and blob (dormant until built);
+- [H-1243](../spec/bastion.md#h-1243--a-plain-index-path-of-a-debian-remote-without-by-hash-can-disagree-with-the-inrelease-a-bastion-serves):
+  a plain index path of a Debian remote without by-hash can disagree with the `InRelease` a Bastion serves (dormant until built);
+- [H-1244](../spec/bastion.md#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer):
+  cold fills of large blobs hold budget slots and spool for their transfer (dormant until images are served);
+- [H-1245](../spec/bastion.md#h-1245--a-caller-on-another-replica-waits-for-a-running-fill-without-a-byte-up-to-fill_wait_max):
+  a caller on another replica waits for a running fill without a byte (dormant until built);
+- [H-1246](../spec/bastion.md#h-1246--a-compromised-bastion-can-serve-an-older-genuine-document-of-a-repository): a compromised Bastion
+  can serve an older genuine document (live for a taken-over pod);
+- [H-1247](../spec/bastion.md#h-1247--the-certificate-admission-of-the-clamav-definitions-does-not-reach-a-bastion): the certificate
+  admission of the ClamAV definitions does not reach a Bastion (a limit of the design);
+- [H-1248](../spec/bastion.md#h-1248--a-binding-changed-at-the-main-installation-reaches-a-bastion-at-its-next-handshake): a binding
+  changed at the main installation reaches a Bastion at its next handshake (dormant until a Bastion serves a bound host).
 
 This page does not describe the main installation's own mechanisms that the Bastion relies on (the decision point, token
 validation, the revocation journal); their pages and gaps are linked above.

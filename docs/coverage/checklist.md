@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 655 of 1,149 spec requirements are implemented: a passing test names them and no
+**Status.** 655 of 1,160 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 795 specified (509 of them implemented), 1,444 open.
-1,149 spec requirements: 734 cover catalog features, 415 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 795 specified (506 of them implemented), 1,444 open.
+1,160 spec requirements: 740 cover catalog features, 420 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -27,7 +27,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | Catalog page | Prefix | Features | MVP specified | Specified | Open | Implemented |
 |---|---|---:|---:|---:|---:|---:|
 | [Repositories](#repositories-repo) | `REPO` | 68 | 24 of 24 | 41 | 27 | 29 |
-| [Remote repositories](#remote-repositories-rmt) | `RMT` | 49 | 18 of 18 | 31 | 18 | 23 |
+| [Remote repositories](#remote-repositories-rmt) | `RMT` | 49 | 18 of 18 | 31 | 18 | 22 |
 | [Replication, federation and multi-site topology](#replication-federation-and-multi-site-topology-repl) | `REPL` | 72 | – | 0 | 72 | 0 |
 | [Artifact management](#artifact-management-art) | `ART` | 53 | 10 of 10 | 32 | 21 | 16 |
 | [Search and query language](#search-and-query-language-srch) | `SRCH` | 64 | – | 3 | 61 | 1 |
@@ -41,7 +41,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [High availability and deployment](#high-availability-and-deployment-ha) | `HA` | 79 | 49 of 49 | 61 | 18 | 43 |
 | [Operations, monitoring and configuration](#operations-monitoring-and-configuration-ops) | `OPS` | 100 | 17 of 17 | 43 | 57 | 26 |
 | [Events and extensibility](#events-and-extensibility-evt) | `EVT` | 82 | 1 of 1 | 26 | 56 | 3 |
-| [Distribution and release lifecycle](#distribution-and-release-lifecycle-dist) | `DIST` | 70 | 2 of 2 | 2 | 68 | 2 |
+| [Distribution and release lifecycle](#distribution-and-release-lifecycle-dist) | `DIST` | 70 | 2 of 2 | 2 | 68 | 0 |
 | [Security scanning and curation](#security-scanning-and-curation-sec) | `SEC` | 98 | 18 of 18 | 18 | 80 | 7 |
 | [UI inventory](#ui-inventory-ui) | `UI` | 61 | 33 of 33 | 47 | 14 | 33 |
 | [Content API operation catalog](#content-api-operation-catalog-api) | `API` | 166 | 15 of 15 | 71 | 95 | 28 |
@@ -174,7 +174,7 @@ Catalog page: [repositories.md](../features/repositories.md) · specified by pri
 Catalog page: [remote-repositories.md](../features/remote-repositories.md) · specified by priority: MVP 18 of 18 · P1 13 of 14 · P2 0 of 17
 
 <details>
-<summary>49 features: 31 specified, 18 open, 23 implemented</summary>
+<summary>49 features: 31 specified, 18 open, 22 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -218,7 +218,7 @@ Catalog page: [remote-repositories.md](../features/remote-repositories.md) · sp
 | RMT-038 | Remote folder listing | P2 | open | – |
 | RMT-039 | Configuration sharing | P2 | open | – |
 | RMT-040 | Chained remote repository | MVP | implemented | [R-BAS-008](../spec/bastion.md) (implemented), [R-BAS-010](../spec/bastion.md) (implemented), [R-BAS-011](../spec/bastion.md) (implemented), [R-BAS-012](../spec/bastion.md) (implemented), [R-BAS-013](../spec/bastion.md) (implemented), [R-BAS-015](../spec/bastion.md) (implemented), [R-BAS-021](../spec/bastion.md) (implemented), [R-BAS-022](../spec/bastion.md) (implemented), [R-BAS-023](../spec/bastion.md) (implemented) |
-| RMT-041 | Download statistics reporting | MVP | implemented | [R-BAS-016](../spec/bastion.md) (implemented), [R-BAS-039](../spec/bastion.md) (implemented) |
+| RMT-041 | Download statistics reporting | MVP | specified | [R-BAS-016](../spec/bastion.md) (implemented), [R-BAS-039](../spec/bastion.md) (implemented), [R-BAS-059](../spec/bastion.md) |
 | RMT-042 | Property synchronization | P2 | open | – |
 | RMT-043 | Source absence detection | P2 | open | – |
 | RMT-044 | Uncached retrieval through a virtual repository for chained requests | MVP | implemented | [R-BAS-013](../spec/bastion.md) (implemented), [R-BAS-021](../spec/bastion.md) (implemented) |
@@ -1174,7 +1174,7 @@ Catalog page: [events-and-extensibility.md](../features/events-and-extensibility
 Catalog page: [distribution-and-lifecycle.md](../features/distribution-and-lifecycle.md) · specified by priority: MVP 2 of 2 · Later 0 of 67 · Out of scope 0 of 1
 
 <details>
-<summary>70 features: 2 specified, 68 open, 2 implemented</summary>
+<summary>70 features: 2 specified, 68 open, 0 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -1201,8 +1201,8 @@ Catalog page: [distribution-and-lifecycle.md](../features/distribution-and-lifec
 | DIST-021 | Promotion rollback | Later | open | – |
 | DIST-022 | Promotion records and queries | Later | open | – |
 | DIST-023 | Security scan gate for release sets | Later | open | – |
-| DIST-024 | Distribution topology and edge instances | MVP | implemented | [R-BAS-001](../spec/bastion.md) (implemented), [R-BAS-002](../spec/bastion.md) (implemented), [R-BAS-003](../spec/bastion.md) (implemented), [R-BAS-045](../spec/bastion.md) (implemented), [R-BAS-046](../spec/bastion.md) (implemented) |
-| DIST-025 | Trust between source and edge instances | MVP | implemented | [R-BAS-004](../spec/bastion.md) (implemented), [R-BAS-005](../spec/bastion.md) (implemented), [R-BAS-006](../spec/bastion.md) (implemented) |
+| DIST-024 | Distribution topology and edge instances | MVP | specified | [R-BAS-001](../spec/bastion.md) (implemented), [R-BAS-002](../spec/bastion.md) (implemented), [R-BAS-003](../spec/bastion.md) (implemented), [R-BAS-045](../spec/bastion.md) (implemented), [R-BAS-046](../spec/bastion.md) (implemented), [R-BAS-050](../spec/bastion.md), [R-BAS-051](../spec/bastion.md), [R-BAS-053](../spec/bastion.md), [R-BAS-055](../spec/bastion.md) |
+| DIST-025 | Trust between source and edge instances | MVP | specified | [R-BAS-004](../spec/bastion.md) (implemented), [R-BAS-005](../spec/bastion.md) (implemented), [R-BAS-006](../spec/bastion.md) (implemented), [R-BAS-052](../spec/bastion.md) |
 | DIST-026 | Signing key propagation to targets | Later | open | – |
 | DIST-027 | Distribute a release set version | Later | open | – |
 | DIST-028 | Target path mapping and repository auto-creation | Later | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>415 requirements</summary>
+<summary>420 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3148,6 +3148,11 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-047 (implemented) | Network policy | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-048 (implemented) | Integration suite against an in-process main installation | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-049 | End-to-end suite on kind with npm and NuGet | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-054 | Large artifacts | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-056 | The ClamAV definitions through a Bastion | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-057 | Format facts at the Bastion: the handshake's format table and bound hosts | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-058 | What a format owes a Bastion, and kit check 19 | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-060 | Tests of the feature and what they cost | MVP | [bastion.md](../spec/bastion.md) |
 | R-EP-002 (implemented) | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 (implemented) | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 (implemented) | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |
