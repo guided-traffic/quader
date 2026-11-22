@@ -257,7 +257,11 @@ What the handlers decide and what they leave to the store:
   `signatures.Signer`, returned as text. A signature this installation made (stage 2: npm's registry signature of a local version, read
   by its subject name like an upstream's) carries `source: "issued"` and `issuedBy` (`identity`, `subject`, `fingerprint`, `state`) from
   the view's `IssuedBy` (`SignatureViews` joins the signing identity), and `keyId` its npm keyid; it has no trust row and never decides the
-  badge (R-SIG-055). `covering` lists the releases the format's coverage names (`SignatureServices.Coverage`, bound
+  badge (R-SIG-055). Quader's receipt attestation, issued the same way, adds `attestation`, its statement decoded from the stored bundle
+  (`bundle.Payload`, `statement.Read`, bounded as the statement is; absent when it does not decode, Q-SIG-234), and `servedAs` (`referrer`,
+  `api`) with `servedReason` (`hides_signature`, `no_referrers_api`) for an image served through the API (Q-SIG-233), from the view's
+  `Receipt`, which `SignatureViews` reads from `signing_attestations` for an issued signature alone
+  ([signatures_receipt.go](../../internal/api/v1/signatures_receipt.go)). `covering` lists the releases the format's coverage names (`SignatureServices.Coverage`, bound
   to Debian's `formats.SignatureCoverage`; [signatures_covering.go](../../internal/api/v1/signatures_covering.go)), each with the
   signatures attached to it in the repository and its state read as a publisher's (R-SIG-030).
 - **Origin** (`signatureOrigin`, R-SIG-010): the store's `artifact_origins` row, else `fetched` from the item's upstream URL, else the

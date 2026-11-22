@@ -91,6 +91,12 @@ const backlog = [
   { kind: 'attestation', due: 0, failed: 0, oldestDueAt: null },
 ];
 
+/** The job's backlog of the upload (R-SIG-055 `backlog`, the section's quiet line): a few publishes and a rotation's receipts made again. */
+const busyBacklog = (): Record<string, unknown>[] => [
+  { kind: 'npm', due: 3, failed: 0, oldestDueAt: at(-240_000 / DAY) },
+  { kind: 'attestation', due: 1204, failed: 2, oldestDueAt: at(-840_000 / DAY) },
+];
+
 /** The states the walk renders, each as a change of the real answer. */
 export type SigningState = 'pending' | 'upload' | 'helm' | 'helm-refused';
 
@@ -117,7 +123,7 @@ export function signingAnswer(state: SigningState): (body: Record<string, unknow
           }),
         };
       case 'upload':
-        return { ...base, state: 'upload', current: identity({}), previous: previous() };
+        return { ...base, state: 'upload', current: identity({}), previous: previous(), backlog: busyBacklog() };
       case 'helm':
       case 'helm-refused':
         return {

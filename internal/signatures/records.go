@@ -153,6 +153,17 @@ type View struct {
 	Trust *Trust
 	// IssuedBy is the identity of the installation that made the signature, nil for every signature Quader did not make (R-SIG-055).
 	IssuedBy *IssuedBy
+	// Receipt is Quader's receipt attestation as the job signing keeps it (R-SIG-054), nil for every other signature.
+	Receipt *Receipt
+}
+
+// Receipt is what the job signing keeps of a receipt attestation it issued (R-SIG-054, R-SIG-055): the bundle, whose statement the API
+// decodes, and where the attestation is served: ServedAs "referrer" or "api", with Reason "hides_signature" or "no_referrers_api" for
+// an image served through the API.
+type Receipt struct {
+	Bundle   []byte
+	ServedAs string
+	Reason   string
 }
 
 // IssuedBy is the signing identity that made a signature of Quader's own (stage 2, R-SIG-054, R-SIG-055): its id, its certificate's

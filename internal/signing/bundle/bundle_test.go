@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -160,6 +161,22 @@ func TestR_SIG_052_ABundleOfTheSignerVerifiesAgainstTheTrustedRootQuaderBuilds(t
 		}
 		if bytes.Contains(raw, []byte("PRIVATE KEY")) {
 			t.Fatal("the bundle carries key material")
+		}
+	})
+	t.Run("R-SIG-055 the statement read back out of the bundle", func(t *testing.T) {
+		got, err := bundle.Payload(raw)
+		if err != nil || !bytes.Equal(got, sampleStatement(t, artifact)) {
+			t.Fatalf("%v: %s", err, got)
+		}
+		for name, b := range map[string][]byte{
+			"another media type": bytes.Replace(raw, []byte(bundle.MediaType), []byte("application/vnd.dev.sigstore.bundle.v0.2+json"), 1),
+			"no envelope":        []byte(`{"mediaType":"` + bundle.MediaType + `"}`),
+			"not JSON":           []byte("{"),
+			"above the bound":    append(bytes.Repeat([]byte(" "), bundle.MaxBytes), raw...),
+		} {
+			if _, err := bundle.Payload(b); !errors.Is(err, bundle.ErrNotBundle) {
+				t.Errorf("%s: %v", name, err)
+			}
 		}
 	})
 }

@@ -3685,6 +3685,42 @@ func (e SignatureEntryCommitmentType) Valid() bool {
 	}
 }
 
+// Defines values for SignatureEntryServedAs.
+const (
+	SignatureEntryServedAsApi      SignatureEntryServedAs = "api"
+	SignatureEntryServedAsReferrer SignatureEntryServedAs = "referrer"
+)
+
+// Valid indicates whether the value is a known member of the SignatureEntryServedAs enum.
+func (e SignatureEntryServedAs) Valid() bool {
+	switch e {
+	case SignatureEntryServedAsApi:
+		return true
+	case SignatureEntryServedAsReferrer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureEntryServedReason.
+const (
+	HidesSignature SignatureEntryServedReason = "hides_signature"
+	NoReferrersApi SignatureEntryServedReason = "no_referrers_api"
+)
+
+// Valid indicates whether the value is a known member of the SignatureEntryServedReason enum.
+func (e SignatureEntryServedReason) Valid() bool {
+	switch e {
+	case HidesSignature:
+		return true
+	case NoReferrersApi:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SignatureEntryTimeProof.
 const (
 	Log       SignatureEntryTimeProof = "log"
@@ -3931,6 +3967,36 @@ func (e SignatureOriginKind) Valid() bool {
 	case Fetched:
 		return true
 	case Uploaded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureReceiptMalwareState.
+const (
+	SignatureReceiptMalwareStateClean       SignatureReceiptMalwareState = "clean"
+	SignatureReceiptMalwareStateFailed      SignatureReceiptMalwareState = "failed"
+	SignatureReceiptMalwareStateInfected    SignatureReceiptMalwareState = "infected"
+	SignatureReceiptMalwareStateNotScanned  SignatureReceiptMalwareState = "not_scanned"
+	SignatureReceiptMalwareStatePending     SignatureReceiptMalwareState = "pending"
+	SignatureReceiptMalwareStateUnscannable SignatureReceiptMalwareState = "unscannable"
+)
+
+// Valid indicates whether the value is a known member of the SignatureReceiptMalwareState enum.
+func (e SignatureReceiptMalwareState) Valid() bool {
+	switch e {
+	case SignatureReceiptMalwareStateClean:
+		return true
+	case SignatureReceiptMalwareStateFailed:
+		return true
+	case SignatureReceiptMalwareStateInfected:
+		return true
+	case SignatureReceiptMalwareStateNotScanned:
+		return true
+	case SignatureReceiptMalwareStatePending:
+		return true
+	case SignatureReceiptMalwareStateUnscannable:
 		return true
 	default:
 		return false
@@ -12714,6 +12780,12 @@ type SignatureEntry struct {
 	AlternativeNames *[]string             `json:"alternativeNames,omitempty"`
 	Attachments      []SignatureAttachment `json:"attachments"`
 
+	// Attestation What Quader's receipt attestation says, decoded from the statement in its bundle (R-SIG-051, R-SIG-055): the facts of the
+	// receipt and the checks' states at the time it was issued, which the statement names with their dates. Bounded as the statement
+	// is (at most 16 KiB, at most 32 signatures). Absent when the bundle does not decode. It is Quader's own claim, never the badge
+	// (Q-SIG-1).
+	Attestation *SignatureReceipt `json:"attestation,omitempty"`
+
 	// CertificateNotAfter The leaf's expiry; a certificate that expired since is a fact of the details, not a verdict (R-SIG-007).
 	CertificateNotAfter  *time.Time `json:"certificateNotAfter,omitempty"`
 	CertificateNotBefore *time.Time `json:"certificateNotBefore,omitempty"`
@@ -12747,8 +12819,8 @@ type SignatureEntry struct {
 	Identity *string `json:"identity,omitempty"`
 
 	// IssuedBy The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
-	// made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
-	// (Q-SIG-1); its trust is not computed (R-SIG-054).
+	// made itself, npm's registry signature of a version of a local repository and the receipt attestation of every artifact. Such a
+	// signature never carries the badge (Q-SIG-1); its trust is not computed (R-SIG-054).
 	IssuedBy *SignatureIssuedBy `json:"issuedBy,omitempty"`
 	Issuer   *string            `json:"issuer,omitempty"`
 	KeyId    *string            `json:"keyId,omitempty"`
@@ -12790,9 +12862,20 @@ type SignatureEntry struct {
 	Scheme SignatureScheme `json:"scheme"`
 
 	// SchemeName The name of a scheme Quader does not read, where it can tell it.
-	SchemeName   *string `json:"schemeName,omitempty"`
-	Serial       *string `json:"serial,omitempty"`
-	ServiceIndex *string `json:"serviceIndex,omitempty"`
+	SchemeName *string `json:"schemeName,omitempty"`
+	Serial     *string `json:"serial,omitempty"`
+
+	// ServedAs Where Quader serves its receipt attestation (R-SIG-054): `referrer` among the image's referrers, which cosign and a
+	// cluster's policy engine find; `api` through `GET …/repositories/{repoKey}/attestation?path=` alone, as for every format
+	// but an image of a local repository. Present only on a receipt attestation of this installation.
+	ServedAs *SignatureEntryServedAs `json:"servedAs,omitempty"`
+
+	// ServedReason Why an image's receipt is served through the API and not as a referrer (R-SIG-054, Q-SIG-66, Q-SIG-183):
+	// `hides_signature`, an older cosign signature tag stands for the image, which cosign would stop reading beside a referrer;
+	// `no_referrers_api`, the image is held by a remote or a virtual repository. Absent for every other format, whose receipt is
+	// served through the API by rule.
+	ServedReason *SignatureEntryServedReason `json:"servedReason,omitempty"`
+	ServiceIndex *string                     `json:"serviceIndex,omitempty"`
 
 	// Signer The certificate's subject, or an OpenPGP key's user ID once the key is known.
 	Signer        *string `json:"signer,omitempty"`
@@ -12827,6 +12910,17 @@ type SignatureEntry struct {
 
 // SignatureEntryCommitmentType defines model for SignatureEntry.CommitmentType.
 type SignatureEntryCommitmentType string
+
+// SignatureEntryServedAs Where Quader serves its receipt attestation (R-SIG-054): `referrer` among the image's referrers, which cosign and a
+// cluster's policy engine find; `api` through `GET …/repositories/{repoKey}/attestation?path=` alone, as for every format
+// but an image of a local repository. Present only on a receipt attestation of this installation.
+type SignatureEntryServedAs string
+
+// SignatureEntryServedReason Why an image's receipt is served through the API and not as a referrer (R-SIG-054, Q-SIG-66, Q-SIG-183):
+// `hides_signature`, an older cosign signature tag stands for the image, which cosign would stop reading beside a referrer;
+// `no_referrers_api`, the image is held by a remote or a virtual repository. Absent for every other format, whose receipt is
+// served through the API by rule.
+type SignatureEntryServedReason string
 
 // SignatureEntryTimeProof defines model for SignatureEntry.TimeProof.
 type SignatureEntryTimeProof string
@@ -13044,8 +13138,8 @@ type SignatureImpactRequestChange string
 type SignatureIntegrityState string
 
 // SignatureIssuedBy The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
-// made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
-// (Q-SIG-1); its trust is not computed (R-SIG-054).
+// made itself, npm's registry signature of a version of a local repository and the receipt attestation of every artifact. Such a
+// signature never carries the badge (Q-SIG-1); its trust is not computed (R-SIG-054).
 type SignatureIssuedBy struct {
 	// Fingerprint The SHA-256 of the identity's certificate, lower-case hex.
 	Fingerprint string `json:"fingerprint"`
@@ -13102,6 +13196,84 @@ type SignatureOriginCI struct {
 	RefType        *string `json:"refType,omitempty"`
 	Sha            *string `json:"sha,omitempty"`
 	UserLogin      *string `json:"userLogin,omitempty"`
+}
+
+// SignatureReceipt What Quader's receipt attestation says, decoded from the statement in its bundle (R-SIG-051, R-SIG-055): the facts of the
+// receipt and the checks' states at the time it was issued, which the statement names with their dates. Bounded as the statement
+// is (at most 16 KiB, at most 32 signatures). Absent when the bundle does not decode. It is Quader's own claim, never the badge
+// (Q-SIG-1).
+type SignatureReceipt struct {
+	// IssuedAt When Quader signed the statement; no log and no timestamp proves it (Q-SIG-63).
+	IssuedAt time.Time `json:"issuedAt"`
+
+	// Malware The malware scan's verdict the statement names (R-MAL-002), with the database and the scan time where a scan answered.
+	Malware SignatureReceiptMalware `json:"malware"`
+
+	// Origin Where the artifact came from (R-SIG-010, R-SIG-035): `uploaded` by a principal (`principalKind` `user`, `service_account`,
+	// `ci`, ...), with the CI job's claims for an upload from CI; or `fetched` from the remote's upstream at `at`.
+	Origin SignatureOrigin `json:"origin"`
+
+	// ReceivedAt When Quader stored the artifact.
+	ReceivedAt time.Time `json:"receivedAt"`
+
+	// Signatures The signatures attached to the artifact when the statement was issued, with their integrity states and no trust state.
+	Signatures []SignatureReceiptSignature `json:"signatures"`
+
+	// SignaturesOmitted Signatures the statement left out to stay within its bound.
+	SignaturesOmitted int `json:"signaturesOmitted"`
+
+	// Vulnerabilities The version's evaluation the statement names (R-VULN-001), as of the date of its advisory data.
+	Vulnerabilities SignatureReceiptVulnerabilities `json:"vulnerabilities"`
+}
+
+// SignatureReceiptCounts defines model for SignatureReceiptCounts.
+type SignatureReceiptCounts struct {
+	Critical int `json:"critical"`
+	High     int `json:"high"`
+	Low      int `json:"low"`
+	Medium   int `json:"medium"`
+	Unknown  int `json:"unknown"`
+}
+
+// SignatureReceiptMalware The malware scan's verdict the statement names (R-MAL-002), with the database and the scan time where a scan answered.
+type SignatureReceiptMalware struct {
+	Database        *string    `json:"database,omitempty"`
+	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt,omitempty"`
+
+	// Released A release of R-MAL-021 let the blob pass.
+	Released  bool       `json:"released"`
+	ScannedAt *time.Time `json:"scannedAt,omitempty"`
+
+	// State `not_scanned`: the installation does not scan; `pending`: no verdict yet when the statement was issued (after `signing.attestations.wait_for_checks`).
+	State SignatureReceiptMalwareState `json:"state"`
+}
+
+// SignatureReceiptMalwareState `not_scanned`: the installation does not scan; `pending`: no verdict yet when the statement was issued (after `signing.attestations.wait_for_checks`).
+type SignatureReceiptMalwareState string
+
+// SignatureReceiptSignature defines model for SignatureReceiptSignature.
+type SignatureReceiptSignature struct {
+	Identity *string `json:"identity,omitempty"`
+
+	// Integrity The integrity state when the statement was issued (R-SIG-006).
+	Integrity string  `json:"integrity"`
+	Issuer    *string `json:"issuer,omitempty"`
+	Role      string  `json:"role"`
+	Scheme    string  `json:"scheme"`
+}
+
+// SignatureReceiptVulnerabilities The version's evaluation the statement names (R-VULN-001), as of the date of its advisory data.
+type SignatureReceiptVulnerabilities struct {
+	Counts *SignatureReceiptCounts `json:"counts,omitempty"`
+	DataAt *time.Time              `json:"dataAt,omitempty"`
+	Grade  *string                 `json:"grade,omitempty"`
+
+	// State The derived evaluation state of a stored version in a repository (R-VULN-001): `evaluated` (the advisory data is
+	// complete), `pending_data` (it was never imported completely), `internal` (public advisories do not apply to the name)
+	// or `not_covered` (scanning is off, the upstream is not recognised, or the format has no adapter). For an image also
+	// `pending_scan` (its manifests have not been scanned yet, so the absence of findings says nothing) and `scan_failed` (the scan of one of
+	// them did not finish; `images` names why).
+	State VulnerabilityEvaluation `json:"state"`
 }
 
 // SignatureRefusal A download a repository's gate refused (R-SIG-073), one entry per repository and artifact.

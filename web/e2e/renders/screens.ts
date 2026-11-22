@@ -30,6 +30,7 @@ import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
 import { trivyDatabases } from './scanners';
 import { signedFile, signedImage, signedVersions } from './signatures';
+import { issuedFile, issuedImage, issuedVersion } from './receipts';
 import { signingAnswer } from './signing';
 import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
@@ -722,17 +723,22 @@ async function restrictInternal(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
+/** Changes the real answers of a URL from now on, without loading the page again: for an answer the page reads later (a section that opens). */
+async function routeWith(page: Page, url: string, change: (body: Record<string, unknown>) => Record<string, unknown>): Promise<void> {
+  await page.unroute(url);
+  await page.route(url, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: JSON.stringify(change((await res.json()) as Record<string, unknown>)) });
+  });
+}
+
 /**
  * An answer of the app's API changed in the browser from the real one, and the page loaded again: the states of the malware scan
  * that the shared render database cannot hold (R-MAL-023, R-MAL-024): a stale database with a failure, none yet, the scanning off,
  * the installation's switch on. Whether the caller may read it stays the server's.
  */
 async function answerWith(page: Page, url: string, change: (body: Record<string, unknown>) => Record<string, unknown>): Promise<void> {
-  await page.unroute(url);
-  await page.route(url, async (route) => {
-    const res = await route.fetch();
-    await route.fulfill({ response: res, body: JSON.stringify(change((await res.json()) as Record<string, unknown>)) });
-  });
+  await routeWith(page, url, change);
   const answered = page.waitForResponse(url);
   await page.reload();
   await answered;
@@ -1375,28 +1381,57 @@ async function* signatureVersions(page: Page): AsyncGenerator<string> {
     await expect(page.locator('main [data-testid="signature-state"]')).toBeVisible();
     yield state;
   }
+  // R-SIG-056: the same local version as an installation with a signing identity answers it, Quader's npm signature beside the
+  // publisher's provenance and its receipt under Attestations, the receipt's fold opened (renders/receipts.ts).
+  const report = `**/api/v1/packages/*/versions/${signedVersions.public}/signatures`;
+  await page.goto(`${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`);
+  await answerWith(page, report, issuedVersion);
+  await expect(page.locator('main [data-testid="signature-receipt"]')).toBeVisible();
+  await page.locator('main [data-testid="signature-receipt"] quader-disclosure button.inline-toggle').click();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'issued';
+  await page.unroute(report);
 }
 
-/** The image's tab **Signatures** (R-SIG-024): its signatures and, apart, its attestations and SBOMs; then the image no anchor knows. */
+/**
+ * The image's tab **Signatures** (R-SIG-024): its signatures and, apart, its attestations and SBOMs; with Quader's receipt standing as
+ * its referrer (R-SIG-056); then the image no anchor knows, whose older cosign signature tag puts its receipt behind the API, as the
+ * page says (R-SIG-054). The receipts are the real answers changed in the browser (renders/receipts.ts).
+ */
 async function* signatureImages(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main .sig-attestations table')).toBeVisible();
   yield '';
   await openTechnical(page);
   yield 'technical';
+  const image = `**/api/v1/packages/*/versions/${signedImage.tag}/signatures`;
+  await answerWith(page, image, issuedImage('referrer'));
+  await expect(page.locator('main [data-testid="signature-receipt-served"]')).toContainText('As a referrer of the image');
+  yield 'receipt';
+  await routeWith(page, image, issuedImage('hides_signature'));
   await page.goto(`${ver(P, { format: 'oci', name: signedImage.untrusted }, '1.4.0')}?tab=signatures`);
   await expect(page.locator('main [data-testid="signature-entry"]').first()).toBeVisible();
+  await expect(page.locator('main [data-testid="signature-receipt-served"]')).toContainText('older cosign signature');
   yield 'untrusted';
+  await page.unroute(image);
 }
 
-/** A file's section **Signatures** opened (R-SIG-035, R-SIG-010): three signature files and the pipeline that uploaded it; then one of them. */
+/**
+ * A file's section **Signatures** opened (R-SIG-035, R-SIG-010, R-SIG-056): three signature files, the pipeline that uploaded it and
+ * Quader's receipt (the real answer with the receipt added in the browser, renders/receipts.ts); then one of the signature files.
+ */
 async function* signatureFile(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main [data-testid="signature-fact"]')).toBeVisible();
   yield '';
+  // The section reads the file's answer when it opens, so the change is in place before the toggle.
+  const report = `**/api/v1/projects/${mainProject}/repositories/${signedFile.repo}/signatures?**`;
+  await routeWith(page, report, issuedFile);
   const { toggle } = sectionHeaded(page, 'Signatures');
   await toggle.click();
   await expect(page.locator('main [data-testid="signature-origin"]')).toBeVisible();
+  await expect(page.locator('main [data-testid="signature-receipt"]')).toBeVisible();
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'details';
+  await page.unroute(report);
   await page.goto(`${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}.asc`);
   await expect(page.locator('main dl.file-facts')).toBeVisible();
   yield 'sibling';
@@ -1514,9 +1549,12 @@ async function* signingIdentity(page: Page): AsyncGenerator<string> {
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  // The job's backlog of both kinds in its quiet line (R-SIG-055 `backlog`); the Helm values' state below has none ("Nothing waits").
+  await expect(section.locator('[data-testid="signing-backlog"]')).toContainText('receipt attestations');
   yield 'upload';
   await answerWith(page, url, signingAnswer('helm'));
   await expect(section.locator('[data-testid="signing-facts-current"]')).toBeVisible();
+  await expect(section.locator('[data-testid="signing-backlog"]')).toHaveText('Nothing waits to be signed.');
   yield 'helm';
   await answerWith(page, url, signingAnswer('helm-refused'));
   await expect(section.locator('[data-testid="signing-refused"]')).toBeVisible();

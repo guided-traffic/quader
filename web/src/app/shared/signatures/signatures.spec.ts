@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { SignatureBadgeState, SignatureEntry } from '../../api/signatures-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, OCI_FORMAT } from '../../api/testing/fakes-catalog';
-import { issuedNpmEntry, repositoryReport, sigstoreEntry } from '../../api/testing/fakes-signatures';
+import { issuedNpmEntry, issuedReceiptEntry, repositoryReport, sigstoreEntry } from '../../api/testing/fakes-signatures';
 import { expectAccessible, renderScreen, text } from '../../testing/screen';
 import { SignatureBadge } from './signature-badge';
 import { SignatureReport, SignatureReportView } from './signature-report';
@@ -123,15 +123,69 @@ describe('The details of the signatures (R-SIG-035)', () => {
     expect(text(root.querySelector('[data-testid="signature-state"]')!)).toContain('No trust anchor knows this signer.');
   });
 
-  it('R-SIG-055 Quader\'s own npm signature reads as the registry\'s origin, never as a publisher\'s signature, and carries no badge', async () => {
+  it('R-SIG-056 Quader\'s own npm signature reads as this installation\'s origin with its key ID, never as a signer no anchor knows, and carries no badge', async () => {
     const root = await report(repositoryReport({ repository: 'web/npm-local', signatures: [sigstoreEntry(), issuedNpmEntry()] }), 'npm');
     expect(text(root.querySelector('[data-testid="signature-state"]')!)).toContain('Verified · internal');
     const entries = [...root.querySelectorAll<HTMLElement>('[data-testid="signature-entry"]')];
-    const own = entries.find((e) => text(e).includes('Origin confirmed by registry'));
+    const own = entries.find((e) => text(e).includes('Origin confirmed by registry · this installation'));
     expect(own).toBeDefined();
     expect(text(own!)).not.toContain('Publisher signature');
+    expect(text(own!)).not.toContain('No trust anchor knows this signer');
+    expect(text(own!)).toContain('npm key IDSHA256:Zq2bQuaderSigningKey0000000000000000000000');
+    expect(text(own!)).toContain("by this installation's signing identity");
     expect(own!.querySelector('[data-testid="signature-badge"]')).toBeNull();
-    expect(text(own!)).toContain('SHA256:Zq2bQuaderSigningKey0000000000000000000000');
+  });
+
+  it('R-SIG-056 a retired identity\'s npm signature says it is no longer served and what follows', async () => {
+    const retired = issuedNpmEntry({ issuedBy: { identity: 2, subject: 'CN=Quader signing', fingerprint: 'ab'.repeat(32), state: 'retired' } });
+    const root = await report(repositoryReport({ state: 'none', signatures: [retired], origin: null }), 'npm');
+    expect(text(root.querySelector('[data-testid="signature-entry"]')!)).toContain('an administrator retired, so npm no longer gets it');
+    // Q-SIG-235: a list that holds this installation's own signature is not headed "No signature found".
+    expect(text(root.querySelector('[data-testid="signature-state"]')!)).toBe(
+      'No signature of the publisher. What is listed below confirms where the artifact was published or received, not who built it.',
+    );
+  });
+
+  it('R-SIG-056 Quader\'s receipt stands under Attestations with its issue time, its malware state, where it is served and its download; no badge; passes axe', async () => {
+    const sbom = sigstoreEntry({ id: 12, role: 'attestation', type: 'https://spdx.dev/Document', size: 18200 });
+    const r = await report(repositoryReport({ attestations: [issuedReceiptEntry(), sbom] }));
+    const receipt = r.querySelector<HTMLElement>('[data-testid="signature-receipt"]')!;
+    expect(text(receipt)).toContain('Receipt attestation by this installation');
+    expect(text(receipt)).toContain('Issued');
+    expect(text(receipt.querySelector('[data-testid="signature-receipt-malware"]')!)).toContain('No malware found');
+    expect(text(receipt.querySelector('[data-testid="signature-receipt-served"]')!)).toContain('As a referrer of the image');
+    expect(receipt.querySelector('[data-testid="signature-badge"]')).toBeNull();
+    expect(text(receipt)).not.toContain('No trust anchor knows');
+    const download = [...receipt.querySelectorAll<HTMLAnchorElement>('a')].find((a) => text(a) === 'Download attestation');
+    expect(download?.getAttribute('href')).toBe('/api/v1/projects/web/repositories/docker-local/attestation?path=portal%2Fweb%2F_manifests%2Fsha256%3Aab12');
+    // The rest of the statement is one fold further: the origin, the vulnerabilities, the signatures it names.
+    expect(text(receipt)).toContain('Grade A, 2 open findings');
+    expect(text(receipt)).toContain('Provenance attestation · matched the content');
+    // The others keep their table, under the heading of both.
+    expect(text(r.querySelector('.sig-attestations table')!)).toContain('https://spdx.dev/Document');
+    expect(text(r.querySelector('.sig-attestations table')!)).not.toContain('receipt-attestation-v1');
+    expect([...r.querySelectorAll('.sig-heading')].map(text)).toContain('Attestations and SBOMs');
+    await expectAccessible(r);
+  });
+
+  it('R-SIG-056 an image\'s receipt served through the API names why; a retired identity\'s offers no download; a receipt alone is headed Attestations', async () => {
+    const hidden = issuedReceiptEntry({ servedAs: 'api', servedReason: 'hides_signature' });
+    let r = await report(repositoryReport({ attestations: [hidden] }));
+    expect(text(r.querySelector('[data-testid="signature-receipt-served"]')!)).toBe(
+      'Through the API The image carries an older cosign signature, which cosign stops reading once a referrer stands beside it.',
+    );
+    expect([...r.querySelectorAll('.sig-heading')].map(text)).toEqual(['Attestations']);
+    expect(r.querySelector('.sig-attestations')).toBeNull();
+
+    const pending = issuedReceiptEntry({
+      issuedBy: { identity: 2, subject: 'CN=Quader signing', fingerprint: 'ab'.repeat(32), state: 'retired' },
+      attestation: { ...issuedReceiptEntry().attestation!, malware: { state: 'pending', released: false } },
+    });
+    r = await report(repositoryReport({ attestations: [pending] }));
+    const receipt = r.querySelector<HTMLElement>('[data-testid="signature-receipt"]')!;
+    expect(text(receipt)).toContain('an administrator retired, so it is no longer served');
+    expect(text(receipt.querySelector('[data-testid="signature-receipt-malware"]')!)).toBe('No verdict yet when it was issued');
+    expect([...receipt.querySelectorAll('a')].some((a) => text(a) === 'Download attestation')).toBe(false);
   });
 
   it('R-SIG-009 no signature names the kinds the format knows', async () => {

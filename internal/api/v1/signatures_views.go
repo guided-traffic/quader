@@ -180,6 +180,7 @@ func sigEntry(v signatures.View, subj sigSubject, names func(int64) string) gen.
 		if e.KeyId == nil && len(sg.KeyIDs) > 0 {
 			e.KeyId = optionalText(sg.KeyIDs[0])
 		}
+		receiptMembers(&e, v.Receipt)
 	}
 	switch sg.TimeProof {
 	case "timestamp", "log":

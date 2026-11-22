@@ -12320,11 +12320,90 @@ export interface components {
             /** @description The relative URL of the original (`/api/v1/signatures/objects/{sha256}`). */
             original: string;
             issuedBy?: components["schemas"]["SignatureIssuedBy"];
+            attestation?: components["schemas"]["SignatureReceipt"];
+            /**
+             * @description Where Quader serves its receipt attestation (R-SIG-054): `referrer` among the image's referrers, which cosign and a
+             *     cluster's policy engine find; `api` through `GET …/repositories/{repoKey}/attestation?path=` alone, as for every format
+             *     but an image of a local repository. Present only on a receipt attestation of this installation.
+             * @enum {string}
+             */
+            servedAs?: "referrer" | "api";
+            /**
+             * @description Why an image's receipt is served through the API and not as a referrer (R-SIG-054, Q-SIG-66, Q-SIG-183):
+             *     `hides_signature`, an older cosign signature tag stands for the image, which cosign would stop reading beside a referrer;
+             *     `no_referrers_api`, the image is held by a remote or a virtual repository. Absent for every other format, whose receipt is
+             *     served through the API by rule.
+             * @enum {string}
+             */
+            servedReason?: "hides_signature" | "no_referrers_api";
+        };
+        /**
+         * @description What Quader's receipt attestation says, decoded from the statement in its bundle (R-SIG-051, R-SIG-055): the facts of the
+         *     receipt and the checks' states at the time it was issued, which the statement names with their dates. Bounded as the statement
+         *     is (at most 16 KiB, at most 32 signatures). Absent when the bundle does not decode. It is Quader's own claim, never the badge
+         *     (Q-SIG-1).
+         */
+        SignatureReceipt: {
+            /**
+             * Format: date-time
+             * @description When Quader stored the artifact.
+             */
+            receivedAt: string;
+            /**
+             * Format: date-time
+             * @description When Quader signed the statement; no log and no timestamp proves it (Q-SIG-63).
+             */
+            issuedAt: string;
+            origin: components["schemas"]["SignatureOrigin"];
+            /** @description The signatures attached to the artifact when the statement was issued, with their integrity states and no trust state. */
+            signatures: components["schemas"]["SignatureReceiptSignature"][];
+            /** @description Signatures the statement left out to stay within its bound. */
+            signaturesOmitted: number;
+            malware: components["schemas"]["SignatureReceiptMalware"];
+            vulnerabilities: components["schemas"]["SignatureReceiptVulnerabilities"];
+        };
+        SignatureReceiptSignature: {
+            role: string;
+            scheme: string;
+            /** @description The integrity state when the statement was issued (R-SIG-006). */
+            integrity: string;
+            identity?: string;
+            issuer?: string;
+        };
+        /** @description The malware scan's verdict the statement names (R-MAL-002), with the database and the scan time where a scan answered. */
+        SignatureReceiptMalware: {
+            /**
+             * @description `not_scanned`: the installation does not scan; `pending`: no verdict yet when the statement was issued (after `signing.attestations.wait_for_checks`).
+             * @enum {string}
+             */
+            state: "not_scanned" | "pending" | "clean" | "infected" | "unscannable" | "failed";
+            database?: string;
+            /** Format: date-time */
+            databaseBuiltAt?: string;
+            /** Format: date-time */
+            scannedAt?: string;
+            /** @description A release of R-MAL-021 let the blob pass. */
+            released: boolean;
+        };
+        /** @description The version's evaluation the statement names (R-VULN-001), as of the date of its advisory data. */
+        SignatureReceiptVulnerabilities: {
+            state: components["schemas"]["VulnerabilityEvaluation"];
+            grade?: string;
+            counts?: components["schemas"]["SignatureReceiptCounts"];
+            /** Format: date-time */
+            dataAt?: string;
+        };
+        SignatureReceiptCounts: {
+            critical: number;
+            high: number;
+            medium: number;
+            low: number;
+            unknown: number;
         };
         /**
          * @description The signing identity of this installation that made the signature (R-SIG-054, R-SIG-055): present only on a signature Quader
-         *     made itself, such as npm's registry signature of a version of a local repository. Such a signature never carries the badge
-         *     (Q-SIG-1); its trust is not computed (R-SIG-054).
+         *     made itself, npm's registry signature of a version of a local repository and the receipt attestation of every artifact. Such a
+         *     signature never carries the badge (Q-SIG-1); its trust is not computed (R-SIG-054).
          */
         SignatureIssuedBy: {
             /**

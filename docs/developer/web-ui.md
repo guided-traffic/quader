@@ -1444,7 +1444,7 @@ stage 3's gate (R-SIG-074; Q-SIG-223 to Q-SIG-232, [developer/signatures.md](sig
 |---|---|
 | The words of every state, role, scheme, reason, anchor and origin, one place for every screen | [shared/signatures/signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) |
 | The badge `<quader-signature-badge [state] [stale]>`: draws the four states of R-SIG-009 (green only for the verified ones), nothing for the other three | [signature-badge.ts](../../web/src/app/shared/signatures/signature-badge.ts) |
-| The details `<quader-signature-report [report] [format] [level]>` of a version's repository or a file: the state's sentence, the origin, each signature with a fold **Technical details**, Debian's covering releases, an image's **Attestations and SBOMs**; the kinds a format knows come from `signatureKinds` of the format descriptor | [signature-report.ts](../../web/src/app/shared/signatures/signature-report.ts), `.html`, `.scss` |
+| The details `<quader-signature-report [report] [format] [level]>` of a version's repository or a file: the state's sentence, the origin, each signature with a fold **Technical details**, Debian's covering releases, an image's **Attestations and SBOMs**, and what this installation signed itself (stage 2: its npm signature, its receipt as a block under **Attestations**); the kinds a format knows come from `signatureKinds` of the format descriptor | [signature-report.ts](../../web/src/app/shared/signatures/signature-report.ts), `.html`, `.scss` |
 | The version list's badge (the row's member `signatures`), the version page's header badge, its column **Signature** of Files and its tab **Signatures** | [package-detail.html](../../web/src/app/features/packages/package-detail.html), [package-version.ts](../../web/src/app/features/packages/package-version.ts), [version-signatures.ts](../../web/src/app/features/packages/version-signatures.ts) |
 | A file's fact **Signature**, its section **Signatures** read on opening, a generic signature file's **Signature of** | [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts) |
 | **Admin area › Settings › Signatures**, the anchors' table and the dialogs **Add trust anchor** and **Block signer** | [signature-settings.ts](../../web/src/app/features/settings/signature-settings.ts), [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts), [anchor-dialog.ts](../../web/src/app/shared/signatures/anchor-dialog.ts), [block-dialog.ts](../../web/src/app/shared/signatures/block-dialog.ts) |
@@ -1474,7 +1474,13 @@ any anchor, chosen anchors with a removed one, the checks off; as the Owner and 
 `admin-settings-signatures`; the profile gates no repository, so every state but the first is its answer changed in the browser, and no row
 is written by SQL. A Debian repository's section is in `repository-settings-deb`, and every screen that opens a repository's sections shows
 the gate off with the profile's real preview. They add 31 states, 186 pictures, to the layout job: about 270 s of a browser (measured on 2026-11-22 on a shared machine), about 90 s
-at its three workers.
+at its three workers. Quader's own signatures at an artifact (stage 2, R-SIG-056's second half, Q-SIG-237): the profile signs nothing, so
+[renders/receipts.ts](../../web/e2e/renders/receipts.ts) changes the real signatures answers in the browser: the state `issued` of
+`package-version-signatures` (the local npm version with npmjs's signature replaced by Quader's and its receipt beside the provenance, the
+receipt's fold opened), the state `receipt` of `package-version-signatures-oci` (a referrer), its state `untrusted` (the image with an older
+cosign signature, whose receipt is served through the API with the reason), and the state `details` of `files-signatures` (the receipt beside
+the three signature files); the section's backlog line is in the states `upload` (busy) and `helm` (idle) of `admin-settings-signing`. Two
+states, 12 pictures, more.
 
 **Tests** (Vitest, about 2.5 s for the four spec files of stage 1 together, about 0.3 s for the section's and about 0.4 s for the gate's, data
 of the fakes): [repository-signature-gate.spec.ts](../../web/src/app/features/repositories/repository-signature-gate.spec.ts), [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts),

@@ -53,7 +53,9 @@ verdicts or after `signing.attestations.wait_for_checks` (1 hour), made again wh
 with the item. Repositories of the built-in project `upstream` that hold the product's own tool data get none. `signing.attestations.enabled:
 false` stops them (made ones stay served), `signing.attestations.fills: false` attests uploads only. Each takes about 2.5 KiB in PostgreSQL;
 the first identity after many stored artifacts, and every rotation, makes them all again in the background (minutes per million). The
-**Verify** step of every repository's client setup shows the command your users run.
+**Verify** step of every repository's client setup shows the command your users run. One quiet line of the section says what the job has left:
+"Waiting to be signed: 3 npm versions and 1,204 receipt attestations, the oldest since 14 minutes ago.", with those that reached their last
+attempt (the job tries them again once a day), or "Nothing waits to be signed." beside a current identity.
 
 **Previous identities**, closed, lists the identities that signed before, with their dates. Their npm signatures stay valid. **Retire** one
 whose key you believe taken: "Retire this identity? Its key leaves npm's keys at once; Quader signs its packages and attestations again with

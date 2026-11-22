@@ -100,6 +100,26 @@ describe('Signing identity (R-SIG-056)', () => {
     expect(api.calls).toEqual([{ op: 'retire', body: { id: 2 } }]);
   });
 
+  it('R-SIG-056 the job\'s backlog of both kinds is one quiet line beside a current identity, and no line without one and without work', async () => {
+    const busy = await render(READER, (api) => {
+      uploaded(api);
+      api.current = {
+        ...api.current,
+        backlog: [
+          { kind: 'npm', due: 3, failed: 0, oldestDueAt: daysFromNow(-0.003) },
+          { kind: 'attestation', due: 1204, failed: 2, oldestDueAt: daysFromNow(-0.01) },
+        ],
+      };
+    });
+    expect(text(busy.root.querySelector('[data-testid="signing-backlog"]')!)).toMatch(
+      /^Waiting to be signed: 3 npm versions and 1,204 receipt attestations, the oldest since .+\. 2 reached their last attempt; the job tries again once a day\.$/,
+    );
+    const idle = await render(READER, uploaded);
+    expect(text(idle.root.querySelector('[data-testid="signing-backlog"]')!)).toBe('Nothing waits to be signed.');
+    const none = await render(READER);
+    expect(none.root.querySelector('[data-testid="signing-backlog"]')).toBeNull();
+  });
+
   it('R-SIG-056 an expired certificate reads "expired" in red; an auditor sees the facts and the previous identities without a control', async () => {
     const { root } = await render(READER, (api) => {
       uploaded(api);

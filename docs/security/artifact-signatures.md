@@ -99,7 +99,10 @@ computed of the stored tarball. A receipt attestation is a statement of every ar
 bundle with the identity's leaf (R-SIG-051, R-SIG-052); both are kept in stage 1's store with `identity_id` set and the attachment source
 `issued` (one mechanism, `RecordIssued`), which the gate never counts (R-SIG-062) and the trust job never judges. An attestation is served
 through the API to whoever may read the item, and an image's is written as a referrer by the system (`system:signing`) where it hides no
-older signature (R-SIG-054). Retiring an uploaded identity drops its sealed key from the database
+older signature (R-SIG-054). The signatures answers decode its statement for their readers of R-SIG-034 (R-SIG-055, Q-SIG-234), which
+include a holder of `content:metadata-read` without `read`: what it adds is the receipt's own snapshot of facts those answers already show
+(the origin with the CI claims through R-SIG-010's allowlist, the integrity states) and of the malware and vulnerability states, within the
+statement's bounds and without an e-mail address; the bundle itself stays with the item's readers. Retiring an uploaded identity drops its sealed key from the database
 ([Q-SIG-149](../spec/signatures.md#q-sig-149--retiring-an-uploaded-identity-drops-its-sealed-key)), and a worker drops an opened key once its
 identity neither signs nor waits to.
 

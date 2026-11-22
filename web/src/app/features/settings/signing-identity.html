@@ -128,6 +128,27 @@
     </p>
   }
 
+  @if (backlog(); as b) {
+    <!-- What the job signing has left to do (R-SIG-055 backlog): one quiet line, the numbers of both kinds that fill it. -->
+    <p class="muted" data-testid="signing-backlog">
+      @if (b.idle) {
+        <ng-container i18n="@@signing.backlog.idle">Nothing waits to be signed.</ng-container>
+      } @else {
+        <!-- Each count is a plural of its own (no ICU nested in a sentence): "Waiting to be signed:", the npm versions, "and", the receipts. -->
+        <ng-container i18n="@@signing.backlog.due">Waiting to be signed:</ng-container>&ngsp;<ng-container i18n="@@signing.backlog.npm"
+          >{b.npm, plural, =1 {1 npm version} other {{{ b.npm | number }} npm versions}}</ng-container
+        >&ngsp;<ng-container i18n="@@signing.backlog.and">and</ng-container>&ngsp;<ng-container i18n="@@signing.backlog.receipts"
+          >{b.receipts, plural, =1 {1 receipt attestation} other {{{ b.receipts | number }} receipt attestations}}</ng-container
+        >@if (b.oldest; as oldest) {<span>, <ng-container i18n="@@signing.backlog.oldest">the oldest since</ng-container>&ngsp;<quader-time-ago [at]="oldest" absolute="title" /></span>}.
+        @if (b.failed > 0) {
+          &ngsp;<ng-container i18n="@@signing.backlog.failed"
+            >{b.failed, plural, =1 {1 reached its last attempt; the job tries again once a day.} other {{{ b.failed | number }} reached their last attempt; the job tries again once a day.}}</ng-container
+          >
+        }
+      }
+    </p>
+  }
+
   @if (ov.pending; as p) {
     <!-- A key request waits for the CA (R-SIG-047); it is shown again after a reload, and its request is public material. -->
     <h3 i18n="@@signing.request">Certificate request</h3>

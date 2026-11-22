@@ -5,9 +5,11 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/json"
+	"errors"
 	"flag"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -149,5 +151,59 @@ func TestR_SIG_051_AStatementKeepsToItsBounds(t *testing.T) {
 	}
 	if len(got) > statement.MaxBytes || len(st.Predicate.Signatures)+st.Predicate.Omitted != 40 || len(st.Predicate.Signatures) > statement.MaxSignatures {
 		t.Fatalf("%d bytes, %d signatures, %d omitted", len(got), len(st.Predicate.Signatures), st.Predicate.Omitted)
+	}
+	back, err := statement.Read(got)
+	if err != nil || len(back.Signatures) != len(st.Predicate.Signatures) || back.SignaturesOmitted != st.Predicate.Omitted {
+		t.Fatalf("read back %v: %d signatures, %d omitted", err, len(back.Signatures), back.SignaturesOmitted)
+	}
+}
+
+// TestR_SIG_055_AStatementReadsBackAsItsFacts: Read is Build's inverse for what a statement carries (the facts the screens show at a
+// version and a file: the time of receipt, the origin with a pipeline's claims, the integrity states, the malware and the vulnerability
+// state with their dates), with the defaults Build writes and without the e-mail claim Build drops; what is no receipt v1 or is beyond
+// the bounds is refused (a statement cut at its bounds reads back in the test above). Unit, milliseconds, the five golden cases.
+func TestR_SIG_055_AStatementReadsBackAsItsFacts(t *testing.T) {
+	for name, f := range cases() {
+		t.Run(name, func(t *testing.T) {
+			b, err := statement.Build(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := statement.Read(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := f
+			want.Host = ""
+			if want.Vulnerabilities.State == "" {
+				want.Vulnerabilities.State = "not_covered"
+			}
+			if want.Origin.CI != nil {
+				ci := map[string]any{}
+				for k, v := range want.Origin.CI {
+					if k != "user_email" {
+						ci[k] = v
+					}
+				}
+				want.Origin.CI = ci
+			}
+			if !reflect.DeepEqual(got.Facts, want) || got.SignaturesOmitted != 0 {
+				t.Errorf("read back:\n%+v\nwant:\n%+v", got.Facts, want)
+			}
+		})
+	}
+	good, err := statement.Build(cases()["infected"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, b := range map[string][]byte{
+		"another predicate": bytes.Replace(good, []byte("#receipt-attestation-v1"), []byte("#receipt-attestation-v2"), 1),
+		"no statement":      []byte(`{"_type":"https://example.com/other"}`),
+		"not JSON":          []byte("{"),
+		"above the bound":   append(bytes.Repeat([]byte(" "), statement.MaxBytes), good...),
+	} {
+		if _, err := statement.Read(b); !errors.Is(err, statement.ErrNotReceipt) {
+			t.Errorf("%s: %v", name, err)
+		}
 	}
 }

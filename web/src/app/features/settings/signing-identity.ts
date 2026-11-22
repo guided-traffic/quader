@@ -1,4 +1,4 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
@@ -44,13 +44,14 @@ import {
  * controls; a refused pair of the files as a red line with its reason), uploaded (the facts, **Replace**, **Remove**). The facts are the
  * subject, the issuer, the alternative names, the validity with "expires in 12 days" amber from 14 days and "expired" red, the
  * fingerprint, npm's key ID and the state, with **Download chain** and **Download trusted root**; an announced identity stands below with
- * its switch. **Previous identities**, closed, each with its dates and **Retire**. An administrator without the right reads the same
+ * its switch; one quiet line says what the job `signing` has left to do. **Previous identities**, closed, each with its dates and
+ * **Retire**. An administrator without the right reads the same
  * without a control. The writes need a recent sign-in: the app's re-authentication dialog asks for it, and the key request and the
  * certificate wait as a draft of the route and open again after it (Q-SIG-174).
  */
 @Component({
   selector: 'quader-signing-identity',
-  imports: [CodeWindow, CopyButton, DataTable, DatePipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
+  imports: [CodeWindow, CopyButton, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
   templateUrl: './signing-identity.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -149,6 +150,21 @@ export class SigningIdentitySection {
   protected readonly canImport = computed(() => {
     const ov = this.overview();
     return this.canChange() && !ov?.pending && !ov?.announced;
+  });
+  /**
+   * The job's backlog in one quiet line (R-SIG-055 `backlog`, Q-SIG-236): npm versions and receipts that wait, the oldest of them, and
+   * those that reached their last attempt; shown while an identity signs or work is left, nothing beside an installation that never signed.
+   */
+  protected readonly backlog = computed(() => {
+    const ov = this.overview();
+    if (!ov) return null;
+    const of = (kind: string) => ov.backlog.find((b) => b.kind === kind);
+    const npm = of('npm')?.due ?? 0;
+    const receipts = of('attestation')?.due ?? 0;
+    const failed = ov.backlog.reduce((n, b) => n + b.failed, 0);
+    const oldest = ov.backlog.map((b) => b.oldestDueAt).filter((t): t is string => !!t).sort()[0] ?? null;
+    if (!ov.current && npm + receipts + failed === 0) return null;
+    return { npm, receipts, failed, oldest, idle: npm + receipts + failed === 0 };
   });
   protected readonly previousColumns = computed<readonly TableColumn[]>(() => [
     { id: 'identity', label: $localize`:@@signing.prev.col.identity:Identity`, width: '12rem', prefer: true },

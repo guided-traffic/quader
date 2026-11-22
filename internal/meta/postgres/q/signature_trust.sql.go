@@ -1859,10 +1859,16 @@ SELECT s.id, s.object_sha256, s.part, s.subject_sha256, COALESCE(s.subject_name,
        COALESCE(t.block_id, 0)::bigint AS trust_block_id, COALESCE(t.anchor_epoch, 0)::bigint AS trust_epoch, t.computed_at AS trust_computed_at,
        (SELECT st.anchor_epoch FROM signature_settings st WHERE st.id)::bigint AS current_epoch,
        COALESCE(s.identity_id, 0)::bigint AS identity_id, COALESCE(si.subject, '')::text AS identity_subject,
-       COALESCE(si.cert_sha256, ''::bytea)::bytea AS identity_cert_sha256, COALESCE(si.state, '')::text AS identity_state
+       COALESCE(si.cert_sha256, ''::bytea)::bytea AS identity_cert_sha256, COALESCE(si.state, '')::text AS identity_state,
+       (CASE WHEN sa.signature_id IS NOT NULL THEN o.raw END)::bytea AS issued_bundle,
+       COALESCE(sa.served_as, '')::text AS served_as, COALESCE(sa.api_reason, '')::text AS served_reason
   FROM signatures s
   JOIN signature_objects o ON o.sha256 = s.object_sha256
   LEFT JOIN signing_identities si ON si.id = s.identity_id
+  LEFT JOIN LATERAL (SELECT x.signature_id, x.served_as, x.api_reason
+                       FROM signing_attestations x
+                      WHERE s.identity_id IS NOT NULL AND x.signature_id = s.id
+                      LIMIT 1) AS sa ON true
   LEFT JOIN LATERAL (SELECT x.signature_id, x.project_id, x.state, x.anchor_ids, x.block_id, x.anchor_epoch, x.computed_at
                        FROM signature_trust x
                       WHERE x.signature_id = s.id
@@ -1921,11 +1927,15 @@ type SignatureViewsRow struct {
 	IdentitySubject    string
 	IdentityCertSha256 []byte
 	IdentityState      string
+	IssuedBundle       []byte
+	ServedAs           string
+	ServedReason       string
 }
 
 // The signatures of the subjects (or npm's subject names) attached in the repositories asked, with their object's scheme, media type
 // and size, and their trust row in the scope: the project's row when one exists, else the installation's; with the current epoch; and
-// for a signature Quader made itself the identity that made it (R-SIG-055).
+// for a signature Quader made itself the identity that made it (R-SIG-055), and for its receipt attestation the bundle the API decodes
+// (about 2.5 KiB, read for that signature alone) and where the job serves it (signing_attestations, 00105).
 func (q *Queries) SignatureViews(ctx context.Context, arg SignatureViewsParams) ([]SignatureViewsRow, error) {
 	rows, err := q.db.Query(ctx, signatureViews,
 		arg.ProjectID,
@@ -1980,6 +1990,9 @@ func (q *Queries) SignatureViews(ctx context.Context, arg SignatureViewsParams) 
 			&i.IdentitySubject,
 			&i.IdentityCertSha256,
 			&i.IdentityState,
+			&i.IssuedBundle,
+			&i.ServedAs,
+			&i.ServedReason,
 		); err != nil {
 			return nil, err
 		}

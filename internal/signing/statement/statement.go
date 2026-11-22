@@ -9,6 +9,7 @@
 package statement
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -212,6 +213,26 @@ func (s stamp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Time(s).UTC().Format("2006-01-02T15:04:05.000Z"))
 }
 
+func (s *stamp) UnmarshalJSON(b []byte) error {
+	var text string
+	if err := json.Unmarshal(b, &text); err != nil {
+		return err
+	}
+	t, err := time.Parse(time.RFC3339Nano, text)
+	if err != nil {
+		return err
+	}
+	*s = stamp(t.UTC())
+	return nil
+}
+
+func timeOf(s *stamp) time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	return time.Time(*s)
+}
+
 func stampOf(t time.Time) *stamp {
 	if t.IsZero() {
 		return nil
@@ -319,6 +340,61 @@ func signaturesOf(in []Signature) []signature {
 		out = append(out, signature(s))
 	}
 	return out
+}
+
+// Receipt is a statement read back (R-SIG-055): the facts it carries, as Build took them, and the number of signatures Build left out.
+// Host is not read (the subject's name begins with it but does not mark where it ends), and the CI claims are what the statement holds.
+type Receipt struct {
+	Facts
+	SignaturesOmitted int
+}
+
+// ErrNotReceipt is a statement that is not receipt v1, or that is beyond the bounds Build keeps to.
+var ErrNotReceipt = errors.New("statement: not a receipt v1 within its bounds")
+
+// Read reads a statement Build made (R-SIG-055): the inverse of Build for what the statement carries. It checks the statement's type,
+// its predicate type and the bounds of R-SIG-051 (at most MaxBytes, at most MaxSignatures signatures, one subject with a SHA-256); it
+// verifies nothing, so its caller reads only a statement it took from a bundle of its own store.
+func Read(b []byte) (Receipt, error) {
+	if len(b) > MaxBytes {
+		return Receipt{}, fmt.Errorf("%w: %d bytes", ErrNotReceipt, len(b))
+	}
+	var st statement
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	if err := dec.Decode(&st); err != nil {
+		return Receipt{}, fmt.Errorf("%w: %w", ErrNotReceipt, err)
+	}
+	if st.Type != Type || st.PredicateType != PredicateType || len(st.Subject) != 1 || len(st.Predicate.Signatures) > MaxSignatures {
+		return Receipt{}, ErrNotReceipt
+	}
+	sum, err := hex.DecodeString(st.Subject[0].Digest["sha256"])
+	if err != nil || len(sum) != 32 {
+		return Receipt{}, ErrNotReceipt
+	}
+	p := st.Predicate
+	f := Facts{
+		InstallationID: p.Installation.ID, BaseURL: p.Installation.URL,
+		Project: p.Repository.Project, Repository: p.Repository.Key, Format: p.Repository.Format, Class: p.Repository.Class,
+		Path: p.Artifact.Path, Name: p.Artifact.Name, Version: p.Artifact.Version, MediaType: p.Artifact.MediaType, Size: p.Artifact.Size,
+		SHA256: [32]byte(sum), ReceivedAt: time.Time(p.ReceivedAt), IssuedAt: time.Time(p.IssuedAt),
+		Origin: Origin{Kind: p.Origin.Kind, CI: p.Origin.CI, Upstream: p.Origin.Upstream, FetchedAt: timeOf(p.Origin.FetchedAt)},
+		Malware: Malware{
+			State: p.Malware.State, Database: p.Malware.Database, DatabaseBuiltAt: timeOf(p.Malware.DatabaseBuiltAt),
+			ScannedAt: timeOf(p.Malware.ScannedAt), Released: p.Malware.Released,
+		},
+		Vulnerabilities: Vulnerabilities{State: p.Vulnerabilities.State, Grade: p.Vulnerabilities.Grade, Counts: p.Vulnerabilities.Counts, DataAt: timeOf(p.Vulnerabilities.DataAt)},
+	}
+	if s512, err := hex.DecodeString(st.Subject[0].Digest["sha512"]); err == nil && len(s512) == 64 {
+		f.SHA512 = s512
+	}
+	if p.Origin.Principal != nil {
+		f.Origin.PrincipalKind, f.Origin.PrincipalName = p.Origin.Principal.Kind, p.Origin.Principal.Name
+	}
+	for _, s := range p.Signatures {
+		f.Signatures = append(f.Signatures, Signature(s))
+	}
+	return Receipt{Facts: f, SignaturesOmitted: p.SignaturesOmitted}, nil
 }
 
 func malwareOf(m Malware) malware {

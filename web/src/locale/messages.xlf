@@ -27736,7 +27736,7 @@
         <note category="location">src/app/features/settings/signing-dialogs.ts:93,95</note>
         <note category="location">src/app/features/settings/signing-dialogs.ts:220,221</note>
         <note category="location">src/app/features/settings/signing-dialogs.ts:338,339</note>
-        <note category="location">src/app/features/settings/signing-identity.html:164,165</note>
+        <note category="location">src/app/features/settings/signing-identity.html:185,186</note>
       </notes>
       <segment>
         <source>More options</source>
@@ -27803,7 +27803,7 @@
     <unit id="signing.key.heading">
       <notes>
         <note category="location">src/app/features/settings/signing-dialogs.ts:133</note>
-        <note category="location">src/app/features/settings/signing-identity.html:159,163</note>
+        <note category="location">src/app/features/settings/signing-identity.html:180,184</note>
       </notes>
       <segment>
         <source>Create signing key</source>
@@ -27812,7 +27812,7 @@
     <unit id="signing.cert.heading">
       <notes>
         <note category="location">src/app/features/settings/signing-dialogs.ts:210,211</note>
-        <note category="location">src/app/features/settings/signing-identity.html:153,154</note>
+        <note category="location">src/app/features/settings/signing-identity.html:174,175</note>
       </notes>
       <segment>
         <source>Upload certificate</source>
@@ -27864,7 +27864,7 @@
     <unit id="signing.import.heading">
       <notes>
         <note category="location">src/app/features/settings/signing-dialogs.ts:296,297</note>
-        <note category="location">src/app/features/settings/signing-identity.html:168,170</note>
+        <note category="location">src/app/features/settings/signing-identity.html:189,191</note>
       </notes>
       <segment>
         <source>Import key and certificate</source>
@@ -27921,7 +27921,7 @@
     <unit id="signing.fact.subject">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:4,5</note>
-        <note category="location">src/app/features/settings/signing-identity.html:135,136</note>
+        <note category="location">src/app/features/settings/signing-identity.html:156,157</note>
       </notes>
       <segment>
         <source>Subject</source>
@@ -27962,7 +27962,7 @@
     <unit id="signing.expired">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:24,25</note>
-        <note category="location">src/app/features/settings/signing-identity.html:195,197</note>
+        <note category="location">src/app/features/settings/signing-identity.html:216,218</note>
       </notes>
       <segment>
         <source>expired</source>
@@ -27987,6 +27987,7 @@
     <unit id="signing.fact.keyid">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:40,42</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:126,127</note>
       </notes>
       <segment>
         <source>npm key ID</source>
@@ -28043,7 +28044,7 @@
     <unit id="signing.uploaded-by">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:92</note>
-        <note category="location">src/app/features/settings/signing-identity.html:141</note>
+        <note category="location">src/app/features/settings/signing-identity.html:162</note>
       </notes>
       <segment>
         <source>by</source>
@@ -28068,7 +28069,7 @@
     <unit id="signing.download-root">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:103,105</note>
-        <note category="location">src/app/features/settings/signing-identity.html:176,179</note>
+        <note category="location">src/app/features/settings/signing-identity.html:197,200</note>
       </notes>
       <segment>
         <source>Download trusted root</source>
@@ -28131,9 +28132,65 @@
         <source> No signing identity: Quader signs nothing. Packages of local npm repositories carry no registry signature, and no artifact gets a receipt attestation. </source>
       </segment>
     </unit>
+    <unit id="signing.backlog.idle">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:135,137</note>
+      </notes>
+      <segment>
+        <source>Nothing waits to be signed.</source>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.due">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:138</note>
+      </notes>
+      <segment>
+        <source>Waiting to be signed:</source>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.npm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:139,140</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 npm version} other {<ph id="0" equiv="INTERPOLATION"/> npm versions}}</source>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.and">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:140</note>
+      </notes>
+      <segment>
+        <source>and</source>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.receipts">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:141,142</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 receipt attestation} other {<ph id="0" equiv="INTERPOLATION"/> receipt attestations}}</source>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.oldest">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:142</note>
+      </notes>
+      <segment>
+        <source>the oldest since</source>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.failed">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:145,147</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 reached its last attempt; the job tries again once a day.} other {<ph id="0" equiv="INTERPOLATION"/> reached their last attempt; the job tries again once a day.}}</source>
+      </segment>
+    </unit>
     <unit id="signing.request">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:133,134</note>
+        <note category="location">src/app/features/settings/signing-identity.html:154,155</note>
       </notes>
       <segment>
         <source>Certificate request</source>
@@ -28141,7 +28198,7 @@
     </unit>
     <unit id="signing.fact.requested">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:137,139</note>
+        <note category="location">src/app/features/settings/signing-identity.html:158,160</note>
       </notes>
       <segment>
         <source>Key made</source>
@@ -28149,7 +28206,7 @@
     </unit>
     <unit id="signing.request-hint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:150,152</note>
+        <note category="location">src/app/features/settings/signing-identity.html:171,173</note>
       </notes>
       <segment>
         <source>Have your company&apos;s CA issue a code-signing certificate for this request, then upload it with its chain.</source>
@@ -28157,7 +28214,7 @@
     </unit>
     <unit id="signing.discard">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:154,157</note>
+        <note category="location">src/app/features/settings/signing-identity.html:175,178</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -28165,7 +28222,7 @@
     </unit>
     <unit id="signing.import.note">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:166,168</note>
+        <note category="location">src/app/features/settings/signing-identity.html:187,189</note>
       </notes>
       <segment>
         <source> For a CA that hands out the key and the certificate together, or a key moved from another installation. </source>
@@ -28173,7 +28230,7 @@
     </unit>
     <unit id="signing.prev">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:173</note>
+        <note category="location">src/app/features/settings/signing-identity.html:194</note>
       </notes>
       <segment>
         <source>Previous identities</source>
@@ -28181,7 +28238,7 @@
     </unit>
     <unit id="signing.unused">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:187,189</note>
+        <note category="location">src/app/features/settings/signing-identity.html:208,210</note>
       </notes>
       <segment>
         <source>Not in use: the Helm values name the signing identity</source>
@@ -28189,7 +28246,7 @@
     </unit>
     <unit id="signing.retire">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:209</note>
+        <note category="location">src/app/features/settings/signing-identity.html:230</note>
       </notes>
       <segment>
         <source>Retire</source>
@@ -28197,7 +28254,7 @@
     </unit>
     <unit id="signing.prev.col.identity">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:154</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:170</note>
       </notes>
       <segment>
         <source>Identity</source>
@@ -28205,7 +28262,7 @@
     </unit>
     <unit id="signing.prev.col.source">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:155</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:171</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -28213,7 +28270,7 @@
     </unit>
     <unit id="signing.prev.col.until">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:156</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:172</note>
       </notes>
       <segment>
         <source>Valid until</source>
@@ -28221,7 +28278,7 @@
     </unit>
     <unit id="signing.prev.col.signed">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:157</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:173</note>
       </notes>
       <segment>
         <source>Signed</source>
@@ -28229,7 +28286,7 @@
     </unit>
     <unit id="signing.prev.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:158</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:174</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -28237,7 +28294,7 @@
     </unit>
     <unit id="signing.prev.caption">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:168</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:184</note>
       </notes>
       <segment>
         <source>Previous signing identities</source>
@@ -28245,7 +28302,7 @@
     </unit>
     <unit id="signing.prev.hint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:169</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:185</note>
       </notes>
       <segment>
         <source>Identities that signed before. Their npm signatures stay valid until you retire them.</source>
@@ -28253,7 +28310,7 @@
     </unit>
     <unit id="signing.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:170</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:186</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -28261,7 +28318,7 @@
     </unit>
     <unit id="signing.copy-keyid">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:171</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:187</note>
       </notes>
       <segment>
         <source>Copy npm key ID</source>
@@ -28269,7 +28326,7 @@
     </unit>
     <unit id="signing.copy-request">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:172</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:188</note>
       </notes>
       <segment>
         <source>Copy request</source>
@@ -28277,8 +28334,8 @@
     </unit>
     <unit id="signing.draft-restored">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:195</note>
-        <note category="location">src/app/features/settings/signing-identity.ts:198</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:211</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:214</note>
       </notes>
       <segment>
         <source>Your entries were restored. Send them again.</source>
@@ -28286,7 +28343,7 @@
     </unit>
     <unit id="signing.key.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:224</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:240</note>
       </notes>
       <segment>
         <source>The signing key is made. Have your company&apos;s CA issue a certificate for its request.</source>
@@ -28294,7 +28351,7 @@
     </unit>
     <unit id="signing.installed-announced">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:250</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:266</note>
       </notes>
       <segment>
         <source>The new signing identity is announced. It becomes current after the announce period; until then the current one signs.</source>
@@ -28302,7 +28359,7 @@
     </unit>
     <unit id="signing.installed-current">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:251</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:267</note>
       </notes>
       <segment>
         <source>The signing identity is current. Quader signs with it from now on.</source>
@@ -28310,7 +28367,7 @@
     </unit>
     <unit id="signing.discard.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:273</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:289</note>
       </notes>
       <segment>
         <source>Discard the signing key?</source>
@@ -28318,7 +28375,7 @@
     </unit>
     <unit id="signing.discard.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:274</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:290</note>
       </notes>
       <segment>
         <source>The key and its request are deleted. A certificate the CA issues for this request can no longer be uploaded.</source>
@@ -28326,7 +28383,7 @@
     </unit>
     <unit id="signing.discard.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:275</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:291</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -28334,7 +28391,7 @@
     </unit>
     <unit id="signing.discard.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:278</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:294</note>
       </notes>
       <segment>
         <source>The signing key is discarded.</source>
@@ -28342,7 +28399,7 @@
     </unit>
     <unit id="signing.remove.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:283</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:299</note>
       </notes>
       <segment>
         <source>Remove the signing identity?</source>
@@ -28350,7 +28407,7 @@
     </unit>
     <unit id="signing.remove.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:285</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:301</note>
       </notes>
       <segment>
         <source>It becomes a previous identity and Quader signs nothing until another identity is current. Its npm signatures stay valid, and the attestations it made stay served until its certificate expires.</source>
@@ -28358,7 +28415,7 @@
     </unit>
     <unit id="signing.remove.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:287</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:303</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -28366,7 +28423,7 @@
     </unit>
     <unit id="signing.remove.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:290</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:306</note>
       </notes>
       <segment>
         <source>The signing identity is removed. Quader signs nothing now.</source>
@@ -28374,7 +28431,7 @@
     </unit>
     <unit id="signing.retire.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:295</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:311</note>
       </notes>
       <segment>
         <source>Retire this identity?</source>
@@ -28382,7 +28439,7 @@
     </unit>
     <unit id="signing.retire.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:297</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:313</note>
       </notes>
       <segment>
         <source>Its key leaves npm&apos;s keys at once; Quader signs its packages and attestations again with the current identity.</source>
@@ -28390,7 +28447,7 @@
     </unit>
     <unit id="signing.retire.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:299</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:315</note>
       </notes>
       <segment>
         <source>Retire</source>
@@ -28398,7 +28455,7 @@
     </unit>
     <unit id="signing.retire.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:302</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:318</note>
       </notes>
       <segment>
         <source>The identity is retired.</source>
@@ -36350,7 +36407,7 @@
     <unit id="sig.badge.invalid">
       <notes>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:29</note>
-        <note category="location">src/app/shared/signatures/signature-words.ts:42</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:44</note>
       </notes>
       <segment>
         <source>Invalid signature</source>
@@ -40693,7 +40750,7 @@
       <notes>
         <note category="location">src/app/shared/signatures/gate-words.ts:25</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:88,91</note>
-        <note category="location">src/app/shared/signatures/signature-words.ts:59</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:61</note>
       </notes>
       <segment>
         <source>Not checked yet</source>
@@ -40935,6 +40992,7 @@
     <unit id="sig.origin">
       <notes>
         <note category="location">src/app/shared/signatures/signature-report.html:34,36</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:324,325</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -41014,7 +41072,7 @@
     </unit>
     <unit id="sig.fact.key">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:126</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:130</note>
       </notes>
       <segment>
         <source>Key</source>
@@ -41022,7 +41080,7 @@
     </unit>
     <unit id="sig.fact.signed">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:128,130</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:132,134</note>
       </notes>
       <segment>
         <source>Signed</source>
@@ -41030,7 +41088,7 @@
     </unit>
     <unit id="sig.fact.certificate">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:133,134</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:137,138</note>
       </notes>
       <segment>
         <source>Certificate</source>
@@ -41038,7 +41096,7 @@
     </unit>
     <unit id="sig.fact.anchor">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:137,139</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:141,143</note>
       </notes>
       <segment>
         <source>Trust anchor</source>
@@ -41046,7 +41104,7 @@
     </unit>
     <unit id="sig.fact.no-anchor">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:144,146</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:148,150</note>
       </notes>
       <segment>
         <source>None knows this signer</source>
@@ -41054,7 +41112,7 @@
     </unit>
     <unit id="sig.fact.ci">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:150,152</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:154,156</note>
       </notes>
       <segment>
         <source>CI job</source>
@@ -41062,7 +41120,8 @@
     </unit>
     <unit id="sig.fact.platform">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:159,160</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:163,164</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:302,303</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -41070,7 +41129,8 @@
     </unit>
     <unit id="sig.fact.file">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:164,165</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:168,169</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:306,307</note>
       </notes>
       <segment>
         <source>File</source>
@@ -41078,7 +41138,8 @@
     </unit>
     <unit id="sig.fact.repository">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:168,169</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:172,173</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:310,311</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -41086,8 +41147,8 @@
     </unit>
     <unit id="sig.download">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:173,175</note>
-        <note category="location">src/app/shared/signatures/signature-report.html:265,267</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:177,179</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:393,395</note>
       </notes>
       <segment>
         <source>Download original</source>
@@ -41095,7 +41156,7 @@
     </unit>
     <unit id="sig.tech.key-ids">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:178,180</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:182,184</note>
       </notes>
       <segment>
         <source>Key identifiers</source>
@@ -41103,15 +41164,24 @@
     </unit>
     <unit id="sig.tech.algorithm">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:186,187</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:190,191</note>
       </notes>
       <segment>
         <source>Algorithm</source>
       </segment>
     </unit>
+    <unit id="sig.receipt.identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:194,196</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:357,359</note>
+      </notes>
+      <segment>
+        <source>Signing identity</source>
+      </segment>
+    </unit>
     <unit id="sig.tech.serial">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:190,191</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:201,202</note>
       </notes>
       <segment>
         <source>Serial</source>
@@ -41119,7 +41189,7 @@
     </unit>
     <unit id="sig.tech.chain">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:194,196</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:205,207</note>
       </notes>
       <segment>
         <source>Chain</source>
@@ -41127,7 +41197,7 @@
     </unit>
     <unit id="sig.tech.log">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:202,204</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:213,215</note>
       </notes>
       <segment>
         <source>Transparency log</source>
@@ -41135,7 +41205,7 @@
     </unit>
     <unit id="sig.tech.timestamp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:211,213</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:222,224</note>
       </notes>
       <segment>
         <source>Timestamp</source>
@@ -41143,7 +41213,7 @@
     </unit>
     <unit id="sig.tech.claimed">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:220,221</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:231,232</note>
       </notes>
       <segment>
         <source>Time the signer claims</source>
@@ -41151,7 +41221,8 @@
     </unit>
     <unit id="sig.tech.received">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:223,224</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:234,235</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:322,323</note>
       </notes>
       <segment>
         <source>Received by Quader</source>
@@ -41159,7 +41230,8 @@
     </unit>
     <unit id="sig.tech.predicate">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:226,227</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:237,238</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:364,365</note>
       </notes>
       <segment>
         <source>Predicate</source>
@@ -41167,7 +41239,7 @@
     </unit>
     <unit id="sig.tech.media-type">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:230,231</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:241,242</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -41175,7 +41247,8 @@
     </unit>
     <unit id="sig.tech.size">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:233,234</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:244,245</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:367,368</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -41183,7 +41256,8 @@
     </unit>
     <unit id="sig.tech.attached">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:235,237</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:246,248</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:369,371</note>
       </notes>
       <segment>
         <source>Attached at</source>
@@ -41191,7 +41265,7 @@
     </unit>
     <unit id="sig.tech.cut">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:242,243</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:253,254</note>
       </notes>
       <segment>
         <source>Cut at the bounds</source>
@@ -41199,15 +41273,119 @@
     </unit>
     <unit id="sig.attestations">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.html:251,252</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:263,265</note>
       </notes>
       <segment>
         <source>Attestations and SBOMs</source>
       </segment>
     </unit>
+    <unit id="sig.attestations-only">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:265,268</note>
+      </notes>
+      <segment>
+        <source>Attestations</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.issued">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:276,277</note>
+      </notes>
+      <segment>
+        <source>Issued</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.malware">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:279,280</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.released">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:283,285</note>
+      </notes>
+      <segment>
+        <source>· released by a security administrator</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.scanned">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:287</note>
+      </notes>
+      <segment>
+        <source>scanned</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.served">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:293,294</note>
+      </notes>
+      <segment>
+        <source>Served</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.download">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:316,319</note>
+      </notes>
+      <segment>
+        <source>Download attestation</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.database">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:327,329</note>
+      </notes>
+      <segment>
+        <source>Signature database</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vulnerabilities">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:335,337</note>
+      </notes>
+      <segment>
+        <source>Vulnerabilities</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.advisories">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:340</note>
+      </notes>
+      <segment>
+        <source>advisories of</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.signatures">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:344,346</note>
+      </notes>
+      <segment>
+        <source>Signatures it names</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.signatures-none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:349,351</note>
+      </notes>
+      <segment>
+        <source>None</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.omitted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:352,353</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more left out at the bound} other {and <ph id="0" equiv="INTERPOLATION"/> more left out at the bound}}</source>
+      </segment>
+    </unit>
     <unit id="sig.att.type">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:130</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:177</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -41215,7 +41393,7 @@
     </unit>
     <unit id="sig.att.platform">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:131</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:178</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -41223,7 +41401,7 @@
     </unit>
     <unit id="sig.att.size">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:132</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:179</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -41231,7 +41409,7 @@
     </unit>
     <unit id="sig.att.received">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:133</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:180</note>
       </notes>
       <segment>
         <source>Received</source>
@@ -41239,7 +41417,7 @@
     </unit>
     <unit id="sig.att.download">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:134</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:181</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -41247,7 +41425,7 @@
     </unit>
     <unit id="sig.att.caption">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:136</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:183</note>
       </notes>
       <segment>
         <source>Attestations and SBOMs of this image</source>
@@ -41255,7 +41433,7 @@
     </unit>
     <unit id="sig.technical">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:137</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:184</note>
       </notes>
       <segment>
         <source>Technical details</source>
@@ -41263,7 +41441,7 @@
     </unit>
     <unit id="sig.att.image">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-report.ts:138</note>
+        <note category="location">src/app/shared/signatures/signature-report.ts:185</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -41271,7 +41449,7 @@
     </unit>
     <unit id="sig.promise">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:29</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:31</note>
       </notes>
       <segment>
         <source>A signature tells who signed an artifact and whether a trust anchor knows the signer. It does not tell that the content is safe; the malware scan and the vulnerability scanning check that.</source>
@@ -41279,7 +41457,7 @@
     </unit>
     <unit id="sig.badge.verified-public">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:36</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:38</note>
       </notes>
       <segment>
         <source>Verified · public</source>
@@ -41287,7 +41465,7 @@
     </unit>
     <unit id="sig.badge.verified-internal">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:38</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:40</note>
       </notes>
       <segment>
         <source>Verified · internal</source>
@@ -41295,7 +41473,7 @@
     </unit>
     <unit id="sig.badge.untrusted">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:40</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:42</note>
       </notes>
       <segment>
         <source>Signed · signer not trusted</source>
@@ -41303,7 +41481,7 @@
     </unit>
     <unit id="sig.state.unsupported">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:61</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:63</note>
       </notes>
       <segment>
         <source>Scheme not supported</source>
@@ -41311,7 +41489,7 @@
     </unit>
     <unit id="sig.state.none">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:63</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:65</note>
       </notes>
       <segment>
         <source>No signature</source>
@@ -41319,7 +41497,7 @@
     </unit>
     <unit id="sig.sentence.verified-internal">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:71</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:73</note>
       </notes>
       <segment>
         <source>The signature matches the content, and a trust anchor of this installation or of this project knows the signer.</source>
@@ -41327,7 +41505,7 @@
     </unit>
     <unit id="sig.sentence.verified-public">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:73</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:75</note>
       </notes>
       <segment>
         <source>The signature matches the content, and a public trust anchor shipped with Quader knows the signer.</source>
@@ -41335,7 +41513,7 @@
     </unit>
     <unit id="sig.sentence.untrusted">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:75</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:77</note>
       </notes>
       <segment>
         <source>The signature matches the content or cannot be matched without a key. No trust anchor knows this signer.</source>
@@ -41343,7 +41521,7 @@
     </unit>
     <unit id="sig.sentence.invalid">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:77</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:79</note>
       </notes>
       <segment>
         <source>The signature does not match the content.</source>
@@ -41351,7 +41529,7 @@
     </unit>
     <unit id="sig.sentence.not-checked">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:79</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:81</note>
       </notes>
       <segment>
         <source>A signature was found and is not checked yet.</source>
@@ -41359,7 +41537,7 @@
     </unit>
     <unit id="sig.sentence.unsupported">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:81</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:83</note>
       </notes>
       <segment>
         <source>A signature was found in a scheme Quader does not read, or it could not be read.</source>
@@ -41367,15 +41545,31 @@
     </unit>
     <unit id="sig.sentence.none">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:83</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:85</note>
       </notes>
       <segment>
         <source>No signature found.</source>
       </segment>
     </unit>
+    <unit id="sig.state.no-publisher">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:96</note>
+      </notes>
+      <segment>
+        <source>No signature of the publisher</source>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.no-publisher">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:97</note>
+      </notes>
+      <segment>
+        <source>What is listed below confirms where the artifact was published or received, not who built it.</source>
+      </segment>
+    </unit>
     <unit id="sig.kinds.none">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:90</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:104</note>
       </notes>
       <segment>
         <source>This format has no signatures.</source>
@@ -41383,7 +41577,7 @@
     </unit>
     <unit id="sig.kinds.known">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:92</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:106</note>
       </notes>
       <segment>
         <source>Signatures this format knows: <ph id="0" equiv="kinds" disp="list"/>.</source>
@@ -41391,7 +41585,7 @@
     </unit>
     <unit id="sig.deb.index">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:97</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:111</note>
       </notes>
       <segment>
         <source>apt checks the signature of this repository&apos;s index, not of the package.</source>
@@ -41399,7 +41593,7 @@
     </unit>
     <unit id="sig.scheme.sigstore-keyless">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:104</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:118</note>
       </notes>
       <segment>
         <source>Sigstore, keyless</source>
@@ -41407,7 +41601,7 @@
     </unit>
     <unit id="sig.scheme.sigstore-key">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:104</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:118</note>
       </notes>
       <segment>
         <source>Sigstore, with a key</source>
@@ -41415,7 +41609,7 @@
     </unit>
     <unit id="sig.scheme.cosign">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:106</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:120</note>
       </notes>
       <segment>
         <source>cosign, older layout</source>
@@ -41423,7 +41617,7 @@
     </unit>
     <unit id="sig.scheme.nuget">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:111</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:125</note>
       </notes>
       <segment>
         <source>NuGet package signature</source>
@@ -41431,7 +41625,7 @@
     </unit>
     <unit id="sig.scheme.npm">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:115</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:129</note>
       </notes>
       <segment>
         <source>npm registry signature</source>
@@ -41439,7 +41633,7 @@
     </unit>
     <unit id="sig.scheme.public-key">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:117</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:131</note>
       </notes>
       <segment>
         <source>a public key</source>
@@ -41447,7 +41641,7 @@
     </unit>
     <unit id="sig.scheme.unknown">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:119</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:133</note>
       </notes>
       <segment>
         <source>an unknown scheme</source>
@@ -41455,7 +41649,7 @@
     </unit>
     <unit id="sig.kind.author">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:128</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:144</note>
       </notes>
       <segment>
         <source>Author signature · <ph id="0" equiv="scheme" disp="scheme"/></source>
@@ -41463,7 +41657,7 @@
     </unit>
     <unit id="sig.kind.publisher">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:129</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:145</note>
       </notes>
       <segment>
         <source>Publisher signature · <ph id="0" equiv="scheme" disp="scheme"/></source>
@@ -41471,23 +41665,223 @@
     </unit>
     <unit id="sig.kind.provenance">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:132</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:148</note>
       </notes>
       <segment>
         <source>Provenance attestation</source>
       </segment>
     </unit>
+    <unit id="sig.kind.registry-own">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:152</note>
+      </notes>
+      <segment>
+        <source>Origin confirmed by registry · this installation</source>
+      </segment>
+    </unit>
     <unit id="sig.kind.registry">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:134</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:153</note>
       </notes>
       <segment>
         <source>Origin confirmed by registry</source>
       </segment>
     </unit>
+    <unit id="sig.kind.receipt">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:155</note>
+      </notes>
+      <segment>
+        <source>Receipt attestation by this installation</source>
+      </segment>
+    </unit>
+    <unit id="sig.issued.receipt-retired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:173</note>
+      </notes>
+      <segment>
+        <source>Made with a signing identity an administrator retired, so it is no longer served. Quader makes it again with the current identity.</source>
+      </segment>
+    </unit>
+    <unit id="sig.issued.receipt">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:174</note>
+      </notes>
+      <segment>
+        <source>This installation&apos;s signed record of when it received the artifact, from where, and what its checks said then. It is not a signature of the publisher.</source>
+      </segment>
+    </unit>
+    <unit id="sig.issued.registry-retired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:177</note>
+      </notes>
+      <segment>
+        <source>Signed with a signing identity an administrator retired, so npm no longer gets it. Quader signs the version again with the current identity.</source>
+      </segment>
+    </unit>
+    <unit id="sig.issued.registry">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:178</note>
+      </notes>
+      <segment>
+        <source>This installation signed the version with its signing identity, and npm audit signatures checks it against this repository&apos;s keys. It confirms where the version was published, not who built it.</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.malware-off">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:185</note>
+      </notes>
+      <segment>
+        <source>Not scanned: the malware scan is off</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.malware-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:187</note>
+      </notes>
+      <segment>
+        <source>No verdict yet when it was issued</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:201</note>
+      </notes>
+      <segment>
+        <source>Grade <ph id="0" equiv="grade" disp="grade"/>, no open finding</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-open">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:202</note>
+      </notes>
+      <segment>
+        <source>Grade <ph id="0" equiv="grade" disp="grade"/>, <ph id="1" equiv="count" disp="open"/> open findings</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:206</note>
+      </notes>
+      <segment>
+        <source>Not evaluated yet when it was issued</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-internal">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:208</note>
+      </notes>
+      <segment>
+        <source>An internal package: public advisories do not apply</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-failed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:210</note>
+      </notes>
+      <segment>
+        <source>The image&apos;s scan had failed</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-not-covered">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:212</note>
+      </notes>
+      <segment>
+        <source>Not covered by the vulnerability scanning</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.served-referrer">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:219</note>
+      </notes>
+      <segment>
+        <source>As a referrer of the image</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.served-api">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:220</note>
+      </notes>
+      <segment>
+        <source>Through the API</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.reason-referrer">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:225</note>
+      </notes>
+      <segment>
+        <source>cosign and a cluster&apos;s policy engine find it beside the image.</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.reason-hides">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:228</note>
+      </notes>
+      <segment>
+        <source>The image carries an older cosign signature, which cosign stops reading once a referrer stands beside it.</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.reason-remote">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:230</note>
+      </notes>
+      <segment>
+        <source>A remote or virtual repository holds the image, and Quader adds no referrer of its own there.</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-valid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:240</note>
+      </notes>
+      <segment>
+        <source>matched the content</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:242</note>
+      </notes>
+      <segment>
+        <source>did not match the content</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-no-key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:244</note>
+      </notes>
+      <segment>
+        <source>no key known</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:246</note>
+      </notes>
+      <segment>
+        <source>not checked yet</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-unsupported">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:248</note>
+      </notes>
+      <segment>
+        <source>scheme not supported</source>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-malformed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:250</note>
+      </notes>
+      <segment>
+        <source>could not be read</source>
+      </segment>
+    </unit>
     <unit id="sig.reason.digest">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:146</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:262</note>
       </notes>
       <segment>
         <source>the content&apos;s digest differs from the signed one</source>
@@ -41495,7 +41889,7 @@
     </unit>
     <unit id="sig.reason.subject">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:148</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:264</note>
       </notes>
       <segment>
         <source>the signature names other content</source>
@@ -41503,7 +41897,7 @@
     </unit>
     <unit id="sig.reason.signature">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:150</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:266</note>
       </notes>
       <segment>
         <source>the signature value does not verify</source>
@@ -41511,7 +41905,7 @@
     </unit>
     <unit id="sig.reason.chain">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:152</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:268</note>
       </notes>
       <segment>
         <source>the certificate chain does not sign it</source>
@@ -41519,7 +41913,7 @@
     </unit>
     <unit id="sig.reason.log">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:154</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:270</note>
       </notes>
       <segment>
         <source>its transparency-log entry does not verify</source>
@@ -41527,7 +41921,7 @@
     </unit>
     <unit id="sig.reason.timestamp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:156</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:272</note>
       </notes>
       <segment>
         <source>its timestamp does not verify</source>
@@ -41535,7 +41929,7 @@
     </unit>
     <unit id="sig.reason.attribute">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:158</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:274</note>
       </notes>
       <segment>
         <source>a signed attribute the scheme requires is missing</source>
@@ -41543,7 +41937,7 @@
     </unit>
     <unit id="sig.reason.weak">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:160</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:276</note>
       </notes>
       <segment>
         <source>a weak algorithm (SHA-1, or RSA below 2048 bits)</source>
@@ -41551,7 +41945,7 @@
     </unit>
     <unit id="sig.reason.scheme">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:162</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:278</note>
       </notes>
       <segment>
         <source>a scheme Quader does not read</source>
@@ -41559,7 +41953,7 @@
     </unit>
     <unit id="sig.reason.version">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:164</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:280</note>
       </notes>
       <segment>
         <source>a version of the scheme Quader does not read</source>
@@ -41567,7 +41961,7 @@
     </unit>
     <unit id="sig.reason.limits">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:166</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:282</note>
       </notes>
       <segment>
         <source>larger than the bounds Quader reads</source>
@@ -41575,7 +41969,7 @@
     </unit>
     <unit id="sig.reason.subject-missing">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:168</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:284</note>
       </notes>
       <segment>
         <source>the signed content is not stored yet</source>
@@ -41583,7 +41977,7 @@
     </unit>
     <unit id="sig.reason.content">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:170</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:286</note>
       </notes>
       <segment>
         <source>the signed content could not be read</source>
@@ -41591,7 +41985,7 @@
     </unit>
     <unit id="sig.entry.trusted">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:181</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:298</note>
       </notes>
       <segment>
         <source>The signature matches the content. A trust anchor knows the signer.</source>
@@ -41599,7 +41993,7 @@
     </unit>
     <unit id="sig.entry.untrusted">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:183</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:300</note>
       </notes>
       <segment>
         <source>The signature matches the content. No trust anchor knows this signer.</source>
@@ -41607,7 +42001,7 @@
     </unit>
     <unit id="sig.entry.no-key">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:185</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:302</note>
       </notes>
       <segment>
         <source>No key of this signer is known, so the signature cannot be matched with the content yet.</source>
@@ -41615,7 +42009,7 @@
     </unit>
     <unit id="sig.entry.invalid-why">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:189</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:306</note>
       </notes>
       <segment>
         <source>The signature does not match the content: <ph id="0" equiv="reason" disp="why"/>.</source>
@@ -41623,7 +42017,7 @@
     </unit>
     <unit id="sig.entry.invalid">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:190</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:307</note>
       </notes>
       <segment>
         <source>The signature does not match the content.</source>
@@ -41631,7 +42025,7 @@
     </unit>
     <unit id="sig.entry.unsupported">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:193</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:310</note>
       </notes>
       <segment>
         <source>Scheme not supported.</source>
@@ -41639,7 +42033,7 @@
     </unit>
     <unit id="sig.entry.malformed">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:195</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:312</note>
       </notes>
       <segment>
         <source>The signature could not be read.</source>
@@ -41647,7 +42041,7 @@
     </unit>
     <unit id="sig.entry.pending">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:197</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:314</note>
       </notes>
       <segment>
         <source>Not checked yet.</source>
@@ -41655,7 +42049,7 @@
     </unit>
     <unit id="sig.cert.short-log">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:235</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:352</note>
       </notes>
       <segment>
         <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing; covered by the log entry</source>
@@ -41663,7 +42057,7 @@
     </unit>
     <unit id="sig.cert.short-timestamp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:236</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:353</note>
       </notes>
       <segment>
         <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing; covered by the timestamp</source>
@@ -41671,7 +42065,7 @@
     </unit>
     <unit id="sig.cert.short">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:237</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:354</note>
       </notes>
       <segment>
         <source>valid for <ph id="0" equiv="minutes" disp="minutes"/> minutes at signing</source>
@@ -41679,7 +42073,7 @@
     </unit>
     <unit id="sig.cert.expired">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:241</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:358</note>
       </notes>
       <segment>
         <source>expired on <ph id="0" equiv="date" disp="when"/></source>
@@ -41687,15 +42081,23 @@
     </unit>
     <unit id="sig.cert.valid-until">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:241</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:358</note>
       </notes>
       <segment>
         <source>valid until <ph id="0" equiv="date" disp="when"/></source>
       </segment>
     </unit>
+    <unit id="sig.time.issued">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:363</note>
+      </notes>
+      <segment>
+        <source>by this installation&apos;s signing identity</source>
+      </segment>
+    </unit>
     <unit id="sig.time.log">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:248</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:366</note>
       </notes>
       <segment>
         <source>proven by the transparency log</source>
@@ -41703,7 +42105,7 @@
     </unit>
     <unit id="sig.time.timestamp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:250</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:368</note>
       </notes>
       <segment>
         <source>proven by a timestamp</source>
@@ -41711,7 +42113,7 @@
     </unit>
     <unit id="sig.time.received">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:252</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:370</note>
       </notes>
       <segment>
         <source>received by Quader</source>
@@ -41719,7 +42121,7 @@
     </unit>
     <unit id="sig.scope.shipped">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:265</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:383</note>
       </notes>
       <segment>
         <source>Shipped with Quader</source>
@@ -41727,7 +42129,7 @@
     </unit>
     <unit id="sig.scope.configuration">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:267</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:385</note>
       </notes>
       <segment>
         <source>From the Helm values</source>
@@ -41735,7 +42137,7 @@
     </unit>
     <unit id="sig.scope.installation">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:269</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:387</note>
       </notes>
       <segment>
         <source>Added by an administrator</source>
@@ -41743,7 +42145,7 @@
     </unit>
     <unit id="sig.scope.project">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:271</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:389</note>
       </notes>
       <segment>
         <source>Added by the project&apos;s Owner</source>
@@ -41751,7 +42153,7 @@
     </unit>
     <unit id="sig.anchor-kind.ca">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:279</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:397</note>
       </notes>
       <segment>
         <source>CA certificate</source>
@@ -41759,7 +42161,7 @@
     </unit>
     <unit id="sig.anchor-kind.openpgp">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:281</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:399</note>
       </notes>
       <segment>
         <source>OpenPGP key</source>
@@ -41767,7 +42169,7 @@
     </unit>
     <unit id="sig.anchor-kind.public-key">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:283</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:401</note>
       </notes>
       <segment>
         <source>Public key</source>
@@ -41775,7 +42177,7 @@
     </unit>
     <unit id="sig.anchor-kind.sigstore">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:285</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:403</note>
       </notes>
       <segment>
         <source>Sigstore identity</source>
@@ -41783,7 +42185,7 @@
     </unit>
     <unit id="sig.block-kind.fingerprint">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:293</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:411</note>
       </notes>
       <segment>
         <source>Fingerprint</source>
@@ -41791,7 +42193,7 @@
     </unit>
     <unit id="sig.block-kind.serial">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:295</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:413</note>
       </notes>
       <segment>
         <source>Issuer and serial</source>
@@ -41799,7 +42201,7 @@
     </unit>
     <unit id="sig.block-kind.keyid">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:297</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:415</note>
       </notes>
       <segment>
         <source>Key ID</source>
@@ -41807,7 +42209,7 @@
     </unit>
     <unit id="sig.block-kind.identity">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:299</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:417</note>
       </notes>
       <segment>
         <source>Sigstore identity</source>
@@ -41815,7 +42217,7 @@
     </unit>
     <unit id="sig.origin.fetched">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:307</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:425</note>
       </notes>
       <segment>
         <source>Fetched from <ph id="0" equiv="upstream" disp="from"/></source>
@@ -41823,7 +42225,7 @@
     </unit>
     <unit id="sig.origin.fetched-remote">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:307</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:425</note>
       </notes>
       <segment>
         <source>Fetched from the remote&apos;s upstream</source>
@@ -41831,7 +42233,7 @@
     </unit>
     <unit id="sig.origin.pipeline">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:311</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:429</note>
       </notes>
       <segment>
         <source>pipeline <ph id="0" equiv="id" disp="o.ci.pipelineId"/></source>
@@ -41839,7 +42241,7 @@
     </unit>
     <unit id="sig.origin.ci">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:314</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:432</note>
       </notes>
       <segment>
         <source>Uploaded by CI job <ph id="0" equiv="job" disp="parts"/></source>
@@ -41847,7 +42249,7 @@
     </unit>
     <unit id="sig.origin.service-account">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:318</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:436</note>
       </notes>
       <segment>
         <source>Uploaded by the service account <ph id="0" equiv="name" disp="name"/></source>
@@ -41855,7 +42257,7 @@
     </unit>
     <unit id="sig.origin.anonymous">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:320</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:438</note>
       </notes>
       <segment>
         <source>Uploaded without signing in</source>
@@ -41863,7 +42265,7 @@
     </unit>
     <unit id="sig.origin.user">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-words.ts:322</note>
+        <note category="location">src/app/shared/signatures/signature-words.ts:440</note>
       </notes>
       <segment>
         <source>Uploaded by <ph id="0" equiv="name" disp="name"/></source>

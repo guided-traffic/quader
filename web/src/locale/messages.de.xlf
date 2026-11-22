@@ -47841,5 +47841,447 @@
         <target>Signaturprüfung dieses Repositorys</target>
       </segment>
     </unit>
+    <unit id="signing.backlog.idle">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:135,137</note>
+      </notes>
+      <segment>
+        <source>Nothing waits to be signed.</source>
+        <target>Nichts wartet auf die Signatur.</target>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.due">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:138</note>
+      </notes>
+      <segment>
+        <source>Waiting to be signed:</source>
+        <target>Warten auf die Signatur:</target>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.npm">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:139,140</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 npm version} other {<ph id="0" equiv="INTERPOLATION"/> npm versions}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 npm-Version} other {<ph id="0" equiv="INTERPOLATION"/> npm-Versionen}}</target>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.and">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:140</note>
+      </notes>
+      <segment>
+        <source>and</source>
+        <target>und</target>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.receipts">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:141,142</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 receipt attestation} other {<ph id="0" equiv="INTERPOLATION"/> receipt attestations}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Empfangsattestierung} other {<ph id="0" equiv="INTERPOLATION"/> Empfangsattestierungen}}</target>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.oldest">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:142</note>
+      </notes>
+      <segment>
+        <source>the oldest since</source>
+        <target>die älteste seit</target>
+      </segment>
+    </unit>
+    <unit id="signing.backlog.failed">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:145,147</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 reached its last attempt; the job tries again once a day.} other {<ph id="0" equiv="INTERPOLATION"/> reached their last attempt; the job tries again once a day.}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Eintrag hat seinen letzten Versuch erreicht; der Job versucht es einmal am Tag erneut.} other {<ph id="0" equiv="INTERPOLATION"/> Einträge haben ihren letzten Versuch erreicht; der Job versucht es einmal am Tag erneut.}}</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.identity">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:194,196</note>
+        <note category="location">src/app/shared/signatures/signature-report.html:357,359</note>
+      </notes>
+      <segment>
+        <source>Signing identity</source>
+        <target>Signaturidentität</target>
+      </segment>
+    </unit>
+    <unit id="sig.attestations-only">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:265,268</note>
+      </notes>
+      <segment>
+        <source>Attestations</source>
+        <target>Attestierungen</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.issued">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:276,277</note>
+      </notes>
+      <segment>
+        <source>Issued</source>
+        <target>Ausgestellt</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.malware">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:279,280</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.released">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:283,285</note>
+      </notes>
+      <segment>
+        <source>· released by a security administrator</source>
+        <target>· von einer Sicherheitsadministration freigegeben</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.scanned">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:287</note>
+      </notes>
+      <segment>
+        <source>scanned</source>
+        <target>geprüft</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.served">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:293,294</note>
+      </notes>
+      <segment>
+        <source>Served</source>
+        <target>Ausgeliefert</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.download">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:316,319</note>
+      </notes>
+      <segment>
+        <source>Download attestation</source>
+        <target>Attestierung herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.database">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:327,329</note>
+      </notes>
+      <segment>
+        <source>Signature database</source>
+        <target>Signaturdatenbank</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vulnerabilities">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:335,337</note>
+      </notes>
+      <segment>
+        <source>Vulnerabilities</source>
+        <target>Schwachstellen</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.advisories">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:340</note>
+      </notes>
+      <segment>
+        <source>advisories of</source>
+        <target>Advisories vom</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.signatures">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:344,346</note>
+      </notes>
+      <segment>
+        <source>Signatures it names</source>
+        <target>Genannte Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.signatures-none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:349,351</note>
+      </notes>
+      <segment>
+        <source>None</source>
+        <target>Keine</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.omitted">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-report.html:352,353</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more left out at the bound} other {and <ph id="0" equiv="INTERPOLATION"/> more left out at the bound}}</source>
+        <target>{VAR_PLURAL, plural, =1 {und 1 weitere, an der Grenze weggelassen} other {und <ph id="0" equiv="INTERPOLATION"/> weitere, an der Grenze weggelassen}}</target>
+      </segment>
+    </unit>
+    <unit id="sig.state.no-publisher">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:96</note>
+      </notes>
+      <segment>
+        <source>No signature of the publisher</source>
+        <target>Keine Signatur des Herausgebers</target>
+      </segment>
+    </unit>
+    <unit id="sig.sentence.no-publisher">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:97</note>
+      </notes>
+      <segment>
+        <source>What is listed below confirms where the artifact was published or received, not who built it.</source>
+        <target>Was unten steht, bestätigt, wo das Artefakt veröffentlicht oder empfangen wurde, nicht, wer es gebaut hat.</target>
+      </segment>
+    </unit>
+    <unit id="sig.kind.registry-own">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:152</note>
+      </notes>
+      <segment>
+        <source>Origin confirmed by registry · this installation</source>
+        <target>Herkunft von der Registry bestätigt · diese Installation</target>
+      </segment>
+    </unit>
+    <unit id="sig.kind.receipt">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:155</note>
+      </notes>
+      <segment>
+        <source>Receipt attestation by this installation</source>
+        <target>Empfangsattestierung dieser Installation</target>
+      </segment>
+    </unit>
+    <unit id="sig.issued.receipt-retired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:173</note>
+      </notes>
+      <segment>
+        <source>Made with a signing identity an administrator retired, so it is no longer served. Quader makes it again with the current identity.</source>
+        <target>Mit einer Signaturidentität erstellt, die eine Administration außer Dienst gestellt hat; sie wird daher nicht mehr ausgeliefert. Quader erstellt sie mit der aktuellen Identität neu.</target>
+      </segment>
+    </unit>
+    <unit id="sig.issued.receipt">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:174</note>
+      </notes>
+      <segment>
+        <source>This installation&apos;s signed record of when it received the artifact, from where, and what its checks said then. It is not a signature of the publisher.</source>
+        <target>Die signierte Aufzeichnung dieser Installation, wann sie das Artefakt empfangen hat, woher, und was ihre Prüfungen damals sagten. Sie ist keine Signatur des Herausgebers.</target>
+      </segment>
+    </unit>
+    <unit id="sig.issued.registry-retired">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:177</note>
+      </notes>
+      <segment>
+        <source>Signed with a signing identity an administrator retired, so npm no longer gets it. Quader signs the version again with the current identity.</source>
+        <target>Mit einer Signaturidentität signiert, die eine Administration außer Dienst gestellt hat; npm erhält sie daher nicht mehr. Quader signiert die Version mit der aktuellen Identität neu.</target>
+      </segment>
+    </unit>
+    <unit id="sig.issued.registry">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:178</note>
+      </notes>
+      <segment>
+        <source>This installation signed the version with its signing identity, and npm audit signatures checks it against this repository&apos;s keys. It confirms where the version was published, not who built it.</source>
+        <target>Diese Installation hat die Version mit ihrer Signaturidentität signiert, und npm audit signatures prüft sie gegen die Schlüssel dieses Repositorys. Sie bestätigt, wo die Version veröffentlicht wurde, nicht, wer sie gebaut hat.</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.malware-off">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:185</note>
+      </notes>
+      <segment>
+        <source>Not scanned: the malware scan is off</source>
+        <target>Nicht geprüft: die Malware-Prüfung ist aus</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.malware-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:187</note>
+      </notes>
+      <segment>
+        <source>No verdict yet when it was issued</source>
+        <target>Noch kein Ergebnis, als sie ausgestellt wurde</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-none">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:201</note>
+      </notes>
+      <segment>
+        <source>Grade <ph id="0" equiv="grade" disp="grade"/>, no open finding</source>
+        <target>Note <ph id="0" equiv="grade" disp="grade"/>, kein offener Befund</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-open">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:202</note>
+      </notes>
+      <segment>
+        <source>Grade <ph id="0" equiv="grade" disp="grade"/>, <ph id="1" equiv="count" disp="open"/> open findings</source>
+        <target>Note <ph id="0" equiv="grade" disp="grade"/>, <ph id="1" equiv="count" disp="open"/> offene Befunde</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:206</note>
+      </notes>
+      <segment>
+        <source>Not evaluated yet when it was issued</source>
+        <target>Noch nicht bewertet, als sie ausgestellt wurde</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-internal">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:208</note>
+      </notes>
+      <segment>
+        <source>An internal package: public advisories do not apply</source>
+        <target>Ein internes Paket: öffentliche Advisories gelten nicht</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-failed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:210</note>
+      </notes>
+      <segment>
+        <source>The image&apos;s scan had failed</source>
+        <target>Der Scan des Images war fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.vuln-not-covered">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:212</note>
+      </notes>
+      <segment>
+        <source>Not covered by the vulnerability scanning</source>
+        <target>Nicht von der Schwachstellenprüfung erfasst</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.served-referrer">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:219</note>
+      </notes>
+      <segment>
+        <source>As a referrer of the image</source>
+        <target>Als Referrer des Images</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.served-api">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:220</note>
+      </notes>
+      <segment>
+        <source>Through the API</source>
+        <target>Über die API</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.reason-referrer">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:225</note>
+      </notes>
+      <segment>
+        <source>cosign and a cluster&apos;s policy engine find it beside the image.</source>
+        <target>cosign und die Policy-Engine eines Clusters finden sie neben dem Image.</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.reason-hides">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:228</note>
+      </notes>
+      <segment>
+        <source>The image carries an older cosign signature, which cosign stops reading once a referrer stands beside it.</source>
+        <target>Das Image trägt eine ältere cosign-Signatur, die cosign nicht mehr liest, sobald ein Referrer daneben steht.</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.reason-remote">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:230</note>
+      </notes>
+      <segment>
+        <source>A remote or virtual repository holds the image, and Quader adds no referrer of its own there.</source>
+        <target>Ein Remote- oder virtuelles Repository hält das Image, und Quader fügt dort keinen eigenen Referrer hinzu.</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-valid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:240</note>
+      </notes>
+      <segment>
+        <source>matched the content</source>
+        <target>passte zum Inhalt</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-invalid">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:242</note>
+      </notes>
+      <segment>
+        <source>did not match the content</source>
+        <target>passte nicht zum Inhalt</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-no-key">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:244</note>
+      </notes>
+      <segment>
+        <source>no key known</source>
+        <target>kein Schlüssel bekannt</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-pending">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:246</note>
+      </notes>
+      <segment>
+        <source>not checked yet</source>
+        <target>noch nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-unsupported">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:248</note>
+      </notes>
+      <segment>
+        <source>scheme not supported</source>
+        <target>Verfahren nicht unterstützt</target>
+      </segment>
+    </unit>
+    <unit id="sig.receipt.integrity-malformed">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:250</note>
+      </notes>
+      <segment>
+        <source>could not be read</source>
+        <target>konnte nicht gelesen werden</target>
+      </segment>
+    </unit>
+    <unit id="sig.time.issued">
+      <notes>
+        <note category="location">src/app/shared/signatures/signature-words.ts:363</note>
+      </notes>
+      <segment>
+        <source>by this installation&apos;s signing identity</source>
+        <target>mit der Signaturidentität dieser Installation</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

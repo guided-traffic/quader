@@ -121,7 +121,11 @@
             }
           </dd>
         }
-        @if (!e.signer && !e.identity && (e.fingerprint || e.keyId)) {
+        @if (e.issuedBy && e.keyId) {
+          <!-- Quader's npm signature (R-SIG-056): the key ID npm's keys endpoint lists, as the section Signing identity names it. -->
+          <dt i18n="@@signing.fact.keyid">npm key ID</dt>
+          <dd><code class="sig-text" translate="no">{{ e.keyId }}</code></dd>
+        } @else if (!e.signer && !e.identity && (e.fingerprint || e.keyId)) {
           <dt i18n="@@sig.fact.key">Key</dt>
           <dd><code class="sig-text" translate="no">{{ e.fingerprint ?? e.keyId }}</code></dd>
         }
@@ -186,6 +190,13 @@
             <dt i18n="@@sig.tech.algorithm">Algorithm</dt>
             <dd translate="no">{{ algorithms(e) }}</dd>
           }
+          @if (e.issuedBy; as by) {
+            <dt i18n="@@sig.receipt.identity">Signing identity</dt>
+            <dd>
+              <span class="sig-line sig-text" translate="no">{{ by.subject }}</span>
+              <code class="sig-line sig-text muted" translate="no">{{ by.fingerprint }}</code>
+            </dd>
+          }
           @if (e.serial; as serial) {
             <dt i18n="@@sig.tech.serial">Serial</dt>
             <dd><code class="sig-text" translate="no">{{ serial }}</code></dd>
@@ -248,9 +259,126 @@
   }
 
   @if (r.attestations.length > 0) {
-    <p class="sig-heading" role="heading" [attr.aria-level]="level()" i18n="@@sig.attestations">Attestations and SBOMs</p>
+    @if (otherAttestations().length > 0) {
+      <p class="sig-heading" role="heading" [attr.aria-level]="level()" i18n="@@sig.attestations">Attestations and SBOMs</p>
+    } @else {
+      <p class="sig-heading" role="heading" [attr.aria-level]="level()" i18n="@@sig.attestations-only">Attestations</p>
+    }
+  }
+  <!-- Quader's own receipt (R-SIG-056): its issue time, the malware state it names, where it is served, and its download; never a badge (Q-SIG-1). -->
+  @for (e of receipts(); track e.id; let i = $index) {
+    <article class="sig-entry sig-receipt" [attr.aria-labelledby]="'sig-receipt-' + e.id + '-' + i" data-testid="signature-receipt">
+      <p class="sig-kind" role="heading" [attr.aria-level]="entryLevel()" [id]="'sig-receipt-' + e.id + '-' + i">
+        <span class="sig-kind-name">{{ kind(e) }}</span>
+      </p>
+      <p class="sig-sentence">{{ entrySentence(e) }}</p>
+      <dl class="facts">
+        <dt i18n="@@sig.receipt.issued">Issued</dt>
+        <dd><time [attr.datetime]="issuedAt(e)">{{ issuedAt(e) | date: 'medium' }}</time></dd>
+        @if (e.attestation; as att) {
+          <dt i18n="@@sig.receipt.malware">Malware scan</dt>
+          <dd data-testid="signature-receipt-malware">
+            {{ malwareWords(att.malware.state) }}
+            @if (att.malware.released) {
+              &ngsp;<span class="muted" i18n="@@sig.receipt.released">· released by a security administrator</span>
+            }
+            @if (att.malware.scannedAt; as scanned) {
+              <span class="sig-line muted"
+                ><ng-container i18n="@@sig.receipt.scanned">scanned</ng-container>&ngsp;<time [attr.datetime]="scanned">{{ scanned | date: 'medium' }}</time></span
+              >
+            }
+          </dd>
+        }
+        @if (e.servedAs) {
+          <dt i18n="@@sig.receipt.served">Served</dt>
+          <dd data-testid="signature-receipt-served">
+            {{ served(e) }}
+            @if (servedReason(e); as why) {
+              <span class="sig-line muted">{{ why }}</span>
+            }
+          </dd>
+        }
+        @if (e.platform; as platform) {
+          <dt i18n="@@sig.fact.platform">Platform</dt>
+          <dd translate="no">{{ platform }}</dd>
+        }
+        @if (format() !== 'oci' && severalFiles() && e.path; as path) {
+          <dt i18n="@@sig.fact.file">File</dt>
+          <dd class="sig-text" translate="no">{{ path }}</dd>
+        }
+        @if (showRepository()) {
+          <dt i18n="@@sig.fact.repository">Repository</dt>
+          <dd translate="no">{{ e.repository }}</dd>
+        }
+      </dl>
+      @if (receiptDownload(e); as href) {
+        <p class="sig-actions">
+          <a class="btn btn-tertiary" [href]="href" download i18n="@@sig.receipt.download">Download attestation</a>
+        </p>
+      }
+      <quader-disclosure class="sig-technical" [inline]="true" [heading]="technicalHeading">
+        <dl class="facts">
+          @if (e.attestation; as att) {
+            <dt i18n="@@sig.tech.received">Received by Quader</dt>
+            <dd><time [attr.datetime]="att.receivedAt">{{ att.receivedAt | date: 'medium' }}</time></dd>
+            <dt i18n="@@sig.origin">Origin</dt>
+            <dd class="sig-text" translate="no">{{ originText(att.origin) }}</dd>
+            @if (att.malware.database; as db) {
+              <dt i18n="@@sig.receipt.database">Signature database</dt>
+              <dd>
+                <code class="sig-text" translate="no">{{ db }}</code>
+                @if (att.malware.databaseBuiltAt; as built) {
+                  &ngsp;<span class="muted">· <time [attr.datetime]="built">{{ built | date: 'medium' }}</time></span>
+                }
+              </dd>
+            }
+            <dt i18n="@@sig.receipt.vulnerabilities">Vulnerabilities</dt>
+            <dd>
+              {{ vulnerabilityWords(att.vulnerabilities) }}
+              @if (att.vulnerabilities.dataAt; as data) {
+                <span class="sig-line muted"
+                  ><ng-container i18n="@@sig.receipt.advisories">advisories of</ng-container>&ngsp;<time [attr.datetime]="data">{{ data | date: 'medium' }}</time></span
+                >
+              }
+            </dd>
+            <dt i18n="@@sig.receipt.signatures">Signatures it names</dt>
+            <dd>
+              @for (s of att.signatures; track $index) {
+                <span class="sig-line sig-text">{{ receiptSignatureLine(s) }}</span>
+              } @empty {
+                <span class="muted" i18n="@@sig.receipt.signatures-none">None</span>
+              }
+              @if (att.signaturesOmitted > 0) {
+                <span class="sig-line muted" i18n="@@sig.receipt.omitted">{att.signaturesOmitted, plural, =1 {and 1 more left out at the bound} other {and {{ att.signaturesOmitted }} more left out at the bound}}</span>
+              }
+            </dd>
+          }
+          @if (e.issuedBy; as by) {
+            <dt i18n="@@sig.receipt.identity">Signing identity</dt>
+            <dd>
+              <span class="sig-line sig-text" translate="no">{{ by.subject }}</span>
+              <code class="sig-line sig-text muted" translate="no">{{ by.fingerprint }}</code>
+            </dd>
+          }
+          @if (e.predicateType; as pt) {
+            <dt i18n="@@sig.tech.predicate">Predicate</dt>
+            <dd class="sig-text" translate="no">{{ pt }}</dd>
+          }
+          <dt i18n="@@sig.tech.size">Size</dt>
+          <dd>{{ size(e.size) }}</dd>
+          <dt i18n="@@sig.tech.attached">Attached at</dt>
+          <dd>
+            @for (a of e.attachments; track $index) {
+              <span class="sig-line sig-text" translate="no">{{ a.repository }} · {{ a.location }}</span>
+            }
+          </dd>
+        </dl>
+      </quader-disclosure>
+    </article>
+  }
+  @if (otherAttestations().length > 0) {
     <quader-data-table class="sig-attestations" [caption]="attestationCaption" [columns]="attestationColumns" [empty]="false">
-      @for (a of r.attestations; track a.id) {
+      @for (a of otherAttestations(); track a.id) {
         <tr>
           <th scope="row" class="wrap-name" translate="no">{{ a.type }}</th>
           <td translate="no">

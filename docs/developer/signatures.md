@@ -378,9 +378,10 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 Stage 2 of [signatures.md](../spec/signatures.md#quader-signs-stage-2) (R-SIG-044 to R-SIG-060, [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker))
 is built in four packages: (1) the signing identity with its chart, its API, events, metrics and alerts, and the frame of the job
 `signing` (built, below); (2) npm's registry signatures of local versions and the local keys endpoint (built, below); (3) the receipt
-attestations with the contract's `AttestationSubjects` (built, below); (4) the screens, of which the section **Signing identity** of the
-admin area is built (below). The decisions of package 1 are Q-SIG-145 to Q-SIG-155, those of package 2 Q-SIG-156 to Q-SIG-163, those of the
-section Q-SIG-170 to Q-SIG-176, those of package 3 Q-SIG-180 to Q-SIG-191.
+attestations with the contract's `AttestationSubjects` (built, below); (4) the screens: the section **Signing identity** of the admin area
+and Quader's own signatures in the details of a version, a file and an image (both built, below). The decisions of package 1 are Q-SIG-145
+to Q-SIG-155, those of package 2 Q-SIG-156 to Q-SIG-163, those of the section Q-SIG-170 to Q-SIG-176, those of package 3 Q-SIG-180 to
+Q-SIG-191, those of the second half of the screens Q-SIG-233 to Q-SIG-239.
 
 ### What has to be in your head first
 
@@ -472,7 +473,7 @@ signatures answers); the decisions are Q-SIG-156 to Q-SIG-163 of the specificati
 | A signature of Quader's in stage 1's store (`RecordIssued`, `DetachRetiredIssued`, `SourceIssued`); the batches and the trust job leave it alone; the views name the identity (`View.IssuedBy`) | [store/issued.go](../../internal/signatures/store/issued.go), [queries/signatures.sql](../../internal/meta/postgres/queries/signatures.sql) `SignatureReplaceAttachments`, [queries/signature_trust.sql](../../internal/meta/postgres/queries/signature_trust.sql) `SignatureTrustBatch`, `SignatureViews` |
 | The documents' `dist.signatures` and the keys of a local and a virtual repository | [npm.md](npm.md#signatures-signaturesmd-r-sig-028) |
 | The API's `source: "issued"` and `issuedBy` | [http-api.md](http-api.md#the-operations-of-signatures-r-sig-034), [signatures_views.go](../../internal/api/v1/signatures_views.go) |
-| The tab **Signatures** of a version until the second half of the screens: an `issuedBy` entry reads "Origin confirmed by registry" with its key and carries no badge of its own (Q-SIG-1) | [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) `entryBadgeState`; the fake `issuedNpmEntry` ([fakes-signatures.ts](../../web/src/app/api/testing/fakes-signatures.ts)) |
+| The tab **Signatures** of a version: an `issuedBy` entry carries no badge of its own (Q-SIG-1); its words are the second half of the screens' (below) | [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) `entryBadgeState`; the fake `issuedNpmEntry` ([fakes-signatures.ts](../../web/src/app/api/testing/fakes-signatures.ts)) |
 | The wiring: the kind on the roles that run jobs (`npmSigningKind`), the npm data port's `RegistrySigning` (`npmSigningPort`: the keys from the snapshot, the work of a publish) | [app/wire_signing.go](../../internal/app/wire_signing.go), [app/wire_formats.go](../../internal/app/wire_formats.go) |
 | Migration 00103: the source `issued`, `signing_settings.served` | [database.md](database.md#npms-registry-signatures-00103) |
 
@@ -533,8 +534,8 @@ once per page load and after each write, and decides every state from that answe
 | Web unit | [signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts): without an identity as the writer (with axe) and read-only; a pending key, its request and **Discard**; an upload with the amber validity, **Replace**, **Remove** and **Retire** with the spec's question; the red "expired" read-only; the Helm values with a refused pair; the key request's defaults and a refused chain under its field | seven cases, about 0.3 s (1.3 s with the file's start) | the fake's answers |
 | Renders | `admin-settings-signing`: five states as the administrator, four as the auditor, at three widths and in both schemes (54 pictures) | 48 s and 39 s of a browser (measured on 2026-11-21 on a shared machine), about 30 s of the job `ui-layout` at its three workers | answers changed in the browser |
 
-What follows with the second half of package 4: Quader's npm signature and its attestation in the details of a version and a file
-(R-SIG-056, the second bullet). The client setup's tab **Verify** is package 3's (below).
+Quader's npm signature and its receipt in the details of a version and a file are the second half of package 4 (below), which also gave
+the section its backlog line. The client setup's tab **Verify** is package 3's (below).
 
 ### Package 3: the receipt attestations (built)
 
@@ -600,6 +601,28 @@ What every leg gains: the unit run under 0.1 s of test time and about 4.3 s of t
 shard took 32.8 minutes in its first run on 2026-11-22, `signing` and `signatures` among its areas); `e2e (oci)`
 about 6 s and the copy of the cosign binary (136 MB) onto its control-plane node, 1.3 to 4.8 s ([Q-SIG-192](../spec/signatures.md#q-sig-192--cosign-reaches-the-set-oci-alone-as-its-binary-copied-onto-the-control-plane-node)); `oci-closing` and `oci-long` nothing. With 25 formats: 25 kit cases more; no leg loads another format's
 client.
+
+### Package 4, second half: Quader's own signatures at an artifact (built)
+
+What a person sees at an artifact of what Quader itself signed (R-SIG-055's three members, R-SIG-056's second bullet; the decisions
+Q-SIG-233 to Q-SIG-239). No signature or receipt is made, stored or served differently: the answers read what packages 2 and 3 store.
+
+| What | Where |
+|---|---|
+| The statement read back (`statement.Read`, `Build`'s inverse within the bounds) and the payload of a bundle (`bundle.Payload`) | [statement.go](../../internal/signing/statement/statement.go), [bundle.go](../../internal/signing/bundle/bundle.go) |
+| The bundle and where it is served, for an issued signature alone: `SignatureViews` joins `signing_attestations` (`issued_bundle`, `served_as`, `served_reason`); `View.Receipt` | [queries/signature_trust.sql](../../internal/meta/postgres/queries/signature_trust.sql), [store/views.go](../../internal/signatures/store/views.go), [records.go](../../internal/signatures/records.go) |
+| The members `attestation` (`SignatureReceipt`), `servedAs` and `servedReason` of a signatures answer's entry | [signatures_receipt.go](../../internal/api/v1/signatures_receipt.go), called by `sigEntry` of [signatures_views.go](../../internal/api/v1/signatures_views.go); [http-api.md](http-api.md#the-operations-of-signatures-r-sig-034) |
+| The words: "Origin confirmed by registry · this installation", "Receipt attestation by this installation", the sentences of an issued entry and of a retired one, the malware and vulnerability states a receipt names, where it is served and why, an integrity state in a few words, "No signature of the publisher" | [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) `entryKind`, `isReceipt`, `issuedSentence`, `receiptMalwareWords`, `receiptVulnerabilityWords`, `servedWords`, `servedReasonWords`, `receiptIntegrityWords`, `noPublisherSignature` |
+| The details: Quader's npm signature with its **npm key ID**; the receipt as a block under **Attestations** with **Issued**, **Malware scan**, **Served**, **Download attestation** (`attestationUrl` of [signatures-api.ts](../../web/src/app/api/signatures-api.ts)) and the rest of its statement in **Technical details**; the others' attestations in their table | [signature-report.html](../../web/src/app/shared/signatures/signature-report.html), [signature-report.ts](../../web/src/app/shared/signatures/signature-report.ts); the fake `issuedReceiptEntry` |
+| The section's backlog line | [signing-identity.html](../../web/src/app/features/settings/signing-identity.html), `backlog` of [signing-identity.ts](../../web/src/app/features/settings/signing-identity.ts) |
+| The renders: the states `issued` of `package-version-signatures`, `receipt` and `untrusted` of `package-version-signatures-oci`, `details` of `files-signatures`, `upload` and `helm` of `admin-settings-signing`; the profile's real answers changed in the browser, no row written by SQL (Q-SIG-237) | [renders/receipts.ts](../../web/e2e/renders/receipts.ts), [renders/signing.ts](../../web/e2e/renders/signing.ts), [renders/screens.ts](../../web/e2e/renders/screens.ts) |
+
+| Tier | What | Run time | Data |
+|---|---|---|---|
+| Unit | `internal/signing/statement`: `Read` over the five golden cases and four refusals; `internal/signing/bundle`: `Payload` of a signed bundle and four refusals; `internal/api/v1`: `TestR_SIG_055_QuadersReceiptInTheSignaturesAnswers`, four subtests validated against the API document with `specDocument` | milliseconds each; the API test 0.03 s in the job's mode after the package's shared parse (measured 2026-11-22 at a load of 17 to 27) | the golden facts, a bundle of about 2.5 KiB |
+| Web unit | four cases in [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts) (one with axe), one in [signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts) | about 0.25 s of test time | the fakes' answers |
+| Integration | area `signing`, `TestR_SIG_054_…`: the local image's receipt answers `servedAs` `referrer` and its decoded statement, then `api` with `hides_signature` after the older signature tag | two calls more, under 0.1 s, shard `d` | the test's manifests of bytes |
+| Renders | two states more (`issued`, `receipt`), four existing states changed: 12 pictures more | see [web-ui.md](web-ui.md#the-signatures-screens) | answers changed in the browser |
 
 ## Measured with real clients
 

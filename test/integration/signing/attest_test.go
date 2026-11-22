@@ -303,8 +303,15 @@ func (f *attestFixture) gateIgnoresTheReceipt(img [32]byte) {
 		State        string `json:"state"`
 		Signatures   []json.RawMessage
 		Attestations []struct {
-			Role     string          `json:"role"`
-			IssuedBy json.RawMessage `json:"issuedBy"`
+			Role        string          `json:"role"`
+			IssuedBy    json.RawMessage `json:"issuedBy"`
+			ServedAs    string          `json:"servedAs"`
+			Attestation *struct {
+				IssuedAt string `json:"issuedAt"`
+				Malware  struct {
+					State string `json:"state"`
+				} `json:"malware"`
+			} `json:"attestation"`
 		}
 		Gate *struct {
 			Decision string          `json:"decision"`
@@ -317,6 +324,9 @@ func (f *attestFixture) gateIgnoresTheReceipt(img [32]byte) {
 		len(rep.Attestations[0].IssuedBy) == 0 || string(rep.Attestations[0].IssuedBy) == "null" {
 		f.t.Errorf("the file's answer shows Quader's receipt as a publisher's signature: state %q, %d signatures, attestations %+v",
 			rep.State, len(rep.Signatures), rep.Attestations)
+	} else if a := rep.Attestations[0]; a.ServedAs != "referrer" || a.Attestation == nil || a.Attestation.IssuedAt == "" || a.Attestation.Malware.State == "" {
+		// R-SIG-055: the decoded statement of the bundle the store keeps, and where the job serves it, read through SignatureViews.
+		f.t.Errorf("the file's answer does not say what the receipt says and where it is served: %+v %+v", a.ServedAs, a.Attestation)
 	}
 	if g := rep.Gate; g == nil || g.Decision != "refused" || g.Reason == nil || *g.Reason != "missing" || (len(g.PassedBy) != 0 && string(g.PassedBy) != "null") {
 		f.t.Errorf("the member gate passed the image on Quader's receipt: %+v", g)
@@ -410,5 +420,15 @@ func TestR_SIG_054_AnImagesAttestationIsAReferrerUntilAnOlderSignatureTagArrives
 	}
 	if raw := f.attestation("docker-local", "app/_manifests/"+dg(img)); raw == nil {
 		t.Error("the API does not serve the image's bundle once its referrer went")
+	}
+	var rep struct {
+		Attestations []struct {
+			ServedAs     string `json:"servedAs"`
+			ServedReason string `json:"servedReason"`
+		}
+	}
+	unmarshal(t, f.call("GET", "/api/v1/projects/"+testenv.DefaultProject+"/repositories/docker-local/signatures?path="+url.QueryEscape("app/_manifests/"+dg(img)), f.admin, nil, http.StatusOK), &rep)
+	if len(rep.Attestations) != 1 || rep.Attestations[0].ServedAs != "api" || rep.Attestations[0].ServedReason != "hides_signature" {
+		t.Errorf("the file's answer does not say that the receipt is served through the API and why: %+v", rep.Attestations)
 	}
 }

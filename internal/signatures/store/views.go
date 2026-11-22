@@ -68,6 +68,9 @@ func (s *Store) Views(ctx context.Context, vq signatures.ViewQuery) ([]signature
 					Identity: r.IdentityID, Subject: r.IdentitySubject, Fingerprint: hex.EncodeToString(r.IdentityCertSha256), State: r.IdentityState,
 				}
 			}
+			if r.ServedAs != "" {
+				v.Receipt = &signatures.Receipt{Bundle: r.IssuedBundle, ServedAs: r.ServedAs, Reason: r.ServedReason}
+			}
 			out = append(out, v)
 		}
 		return nil

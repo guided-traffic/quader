@@ -11,6 +11,8 @@ export type SignatureBadgeState = Schema<'SignatureBadgeState'>;
 /** The member `signatures` of a stored file, a version's file, a version and a row of the version list (R-SIG-034). */
 export type SignatureStatus = Schema<'SignatureStatus'>;
 export type SignatureEntry = Schema<'SignatureEntry'>;
+/** What Quader's receipt attestation says, decoded from its statement (R-SIG-051, R-SIG-055). */
+export type SignatureReceipt = Schema<'SignatureReceipt'>;
 export type SignatureRole = Schema<'SignatureRole'>;
 export type SignatureScheme = Schema<'SignatureScheme'>;
 export type SignatureIntegrityState = Schema<'SignatureIntegrityState'>;
@@ -87,6 +89,14 @@ export interface LoadedSignatureSettings {
 /** The entity tag of a resource whose revision is its `version` (`ETag(revision)` of the server: `"<version>"`). */
 export function versionTag(version: number): string {
   return `"${version}"`;
+}
+
+/**
+ * The download of Quader's receipt attestation of a stored file or an image's manifest (R-SIG-054): `GET …/attestation?path=`, read with
+ * the item's permission, from the repository and the location the receipt is attached at.
+ */
+export function attestationUrl(repository: string, path: string): string {
+  return `${repositoryUrl(repository)}/attestation?path=${encodeURIComponent(path)}`;
 }
 
 /**

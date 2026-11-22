@@ -120,6 +120,52 @@ export function issuedNpmEntry(over: Partial<SignatureEntry> = {}): SignatureEnt
   };
 }
 
+/**
+ * The receipt attestation this installation issued of an image's manifest (signatures.md R-SIG-051, R-SIG-055): `source` issued,
+ * `issuedBy` set, the decoded statement in `attestation` (an upload by a pipeline, a provenance, a clean verdict, grade A), served as a
+ * referrer.
+ */
+export function issuedReceiptEntry(over: Partial<SignatureEntry> = {}): SignatureEntry {
+  return {
+    id: 31,
+    role: 'attestation',
+    scheme: 'sigstore-bundle',
+    state: 'valid',
+    reason: null,
+    trust: null,
+    signer: 'CN=Quader signing,O=Example GmbH',
+    issuer: 'CN=Example Code Signing CA',
+    identity: 'https://quader.example.com',
+    keyIds: [],
+    claimedAt: '2026-11-21T08:42:06Z',
+    receivedAt: '2026-11-21T08:42:06Z',
+    log: [],
+    timestamps: [],
+    predicateType: 'https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1',
+    type: 'https://github.com/guided-traffic/quader/blob/main/docs/spec/signatures.md#receipt-attestation-v1',
+    subject: hex('ab12'),
+    repository: 'web/docker-local',
+    source: 'issued',
+    location: 'portal/web/_manifests/sha256:ab12',
+    attachments: [{ repository: 'web/docker-local', source: 'issued', location: 'portal/web/_manifests/sha256:ab12', name: 'portal/web' }],
+    mediaType: 'application/vnd.dev.sigstore.bundle.v0.3+json',
+    size: 2611,
+    original: `/api/v1/signatures/objects/${hex('7e57')}`,
+    issuedBy: { identity: 3, subject: 'CN=Quader signing,O=Example GmbH', fingerprint: hex('ef56'), state: 'current' },
+    attestation: {
+      receivedAt: '2026-11-21T08:42:00Z',
+      issuedAt: '2026-11-21T08:42:06Z',
+      origin: { kind: 'uploaded', principalKind: 'ci', principalName: 'portal-release', ci: { projectPath: 'platform/portal', ref: 'main', pipelineId: '88231', refProtected: true } },
+      signatures: [{ role: 'provenance', scheme: 'sigstore-bundle', integrity: 'valid', identity: 'https://gitlab.example.com/platform/portal//.gitlab-ci.yml@refs/heads/main' }],
+      signaturesOmitted: 0,
+      malware: { state: 'clean', database: 'main-62.daily-27450.bytecode-339', databaseBuiltAt: '2026-11-21T06:10:00Z', scannedAt: '2026-11-21T08:42:04Z', released: false },
+      vulnerabilities: { state: 'evaluated', grade: 'A', counts: { critical: 0, high: 0, medium: 0, low: 2, unknown: 0 }, dataAt: '2026-11-21T04:00:00Z' },
+    },
+    servedAs: 'referrer',
+    ...over,
+  };
+}
+
 /** A version's report in one repository: verified internally by `entries`, unless `over` says otherwise. */
 export function repositoryReport(over: Partial<SignatureRepositoryReport> = {}): SignatureRepositoryReport {
   return {

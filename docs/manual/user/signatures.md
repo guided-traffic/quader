@@ -33,7 +33,9 @@ dashboard.
 The tab **Signatures** of a version, and the section **Signatures** of a file's page, list every signature:
 
 - the kind in plain words: "Publisher signature · Sigstore, keyless", "Provenance attestation", or "Origin confirmed by registry" for a
-  registry's own signature (npm's registry signature, nuget.org's countersignature), which never carries the badge;
+  registry's own signature (npm's registry signature, nuget.org's countersignature), which never carries the badge; "Origin confirmed by
+  registry · this installation" with its **npm key ID** is the signature your installation made of a version of a local npm repository
+  (below);
 - the signer, its identity and the issuer; for a CI job its source, ref and run;
 - when it was signed and what proves it: "proven by the transparency log", "proven by a timestamp", or "received by Quader" when nothing
   proves the time;
@@ -47,6 +49,9 @@ Above the signatures stands where the artifact came from: **Uploaded by** a user
 pipeline <id>" with whether the ref is protected, or **Fetched from** the remote's upstream with the time. Every text a signature carries
 is shown as text.
 
+When an artifact has no badge but the list holds such a registry signature or your installation's receipt, the details say **No signature
+of the publisher**: what is listed confirms where the artifact was published or received, not who built it.
+
 A version held by several repositories lists each of them on its own: a signature pushed to one repository says nothing about the same
 bytes in another. Through a virtual repository the details name the member each signature is attached in.
 
@@ -55,7 +60,7 @@ bytes in another. Through a virtual repository the details name the member each 
 | Format | What you see |
 |---|---|
 | Container images (OCI) | The image's Notation and Sigstore signatures and cosign's older `.sig` signatures, for an index under each platform; apart from them, **Attestations and SBOMs** in a table with their type, platform and size. They are never versions or tags in the image's list |
-| npm | The provenance attestation as the badge's evidence; npm's registry signature as "Origin confirmed by registry" |
+| npm | The provenance attestation as the badge's evidence; npm's registry signature as "Origin confirmed by registry", and in a local repository your installation's own as "Origin confirmed by registry · this installation" |
 | NuGet | The author signature as the badge's evidence; nuget.org's repository countersignature as "Origin confirmed by registry" |
 | Debian | No badge: apt checks the signature of the repository's index, not of the package. The details list the releases whose signed index names the package, with their trust |
 | Ansible Galaxy | A signature a CI job posted for a local version, or the upstream's signatures of a remote version |
@@ -93,6 +98,15 @@ this installation received the bytes of that digest, when, from which uploader o
 the signatures attached to it said, and what the malware scan and the vulnerability evaluation found, each with its date. It says nothing
 about who made the content: that is the publisher's signature above. It is made once the checks have their first verdicts (or after an hour
 with what there is), and again when the malware verdict changes.
+
+**At the artifact**, the tab **Signatures** of a version and the section **Signatures** of a file show it under **Attestations** as
+**Receipt attestation by this installation**, without a badge: when it was **Issued**, the **Malware scan** state it names ("No malware
+found" with the scan's time, or "No verdict yet when it was issued" for one made before the scan answered), where it is **Served** ("As a
+referrer of the image", or "Through the API" with the reason for an image), and **Download attestation**. **Technical details** hold the
+rest of what it says: when Quader received the artifact, from whom or where, the signature database, the vulnerability state with the date
+of its advisories, and the signatures it names with what their check said then. One made with an identity an administrator retired says so
+and offers no download; Quader makes it again with the current identity. A receipt that waits for its checks is not shown until it is
+made.
 
 To check it, open **Set up client** of the repository: the last step, **Verify**, shows the one command for your client. For an image it is
 `cosign verify-attestation` against the image by its digest; for every other artifact the command downloads the file's attestation from

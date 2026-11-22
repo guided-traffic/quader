@@ -5,8 +5,10 @@ import {
   SignatureBlockKind,
   SignatureEntry,
   SignatureOrigin,
+  SignatureReceipt,
   SignatureStatus,
 } from '../../api/signatures-api';
+import { malwareStateWord } from '../malware/malware-words';
 
 /**
  * The words of the signatures (R-SIG-009, R-SIG-035): one place for what each state, role, scheme and anchor is called, so that a
@@ -84,6 +86,18 @@ export function signatureStateSentence(state: SignatureBadgeState): string {
   }
 }
 
+/**
+ * The words of an artifact without a badge whose details still list a signature or a receipt (Q-SIG-235): a registry's signature, this
+ * installation's own, its receipt. "No signature found" above them would contradict the list; they confirm where the artifact was
+ * published or received, never who built it, which is what the badge stands for (Q-SIG-1).
+ */
+export function noPublisherSignature(): { readonly word: string; readonly sentence: string } {
+  return {
+    word: $localize`:@@sig.state.no-publisher:No signature of the publisher`,
+    sentence: $localize`:@@sig.sentence.no-publisher:What is listed below confirms where the artifact was published or received, not who built it.`,
+  };
+}
+
 /** What the format knows, after "No signature found." (R-SIG-009): the kinds that count for the badge, or that it has none. */
 export function knownKindsSentence(kinds: readonly string[] | null): string {
   if (kinds === null) return '';
@@ -121,7 +135,9 @@ export function schemeWords(e: Pick<SignatureEntry, 'scheme' | 'identity' | 'oid
 }
 
 /** The kind of a signature in plain words (R-SIG-035): the role, then the scheme for a publisher's signature. */
-export function entryKind(e: Pick<SignatureEntry, 'role' | 'scheme' | 'identity' | 'oidcIssuer' | 'schemeName'> & { readonly type?: string }): string {
+export function entryKind(
+  e: Pick<SignatureEntry, 'role' | 'scheme' | 'identity' | 'oidcIssuer' | 'schemeName'> & { readonly type?: string; readonly issuedBy?: SignatureEntry['issuedBy'] },
+): string {
   switch (e.role) {
     case 'publisher': {
       const scheme = schemeWords(e);
@@ -131,9 +147,109 @@ export function entryKind(e: Pick<SignatureEntry, 'role' | 'scheme' | 'identity'
     case 'provenance':
       return $localize`:@@sig.kind.provenance:Provenance attestation`;
     case 'registry':
-      return $localize`:@@sig.kind.registry:Origin confirmed by registry`;
+      // Quader's own npm signature of a local version (R-SIG-056): the same role as npmjs's, named as this installation's.
+      return e.issuedBy
+        ? $localize`:@@sig.kind.registry-own:Origin confirmed by registry · this installation`
+        : $localize`:@@sig.kind.registry:Origin confirmed by registry`;
     default:
+      if (e.issuedBy) return $localize`:@@sig.kind.receipt:Receipt attestation by this installation`;
       return e.type ?? schemeWords(e);
+  }
+}
+
+/** Quader's receipt attestation (R-SIG-051): an attestation this installation issued with its signing identity. */
+export function isReceipt(e: Pick<SignatureEntry, 'role' | 'issuedBy'>): boolean {
+  return !!e.issuedBy && e.role === 'attestation';
+}
+
+/**
+ * The sentence of a signature this installation made (R-SIG-056): what it confirms, never that a trust anchor knows its signer, since
+ * Quader checks no signature it made (R-SIG-054); a retired identity's, which is no longer served, says so and what follows.
+ */
+export function issuedSentence(e: Pick<SignatureEntry, 'role' | 'issuedBy'>): string {
+  const retired = e.issuedBy?.state === 'retired';
+  if (e.role === 'attestation') {
+    return retired
+      ? $localize`:@@sig.issued.receipt-retired:Made with a signing identity an administrator retired, so it is no longer served. Quader makes it again with the current identity.`
+      : $localize`:@@sig.issued.receipt:This installation's signed record of when it received the artifact, from where, and what its checks said then. It is not a signature of the publisher.`;
+  }
+  return retired
+    ? $localize`:@@sig.issued.registry-retired:Signed with a signing identity an administrator retired, so npm no longer gets it. Quader signs the version again with the current identity.`
+    : $localize`:@@sig.issued.registry:This installation signed the version with its signing identity, and npm audit signatures checks it against this repository's keys. It confirms where the version was published, not who built it.`;
+}
+
+/** The malware state a receipt names (R-SIG-051): the scan's words for a verdict, and what "not scanned" and "pending" meant then. */
+export function receiptMalwareWords(state: SignatureReceipt['malware']['state']): string {
+  switch (state) {
+    case 'not_scanned':
+      return $localize`:@@sig.receipt.malware-off:Not scanned: the malware scan is off`;
+    case 'pending':
+      return $localize`:@@sig.receipt.malware-pending:No verdict yet when it was issued`;
+    default:
+      return malwareStateWord(state);
+  }
+}
+
+/** The vulnerability state a receipt names (R-SIG-051), as of the date of its advisory data. */
+export function receiptVulnerabilityWords(v: SignatureReceipt['vulnerabilities']): string {
+  switch (v.state) {
+    case 'evaluated': {
+      const grade = v.grade ?? 'N/A';
+      const c = v.counts;
+      const open = c ? c.critical + c.high + c.medium + c.low + c.unknown : 0;
+      return open === 0
+        ? $localize`:@@sig.receipt.vuln-none:Grade ${grade}:grade:, no open finding`
+        : $localize`:@@sig.receipt.vuln-open:Grade ${grade}:grade:, ${open}:count: open findings`;
+    }
+    case 'pending_scan':
+    case 'pending_data':
+      return $localize`:@@sig.receipt.vuln-pending:Not evaluated yet when it was issued`;
+    case 'internal':
+      return $localize`:@@sig.receipt.vuln-internal:An internal package: public advisories do not apply`;
+    case 'scan_failed':
+      return $localize`:@@sig.receipt.vuln-failed:The image's scan had failed`;
+    default:
+      return $localize`:@@sig.receipt.vuln-not-covered:Not covered by the vulnerability scanning`;
+  }
+}
+
+/** Where Quader serves its receipt (R-SIG-054): as a referrer of the image, or through the API. */
+export function servedWords(e: Pick<SignatureEntry, 'servedAs'>): string {
+  return e.servedAs === 'referrer'
+    ? $localize`:@@sig.receipt.served-referrer:As a referrer of the image`
+    : $localize`:@@sig.receipt.served-api:Through the API`;
+}
+
+/** Why an image's receipt is served through the API and not as a referrer (R-SIG-054, Q-SIG-66, Q-SIG-183); empty for other formats. */
+export function servedReasonWords(e: Pick<SignatureEntry, 'servedAs' | 'servedReason'>): string {
+  if (e.servedAs === 'referrer') return $localize`:@@sig.receipt.reason-referrer:cosign and a cluster's policy engine find it beside the image.`;
+  switch (e.servedReason) {
+    case 'hides_signature':
+      return $localize`:@@sig.receipt.reason-hides:The image carries an older cosign signature, which cosign stops reading once a referrer stands beside it.`;
+    case 'no_referrers_api':
+      return $localize`:@@sig.receipt.reason-remote:A remote or virtual repository holds the image, and Quader adds no referrer of its own there.`;
+    default:
+      return '';
+  }
+}
+
+/** The integrity state a receipt names of one signature, in a few words (R-SIG-006): what the check said when it was issued. */
+export function receiptIntegrityWords(integrity: string): string {
+  switch (integrity) {
+    case 'valid':
+      return $localize`:@@sig.receipt.integrity-valid:matched the content`;
+    case 'invalid':
+      return $localize`:@@sig.receipt.integrity-invalid:did not match the content`;
+    case 'no_key':
+      return $localize`:@@sig.receipt.integrity-no-key:no key known`;
+    case 'pending':
+      return $localize`:@@sig.receipt.integrity-pending:not checked yet`;
+    case 'unsupported':
+      return $localize`:@@sig.receipt.integrity-unsupported:scheme not supported`;
+    case 'malformed':
+      return $localize`:@@sig.receipt.integrity-malformed:could not be read`;
+    default:
+      return integrity;
   }
 }
 
@@ -175,6 +291,7 @@ export function signatureReason(reason: string | null): string {
 
 /** The sentence of one signature's state in the details (R-SIG-035); a blocked signer's is the block's own line. */
 export function entrySentence(e: SignatureEntry): string {
+  if (e.issuedBy) return issuedSentence(e);
   switch (e.state) {
     case 'valid':
       if (e.trust?.state === 'public' || e.trust?.state === 'internal') {
@@ -241,8 +358,9 @@ export function certificateWords(
   return end < now ? $localize`:@@sig.cert.expired:expired on ${when}:date:` : $localize`:@@sig.cert.valid-until:valid until ${when}:date:`;
 }
 
-/** What proves the time of a signature (R-SIG-007, R-SIG-035). */
-export function timeProofWords(e: Pick<SignatureEntry, 'timeProof'>): string {
+/** What proves the time of a signature (R-SIG-007, R-SIG-035); a signature this installation made carries its own time. */
+export function timeProofWords(e: Pick<SignatureEntry, 'timeProof'> & { readonly issuedBy?: SignatureEntry['issuedBy'] }): string {
+  if (e.issuedBy) return $localize`:@@sig.time.issued:by this installation's signing identity`;
   switch (e.timeProof) {
     case 'log':
       return $localize`:@@sig.time.log:proven by the transparency log`;

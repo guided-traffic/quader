@@ -17,6 +17,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -72,4 +73,32 @@ func Sign(stmt []byte, key crypto.Signer, leaf []byte) ([]byte, error) {
 		return nil, fmt.Errorf("bundle: %w", err)
 	}
 	return b.MarshalJSON()
+}
+
+// MaxBytes bounds what Payload reads: a statement of statement.MaxBytes in base64 with the leaf and the signature fits in a quarter of it.
+const MaxBytes = 64 << 10
+
+// ErrNotBundle is a bundle Payload does not read: not of MediaType, without a DSSE envelope of an in-toto statement, or above MaxBytes.
+var ErrNotBundle = errors.New("bundle: not a receipt's bundle")
+
+// Payload answers the statement of a bundle Sign made (R-SIG-055): its DSSE envelope's payload, which the API decodes for the screens of
+// a version and a file. It verifies nothing: its caller reads a bundle of its own store, which Sign read back before it was stored.
+func Payload(raw []byte) ([]byte, error) {
+	if len(raw) > MaxBytes {
+		return nil, ErrNotBundle
+	}
+	var b struct {
+		MediaType    string `json:"mediaType"`
+		DSSEEnvelope *struct {
+			Payload     []byte `json:"payload"`
+			PayloadType string `json:"payloadType"`
+		} `json:"dsseEnvelope"`
+	}
+	if err := json.Unmarshal(raw, &b); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrNotBundle, err)
+	}
+	if b.MediaType != MediaType || b.DSSEEnvelope == nil || b.DSSEEnvelope.PayloadType != statement.PayloadType || len(b.DSSEEnvelope.Payload) == 0 {
+		return nil, ErrNotBundle
+	}
+	return b.DSSEEnvelope.Payload, nil
 }
