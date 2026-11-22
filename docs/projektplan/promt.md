@@ -2072,6 +2072,40 @@ runs are in `git log`; this section holds the current state.
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
   machine.
+- **The run of the several connections' landing ended at 20:13 with every job green** (the four
+  integration shards, the layout checks and its end-to-end legs among them; no job was run again).
+- **Package 2 of the encryption, the keys, reported at 20:13 and is in the landing's gates since 20:15**
+  (one commit of the type `feat` on the several connections; its builder worked from 18:44 to 20:13;
+  migration 00107; every gate exits 0, the blob area on its second run: the first failed the test that
+  the store's package does not depend on the coordination, since the keys' package had imported the
+  cluster's package for the change area's name, which it now spells itself with a test that holds the two
+  equal). **Built:** the table of the storage keys with the connection's mark for keyed names, the
+  session's sealed data key and counter, and the stored size and digest of a part; two sealed columns
+  registered with the key ring, so the task that seals the columns again walks five. A connection's keys
+  are drawn at its first sight, and a location that holds objects while the database has no rows for it
+  is refused with the specification's sentence. Each replica holds the keys by identifier, follows the
+  change area and reads the rows again for an unknown identifier, at most once in ten seconds per
+  connection. The operator's commands export, import and start a new generation, each with its audit
+  event. The one function that hands out a blob's data key, with the architecture rule that bounds its
+  callers. **Two replicas that start together draw one key** by the table's uniqueness and no lock: the
+  slower one reads the winner's rows in its own transaction, and a replica commits its rows before it
+  wraps anything (shown against PostgreSQL with both held at the listing). Decisions Q-STOR-324 to 329
+  (the identifier names kind, connection and generation, so a key cannot be moved to another connection;
+  an import inserts missing rows as retired and makes the highest generation active; keys are drawn after
+  the start checks and before readiness, and a draining connection draws none; the rule of the data key's
+  callers reads syntax and reserves the name; a new generation first opens the one it retires with the
+  ring; an export is audited in the transaction that reads it). Gap H-1328: the refusal over a used
+  location lists current objects only and does not see noncurrent versions. **Each defence was taken out
+  once and a named test caught it.** Its cost: the unit job gains about 0.2 s and one package's start, the
+  blob area about 1 s. **Not run by the builder:** the web's lint, tests and a fresh extraction of the
+  translation source, since its worktree has no modules; it had added three labels of the audit filter and
+  their units by hand. The development agent's extraction in the landing worktree leaves the source as
+  the builder wrote it, and the web's lint and tests are among the landing's gates. Not rendered: the
+  three labels are three more lines of the audit filter's list. **Not verified:** any real store; an
+  encrypted connection end to end and a new upload under a new generation, which are package 3's. A
+  plain installation, the owner's, gets the migration with an empty table and five columns and an empty
+  holder at start; its uploads and downloads do not change. A connection with `encrypted: true` stays
+  refused until package 3. Builders with a test load: the stacking, the links, and the landing's gates.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
