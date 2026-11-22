@@ -1629,11 +1629,12 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
-- **In work since 2026-11-22, 08:30: four researches for the topic the owner opened at 08:25,** the encryption
-  and integrity of the stored content, the delivery by signed links, several object stores, a Bastion that
-  reads the bucket, and a hierarchy of keys ("With the owner" holds his words, what the specification says
-  already and what each research reads). No builder runs; nothing of the product changes until he has
-  answered the working paper that follows them. **The walk through the open questions is moved to the evening
+- **The owner's topic of 2026-11-22, 08:25, is researched and its working paper is with him since 09:02:** the
+  encryption and integrity of the stored content, the delivery by signed links, several object stores, a
+  Bastion that reads the bucket, and a hierarchy of keys. Four researches ran from 08:30 and ended at
+  08:42, 08:47, 08:48 and 08:52 ("With the owner" holds his words, what each found, the paper's verdict and
+  the development agent's favourites; two findings of the store's research are in section 8). No builder
+  runs; nothing of the product changes until his answers are read back. **The walk through the open questions is moved to the evening
   by his word of 08:25;** they are listed in their order at the top of "With the owner", the first of them
   (Q-SIG-211) with a finding of that morning: a writer's read through the signature gate is recorded
   nowhere.
@@ -3593,9 +3594,40 @@ that reads the bucket**
   outages of object stores lasted from one hour to more than seven. *Integrity:* an object store's checksums
   cover transport and storage, not who wrote the bytes; versioning and object lock are what stop a credential
   from replacing an object. **Not verified, among others:** the owner's own provider and five other European
-  ones; two rules of signed links that rest on secondary reports; the digest checks of several clients. **Next:** the
-  evaluation as a working paper he answers in, as for the malware scan and the signatures (standing rules): his
-  wishes as read, what is satisfiable and at which price, and the decisions with options and a recommendation each.
+  ones; two rules of signed links that rest on secondary reports; the digest checks of several clients.
+  **The working paper is with him since 09:02** as an interactive page he answers in (standing rules; its storage
+  was written, read and cleared once by the development agent, the page's own writes from a browser were not
+  exercised): his eight wishes as read, each with whether it is satisfiable and at which price; one question to
+  him (which stores his own installation shall get); what exists in Quader and in the encryption proxy, the
+  clients' behaviour on a redirect, recorded outages, and what is not verified; fourteen decisions with options
+  and the development agent's favourite each; a sketch with seven cases today and after the design (a provider's
+  outage, a changed object, a rotation, a lost database, a lost key ring, a Bastion taken over, encryption
+  switched on later); the stages and what the tests cost. **The verdict in it:** all six wishes can be met; two
+  reach their goal more tightly by another way than the one he sketched (the keys per project and repository, the
+  account for the Bastion), and the Bastion at the bucket reverses his decision Q-BAS-10. **The development
+  agent's advice in it:** build the format in Quader after the model of the proxy's segment chain, bound to the
+  content and not to the object name, so that copies in the store, the reconciliation between stores and the
+  backup need no re-encryption; three levels of keys (the existing key ring as the root, a storage key per
+  connection, a data key per blob), so that a rotation of the root touches no object; several connections first,
+  with a row per copy, reads that fall over, and one reconciliation job that is also how encryption is switched
+  on, a provider changed and a damaged copy replaced; signed links as one switch of the installation, only where
+  the format's client verifies a digest itself and no pace limit applies; no account and no key for the Bastion,
+  and if it shall relieve the main installation, a link and the data key per released blob. **The favourites,
+  so that a later reading can tell where he deviated,** each option (a): (1) a format of Quader's own with test
+  vectors, fuzzing and an offline tool, against importing the proxy's package, its codec alone, or extending the
+  proxy first; (2) the wrapped data key in the database and in the object's metadata, bound to the digest, under
+  the connection's storage key; (3) no level of keys per project or repository, with room for one later, against
+  wraps per referencing repository or objects per project; (4) the existing key ring as the root and its existing
+  rotation; (5) on an encrypted connection an object's name is a keyed MAC of the digest; (6) a new connection is
+  not encrypted unless told; (7) a connection's properties are fixed once it holds data, and changing them is a
+  new connection that the reconciliation fills; (8) an upload is done when one connection holds it, a minimum of
+  copies as a detail; (9) connections are kept in the chart, the admin area shows them; (10) a scrub that reads
+  every copy within a period and replaces a damaged one from another connection; (11) the switch for signed
+  links at the installation with its conditions, a repository can opt out; (12) the Bastion stays away from the
+  main store (the handover per blob as the way once it serves images or its first fills are measured to weigh);
+  (13) the Bastion's cache is encrypted in the same format once it has a key; (14) three stages, the connections
+  and the scrub first, encryption second, the links beside the first. **Nothing is specified or built before his
+  answers are read back** ("bitte auslesen").
 
 **A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
 open questions are in the list above**
