@@ -4896,7 +4896,11 @@ the replay destroys keys only of a connection the restoring configuration does n
 configured connection is skipped and reported. What stays of the gap is the early destruction of an
 already retired connection's keys. The writer amends its commit with it. One unit test failed once under a
 load of about 37 in its first full run and passed in the second (a timing check of the Bastion's engine
-for large artifacts, section 8). The commit lands with the Bastion's two packages in one push.
+for large artifacts, section 8). The commit lands with the Bastion's two packages in one push. **Amended at
+23:43** with the decision as Q-HA-417 (an entry for a configured connection is reported as skipped, with its
+note among the replay's warnings, and the restore goes on); it stands as the third commit on the Bastion's
+two in the landing worktree, with the build, the evidence, the links and the tests that read the
+specification through. The writer's worktree and branch are removed.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
