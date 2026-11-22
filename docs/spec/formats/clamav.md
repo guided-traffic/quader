@@ -173,6 +173,11 @@ The routes, all `GET` and `HEAD`, the action `read`, the kind `Metadata` ([Q-CLA
   and `public` a ClamAV installation is also admitted by its client certificate on an endpoint that admits certificates (R-CLAMAV-010).
 - The malware gate never asks about an item of a system repository (R-MAL-013), and the vulnerability block has nothing to block: the
   format has no vulnerability adapter.
+- **Through a Bastion** ([bastion.md](../bastion.md#r-bas-056--the-clamav-definitions-through-a-bastion) R-BAS-056; specified, not
+  built): the endpoint is served to the anonymous caller and to tokens, a container is kept in the Bastion's cache whatever its size,
+  `freshclam`'s check with `Range` and `If-Modified-Since` is answered from it, and the Bastion's own rate-limit refusals of the format
+  are `503`, never `429` (the format's `catalog.Facts.Bastion`). The client certificates of R-CLAMAV-010 do not reach a Bastion
+  ([Q-BAS-176](../bastion.md#q-bas-176--the-clamav-definitions-through-a-bastion-anonymous-and-tokens-no-client-certificate)).
 
 Acceptance criteria: unit (the kit's checks 1, 2, 3, 7, 12 and 13, milliseconds): the two routes and their examples, `daily.cld` and
 `safebrowsing.cvd` unmatched, every content case the same for three callers; integration (area `malware`, about 3 s, a set of test
@@ -380,6 +385,10 @@ option for it, and `freshclam` sends no token and no header of its own (read in 
 - **The client** is set up by R-CLAMAV-006, the variant "With a client certificate".
 - **Another format later** uses the same admission by letting its repositories admit certificate readers; the endpoint key, the
   subject, its rule and its records stay as they are. Nothing of it is built for another format.
+- **Not through a Bastion.** A Bastion's TLS ends at the Bastion and its forward reaches the default endpoint, which admits no
+  certificates; Quader reads no certificate from a header. A ClamAV installation outside the company updates through a Bastion at
+  `public` or with a token, and with its certificate only from this endpoint
+  ([bastion.md](../bastion.md#h-1247--the-certificate-admission-of-the-clamav-definitions-does-not-reach-a-bastion) H-1247).
 
 Acceptance criteria:
 

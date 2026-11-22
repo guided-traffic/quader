@@ -2275,6 +2275,11 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** the family is new to the limits only. Revisit when a second reader needs the registry's repository.
 **Applied in the spec:** R-LIM-005.
 
+*Superseded in part on 2026-11-22:* the Bastion serves `/v2/` since the owner's decision that it serves every format
+([bastion.md](bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051; specified, not built). It is the second reader the
+revisit names, and it calls `ParseRegistryAddress` beside `ParseAddress`, so the choice (a) stands and its "none of them serves `/v2/`"
+no longer holds for the Bastion.
+
 ### Q-LIM-42 · A request's charge travels in its context, not in a field of the remote engine's request
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

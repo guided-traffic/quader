@@ -1731,7 +1731,7 @@ because several blocks are held equal to the code by tests.
 | Deletion by the Galaxy API (`DELETE` of a collection or a version), namespaces (`v3/namespaces/`), collection deprecation, `move`/`copy` between repositories of the Galaxy API | P2 | `ansible-galaxy` does not call them; deletion is the management API's |
 | Signing: Quader-held keys, uploaded signatures, server-side signature verification of a remote's signatures | P2 | H-839; the protocol is ready (`signatures[]`) |
 | Vulnerability evaluation of collections | P2 | H-841; needs an advisory source |
-| Exposure rules and the Bastion for the format | P2 | Q-ANS-25 |
+| Exposure rules for the format | P2 | Q-ANS-25; the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050 (MVP; specified, not built) |
 | Git and URL roles through a proxy; role publish | P2 | Not offered by design (R-ANS-014) |
 | Automation Hub certified content beyond the token exchange (per-repository `content/<repo>/` paths, approval workflows) | P2 | Only the hub as an upstream is specified |
 | Search over collections (`v3/plugin/…/search`, `ansible-galaxy collection list --remote`) | P2 | The client's `search` is for roles and uses `v1/search/roles`, not offered |
@@ -2168,10 +2168,15 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) No exposure adapter; not served on endpoints with exposure rules or through the Bastion (chosen) | As the Debian format | Nothing in F0 asks for them | They wait |
+| (a) No exposure adapter; not served on endpoints with exposure rules or through the Bastion (chosen; the Bastion's part superseded on 2026-11-22, below) | As the Debian format | Nothing in F0 asks for them | They wait |
 | (b) Build them | Complete | Uniform with npm | A design of its own per feature |
 
 **Choice:** (a). **Rationale:** same as Q-DEB-26. Revisit when an endpoint needs Galaxy content.
+
+**Superseded in part on 2026-11-22.** The owner decided that a Bastion serves every format as the main installation does ("Er soll alles
+liefern wie die Hauptinstanz"). The format's routes are served through a Bastion by their kinds like npm's, and `ansible.version.deleted`
+is a `content` entry of the feed ([bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050,
+Q-BAS-175; specified, not built). The statements about exposure rules and vulnerability matching stand.
 
 **Applied in the spec:** Deferred; endpoints.md.
 

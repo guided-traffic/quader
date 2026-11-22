@@ -218,7 +218,9 @@ The registry uses the token flow of the Docker registry token authentication spe
   the token but not by the decision point answers 403 `DENIED`, or 404 `NAME_UNKNOWN` where the repository is hidden
   (R-AUTHZ-016).
 - **Realm.** The realm is built from the response base URL of the endpoint the request arrived on (R-EP-003), so it is
-  reachable under every host the endpoint serves; on a bound host it is that host's own `/v2/_token` (R-EP-007).
+  reachable under every host the endpoint serves; on a bound host it is that host's own `/v2/_token` (R-EP-007). Through a Bastion it
+  is the Bastion's `/v2/_token`, which forwards the token request to this token service ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion)
+  R-BAS-051; specified, not built).
 - **Kubernetes** pulls with an image pull secret whose password is a Quader token (PKG-DOCKER-015); the kubelet's container
   runtime follows the same flow.
 
@@ -1090,7 +1092,9 @@ Priority: **P1** · Covers: PKG-DOCKER-005, PKG-DOCKER-008
   with the image name as sent, the token service and the version check are that host's, and scopes name `<name>` without a
   prefix (R-EP-007). A Docker Engine with `registry-mirrors: ["https://mirror.example.com"]` pulls Docker Hub images through R.
 - The format declares `/v2/` as its bound-host prefix; the core's dispatcher fixes the repository from the binding and runs
-  authorization and exposure on it exactly as for an unbound address.
+  authorization and exposure on it exactly as for an unbound address. A Bastion whose base URL is a bound host serves the mirror too: the
+  handshake names the bound repository ([bastion.md](../bastion.md#r-bas-057--format-facts-at-the-bastion-the-handshakes-format-table-and-bound-hosts)
+  R-BAS-057; specified, not built).
 - A binding to a repository that does not exist or is not of the format behaves as no binding (R-EP-006): the dispatcher reads
   it per request, through the repository reader, in one function (`BoundRepository`) that the match of `/v2/`, the token
   service's scope grammar and the catalog all call, so the address of a request, the scopes of its token and the names of its
@@ -1611,7 +1615,7 @@ R-ARCH-009 by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`):
 | PKG-OCI-018 | P1 | Helm charts in OCI repositories (F5). |
 | Cosign beyond referrers | P1 | Verification and display of Notation, Sigstore and the older cosign layout are specified as stage 1 of [signatures.md](../signatures.md) (R-SIG-023 to R-SIG-027); a policy that refuses is stage 3. |
 | OCI on endpoints with exposure rules | P1 | The format has no exposure adapter yet, so an endpoint with `exposure: rules` does not serve it (R-EP-018, Q-OCI-23). |
-| OCI through the Bastion | P2 | The Bastion's mirrored URL space has no `/v2/` and no token service (Q-OCI-23). |
+| OCI through the Bastion | — | *Superseded on 2026-11-22:* a Bastion serves the registry root and its token flow ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051 to R-BAS-054, MVP; specified, not built). |
 
 ## Security notes
 
@@ -2416,13 +2420,19 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `Exposure()` returns nil, so an endpoint with `exposure: rules` does not serve the format; the Bastion does not serve `/v2/` (chosen) | Both stay deferred | The phase stays the registry; exposure of tags needs a decision about tag ranges | A customer endpoint cannot hand out images yet |
+| (a) `Exposure()` returns nil, so an endpoint with `exposure: rules` does not serve the format; the Bastion does not serve `/v2/` (chosen; the Bastion's part superseded on 2026-11-22, below) | Both stay deferred | The phase stays the registry; exposure of tags needs a decision about tag ranges | A customer endpoint cannot hand out images yet |
 | (b) Exposure by image name only | Names, no tags | A first customer case | Half a rule set that a later tag dimension would change |
 
 **Choice:** (a).
 
 **Rationale:** R-ARCH-008 makes a format without the adapter unservable on such endpoints, which is safe. The development agent would
 revisit it when a customer endpoint needs images.
+
+**Superseded in part on 2026-11-22.** The owner decided that a Bastion serves every format as the main installation does ("Er soll alles
+liefern wie die Hauptinstanz"). A Bastion connects to the default endpoint, which serves everything a caller may read (Q-BAS-4), so the
+reason above, the exposure rules of tags, never applied to it. A Bastion serves `/v2/` at its own host root, its token flow through the
+main installation's token service ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051 to R-BAS-054,
+Q-BAS-165 to Q-BAS-168; specified, not built). The statement about exposure rules stands.
 
 **Applied in the spec:** [Deferred](#deferred).
 
