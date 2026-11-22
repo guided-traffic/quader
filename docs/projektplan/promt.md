@@ -2155,6 +2155,11 @@ runs are in `git log`; this section holds the current state.
   integration shards, the layout checks and three end-to-end legs run, and the trace is pushed after
   them. The load is 35 on 20 cores with two builders' gates and the landing's gates at once; no further
   builder starts.
+- **The timer's check at 21:44:** the stacking stands with its four commits on the top of `main` and is at
+  its gates again; the links' second package has its commit on a clean tree and has not moved onto the top
+  yet, active three minutes ago; the writer of the Bastion's specification is at work. The run of the
+  trace has no failed job and its release is not cut yet, so the plan's commits wait. The load is 4. His
+  UI's backend is ready on the trace's state.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -4402,7 +4407,14 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
    name. Moved onto the keys by the development agent without a conflict, the translation source extracted
    afresh into the commit. **Not verified:** `cosign sign` and `notation sign` against a running installation
    with the event read from the audit log; the German label on the screen. It is pushed when the keys' run
-   has finished its integration shards, since a push cancels a run in progress.
+   has finished its integration shards, since a push cancels a run in progress. **Landed on 2026-11-22 at
+   21:34,** after the keys' run had ended at 21:32 with every job green: the landing's gates ran in the
+   landing worktree from 21:05 to 21:33, twenty-two of them, each exit 0 (the same set as for the keys, with
+   the integration areas `signatures`, the query budget, `ocilocal`, `registry` and `files`). The stacking's
+   and the links' builders are told the new top; the links' builder also that a writer's read which is
+   answered by a link leaves the same event. The worktrees and branches of the trace's and the keys' builders
+   are removed. His UI's backend is started again on this state. Released at 21:46; the plan's commits of the
+   minutes between waited for it.
 2. **How strong the gate is without chosen anchors (Q-SIG-76).** Built: (a) whatever shows as verified passes, with a
    warning at the setting. **Answered by him on 2026-11-22 at 20:39: (a), as built** ("a"), told with the weakness
    that stays (H-1194). The statuses of the decision blocks he confirms in this walk are changed in one commit of
@@ -4699,6 +4711,29 @@ own answer 24** in its letter: a plain pool object keeps its digest name, an enc
 identifier. A retired generation of a live connection is not destroyed (nothing wraps objects again). Told to
 the owner in three lines at 21:27. **The specification is written when the stack of four is on `main`,** since
 the rest of package E changes the same paragraphs of the backup's page.
+**The design of the read shapes per package came back at 21:38** (its planner worked from 21:11; kept in the
+scratchpad as `design-bastion-package-shapes.md`). The main installation's core already knows the package of a
+response, since every format decides its reads through the host; the marking gains the package and the caller's
+shape on it, the check answers per repository and package, and the Bastion keeps a fourth kind of answer by
+credential, repository and package under the same four rules of validity and the same feed as a full answer
+of a repository. A registry token is full on a package only within its grant, limited at the main installation
+and compared again at the Bastion. **What it gains, by reading and not by a run:** a warm pull of an image with
+ten layers costs the main installation 3 requests instead of 14 (the token's request with its probe, and one
+check), so about 100 pulls a minute fit one address's miss limit where about 20 did; the gap of the request per
+layer is narrowed, not closed. The format contract gains a twenty-first check of the kit (a reader of one
+package gets the same document as a reader of the repository), so a format to come is served without a
+decision of its own. The interface rises by one, and the handover's version moves behind it. Four packages:
+the wire and the decision point with the kit's check side by side, then the main installation's side, then
+the Bastion's. **It changes the wording of one decision of the owner's** (Q-BAS-18 of 2026-11-02: a document is
+shared with confirmed full readers of the repository; now also with a full reader of the package the document
+belongs to, which the kit's check makes the same document), named to him at 21:40. **What changes for the
+worse, as gaps:** a change the feed does not carry (an automatic vulnerability block, the malware switch)
+reaches a registry token's reads within the revalidation period and no longer at its next read, as it does
+for full readers today; a subject at its limits keeps reading warm content until its answer runs out. Two
+findings of the planner about today's code, read and not run: the first read of a cached entry by a credential
+without an answer costs two requests where an uncached path costs one, a timing signal for a narrowed reader;
+and a blocked full reader's answer keeps being renewed by the background refresh. **In work since 21:39: the
+writer of its specification** (documents only, one commit, with the build plan's page).
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
