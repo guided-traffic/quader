@@ -1608,7 +1608,10 @@ runs are in `git log`; this section holds the current state.
   and the screens'); on the commit as it landed, each exit 0: the UI's install, the API's types regenerated
   and the translation source extracted without a difference, the UI tests (1,929), lint, layout tests and
   build, the evidence and its count test; the diff holds no name the white-label rule forbids. Pushed
-  after the release of the repair before it, whose run it stopped at its long jobs. **Its release was cut at 01:10.** **Its tests
+  after the release of the repair before it, whose run it stopped at its long jobs. **Its release was cut at 01:10,** image
+  and chart were published at 01:16, and **the owner's installation runs it since 01:19** (read on the
+  cluster at 01:19: every Deployment ready, no restart, no error line of `api`, `packages` or the workers;
+  the UI answers on his host). **Its tests
   cost** about 0.4 s of UI tests and about 90 s of the layout job (31 states, 186 pictures; the job stood at
   42 of its 75 minutes). **Not verified:** a real save of the setting, a real release and the real refusal
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
