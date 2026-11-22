@@ -4481,9 +4481,12 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     authority's for that name, valid until 2027-02-20. An anonymous request for a token answers 401 at the
     Bastion and 200 at the main installation, which is the specified answer of a Bastion whose main
     installation serves no anonymous read (not read on his installation whether a repository is public).
-    **Not verified:** a pull by a client with a token through the Bastion from outside. **Still left:** the
-    challenge object of the DNS attempt, which hangs in its deletion, and the registration `artifacts`
-    with its token from the development agent's mistake; both are his to remove or to hand over. **His rule for his
+    **Not verified:** a pull by a client with a token through the Bastion from outside. **The challenge
+    object of the DNS attempt is gone since 20:26,** removed by the development agent at his word
+    ("Hängendes Challenge Objekt bitte entfernen"): its finalizer taken off, the one object; it had never
+    presented a record, so nothing is left at the DNS provider. **Still left:** the registration
+    `artifacts` with its token from the development agent's mistake, which is his to remove or to hand
+    over. **His rule for his
     deployment repositories stands in his global rules for agents since 18:46, at his word** ("Das kommt
     nach …"): every file at once; a Secret he fills as a placeholder `s-<name>.unenc.yml` with the one
     command that encrypts it; no secret value fetched or issued by an agent, the cluster read only and
