@@ -4198,6 +4198,33 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     on a kind cluster and with clients in containers, and nothing of it shows on his cluster. (a) the development
     agent adds the Bastion's chart under `apps/quader` once packages B and C are released, and he names a host
     and issues the Bastion's token in his admin area; (b) not on his cluster for now.
+    **Answered by him on 2026-11-22 at 18:20, as (a):** "Kannst du mir in meinem Flux Repo für die Instanz
+    quader.k8s-main.wds18.net einen bastion konfigurieren für artifacts.guided-traffic.com (external ingress)".
+    **Asked who issues the token, he chose to do it himself in the admin area** and to encrypt it with the
+    command the development agent gives him, so that neither the break-glass administrator is used nor the
+    token passes through the development agent; the rest is committed once the encrypted Secret lies in his
+    repository. **Prepared and checked on a copy, nothing committed** (18:20 to 18:34, read-only on his
+    cluster and his repository): a namespace `quader-bastion` with a Flux Kustomization of its own under
+    `apps/quader`; the HelmRelease of the chart `quader-bastion` (published beside the main chart, the same
+    version, followed with `*`, waiting for the main release) on the external ingress class with a public
+    certificate, two replicas, a cache of 4 GiB per replica on an ephemeral volume; on the main installation
+    the Bastion's address and the two Service names as additional base URLs, the Bastion's trusted addresses
+    and the Bastion's pods admitted to port 8080; a section of his repository's README with the renewal of the
+    token. **Decided by the development agent:** a namespace of its own; **the Bastion calls the main
+    installation's pods under their Service names, as the end-to-end legs do, and not through his internal
+    ingress,** whose controller writes `X-Forwarded-For` from the source address (his own values say so; the
+    controller's default, read from memory of its documentation and not looked up again), which would replace
+    the client's address the Bastion passes on, so the main installation's limits and audit trail would name
+    the Bastion. **Read on his cluster:** the external ingress class and its controller's namespace and labels;
+    every cluster-wide network policy allows and none denies, egress inside the cluster is open and ingress
+    closed, so the one rule that admits the Bastion's pods to the main pods is enough; the trust bundle is in
+    every namespace; the public name resolves to the addresses of his website already. Both charts render
+    with the prepared values and his cluster's settings. **A property of his cluster, told to him:** the
+    Bastion's pods take their addresses from the pod network, which is the range his main installation trusts
+    as its own proxies already, so the two lists overlap and Quader logs the warning of it at every start;
+    it changes nothing there, since only the internal ingress and the Bastion reach the port. **Not verified
+    until it runs:** the public certificate's issue, the handshake of the Bastion with the main installation,
+    a client's pull from outside.
 18. **A speed limit keeps nearly every caller away from signed links (Q-LIM-97),** from the planner of the storage
     topic's third stage on 2026-11-22. His decision 11 took the condition "no pace limit applies to the caller" as
     the working paper put it, and every built-in profile but Unlimited sets a speed limit, so on a new
