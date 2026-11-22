@@ -2074,7 +2074,7 @@ runs are in `git log`; this section holds the current state.
   machine.
 - **The run of the several connections' landing ended at 20:13 with every job green** (the four
   integration shards, the layout checks and its end-to-end legs among them; no job was run again).
-- **Package 2 of the encryption, the keys, reported at 20:13 and is in the landing's gates since 20:15**
+- **Package 2 of the encryption, the keys, reported at 20:13 and is in the landing's gates since 20:14**
   (one commit of the type `feat` on the several connections; its builder worked from 18:44 to 20:13;
   migration 00107; every gate exits 0, the blob area on its second run: the first failed the test that
   the store's package does not depend on the coordination, since the keys' package had imported the
@@ -2106,6 +2106,12 @@ runs are in `git log`; this section holds the current state.
   plain installation, the owner's, gets the migration with an empty table and five columns and an empty
   holder at start; its uploads and downloads do not change. A connection with `encrypted: true` stays
   refused until package 3. Builders with a test load: the stacking, the links, and the landing's gates.
+- **The timer's check at 20:15:** the stacking has its four commits in order on a clean tree and is at
+  its gates; the links' package is at work; the landing's gates of the keys have passed the build and the
+  vet; the load is 29 on 20 cores with these three, so package 3 of the encryption starts when the
+  landing's gates are through. The owner's installation runs the newest release; the exemption of the
+  challenge's path lies uncommitted in his base repository for his review, and the Bastion's
+  certificate stands at two failed attempts until then.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
