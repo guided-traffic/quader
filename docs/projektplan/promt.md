@@ -1892,6 +1892,19 @@ runs are in `git log`; this section holds the current state.
   the end-to-end legs install it, on a kind cluster of its own, with the set of the reference client, and in
   the running installation the rendered connections, the mounts, the marker and what the start check recorded.
   The several connections are not pushed before it has reported.
+- **In work since 14:46: package C of the several connections, the reconciliation** (the job with its queue and
+  its pass, copies made by the store and copies streamed through Quader, the bound on inserts, drain, retire,
+  the journal's pass, its metrics, and the integration case against two real buckets of the integration
+  stack). Its builder works on top of the two commits that are not on `main` yet, which the development agent
+  rebases at the landing; the packages B, C and D depend on A alone and own disjoint files, so C, the longest
+  of them, starts before A has landed. It exports the two metrics the chart's alerts wait for (the queue's age,
+  the gauge of a connection that is still filling) and takes its lines out of the list of metrics of later
+  packages in the chart's tests. Identifiers Q-STOR-255 to 259 and H-1261 to 1264. **The timer's check at
+  14:44:** of the integration areas on A's commit 24 have passed and none failed; the landing gates of the
+  Bastion's package D are through the first nine with exit 0 (the unit run from the cache, 203 packages, no
+  failure); the builder of package A, the encryption's package 5 and the planner of the handover are at
+  work; builders with a test load now: the encryption's package 5, the proof of the development profile, the
+  reconciliation, and beside them the development agent's integration run.
 - **Landed on 2026-11-22 at 13:35: package C of "a Bastion serves every format", the Bastion's side: images,
   Debian and every other format are served through a Bastion, shown with the real clients** (a commit of the
   type `feat`, which announces the interface's fourth version; R-BAS-050 to R-BAS-054, R-BAS-056 and the
