@@ -2018,12 +2018,33 @@ runs are in `git log`; this section holds the current state.
   **The order of the pushes, decided by the development agent:** package D was pushed alone, and its legs of
   the Bastion and of the registry finish before the several connections are pushed, so that the Bastion's
   end-to-end set, which the pipeline has not yet run on package C, gets a result that no change of the store
-  can blur. **Open until that run has ended:** the Bastion's end-to-end set and the new case in the pipeline.
+  can blur. **The Bastion's end-to-end set is green in the pipeline, read at 15:32:** in the run of this push
+  the legs of the Bastion and of the registry (with the new case of an image through a Bastion), of npm, the
+  vulnerabilities, the push and the long access set and all four integration shards ended in success; the
+  layout checks still ran. With it images, Debian and every other format through a Bastion are shown at every
+  tier: the real clients by hand (package C), the replays at the integration tier, and the clients on a
+  cluster in the pipeline.
 - **In work since 14:43: the proof of the development profile for the several connections,** which the chart's
   builder had to leave out for want of memory and resumes now that the other cluster is gone: the profile as
   the end-to-end legs install it, on a kind cluster of its own, with the set of the reference client, and in
   the running installation the rendered connections, the mounts, the marker and what the start check recorded.
-  The several connections are not pushed before it has reported.
+  The several connections are not pushed before it has reported. **Reported at 15:32: the development profile
+  comes up and the set of the reference client passes** (four nodes, TLS everywhere, the operators, the object
+  store over HTTPS with its CA, the backup on, installed the way the pipeline's legs install it, from the
+  chart's commit on package A; the dependencies in 346 s, the release in 43 s; the migration ran and every
+  Deployment became ready). **The set: 13 tests and 212 subtests passed, none failed, 1,172 s.** In the running
+  installation: every pod's configuration holds one connection `default` with its key files and its CA under
+  the new paths, and the binary's own validation reports the same; the pods mount the connection's Secret and
+  its CA, the migration Job nothing of the store; the marker object names the installation and the
+  connection; the connection's row records the capabilities the start check found (metadata, batch delete, a
+  copy that replaces metadata, a wrong payload checksum refused); after the set 3,339 blobs stand with 3,339
+  copies on `default`, all present and verified, the queue empty; the backup's pods mount the read login and
+  the CA and not the runtime keys, and a backup run by hand copied 1,191 blobs with none damaged (in this
+  profile the read login is the same account as the runtime keys, so this shows the wiring, not a narrower
+  right). **A red test of its first run was its environment** (the tests' profile switches replace the extra
+  Helm arguments and so dropped its own image tag; green with the image under the tag the set expects, which
+  is the pipeline's). No defect of the chart or of package A, no new commit; its cluster, image and
+  kubeconfig are gone.
 - **In work since 14:46: package C of the several connections, the reconciliation** (the job with its queue and
   its pass, copies made by the store and copies streamed through Quader, the bound on inserts, drain, retire,
   the journal's pass, its metrics, and the integration case against two real buckets of the integration
