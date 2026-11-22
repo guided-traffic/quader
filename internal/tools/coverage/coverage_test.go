@@ -99,9 +99,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		for _, r := range m.Reqs {
 			count[r.Priority]++
 		}
-		// 1160 since bastion.md's Every format (R-BAS-050 to R-BAS-060, eleven MVP requirements of 2026-11-22).
-		if len(m.Reqs) != 1160 || count[prioMVP] != 718 || count[prioP1] != 401 || count[prioP2] != 41 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1160 (718, 401, 41)",
+		// 1160 since bastion.md's Every format (R-BAS-050 to R-BAS-060, eleven MVP requirements of 2026-11-22); 1168 since the
+		// download links of storage.md (R-STOR-070 to R-STOR-074, R-LIM-040, R-UI-200, R-UI-201, and R-STOR-014 from P2 to P1).
+		if len(m.Reqs) != 1168 || count[prioMVP] != 718 || count[prioP1] != 410 || count[prioP2] != 40 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1168 (718, 410, 40)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})
