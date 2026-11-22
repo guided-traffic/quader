@@ -1694,7 +1694,25 @@ runs are in `git log`; this section holds the current state.
   package).
 - **The chart's package of the several connections is at work again since 14:05** with A's commit: its rebase,
   the tests that pass the rendered configuration to the binary, and the proof of the development profile on a
-  kind cluster of its own.
+  kind cluster of its own. At 14:21 its commit stands on A's rebased commit with a clean tree; it has not
+  reported.
+- **In work since 2026-11-22, 14:22: the planner of the handover per blob to a Bastion** (the owner's decision
+  12, option b: a short-lived link of the object store and, on an encrypted connection, the data key of that
+  one blob, so a Bastion reads large content from the store itself; no account and no key above the blob's own
+  in the DMZ). Both conditions of its turn are met: the encryption's specification is on `main`, and a Bastion
+  serves every format (packages A to C landed, D at work). It writes the specification and a build plan and no
+  code, with a block of identifiers of its own (R-BAS-070 to 089, Q-BAS-230 to 269, R-STOR-095 to 099,
+  Q-STOR-340 to 359, ADR-250 to 253, H-1340 to 1369), and it brings back the questions that are the owner's.
+  With it four agents are at work: the Bastion's package D, package 5 of the encryption, the chart's package
+  of the several connections, and this planner.
+- **The timer's check at 14:21:** nothing has reported since package A; of the integration areas the
+  development agent runs on A's rebased commit, the first five passed (the three of Ansible, Debian local and
+  remote) and the others run, one lock per area; the owner's installation runs the newest release (read at
+  14:17: the chart's release deployed and ready, six Deployments with every replica ready, 19 pods, no
+  restart); the pipeline of the last code push is attended in his window from 17:00. **The owner asked at
+  14:16 what has been finished since Friday afternoon** and got the overview in the chat (35 releases since
+  Friday noon, by topic, with what is on `main` without effect yet, what is built and not landed, and what is
+  not verified); no decision in it.
 - **In work since 2026-11-22, 14:00: package 5 of the encryption, the Bastion's cache** (everything the cache
   writes to its store sealed in the format under one key file of its chart, off by default; it needs the
   format alone).
@@ -4115,7 +4133,7 @@ that reads the bucket**
   the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
-  and after the Bastion serves every format.
+  and after the Bastion serves every format (**its planner is at work since 14:22**, run record).
   **Stage 2, encryption, is specified on `main` since 13:02** (its planner worked from 12:06 to 12:49; one commit,
   rebased twice by the development agent, with the Bastion's decision blocks merged by hand; on the rebased
   commit the whole of the chart tests, the full unit run, the evidence regenerated without a difference, links,
