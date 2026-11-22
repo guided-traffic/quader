@@ -173,6 +173,18 @@ func TestBlobReferenceRules(t *testing.T) {
 			}
 		}
 	})
+	t.Run("R-STOR-052 the copies and the queue of the reconciliation carry no foreign key to blobs, and refer to their connection", func(t *testing.T) {
+		_, _, admin := migrated(t, st)
+		for _, table := range []string{"blob_copies", "blob_copy_queue"} {
+			toBlobs := scalar[int](t, admin, `SELECT count(*) FROM pg_constraint
+				 WHERE contype = 'f' AND conrelid = ('quader.' || $1)::regclass AND confrelid = 'quader.blobs'::regclass`, table)
+			toConnections := scalar[int](t, admin, `SELECT count(*) FROM pg_constraint
+				 WHERE contype = 'f' AND conrelid = ('quader.' || $1)::regclass AND confrelid = 'quader.storage_connections'::regclass`, table)
+			if toBlobs != 0 || toConnections != 1 {
+				t.Errorf("%s: %d foreign keys to blobs (collection would read one as a reference), %d to storage_connections", table, toBlobs, toConnections)
+			}
+		}
+	})
 }
 
 // TestStorageSchema exercises the behaviour R-STOR-003 puts into the schema.

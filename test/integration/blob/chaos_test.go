@@ -137,9 +137,9 @@ func TestGCKilledAtRandomPoints(t *testing.T) {
 				later = append(later, d)
 			}
 			cfg := up.cfg
-			cfg.GC.BatchDelete = rng.IntN(2) == 0
+			batch := rng.IntN(2) == 0
 			// A fresh collector is a fresh process: it knows none of its predecessor's claims.
-			c := blob.NewCollector(cfg.GC, cfg.S3.Prefix, up.obj, p.db, blob.WithCollectorLogger(quiet))
+			c := collector(cfg, up.obj, p.db, blob.WithCollectorLogger(quiet), blob.WithBatchDelete(batch))
 			rctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 			stopAt, mode := 1+rng.IntN(30), rng.IntN(3)
 			var calls atomic.Int32
@@ -389,7 +389,7 @@ func TestUploadMeetsDeletingRow(t *testing.T) {
 		case <-time.After(500 * time.Millisecond):
 		}
 		// A healthy collector finishes the row once handover_delay has passed.
-		c2 := blob.NewCollector(r.cfg.GC, r.cfg.S3.Prefix, r.obj, p.db, blob.WithCollectorLogger(quiet))
+		c2 := collector(r.cfg, r.obj, p.db, blob.WithCollectorLogger(quiet))
 		for deadline := time.Now().Add(20 * time.Second); ; time.Sleep(200 * time.Millisecond) {
 			if _, err := c2.Run(ctx, blob.RunOptions{Mode: blob.GCIncremental}); err != nil {
 				t.Fatal(err)
@@ -421,7 +421,7 @@ func TestDownloadVerificationOnTheStore(t *testing.T) {
 		}
 		bad := bytes.Clone(data)
 		bad[len(bad)/3] ^= 0xff
-		if err := e.raw.Put(ctx, blob.Key(e.prefix, d), bytes.NewReader(bad), int64(len(bad)), blob.Checksum{}); err != nil {
+		if err := e.raw.Put(ctx, blob.Key(e.prefix, d), bytes.NewReader(bad), int64(len(bad)), blob.Checksum{}, nil); err != nil {
 			t.Fatal(err)
 		}
 		body, err := r.store.Open(ctx, d, int64(len(data)), blob.OpenOptions{})

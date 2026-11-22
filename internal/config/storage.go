@@ -6,11 +6,13 @@ import (
 	"time"
 )
 
-// Storage configures the content-addressed blob store and its spool
-// (R-STOR-001 to R-STOR-046). The credential files of the object store are
-// file-only secrets.
+// Storage configures the content-addressed blob store, its object-store connections and its spool
+// (R-STOR-001 to R-STOR-063). The credential files of the connections are file-only secrets.
 type Storage struct {
-	S3               StorageS3               `yaml:"s3"`
+	Connections      []StorageConnection     `yaml:"connections" default:"[]" doc:"The object-store connections, one to eight (R-STOR-050). The list order is the write order and the read order; every connection that is not draining holds every blob. An element without id is default, and at most one element may leave it out. In the environment the whole list is one JSON value (QUADER_STORAGE_CONNECTIONS)."`
+	ObjectStore      StorageObjectStore      `yaml:"object_store" doc:"The client of every connection (R-STOR-033 to R-STOR-035)."`
+	Replication      StorageReplication      `yaml:"replication"`
+	Reconcile        StorageReconcile        `yaml:"reconcile" doc:"The reconciliation between the connections (R-STOR-056)."`
 	Spool            StorageSpool            `yaml:"spool"`
 	Upload           StorageUpload           `yaml:"upload"`
 	Uploads          StorageUploads          `yaml:"uploads" doc:"Multi-request upload sessions (P1)."`
@@ -26,11 +28,14 @@ type Storage struct {
 	Scrub            StorageScrub            `yaml:"scrub"`
 }
 
-// StorageS3 is the S3-compatible object store (R-STOR-030 to R-STOR-036).
+// StorageS3 is the configuration of one S3 client: the client of an object-store connection (a connection's element with the
+// shared settings of storage.object_store, [ClientConfig]), of the backup target and of the Bastion's cache bucket. It is no
+// key of the configuration file: storage.s3 is gone since several connections (R-STOR-050); the defaults of its tags are the
+// shared defaults those clients start from.
 type StorageS3 struct {
 	Endpoint              string               `yaml:"endpoint" default:"" doc:"Empty means AWS endpoint resolution for the region. A host without a scheme means https://; plain HTTP needs http:// and allow_insecure_endpoint."`
 	Region                string               `yaml:"region" default:""`
-	Bucket                string               `yaml:"bucket" default:"" doc:"Blob bucket; required to serve."`
+	Bucket                string               `yaml:"bucket" default:""`
 	Prefix                string               `yaml:"prefix" default:"quader"`
 	ForcePathStyle        bool                 `yaml:"force_path_style" default:"false" doc:"True for SeaweedFS, MinIO and Ceph RGW."`
 	AllowInsecureEndpoint bool                 `yaml:"allow_insecure_endpoint" default:"false"`
@@ -44,7 +49,6 @@ type StorageS3 struct {
 	Retry                 StorageS3Retry       `yaml:"retry"`
 	CircuitBreaker        StorageS3Breaker     `yaml:"circuit_breaker"`
 	Multipart             StorageS3Multipart   `yaml:"multipart"`
-	Presign               StorageS3Presign     `yaml:"presign"`
 	StartupCheck          bool                 `yaml:"startup_check" default:"true" doc:"Object-store conformance check before the first readiness (R-STOR-035)."`
 }
 
@@ -54,8 +58,8 @@ type StorageS3Checksums struct {
 	ResponseValidation string `yaml:"response_validation" default:"when_supported" validate:"oneof=when_supported|when_required"`
 }
 
-// StorageS3Credentials selects where the object-store credential comes from
-// (R-STOR-031). Every `_file` key is a file-only secret.
+// StorageS3Credentials selects where an object-store credential comes from (R-STOR-031). Every `_file` key is a file-only
+// secret.
 type StorageS3Credentials struct {
 	Source               string `yaml:"source" default:"default" validate:"oneof=default|webIdentity|static"`
 	RoleARN              string `yaml:"role_arn" default:""`
@@ -73,9 +77,9 @@ type StorageS3SSE struct {
 	BucketKey bool   `yaml:"bucket_key" default:"true"`
 }
 
-// StorageS3HTTP tunes the object store's HTTP transport (R-STOR-033).
+// StorageS3HTTP tunes an object-store client's HTTP transport (R-STOR-033).
 type StorageS3HTTP struct {
-	MaxConnections        int           `yaml:"max_connections" default:"256" validate:"min=1"`
+	MaxConnections        int           `yaml:"max_connections" default:"256" validate:"min=1" doc:"Per connection and replica."`
 	DialTimeout           time.Duration `yaml:"dial_timeout" default:"5s" validate:"min=100ms"`
 	TLSHandshakeTimeout   time.Duration `yaml:"tls_handshake_timeout" default:"5s" validate:"min=100ms"`
 	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" default:"30s" validate:"min=1s"`
@@ -93,7 +97,7 @@ type StorageS3Retry struct {
 	MaxBackoff  time.Duration `yaml:"max_backoff" default:"20s" validate:"min=100ms"`
 }
 
-// StorageS3Breaker is the object store's circuit breaker.
+// StorageS3Breaker is the circuit breaker of an object-store client; one per connection and replica (R-STOR-060).
 type StorageS3Breaker struct {
 	FailureThreshold int           `yaml:"failure_threshold" default:"5" validate:"min=1"`
 	OpenDuration     time.Duration `yaml:"open_duration" default:"10s" validate:"min=100ms"`
@@ -104,14 +108,176 @@ type StorageS3Multipart struct {
 	Threshold          ByteSize `yaml:"threshold" default:"100MiB" validate:"min=5MiB"`
 	PartSize           ByteSize `yaml:"part_size" default:"16MiB" validate:"min=5MiB"`
 	Concurrency        int      `yaml:"concurrency" default:"4" validate:"min=1" doc:"Parallel parts per upload."`
-	MaxConcurrentParts int      `yaml:"max_concurrent_parts" default:"64" validate:"min=1" doc:"Per replica."`
+	MaxConcurrentParts int      `yaml:"max_concurrent_parts" default:"64" validate:"min=1" doc:"Per replica, over all connections."`
 }
 
-// StorageS3Presign configures redirects to presigned URLs.
-type StorageS3Presign struct {
-	Endpoint string        `yaml:"endpoint" default:"" doc:"Empty means storage.s3.endpoint."`
-	TTL      time.Duration `yaml:"ttl" default:"60s" validate:"min=1s"`
-	MinSize  ByteSize      `yaml:"min_size" default:"1MiB" validate:"min=0"`
+// StorageObjectStore is what every connection's client shares (R-STOR-050, Q-STOR-220): the HTTP transport, the retries, the
+// circuit breaker's thresholds, the multipart sizing and the start check.
+type StorageObjectStore struct {
+	HTTP           StorageS3HTTP      `yaml:"http"`
+	Retry          StorageS3Retry     `yaml:"retry"`
+	CircuitBreaker StorageS3Breaker   `yaml:"circuit_breaker"`
+	Multipart      StorageS3Multipart `yaml:"multipart"`
+	StartupCheck   bool               `yaml:"startup_check" default:"true" doc:"The start check of every connection before the first readiness, with its capabilities (R-STOR-035)."`
+}
+
+// StorageReplication configures how many copies an upload needs before it is answered (R-STOR-053).
+type StorageReplication struct {
+	MinCopies int `yaml:"min_copies" default:"1" validate:"min=1,max=8" doc:"Copies written before an upload is answered; at most the number of connections without drain: true. The reconciliation brings a blob to the other connections afterwards."`
+}
+
+// StorageReconcile tunes the reconciliation between the connections (R-STOR-056).
+type StorageReconcile struct {
+	Concurrency     int           `yaml:"concurrency" default:"4" validate:"min=1" doc:"Copies at a time in one run."`
+	BytesPerSecond  ByteSize      `yaml:"bytes_per_second" default:"100MiB" validate:"min=1MiB" doc:"Streamed bytes per run; server-side copies are not counted."`
+	ServerSide      string        `yaml:"server_side" default:"auto" validate:"oneof=auto|never" doc:"auto copies server-side between two connections on one endpoint."`
+	QueueLimit      int           `yaml:"queue_limit" default:"10000" validate:"min=1" doc:"Gaps the pass queues per connection before it waits for the copier."`
+	RetryMaxBackoff time.Duration `yaml:"retry_max_backoff" default:"1h" validate:"min=1s"`
+	RunDuration     time.Duration `yaml:"run_duration" default:"10m" validate:"min=1m" doc:"A run ends after this and the next scheduled run continues."`
+}
+
+// StorageConnection is one element of storage.connections (R-STOR-050): one bucket and prefix on one S3-compatible endpoint
+// with everything that may differ between providers (Q-STOR-222). An element of a list is decoded as it is written, so a key
+// left out is the zero value; the pointer fields tell an empty prefix and a false switch from a key left out, and
+// [StorageConnection.WithDefaults] applies the defaults, which the loader writes back after validation.
+type StorageConnection struct {
+	ID                         string        `yaml:"id" doc:"Names the connection for its whole life; default for at most one element, never changes, never reused."`
+	Endpoint                   string        `yaml:"endpoint" doc:"Empty means AWS endpoint resolution for the region; a host without a scheme means https://."`
+	EndpointFile               string        `yaml:"endpoint_file" doc:"A file whose trimmed content is the endpoint (a provisioner's Secret), read once at start; excludes endpoint."`
+	Region                     string        `yaml:"region"`
+	RegionFile                 string        `yaml:"region_file" doc:"A file whose trimmed content is the region; excludes region."`
+	Bucket                     string        `yaml:"bucket" doc:"Required unless bucket_file."`
+	BucketFile                 string        `yaml:"bucket_file" doc:"A file whose trimmed content is the bucket; excludes bucket."`
+	Prefix                     *string       `yaml:"prefix" doc:"Default quader; fixed once the connection holds data (R-STOR-051)."`
+	ForcePathStyle             bool          `yaml:"force_path_style" doc:"True for SeaweedFS, MinIO and Ceph RGW."`
+	AllowInsecureEndpoint      bool          `yaml:"allow_insecure_endpoint"`
+	CAFile                     string        `yaml:"ca_file" doc:"The connection's trust anchor; empty means the outbound trust store."`
+	StorageClass               string        `yaml:"storage_class"`
+	PayloadChecksum            string        `yaml:"payload_checksum" doc:"sha256 (default), md5 or none."`
+	RequestChecksumCalculation string        `yaml:"request_checksum_calculation" doc:"when_supported (default) or when_required."`
+	ResponseChecksumValidation string        `yaml:"response_checksum_validation" doc:"when_supported (default) or when_required."`
+	BatchDelete                *bool         `yaml:"batch_delete" doc:"Default true; false for a store without DeleteObjects."`
+	CredentialsSource          string        `yaml:"credentials_source" doc:"default (default), webIdentity or static (R-STOR-031)."`
+	RoleARN                    string        `yaml:"role_arn"`
+	WebIdentityTokenFile       string        `yaml:"web_identity_token_file" secret:"file"`
+	STSEndpoint                string        `yaml:"sts_endpoint"`
+	AccessKeyIDFile            string        `yaml:"access_key_id_file" secret:"file"`
+	SecretAccessKeyFile        string        `yaml:"secret_access_key_file" secret:"file"`
+	SessionTokenFile           string        `yaml:"session_token_file" secret:"file"`
+	SSEMode                    string        `yaml:"sse_mode" doc:"none (default), s3 or kms (R-STOR-032)."`
+	SSEKMSKeyID                string        `yaml:"sse_kms_key_id"`
+	SSEBucketKey               *bool         `yaml:"sse_bucket_key" doc:"Default true."`
+	ScrubPeriod                time.Duration `yaml:"scrub_period" doc:"Default 720h: every copy is read whole once in this period (R-STOR-027); at least 24h."`
+	ScrubBytesPerSecond        ByteSize      `yaml:"scrub_bytes_per_second" doc:"Default 50MiB, per connection and run; at least 1MiB."`
+	Drain                      bool          `yaml:"drain" doc:"Takes the connection out: no upload goes to it, its blobs are copied to the others and then deleted here (R-STOR-051)."`
+	Encrypted                  bool          `yaml:"encrypted" doc:"The encryption of stored content; true is refused until it is built (R-STOR-050)."`
+}
+
+// MaxConnections is the most connections a configuration holds (Q-STOR-247).
+const MaxConnections = 8
+
+// DefaultConnectionID is the id of the element that leaves its id out (R-STOR-050).
+const DefaultConnectionID = "default"
+
+// The defaults of a connection's element (R-STOR-050).
+const (
+	defaultConnectionPrefix  = "quader"
+	defaultScrubPeriod       = 720 * time.Hour
+	defaultScrubBytesPerSec  = 50 * MiB
+	minScrubPeriod           = 24 * time.Hour
+	minScrubBytesPerSecond   = MiB
+	defaultPayloadChecksum   = "sha256"
+	defaultChecksumMode      = "when_supported"
+	defaultCredentialsSource = "default"
+	defaultSSEMode           = "none"
+)
+
+// ValidConnectionID reports whether id matches the pattern of a connection id, ^[a-z][a-z0-9-]{0,30}[a-z0-9]$ (R-STOR-050).
+func ValidConnectionID(id string) bool {
+	if len(id) < 2 || len(id) > 32 || id[0] < 'a' || id[0] > 'z' {
+		return false
+	}
+	for i := 1; i < len(id); i++ {
+		c := id[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
+		case c == '-' && i < len(id)-1:
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// WithDefaults returns the element with the default of every key that was left out (R-STOR-050).
+func (c StorageConnection) WithDefaults() StorageConnection {
+	if c.ID == "" {
+		c.ID = DefaultConnectionID
+	}
+	if c.Prefix == nil {
+		p := defaultConnectionPrefix
+		c.Prefix = &p
+	}
+	if c.PayloadChecksum == "" {
+		c.PayloadChecksum = defaultPayloadChecksum
+	}
+	if c.RequestChecksumCalculation == "" {
+		c.RequestChecksumCalculation = defaultChecksumMode
+	}
+	if c.ResponseChecksumValidation == "" {
+		c.ResponseChecksumValidation = defaultChecksumMode
+	}
+	if c.BatchDelete == nil {
+		t := true
+		c.BatchDelete = &t
+	}
+	if c.CredentialsSource == "" {
+		c.CredentialsSource = defaultCredentialsSource
+	}
+	if c.SSEMode == "" {
+		c.SSEMode = defaultSSEMode
+	}
+	if c.SSEBucketKey == nil {
+		t := true
+		c.SSEBucketKey = &t
+	}
+	if c.ScrubPeriod == 0 {
+		c.ScrubPeriod = defaultScrubPeriod
+	}
+	if c.ScrubBytesPerSecond == 0 {
+		c.ScrubBytesPerSecond = defaultScrubBytesPerSec
+	}
+	return c
+}
+
+// KeyPrefix is the connection's prefix, quader when it was left out.
+func (c StorageConnection) KeyPrefix() string {
+	if c.Prefix == nil {
+		return defaultConnectionPrefix
+	}
+	return *c.Prefix
+}
+
+// BatchDeletes reports whether the connection deletes with DeleteObjects (true when left out).
+func (c StorageConnection) BatchDeletes() bool { return c.BatchDelete == nil || *c.BatchDelete }
+
+// ClientConfig is the client configuration of one connection: the element's keys and the shared settings of
+// storage.object_store (Q-STOR-220). The element should carry its defaults (WithDefaults) and its resolved files
+// ([ResolveConnection]).
+func ClientConfig(c StorageConnection, o StorageObjectStore) StorageS3 {
+	c = c.WithDefaults()
+	return StorageS3{
+		Endpoint: c.Endpoint, Region: c.Region, Bucket: c.Bucket, Prefix: c.KeyPrefix(),
+		ForcePathStyle: c.ForcePathStyle, AllowInsecureEndpoint: c.AllowInsecureEndpoint, CAFile: c.CAFile,
+		StorageClass: c.StorageClass, PayloadChecksum: c.PayloadChecksum,
+		Checksums: StorageS3Checksums{RequestCalculation: c.RequestChecksumCalculation, ResponseValidation: c.ResponseChecksumValidation},
+		Credentials: StorageS3Credentials{
+			Source: c.CredentialsSource, RoleARN: c.RoleARN, WebIdentityTokenFile: c.WebIdentityTokenFile, STSEndpoint: c.STSEndpoint,
+			AccessKeyIDFile: c.AccessKeyIDFile, SecretAccessKeyFile: c.SecretAccessKeyFile, SessionTokenFile: c.SessionTokenFile,
+		},
+		SSE:  StorageS3SSE{Mode: c.SSEMode, KMSKeyID: c.SSEKMSKeyID, BucketKey: *c.SSEBucketKey},
+		HTTP: o.HTTP, Retry: o.Retry, CircuitBreaker: o.CircuitBreaker, Multipart: o.Multipart, StartupCheck: o.StartupCheck,
+	}
 }
 
 // StorageSpool is the replica-local scratch space (R-STOR-004, R-HA-035).
@@ -187,13 +353,13 @@ type StorageUsage struct {
 	FoldInterval time.Duration `yaml:"fold_interval" default:"5s" validate:"min=1s"`
 }
 
-// StorageGC configures blob garbage collection (R-STOR-024).
+// StorageGC configures blob garbage collection (R-STOR-024). Whether a delete goes as DeleteObjects is the connection's
+// batch_delete (Q-STOR-222).
 type StorageGC struct {
 	GracePeriod       time.Duration `yaml:"grace_period" default:"24h" validate:"min=0s"`
 	DeleteSettle      time.Duration `yaml:"delete_settle" default:"30s" validate:"min=1s" doc:"Also bounds, as half of it, how long after its object write an upload may insert the blob row (R-STOR-005)."`
 	HandoverDelay     time.Duration `yaml:"handover_delay" default:"10m" validate:"min=0s"`
 	BatchSize         int           `yaml:"batch_size" default:"1000" validate:"min=1"`
-	BatchDelete       bool          `yaml:"batch_delete" default:"true" doc:"False for stores without DeleteObjects."`
 	DeleteConcurrency int           `yaml:"delete_concurrency" default:"8" validate:"min=1"`
 }
 
@@ -203,16 +369,15 @@ type StorageOrphans struct {
 	MultipartMaxAge time.Duration `yaml:"multipart_max_age" default:"24h" validate:"min=1s"`
 }
 
-// StorageScrub configures integrity checks (R-STOR-027).
+// StorageScrub configures the scrub's runs (R-STOR-027); its period and its throttle are keys of each connection.
 type StorageScrub struct {
-	CheckInterval      time.Duration `yaml:"check_interval" default:"168h" validate:"min=1h"`
-	DeepInterval       time.Duration `yaml:"deep_interval" default:"2160h" validate:"min=1h"`
-	DeepBytesPerSecond ByteSize      `yaml:"deep_bytes_per_second" default:"50MiB" validate:"min=1KiB"`
+	RunDuration time.Duration `yaml:"run_duration" default:"50m" validate:"min=1m" doc:"A run of the hourly task ends after this and the next continues."`
 }
 
 // Validate checks the cross-field rules of the section.
 func (s *Storage) Validate(r *Report) {
-	s.validateS3Connection(r)
+	s.validateConnections(r)
+	s.validateObjectStore(r)
 	if s.Upload.CommitDeadline >= s.Orphans.MinAge/2 {
 		r.Add("upload.commit_deadline", "must be below orphans.min_age / 2 (R-STOR-026)")
 	}
@@ -230,18 +395,6 @@ func (s *Storage) Validate(r *Report) {
 	}
 	if s.Uploads.PartSize > 0 && s.Upload.MaxSize > s.Uploads.PartSize*maxUploadParts {
 		r.Add("upload.max_size", "must not exceed %d parts of uploads.part_size (%s), the most an S3 multipart upload has (R-STOR-011)", maxUploadParts, s.Uploads.PartSize)
-	}
-	if s.S3.Credentials.Source == "static" && (s.S3.Credentials.AccessKeyIDFile == "" || s.S3.Credentials.SecretAccessKeyFile == "") {
-		r.Add("s3.credentials", "source static needs access_key_id_file and secret_access_key_file")
-	}
-	if s.S3.Credentials.Source == "webIdentity" && s.S3.Credentials.WebIdentityTokenFile == "" {
-		r.Add("s3.credentials.web_identity_token_file", "is required with source webIdentity")
-	}
-	if s.S3.SSE.Mode == "kms" && s.S3.SSE.KMSKeyID == "" {
-		r.Add("s3.sse.kms_key_id", "is required with mode kms")
-	}
-	if s.S3.Multipart.PartSize > s.S3.Multipart.Threshold {
-		r.Add("s3.multipart.part_size", "must not exceed s3.multipart.threshold")
 	}
 }
 
@@ -261,14 +414,19 @@ func (c *Config) validateStorageCoupling(r *Report) {
 	}
 }
 
-// ValidateFor requires the blob bucket where a replica serves and checks the
-// spool against the largest upload on the roles that accept uploads.
+// ValidateFor requires a connection with a bucket where a replica serves and checks the spool against the largest upload on
+// the roles that accept uploads.
 func (s *Storage) ValidateFor(cmd Command, r *Report) {
 	if !cmd.runsReplica() {
 		return
 	}
-	if s.S3.Bucket == "" {
-		r.Add("s3.bucket", "is required")
+	if len(s.Connections) == 0 {
+		r.Add("connections", "needs one element at least: a connection with a bucket (R-STOR-050)")
+	}
+	for i, c := range s.Connections {
+		if c.Bucket == "" && c.BucketFile == "" {
+			r.Add(connectionKey(i, c.WithDefaults().ID), "bucket or bucket_file is required")
+		}
 	}
 	// The roles that accept the protocols' uploads spool up to upload.max_size (packages, web, all). An api replica spools only the UI's
 	// uploads, whose own limit validateUICoupling holds to its spool (R-HA-029, Q-UI-106); a worker spools reports and remote-cache
@@ -292,36 +450,28 @@ func NormalizeEndpoint(raw string) string {
 	return "https://" + raw
 }
 
-// finalizeEndpoints writes the endpoints that had no scheme back with https://,
-// so every consumer and the effective-configuration view see an absolute URL.
+// finalizeEndpoints writes every connection back with its defaults and the endpoints that had no scheme with https://, so
+// every consumer and the effective-configuration view see an absolute URL and the value of every key.
 func (s *Storage) finalizeEndpoints(sources map[string]Source) {
-	for key, field := range map[string]*string{
-		"storage.s3.endpoint": &s.S3.Endpoint, "storage.s3.presign.endpoint": &s.S3.Presign.Endpoint,
-	} {
-		if n := NormalizeEndpoint(*field); n != *field {
-			*field = n
-			sources[key] = Source{Kind: "derived", Detail: "no scheme given, https:// assumed"}
+	derived := false
+	for i, c := range s.Connections {
+		c = c.WithDefaults()
+		if n := NormalizeEndpoint(c.Endpoint); n != c.Endpoint {
+			c.Endpoint, derived = n, true
 		}
+		s.Connections[i] = c
+	}
+	if derived {
+		sources["storage.connections"] = Source{Kind: "derived", Detail: "an endpoint without a scheme, https:// assumed"}
 	}
 }
 
-// validateS3Connection applies the startup validation of R-STOR-030: the prefix
-// and the endpoint.
-func (s *Storage) validateS3Connection(r *Report) {
-	checkKeyPrefix(r, "s3.prefix", s.S3.Prefix)
-	endpoint, presign := NormalizeEndpoint(s.S3.Endpoint), NormalizeEndpoint(s.S3.Presign.Endpoint)
-	rejectUserinfo(r, "s3.endpoint", endpoint, "storage.s3.credentials.access_key_id_file")
-	rejectUserinfo(r, "s3.credentials.sts_endpoint", s.S3.Credentials.STSEndpoint, "")
-	rejectUserinfo(r, "s3.presign.endpoint", presign, "")
-	rejectUserinfo(r, "s3.http.proxy_url", s.S3.HTTP.ProxyURL, "storage.s3.http.proxy_credentials_file")
-	if e := endpoint; e != "" {
-		u, err := url.Parse(e)
-		switch {
-		case err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http"):
-			r.Add("s3.endpoint", "must be an absolute https URL (is %q)", redactUserinfo(e))
-		case u.Scheme == "http" && !s.S3.AllowInsecureEndpoint:
-			r.Add("s3.endpoint", "uses http: set s3.allow_insecure_endpoint to allow it")
-		}
+// validateObjectStore applies the rules of the shared client settings.
+func (s *Storage) validateObjectStore(r *Report) {
+	o := s.ObjectStore
+	rejectUserinfo(r, "object_store.http.proxy_url", o.HTTP.ProxyURL, "storage.object_store.http.proxy_credentials_file")
+	if o.Multipart.PartSize > o.Multipart.Threshold {
+		r.Add("object_store.multipart.part_size", "must not exceed object_store.multipart.threshold")
 	}
 }
 
@@ -349,4 +499,19 @@ func checkKeyPrefix(r *Report, key, p string) {
 // isKeyChar reports a character the key prefix may contain (R-STOR-030).
 func isKeyChar(c rune) bool {
 	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || strings.ContainsRune("!_.*'()/-", c)
+}
+
+// checkEndpointURL applies the endpoint rule of R-STOR-030 to an endpoint with its scheme: an absolute https URL, http only
+// when allowed.
+func checkEndpointURL(r *Report, key, endpoint string, allowInsecure bool) {
+	if endpoint == "" {
+		return
+	}
+	u, err := url.Parse(endpoint)
+	switch {
+	case err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http"):
+		r.Add(key, "must be an absolute https URL (is %q)", redactUserinfo(endpoint))
+	case u.Scheme == "http" && !allowInsecure:
+		r.Add(key, "uses http: set allow_insecure_endpoint to allow it")
+	}
 }

@@ -22,7 +22,7 @@ func stagedBlob(t *testing.T, f *fixture, data []byte, key string) *blob.Spooled
 	t.Helper()
 	f.mem.Set(key, data, f.mem.Now())
 	whole := f.ingest(t, data)
-	return blob.Staged(whole.Digests, key)
+	return blob.Staged("default", whole.Digests, key)
 }
 
 func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
@@ -43,7 +43,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 		if f.mem.Count("copy") != 1 || f.mem.Count("put") != 0 {
 			t.Fatalf("copies %d, puts %d", f.mem.Count("copy"), f.mem.Count("put"))
 		}
-		if got, ok := f.mem.Data(f.store.Key(staged.SHA256)); !ok || !bytes.Equal(got, data) {
+		if got, ok := f.mem.Data(f.key(staged.SHA256)); !ok || !bytes.Equal(got, data) {
 			t.Fatal("the content address does not hold the bytes")
 		}
 		if staged.StagedKey() != key {
@@ -59,7 +59,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 		if _, err := f.store.Commit(ctx, f.ingest(t, data), noLink); err != nil {
 			t.Fatal(err)
 		}
-		staged := blob.Staged(f.ingest(t, data).Digests, "quader/_uploads/gone/data")
+		staged := blob.Staged("default", f.ingest(t, data).Digests, "quader/_uploads/gone/data")
 		res, err := f.store.Commit(ctx, staged, noLink)
 		if err != nil {
 			t.Fatal(err)
@@ -70,7 +70,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 	})
 	t.Run("a staging object that is gone is ErrStagingGone", func(t *testing.T) {
 		f := newFixture(t, nil)
-		staged := blob.Staged(f.ingest(t, content(100, 5)).Digests, "quader/_uploads/gone/data")
+		staged := blob.Staged("default", f.ingest(t, content(100, 5)).Digests, "quader/_uploads/gone/data")
 		_, err := f.store.Commit(ctx, staged, noLink)
 		if !errors.Is(err, blob.ErrStagingGone) {
 			t.Fatalf("err = %v", err)
@@ -80,7 +80,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 		}
 	})
 	t.Run("a staged blob has no bytes to read", func(t *testing.T) {
-		staged := blob.Staged(blob.Digests{Size: 10}, "k")
+		staged := blob.Staged("default", blob.Digests{Size: 10}, "k")
 		if _, err := staged.Reader().Read(make([]byte, 1)); err == nil {
 			t.Fatal("read from a staged blob")
 		}

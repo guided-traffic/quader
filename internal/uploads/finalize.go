@@ -168,7 +168,7 @@ func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Resul
 		item = itemID
 		return s.rows.markDone(ctx, tx, r.ID, itemID)
 	}
-	switch err = commit(ctx, blob.Staged(d, key), markDone); {
+	switch err = commit(ctx, blob.Staged(s.conn, d, key), markDone); {
 	case err == nil:
 	case errors.Is(err, errAborted):
 		return Result{}, unknown()
@@ -342,7 +342,7 @@ func (s *Service) completeSmall(ctx context.Context, r row) error {
 		if s.algorithm == "sha256" {
 			sum = blob.Checksum{Algorithm: "sha256", Value: empty[:]}
 		}
-		return blob.MapStoreError(s.objects.Put(ctx, s.dataKey(r.ID), bytes.NewReader(nil), 0, sum))
+		return blob.MapStoreError(s.objects.Put(ctx, s.dataKey(r.ID), bytes.NewReader(nil), 0, sum, nil))
 	}
 	merged, err := s.joinTails(ctx, r, r.Tails, nil, nil)
 	if err != nil {
@@ -361,7 +361,7 @@ func (s *Service) completeSmall(ctx context.Context, r row) error {
 		return err
 	}
 	defer merged.Close()
-	return blob.MapStoreError(s.objects.Put(ctx, s.dataKey(r.ID), merged.Reader(), merged.Size, s.checksumOf(merged)))
+	return blob.MapStoreError(s.objects.Put(ctx, s.dataKey(r.ID), merged.Reader(), merged.Size, s.checksumOf(merged), nil))
 }
 
 // tailAsPart sends the recorded tail, its segments joined, as the last part. One continuation does it under a short claim of its own

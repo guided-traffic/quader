@@ -101,6 +101,9 @@ type ReplicaSnapshot struct {
 	// Valkey is the replica's view of Valkey (R-OPS-003), rendered by the
 	// caller; opaque here. No credential, ACL user name or key appears.
 	Valkey json.RawMessage
+	// ObjectStore is the replica's object-store view (R-OPS-003, storage.md R-STOR-060): {"connections": [{"id", "circuit",
+	// "drain"}]}, rendered by the caller; opaque here. No endpoint, bucket or credential appears. Nil writes '{}'.
+	ObjectStore json.RawMessage
 	// Runtime is the replica's measurement of the period since the previous
 	// snapshot (Q-OPS-175); nil writes '{}', which reads back as no runtime.
 	Runtime *ReplicaRuntime
@@ -305,6 +308,10 @@ func upsertParams(id ReplicaIdentity, snap ReplicaSnapshot, held []HeldInfo) (q.
 			return q.UpsertReplicaParams{}, err
 		}
 	}
+	objectStore := string(snap.ObjectStore)
+	if objectStore == "" {
+		objectStore = "{}"
+	}
 	keyIDs := id.SecretKeyIDs
 	if keyIDs == nil {
 		keyIDs = []string{}
@@ -313,7 +320,7 @@ func upsertParams(id ReplicaIdentity, snap ReplicaSnapshot, held []HeldInfo) (q.
 		InstanceUid: id.UID, Name: id.Name, Version: id.Version, Revision: id.Revision,
 		Roles: []string{id.Role}, State: snap.State, Checks: string(checks), Leases: string(leases),
 		SecretKeyIds: keyIDs, ActiveSecretKeyID: id.ActiveSecretKeyID, Node: id.Node,
-		Valkey: valkey, Pool: id.Pool, Runtime: string(runtime),
+		Valkey: valkey, Pool: id.Pool, Runtime: string(runtime), ObjectStore: objectStore,
 		StartedAt: pgtype.Timestamptz{Time: id.StartedAt, Valid: true},
 	}, nil
 }

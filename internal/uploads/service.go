@@ -53,8 +53,10 @@ type ObjectStore = blob.ObjectStore
 type Options struct {
 	// DB runs the service's transactions on the main pool.
 	DB blob.DB
-	// Objects is the object-store client of the replica.
+	// Objects is the client of the connection the sessions start on (Connection).
 	Objects ObjectStore
+	// Connection is the id of the connection the sessions start on and stay on (R-STOR-054); empty is default.
+	Connection string
 	// Spool holds the segment of a part while it is sent.
 	Spool *blob.Spool
 	// Storage is the storage section: the prefix, the payload checksum, the maximum upload size and storage.uploads.
@@ -71,6 +73,7 @@ type Service struct {
 	spool     *blob.Spool
 	cfg       config.StorageUploads
 	prefix    string
+	conn      string // the connection the sessions start on
 	algorithm string
 	maxSize   int64
 	log       *slog.Logger
@@ -87,7 +90,22 @@ func New(o Options) (*Service, error) {
 	if o.DB == nil || o.Objects == nil || o.Spool == nil {
 		return nil, errors.New("uploads: the service needs a database, an object store and a spool")
 	}
-	return newService(pgRows{db: o.DB}, o), nil
+	return newService(pgRows{db: o.DB, conn: sessionConnection(o).ID}, o), nil
+}
+
+// sessionConnection is the element of the connection the sessions start on (Options.Connection, default when empty), with its
+// defaults (storage.md R-STOR-054).
+func sessionConnection(o Options) config.StorageConnection {
+	id := o.Connection
+	if id == "" {
+		id = config.DefaultConnectionID
+	}
+	for _, c := range o.Storage.Connections {
+		if c = c.WithDefaults(); c.ID == id {
+			return c
+		}
+	}
+	return config.StorageConnection{ID: id}.WithDefaults()
 }
 
 func newService(r rows, o Options) *Service {
@@ -95,12 +113,13 @@ func newService(r rows, o Options) *Service {
 	if log == nil {
 		log = slog.Default()
 	}
-	algorithm := o.Storage.S3.PayloadChecksum
+	conn := sessionConnection(o)
+	algorithm := conn.PayloadChecksum
 	if algorithm == "none" {
 		algorithm = ""
 	}
 	return &Service{
-		rows: r, objects: o.Objects, spool: o.Spool, cfg: o.Storage.Uploads, prefix: o.Storage.S3.Prefix, algorithm: algorithm,
+		rows: r, objects: o.Objects, spool: o.Spool, cfg: o.Storage.Uploads, prefix: conn.KeyPrefix(), conn: conn.ID, algorithm: algorithm,
 		maxSize: int64(o.Storage.Upload.MaxSize), log: log, metrics: o.Metrics,
 	}
 }

@@ -9,10 +9,10 @@
 -- count and the insert are one statement, and the caller holds the lock of the repository row (UploadLockRepository), so that two starts at
 -- once cannot both count below the cap: the second one waits for the lock and then sees the first insert (READ COMMITTED takes a new
 -- snapshot per statement). A principal that is none counts as the all-zero uuid, which the expression index on the count shares.
-INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, principal_id, hash_state, part_size, s3_upload_id, state)
+INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, principal_id, hash_state, part_size, s3_upload_id, state, connection_id)
 SELECT sqlc.arg(id)::text::uuid, sqlc.arg(repo_id)::bigint, sqlc.arg(addressed_repo_id)::bigint, sqlc.arg(binding)::text,
         NULLIF(sqlc.arg(principal_id)::text, '')::uuid, sqlc.arg(hash_state)::bytea, sqlc.arg(part_size)::bigint,
-        sqlc.arg(s3_upload_id)::text, 'open'
+        sqlc.arg(s3_upload_id)::text, 'open', sqlc.arg(connection_id)::text
 WHERE (SELECT count(*) FROM upload_sessions o
         WHERE o.repo_id = sqlc.arg(repo_id)::bigint AND COALESCE(o.principal_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE(NULLIF(sqlc.arg(principal_id)::text, '')::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
           AND o.state IN ('open', 'completing', 'assembled')) < sqlc.arg(max_open)::bigint;

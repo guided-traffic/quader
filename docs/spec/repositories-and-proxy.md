@@ -3529,7 +3529,7 @@ Priority: **P1** · Covers: RMT-008
   and MUST be reloaded within 60 s of a change without a restart; new connections use the new pool,
   open connections are not torn down. The reload is built in M0: the outbound clients read their trust
   store again at most every 10 s on use (`DefaultTrustCheckEvery`), so the bound holds with margin, and the
-  object store's `storage.s3.ca_file` takes the same path ([R-STOR-030](storage.md)). The mechanism is
+  object store's `storage.connections[].ca_file` takes the same path ([R-STOR-030](storage.md)). The mechanism is
   described in [security/transport-encryption.md](../security/transport-encryption.md).
 - A verification failure answers 502 `tls_untrusted`, is logged as a security event and does
   not count toward the circuit (R-REPO-029): a certificate that suddenly fails to verify may be an

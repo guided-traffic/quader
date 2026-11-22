@@ -29,7 +29,7 @@ func TestCAFile(t *testing.T) {
 
 	dir := t.TempDir()
 	caFile := storeCA.WriteCA(t, dir, "s3-ca.crt")
-	cfg := blobtest.Storage(t, dir).S3
+	cfg := blobtest.S3(t)
 	cfg.Endpoint, cfg.Region, cfg.Bucket, cfg.ForcePathStyle = srv.URL, "us-east-1", "b", true
 	cfg.AllowInsecureEndpoint, cfg.CAFile = false, caFile
 	cfg.Retry = config.StorageS3Retry{MaxAttempts: 1, MaxBackoff: time.Millisecond}

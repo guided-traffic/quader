@@ -25,11 +25,11 @@ func TestR_BAK_021_ABackupOfTheCreatePipelineRestoresIntoAFreshInstallation(t *t
 	}
 	cfg := loaded.Config
 	factory := outbound.New(cfg.Proxy.Outbound)
-	client, err := s3.NewFromFactory(context.Background(), cfg.Storage.S3, factory)
+	client, err := s3.NewFromFactory(context.Background(), firstS3(cfg.Storage), factory)
 	if err != nil {
 		t.Fatal(err)
 	}
-	in := &install{t: t, dbName: src.stack.Database(), dbCfg: cfg.Database, s3cfg: cfg.Storage.S3, obj: client, client: client, prefix: cfg.Storage.S3.Prefix}
+	in := &install{t: t, dbName: src.stack.Database(), dbCfg: cfg.Database, s3cfg: firstS3(cfg.Storage), obj: client, client: client, prefix: firstS3(cfg.Storage).Prefix}
 	in.dbCfg.Preflight.AllowSuperuser = true
 
 	// A target of its own, so that the backup under test is the pipeline's and not the fixture's.

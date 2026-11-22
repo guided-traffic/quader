@@ -52,7 +52,7 @@ func downloadBuffer(d config.StorageDownload, size int64) int64 {
 // request itself: its buffer and what the object store has sent ahead of the
 // reader, at most the receive window (Q-ARCH-241, Q-ARCH-328).
 func DownloadCost(cfg config.Storage, size int64) int64 {
-	return downloadBuffer(cfg.Download, size) + min(max(size, 0), int64(cfg.S3.HTTP.ReceiveWindow))
+	return downloadBuffer(cfg.Download, size) + min(max(size, 0), int64(cfg.ObjectStore.HTTP.ReceiveWindow))
 }
 
 // Release returns a buffer of Buffer to its pool; one of another length is left
@@ -81,5 +81,5 @@ func RangeCost(cfg config.Storage, size int64, r ByteRange) int64 {
 	}
 	n = max(n, 0)
 	buf := min(n, max(int64(cfg.Download.BufferSize), 4096))
-	return downloadBuffer(config.StorageDownload{BufferSize: config.ByteSize(buf), HoldBack: 0}, math.MaxInt64) + min(n, int64(cfg.S3.HTTP.ReceiveWindow))
+	return downloadBuffer(config.StorageDownload{BufferSize: config.ByteSize(buf), HoldBack: 0}, math.MaxInt64) + min(n, int64(cfg.ObjectStore.HTTP.ReceiveWindow))
 }

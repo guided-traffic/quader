@@ -109,7 +109,7 @@ func TestR_BAS_001_AKeyOfAnotherSectionStopsStartupNamingKeyAndRole(t *testing.T
 		name, extra, want string
 	}{
 		{"database.host", "database:\n  host: db\n", "database.host"},
-		{"storage", "storage:\n  s3:\n    bucket: b\n", "storage.s3.bucket"},
+		{"storage", "storage:\n  replication:\n    min_copies: 1\n", "storage.replication.min_copies"},
 		{"auth", "auth:\n  anonymous:\n    allowed: true\n", "auth.anonymous.allowed"},
 		{"server.endpoints", "server:\n  base_url: https://packages.example.com\n  endpoints:\n    x:\n      listen: ':9000'\n", "server.endpoints.x.listen"},
 		{"server.additional_base_urls", "server:\n  base_url: https://packages.example.com\n  additional_base_urls: [https://a.example]\n", "server.additional_base_urls"},

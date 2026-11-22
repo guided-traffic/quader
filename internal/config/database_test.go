@@ -33,7 +33,7 @@ func TestDatabaseTLSProblem(t *testing.T) {
 		})
 	}
 	t.Run("R-HA-015 the load refuses require without a CA file naming ssl_mode", func(t *testing.T) {
-		env := minimalEnv("QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_DATABASE_SSL_MODE=require")
+		env := minimalEnv("QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]", "QUADER_DATABASE_SSL_MODE=require")
 		_, err := Load(Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": ""}), Environ: env, Command: CommandMigrate})
 		if !hasIssue(err, "database.ssl_mode") {
 			t.Fatalf("got %v", err)

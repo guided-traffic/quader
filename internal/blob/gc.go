@@ -86,6 +86,8 @@ type Collector struct {
 	// uploads, when set, makes the run expire and clean up the upload sessions (WithUploadSessions).
 	uploads                *config.StorageUploads
 	sweepPages, sweepBatch int
+	// batchDelete is the connection's batch_delete: deletes go as DeleteObjects (Q-STOR-222, WithBatchDelete).
+	batchDelete bool
 
 	// Paused reports the deletion pause of R-HA-025. The default reads the
 	// system_state key deletions_paused_at.
@@ -115,9 +117,13 @@ func WithCollectorClock(now func() time.Time) CollectorOption {
 // WithCollectorPoll sets how often the end of a run looks for rows to settle.
 func WithCollectorPoll(d time.Duration) CollectorOption { return func(c *Collector) { c.poll = d } }
 
-// NewCollector builds a collector. prefix is storage.s3.prefix.
+// WithBatchDelete sets whether deletes go as DeleteObjects: the batch_delete of the connection the collector deletes on
+// (Q-STOR-222); true by default.
+func WithBatchDelete(on bool) CollectorOption { return func(c *Collector) { c.batchDelete = on } }
+
+// NewCollector builds a collector. prefix is the prefix of the connection it deletes on.
 func NewCollector(cfg config.StorageGC, prefix string, objects ObjectStore, db DB, opts ...CollectorOption) *Collector {
-	c := &Collector{db: db, objects: objects, prefix: prefix, cfg: cfg, log: slog.Default(), now: time.Now}
+	c := &Collector{db: db, objects: objects, prefix: prefix, cfg: cfg, log: slog.Default(), now: time.Now, batchDelete: true}
 	for _, o := range opts {
 		o(c)
 	}
@@ -606,7 +612,7 @@ func digestBytes(ds []Digest) [][]byte {
 // single objects are counted in res.Errors; an error that stops the run (the
 // context, an open circuit) is returned.
 func (c *Collector) removeObjects(ctx context.Context, digests []Digest, res *GCResult) (done []Digest, err error) {
-	if c.cfg.BatchDelete {
+	if c.batchDelete {
 		for len(digests) > 0 {
 			n := min(len(digests), 1000)
 			chunk := digests[:n]

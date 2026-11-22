@@ -101,13 +101,17 @@ func newInstall(t *testing.T) *install {
 	}
 	t.Cleanup(func() { _ = conn.Close(context.Background()) })
 
-	vk, s3 := testenv.ValkeyConfig(t), testenv.S3Config(t)
+	vk := testenv.ValkeyConfig(t)
 	dir := t.TempDir()
 	var sentinels []string
 	for _, s := range vk.Sentinels {
 		sentinels = append(sentinels, strconv.Quote(s))
 	}
 	key := write(t, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{42}, 32)))
+	// A prefix of the installation's own: the location's marker names one installation, and every install here is a new
+	// one (R-STOR-051).
+	prefix := "it-srv/" + name
+	testenv.RemoveObjectsAtCleanup(t, testenv.S3Config(t).BlobsBucket, prefix)
 	env := []string{
 		"QUADER_DATABASE_HOST=" + host, "QUADER_DATABASE_PORT=" + port, "QUADER_DATABASE_NAME=" + name,
 		"QUADER_DATABASE_USERNAME_FILE=" + write(t, dir, "db-user", user+"\n"), "QUADER_DATABASE_PASSWORD_FILE=" + write(t, dir, "db-pass", pass+"\n"),
@@ -121,11 +125,7 @@ func newInstall(t *testing.T) *install {
 		"QUADER_VALKEY_SENTINEL_PASSWORD_FILE=" + write(t, dir, "vk-sentinel-pass", vk.SentinelPassword),
 		"QUADER_VALKEY_USERNAME_FILE=" + write(t, dir, "vk-user", vk.Username), "QUADER_VALKEY_PASSWORD_FILE=" + write(t, dir, "vk-pass", vk.Password),
 		"QUADER_VALKEY_TLS_CA_FILE=" + vk.CAFile, "QUADER_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
-		"QUADER_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "QUADER_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "QUADER_STORAGE_S3_REGION=" + s3.Region,
-		"QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE=" + testenv.CAFile(t),
-		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",
-		"QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE=" + write(t, dir, "s3-id", s3.AccessKey),
-		"QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE=" + write(t, dir, "s3-secret", s3.SecretKey),
+		"QUADER_STORAGE_CONNECTIONS=" + testenv.ConnectionsJSON(t, dir, prefix),
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[" + strconv.Quote(key) + "]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 		"QUADER_SERVER_TRUSTED_PROXIES=[\"127.0.0.0/8\"]", "QUADER_TRACING_TRUSTED_PEERS=[\"127.0.0.0/8\"]", "QUADER_SERVER_BASE_URL=http://quader.test",
 		"QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ=true",

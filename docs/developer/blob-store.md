@@ -1,10 +1,12 @@
 # Blob store
 
-Content-addressed storage on an S3-compatible bucket: [internal/blob](../../internal/blob/) (everything that does not
-depend on an S3 client), [internal/blob/s3](../../internal/blob/s3/) (the AWS SDK adapter, the only package that imports
+Content-addressed storage on one to eight S3-compatible object-store connections: [internal/blob](../../internal/blob/) (everything that
+does not depend on an S3 client), [internal/blob/s3](../../internal/blob/s3/) (the AWS SDK adapter, the only package that imports
 the SDK), [internal/blob/blobtest](../../internal/blob/blobtest/) (an in-memory store with fault injection for tests).
-Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024, R-STOR-025, R-STOR-030 to R-STOR-035, R-STOR-046.
-The row is the authority on whether a blob exists; the object is the content. Nothing in this tree uses Valkey or a
+Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024, R-STOR-025, R-STOR-030 to R-STOR-035, R-STOR-046, R-STOR-050 to
+R-STOR-053, R-STOR-055, R-STOR-060, R-STOR-062.
+The row is the authority on whether a blob exists; a row per copy (`blob_copies`) says on which connection its object lies, under which
+name and size, and what is known about it; the object is the content. Nothing in this tree uses Valkey or a
 session-level advisory lock (R-STOR-046, enforced by [internal/archtest](../../internal/archtest/)). The first caller of `Ingest`,
 `Commit` and `Open` is the files transfer ([files.md](files.md)): its link function is the item insert or replace, and a download opens
 the verifying reader or a range.
@@ -14,21 +16,26 @@ the verifying reader or a range.
 | File | Responsibility |
 |---|---|
 | [key.go](../../internal/blob/key.go) | `Digest`, `Key(prefix, digest)`, `ParseKey`, `Digests` (the four digests and the size) |
-| [objects.go](../../internal/blob/objects.go) | `ObjectStore` interface, `StoreError` and its kinds, `ErrNotFound`, `ErrCircuitOpen` |
+| [objects.go](../../internal/blob/objects.go) | `ObjectStore` interface (with `Metadata` on `Put`, `CreateMultipart`, `Copy`, `Head`, `Get`), `BucketCopier` (a copy from another bucket of one endpoint), `StoreError` and its kinds, `ErrNotFound`, `ErrCircuitOpen` |
+| [connections.go](../../internal/blob/connections.go) | `Connection` (one element: its client, prefix, naming function `ObjectKey`, `Drain`, `Encrypted`, `Capabilities`, `Verifies`, `Read`, guarded `Presign`, `LinkCheck`), `Connections` (the ordered set: `List`, `Get`, `First`, `Targets`, `Writable`, the read order) |
+| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `Store.Servable`, the marks of a copy (`markCopy`, `copyBack`), the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
+| [record.go](../../internal/blob/record.go) | `Store.RecordConnections` (first sight, fixed properties, retired ids, the bind of the migration's row), `RecordCapabilities`, `HoldsCopies`, `ForgetConnection`, `Refusal` |
+| [startcheck.go](../../internal/blob/startcheck.go) | `CheckConnection` (the start check of one connection with the marker and the capabilities), `AwaitConnections` (the first readiness of R-STOR-060), `MarkerKey` |
 | [spool.go](../../internal/blob/spool.go) | `Spool`: admission, the budget, spool files, the single hashing pass, cleanup |
 | [store.go](../../internal/blob/store.go), [commit.go](../../internal/blob/commit.go) | `Store`, `Ingest`, `Commit` (the commit protocol), `Lookup` |
 | [transfer.go](../../internal/blob/transfer.go) | single `PutObject` or multipart from the spool file, part sizing, abort |
 | [staged.go](../../internal/blob/staged.go), [spool_segment.go](../../internal/blob/spool_segment.go) | the staging area of the upload sessions: `SessionKey`, `Staged` (a blob that is in the bucket already, committed by a server-side copy), `Spool.IngestSegment` (one part of a request, behind the recorded tail, through the session's hash functions) |
 | [gc_uploads.go](../../internal/blob/gc_uploads.go) | the session step of a collection run: expiry, `RemoveSession`, the sweep of `_uploads/` |
-| [download.go](../../internal/blob/download.go) | `Store.Open` and the verifying reader (hold-back, `content_status`), the mark of a missing object (`markMissing`) and its recheck (`RecheckMissing`) |
-| [guard.go](../../internal/blob/guard.go) | `Guard`: circuit breaker and request metrics around any `ObjectStore` |
+| [download.go](../../internal/blob/download.go) | `Store.Open` over the copies and the verifying reader (hold-back, the copy's stored size), the mark of a copy a connection does not have (`copyGone`) and the recheck of a missing blob (`RecheckMissing`) |
+| [guard.go](../../internal/blob/guard.go) | `Guard`: circuit breaker and request metrics with the label `connection` around any `ObjectStore`, one per connection; `Circuit`, the guarded `Presign` and `CopyFrom` |
 | [gc.go](../../internal/blob/gc.go), [gcjob.go](../../internal/blob/gcjob.go) | `Collector` (per-blob protocol, hand-over, pause, hold, fault hook) and the job adapter |
 | [usagefold.go](../../internal/blob/usagefold.go) | `UsageFolder`: the fold loop of the usage counters (R-STOR-003) and its `Fold` iteration |
-| [conformance.go](../../internal/blob/conformance.go) | startup check, conformance checks, `AwaitStartupCheck` |
-| [sql.go](../../internal/blob/sql.go), [tables.go](../../internal/blob/tables.go), [metrics.go](../../internal/blob/metrics.go), [errors.go](../../internal/blob/errors.go) | the `DB` interface, the `blobRows` seam and its sqlc implementation, export-class registration, metric families, `errs` mapping |
+| [conformance.go](../../internal/blob/conformance.go) | startup check, conformance checks (with the capability checks), `AwaitStartupCheck` |
+| [sql.go](../../internal/blob/sql.go), [tables.go](../../internal/blob/tables.go), [metrics.go](../../internal/blob/metrics.go), [errors.go](../../internal/blob/errors.go) | the `DB` interface, the `Rows` seam (`WithRows`) and its sqlc implementation, export-class registration, metric families, `errs` mapping |
 | [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `quader admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify`, lists the versions of each key without an object (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version |
 | [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `quader admin storage verify` ([below](#storage-verify-r-stor-027-q-stor-200)): `Run` over a `Source` (the pages and the items) and an `Objects` (`Head`), `PGSource` |
-| [s3/client.go](../../internal/blob/s3/client.go) | `s3.Client` (the `ObjectStore`), `NewFromFactory` |
+| [s3/client.go](../../internal/blob/s3/client.go), [s3/copy.go](../../internal/blob/s3/copy.go) | `s3.Client` (the `ObjectStore` and the `BucketCopier`: `Location`, `CopyFrom`), `NewFromFactory` |
+| [blobtest/endpoint.go](../../internal/blob/blobtest/endpoint.go) | `blobtest.NewEndpoint`: in-memory stores of the buckets of one endpoint, which copy from each other (`CopyFrom`) |
 | [s3/credentials.go](../../internal/blob/s3/credentials.go) | credential sources of R-STOR-031, SDK configuration |
 | [s3/errors.go](../../internal/blob/s3/errors.go), [s3/idle.go](../../internal/blob/s3/idle.go) | SDK error classification; stall detection |
 
@@ -74,7 +81,7 @@ the next round starts after all of them were served, and a failure queues every 
 [queries/blob.sql](../../internal/meta/postgres/queries/blob.sql), run on the transaction behind `meta.Tx`
 (`postgres.Unwrap` + `q.New`, [sql.go](../../internal/blob/sql.go)); `meta.Tx` itself cannot run SQL. `Store` needs
 only `DB.InTx(ctx, func(meta.Tx) error)`, which `*postgres.DB` has. The commit and download paths reach the table
-through the small `blobRows` interface so that the unit tests can simulate it (`WithRows` in `export_test.go`); the
+through the small `Rows` interface so that the unit tests can simulate it (`WithRows` in `export_test.go`); the
 collector has no such seam.
 
 The row is inserted for an object no row announced only within `min(commit_deadline, delete_settle / 2)` of the end
@@ -83,11 +90,21 @@ object is written again. `delete_settle` therefore has a minimum of 1 s.
 
 | Row state seen | Action |
 |---|---|
-| no row, object not written (or written longer than `commit_deadline` ago) | roll back, write the object, loop |
-| no row, object written | `INSERT … ON CONFLICT DO NOTHING`; 0 rows means a concurrent winner, roll back and loop |
-| `deleting` | roll back, forget the write, poll until the row is gone (`blob_wait_timeout`, else `503`), loop |
-| `live`, `content_status <> 'ok'` | roll back, write the object, mark `ok`, loop |
-| `live` | run `link`, commit (a deduplication hit when this call wrote nothing) |
+| no row, object not written (or written longer than `commit_deadline` ago) | roll back, write the object to the connections, loop |
+| no row, object written | `INSERT … ON CONFLICT DO NOTHING`, then a copy row per object written and a queue row per other connection without drain (`recordWrites`); 0 rows means a concurrent winner, roll back and loop |
+| `deleting` | roll back, forget the writes, poll until the row is gone (`blob_wait_timeout`, else `503`), loop |
+| `live`, `content_status <> 'ok'` | roll back, write the object to the connections, record their copies and let the content state follow (`repair`), loop |
+| `live` | run `link`, commit (a deduplication hit when this call wrote nothing; when it wrote within the insert bound, its copy rows too) |
+
+**The object write over the connections** (R-STOR-053, `writeObjects` in [transfer.go](../../internal/blob/transfer.go)): the content goes to
+the first `storage.replication.min_copies` writable connections (`Connections.Writable`: no `drain`, the circuit closed on this replica) in
+parallel, each with its own payload checksum. A write that fails with a transient error or an open circuit is started on the next writable
+connection while the spool holds the bytes; fewer than `min_copies` successful writes are the `503` of R-STOR-036, and what was written is
+left without a copy row for the orphan sweep. A copy row is `present`, with `stored_size` the bytes written, and `verified_at` now when the
+connection enforces the payload checksum (`Connection.Verifies`, the start check's capability). The upsert of the copy row overwrites a
+`missing` or `corrupt` row and leaves a `deleting` one ([Q-STOR-253](../spec/storage.md#q-stor-253--a-commits-write-overwrites-a-missing-or-corrupt-copy-row)).
+The content state of a blob follows from its copies (`DeriveContentStatus`); the statements that change a copy lock the blob row `FOR NO
+KEY UPDATE` first, so two marks of one blob, and a mark and a commit, never derive from each other's stale view.
 
 SQLSTATE `AS001` from `link` (the guard trigger saw a row that is not live) restarts the loop. After
 `storage.upload.commit_attempts` rounds the error is `503` (`ErrCommitAttempts`). A failure after the object write
@@ -96,20 +113,29 @@ call wrote the object, inserted the row, or deduplicated.
 
 ## Transfer (R-STOR-006)
 
-Up to `storage.s3.multipart.threshold`: one `PutObject`. Above it, Quader's own multipart upload (Q-ARCH-4): part size is
-`part_size`, raised so the content fits 10,000 parts (whole MiB, `blob.PartSize`); each part is an
+Per connection, up to `storage.object_store.multipart.threshold`: one `PutObject`. Above it, Quader's own multipart upload (Q-ARCH-4):
+part size is `part_size`, raised so the content fits 10,000 parts (whole MiB, `blob.PartSize`); each part is an
 `io.SectionReader` on the spool file; `multipart.concurrency` parts per upload, `multipart.max_concurrent_parts` per
-`Store`. Any failure or cancellation aborts the upload with a context of its own. After `CompleteMultipartUpload` the
-object size is checked with `HeadObject`. The payload checksum is `storage.s3.payload_checksum`: for a single request
-SHA-256 or MD5 of the whole content (known from the hashing pass), for parts the digest of the part (computed by one
-extra read of the part from the spool file) and `ChecksumAlgorithm: SHA256` on `CreateMultipartUpload`.
+`Store` over all its connections. Any failure or cancellation aborts the upload with a context of its own. After
+`CompleteMultipartUpload` the object size is checked with `HeadObject`. The payload checksum is the connection's `payload_checksum`: for a
+single request SHA-256 or MD5 of the whole content (known from the hashing pass), for parts the digest of the part (computed by one
+extra read of the part from the spool file) and `ChecksumAlgorithm: SHA256` on `CreateMultipartUpload`. Stage 1 writes no metadata.
 
 ## Object-store client (R-STOR-030 to R-STOR-033)
 
-`s3.NewFromFactory(ctx, cfg.S3, outboundFactory)` takes its HTTP client from `internal/outbound` (purpose
-`objectstore`) with the connect and response-header timeouts and the proxy of `storage.s3.http`. Retries are the SDK's
+The configuration is a list `storage.connections` of flat elements and the shared block `storage.object_store`
+([storage.go](../../internal/config/storage.go), [storage_connections.go](../../internal/config/storage_connections.go)): the loader
+validates what the configuration says (R-STOR-050), `config.ResolveConnections` reads the files of a provisioner's Secret
+(`bucket_file`, `region_file`, `endpoint_file`) and checks the location rule again where the clients are built
+([Q-STOR-251](../spec/storage.md#q-stor-251--the-files-of-a-connections-location-are-read-when-the-clients-are-built-not-when-the-configuration-is-loaded)),
+and `config.ClientConfig(element, objectStore)` is the `config.StorageS3` of one connection's client, the type the backup target and the
+Bastion's bucket use as well. The operator commands and the backup reach the first connection (`Storage.FirstClient`) until packages D and
+E teach them the others.
+
+`s3.NewFromFactory(ctx, config.ClientConfig(el, cfg.ObjectStore), outboundFactory)` takes its HTTP client from `internal/outbound` (purpose
+`objectstore`) with the connect and response-header timeouts and the proxy of `storage.object_store.http`. Retries are the SDK's
 standard retryer (`retry.max_attempts`, `retry.max_backoff`). A transfer in which no byte moves for
-`http.idle_transfer_timeout` is cancelled (`idle.go`). Credentials (`credentials.source`):
+`http.idle_transfer_timeout` is cancelled (`idle.go`). Credentials (the connection's `credentials_source`):
 
 | Source | Behavior | Tested |
 |---|---|---|
@@ -121,20 +147,24 @@ standard retryer (`retry.max_attempts`, `retry.max_backoff`). A transfer in whic
 `s3/errors.go`: a missing key is `ErrNotFound`; `AccessDenied`, `NoSuchBucket`, bad credentials are `KindConfig`;
 5xx, throttling, no answer and credential retrieval failures are `KindTransient`; other 4xx are `KindOther`.
 
-`blob.NewGuard(store, cfg.S3.CircuitBreaker, …)` wraps any `ObjectStore`: `failure_threshold` consecutive transient
-failures open the circuit for `open_duration`, then one probe request goes through. Config errors, 404 and other 4xx
-are answers, not failures; a cancelled caller is no evidence. Metrics: `quader_storage_s3_requests_total{operation,outcome}`
-(the specification writes `op`, which R-OPS-007 does not allow), `quader_storage_s3_request_duration_seconds`,
-`quader_storage_s3_bytes_total{direction}`, `quader_storage_s3_circuit_open`. The composition root builds
-`blob.NewMetrics(m)` once and passes it to the spool, the guard and the collector.
+`blob.NewGuard(store, cfg.ObjectStore.CircuitBreaker, blob.WithGuardConnection(id), …)` wraps any `ObjectStore`, one per connection:
+`failure_threshold` consecutive transient failures open the circuit for `open_duration`, then one probe request goes through. Config
+errors, 404 and other 4xx are answers, not failures; a cancelled caller is no evidence. One connection's open circuit changes nothing on
+another's. Metrics, each with the label `connection`: `quader_storage_s3_requests_total{connection,operation,outcome}`,
+`quader_storage_s3_request_duration_seconds`, `quader_storage_s3_bytes_total{connection,direction}`,
+`quader_storage_s3_circuit_open{connection}` (0 from the guard's construction); the reads add `quader_storage_copies_damaged_total{connection,status}`
+and `quader_storage_reads_fallen_over_total{connection,reason}` (`not_found`, `unavailable`, `size`,
+[Q-STOR-254](../spec/storage.md#q-stor-254--the-names-the-start-check-and-the-reads-give-their-findings)). The guard's `Presign` refuses while
+the circuit is open (R-STOR-062), and `CopyFrom` passes the breaker. The composition root builds `blob.NewMetrics(m)` once and passes it to
+the spool, the guards and the collector.
 
-Endpoint: a `storage.s3.endpoint` (and `presign.endpoint`) without a scheme is a host and means `https://`
-(Q-STOR-15). `config.NormalizeEndpoint` does it once at load (`Config.Finalize`, source `derived`) and again in
-`s3.New`, so a client built from a hand-made config agrees. Plaintext is always spelled `http://` with
-`allow_insecure_endpoint`; the flag never changes a scheme-less host.
+Endpoint: a connection's `endpoint` without a scheme is a host and means `https://` (Q-STOR-15). `config.NormalizeEndpoint` does it once at
+load (`Config.Finalize`, the source of `storage.connections` becomes `derived`) and again in `s3.New`, so a client built from a hand-made
+config agrees. Plaintext is always spelled `http://` with `allow_insecure_endpoint`; the flag never changes a scheme-less host. A link is
+signed against the connection's own endpoint; the public address a link names is stage 3's (R-STOR-074).
 
 TLS: an `https://` endpoint verifies against the factory's trust store (system roots plus
-`proxy.outbound.tls.ca_files`), or, with `storage.s3.ca_file` set, against that bundle only: `NewFromFactory` builds a
+`proxy.outbound.tls.ca_files`), or, with the connection's `ca_file` set, against that bundle only: `NewFromFactory` builds a
 trust store of its own (`outbound.Factory.TrustStore` + `outbound.WithRootCAs`), read again like the factory's, so a
 rotated CA applies to the next connection without a restart (R-ARCH-035). A `ca_file` that does not load at start is a
 configuration error naming the key. `Client.HTTPClient()` is the client the store is reached with; a caller that
@@ -142,7 +172,7 @@ fetches a presigned URL itself (the conformance check) uses it, so the fetch tru
 
 Gaps against the specification, all visible at construction (nothing is silently ignored):
 
-- `storage.s3.http.proxy_credentials_file`: `NewFromFactory` refuses it. `outbound.WithProxyURL` sends only the user information of the proxy URL, which the configuration forbids (R-OPS-013: URL keys carry no credentials), and a file read once would not follow a rotation. Use a proxy that authenticates by source address until the outbound layer takes a re-read proxy credential.
+- `storage.object_store.http.proxy_credentials_file`: `NewFromFactory` refuses it. `outbound.WithProxyURL` sends only the user information of the proxy URL, which the configuration forbids (R-OPS-013: URL keys carry no credentials), and a file read once would not follow a rotation. Use a proxy that authenticates by source address until the outbound layer takes a re-read proxy credential.
 - `http.max_connections`, `tls_handshake_timeout`, `idle_conn_timeout`: the outbound factory has
   no options for them, so its defaults apply (`proxy_url` and `no_proxy` as host patterns are passed through; CIDR
   patterns in `no_proxy` are not).
@@ -150,29 +180,37 @@ Gaps against the specification, all visible at construction (nothing is silently
 
 ## Download verification (R-STOR-013, Q-STOR-6)
 
-`Store.Open(ctx, digest, size, OpenOptions)` returns a reader. A full read is verified unless
-`storage.download.verify` is false and the caller did not set `OpenOptions.Verify` (the UI's shared asset store sets it, Q-UI-143): SHA-256 is computed while reading and the last `hold_back` bytes are not released
-before the body ended and the digest matched. On a mismatch the reader returns `ErrCorrupt` instead of the held bytes
-(the HTTP layer aborts the response). Only evidence about the object marks the blob `corrupt`: an object whose size
-differs from the row's, or a body read to its end with another digest. A transport error aborts the read but changes no
-status. `WithDamageHook` is where the audit event hangs; the composition root binds none yet, so no detection writes one. A range is
-returned as stored (H-11).
+`Store.Open(ctx, digest, size, OpenOptions)` reads the blob's copies (one indexed lookup) and returns a reader of the first copy that
+answers (R-STOR-055): the `present` copies on connections this replica configures, in list order, a draining connection's last, a
+connection with an open circuit left out. A copy is left for the next before the first byte when its connection answers "no such object",
+fails transiently or answers with a size other than the copy's `stored_size`; after the first byte a failure aborts the response. With no
+copy to take, the read is `ErrNotFound` (no present copy on a configured connection, which `items.Store.Open` answers `503
+content_unavailable`), the store's `503` (the copies' connections failed), or `ErrCorrupt` (the last copy had another size). A full read is
+verified unless `storage.download.verify` is false and the caller did not set `OpenOptions.Verify` (the UI's shared asset store sets it,
+Q-UI-143): SHA-256 is computed while reading and the last `hold_back` bytes are not released before the body ended and the digest
+matched. On a mismatch the reader returns `ErrCorrupt` instead of the held bytes (the HTTP layer aborts the response) and marks that copy
+`corrupt`. A match stamps the copy's `verified_at` at most once a day (`VerifiedStampInterval`, Q-STOR-233). Only evidence about an object
+marks its copy; the blob's content state follows from its copies, so a copy's damage changes the blob only when no other copy is present.
+A transport error aborts the read but changes no state. `WithDamageHook` is where the audit event hangs; the composition root binds none
+yet, so no detection writes one. A range is returned as stored (H-11).
 
-A store that answers "no such object" (`ErrNotFound`), for a full or a ranged read, marks the blob `missing` (`markMissing`,
-R-HA-024, [Q-STOR-151](../spec/storage.md#q-stor-151--a-read-that-finds-no-object-marks-the-blob-missing-and-looks-once-more-after-the-mark)):
-`MarkBlobDamaged` changes only an `ok` row, so the detection is counted (`quader_storage_blobs_damaged_total{status="missing"}`, the alert
-`QuaderBlobMissing`) and logged with the digest once per blob. Then the object is looked for once more (`HeadObject`): a commit of the same
-content that wrote it again between the read and the mark would otherwise be undone, so a row whose object is there again is set `ok`. The
-error stays `ErrNotFound`; `items.Store.Open` answers it `503 content_unavailable`, and a remote repository fills the item again
+A connection that answers "no such object" (`ErrNotFound`), for a full or a ranged read, marks that copy `missing` and queues its repair
+(`copyGone`, `markCopy`, R-HA-024, [Q-STOR-151](../spec/storage.md#q-stor-151--a-read-that-finds-no-object-marks-the-blob-missing-and-looks-once-more-after-the-mark)):
+`SetBlobCopyState` changes only a `present` copy, the change is counted (`quader_storage_copies_damaged_total`), and the blob turns
+`missing` (counted by `quader_storage_blobs_damaged_total{status="missing"}`, the alert `QuaderBlobMissing`) only when no other copy is
+present. Then the object is looked for once more on the same connection (`HeadObject`): a repair that wrote it again between the read and
+the mark would otherwise be undone, so a copy whose object is there again with its stored size is `present` again. A read of a blob
+without a present copy is `ErrNotFound`; `items.Store.Open` answers it `503 content_unavailable`, and a remote repository fills the item again
 ([proxy.md](proxy.md#lost-content-r-stor-027-q-repo-202-to-q-repo-204)). The mark is cleared by the commit protocol's repair (the next
 commit of the same content writes the object, table above), and it heals by itself
 ([Q-STOR-153](../spec/storage.md#q-stor-153--a-missing-mark-heals-by-itself-a-read-asks-the-store-again-once-per-blob-and-30-s)):
 `Store.RecheckMissing(digest, size)`, which every read of a blob marked `missing` calls through `items.Store.Usable` (`/files/`, the format
 host's `Serve`, the remote engine), claims the one look of `MissingRecheckInterval` (30 s) with `ClaimMissingRecheck`, a conditional `UPDATE`
 of the row's `checked_at` that moves it only when it is that old, so one read per blob and interval asks whatever the number of replicas.
-The claimer sends `HeadObject`; an object of the row's size sets `ok` (`MarkBlobOK`) and the read serves it; anything else leaves the mark,
-and the moved `checked_at` starts the interval again. `MarkBlobDamaged` sets `checked_at` too, so the interval starts at the detection.
-`checked_at` is the column R-STOR-027's scrub orders its existence checks by; no migration.
+The claimer sends one `HeadObject` per `missing` copy on a reachable connection of this replica; an object of the copy's stored size sets
+that copy `present` and the blob `ok`, and the read serves it; anything else leaves the mark, and the moved `checked_at` starts the
+interval again. The statement that turns a blob away from `ok` (`SetBlobContentStatus`) sets `checked_at` too, so the interval starts at the
+detection. `blobs.checked_at` keeps this one meaning; the scrub orders copies by their own `verified_at` (R-STOR-052).
 
 What a download holds ([Q-ARCH-241](../spec/architecture.md#q-arch-241--a-download-holds-one-buffer-of-its-own-size-and-the-object-store-sends-no-more-than-one-window-ahead)):
 
@@ -189,17 +227,21 @@ What a download holds ([Q-ARCH-241](../spec/architecture.md#q-arch-241--a-downlo
   `blob.DownloadCost(cfg, size)` is what a download of that size holds (its buffer class plus `min(size, receive_window)`), which
   `Store.Open` hands to the request's memory charge through `blob.WithMemory` before it asks the object store
   ([architecture.md](architecture.md#stage-4-and-the-memory-guard), Q-ARCH-328).
-- The object-store client's HTTP/2 receive window per stream is `storage.s3.http.receive_window` (`outbound.WithStreamReceiveWindow`);
+- The object-store client's HTTP/2 receive window per stream is `storage.object_store.http.receive_window` (`outbound.WithStreamReceiveWindow`);
   without it Go's transport lets the store send 4 MiB of an object ahead of a slow reader.
 
 ## Staged blobs and the upload sessions (R-STOR-011)
 
 The service that holds the sessions is [internal/uploads](../../internal/uploads/) (see [oci.md](oci.md#upload-sessions-r-stor-011)); this package
-gives it three things. `ObjectStore.Copy(src, dst, size)` is a server-side copy (`CopyObject` up to 5 GiB, `UploadPartCopy` parts of 1 GiB
-above, the encryption of every write; [s3/copy.go](../../internal/blob/s3/copy.go)). `blob.Staged(digests, key)` returns a `*Spooled` whose
-content is the object at `key`: `Commit` and `CommitAll` take it like any spooled body, and the only difference is the protocol's object
-write (`putStaged`: the copy to the content address, then a size check), which a deduplication hit never runs. If the staging object is gone
-the commit fails with `ErrStagingGone`. A staged body has no reader (its `Reader` fails) and no spool budget.
+gives it three things. `ObjectStore.Copy(src, dst, size, md)` is a server-side copy (`CopyObject` up to 5 GiB, `UploadPartCopy` parts of
+1 GiB above, the encryption of every write; `md` nil keeps the source's metadata, carried over by hand on the multipart copy;
+[s3/copy.go](../../internal/blob/s3/copy.go)). `blob.Staged(conn, digests, key)` returns a `*Spooled` whose content is the object at `key`
+on the connection `conn`: `Commit` and `CommitAll` take it like any spooled body, and the only difference is the protocol's object write
+(`putStaged`: the copy to the content address on that connection, then a size check; its copy row is `present` and not verified, so the
+scrub reads it first), which a deduplication hit never runs. With `min_copies` above 1 the content object is then streamed through the
+spool, hashed against the session's digests, to the next writable connections. If the staging object is gone the commit fails with
+`ErrStagingGone`. A staged body has no reader (its `Reader` fails) and no spool budget. Until package B pins each session
+(R-STOR-054), the service starts every session on the first connection without drain (`uploads.Options.Connection`).
 `Spool.IngestSegment(ctx, prefix, body, n, tee)` reads at most `n` bytes into a `*Spooled` (memory below the spool's threshold, a spool file
 above it, its budget reserved as the bytes arrive), the bytes of `prefix` first (the recorded tail, which the session's hash state has seen
 already) and then `body`, each byte of which goes through `tee` before it is kept; the result carries the segment's SHA-256 and MD5, the
@@ -207,7 +249,9 @@ payload checksums of a part.
 
 ## Garbage collection (R-STOR-024, R-STOR-025)
 
-`blob.NewCollector(cfg.GC, prefix, objects, db)`; `Run(ctx, RunOptions{Mode, DryRun, Cursor, Checkpoint})` returns a
+`blob.NewCollector(cfg.GC, prefix, objects, db, blob.WithBatchDelete(conn.BatchDelete()))`, built on the first connection without drain
+(collection per copy is package B's, R-STOR-057; until then it deletes there only, and the drop of a blob row in step 6 takes its copy and
+queue rows, `DropBlobRows`); `Run(ctx, RunOptions{Mode, DryRun, Cursor, Checkpoint})` returns a
 `GCResult` (`dryRun, trashPurged, candidates, kept, held, deleted, bytesReclaimed, errors, paused`, and the counters of the
 session step: `uploadSessionsAborted, uploadSessionsCleaned, uploadObjectsDeleted, uploadsAborted`). A run:
 
@@ -303,7 +347,7 @@ the figure over HTTP.
 
 `quader admin storage verify` ([cmd/quader/admin_storage.go](../../cmd/quader/admin_storage.go)) checks that the object of every `live` blob row is in the store.
 It is a command of the binary like `admin backup check`: it loads the configuration without a role, opens the database in the `web` role and the S3 client
-of `storage.s3` (the runtime credential, so it needs no permission the replicas lack), and never opens Valkey, so it runs in any pod of the installation
+of the first connection (the runtime credential, so it needs no permission the replicas lack), and never opens Valkey, so it runs in any pod of the installation
 (`kubectl exec deploy/quader-worker -- quader admin storage verify`) and, with the replicas held not ready, in a one-off pod of the release's configuration.
 
 | Part | Responsibility |
@@ -330,10 +374,32 @@ backoff capped at 30 s and logged once per minute, and the call returns only whe
 and delete visibility to the next read and list (A1), concurrent writes of identical bytes (A6), a ranged read, a
 multipart object invisible until completion and complete after, an aborted upload leaving neither object nor listed
 upload (A2), a completion that assembles the part it names and refuses an ETag the store never issued (a part number sent twice, A2), a server-side copy that replaces its destination and reports a missing source as not found (the object write of
-a session's finalize, R-STOR-011), `DeleteObjects` (optional: its failure names `storage.gc.batch_delete`) and a presigned
-URL. Everything it writes lies below `<prefix>/_probe/` and is removed. Conditional writes are not checked: Quader uses none.
+a session's finalize, R-STOR-011), `DeleteObjects` (optional: its failure names the connection's `batch_delete`), a presigned
+URL, and the capability checks (`Capability`: a wrong payload checksum refused, metadata kept by a write, metadata replaced by a copy onto itself
+that keeps the object's bytes, a server-side copy from each other connection on the endpoint, `ConformanceOptions.Peers`). The visibility of an overwrite and a delete is
+reported as `strong` or `eventual (tolerated, A1)` in `CheckResult.Note`, never as a failure (Q-STOR-249). Everything it writes lies below
+`<prefix>/_probe/` and is removed. Conditional writes are not checked: Quader uses none.
 
-The command `quader admin storage check` is not written yet; it is `RunConformance` plus a printed report.
+**The start check per connection** (R-STOR-035, [startcheck.go](../../internal/blob/startcheck.go)): `CheckConnection` is the startup check
+with the connection's payload checksum (a refusal is a configuration error naming `payload_checksum` and `request_checksum_calculation` and
+the values to try), the marker `<prefix>/_connection` (written when absent, refused when it names another installation or id, R-STOR-051),
+and the capabilities, which `Store.RecordCapabilities` writes into `storage_connections.capabilities` and `Connection.SetCapabilities`
+keeps for `Verifies`. `AwaitConnections` runs every connection's check at once with the backoff of `AwaitStartupCheck` and returns when the
+check passed on one connection without drain and every such connection answered once
+([Q-STOR-252](../spec/storage.md#q-stor-252--the-first-readiness-waits-for-each-connections-first-answer)); a configuration error of a
+connection without drain is the start's error, a draining connection's is logged. Before the checks, `Store.RecordConnections` records the
+connections (first sight with the audit event `system.storage.connection_added`, the fixed properties, a retired id refused, the bind of
+the migration's row, [Q-STOR-250](../spec/storage.md#q-stor-250--the-blobs-that-exist-become-copies-of-the-connection-default-which-its-first-replica-binds)).
+The readiness check `objectStore` asks every connection with one `HeadObject` on a sentinel key and names the failing ones
+(`unavailable: secondary`); it is reported, and with `health.require_object_store` gating while no connection without drain answers
+([wire_blob.go](../../internal/app/wire_blob.go) `objectStoreCheck`). Each heartbeat writes the connections, their circuits and their
+drain flags into `replica.object_store` (`objectStoreView`, R-OPS-003).
+
+`quader admin storage check [--connection <id>]` ([storage_connections.go](../../cmd/quader/storage_connections.go)) runs
+`RunConformance` on every connection, or the one named, with the others as peers, reads the marker without writing one, needs no database,
+prints one line per check (`ok`, `absent` for a missing capability, `FAILED`) and exits `5` when a check that is not optional failed.
+`quader admin storage forget-connection <id>` is `blob.ForgetConnection` with the audit event `system.storage.connection_forgotten`: exit
+`2` while its own configuration or a live replica (the registry's object-store view) has the id.
 
 ### Running it against another S3
 
@@ -353,15 +419,16 @@ Store-specific settings (all optional): `QUADER_TEST_S3_PAYLOAD_CHECKSUM` (`sha2
 `QUADER_TEST_S3_REQUEST_CHECKSUM` and `QUADER_TEST_S3_RESPONSE_CHECKSUM` (`when_supported` default, `when_required`),
 `QUADER_TEST_S3_BATCH_DELETE` (`true` default). Against SeaweedFS (the stack) the checks pass with the defaults, with
 `md5`, and with `none` plus `when_required`. The stack's gateway is https with a private CA, which the suite passes as
-`storage.s3.ca_file`; the presigned fetch must use `Client.HTTPClient()` (or a client with `WithRootCAs`) to trust it. SeaweedFS creates a missing bucket on the first write, so a wrong bucket name is
+the connection's `ca_file`; the presigned fetch must use `Client.HTTPClient()` (or a client with `WithRootCAs`) to trust it. SeaweedFS creates a missing bucket on the first write, so a wrong bucket name is
 not an error there; the credential test uses a wrong secret key instead.
 
 ## Tests
 
 | Tier | Where | What it proves |
 |---|---|---|
-| unit | [internal/blob](../../internal/blob/), [s3](../../internal/blob/s3/), [blobtest](../../internal/blob/blobtest/) | key layout, spool admission and cleanup on every error path, single pass digests, the commit protocol and its branches against a fake database, multipart (threshold, parts, concurrency, abort, checksums), the breaker, verification, the mark of a missing object, its repair and its recheck once per interval (`TestDownloadVerification`, Q-STOR-151, Q-STOR-153), conformance logic, the SDK adapter against a fake endpoint (retries, error mapping, stall, credentials) |
-| integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object |
+| unit | [internal/blob](../../internal/blob/), [s3](../../internal/blob/s3/), [blobtest](../../internal/blob/blobtest/) | key layout, spool admission and cleanup on every error path, single pass digests, the commit protocol and its branches against a fake database, multipart (threshold, parts, concurrency, abort, checksums), the breaker, verification, the mark of a missing object, its repair and its recheck once per interval (`TestDownloadVerification`, Q-STOR-151, Q-STOR-153), conformance logic, the SDK adapter against a fake endpoint (retries, error mapping, stall, credentials, metadata `TestR_STOR_062_TheAdapterCarriesObjectMetadata`); with two in-memory stores, the fault hook and the fake database ([connections_test.go](../../internal/blob/connections_test.go)): the derivation (R-STOR-052), the commit's routing, fall-over and `min_copies` (R-STOR-053), the reads, their fall-over, marks, recheck and daily stamp (R-STOR-055), `Servable` and the metadata of `blobtest` (R-STOR-062), the start check with the marker and the capabilities and `AwaitConnections` (R-STOR-035, R-STOR-060) |
+| unit | [internal/config](../../internal/config/storage_connections_test.go), [internal/app](../../internal/app/wire_blob_test.go) | the configuration table of R-STOR-050 and the files of a provisioner's Secret; the readiness of R-STOR-060 and the registry's object-store view |
+| integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object; the records of the connections against PostgreSQL with in-memory stores ([connections_test.go](../../test/integration/blob/connections_test.go): fixed properties, detached, forget, the bind of the migration's row, the copy and queue rows of a commit and their drop, R-STOR-051, R-STOR-052) |
 
 `make test` runs the unit tier, `make test-integration` the integration tier (`QUADER_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
 unit fake (`fakedb_test.go`) simulates only the table operations the commit protocol and the download path use; the real locking
@@ -374,15 +441,18 @@ An object-store response without `Content-Length` has `ObjectInfo.Size == -1` (u
 of a download is skipped and the digest at the end of the body decides. A caller's own deadline ending a store call
 (`context.DeadlineExceeded` that is not a transient `StoreError`) is no answer for the circuit breaker.
 
-## Several connections: the build plan (specified, not built)
+## Several connections: the build plan
 
 Stage 1 of the owner's topic on the stored content ([storage.md](../spec/storage.md#several-object-store-connections) R-STOR-050 to
 R-STOR-063, R-STOR-026, R-STOR-027; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-restore.md](../spec/backup-and-restore.md)
 R-BAK-030; [api-and-ui.md](../spec/api-and-ui.md) R-UI-196, R-UI-197;
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)).
-Everything above describes the one store of today. The build comes in six packages; each is a whole feature for one builder, the
+The sections above describe what is built: package A. The build comes in six packages; each is a whole feature for one builder, the
 directories (or, inside `internal/app` and `internal/api/v1`, the files) of packages that run at the same time are disjoint, and at most
-four run at once.
+four run at once. Package A left the hooks of B, C and D in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go),
+[wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go) and [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go):
+`register<X>(r *jobs.Registry)`, called by `jobRegistry`, and `wire<X>(ctx, blobArea) error`, called at the end of `wireBlob`; both do
+nothing yet.
 
 | Package | After | What it builds | Owns |
 |---|---|---|---|

@@ -9,12 +9,10 @@ import (
 )
 
 // Metrics are the Prometheus families of the blob store (R-STOR-004,
-// R-STOR-024, R-STOR-033). Build it once per process with NewMetrics and hand
+// R-STOR-024, R-STOR-033, R-STOR-055, R-STOR-060). Build it once per process with NewMetrics and hand
 // it to every Spool, Guard and Collector; a nil *Metrics records nothing, which
-// is what unit tests use.
-//
-// The S3 request counter names its operation label "operation" because that is
-// the label R-OPS-007 allows; R-STOR-033 writes "op".
+// is what unit tests use. The object-store families carry the label connection, the id of a configured connection
+// (at most eight, R-OPS-007).
 type Metrics struct {
 	rejections *prometheus.CounterVec
 	spoolUsed  prometheus.Gauge
@@ -23,7 +21,7 @@ type Metrics struct {
 	s3Requests    *prometheus.CounterVec
 	s3Duration    *prometheus.HistogramVec
 	s3Bytes       *prometheus.CounterVec
-	s3CircuitOpen prometheus.Gauge
+	s3CircuitOpen *prometheus.GaugeVec
 
 	gcDeleted   prometheus.Counter
 	gcReclaimed prometheus.Counter
@@ -32,7 +30,9 @@ type Metrics struct {
 	gcDeleting  prometheus.Gauge
 	gcLastOK    *prometheus.GaugeVec // no series until a run succeeded
 
-	damaged *prometheus.CounterVec
+	damaged         *prometheus.CounterVec
+	copiesDamaged   *prometheus.CounterVec
+	readsFallenOver *prometheus.CounterVec
 
 	uploadSessions *prometheus.CounterVec
 }
@@ -45,10 +45,10 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 		spoolUsed:  m.NewGaugeVec("quader_spool_used_bytes", "Spool budget held by running uploads: the bytes they have reserved on the spool volume.").WithLabelValues(),
 		spoolFree:  m.NewGaugeVec("quader_spool_free_bytes", "Free bytes of the spool volume, read at the last reservation or release.").WithLabelValues(),
 
-		s3Requests:    m.NewCounterVec("quader_storage_s3_requests_total", "Object-store requests by operation and outcome.", "operation", "outcome"),
-		s3Duration:    m.NewHistogramVec("quader_storage_s3_request_duration_seconds", "Duration of object-store requests by operation.", observability.HTTPBuckets(), "operation"),
-		s3Bytes:       m.NewCounterVec("quader_storage_s3_bytes_total", "Bytes sent to and received from the object store.", "direction"),
-		s3CircuitOpen: m.NewGaugeVec("quader_storage_s3_circuit_open", "1 while the object-store circuit breaker is open.").WithLabelValues(),
+		s3Requests:    m.NewCounterVec("quader_storage_s3_requests_total", "Object-store requests by connection, operation and outcome.", "connection", "operation", "outcome"),
+		s3Duration:    m.NewHistogramVec("quader_storage_s3_request_duration_seconds", "Duration of object-store requests by connection and operation.", observability.HTTPBuckets(), "connection", "operation"),
+		s3Bytes:       m.NewCounterVec("quader_storage_s3_bytes_total", "Bytes sent to and received from the object store, by connection and direction.", "connection", "direction"),
+		s3CircuitOpen: m.NewGaugeVec("quader_storage_s3_circuit_open", "1 while the circuit breaker of the connection is open on this replica (R-STOR-060).", "connection"),
 
 		gcDeleted:   m.NewCounterVec("quader_gc_deleted_blobs_total", "Blobs whose object garbage collection deleted.").WithLabelValues(),
 		gcReclaimed: m.NewCounterVec("quader_gc_reclaimed_bytes_total", "Bytes garbage collection reclaimed.").WithLabelValues(),
@@ -57,7 +57,9 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 		gcDeleting:  m.NewGaugeVec("quader_gc_deleting_rows", "Blob rows in state deleting at the end of the last run.").WithLabelValues(),
 		gcLastOK:    m.NewGaugeVec("quader_gc_last_success_timestamp_seconds", "End of the last garbage-collection run of this replica that was neither a dry run, nor paused, nor failed; absent until one has ended."),
 
-		damaged: m.NewCounterVec("quader_storage_blobs_damaged_total", "Blobs marked damaged by a detection, by new status.", "status"),
+		damaged:         m.NewCounterVec("quader_storage_blobs_damaged_total", "Blobs marked damaged by a detection, by new status.", "status"),
+		copiesDamaged:   m.NewCounterVec("quader_storage_copies_damaged_total", "Copies of blobs marked damaged by a detection, by connection and new status (R-STOR-055).", "connection", "status"),
+		readsFallenOver: m.NewCounterVec("quader_storage_reads_fallen_over_total", "Reads that left a copy for the next before their first byte, by connection and reason (R-STOR-055).", "connection", "reason"),
 
 		uploadSessions: m.NewCounterVec("quader_storage_upload_sessions_total", "Multi-request upload sessions by how they ended: completed, aborted or expired (R-STOR-011).", "outcome"),
 	}
@@ -95,20 +97,20 @@ func (m *Metrics) setSpool(used int64, free uint64) {
 	}
 }
 
-func (m *Metrics) request(op, outcome string, seconds float64) {
+func (m *Metrics) request(conn, op, outcome string, seconds float64) {
 	if m != nil {
-		m.s3Requests.WithLabelValues(op, outcome).Inc()
-		m.s3Duration.WithLabelValues(op).Observe(seconds)
+		m.s3Requests.WithLabelValues(conn, op, outcome).Inc()
+		m.s3Duration.WithLabelValues(conn, op).Observe(seconds)
 	}
 }
 
-func (m *Metrics) bytes(direction string, n int64) {
+func (m *Metrics) bytes(conn, direction string, n int64) {
 	if m != nil && n > 0 {
-		m.s3Bytes.WithLabelValues(direction).Add(float64(n))
+		m.s3Bytes.WithLabelValues(conn, direction).Add(float64(n))
 	}
 }
 
-func (m *Metrics) circuit(open bool) {
+func (m *Metrics) circuit(conn string, open bool) {
 	if m == nil {
 		return
 	}
@@ -116,7 +118,28 @@ func (m *Metrics) circuit(open bool) {
 	if open {
 		v = 1
 	}
-	m.s3CircuitOpen.Set(v)
+	m.s3CircuitOpen.WithLabelValues(conn).Set(v)
+}
+
+// The reasons of quader_storage_reads_fallen_over_total (R-STOR-055).
+const (
+	fallOverNotFound    = "not_found"   // the connection answered "no such object"
+	fallOverUnavailable = "unavailable" // a transient error or an open circuit
+	fallOverSize        = "size"        // a Content-Length other than the copy's stored size
+)
+
+// copyDamaged counts a copy marked missing or corrupt (R-STOR-055, R-STOR-027).
+func (m *Metrics) copyDamaged(conn, status string) {
+	if m != nil {
+		m.copiesDamaged.WithLabelValues(conn, status).Inc()
+	}
+}
+
+// fellOver counts a read that left a copy for the next (R-STOR-055).
+func (m *Metrics) fellOver(conn, reason string) {
+	if m != nil {
+		m.readsFallenOver.WithLabelValues(conn, reason).Inc()
+	}
 }
 
 func (m *Metrics) gc(deleted, kept, held int, reclaimed int64) {

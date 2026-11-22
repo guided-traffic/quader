@@ -11,15 +11,15 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 )
 
-// Store is the blob store of one replica: its spool, its object-store client
+// Store is the blob store of one replica: its spool, its object-store connections
 // and the database it commits to. Several Stores (several replicas) work on
-// the same bucket and database without coordinating, which is what the commit
+// the same connections and database without coordinating, which is what the commit
 // protocol and garbage collection are built for.
 type Store struct {
 	cfg       config.Storage
-	objects   ObjectStore
+	conns     *Connections
 	db        DB
-	rows      blobRows
+	rows      Rows
 	spool     *Spool
 	log       *slog.Logger
 	metrics   *Metrics
@@ -27,6 +27,7 @@ type Store struct {
 	wait      time.Duration
 	parts     chan struct{}
 	onDamage  func(ctx context.Context, d Digest, status string)
+	onAdded   ConnectionAddedFunc
 	spoolOpts []SpoolOption
 	memory    func(ctx context.Context, n int64) (undo func())
 }
@@ -66,13 +67,14 @@ func WithDamageHook(f func(ctx context.Context, d Digest, status string)) Option
 	return func(s *Store) { s.onDamage = f }
 }
 
-// New builds the store and its spool; the spool directory is emptied.
-func New(cfg config.Storage, objects ObjectStore, db DB, opts ...Option) (*Store, error) {
-	if objects == nil || db == nil {
-		return nil, errors.New("blob store needs an object store and a database")
+// New builds the store over its connections and its spool; the spool directory is emptied. The connections are recorded in
+// the database by [Store.RecordConnections] before the store commits (the composition root does it at start).
+func New(cfg config.Storage, conns *Connections, db DB, opts ...Option) (*Store, error) {
+	if conns == nil || db == nil {
+		return nil, errors.New("blob store needs its object-store connections and a database")
 	}
 	s := &Store{
-		cfg: cfg, objects: objects, db: db, rows: pgRows{}, log: slog.Default(), now: time.Now, wait: 250 * time.Millisecond,
+		cfg: cfg, conns: conns, db: db, rows: pgRows{}, log: slog.Default(), now: time.Now, wait: 250 * time.Millisecond,
 	}
 	for _, o := range opts {
 		o(s)
@@ -83,7 +85,8 @@ func New(cfg config.Storage, objects ObjectStore, db DB, opts ...Option) (*Store
 		return nil, fmt.Errorf("blob store: %w", err)
 	}
 	s.spool = sp
-	n := cfg.S3.Multipart.MaxConcurrentParts
+	// the parts of every connection share the replica's bound (R-STOR-053)
+	n := cfg.ObjectStore.Multipart.MaxConcurrentParts
 	if n < 1 {
 		n = 1
 	}
@@ -93,6 +96,12 @@ func New(cfg config.Storage, objects ObjectStore, db DB, opts ...Option) (*Store
 
 // Spool is the store's spool.
 func (s *Store) Spool() *Spool { return s.spool }
+
+// Connections is the store's ordered set of connections.
+func (s *Store) Connections() *Connections { return s.conns }
+
+// minCopies is storage.replication.min_copies: the copies a commit writes before it answers (R-STOR-053).
+func (s *Store) minCopies() int { return max(1, s.cfg.Replication.MinCopies) }
 
 // Ingest spools and hashes a body with the store's default maximum size
 // (R-STOR-004). The caller closes the result.
@@ -121,23 +130,25 @@ func WithAwaitedBody(ctx context.Context) context.Context {
 
 func awaitedBody(ctx context.Context) bool { v, _ := ctx.Value(awaitedBodyKey{}).(bool); return v }
 
-// RejectUpload is the answer to an upload that has not sent its body yet, nil when it may go on: while the object
-// store's circuit is open a new blob cannot be stored, and a client that waits for "100 Continue" is told so before it
-// sends the body (R-HA-010).
+// RejectUpload is the answer to an upload that has not sent its body yet, nil when it may go on: while fewer than
+// storage.replication.min_copies connections are writable (their circuits open, R-STOR-053) a new blob cannot be stored, and
+// a client that waits for "100 Continue" is told so before it sends the body (R-HA-010). The Retry-After is the soonest any
+// of the connections that take uploads probes again.
 func (s *Store) RejectUpload() error {
-	c, ok := s.objects.(interface{ Rejecting() (time.Duration, bool) })
-	if !ok {
+	if len(s.conns.Writable()) >= s.minCopies() {
 		return nil
 	}
-	after, rejecting := c.Rejecting()
-	if !rejecting {
-		return nil
+	var after time.Duration
+	for _, c := range s.conns.Targets() {
+		if a, rejecting := c.Rejecting(); rejecting && (after == 0 || a < after) {
+			after = a
+		}
+	}
+	if after == 0 {
+		after = retryAfter
 	}
 	return storeUnavailable(&circuitOpenError{retry: after})
 }
-
-// Key is the object key of a blob under the configured prefix.
-func (s *Store) Key(d Digest) string { return Key(s.cfg.S3.Prefix, d) }
 
 // Row is a blob row (R-STOR-003).
 type Row struct {
@@ -146,3 +157,7 @@ type Row struct {
 	ContentStatus string
 	CreatedAt     time.Time
 }
+
+// WithRows replaces the store's access to the blob rows and their copies with a simulation: the seam of the unit tests that
+// drive the commit protocol and the reads without PostgreSQL. The integration tier runs the same code against PostgreSQL.
+func WithRows(r Rows) Option { return func(s *Store) { s.rows = r } }

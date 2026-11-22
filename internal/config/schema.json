@@ -1014,7 +1014,7 @@
             },
             "separate_credentials": {
               "default": false,
-              "description": "Read the blob bucket with backup.source.credentials instead of storage.s3.credentials.",
+              "description": "Read the blob bucket with backup.source.credentials instead of the credential of the first storage connection.",
               "type": "boolean",
               "x-quader-env": "QUADER_BACKUP_SOURCE_SEPARATE_CREDENTIALS"
             }
@@ -2551,7 +2551,11 @@
             },
             "scrub": {
               "Enabled": true,
-              "Schedule": "0 4 * * *"
+              "Schedule": "7 * * * *"
+            },
+            "storage-reconcile": {
+              "Enabled": true,
+              "Schedule": "* * * * *"
             },
             "storage-summary": {
               "Enabled": true,
@@ -4084,6 +4088,138 @@
     "storage": {
       "additionalProperties": false,
       "properties": {
+        "connections": {
+          "default": [],
+          "description": "The object-store connections, one to eight (R-STOR-050). The list order is the write order and the read order; every connection that is not draining holds every blob. An element without id is default, and at most one element may leave it out. In the environment the whole list is one JSON value (QUADER_STORAGE_CONNECTIONS).",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "access_key_id_file": {
+                "type": "string",
+                "x-quader-secret": "file-only"
+              },
+              "allow_insecure_endpoint": {
+                "type": "boolean"
+              },
+              "batch_delete": {
+                "description": "Default true; false for a store without DeleteObjects.",
+                "type": "boolean"
+              },
+              "bucket": {
+                "description": "Required unless bucket_file.",
+                "type": "string"
+              },
+              "bucket_file": {
+                "description": "A file whose trimmed content is the bucket; excludes bucket.",
+                "type": "string"
+              },
+              "ca_file": {
+                "description": "The connection's trust anchor; empty means the outbound trust store.",
+                "type": "string"
+              },
+              "credentials_source": {
+                "description": "default (default), webIdentity or static (R-STOR-031).",
+                "type": "string"
+              },
+              "drain": {
+                "description": "Takes the connection out: no upload goes to it, its blobs are copied to the others and then deleted here (R-STOR-051).",
+                "type": "boolean"
+              },
+              "encrypted": {
+                "description": "The encryption of stored content; true is refused until it is built (R-STOR-050).",
+                "type": "boolean"
+              },
+              "endpoint": {
+                "description": "Empty means AWS endpoint resolution for the region; a host without a scheme means https://.",
+                "type": "string"
+              },
+              "endpoint_file": {
+                "description": "A file whose trimmed content is the endpoint (a provisioner's Secret), read once at start; excludes endpoint.",
+                "type": "string"
+              },
+              "force_path_style": {
+                "description": "True for SeaweedFS, MinIO and Ceph RGW.",
+                "type": "boolean"
+              },
+              "id": {
+                "description": "Names the connection for its whole life; default for at most one element, never changes, never reused.",
+                "type": "string"
+              },
+              "payload_checksum": {
+                "description": "sha256 (default), md5 or none.",
+                "type": "string"
+              },
+              "prefix": {
+                "description": "Default quader; fixed once the connection holds data (R-STOR-051).",
+                "type": "string"
+              },
+              "region": {
+                "type": "string"
+              },
+              "region_file": {
+                "description": "A file whose trimmed content is the region; excludes region.",
+                "type": "string"
+              },
+              "request_checksum_calculation": {
+                "description": "when_supported (default) or when_required.",
+                "type": "string"
+              },
+              "response_checksum_validation": {
+                "description": "when_supported (default) or when_required.",
+                "type": "string"
+              },
+              "role_arn": {
+                "type": "string"
+              },
+              "scrub_bytes_per_second": {
+                "description": "Default 50MiB, per connection and run; at least 1MiB.",
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "x-quader-type": "bytes"
+              },
+              "scrub_period": {
+                "description": "Default 720h: every copy is read whole once in this period (R-STOR-027); at least 24h.",
+                "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                "type": "string",
+                "x-quader-type": "duration"
+              },
+              "secret_access_key_file": {
+                "type": "string",
+                "x-quader-secret": "file-only"
+              },
+              "session_token_file": {
+                "type": "string",
+                "x-quader-secret": "file-only"
+              },
+              "sse_bucket_key": {
+                "description": "Default true.",
+                "type": "boolean"
+              },
+              "sse_kms_key_id": {
+                "type": "string"
+              },
+              "sse_mode": {
+                "description": "none (default), s3 or kms (R-STOR-032).",
+                "type": "string"
+              },
+              "storage_class": {
+                "type": "string"
+              },
+              "sts_endpoint": {
+                "type": "string"
+              },
+              "web_identity_token_file": {
+                "type": "string",
+                "x-quader-secret": "file-only"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array",
+          "x-quader-env": "QUADER_STORAGE_CONNECTIONS"
+        },
         "delete": {
           "additionalProperties": false,
           "properties": {
@@ -4152,12 +4288,6 @@
         "gc": {
           "additionalProperties": false,
           "properties": {
-            "batch_delete": {
-              "default": true,
-              "description": "False for stores without DeleteObjects.",
-              "type": "boolean",
-              "x-quader-env": "QUADER_STORAGE_GC_BATCH_DELETE"
-            },
             "batch_size": {
               "default": 1000,
               "minimum": 1,
@@ -4191,6 +4321,169 @@
               "type": "string",
               "x-quader-env": "QUADER_STORAGE_GC_HANDOVER_DELAY",
               "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "object_store": {
+          "additionalProperties": false,
+          "properties": {
+            "circuit_breaker": {
+              "additionalProperties": false,
+              "properties": {
+                "failure_threshold": {
+                  "default": 5,
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_CIRCUIT_BREAKER_FAILURE_THRESHOLD"
+                },
+                "open_duration": {
+                  "default": "10s",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_CIRCUIT_BREAKER_OPEN_DURATION",
+                  "x-quader-type": "duration"
+                }
+              },
+              "type": "object"
+            },
+            "http": {
+              "additionalProperties": false,
+              "properties": {
+                "dial_timeout": {
+                  "default": "5s",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_DIAL_TIMEOUT",
+                  "x-quader-type": "duration"
+                },
+                "idle_conn_timeout": {
+                  "default": "1m30s",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_IDLE_CONN_TIMEOUT",
+                  "x-quader-type": "duration"
+                },
+                "idle_transfer_timeout": {
+                  "default": "1m",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_IDLE_TRANSFER_TIMEOUT",
+                  "x-quader-type": "duration"
+                },
+                "max_connections": {
+                  "default": 256,
+                  "description": "Per connection and replica.",
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_MAX_CONNECTIONS"
+                },
+                "no_proxy": {
+                  "default": "",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_NO_PROXY"
+                },
+                "proxy_credentials_file": {
+                  "default": "",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_PROXY_CREDENTIALS_FILE",
+                  "x-quader-secret": "file-only"
+                },
+                "proxy_url": {
+                  "default": "",
+                  "description": "Empty means the environment.",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_PROXY_URL"
+                },
+                "receive_window": {
+                  "default": "256KiB",
+                  "description": "HTTP/2 only: how far the store may send ahead of what Quader has read of one object; it bounds what a slow download holds (Q-ARCH-241). The transport's own default is 4 MiB.",
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_RECEIVE_WINDOW",
+                  "x-quader-type": "bytes"
+                },
+                "response_header_timeout": {
+                  "default": "30s",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_RESPONSE_HEADER_TIMEOUT",
+                  "x-quader-type": "duration"
+                },
+                "tls_handshake_timeout": {
+                  "default": "5s",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_HTTP_TLS_HANDSHAKE_TIMEOUT",
+                  "x-quader-type": "duration"
+                }
+              },
+              "type": "object"
+            },
+            "multipart": {
+              "additionalProperties": false,
+              "properties": {
+                "concurrency": {
+                  "default": 4,
+                  "description": "Parallel parts per upload.",
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_MULTIPART_CONCURRENCY"
+                },
+                "max_concurrent_parts": {
+                  "default": 64,
+                  "description": "Per replica, over all connections.",
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_MULTIPART_MAX_CONCURRENT_PARTS"
+                },
+                "part_size": {
+                  "default": "16MiB",
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_MULTIPART_PART_SIZE",
+                  "x-quader-type": "bytes"
+                },
+                "threshold": {
+                  "default": "100MiB",
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_MULTIPART_THRESHOLD",
+                  "x-quader-type": "bytes"
+                }
+              },
+              "type": "object"
+            },
+            "retry": {
+              "additionalProperties": false,
+              "properties": {
+                "max_attempts": {
+                  "default": 5,
+                  "minimum": 1,
+                  "type": "integer",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_RETRY_MAX_ATTEMPTS"
+                },
+                "max_backoff": {
+                  "default": "20s",
+                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+                  "type": "string",
+                  "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_RETRY_MAX_BACKOFF",
+                  "x-quader-type": "duration"
+                }
+              },
+              "type": "object"
+            },
+            "startup_check": {
+              "default": true,
+              "description": "The start check of every connection before the first readiness, with its capabilities (R-STOR-035).",
+              "type": "boolean",
+              "x-quader-env": "QUADER_STORAGE_OBJECT_STORE_STARTUP_CHECK"
             }
           },
           "type": "object"
@@ -4233,346 +4526,71 @@
           },
           "type": "object"
         },
-        "s3": {
+        "reconcile": {
           "additionalProperties": false,
           "properties": {
-            "allow_insecure_endpoint": {
-              "default": false,
-              "type": "boolean",
-              "x-quader-env": "QUADER_STORAGE_S3_ALLOW_INSECURE_ENDPOINT"
+            "bytes_per_second": {
+              "default": "100MiB",
+              "description": "Streamed bytes per run; server-side copies are not counted.",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_STORAGE_RECONCILE_BYTES_PER_SECOND",
+              "x-quader-type": "bytes"
             },
-            "bucket": {
-              "default": "",
-              "description": "Blob bucket; required to serve.",
+            "concurrency": {
+              "default": 4,
+              "description": "Copies at a time in one run.",
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_STORAGE_RECONCILE_CONCURRENCY"
+            },
+            "queue_limit": {
+              "default": 10000,
+              "description": "Gaps the pass queues per connection before it waits for the copier.",
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_STORAGE_RECONCILE_QUEUE_LIMIT"
+            },
+            "retry_max_backoff": {
+              "default": "1h",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_BUCKET"
+              "x-quader-env": "QUADER_STORAGE_RECONCILE_RETRY_MAX_BACKOFF",
+              "x-quader-type": "duration"
             },
-            "ca_file": {
-              "default": "",
-              "description": "Empty means the system trust store.",
+            "run_duration": {
+              "default": "10m",
+              "description": "A run ends after this and the next scheduled run continues.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_CA_FILE"
+              "x-quader-env": "QUADER_STORAGE_RECONCILE_RUN_DURATION",
+              "x-quader-type": "duration"
             },
-            "checksums": {
-              "additionalProperties": false,
-              "properties": {
-                "request_calculation": {
-                  "default": "when_supported",
-                  "enum": [
-                    "when_supported",
-                    "when_required"
-                  ],
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CHECKSUMS_REQUEST_CALCULATION"
-                },
-                "response_validation": {
-                  "default": "when_supported",
-                  "enum": [
-                    "when_supported",
-                    "when_required"
-                  ],
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CHECKSUMS_RESPONSE_VALIDATION"
-                }
-              },
-              "type": "object"
-            },
-            "circuit_breaker": {
-              "additionalProperties": false,
-              "properties": {
-                "failure_threshold": {
-                  "default": 5,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_STORAGE_S3_CIRCUIT_BREAKER_FAILURE_THRESHOLD"
-                },
-                "open_duration": {
-                  "default": "10s",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CIRCUIT_BREAKER_OPEN_DURATION",
-                  "x-quader-type": "duration"
-                }
-              },
-              "type": "object"
-            },
-            "credentials": {
-              "additionalProperties": false,
-              "properties": {
-                "access_key_id_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE",
-                  "x-quader-secret": "file-only"
-                },
-                "role_arn": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_ROLE_ARN"
-                },
-                "secret_access_key_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE",
-                  "x-quader-secret": "file-only"
-                },
-                "session_token_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_SESSION_TOKEN_FILE",
-                  "x-quader-secret": "file-only"
-                },
-                "source": {
-                  "default": "default",
-                  "enum": [
-                    "default",
-                    "webIdentity",
-                    "static"
-                  ],
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_SOURCE"
-                },
-                "sts_endpoint": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_STS_ENDPOINT"
-                },
-                "web_identity_token_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_CREDENTIALS_WEB_IDENTITY_TOKEN_FILE",
-                  "x-quader-secret": "file-only"
-                }
-              },
-              "type": "object"
-            },
-            "endpoint": {
-              "default": "",
-              "description": "Empty means AWS endpoint resolution for the region. A host without a scheme means https://; plain HTTP needs http:// and allow_insecure_endpoint.",
-              "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_ENDPOINT"
-            },
-            "force_path_style": {
-              "default": false,
-              "description": "True for SeaweedFS, MinIO and Ceph RGW.",
-              "type": "boolean",
-              "x-quader-env": "QUADER_STORAGE_S3_FORCE_PATH_STYLE"
-            },
-            "http": {
-              "additionalProperties": false,
-              "properties": {
-                "dial_timeout": {
-                  "default": "5s",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_DIAL_TIMEOUT",
-                  "x-quader-type": "duration"
-                },
-                "idle_conn_timeout": {
-                  "default": "1m30s",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_IDLE_CONN_TIMEOUT",
-                  "x-quader-type": "duration"
-                },
-                "idle_transfer_timeout": {
-                  "default": "1m",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_IDLE_TRANSFER_TIMEOUT",
-                  "x-quader-type": "duration"
-                },
-                "max_connections": {
-                  "default": 256,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_MAX_CONNECTIONS"
-                },
-                "no_proxy": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_NO_PROXY"
-                },
-                "proxy_credentials_file": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_PROXY_CREDENTIALS_FILE",
-                  "x-quader-secret": "file-only"
-                },
-                "proxy_url": {
-                  "default": "",
-                  "description": "Empty means the environment.",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_PROXY_URL"
-                },
-                "receive_window": {
-                  "default": "256KiB",
-                  "description": "HTTP/2 only: how far the store may send ahead of what Quader has read of one object; it bounds what a slow download holds (Q-ARCH-241). The transport's own default is 4 MiB.",
-                  "type": [
-                    "string",
-                    "integer"
-                  ],
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_RECEIVE_WINDOW",
-                  "x-quader-type": "bytes"
-                },
-                "response_header_timeout": {
-                  "default": "30s",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_RESPONSE_HEADER_TIMEOUT",
-                  "x-quader-type": "duration"
-                },
-                "tls_handshake_timeout": {
-                  "default": "5s",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_HTTP_TLS_HANDSHAKE_TIMEOUT",
-                  "x-quader-type": "duration"
-                }
-              },
-              "type": "object"
-            },
-            "multipart": {
-              "additionalProperties": false,
-              "properties": {
-                "concurrency": {
-                  "default": 4,
-                  "description": "Parallel parts per upload.",
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_STORAGE_S3_MULTIPART_CONCURRENCY"
-                },
-                "max_concurrent_parts": {
-                  "default": 64,
-                  "description": "Per replica.",
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_STORAGE_S3_MULTIPART_MAX_CONCURRENT_PARTS"
-                },
-                "part_size": {
-                  "default": "16MiB",
-                  "type": [
-                    "string",
-                    "integer"
-                  ],
-                  "x-quader-env": "QUADER_STORAGE_S3_MULTIPART_PART_SIZE",
-                  "x-quader-type": "bytes"
-                },
-                "threshold": {
-                  "default": "100MiB",
-                  "type": [
-                    "string",
-                    "integer"
-                  ],
-                  "x-quader-env": "QUADER_STORAGE_S3_MULTIPART_THRESHOLD",
-                  "x-quader-type": "bytes"
-                }
-              },
-              "type": "object"
-            },
-            "payload_checksum": {
-              "default": "sha256",
+            "server_side": {
+              "default": "auto",
+              "description": "auto copies server-side between two connections on one endpoint.",
               "enum": [
-                "sha256",
-                "md5",
-                "none"
+                "auto",
+                "never"
               ],
               "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_PAYLOAD_CHECKSUM"
-            },
-            "prefix": {
-              "default": "quader",
-              "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_PREFIX"
-            },
-            "presign": {
-              "additionalProperties": false,
-              "properties": {
-                "endpoint": {
-                  "default": "",
-                  "description": "Empty means storage.s3.endpoint.",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_PRESIGN_ENDPOINT"
-                },
-                "min_size": {
-                  "default": "1MiB",
-                  "type": [
-                    "string",
-                    "integer"
-                  ],
-                  "x-quader-env": "QUADER_STORAGE_S3_PRESIGN_MIN_SIZE",
-                  "x-quader-type": "bytes"
-                },
-                "ttl": {
-                  "default": "1m",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_PRESIGN_TTL",
-                  "x-quader-type": "duration"
-                }
-              },
-              "type": "object"
-            },
-            "region": {
-              "default": "",
-              "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_REGION"
-            },
-            "retry": {
-              "additionalProperties": false,
-              "properties": {
-                "max_attempts": {
-                  "default": 5,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_STORAGE_S3_RETRY_MAX_ATTEMPTS"
-                },
-                "max_backoff": {
-                  "default": "20s",
-                  "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_RETRY_MAX_BACKOFF",
-                  "x-quader-type": "duration"
-                }
-              },
-              "type": "object"
-            },
-            "sse": {
-              "additionalProperties": false,
-              "properties": {
-                "bucket_key": {
-                  "default": true,
-                  "type": "boolean",
-                  "x-quader-env": "QUADER_STORAGE_S3_SSE_BUCKET_KEY"
-                },
-                "kms_key_id": {
-                  "default": "",
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_SSE_KMS_KEY_ID"
-                },
-                "mode": {
-                  "default": "none",
-                  "enum": [
-                    "none",
-                    "s3",
-                    "kms"
-                  ],
-                  "type": "string",
-                  "x-quader-env": "QUADER_STORAGE_S3_SSE_MODE"
-                }
-              },
-              "type": "object"
-            },
-            "startup_check": {
-              "default": true,
-              "description": "Object-store conformance check before the first readiness (R-STOR-035).",
-              "type": "boolean",
-              "x-quader-env": "QUADER_STORAGE_S3_STARTUP_CHECK"
-            },
-            "storage_class": {
-              "default": "",
-              "type": "string",
-              "x-quader-env": "QUADER_STORAGE_S3_STORAGE_CLASS"
+              "x-quader-env": "QUADER_STORAGE_RECONCILE_SERVER_SIDE"
+            }
+          },
+          "type": "object"
+        },
+        "replication": {
+          "additionalProperties": false,
+          "properties": {
+            "min_copies": {
+              "default": 1,
+              "description": "Copies written before an upload is answered; at most the number of connections without drain: true. The reconciliation brings a blob to the other connections afterwards.",
+              "maximum": 8,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_STORAGE_REPLICATION_MIN_COPIES"
             }
           },
           "type": "object"
@@ -4580,27 +4598,12 @@
         "scrub": {
           "additionalProperties": false,
           "properties": {
-            "check_interval": {
-              "default": "168h",
+            "run_duration": {
+              "default": "50m",
+              "description": "A run of the hourly task ends after this and the next continues.",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
-              "x-quader-env": "QUADER_STORAGE_SCRUB_CHECK_INTERVAL",
-              "x-quader-type": "duration"
-            },
-            "deep_bytes_per_second": {
-              "default": "50MiB",
-              "type": [
-                "string",
-                "integer"
-              ],
-              "x-quader-env": "QUADER_STORAGE_SCRUB_DEEP_BYTES_PER_SECOND",
-              "x-quader-type": "bytes"
-            },
-            "deep_interval": {
-              "default": "2160h",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_STORAGE_SCRUB_DEEP_INTERVAL",
+              "x-quader-env": "QUADER_STORAGE_SCRUB_RUN_DURATION",
               "x-quader-type": "duration"
             }
           },

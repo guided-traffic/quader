@@ -161,33 +161,16 @@ func newEnv(t *testing.T) *env {
 
 func newS3(t *testing.T) (config.Storage, blob.ObjectStore) {
 	t.Helper()
-	dir := t.TempDir()
-	writeSecret := func(file, v string) string {
-		p := filepath.Join(dir, file)
-		if err := os.WriteFile(p, []byte(v+"\n"), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		return p
-	}
 	cfg := blobtest.Storage(t, t.TempDir())
-	cfg.S3.Endpoint = testenv.Get(t, "QUADER_TEST_S3_ENDPOINT")
-	cfg.S3.Region = testenv.Get(t, "QUADER_TEST_S3_REGION")
-	cfg.S3.Bucket = testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS")
-	cfg.S3.ForcePathStyle = testenv.Get(t, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
-	cfg.S3.CAFile = testenv.CAFile(t)
-	cfg.S3.Prefix = "it-proxy/" + randHex(5)
-	cfg.S3.Credentials = config.StorageS3Credentials{
-		Source:              "static",
-		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(t, "QUADER_TEST_S3_ACCESS_KEY")),
-		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(t, "QUADER_TEST_S3_SECRET_KEY")),
-	}
+	cfg.Connections = []config.StorageConnection{testenv.Connection(t, t.TempDir(), "it-proxy/"+randHex(5))}
 	cfg.Spool.MinFreeBytes = 0
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
-	c, err := s3.NewFromFactory(context.Background(), cfg.S3, f)
+	s3cfg := config.ClientConfig(cfg.Connections[0], cfg.ObjectStore)
+	c, err := s3.NewFromFactory(context.Background(), s3cfg, f)
 	if err != nil {
 		t.Fatalf("object store client: %v", err)
 	}
-	testenv.RemoveObjectsAtCleanup(t, cfg.S3.Bucket, cfg.S3.Prefix)
+	testenv.RemoveObjectsAtCleanup(t, s3cfg.Bucket, s3cfg.Prefix)
 	return cfg, c
 }
 
@@ -338,18 +321,18 @@ type chaosStore struct {
 	down atomic.Bool
 }
 
-func (c *chaosStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum) error {
+func (c *chaosStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum, md blob.Metadata) error {
 	if c.down.Load() {
 		return blob.ErrCircuitOpen
 	}
-	return c.ObjectStore.Put(ctx, key, body, size, sum)
+	return c.ObjectStore.Put(ctx, key, body, size, sum, md)
 }
 
-func (c *chaosStore) CreateMultipart(ctx context.Context, key, algorithm string) (string, error) {
+func (c *chaosStore) CreateMultipart(ctx context.Context, key, algorithm string, md blob.Metadata) (string, error) {
 	if c.down.Load() {
 		return "", blob.ErrCircuitOpen
 	}
-	return c.ObjectStore.CreateMultipart(ctx, key, algorithm)
+	return c.ObjectStore.CreateMultipart(ctx, key, algorithm, md)
 }
 
 // valkeyMode says how a replica reaches Valkey.
@@ -474,7 +457,15 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 	cfg := e.s3
 	cfg.Spool.Dir = t.TempDir()
 	r.obj = &chaosStore{ObjectStore: e.obj}
-	if r.blobs, err = blob.New(cfg, r.obj, r.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond)); err != nil {
+	conns, err := blob.NewConnections(blob.NewConnection(cfg.Connections[0], r.obj))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.blobs, err = blob.New(cfg, conns, r.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond)); err != nil {
+		t.Fatal(err)
+	}
+	// the copy rows refer to the connection's row (R-STOR-052)
+	if err := r.blobs.RecordConnections(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if r.items, err = items.New(items.Options{Runner: r.db, Blobs: r.blobs, Recorder: r.rec, Storage: cfg, Hooks: o.hooks, Log: quiet}); err != nil {
@@ -574,7 +565,7 @@ func proxyConfig(t *testing.T) config.Proxy {
 	l, err := config.Load(config.Options{
 		ReadFile: func(string) ([]byte, error) { return nil, os.ErrNotExist },
 		Environ: []string{
-			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_S3_BUCKET=blobs",
+			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]",
 			"QUADER_STORAGE_SPOOL_DIR=" + t.TempDir(),
 		},
 		Command: config.CommandMigrate,

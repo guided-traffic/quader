@@ -325,13 +325,13 @@ func (q *Queries) UploadInsertPart(ctx context.Context, arg UploadInsertPartPara
 
 const uploadInsertSession = `-- name: UploadInsertSession :execrows
 
-INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, principal_id, hash_state, part_size, s3_upload_id, state)
+INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, principal_id, hash_state, part_size, s3_upload_id, state, connection_id)
 SELECT $1::text::uuid, $2::bigint, $3::bigint, $4::text,
         NULLIF($5::text, '')::uuid, $6::bytea, $7::bigint,
-        $8::text, 'open'
+        $8::text, 'open', $9::text
 WHERE (SELECT count(*) FROM upload_sessions o
         WHERE o.repo_id = $2::bigint AND COALESCE(o.principal_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE(NULLIF($5::text, '')::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-          AND o.state IN ('open', 'completing', 'assembled')) < $9::bigint
+          AND o.state IN ('open', 'completing', 'assembled')) < $10::bigint
 `
 
 type UploadInsertSessionParams struct {
@@ -343,6 +343,7 @@ type UploadInsertSessionParams struct {
 	HashState       []byte
 	PartSize        int64
 	S3UploadID      string
+	ConnectionID    string
 	MaxOpen         int64
 }
 
@@ -365,6 +366,7 @@ func (q *Queries) UploadInsertSession(ctx context.Context, arg UploadInsertSessi
 		arg.HashState,
 		arg.PartSize,
 		arg.S3UploadID,
+		arg.ConnectionID,
 		arg.MaxOpen,
 	)
 	if err != nil {

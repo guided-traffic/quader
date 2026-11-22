@@ -9,7 +9,7 @@ R-STOR-091; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [b
 [ADR-245](../decisions.md#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart); security pages
 [stored-content-format.md](../security/stored-content-format.md), [stored-content-keys.md](../security/stored-content-keys.md),
 [stored-content-visibility.md](../security/stored-content-visibility.md)). Stage 2 of the owner's topic on the stored content. This page is
-the build plan: the six packages, what each owns, the order against stage 1's packages ([blob-store.md](blob-store.md#several-connections-the-build-plan-specified-not-built)),
+the build plan: the six packages, what each owns, the order against stage 1's packages ([blob-store.md](blob-store.md#several-connections-the-build-plan)),
 the tests and what they cost.
 
 ## What has to be in your head first

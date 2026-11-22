@@ -30,7 +30,7 @@ Every S3 client is of purpose `objectstore`, because each is built through `s3.N
 backup lane, the backup target client (`backup.target`, [target.go](../../internal/blob/s3/target.go), `NewTarget`), the backup's read of
 the blob bucket (`backup.source`, [backup_create.go](../../cmd/quader/backup_create.go)) and the journal reader of a restore and of the
 post-restore ([journal/replay/open.go](../../internal/journal/replay/open.go), `OpenJournal`). None of them passes the address policy, so
-the endpoint of `backup.target` is as unchecked as `storage.s3.endpoint`.
+the endpoint of `backup.target` is as unchecked as `storage.connections[].endpoint`.
 
 The OTLP span export does not use the factory at all; it uses the SDK's transport ([H-53](../spec/operations-and-observability.md#h-53--span-export-bypasses-the-egress-address-policy)).
 

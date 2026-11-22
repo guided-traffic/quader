@@ -134,7 +134,7 @@ func New(ctx context.Context, cfg config.StorageS3, hc *http.Client) (*Client, e
 		return nil, errors.New("storage.s3.bucket is required")
 	}
 	// An endpoint without a scheme is a host and means https:// (R-STOR-030).
-	cfg.Endpoint, cfg.Presign.Endpoint = config.NormalizeEndpoint(cfg.Endpoint), config.NormalizeEndpoint(cfg.Presign.Endpoint)
+	cfg.Endpoint = config.NormalizeEndpoint(cfg.Endpoint)
 	if err := checkEndpoint(cfg); err != nil {
 		return nil, err
 	}
@@ -142,21 +142,14 @@ func New(ctx context.Context, cfg config.StorageS3, hc *http.Client) (*Client, e
 	if err != nil {
 		return nil, err
 	}
-	mk := func(endpoint string) *awss3.Client {
-		return awss3.NewFromConfig(awsCfg, func(o *awss3.Options) {
-			o.UsePathStyle = cfg.ForcePathStyle
-			if endpoint != "" {
-				o.BaseEndpoint = aws.String(endpoint)
-			}
-		})
-	}
-	c := &Client{api: mk(cfg.Endpoint), http: hc, bucket: cfg.Bucket, cfg: cfg, idle: cfg.HTTP.IdleTransferTimeout}
-	pe := cfg.Presign.Endpoint
-	if pe == "" {
-		c.presign = awss3.NewPresignClient(c.api)
-	} else {
-		c.presign = awss3.NewPresignClient(mk(pe))
-	}
+	api := awss3.NewFromConfig(awsCfg, func(o *awss3.Options) {
+		o.UsePathStyle = cfg.ForcePathStyle
+		if cfg.Endpoint != "" {
+			o.BaseEndpoint = aws.String(cfg.Endpoint)
+		}
+	})
+	// a link is signed against the connection's own endpoint; the public address a link names is stage 3's (R-STOR-074)
+	c := &Client{api: api, presign: awss3.NewPresignClient(api), http: hc, bucket: cfg.Bucket, cfg: cfg, idle: cfg.HTTP.IdleTransferTimeout}
 	return c, nil
 }
 
@@ -221,7 +214,7 @@ func (c *Client) watch(ctx context.Context) (context.Context, *idle, context.Can
 }
 
 // Put implements blob.ObjectStore.
-func (c *Client) Put(ctx context.Context, key string, rs io.ReadSeeker, size int64, sum blob.Checksum) error {
+func (c *Client) Put(ctx context.Context, key string, rs io.ReadSeeker, size int64, sum blob.Checksum, md blob.Metadata) error {
 	ctx, w, done := c.watch(ctx)
 	defer done()
 	w.touch()
@@ -229,7 +222,7 @@ func (c *Client) Put(ctx context.Context, key string, rs io.ReadSeeker, size int
 	in := &awss3.PutObjectInput{
 		Bucket: &c.bucket, Key: &key, Body: &seeker{rs: rs, w: w}, ContentLength: aws.Int64(size),
 		ContentType: aws.String("application/octet-stream"), StorageClass: types.StorageClass(c.cfg.StorageClass),
-		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
+		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket, Metadata: md,
 	}
 	switch sum.Algorithm {
 	case "sha256":
@@ -245,12 +238,12 @@ func (c *Client) Put(ctx context.Context, key string, rs io.ReadSeeker, size int
 }
 
 // CreateMultipart implements blob.ObjectStore.
-func (c *Client) CreateMultipart(ctx context.Context, key, algorithm string) (string, error) {
+func (c *Client) CreateMultipart(ctx context.Context, key, algorithm string, md blob.Metadata) (string, error) {
 	s := c.sse()
 	in := &awss3.CreateMultipartUploadInput{
 		Bucket: &c.bucket, Key: &key, ContentType: aws.String("application/octet-stream"),
 		StorageClass:         types.StorageClass(c.cfg.StorageClass),
-		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
+		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket, Metadata: md,
 	}
 	if algorithm == "sha256" {
 		in.ChecksumAlgorithm = types.ChecksumAlgorithmSha256
@@ -337,7 +330,7 @@ func (c *Client) Head(ctx context.Context, key string) (blob.ObjectInfo, error) 
 	if err != nil {
 		return blob.ObjectInfo{}, mapError(ctx, "HeadObject", key, err)
 	}
-	return blob.ObjectInfo{Key: key, Size: sizeOf(out.ContentLength), ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified)}, nil
+	return blob.ObjectInfo{Key: key, Size: sizeOf(out.ContentLength), ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified), Metadata: lowerKeys(out.Metadata)}, nil
 }
 
 // Get implements blob.ObjectStore.
@@ -356,7 +349,7 @@ func (c *Client) Get(ctx context.Context, key string, rng *blob.ByteRange) (io.R
 		cancel()
 		return nil, blob.ObjectInfo{}, mapError(ctx, "GetObject", key, err)
 	}
-	info := blob.ObjectInfo{Key: key, Size: -1, ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified)}
+	info := blob.ObjectInfo{Key: key, Size: -1, ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified), Metadata: lowerKeys(out.Metadata)}
 	if rng == nil {
 		info.Size = sizeOf(out.ContentLength)
 	} else if cr := aws.ToString(out.ContentRange); cr != "" {
@@ -466,4 +459,17 @@ func (c *Client) Presign(ctx context.Context, key string, ttl time.Duration) (st
 		return "", mapError(ctx, "PresignGetObject", key, err)
 	}
 	return r.URL, nil
+}
+
+// lowerKeys is the metadata of an answer with lower-case keys, nil when it has none (R-STOR-062): HTTP headers are not case
+// sensitive, and Quader writes its keys in lower case.
+func lowerKeys(md map[string]string) blob.Metadata {
+	if len(md) == 0 {
+		return nil
+	}
+	out := make(blob.Metadata, len(md))
+	for k, v := range md {
+		out[strings.ToLower(k)] = v
+	}
+	return out
 }

@@ -23,10 +23,10 @@ import (
 //     outbox holds a row. A change never waits for it.
 
 // wireJournalShipper builds the shipper for a replica that claims jobs.
-func (a *App) wireJournalShipper(client *s3.Client, db *postgres.DB) {
+func (a *App) wireJournalShipper(client *s3.Client, prefix string, db *postgres.DB) {
 	j := a.cfg.Backup.RevocationJournal
 	o := ship.Options{
-		Outbox: ship.NewOutbox(db), BlobPrefix: a.cfg.Storage.S3.Prefix, Discard: !j.Enabled,
+		Outbox: ship.NewOutbox(db), BlobPrefix: prefix, Discard: !j.Enabled,
 		Log:          a.log.With("component", "journal"),
 		OnQuarantine: func(journal.OutboxRow, error) { a.laneMetrics().jrnl.Quarantined.Inc() },
 	}

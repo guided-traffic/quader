@@ -14,9 +14,6 @@ ON CONFLICT DO NOTHING;
 -- name: BlobExists :many
 SELECT sha256 FROM blobs WHERE sha256 = $1;
 
--- name: MarkBlobOK :exec
-UPDATE blobs SET content_status = 'ok' WHERE sha256 = $1 AND state = 'live';
-
 -- name: EnqueueBlobForGC :exec
 INSERT INTO blob_gc_queue (sha256, enqueued_at) VALUES ($1, now())
 ON CONFLICT (sha256) DO UPDATE SET enqueued_at = EXCLUDED.enqueued_at;
@@ -25,18 +22,9 @@ ON CONFLICT (sha256) DO UPDATE SET enqueued_at = EXCLUDED.enqueued_at;
 SELECT sha256, sha1, md5, sha512, size, state, content_status, created_at
   FROM blobs WHERE sha256 = $1;
 
--- name: MarkBlobDamaged :execrows
--- Only a live row that was ok changes, so a repair or a concurrent detection is
--- not overwritten. A detection is an existence check of the object: checked_at
--- (R-STOR-027) is now, which starts the recheck interval of a missing object
--- (Q-STOR-153).
-UPDATE blobs SET content_status = $2, checked_at = clock_timestamp()
- WHERE sha256 = $1 AND state = 'live' AND content_status = 'ok';
-
 -- name: ClaimMissingRecheck :execrows
--- The recheck of a blob marked missing (Q-STOR-153): the statement that moves
--- checked_at, the time of the last existence check (R-STOR-027), claims the one
--- look at the store of the interval for every replica; a read inside the interval
+-- The recheck of a blob marked missing (Q-STOR-153, R-STOR-055): the statement that moves checked_at, the recheck claim of a
+-- blob without a present copy, claims the one look at the store of the interval for every replica; a read inside the interval
 -- matches nothing and does not ask the store.
 UPDATE blobs SET checked_at = clock_timestamp()
  WHERE sha256 = sqlc.arg(sha256) AND state = 'live' AND content_status = 'missing'
@@ -75,10 +63,18 @@ UPDATE blobs SET object_deleted_at = now()
 RETURNING size;
 
 -- name: DropBlobRows :exec
--- Step (6).
-DELETE FROM blobs
- WHERE sha256 = ANY(@digests::bytea[]) AND state = 'deleting'
-   AND object_deleted_at < now() - make_interval(secs => @settle_secs::float8);
+-- Step (6), with the blob's copy and queue rows, which carry no foreign key to blobs (R-STOR-052): a queue row is found by its
+-- primary key through the at most eight connections.
+WITH dropped AS (
+    DELETE FROM blobs
+     WHERE sha256 = ANY(@digests::bytea[]) AND state = 'deleting'
+       AND object_deleted_at < now() - make_interval(secs => @settle_secs::float8)
+    RETURNING sha256
+), copies AS (
+    DELETE FROM blob_copies WHERE sha256 IN (SELECT sha256 FROM dropped)
+)
+DELETE FROM blob_copy_queue
+ WHERE (connection_id, sha256) IN (SELECT sc.id, d.sha256 FROM storage_connections sc CROSS JOIN dropped d);
 
 -- name: EligibleBlobs :many
 -- The rows earlier runs left: object deleted and settled (step 6), or claimed and

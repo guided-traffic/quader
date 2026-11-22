@@ -29,14 +29,15 @@ func (f configFacts) Facts(ctx context.Context) (v1.Facts, error) {
 		Mode: gen.ValkeyFactsMode(c.Valkey.Mode), PrimaryName: c.Valkey.Sentinel.PrimaryName,
 		Sentinels: len(c.Valkey.Sentinel.Addresses), Tls: c.Valkey.TLS.Mode, KeyPrefix: c.Valkey.KeyPrefix,
 	}
-	src := c.Storage.S3.Credentials.Source
-	if src == "" {
-		src = "default"
+	// the first connection until the facts list every connection (storage.md R-STOR-061)
+	first := config.StorageConnection{}.WithDefaults()
+	if len(c.Storage.Connections) > 0 {
+		first = c.Storage.Connections[0].WithDefaults()
 	}
 	out := v1.Facts{
 		Valkey: vf,
 		ObjectStore: gen.ObjectStoreFacts{
-			Endpoint: c.Storage.S3.Endpoint, Bucket: c.Storage.S3.Bucket, Prefix: c.Storage.S3.Prefix, CredentialSource: src,
+			Endpoint: first.Endpoint, Bucket: first.Bucket, Prefix: first.KeyPrefix(), CredentialSource: first.CredentialsSource,
 		},
 		Tracing:     c.Tracing.Enabled,
 		Formats:     formatNames(),

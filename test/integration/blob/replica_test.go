@@ -28,9 +28,9 @@ type countingStore struct {
 	manyCalled chan struct{}
 }
 
-func (c *countingStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum) error {
+func (c *countingStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum, md blob.Metadata) error {
 	c.puts.Add(1)
-	return c.ObjectStore.Put(ctx, key, body, size, sum)
+	return c.ObjectStore.Put(ctx, key, body, size, sum, md)
 }
 
 func (c *countingStore) UploadPart(ctx context.Context, key, id string, n int, body io.ReadSeeker, size int64, sum blob.Checksum) (blob.Part, error) {
@@ -99,11 +99,8 @@ func newReplica(tb testing.TB, e *s3Env, p *pgEnv, mutate func(*config.Storage))
 		mutate(&cfg)
 	}
 	obj := &countingStore{ObjectStore: e.raw}
-	s, err := blob.New(cfg, obj, p.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond))
-	if err != nil {
-		tb.Fatal(err)
-	}
-	c := blob.NewCollector(cfg.GC, cfg.S3.Prefix, obj, p.db, blob.WithCollectorLogger(quiet))
+	s := e.newStore(tb, cfg, obj, p.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond))
+	c := collector(cfg, obj, p.db, blob.WithCollectorLogger(quiet))
 	return &replica{store: s, coll: c, obj: obj, cfg: cfg, pg: p}
 }
 

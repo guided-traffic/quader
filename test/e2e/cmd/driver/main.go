@@ -88,7 +88,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 			"valkey_sentinel_refresh_interval_ms": cfg.Valkey.Sentinel.RefreshInterval.Milliseconds(),
 			"valkey_command_timeout_ms":           cfg.Valkey.CommandTimeout.Milliseconds(),
 			// R-HA-052's object-store outage: full recovery within open_duration + 10 s
-			"s3_open_duration_ms": cfg.Storage.S3.CircuitBreaker.OpenDuration.Milliseconds(),
+			"s3_open_duration_ms": cfg.Storage.ObjectStore.CircuitBreaker.OpenDuration.Milliseconds(),
 			// R-HA-052's node loss: the server releases the advisory locks of a vanished session within idle + interval x count (R-HA-015)
 			"lease_release_bound_ms": (cfg.Database.ServerKeepalive.Idle + time.Duration(cfg.Database.ServerKeepalive.Count)*cfg.Database.ServerKeepalive.Interval).Milliseconds(),
 		})

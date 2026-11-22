@@ -29,7 +29,7 @@ func TestObjectStoreTLS(t *testing.T) {
 	dir := t.TempDir()
 	caFile := copyCA(t, dir, "s3-ca.crt")
 	env := testenv.S3Config(t)
-	cfg := testenv.SecureS3(t, blobtest.Storage(t, dir).S3)
+	cfg := testenv.SecureS3(t, blobtest.S3(t))
 	cfg.CAFile = caFile // a copy this test may rewrite
 	cfg.Region, cfg.Bucket, cfg.ForcePathStyle = env.Region, env.BlobsBucket, env.ForcePathStyle
 	cfg.Prefix = "it-tls/" + randHex(5)
@@ -61,7 +61,7 @@ func TestObjectStoreTLS(t *testing.T) {
 	put := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		return c.Put(ctx, key, bytes.NewReader([]byte("tls")), 3, blob.Checksum{})
+		return c.Put(ctx, key, bytes.NewReader([]byte("tls")), 3, blob.Checksum{}, nil)
 	}
 	stack, err := os.ReadFile(testenv.CAFile(t))
 	if err != nil {

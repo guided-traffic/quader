@@ -8,7 +8,7 @@ import (
 
 func loadStorage(t *testing.T, file, role string, cmd Command) error {
 	t.Helper()
-	env := minimalEnv("QUADER_STORAGE_S3_BUCKET=blobs")
+	env := minimalEnv("QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]")
 	if role != "" {
 		env = append(env, "QUADER_PROCESS_ROLE="+role)
 	}
@@ -58,69 +58,6 @@ func TestStorageSpoolRule(t *testing.T) {
 		for _, role := range []string{"web", "worker", "all"} {
 			if err := loadStorage(t, ok, role, CommandServe); hasIssue(err, "storage.upload.max_size") {
 				t.Errorf("role %s: %v", role, err)
-			}
-		}
-	})
-}
-
-func TestStorageConnectionRules(t *testing.T) {
-	cases := []struct {
-		name, yaml, key string
-		bad             bool
-	}{
-		{"prefix of a slash", "storage:\n  s3:\n    prefix: \"/\"\n", "storage.s3.prefix", true},
-		{"prefix with a double slash", "storage:\n  s3:\n    prefix: \"a//b\"\n", "storage.s3.prefix", true},
-		{"prefix with a trailing slash", "storage:\n  s3:\n    prefix: \"a/\"\n", "storage.s3.prefix", true},
-		{"prefix with a space", "storage:\n  s3:\n    prefix: \"a b\"\n", "storage.s3.prefix", true},
-		{"nested prefix", "storage:\n  s3:\n    prefix: \"team-a/quader\"\n", "storage.s3.prefix", false},
-		{"empty prefix", "storage:\n  s3:\n    prefix: \"\"\n", "storage.s3.prefix", false},
-		{"http endpoint", "storage:\n  s3:\n    endpoint: \"http://s3.example.com\"\n", "storage.s3.endpoint", true},
-		{"http endpoint allowed", "storage:\n  s3:\n    endpoint: \"http://s3.example.com\"\n    allow_insecure_endpoint: true\n", "storage.s3.endpoint", false},
-		{"endpoint without a scheme is a host and means https", "storage:\n  s3:\n    endpoint: \"s3.example.com:9000\"\n", "storage.s3.endpoint", false},
-		{"endpoint of an unsupported scheme", "storage:\n  s3:\n    endpoint: \"ftp://s3.example.com\"\n", "storage.s3.endpoint", true},
-		{"https endpoint", "storage:\n  s3:\n    endpoint: \"https://s3.example.com:9000\"\n", "storage.s3.endpoint", false},
-	}
-	for _, c := range cases {
-		t.Run("R-STOR-030 "+c.name, func(t *testing.T) {
-			err := loadStorage(t, c.yaml, "web", CommandServe)
-			if got := hasIssue(err, c.key); got != c.bad {
-				t.Fatalf("issue on %s = %v, want %v (%v)", c.key, got, c.bad, err)
-			}
-		})
-	}
-}
-
-func TestStorageEndpointScheme(t *testing.T) {
-	load := func(t *testing.T, y string) *Loaded {
-		t.Helper()
-		l, err := Load(Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": y}), Environ: servableEnv("QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_PROCESS_ROLE=web"), Command: CommandServe})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return l
-	}
-	t.Run("R-STOR-030 an endpoint without a scheme becomes https:// in the effective configuration, with its source", func(t *testing.T) {
-		l := load(t, "storage:\n  s3:\n    endpoint: \"s3.eu01.example.cloud:443\"\n    presign:\n      endpoint: \"blobs.example.com\"\n")
-		if got := l.Config.Storage.S3.Endpoint; got != "https://s3.eu01.example.cloud:443" {
-			t.Errorf("endpoint = %q", got)
-		}
-		if got := l.Config.Storage.S3.Presign.Endpoint; got != "https://blobs.example.com" {
-			t.Errorf("presign endpoint = %q", got)
-		}
-		if k := l.Sources["storage.s3.endpoint"].Kind; k != "derived" {
-			t.Errorf("source kind = %q, want derived", k)
-		}
-	})
-	t.Run("R-STOR-030 allow_insecure_endpoint does not turn a scheme-less host into http", func(t *testing.T) {
-		l := load(t, "storage:\n  s3:\n    endpoint: \"minio.local:9000\"\n    allow_insecure_endpoint: true\n")
-		if got := l.Config.Storage.S3.Endpoint; got != "https://minio.local:9000" {
-			t.Errorf("endpoint = %q", got)
-		}
-	})
-	t.Run("R-STOR-030 an endpoint with a scheme and the empty endpoint are left alone", func(t *testing.T) {
-		for in, want := range map[string]string{"": "", "http://s3.local:9000": "http://s3.local:9000", "https://s3.example.com": "https://s3.example.com"} {
-			if got := NormalizeEndpoint(in); got != want {
-				t.Errorf("NormalizeEndpoint(%q) = %q, want %q", in, got, want)
 			}
 		}
 	})

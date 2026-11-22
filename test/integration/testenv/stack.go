@@ -206,7 +206,7 @@ func ScanClients() string {
 // ops listener.
 func (s *Stack) environ(host, port, name, userFile, passFile string) []string {
 	tb, dir := s.tb, s.dir
-	vk, s3 := ValkeyConfig(tb), S3Config(tb)
+	vk := ValkeyConfig(tb)
 	sentinels := make([]string, 0, len(vk.Sentinels))
 	for _, a := range vk.Sentinels {
 		sentinels = append(sentinels, strconv.Quote(a))
@@ -229,13 +229,8 @@ func (s *Stack) environ(host, port, name, userFile, passFile string) []string {
 		"QUADER_VALKEY_USERNAME_FILE=" + WriteFile(tb, dir, "vk-user", vk.Username), "QUADER_VALKEY_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-pass", vk.Password),
 		"QUADER_VALKEY_TLS_CA_FILE=" + vk.CAFile, "QUADER_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
 		"QUADER_VALKEY_STARTUP_ANSWER_TIMEOUT=" + answerWait,
-		"QUADER_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "QUADER_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "QUADER_STORAGE_S3_REGION=" + s3.Region,
-		"QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE=" + CAFile(tb),
-		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",
-		"QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE=" + WriteFile(tb, dir, "s3-id", s3.AccessKey),
-		"QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE=" + WriteFile(tb, dir, "s3-secret", s3.SecretKey),
-		// An S3 prefix of the installation keeps parallel suites apart in one bucket.
-		"QUADER_STORAGE_S3_PREFIX=" + s.ObjectPrefix(),
+		// One connection on the blob bucket; a prefix of the installation keeps parallel suites apart in one bucket.
+		"QUADER_STORAGE_CONNECTIONS=" + ConnectionsJSON(tb, dir, s.ObjectPrefix()),
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[" + strconv.Quote(s.sealed) + "]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 		"QUADER_SERVER_BASE_URL=http://quader.test", "QUADER_SERVER_LISTEN=127.0.0.1:0",
 		// The management API's own classes are tested where they are the subject;

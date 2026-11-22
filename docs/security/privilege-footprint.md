@@ -104,7 +104,7 @@ uses grants a workload policy that denies `PutBucketVersioning`, `PutLifecycleCo
 the provisioner's documentation on 2026-10-29, not in this repository. Consequences for the design: a versioned blob bucket
 and an incomplete-multipart lifecycle rule cannot be set by Quader, and the backup target cannot use Object Lock.
 
-The credential source is one of `default`, `webIdentity` and `static` (`storage.s3.credentials.source`). With `static`,
+The credential source is one of `default`, `webIdentity` and `static` (`storage.connections[].credentials_source`). With `static`,
 Quader reads the key files and nothing else. With `default` the AWS SDK's default chain is used, which is
 [H-74](#h-74--the-default-object-store-credential-chain-can-reach-node-metadata).
 
@@ -242,7 +242,7 @@ Valkey instance per installation, or one ACL user per installation once the oper
 
 ### H-74 · The default object-store credential chain can reach node metadata
 
-Stage: the credentials of the object-store client when `storage.s3.credentials.source` is `default`
+Stage: the credentials of the object-store client when `storage.connections[].credentials_source` is `default`
 ([blob/s3/credentials.go](../../internal/blob/s3/credentials.go), `awsConfig`).
 
 Live on a cloud without workload identity, with the default source and no environment or shared-config credentials: the AWS

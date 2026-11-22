@@ -48,6 +48,7 @@ func runID(tb testing.TB) string {
 
 // s3Env is the object store under test, with a prefix of its own in the shared bucket.
 type s3Env struct {
+	conn   config.StorageConnection
 	cfg    config.StorageS3
 	raw    blob.ObjectStore
 	prefix string
@@ -63,26 +64,23 @@ func newS3(tb testing.TB) *s3Env {
 		}
 		return p
 	}
-	cfg := blobtest.Storage(tb, dir).S3
-	cfg.Endpoint = testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT")
-	cfg.Region = testenv.Get(tb, "QUADER_TEST_S3_REGION")
-	cfg.Bucket = testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS")
-	cfg.ForcePathStyle = testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
-	cfg.AllowInsecureEndpoint = false
-	cfg.CAFile = testenv.CAFile(tb)
-	cfg.Prefix = "it-uploads/" + runID(tb)
-	cfg.Credentials = config.StorageS3Credentials{
-		Source:              "static",
+	prefix := "it-uploads/" + runID(tb)
+	conn := config.StorageConnection{
+		Endpoint: testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT"), Region: testenv.Get(tb, "QUADER_TEST_S3_REGION"),
+		Bucket: testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS"), Prefix: &prefix,
+		ForcePathStyle: testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true", CAFile: testenv.CAFile(tb),
+		CredentialsSource:   "static",
 		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
 		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
-	}
+	}.WithDefaults()
+	cfg := config.ClientConfig(conn, blobtest.Storage(tb, dir).ObjectStore)
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
 	if err != nil {
 		tb.Fatalf("object store client: %v", err)
 	}
 	testenv.RemoveObjectsAtCleanup(tb, cfg.Bucket, cfg.Prefix)
-	e := &s3Env{cfg: cfg, raw: c, prefix: cfg.Prefix}
+	e := &s3Env{conn: conn, cfg: cfg, raw: c, prefix: cfg.Prefix}
 	return e
 }
 
@@ -110,7 +108,7 @@ func (e *s3Env) keys(tb testing.TB, prefix string) []string {
 func (e *s3Env) storage(tb testing.TB) config.Storage {
 	tb.Helper()
 	cfg := blobtest.Storage(tb, tb.TempDir())
-	cfg.S3 = e.cfg
+	cfg.Connections = []config.StorageConnection{e.conn}
 	cfg.Upload.BlobWaitTimeout = 60 * time.Second
 	cfg.Uploads.PartSize = 5 << 20 // the smallest part S3 takes
 	return cfg

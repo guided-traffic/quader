@@ -44,7 +44,11 @@ func backupCheckCmd(args []string, s streams) error {
 		return backupExit(err)
 	}
 	defer db.Close()
-	client, err := s3.NewFromFactory(ctx, cfg.Storage.S3, outbound.New(cfg.Proxy.Outbound))
+	s3cfg, err := cfg.Storage.FirstClient()
+	if err != nil {
+		return backupExit(err)
+	}
+	client, err := s3.NewFromFactory(ctx, s3cfg, outbound.New(cfg.Proxy.Outbound))
 	if err != nil {
 		return backupExit(err)
 	}

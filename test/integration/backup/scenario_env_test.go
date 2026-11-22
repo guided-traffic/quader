@@ -124,11 +124,11 @@ func installOnStack(t *testing.T, s *testenv.Stack) *install {
 		t.Fatal(err)
 	}
 	cfg := loaded.Config
-	client, err := s3.NewFromFactory(context.Background(), cfg.Storage.S3, outbound.New(cfg.Proxy.Outbound))
+	client, err := s3.NewFromFactory(context.Background(), firstS3(cfg.Storage), outbound.New(cfg.Proxy.Outbound))
 	if err != nil {
 		t.Fatal(err)
 	}
-	in := &install{t: t, dbName: s.Database(), dbCfg: cfg.Database, s3cfg: cfg.Storage.S3, obj: client, client: client, prefix: cfg.Storage.S3.Prefix}
+	in := &install{t: t, dbName: s.Database(), dbCfg: cfg.Database, s3cfg: firstS3(cfg.Storage), obj: client, client: client, prefix: firstS3(cfg.Storage).Prefix}
 	in.dbCfg.Preflight.AllowSuperuser = true
 	return in
 }

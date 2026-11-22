@@ -101,6 +101,35 @@ type Checksum struct {
 	Value     []byte
 }
 
+// Metadata is the user metadata of an object (R-STOR-062): keys of lower-case letters, digits and hyphens, the prefix
+// "quader-" reserved for Quader, at most MaxMetadataBytes of keys and values in all. Stage 1 writes none; the start check
+// establishes whether a connection keeps it and whether a copy replaces it (R-STOR-035), for the encryption of stage 2.
+type Metadata map[string]string
+
+// MaxMetadataBytes bounds the keys and values of one object's metadata: the 2 KiB AWS documents for user metadata.
+const MaxMetadataBytes = 2048
+
+// CheckMetadata refuses metadata that a store may not keep as written: a key outside [a-z0-9-]+, or more than
+// MaxMetadataBytes of keys and values.
+func CheckMetadata(md Metadata) error {
+	n := 0
+	for k, v := range md {
+		if k == "" {
+			return errors.New("metadata: an empty key")
+		}
+		for i := 0; i < len(k); i++ {
+			if c := k[i]; (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
+				return fmt.Errorf("metadata: the key %q is not [a-z0-9-]+", k)
+			}
+		}
+		n += len(k) + len(v)
+	}
+	if n > MaxMetadataBytes {
+		return fmt.Errorf("metadata: %d bytes of keys and values, at most %d", n, MaxMetadataBytes)
+	}
+	return nil
+}
+
 // ObjectInfo describes a stored object.
 type ObjectInfo struct {
 	Key string
@@ -110,6 +139,8 @@ type ObjectInfo struct {
 	Size         int64
 	ETag         string
 	LastModified time.Time
+	// Metadata is the object's user metadata as Head and Get return it, nil when it has none; List leaves it nil.
+	Metadata Metadata
 }
 
 // ByteRange selects Length bytes starting at Offset; a negative Length means
@@ -165,12 +196,12 @@ type DeleteFailure struct {
 // The interface is small on purpose: internal/blob/s3 implements it, Guard
 // decorates it and internal/blob/blobtest fakes it.
 type ObjectStore interface {
-	// Put writes body, size bytes long, with one request. The body is seekable so
-	// that a retry can send it again.
-	Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum Checksum) error
-	// CreateMultipart starts a multipart upload; algorithm is the payload
-	// checksum algorithm the parts will carry ("sha256", "md5" or "").
-	CreateMultipart(ctx context.Context, key, algorithm string) (uploadID string, err error)
+	// Put writes body, size bytes long, with one request, and md as the object's metadata (nil for none). The body is
+	// seekable so that a retry can send it again.
+	Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum Checksum, md Metadata) error
+	// CreateMultipart starts a multipart upload whose object gets md as its metadata (nil for none); algorithm is the
+	// payload checksum algorithm the parts will carry ("sha256", "md5" or "").
+	CreateMultipart(ctx context.Context, key, algorithm string, md Metadata) (uploadID string, err error)
 	// UploadPart sends one part.
 	UploadPart(ctx context.Context, key, uploadID string, number int, body io.ReadSeeker, size int64, sum Checksum) (Part, error)
 	// CompleteMultipart makes the object visible.
@@ -179,7 +210,8 @@ type ObjectStore interface {
 	AbortMultipart(ctx context.Context, key, uploadID string) error
 	// Copy copies the object srcKey, size bytes long, to dstKey inside the store, with no byte passing through the caller
 	// (CopyObject up to 5 GiB, UploadPartCopy above). dstKey is replaced if it exists; a missing srcKey is ErrNotFound.
-	Copy(ctx context.Context, srcKey, dstKey string, size int64) error
+	// md nil keeps the source's metadata (x-amz-metadata-directive COPY); a value replaces it (REPLACE).
+	Copy(ctx context.Context, srcKey, dstKey string, size int64, md Metadata) error
 	// Head returns the size and modification time of an object.
 	Head(ctx context.Context, key string) (ObjectInfo, error)
 	// Get opens an object, optionally a range of it. The caller closes the body.
@@ -195,6 +227,17 @@ type ObjectStore interface {
 	ListMultipart(ctx context.Context, prefix string) ([]MultipartUpload, error)
 	// Presign returns a URL that serves GET of the key for ttl.
 	Presign(ctx context.Context, key string, ttl time.Duration) (string, error)
+}
+
+// BucketCopier is implemented by an [ObjectStore] that copies an object of another bucket on its own endpoint into its own
+// bucket with its own credential, with no byte passing through the caller: the server-side copy between two connections on
+// one endpoint (R-STOR-035 capability, R-STOR-056). The source's credential plays no part; this store's credential must be
+// allowed to read the source.
+type BucketCopier interface {
+	// Location is the store's endpoint as the location rule compares it and its bucket (R-STOR-050).
+	Location() (endpoint, bucket string)
+	// CopyFrom copies srcKey of srcBucket, size bytes long, to dstKey. md nil keeps the source's metadata, a value replaces it.
+	CopyFrom(ctx context.Context, srcBucket, srcKey, dstKey string, size int64, md Metadata) error
 }
 
 // MultipartMarker is the position after which a page of unfinished multipart uploads continues; the zero value starts at the first.

@@ -326,7 +326,8 @@ func TestGCDrain(t *testing.T) {
 		e := newS3(t, "gcdrain")
 		p := newPG(t)
 		r := newReplica(t, e, p, func(c *config.Storage) {
-			c.GC.BatchDelete = true
+			on := true
+			c.Connections[0].BatchDelete = &on
 			c.GC.DeleteSettle = 300 * time.Millisecond
 			c.GC.HandoverDelay = 6 * time.Second
 		})

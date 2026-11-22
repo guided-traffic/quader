@@ -28,16 +28,16 @@ DELETE FROM cluster_change c
 -- measurement of the period since its previous heartbeat (Q-OPS-175). draining is the last state of an instance: a heartbeat
 -- that was under way when the drain marked the row does not turn it back (Q-HA-308).
 INSERT INTO replica (instance_uid, name, version, revision, roles, state, checks, leases,
-                     secret_key_ids, active_secret_key_id, node, valkey, pool, runtime, started_at, heartbeat_at)
+                     secret_key_ids, active_secret_key_id, node, valkey, pool, runtime, object_store, started_at, heartbeat_at)
 VALUES (sqlc.arg(instance_uid)::text::uuid, sqlc.arg(name)::text, sqlc.arg(version)::text, sqlc.arg(revision)::text,
         sqlc.arg(roles)::text[], sqlc.arg(state)::text, sqlc.arg(checks)::text::jsonb, sqlc.arg(leases)::text::jsonb,
         sqlc.arg(secret_key_ids)::text[], sqlc.arg(active_secret_key_id)::text,
         NULLIF(sqlc.arg(node)::text, ''), sqlc.arg(valkey)::text::jsonb, NULLIF(sqlc.arg(pool)::text, ''),
-        sqlc.arg(runtime)::text::jsonb, sqlc.arg(started_at)::timestamptz, now())
+        sqlc.arg(runtime)::text::jsonb, sqlc.arg(object_store)::text::jsonb, sqlc.arg(started_at)::timestamptz, now())
 ON CONFLICT (instance_uid) DO UPDATE
    SET state = CASE WHEN replica.state = 'draining' THEN replica.state ELSE EXCLUDED.state END, checks = EXCLUDED.checks, leases = EXCLUDED.leases,
        secret_key_ids = EXCLUDED.secret_key_ids, active_secret_key_id = EXCLUDED.active_secret_key_id,
-       valkey = EXCLUDED.valkey, runtime = EXCLUDED.runtime, heartbeat_at = now();
+       valkey = EXCLUDED.valkey, runtime = EXCLUDED.runtime, object_store = EXCLUDED.object_store, heartbeat_at = now();
 
 -- name: SetReplicaState :execrows
 UPDATE replica SET state = sqlc.arg(state)::text, heartbeat_at = now()

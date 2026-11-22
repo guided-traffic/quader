@@ -336,7 +336,7 @@ func TestR_HA_020_SharedUIAssetsWithoutTheObjectStore(t *testing.T) {
 	proxy := newTCPProxy(t, u.Host)
 	rc := st.Start(t, testenv.ReplicaOptions{
 		Name: "ui-c", Role: "web", UI: c.tree,
-		Env: []string{"QUADER_STORAGE_S3_ENDPOINT=https://" + proxy.addr(), "QUADER_STORAGE_S3_CIRCUIT_BREAKER_OPEN_DURATION=1s"},
+		Env: []string{"QUADER_STORAGE_CONNECTIONS=" + testenv.ConnectionsJSONAt(t, t.TempDir(), st.ObjectPrefix(), "https://"+proxy.addr()), "QUADER_STORAGE_OBJECT_STORE_CIRCUIT_BREAKER_OPEN_DURATION=1s"},
 	})
 	wantFile(t, st, rc, "en", "main-AAAAAAAA.js", a.file(t, "en", "main-AAAAAAAA.js"))
 

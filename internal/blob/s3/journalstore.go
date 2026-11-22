@@ -46,7 +46,7 @@ func NewJournalStore(c *Client, versions bool) *JournalStore {
 // Put writes an object. The same key with the same bytes is harmless; the payload checksum makes the store verify them.
 func (s *JournalStore) Put(ctx context.Context, key string, body []byte) error {
 	h := sha256.Sum256(body)
-	return s.c.Put(ctx, key, bytes.NewReader(body), int64(len(body)), blob.Checksum{Algorithm: "sha256", Value: h[:]})
+	return s.c.Put(ctx, key, bytes.NewReader(body), int64(len(body)), blob.Checksum{Algorithm: "sha256", Value: h[:]}, nil)
 }
 
 // List calls fn for every key below prefix in lexicographic order.

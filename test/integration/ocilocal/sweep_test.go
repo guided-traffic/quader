@@ -53,8 +53,8 @@ func TestR_OCI_019_TheSweepRemovesOnlyUnreferencedBlobsAfterTheGrace(t *testing.
 	e.age(repoOther, old, otherRepo)
 	e.age(repoCache, old, cached)
 	heldDigest := sha256Of("held by a session")
-	e.st.Exec(`INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, received, hash_state, part_size, s3_upload_id, digest, state)
-		VALUES (gen_random_uuid(), $1, $1, 'app', 0, '\x00', 5242880, 'x', $2, 'completing')`, e.repoID(repoLocal), heldDigest[:])
+	e.st.Exec(`INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, received, hash_state, part_size, s3_upload_id, digest, state, connection_id)
+		VALUES (gen_random_uuid(), $1, $1, 'app', 0, '\x00', 5242880, 'x', $2, 'completing', 'default')`, e.repoID(repoLocal), heldDigest[:])
 
 	res, err := e.sweeper(24*time.Hour, nil).Sweep(context.Background())
 	must(t, err)

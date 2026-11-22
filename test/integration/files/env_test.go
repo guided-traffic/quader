@@ -310,27 +310,26 @@ func newS3(t *testing.T) *s3Env {
 		return p
 	}
 	cfg := blobtest.Storage(t, t.TempDir())
-	cfg.S3.Endpoint = testenv.Get(t, "QUADER_TEST_S3_ENDPOINT")
-	cfg.S3.Region = testenv.Get(t, "QUADER_TEST_S3_REGION")
-	cfg.S3.Bucket = testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS")
-	cfg.S3.ForcePathStyle = testenv.Get(t, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
-	cfg.S3.CAFile = testenv.CAFile(t)
-	cfg.S3.Prefix = "it-files/" + randHex(5)
-	cfg.S3.Credentials = config.StorageS3Credentials{
-		Source:              "static",
+	prefix := "it-files/" + randHex(5)
+	cfg.Connections = []config.StorageConnection{config.StorageConnection{
+		Endpoint: testenv.Get(t, "QUADER_TEST_S3_ENDPOINT"), Region: testenv.Get(t, "QUADER_TEST_S3_REGION"),
+		Bucket: testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS"), Prefix: &prefix,
+		ForcePathStyle: testenv.Get(t, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true", CAFile: testenv.CAFile(t),
+		CredentialsSource:   "static",
 		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(t, "QUADER_TEST_S3_ACCESS_KEY")),
 		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(t, "QUADER_TEST_S3_SECRET_KEY")),
-	}
+	}.WithDefaults()}
 	// The transfer is the thing under test: spool admission must not depend on
 	// the free space of the machine running the tests.
 	cfg.Spool.MinFreeBytes = 0
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
-	c, err := s3.NewFromFactory(context.Background(), cfg.S3, f)
+	s3cfg := config.ClientConfig(cfg.Connections[0], cfg.ObjectStore)
+	c, err := s3.NewFromFactory(context.Background(), s3cfg, f)
 	if err != nil {
 		t.Fatalf("object store client: %v", err)
 	}
-	testenv.RemoveObjectsAtCleanup(t, cfg.S3.Bucket, cfg.S3.Prefix)
-	e := &s3Env{cfg: cfg, raw: c, prefix: cfg.S3.Prefix}
+	testenv.RemoveObjectsAtCleanup(t, s3cfg.Bucket, s3cfg.Prefix)
+	e := &s3Env{cfg: cfg, raw: c, prefix: prefix}
 	return e
 }
 
@@ -366,10 +365,10 @@ func (c *countingStore) Get(ctx context.Context, key string, rng *blob.ByteRange
 	return c.ObjectStore.Get(ctx, key, rng)
 }
 
-func (c *countingStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum) error {
+func (c *countingStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum, md blob.Metadata) error {
 	c.puts.Add(1)
 	c.delay(ctx)
-	return c.ObjectStore.Put(ctx, key, body, size, sum)
+	return c.ObjectStore.Put(ctx, key, body, size, sum, md)
 }
 
 func (c *countingStore) UploadPart(ctx context.Context, key, id string, n int, body io.ReadSeeker, size int64, sum blob.Checksum) (blob.Part, error) {
@@ -607,7 +606,15 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 		o.storage(&cfg)
 	}
 	r.obj = &countingStore{ObjectStore: e.s3.raw}
-	if r.blobs, err = blob.New(cfg, r.obj, r.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond)); err != nil {
+	conns, err := blob.NewConnections(blob.NewConnection(cfg.Connections[0], r.obj))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.blobs, err = blob.New(cfg, conns, r.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond)); err != nil {
+		t.Fatal(err)
+	}
+	// the copy rows refer to the connection's row (R-STOR-052)
+	if err := r.blobs.RecordConnections(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	r.stats = items.NewStats(r.db, 300*time.Millisecond, quiet)

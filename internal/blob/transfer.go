@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"slices"
 	"sync"
 	"time"
 )
@@ -17,24 +18,101 @@ const (
 	mib      = 1 << 20
 )
 
-// putObject writes the content of sp to its key (R-STOR-006): one request up to
-// storage.s3.multipart.threshold, a multipart upload from the spool file above
-// it. Failures map to the 503 of R-STOR-036 when the store is the cause.
-func (s *Store) putObject(ctx context.Context, sp *Spooled) error {
-	key := s.Key(sp.SHA256)
-	var err error
+// writeObjects writes the content of sp to the first storage.replication.min_copies writable connections in parallel
+// (R-STOR-053, R-STOR-006): one request up to storage.object_store.multipart.threshold, a multipart upload from the spool
+// file above it, each with its connection's payload checksum. A write that fails with a transient error or meets an open
+// circuit is repeated on the next writable connection within the same request, while the spool still holds the bytes
+// (Q-STOR-229). Fewer than min_copies successful writes are an error with the 503 of R-STOR-036; the objects that were
+// written are returned with it, for the caller to leave to the orphan sweep.
+func (s *Store) writeObjects(ctx context.Context, sp *Spooled) ([]copyWrite, error) {
 	if sp.staged != "" {
 		return s.putStaged(ctx, sp)
 	}
-	if sp.Size <= int64(s.cfg.S3.Multipart.Threshold) {
-		err = s.objects.Put(ctx, key, sp.Reader(), sp.Size, s.wholeChecksum(sp))
-	} else {
-		err = s.putMultipart(ctx, key, sp)
+	return s.writeTo(ctx, sp, s.conns.Writable(), s.minCopies())
+}
+
+// writeTo writes sp to need of the candidates, in their order, falling over to the next on a transient failure.
+func (s *Store) writeTo(ctx context.Context, sp *Spooled, cands []*Connection, need int) ([]copyWrite, error) {
+	if len(cands) < need {
+		return nil, s.notEnoughConnections(nil)
 	}
-	if err != nil {
-		return mapStoreErr(err)
+	wctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	type result struct {
+		w   copyWrite
+		err error
 	}
-	return nil
+	results := make(chan result, len(cands))
+	next, inflight := 0, 0
+	start := func() {
+		c := cands[next]
+		next++
+		inflight++
+		go func() {
+			err := s.putOn(wctx, c, sp)
+			results <- result{w: copyWrite{conn: c, key: c.ObjectKey(sp.SHA256), storedSize: sp.Size, verified: c.Verifies(), at: s.now()}, err: err}
+		}()
+	}
+	for inflight < need && next < len(cands) {
+		start()
+	}
+	var (
+		writes  []copyWrite
+		lastErr error
+		fatal   error
+	)
+	for inflight > 0 {
+		r := <-results
+		inflight--
+		switch {
+		case r.err == nil:
+			writes = append(writes, r.w)
+		case fallsOver(r.err):
+			lastErr = r.err
+			s.log.Warn("a write to a connection failed; the next writable connection takes it", "connection", r.w.conn.ID(), "sha256", sp.SHA256.Hex(), "error", r.err)
+			if fatal == nil && next < len(cands) && len(writes)+inflight < need {
+				start()
+			}
+		default:
+			if fatal == nil {
+				fatal = r.err
+				cancel()
+			}
+		}
+	}
+	slices.SortFunc(writes, func(a, b copyWrite) int { return a.conn.Position() - b.conn.Position() })
+	switch {
+	case fatal != nil:
+		return writes, mapStoreErr(fatal)
+	case len(writes) < need:
+		return writes, s.notEnoughConnections(lastErr)
+	}
+	return writes, nil
+}
+
+// fallsOver reports a write failure that the next writable connection takes over (Q-STOR-229): a transient error or an open
+// circuit. Any other failure fails the request.
+func fallsOver(err error) bool { return IsTransient(err) || errors.Is(err, ErrCircuitOpen) }
+
+// notEnoughConnections is the 503 of a commit that reached fewer than min_copies connections (R-STOR-053), with the
+// Retry-After of the circuit that will probe first.
+func (s *Store) notEnoughConnections(cause error) error {
+	if cause != nil {
+		return storeUnavailable(cause)
+	}
+	if err := s.RejectUpload(); err != nil {
+		return err
+	}
+	return storeUnavailable(&circuitOpenError{retry: retryAfter})
+}
+
+// putOn writes the content of sp to its key on one connection (R-STOR-006).
+func (s *Store) putOn(ctx context.Context, c *Connection, sp *Spooled) error {
+	key := c.ObjectKey(sp.SHA256)
+	if sp.Size <= int64(s.cfg.ObjectStore.Multipart.Threshold) {
+		return c.Objects().Put(ctx, key, sp.Reader(), sp.Size, wholeChecksum(c, sp), nil)
+	}
+	return s.putMultipart(ctx, c, key, sp)
 }
 
 // mapStoreErr turns a store failure into the error a request answers with. The
@@ -53,10 +131,10 @@ func mapStoreErr(err error) error {
 	return err
 }
 
-// wholeChecksum is the payload checksum of a single request. SHA-256 and MD5 of
-// the whole content are known from the hashing pass.
-func (s *Store) wholeChecksum(sp *Spooled) Checksum {
-	switch s.cfg.S3.PayloadChecksum {
+// wholeChecksum is the payload checksum of a single request on a connection. SHA-256 and MD5 of the whole content are known
+// from the hashing pass.
+func wholeChecksum(c *Connection, sp *Spooled) Checksum {
+	switch c.PayloadChecksum() {
 	case "sha256":
 		return Checksum{Algorithm: "sha256", Value: sp.SHA256[:]}
 	case "md5":
@@ -76,15 +154,16 @@ func PartSize(size, configured int64) int64 {
 	return ps
 }
 
-func (s *Store) putMultipart(ctx context.Context, key string, sp *Spooled) (err error) {
-	algorithm := s.cfg.S3.PayloadChecksum
+func (s *Store) putMultipart(ctx context.Context, c *Connection, key string, sp *Spooled) (err error) {
+	objects := c.Objects()
+	algorithm := c.PayloadChecksum()
 	if algorithm == "none" {
 		algorithm = ""
 	}
-	partSize := PartSize(sp.Size, int64(s.cfg.S3.Multipart.PartSize))
+	partSize := PartSize(sp.Size, int64(s.cfg.ObjectStore.Multipart.PartSize))
 	n := int((sp.Size + partSize - 1) / partSize)
 
-	id, err := s.objects.CreateMultipart(ctx, key, algorithm)
+	id, err := objects.CreateMultipart(ctx, key, algorithm, nil)
 	if err != nil {
 		return err
 	}
@@ -95,8 +174,8 @@ func (s *Store) putMultipart(ctx context.Context, key string, sp *Spooled) (err 
 		// The request context may be what failed: abort with one of our own.
 		actx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 		defer cancel()
-		if aerr := s.objects.AbortMultipart(actx, key, id); aerr != nil {
-			s.log.Warn("could not abort a multipart upload; the orphan sweep will", "key", key, "upload_id", id, "error", aerr)
+		if aerr := objects.AbortMultipart(actx, key, id); aerr != nil {
+			s.log.Warn("could not abort a multipart upload; the orphan sweep will", "connection", c.ID(), "key", key, "upload_id", id, "error", aerr)
 		}
 	}()
 
@@ -108,7 +187,7 @@ func (s *Store) putMultipart(ctx context.Context, key string, sp *Spooled) (err 
 		mu       sync.Mutex
 		firstErr error
 	)
-	local := make(chan struct{}, max(1, s.cfg.S3.Multipart.Concurrency))
+	local := make(chan struct{}, max(1, s.cfg.ObjectStore.Multipart.Concurrency))
 	fail := func(e error) {
 		mu.Lock()
 		if firstErr == nil {
@@ -136,7 +215,7 @@ launch:
 		go func(i int, off, size int64) {
 			defer wg.Done()
 			defer func() { <-s.parts; <-local }()
-			p, perr := s.uploadPart(pctx, key, id, i+1, sp, off, size, algorithm)
+			p, perr := uploadPart(pctx, objects, key, id, i+1, sp, off, size, algorithm)
 			if perr != nil {
 				fail(perr)
 				return
@@ -151,23 +230,23 @@ launch:
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := s.objects.CompleteMultipart(ctx, key, id, parts); err != nil {
+	if err := objects.CompleteMultipart(ctx, key, id, parts); err != nil {
 		return err
 	}
-	info, err := s.objects.Head(ctx, key)
+	info, err := objects.Head(ctx, key)
 	if err != nil {
 		return err
 	}
-	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say
+	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say; stage 1 stores the blob's bytes, so the stored size is its size
 		// The completed object is not what was sent. It is not deleted here: a
 		// concurrent uploader may have written the right bytes to the same key.
-		return fmt.Errorf("object %s has %d bytes after the multipart upload, expected %d", key, info.Size, sp.Size)
+		return fmt.Errorf("object %s on connection %s has %d bytes after the multipart upload, expected %d", key, c.ID(), info.Size, sp.Size)
 	}
 	return nil
 }
 
 // uploadPart sends one part read directly from the spool file.
-func (s *Store) uploadPart(ctx context.Context, key, id string, number int, sp *Spooled, off, size int64, algorithm string) (Part, error) {
+func uploadPart(ctx context.Context, objects ObjectStore, key, id string, number int, sp *Spooled, off, size int64, algorithm string) (Part, error) {
 	var sum Checksum
 	if algorithm != "" {
 		var h hash.Hash
@@ -181,7 +260,7 @@ func (s *Store) uploadPart(ctx context.Context, key, id string, number int, sp *
 		}
 		sum = Checksum{Algorithm: algorithm, Value: h.Sum(nil)}
 	}
-	p, err := s.objects.UploadPart(ctx, key, id, number, sp.Section(off, size), size, sum)
+	p, err := objects.UploadPart(ctx, key, id, number, sp.Section(off, size), size, sum)
 	if err != nil {
 		return Part{}, err
 	}

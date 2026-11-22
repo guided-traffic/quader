@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 const (
@@ -27,12 +28,30 @@ func copyBound(n int64) time.Duration {
 }
 
 // Copy implements blob.ObjectStore: CopyObject for an object up to 5 GiB, a multipart copy with UploadPartCopy above, both
-// inside the bucket and with the encryption settings of every write (R-STOR-032).
-func (c *Client) Copy(ctx context.Context, srcKey, dstKey string, size int64) error {
+// inside the bucket and with the encryption settings of every write (R-STOR-032). md nil keeps the source's metadata
+// (x-amz-metadata-directive COPY, and the source's metadata on the multipart copy); a value replaces it (REPLACE, R-STOR-062).
+func (c *Client) Copy(ctx context.Context, srcKey, dstKey string, size int64, md blob.Metadata) error {
+	return c.copyFrom(ctx, c.bucket, srcKey, dstKey, size, md)
+}
+
+var _ blob.BucketCopier = (*Client)(nil)
+
+// Location implements blob.BucketCopier: the endpoint as the location rule compares it and the bucket.
+func (c *Client) Location() (endpoint, bucket string) {
+	return config.ComparableEndpoint(c.cfg.Endpoint, c.cfg.Region), c.bucket
+}
+
+// CopyFrom implements blob.BucketCopier: the copy of an object of another bucket on the same endpoint into this client's
+// bucket, signed with this client's credential, which must be allowed to read the source (R-STOR-056).
+func (c *Client) CopyFrom(ctx context.Context, srcBucket, srcKey, dstKey string, size int64, md blob.Metadata) error {
+	return c.copyFrom(ctx, srcBucket, srcKey, dstKey, size, md)
+}
+
+func (c *Client) copyFrom(ctx context.Context, srcBucket, srcKey, dstKey string, size int64, md blob.Metadata) error {
 	if size <= c.copyLimit() {
-		return c.copyOne(ctx, srcKey, dstKey, size)
+		return c.copyOne(ctx, srcBucket, srcKey, dstKey, size, md)
 	}
-	return c.copyParts(ctx, srcKey, dstKey, size)
+	return c.copyParts(ctx, srcBucket, srcKey, dstKey, size, md)
 }
 
 // copyLimit is the largest object a single CopyObject takes.
@@ -51,25 +70,40 @@ func (c *Client) copyPart() int64 {
 	return copyPartSize
 }
 
-func (c *Client) copyOne(ctx context.Context, srcKey, dstKey string, size int64) error {
+func (c *Client) copyOne(ctx context.Context, srcBucket, srcKey, dstKey string, size int64, md blob.Metadata) error {
 	s := c.sse()
 	ctx, cancel := context.WithTimeout(ctx, copyBound(size))
 	defer cancel()
-	_, err := c.long().CopyObject(ctx, &awss3.CopyObjectInput{
-		Bucket: &c.bucket, Key: &dstKey, CopySource: aws.String(copySource(c.bucket, srcKey)),
+	in := &awss3.CopyObjectInput{
+		Bucket: &c.bucket, Key: &dstKey, CopySource: aws.String(copySource(srcBucket, srcKey)),
 		MetadataDirective: types.MetadataDirectiveCopy, StorageClass: types.StorageClass(c.cfg.StorageClass),
 		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
-	})
+	}
+	if md != nil {
+		// REPLACE replaces every header the object carries, so the content type goes with it
+		in.MetadataDirective, in.Metadata, in.ContentType = types.MetadataDirectiveReplace, md, aws.String("application/octet-stream")
+	}
+	_, err := c.long().CopyObject(ctx, in)
 	return mapError(ctx, "CopyObject", srcKey, err)
 }
 
-func (c *Client) copyParts(ctx context.Context, srcKey, dstKey string, size int64) (err error) {
+func (c *Client) copyParts(ctx context.Context, srcBucket, srcKey, dstKey string, size int64, md blob.Metadata) (err error) {
 	api := c.long()
 	s := c.sse()
+	if md == nil {
+		// a multipart copy creates a new object: the source's metadata is carried over by hand
+		hctx, hcancel := context.WithTimeout(ctx, copyBound(0))
+		ho, herr := api.HeadObject(hctx, &awss3.HeadObjectInput{Bucket: &srcBucket, Key: &srcKey})
+		hcancel()
+		if herr != nil {
+			return mapError(ctx, "HeadObject", srcKey, herr)
+		}
+		md = lowerKeys(ho.Metadata)
+	}
 	cctx, cancel := context.WithTimeout(ctx, copyBound(0))
 	out, err := api.CreateMultipartUpload(cctx, &awss3.CreateMultipartUploadInput{
 		Bucket: &c.bucket, Key: &dstKey, ContentType: aws.String("application/octet-stream"), StorageClass: types.StorageClass(c.cfg.StorageClass),
-		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
+		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket, Metadata: md,
 	})
 	cancel()
 	if err != nil {
@@ -91,7 +125,7 @@ func (c *Client) copyParts(ctx context.Context, srcKey, dstKey string, size int6
 		pctx, pcancel := context.WithTimeout(ctx, copyBound(last-off+1))
 		po, perr := api.UploadPartCopy(pctx, &awss3.UploadPartCopyInput{
 			Bucket: &c.bucket, Key: &dstKey, UploadId: id, PartNumber: aws.Int32(n),
-			CopySource: aws.String(copySource(c.bucket, srcKey)), CopySourceRange: aws.String(fmt.Sprintf("bytes=%d-%d", off, last)),
+			CopySource: aws.String(copySource(srcBucket, srcKey)), CopySourceRange: aws.String(fmt.Sprintf("bytes=%d-%d", off, last)),
 		})
 		pcancel()
 		if perr != nil {

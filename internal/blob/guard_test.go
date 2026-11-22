@@ -222,7 +222,7 @@ func TestGuardBreaker(t *testing.T) {
 		now = time.Now()
 		g, _, m := newGuard(t)
 		data := []byte("hello world")
-		if err := g.Put(context.Background(), "k", bytes.NewReader(data), int64(len(data)), blob.Checksum{}); err != nil {
+		if err := g.Put(context.Background(), "k", bytes.NewReader(data), int64(len(data)), blob.Checksum{}, nil); err != nil {
 			t.Fatal(err)
 		}
 		body, _, err := g.Get(context.Background(), "k", nil)
@@ -315,7 +315,7 @@ func TestIngestRefusesAnAwaitedBodyWhileTheCircuitIsOpen(t *testing.T) {
 	mem := blobtest.New()
 	g := blob.NewGuard(mem, config.StorageS3Breaker{FailureThreshold: 1, OpenDuration: time.Minute})
 	cfg := blobtest.Storage(t, t.TempDir())
-	st, err := blob.New(cfg, g, newFakeDB(), blob.WithRows(newFakeDB()))
+	st, err := blob.New(cfg, blob.SingleConnection("quader", g), newFakeDB(), blob.WithRows(newFakeDB()))
 	if err != nil {
 		t.Fatal(err)
 	}

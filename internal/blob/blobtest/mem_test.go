@@ -16,7 +16,7 @@ func TestMemStore(t *testing.T) {
 	ctx := context.Background()
 	t.Run("R-STOR-035 a multipart object is visible on completion only and parts below the minimum are refused", func(t *testing.T) {
 		m := blobtest.New()
-		id, err := m.CreateMultipart(ctx, "k", "")
+		id, err := m.CreateMultipart(ctx, "k", "", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -46,18 +46,18 @@ func TestMemStore(t *testing.T) {
 		m := blobtest.New()
 		data := []byte("hello")
 		good := sha256.Sum256(data)
-		if err := m.Put(ctx, "a", bytes.NewReader(data), 5, blob.Checksum{Algorithm: "sha256", Value: good[:]}); err != nil {
+		if err := m.Put(ctx, "a", bytes.NewReader(data), 5, blob.Checksum{Algorithm: "sha256", Value: good[:]}, nil); err != nil {
 			t.Fatal(err)
 		}
 		bad := sha256.Sum256([]byte("other"))
-		if err := m.Put(ctx, "b", bytes.NewReader(data), 5, blob.Checksum{Algorithm: "sha256", Value: bad[:]}); err == nil {
+		if err := m.Put(ctx, "b", bytes.NewReader(data), 5, blob.Checksum{Algorithm: "sha256", Value: bad[:]}, nil); err == nil {
 			t.Fatal("a wrong SHA-256 was accepted")
 		}
 	})
 	t.Run("R-STOR-035 ranges, listing with a delimiter and deletion behave like the real store", func(t *testing.T) {
 		m := blobtest.New()
 		for _, k := range []string{"p/a/1", "p/a/2", "p/b/1", "p/c"} {
-			if err := m.Put(ctx, k, bytes.NewReader([]byte("0123456789")), 10, blob.Checksum{}); err != nil {
+			if err := m.Put(ctx, k, bytes.NewReader([]byte("0123456789")), 10, blob.Checksum{}, nil); err != nil {
 				t.Fatal(err)
 			}
 		}

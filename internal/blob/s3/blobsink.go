@@ -179,7 +179,7 @@ func (s *BlobSink) Put(ctx context.Context, d format.Digest, size int64, r io.Re
 		if err := verify(int64(len(buf))); err != nil {
 			return err
 		}
-		if err := s.c.Put(ctx, key, bytes.NewReader(buf), size, blob.Checksum{Algorithm: "sha256", Value: sha256Of(d)}); err != nil {
+		if err := s.c.Put(ctx, key, bytes.NewReader(buf), size, blob.Checksum{Algorithm: "sha256", Value: sha256Of(d)}, nil); err != nil {
 			return err
 		}
 		return s.confirm(ctx, d, size)
@@ -191,7 +191,7 @@ func (s *BlobSink) Put(ctx context.Context, d format.Digest, size int64, r io.Re
 	}
 	defer s.mem.release(held)
 	r = io.LimitReader(r, size+1)
-	id, err := s.c.CreateMultipart(ctx, key, "")
+	id, err := s.c.CreateMultipart(ctx, key, "", nil)
 	if err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ func (s *BlobSink) FirstForeign(ctx context.Context, allowBlobs bool) (string, e
 // Probe writes and deletes the object <prefix>/_probe/<name> (R-BAK-020 check 7).
 func (s *BlobSink) Probe(ctx context.Context, name string) error {
 	key := s.root() + "_probe/" + name
-	if err := s.c.Put(ctx, key, strings.NewReader("probe"), 5, blob.Checksum{}); err != nil {
+	if err := s.c.Put(ctx, key, strings.NewReader("probe"), 5, blob.Checksum{}, nil); err != nil {
 		return err
 	}
 	return s.c.Delete(ctx, key)

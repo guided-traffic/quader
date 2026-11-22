@@ -30,7 +30,7 @@ type Backup struct {
 	ObjectVersioning  bool                    `yaml:"object_versioning" default:"false" doc:"Asserts that the blob bucket is versioned and keeps noncurrent versions for at least recovery_window (R-HA-023)."`
 }
 
-// BackupTarget is the S3 location backups are written to (R-BAK-002, R-BAK-011). It carries the keys of storage.s3 that a
+// BackupTarget is the S3 location backups are written to (R-BAK-002, R-BAK-011). It carries the keys of a connection that a
 // second bucket needs; the target has its own client and its own credentials.
 type BackupTarget struct {
 	Endpoint              string               `yaml:"endpoint" default:"" doc:"Empty means AWS endpoint resolution for the region. A host without a scheme means https://."`
@@ -47,11 +47,11 @@ type BackupTarget struct {
 }
 
 // BackupSource is the credential with which the backup reads the blob bucket (R-BAK-015: the backup never writes or deletes
-// there). Without separate_credentials the backup reads with storage.s3.credentials, which is the right choice for a
+// there). Without separate_credentials the backup reads with the first connection's credential, which is the right choice for a
 // workload identity of the backup's ServiceAccount; with static keys the chart sets it, so the backup pod does not mount the
 // runtime credential (Q-BAK-49).
 type BackupSource struct {
-	SeparateCredentials bool                 `yaml:"separate_credentials" default:"false" doc:"Read the blob bucket with backup.source.credentials instead of storage.s3.credentials."`
+	SeparateCredentials bool                 `yaml:"separate_credentials" default:"false" doc:"Read the blob bucket with backup.source.credentials instead of the credential of the first storage connection."`
 	Credentials         StorageS3Credentials `yaml:"credentials"`
 }
 
@@ -152,23 +152,30 @@ func (b *Backup) ValidateFor(cmd Command, r *Report) {
 	}
 }
 
-// validateBackupCoupling applies the rule of R-BAK-002 that spans backup.target and storage.s3: the target must not share
-// the blob store's endpoint and bucket unless allow_same_bucket is set, and even then neither prefix may contain the
-// other. It only runs where a target is configured.
+// validateBackupCoupling applies the rule of R-BAK-002 that spans backup.target and the object-store connections, per
+// connection (R-STOR-050 rule 5): the target must not share a connection's endpoint and bucket unless allow_same_bucket is
+// set, and even then neither prefix may contain the other. It only runs where a target is configured; a connection whose
+// bucket or endpoint comes from a file is not known here.
 func (c *Config) validateBackupCoupling(r *Report) {
-	t, s := c.Backup.Target, c.Storage.S3
-	if t.Bucket == "" || s.Bucket == "" || t.Bucket != s.Bucket {
+	t := c.Backup.Target
+	if t.Bucket == "" {
 		return
 	}
-	if NormalizeEndpoint(t.Endpoint) != NormalizeEndpoint(s.Endpoint) {
-		return
-	}
-	if !t.AllowSameBucket {
-		r.Add("backup.target.bucket", "(%s) is the blob store's bucket on the same endpoint; use a bucket of its own or set backup.target.allow_same_bucket (R-BAK-002)", t.Bucket)
-		return
-	}
-	if prefixContains(t.Prefix, s.Prefix) || prefixContains(s.Prefix, t.Prefix) {
-		r.Add("backup.target.prefix", "(%q) and storage.s3.prefix (%q) must not contain each other (R-BAK-002)", t.Prefix, s.Prefix)
+	for i, raw := range c.Storage.Connections {
+		s := raw.WithDefaults()
+		if s.Bucket == "" || t.Bucket != s.Bucket || s.EndpointFile != "" {
+			continue
+		}
+		if NormalizeEndpoint(t.Endpoint) != NormalizeEndpoint(s.Endpoint) {
+			continue
+		}
+		if !t.AllowSameBucket {
+			r.Add("backup.target.bucket", "(%s) is the bucket of storage.connections[%d] (%s) on the same endpoint; use a bucket of its own or set backup.target.allow_same_bucket (R-BAK-002)", t.Bucket, i, s.ID)
+			continue
+		}
+		if prefixContains(t.Prefix, s.KeyPrefix()) || prefixContains(s.KeyPrefix(), t.Prefix) {
+			r.Add("backup.target.prefix", "(%q) and the prefix of storage.connections[%d] (%s) (%q) must not contain each other (R-BAK-002)", t.Prefix, i, s.ID, s.KeyPrefix())
+		}
 	}
 }
 

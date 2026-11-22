@@ -320,7 +320,7 @@ func (s *Service) endOfBody(ctx context.Context, r row, writer string, h *hashes
 				out.oldObjects = append(out.oldObjects, s.tailKey(r.ID, t.Writer))
 			}
 		}
-		if err := s.objects.Put(ctx, key, write.Reader(), write.Size, s.checksumOf(write)); err != nil {
+		if err := s.objects.Put(ctx, key, write.Reader(), write.Size, s.checksumOf(write), nil); err != nil {
 			return streamed{}, blob.MapStoreError(err)
 		}
 		out.newObjects = []string{key}
@@ -415,7 +415,7 @@ func (s *Service) sendPart(ctx context.Context, id uuid.UUID, uploadID string, n
 		}
 	}
 	if uploadID == "" {
-		created, err = s.objects.CreateMultipart(ctx, s.dataKey(id), s.algorithm)
+		created, err = s.objects.CreateMultipart(ctx, s.dataKey(id), s.algorithm, nil)
 		if err != nil {
 			return part{}, "", blob.MapStoreError(err)
 		}

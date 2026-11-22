@@ -1,10 +1,13 @@
 # Several object-store connections: who can read, change or delete a copy, and what Quader believes about one
 
-Status: specified on 2026-11-22, not built ([storage.md](../spec/storage.md) R-STOR-050 to R-STOR-063, R-STOR-026, R-STOR-027,
+Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-050 to R-STOR-063, R-STOR-026, R-STOR-027,
 R-STOR-035; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-030;
-[ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)).
-Until it is built an installation has one connection, `storage.s3`, and what [privilege-footprint.md](privilege-footprint.md) and
-[transport-encryption.md](transport-encryption.md) say of the object store describes it.
+[ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)),
+partly built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection
+([storage.md](../spec/storage.md#several-object-store-connections), the status there). The reconciliation, collection per copy, the orphan
+sweep, the scrub, the backup per connection and the journal per connection are not built; H-1258 and H-1259 below are what that costs an
+installation with two connections today. What [privilege-footprint.md](privilege-footprint.md) and
+[transport-encryption.md](transport-encryption.md) say of the object store holds for each connection.
 
 The perspective of this page is the stored content once it lies on several object stores: which parties can read it, change it or delete
 it at each store, what Quader believes about a copy (the rows of R-STOR-052) and on what evidence, and what one store's failure, slowness
@@ -134,6 +137,36 @@ before. Bytes of the same length replaced at the survivor since its last verific
 deletes the only good copy, and the blob is `corrupt` when it is next read. Live during a drain, and only together with a write into the
 surviving bucket by another party or a silent corruption of the same length there. Reading the survivor whole before each deletion would
 close it at the price of reading every blob once more per drain.
+
+### H-1258 · Until the reconciliation is built, a gap is queued and nothing fills it
+
+Component: the commit (R-STOR-053), which queues a gap in `blob_copy_queue` for every connection it did not write, and the reconciliation
+(R-STOR-056), which is not built. Subject: every blob uploaded to an installation with two or more connections and the default
+`storage.replication.min_copies: 1`. Such a blob lies on the first writable connection only, and nothing copies it to the others: H-1251's
+window lasts until the reconciliation exists, not seconds to minutes, and a blob written to the second connection during an outage of the
+first never reaches the first. Live in an installation that configures two connections before package C of the build plan lands; dormant
+with one connection, the case of every installation today. `min_copies` equal to the number of connections closes it at the price that
+an outage of any connection refuses uploads.
+
+### H-1259 · Until collection works per copy, it deletes on the first connection only
+
+Component: collection (R-STOR-024), which deletes a claimed blob's object on the connection the commits write first, and drops the blob
+row with all its copy rows; per-copy collection (R-STOR-057) and the orphan sweep (R-STOR-026) are not built. Subject: deleted content,
+including content whose removal is a duty. With two connections, an object a commit wrote to the second connection (min_copies above 1,
+or a fall-over during an outage of the first) stays in the second bucket after its blob is collected, without a row that names it, and no
+sweep finds it. Live in an installation that configures two connections before package B lands; dormant with one connection. Mitigation
+until then: one connection, or a lifecycle rule or a manual removal at the second provider.
+
+### H-1260 · Two installations that first start on one empty location at the same moment both pass the marker once
+
+Component: the marker `_connection` (R-STOR-051), which the start check reads and, when it is absent, writes with a plain `PutObject`
+([startcheck.go](../../internal/blob/startcheck.go), `checkMarker`); no conditional write guards it, because stores ignore or do not
+offer `If-None-Match` reliably (the specification lets nothing rest on it). Subject: the rule that a location belongs to one installation.
+Two installations whose first starts on the same empty location overlap both find no marker, both write one, and both pass; the marker
+written last names its installation, and the other installation refuses the connection at its next start. Until then both write blobs
+below one prefix, and the collection of each may delete objects the other references. Live only for two installations configured with the
+same bucket and prefix whose first starts overlap within the start check (seconds); dormant otherwise. The location rule of one
+installation (R-STOR-050 rule 4) does not see another installation's configuration.
 
 ### H-1257 · A holder of a connection's credential can keep replicas from starting through its marker
 

@@ -19,7 +19,7 @@ func baseEnv(extra ...string) []string {
 	return append([]string{
 		"QUADER_DATABASE_HOST=db.example", "QUADER_DATABASE_NAME=quader",
 		"QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=quader",
-		"QUADER_STORAGE_S3_BUCKET=blobs",
+		"QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]",
 		// A worker names the scanner it calls while the image scanning is on (R-VULN-041).
 		"QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=https://127.0.0.1:1",
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/keys/2026-10.key\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
@@ -152,7 +152,7 @@ func TestBackupCommands(t *testing.T) {
 	id := "20261028T020000Z-7f3a"
 	// The regions are set here so the target and the blob store build without the host's ~/.aws/config; CI has none, and the
 	// check under test is the key ring, which comes after both.
-	env := baseEnv("QUADER_BACKUP_TARGET_BUCKET=backups", "QUADER_BACKUP_TARGET_REGION=eu-central-1", "QUADER_STORAGE_S3_REGION=eu-central-1")
+	env := baseEnv("QUADER_BACKUP_TARGET_BUCKET=backups", "QUADER_BACKUP_TARGET_REGION=eu-central-1", "QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\",\"region\":\"eu-central-1\"}]")
 	t.Run("R-BAK-020 restore builds its collaborators first: a key ring that does not load is exit 2 naming the file", func(t *testing.T) {
 		code, _, stderr := runCmd(t, env, "backup", "restore", id, "--check", "--skip-revocation-journal")
 		if code != 2 || !strings.Contains(stderr, "2026-10.key") {

@@ -185,7 +185,7 @@ func hsProxyConfig(t *testing.T) config.Proxy {
 	l, err := config.Load(config.Options{
 		ReadFile: func(string) ([]byte, error) { return nil, os.ErrNotExist },
 		Environ: []string{
-			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_S3_BUCKET=blobs",
+			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]",
 			"QUADER_STORAGE_SPOOL_DIR=" + t.TempDir(),
 		},
 		Command: config.CommandMigrate,

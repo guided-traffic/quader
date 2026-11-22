@@ -288,7 +288,8 @@ type Spooled struct {
 	Digests
 
 	data     []byte // set for a body kept in memory
-	staged   string // set for a blob that is in the bucket at this key already (see Staged)
+	staged   string // set for a blob that is on a connection at this key already (see Staged)
+	stagedOn string // the connection of a staged blob
 	file     *os.File
 	spool    *Spool
 	reserved int64

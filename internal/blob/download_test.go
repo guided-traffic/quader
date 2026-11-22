@@ -51,7 +51,7 @@ func TestDownloadVerification(t *testing.T) {
 		f := newFixture(t, func(c *config.Storage) {
 			c.Download.HoldBack = 64 << 10
 			c.Download.BufferSize = 32 << 10
-			c.S3.HTTP.ReceiveWindow = 256 << 10
+			c.ObjectStore.HTTP.ReceiveWindow = 256 << 10
 		}, blob.WithMemory(func(_ context.Context, n int64) func() {
 			charged = append(charged, n)
 			open++
@@ -108,7 +108,7 @@ func TestDownloadVerification(t *testing.T) {
 		f, sp, damaged := setup(t, nil)
 		bad := bytes.Clone(data)
 		bad[len(bad)/2] ^= 0xff
-		f.mem.Set(f.store.Key(sp.SHA256), bad, f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), bad, f.mem.Now())
 		r, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if err != nil {
 			t.Fatal(err)
@@ -127,7 +127,7 @@ func TestDownloadVerification(t *testing.T) {
 	})
 	t.Run("R-HA-024 R-STOR-027 an object that is gone is ErrNotFound and marks its blob missing once; a commit of the same content writes it again", func(t *testing.T) {
 		f, sp, damaged := setup(t, nil)
-		if err := f.mem.Delete(context.Background(), f.store.Key(sp.SHA256)); err != nil {
+		if err := f.mem.Delete(context.Background(), f.key(sp.SHA256)); err != nil {
 			t.Fatal(err)
 		}
 		for _, o := range []blob.OpenOptions{{}, {Range: &blob.ByteRange{Offset: 0, Length: 10}}} {
@@ -176,7 +176,7 @@ func TestDownloadVerification(t *testing.T) {
 		f, sp, _ := setup(t, nil)
 		clock := time.Date(2026, 11, 6, 12, 0, 0, 0, time.UTC)
 		f.db.now = func() time.Time { return clock }
-		key := f.store.Key(sp.SHA256)
+		key := f.key(sp.SHA256)
 		_ = f.mem.Delete(context.Background(), key)
 		if _, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{}); !errors.Is(err, blob.ErrNotFound) {
 			t.Fatalf("open: %v", err)
@@ -228,7 +228,7 @@ func TestDownloadVerification(t *testing.T) {
 	})
 	t.Run("R-STOR-013 an object of the wrong length is refused before any byte and marked corrupt", func(t *testing.T) {
 		f, sp, _ := setup(t, nil)
-		f.mem.Set(f.store.Key(sp.SHA256), data[:len(data)-1], f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), data[:len(data)-1], f.mem.Now())
 		_, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if !errors.Is(err, blob.ErrCorrupt) || f.db.rows[sp.SHA256].status != "corrupt" {
 			t.Fatalf("err=%v status=%s", err, f.db.rows[sp.SHA256].status)
@@ -250,7 +250,7 @@ func TestDownloadVerification(t *testing.T) {
 		// A body that is damaged is still caught, by its digest.
 		bad := bytes.Clone(data)
 		bad[10] ^= 0xff
-		f.mem.Set(f.store.Key(sp.SHA256), bad, f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), bad, f.mem.Now())
 		r, err = f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if err != nil {
 			t.Fatal(err)
@@ -291,7 +291,7 @@ func TestDownloadVerification(t *testing.T) {
 		f, sp, _ := setup(t, func(c *config.Storage) { c.Download.Verify = false })
 		bad := bytes.Clone(data)
 		bad[0] ^= 1
-		f.mem.Set(f.store.Key(sp.SHA256), bad, f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), bad, f.mem.Now())
 		r, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if err != nil {
 			t.Fatal(err)
@@ -304,7 +304,7 @@ func TestDownloadVerification(t *testing.T) {
 		f, sp, damaged := setup(t, func(c *config.Storage) { c.Download.Verify = false })
 		bad := bytes.Clone(data)
 		bad[0] ^= 1
-		f.mem.Set(f.store.Key(sp.SHA256), bad, f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), bad, f.mem.Now())
 		r, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{Verify: true})
 		if err != nil {
 			t.Fatal(err)
@@ -344,7 +344,7 @@ func TestDownloadVerification(t *testing.T) {
 		r.Close()
 		bad := bytes.Clone(data)
 		bad[len(bad)-1] ^= 0xff
-		f.mem.Set(f.store.Key(sp.SHA256), bad, f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), bad, f.mem.Now())
 		r, err = f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if err != nil {
 			t.Fatal(err)
@@ -374,7 +374,7 @@ func TestDownloadVerification(t *testing.T) {
 	t.Run("R-STOR-013 a body longer than the blob row releases nothing past the row's end and is marked corrupt", func(t *testing.T) {
 		f, sp, damaged := setup(t, nil)
 		f.mem.UnknownSize = true
-		f.mem.Set(f.store.Key(sp.SHA256), append(bytes.Clone(data), content(300<<10, 23)...), f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), append(bytes.Clone(data), content(300<<10, 23)...), f.mem.Now())
 		r, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if err != nil {
 			t.Fatal(err)
@@ -411,7 +411,7 @@ func TestDownloadVerification(t *testing.T) {
 		}
 		bad := bytes.Clone(small)
 		bad[5] ^= 1
-		f.mem.Set(f.store.Key(sp.SHA256), bad, f.mem.Now())
+		f.mem.Set(f.key(sp.SHA256), bad, f.mem.Now())
 		r, err := f.store.Open(context.Background(), sp.SHA256, sp.Size, blob.OpenOptions{})
 		if err != nil {
 			t.Fatal(err)

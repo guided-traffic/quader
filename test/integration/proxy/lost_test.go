@@ -49,7 +49,7 @@ func (e *env) loseObject(d blob.Digest) {
 	e.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := e.obj.Delete(ctx, blob.Key(e.s3.S3.Prefix, d)); err != nil {
+	if err := e.obj.Delete(ctx, blob.Key(e.s3.Connections[0].KeyPrefix(), d)); err != nil {
 		e.t.Fatal(err)
 	}
 }

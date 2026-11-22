@@ -85,8 +85,8 @@ func TestCommitRace(t *testing.T) {
 	t.Run("R-STOR-005 the same holds when the object is written by multipart uploads from the spool file", func(t *testing.T) {
 		content := randomBytes(11 << 20)
 		e, p, rs := run(t, content, func(c *config.Storage) {
-			c.S3.Multipart.Threshold = 5 << 20
-			c.S3.Multipart.PartSize = 5 << 20
+			c.ObjectStore.Multipart.Threshold = 5 << 20
+			c.ObjectStore.Multipart.PartSize = 5 << 20
 		}, 24, 3)
 		check(t, e, p, rs, content, 24)
 		var parts int64
@@ -147,9 +147,9 @@ func TestCommitRace(t *testing.T) {
 func TestMultipartOnTheStore(t *testing.T) {
 	ctx := context.Background()
 	multipart := func(c *config.Storage) {
-		c.S3.Multipart.Threshold = 5 << 20
-		c.S3.Multipart.PartSize = 5 << 20
-		c.S3.Multipart.Concurrency = 3
+		c.ObjectStore.Multipart.Threshold = 5 << 20
+		c.ObjectStore.Multipart.PartSize = 5 << 20
+		c.ObjectStore.Multipart.Concurrency = 3
 	}
 	t.Run("R-STOR-006 content above the threshold uploads in parts of part_size and the object has the content's size", func(t *testing.T) {
 		e := newS3(t, "mp")

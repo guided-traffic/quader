@@ -35,7 +35,11 @@ func newFixture(t *testing.T, mutate func(*config.Storage), opts ...blob.Option)
 	mem.MinPartSize = 0
 	db := newFakeDB()
 	opts = append([]blob.Option{blob.WithWaitPoll(5 * time.Millisecond), blob.WithRows(db)}, opts...)
-	s, err := blob.New(cfg, mem, db, opts...)
+	conns, err := blob.NewConnections(blob.NewConnection(cfg.Connections[0], mem))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := blob.New(cfg, conns, db, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +90,7 @@ func TestCommitDeduplicates(t *testing.T) {
 			t.Fatalf("puts=%d rows=%d links=%d", f.mem.Count("put"), len(f.db.rows), links)
 		}
 		sp := f.ingest(t, data)
-		if got, ok := f.mem.Data(f.store.Key(sp.SHA256)); !ok || !bytes.Equal(got, data) {
+		if got, ok := f.mem.Data(f.key(sp.SHA256)); !ok || !bytes.Equal(got, data) {
 			t.Fatal("the object is not under its content address")
 		}
 	})
@@ -191,7 +195,7 @@ func TestCommitProtocol(t *testing.T) {
 		if f.db.rows[sp.SHA256].status != "ok" {
 			t.Fatalf("status %s", f.db.rows[sp.SHA256].status)
 		}
-		if got, _ := f.mem.Data(f.store.Key(sp.SHA256)); !bytes.Equal(got, data) {
+		if got, _ := f.mem.Data(f.key(sp.SHA256)); !bytes.Equal(got, data) {
 			t.Fatal("the object was not rewritten")
 		}
 	})
@@ -275,11 +279,11 @@ func TestCommitProtocol(t *testing.T) {
 
 func TestTransfer(t *testing.T) {
 	multipart := func(c *config.Storage) {
-		c.S3.Multipart.Threshold = 10 << 10
-		c.S3.Multipart.PartSize = 4 << 10
-		c.S3.Multipart.Concurrency = 3
+		c.ObjectStore.Multipart.Threshold = 10 << 10
+		c.ObjectStore.Multipart.PartSize = 4 << 10
+		c.ObjectStore.Multipart.Concurrency = 3
 		c.Spool.MemoryThreshold = 0
-		c.S3.PayloadChecksum = "none"
+		c.Connections[0].PayloadChecksum = "none"
 	}
 	t.Run("R-STOR-006 content up to the threshold is one PutObject", func(t *testing.T) {
 		f := newFixture(t, multipart)
@@ -304,7 +308,7 @@ func TestTransfer(t *testing.T) {
 		if f.mem.Count("put") != 0 || f.mem.Count("upload_part") != 3 || f.mem.Count("complete_multipart") != 1 {
 			t.Fatalf("puts=%d parts=%d completes=%d", f.mem.Count("put"), f.mem.Count("upload_part"), f.mem.Count("complete_multipart"))
 		}
-		if got, _ := f.mem.Data(f.store.Key(sp.SHA256)); !bytes.Equal(got, data) {
+		if got, _ := f.mem.Data(f.key(sp.SHA256)); !bytes.Equal(got, data) {
 			t.Fatal("the assembled object differs from the content")
 		}
 		if f.mem.OpenUploads() != 0 {
@@ -386,8 +390,8 @@ func TestTransfer(t *testing.T) {
 	t.Run("R-STOR-006 the replica-wide part limit holds across uploads", func(t *testing.T) {
 		f := newFixture(t, func(c *config.Storage) {
 			multipart(c)
-			c.S3.Multipart.Concurrency = 4
-			c.S3.Multipart.MaxConcurrentParts = 2
+			c.ObjectStore.Multipart.Concurrency = 4
+			c.ObjectStore.Multipart.MaxConcurrentParts = 2
 		})
 		var inflight, peak atomic.Int32
 		f.mem.SetFault(func(op, _ string) error {
@@ -420,7 +424,7 @@ func TestTransfer(t *testing.T) {
 	})
 	t.Run("R-STOR-006 every request carries the configured payload checksum and the store verifies it", func(t *testing.T) {
 		for _, alg := range []string{"sha256", "md5", "none"} {
-			f := newFixture(t, func(c *config.Storage) { multipart(c); c.S3.PayloadChecksum = alg })
+			f := newFixture(t, func(c *config.Storage) { multipart(c); c.Connections[0].PayloadChecksum = alg })
 			if _, err := f.store.Commit(context.Background(), f.ingest(t, content(1<<10, 7)), noLink); err != nil {
 				t.Fatalf("%s single: %v", alg, err)
 			}
@@ -469,3 +473,6 @@ func TestSpoolIsCleanedAfterCommit(t *testing.T) {
 		}
 	})
 }
+
+// key is the object key of a blob on the fixture's one connection, default, whose prefix is quader.
+func (f *fixture) key(d blob.Digest) string { return blob.Key("quader", d) }

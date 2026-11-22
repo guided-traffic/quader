@@ -46,7 +46,7 @@ func newFixture(t *testing.T) *fixture {
 	obj := blobtest.New()
 	obj.MinPartSize = testPart
 	return &fixture{
-		t: t, rows: newMemRows(), obj: obj, cfg: cfg, prefix: cfg.S3.Prefix,
+		t: t, rows: newMemRows(), obj: obj, cfg: cfg, prefix: cfg.Connections[0].KeyPrefix(),
 		sc: Scope{Addressed: 7, Binding: "team/app", Principal: uuid.NewString()},
 	}
 }
@@ -72,7 +72,7 @@ func (f *fixture) replica() *Service {
 func (f *fixture) commit(ctx context.Context, staged *blob.Spooled, markDone func(context.Context, meta.Tx, int64) error) error {
 	key := blob.Key(f.prefix, staged.SHA256)
 	if _, ok := f.obj.Data(key); !ok {
-		if err := f.obj.Copy(ctx, staged.StagedKey(), key, staged.Size); err != nil {
+		if err := f.obj.Copy(ctx, staged.StagedKey(), key, staged.Size, nil); err != nil {
 			if errors.Is(err, blob.ErrNotFound) {
 				return blob.ErrStagingGone
 			}

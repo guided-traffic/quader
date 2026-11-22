@@ -29014,6 +29014,24 @@
         <target>Optionale Abhängigkeiten</target>
       </segment>
     </unit>
+    <unit id="audit.action.system.storage.connection_added">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:365</note>
+      </notes>
+      <segment>
+        <source>Object-store connection seen for the first time</source>
+        <target>Objektspeicher-Verbindung zum ersten Mal gesehen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.system.storage.connection_forgotten">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
+      </notes>
+      <segment>
+        <source>Object-store connection forgotten</source>
+        <target>Objektspeicher-Verbindung aufgegeben</target>
+      </segment>
+    </unit>
     <unit id="audit.action.system.storage.versions_restored">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:275</note>

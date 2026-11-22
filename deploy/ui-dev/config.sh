@@ -53,14 +53,13 @@ valkey:
   tls:
     ca_file: "$certs/ca.crt"
 storage:
-  s3:
-    bucket: quader-blobs
-    endpoint: https://127.0.0.1:28333
-    region: us-east-1
-    force_path_style: true
-    ca_file: "$certs/ca.crt"
-    credentials:
-      source: static
+  connections:
+    - bucket: quader-blobs
+      endpoint: https://127.0.0.1:28333
+      region: us-east-1
+      force_path_style: true
+      ca_file: "$certs/ca.crt"
+      credentials_source: static
       access_key_id_file: "$secrets/s3-id"
       secret_access_key_file: "$secrets/s3-secret"
   spool:

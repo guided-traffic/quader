@@ -30,7 +30,7 @@ func (c *Client) PutPlain(ctx context.Context, key string, rs io.ReadSeeker, siz
 	if len(sha256) > 0 {
 		sum = blob.Checksum{Algorithm: "sha256", Value: sha256}
 	}
-	return c.Put(ctx, key, rs, size, sum)
+	return c.Put(ctx, key, rs, size, sum, nil)
 }
 
 // OpenPlain opens the object, or length bytes from offset (length -1 is to the end). It returns the size of the

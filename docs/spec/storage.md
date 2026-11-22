@@ -1304,15 +1304,15 @@ applies to the caller, no Bastion is between, only `GET`); the minimum size, the
 disclosure; a repository can opt out. This block replaces the switch per repository it specified before
 ([ADR-045](../decisions.md#adr-045--presigned-download-redirects-as-a-per-repository-opt-in-p2), superseded). Specified, not built.
 
-**What exists today** (read on 2026-11-22): the store can sign a link (`ObjectStore.Presign`,
-[objects.go](../../internal/blob/objects.go) lines 196 to 197; `PresignGetObject` against `storage.s3.presign.endpoint` when it is set,
-[client.go](../../internal/blob/s3/client.go) lines 460 to 469), and its only caller is the conformance check `checkPresign`
-([conformance.go](../../internal/blob/conformance.go) line 173 and from line 564). No download is redirected: `edge.ServeItem` always
+**What exists today** (read on 2026-11-22, updated with the connections of R-STOR-050): the store can sign a link (`ObjectStore.Presign`,
+[objects.go](../../internal/blob/objects.go); `PresignGetObject` against the connection's own endpoint,
+[client.go](../../internal/blob/s3/client.go) from line 453), `Connection.Presign` signs through the connection's guard and refuses while
+its circuit rejects ([connections.go](../../internal/blob/connections.go) from line 129, called by nothing yet), and the only caller of the
+store's is the conformance check `checkPresign` ([conformance.go](../../internal/blob/conformance.go) from line 652). No download is redirected: `edge.ServeItem` always
 streams ([content.go](../../internal/api/edge/content.go) lines 56 to 128). A repository's `storage.presignedDownloads` is stored and read
 by nothing: the member `storage` is opaque JSON ([document.go](../../internal/repository/document.go) lines 56 to 58), and its validation
 checks only that it is an object and `maxUploadSize` ([validate.go](../../internal/repository/validate.go) lines 141 to 148). The keys
-`storage.s3.presign.endpoint`, `ttl` and `min_size` exist ([storage.go](../../internal/config/storage.go) lines 110 to 115) and the last
-two are read by nothing.
+`storage.s3.presign.endpoint`, `ttl` and `min_size` went with `storage.s3`.
 
 **What the switch does.** A download that meets every condition of R-STOR-070 is answered `307 Temporary Redirect` to a link to the
 stored object, signed for `GET` (R-STOR-072); the client fetches the bytes from the object store. Everything else is answered by Quader
@@ -3015,7 +3015,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: STOR-006, STOR-020, STOR-029
 
 **TLS (R-ARCH-035, INV-20).** An `https://` endpoint is the production form. The object store's CA trust is part of
-the TLS material of R-ARCH-035: a connection's `ca_file` (`storage.s3.ca_file` until stage 1, supported since M0) replaces the
+the TLS material of R-ARCH-035: a connection's `ca_file` (supported since M0, per connection since several connections) replaces the
 system roots for that connection's client, and the file is reloaded like the other bundles (Q-STOR-14). A proxy credential file is
 still refused. An `http://` endpoint is a development exception behind the connection's `allow_insecure_endpoint: true`, and the development
 and integration profiles use TLS, so no profile needs the exception. Where the endpoint rules below name plain HTTP as
@@ -3252,7 +3252,7 @@ connections agree in time or order. Operators MUST use stores that satisfy them.
   | The configured payload checksum and checksum modes | The probe's `PutObject` and parts carry them | A refusal (`400 InvalidArgument`, `InvalidRequest`, `501 NotImplemented`) is a configuration error naming the connection's `payload_checksum` or `request_checksum_calculation` and the value to try (`md5`, `none`, `when_required`) |
   | The payload checksum is enforced | One `PutObject` with a wrong checksum below `_probe/` | Accepted: `capabilities.payloadChecksumEnforced: false`; the connection's writes are `present` and not verified (R-STOR-052), so the scrub reads them first |
   | `DeleteObjects` | One request over two probe keys, when `batch_delete: true` | A configuration error naming `batch_delete` |
-  | Metadata survives a write; a copy replaces it | A `PutObject` with one metadata key, `HeadObject`, a `CopyObject` onto itself with `REPLACE`, `HeadObject` | Recorded as `capabilities.metadata` and `capabilities.copyReplacesMetadata`; a plain connection needs neither; an encrypted connection without `metadata` is a configuration error, and without `copyReplacesMetadata` its sessions' finalize streams (R-STOR-075, R-STOR-081) |
+  | Metadata survives a write; a copy replaces it | A `PutObject` with one metadata key, `HeadObject`, a `CopyObject` onto itself with `REPLACE`, `GetObject`: the copy replaces the metadata only if the object kept its bytes (a gateway release is known to have lost the data of such a copy) | Recorded as `capabilities.metadata` and `capabilities.copyReplacesMetadata`; a plain connection needs neither; an encrypted connection without `metadata` is a configuration error, and without `copyReplacesMetadata` its sessions' finalize streams (R-STOR-075, R-STOR-081) |
   | A server-side copy from every other connection on the same endpoint | One `CopyObject` of a probe object across the two buckets, with this connection's credential | Recorded per pair; the reconciliation streams between them (R-STOR-056) |
   | A signed link with its overrides (stage 3's link check, R-STOR-074) | As R-STOR-074 says, on every replica that serves downloads, whether or not the rest of the check runs | Optional: the connection serves no link on that replica; nothing else stops |
 
@@ -3357,8 +3357,19 @@ summarized by [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content
 | 10 The scrub | A worker job reads every copy once within a period (proposed: 30 days), throttled, checks it whole, marks damage and replaces a damaged copy from another connection | R-STOR-027 |
 | 14 Stages | Several connections, reconciliation and scrub first; encryption second; signed links beside stage 1 | this section, R-STOR-062 |
 
-**Status.** Specified, not built. Until it is built an installation has the one connection of `storage.s3` that R-STOR-030 described
-before this section, and every statement below about several connections describes the target.
+**Status.** Partly built, in the packages of [docs/developer/blob-store.md](../developer/blob-store.md#several-connections-the-build-plan).
+Built (package A): the configuration and its validation (R-STOR-050); the records, the fixed properties, the marker and `forget-connection`
+(R-STOR-051); the copies and the derived content state (R-STOR-052); the commit over the connections with its copy and queue rows
+(R-STOR-053); the reads over the copies (R-STOR-055); the start check and the conformance check per connection with the capabilities
+(R-STOR-035); the breaker, the metrics with `connection`, the readiness and the registry's object-store view (R-STOR-060); the seams of
+R-STOR-062. Not built: sessions on their connection, collection per copy and the orphan sweep (package B: R-STOR-054, R-STOR-057,
+R-STOR-026), the reconciliation (package C: R-STOR-056), the scrub and the operator check per connection (package D: R-STOR-027,
+R-STOR-058), the chart's list, the backup and restore per connection and the journal per connection (package E: R-HA-072, R-BAK-030,
+R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built, an installation with two connections queues every gap
+and nothing copies it ([H-1258](../security/object-store-connections.md#h-1258--until-the-reconciliation-is-built-a-gap-is-queued-and-nothing-fills-it)),
+and collection deletes on the first connection only
+([H-1259](../security/object-store-connections.md#h-1259--until-collection-works-per-copy-it-deletes-on-the-first-connection-only)); one
+connection behaves as before this section.
 
 **What "several connections" is not.** Every connection that is not draining holds every blob (a mirror kept by Quader), unlike the
 sharded stores of the catalog that spread blobs over sub-stores for capacity (STOR-013, STOR-026, and the parked "sharding over several
@@ -3672,7 +3683,7 @@ Priority: **P1** · Covers: STOR-011
 - **The commit's guarantee per connection.** The invariant of R-STOR-005 becomes: *a committed reference always points at a blob row in
   state `live` that had at least `min_copies` copies in state `present` when the reference was committed, each written before the row or
   its copy row was*. The link round inserts a copy row for every object this commit wrote within the insert bound of R-STOR-005 (counted
-  from the end of the earliest of its writes), also on a round that turns out a deduplication hit (`ON CONFLICT DO NOTHING`), and a queue
+  from the end of the earliest of its writes), also on a round that turns out a deduplication hit (a `missing` or `corrupt` row becomes `present`, a `deleting` one is left, [Q-STOR-253](#q-stor-253--a-commits-write-overwrites-a-missing-or-corrupt-copy-row)), and a queue
   row (R-STOR-052) for every other connection in this replica's configuration with `drain: false`. A deduplication hit writes nothing and
   needs no connection, as before (R-STOR-036): an existing blob with fewer present copies is the reconciliation's.
 - **Repair.** The commit's repair case (`live` and `content_status <> 'ok'`, no present copy) writes the object to the first
@@ -8151,6 +8162,93 @@ sweep.
 show is the same content, and what eventual delete consistency can show is a copy that is still there; neither is wrong content.
 
 **Applied in the spec:** R-STOR-035, R-STOR-053.
+
+### Q-STOR-250 · The blobs that exist become copies of the connection default, which its first replica binds
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: the specification says nothing about the blobs an installation holds when it takes the migration of the connections (00106).
+The owner's installation and the development stacks hold data. The migration knows that there was one connection, which the element
+without an id names (`default`, R-STOR-050), but neither its bucket nor its prefix, and every reader takes an object's name from its copy row
+(R-STOR-062).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The migration writes the row `default` with an empty bucket, which no configured connection can have, and a copy per blob whose name lacks the prefix; the first replica that configures `default` binds the row to its element and writes its prefix in front of the names (chosen) | One `UPDATE` at the first start | Every existing blob is readable at once, whatever prefix the installation used | A row of the migration that only one start completes |
+| (b) The copies with the prefix `quader` assumed | No bind | Simple | An installation with another prefix reads nothing and marks every blob missing |
+| (c) No copies; the orphan sweep adopts the objects (R-STOR-026) | No migration of data | Uses the general mechanism | Every blob is unreadable until the sweep of package B has run over the bucket |
+| (d) No data kept: the installations are reset | Nothing to build | The rule of no backward compatibility | The owner's playground and the development stacks lose their content for no reason the code needs |
+
+**Choice:** (a). **Rationale:** the copies say what was true before the migration (one connection held every blob), and only the prefix is
+missing, which the first start knows. A blob in state `deleting` keeps its claim on its copy, and one whose object collection already
+deleted gets none. An installation that names its one connection other than `default` at that start leaves the copies on a `default` that
+no replica configures, which is detached (R-STOR-051) until the element is renamed back. The builder would drop it at the first stable
+release, when migrations of data become a duty of their own.
+
+**Applied in the spec:** R-STOR-051; code: migration 00106, `Store.RecordConnections` ([record.go](../../internal/blob/record.go)).
+
+### Q-STOR-251 · The files of a connection's location are read when the clients are built, not when the configuration is loaded
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-050 rule 2 reads `bucket_file`, `region_file` and `endpoint_file` "once at start", and rule 4 refuses two connections at one
+location. `quader admin config validate` and a render check of the chart load the configuration where the provisioner's Secret is not
+mounted.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Loading validates what the configuration says (the exclusive keys, rule 4 for the elements whose location is written in it); the files are read, and rule 4 checked again on the read values, where a replica or a command builds its clients (`config.ResolveConnections`) (chosen) | Two steps | `config validate` runs anywhere; a missing file is an error naming the key at the start that needs it | The location of a file-based element is checked at start, not at validation |
+| (b) The files are read by the loader | One step | Every error at load | Validation fails wherever the Secret is not mounted, also in the chart's checks |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-050; code: [storage_connections.go](../../internal/config/storage_connections.go).
+
+### Q-STOR-252 · The first readiness waits for each connection's first answer
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-060 makes a replica ready once the start check passed on one connection without `drain: true` and no such connection has
+a configuration error. A connection that failed transiently at that moment may show a configuration error later.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The start waits until one connection without drain passed and every connection without drain answered once (passed, failed transiently or failed with a configuration error); a configuration error stops the start; a later one is logged and shown, and the connection keeps failing through its circuit (chosen) | Each store is asked once before the replica serves | A wrong credential on a reachable store stops the rollout; an unreachable store does not hold it | A configuration error that appears after the readiness does not stop a running replica |
+| (b) Ready at the first pass | Fastest | A slow second store does not delay the start | A wrong credential of the second store is found only after the replica serves |
+| (c) Every connection must pass | Strictest | — | Contradicts R-STOR-060: one provider's outage would hold every new pod back |
+
+**Choice:** (a). **Rationale:** the rule's two halves are both decided by each connection's first answer. The check `objectStore` is
+then a reported check (gating with `health.require_object_store` only while no connection without drain answers), since the start check
+already held the first readiness.
+
+**Applied in the spec:** R-STOR-060; code: `blob.AwaitConnections` ([startcheck.go](../../internal/blob/startcheck.go)), `objectStoreCheck`
+([wire_blob.go](../../internal/app/wire_blob.go)).
+
+### Q-STOR-253 · A commit's write overwrites a missing or corrupt copy row
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. It changes a sentence of R-STOR-053, which
+said `ON CONFLICT DO NOTHING` for the copy rows of a round that turns out a deduplication hit.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The copy row of an object this commit wrote becomes `present`: inserted, or a `missing`, `corrupt` or `present` row overwritten; a row in state `deleting` is left to collection (chosen) | The write is evidence about the object | A copy marked missing while this commit wrote the object again is not queued for a repair it does not need | — |
+| (b) `ON CONFLICT DO NOTHING` | As R-STOR-053 said | Never touches a row it did not insert | A copy the commit just wrote stays `missing` until the reconciliation repairs it again |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-053; code: `PutBlobCopy` ([blob_copies.sql](../../internal/meta/postgres/queries/blob_copies.sql)).
+
+### Q-STOR-254 · The names the start check and the reads give their findings
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-035 records a server-side copy from each other connection "per pair" without a name, R-STOR-055 counts
+`quader_storage_reads_fallen_over_total{connection,reason}` without listing the reasons, and R-STOR-035 lets `quader admin storage
+check` report results without an exit code.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `capabilities.serverSideCopyFrom` maps the id of each other connection on the same endpoint to the result, with `checkedAt` beside the four flags of R-STOR-061; the reasons are `not_found`, `unavailable` (a transient error or an open circuit) and `size`; `check` exits `5` when a check that is not optional failed and `2` for a usage or configuration error, and a missing capability is reported `absent`, not failed (chosen) | Names fixed in code | The API of package F and the alerts read fixed names; the check's exit codes are the operator commands' (R-BAK-013) | — |
+| (b) A list of pairs; one reason per error code | — | — | Unbounded label values; two shapes for one fact |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-035, R-STOR-055, R-STOR-061; code: `blob.Capabilities`, `blob/metrics.go`,
+[storage_connections.go](../../cmd/quader/storage_connections.go).
 
 ### Q-STOR-300 · Segments of 64 KiB under AES-256-GCM with the nonce stored in each segment
 

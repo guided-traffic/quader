@@ -19,15 +19,7 @@ import (
 // happens behind quader's back (an out-of-band deletion, ha-and-helm.md R-HA-024).
 func (s *Stack) objects(tb testing.TB) (blob.ObjectStore, string) {
 	tb.Helper()
-	cfg := blobtest.Storage(tb, tb.TempDir()).S3
-	o := S3Config(tb)
-	cfg.Endpoint, cfg.Region, cfg.Bucket, cfg.ForcePathStyle = o.Endpoint, o.Region, o.BlobsBucket, true
-	cfg.CAFile = CAFile(tb)
-	cfg.Prefix = s.ObjectPrefix()
-	dir := tb.TempDir()
-	cfg.Credentials = config.StorageS3Credentials{
-		Source: "static", AccessKeyIDFile: WriteFile(tb, dir, "s3-id", o.AccessKey), SecretAccessKeyFile: WriteFile(tb, dir, "s3-secret", o.SecretKey),
-	}
+	cfg := config.ClientConfig(Connection(tb, tb.TempDir(), s.ObjectPrefix()), blobtest.Storage(tb, tb.TempDir()).ObjectStore)
 	c, err := s3.NewFromFactory(context.Background(), cfg, outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}}))
 	if err != nil {
 		tb.Fatalf("object store client: %v", err)
@@ -77,7 +69,7 @@ func (s *Stack) PutObject(tb testing.TB, digest, data []byte) {
 	c, prefix := s.objects(tb)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := c.Put(ctx, blob.Key(prefix, blob.Digest(digest)), bytes.NewReader(data), int64(len(data)), blob.Checksum{}); err != nil {
+	if err := c.Put(ctx, blob.Key(prefix, blob.Digest(digest)), bytes.NewReader(data), int64(len(data)), blob.Checksum{}, nil); err != nil {
 		tb.Fatalf("put the object: %v", err)
 	}
 }

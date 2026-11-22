@@ -133,7 +133,7 @@ func (d *destination) restorer(o restorerOptions) (*restore.Restorer, *bytes.Buf
 	if err != nil {
 		d.t.Fatal(err)
 	}
-	client, err := s3.NewFromFactory(ctx, cfg.Storage.S3, f)
+	client, err := s3.NewFromFactory(ctx, firstS3(cfg.Storage), f)
 	if err != nil {
 		d.t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func (d *destination) restorer(o restorerOptions) (*restore.Restorer, *bytes.Buf
 	}
 	return restore.New(restore.Deps{
 		Session: session, Target: tgt, Layout: d.src.layout, TargetEndpoint: endpoint, TargetBucket: tgt.Bucket(),
-		Blobs: s3.NewBlobSink(client, cfg.Storage.S3, int64(cfg.Backup.Copy.PartSize)), Keys: ring,
+		Blobs: s3.NewBlobSink(client, firstS3(cfg.Storage), int64(cfg.Backup.Copy.PartSize)), Keys: ring,
 		Items:   app.RestoreItems(cfg, testenv.Quiet()),
 		Journal: journalFn,
 		Config:  cfg.Backup, Log: testenv.Quiet(), Out: &out, Pod: "restore-pod", Hook: o.hook,
@@ -174,7 +174,7 @@ func (d *destination) restorer(o restorerOptions) (*restore.Restorer, *bytes.Buf
 // blobClient is the destination's blob store, for the assertions on its objects.
 func (d *destination) blobClient() *s3.Client {
 	d.t.Helper()
-	c, err := s3.NewFromFactory(context.Background(), d.cfg.Storage.S3, outbound.New(d.cfg.Proxy.Outbound))
+	c, err := s3.NewFromFactory(context.Background(), firstS3(d.cfg.Storage), outbound.New(d.cfg.Proxy.Outbound))
 	if err != nil {
 		d.t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func (d *destination) blobClient() *s3.Client {
 func (d *destination) blobObject(dg format.Digest) []byte {
 	d.t.Helper()
 	h := dg.Hex()
-	key := d.cfg.Storage.S3.Prefix + "/sha256/" + h[0:2] + "/" + h[2:4] + "/" + h
+	key := firstS3(d.cfg.Storage).Prefix + "/sha256/" + h[0:2] + "/" + h[2:4] + "/" + h
 	rc, _, err := d.blobClient().Get(context.Background(), key, nil)
 	if err != nil {
 		return nil

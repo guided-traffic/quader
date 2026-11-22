@@ -86,9 +86,13 @@ func newRestorer(env *backupEnv) (backup.Restorer, error) {
 	if err != nil {
 		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
 	}
-	client, err := s3.NewFromFactory(ctx, cfg.Storage.S3, out)
+	blobCfg, err := cfg.Storage.FirstClient()
 	if err != nil {
-		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.s3: %w", err))
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+	}
+	client, err := s3.NewFromFactory(ctx, blobCfg, out)
+	if err != nil {
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.connections: %w", err))
 	}
 	ring, err := secrets.Load(cfg.Secrets)
 	if err != nil {
@@ -106,7 +110,7 @@ func newRestorer(env *backupEnv) (backup.Restorer, error) {
 	return restore.New(restore.Deps{
 		Session: session, Target: tgt, Layout: format.Layout{Prefix: cfg.Backup.Target.Prefix},
 		TargetEndpoint: tgt.Endpoint(), TargetBucket: tgt.Bucket(),
-		Blobs: s3.NewBlobSink(client, cfg.Storage.S3, int64(cfg.Backup.Copy.PartSize)), Keys: ring,
+		Blobs: s3.NewBlobSink(client, blobCfg, int64(cfg.Backup.Copy.PartSize)), Keys: ring,
 		Items: app.RestoreItems(cfg, env.log), Journal: restoreJournal(cfg, out, env.log), Config: cfg.Backup, Log: env.log, Out: env.stdout, Pod: env.instance,
 	}), nil
 }
@@ -116,7 +120,10 @@ func newRestorer(env *backupEnv) (backup.Restorer, error) {
 // restore's session.
 func restoreJournal(cfg *config.Config, out *outbound.Factory, log *slog.Logger) func(context.Context, restore.JournalEnv) (restore.Journal, error) {
 	return func(ctx context.Context, e restore.JournalEnv) (restore.Journal, error) {
-		s3cfg := cfg.Storage.S3
+		s3cfg, err := cfg.Storage.FirstClient()
+		if err != nil {
+			return nil, err
+		}
 		s3cfg.Bucket, s3cfg.Prefix = e.SourceBucket, e.SourcePrefix
 		if e.SourceEndpoint != "" {
 			s3cfg.Endpoint = e.SourceEndpoint

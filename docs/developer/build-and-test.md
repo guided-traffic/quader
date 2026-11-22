@@ -216,7 +216,7 @@ refused. PgBouncer takes clients with `client_tls_sslmode = require` and talks t
 (`-s3.cert.file`, `-s3.key.file`); a plaintext request to its port is answered with a 400 by the TLS
 server and never reaches the S3 handler. Valkey and the Sentinels were TLS-only already. The tests verify the
 servers from the host (`sslmode=verify-full`, Quader's `ssl_mode: verify-full` with `ssl_root_cert_file`,
-`storage.s3.ca_file`) and no integration config uses `allow_insecure`, `allow_insecure_endpoint` or
+`storage.connections[].ca_file`) and no integration config uses `allow_insecure`, `allow_insecure_endpoint` or
 `ssl_mode: disable`, with two deliberate exceptions that test the refusal itself: the Valkey test
 "R-HA-056 the data node accepts TLS only" configures a client without TLS to prove it never connects,
 and the PostgreSQL test "R-HA-015 ssl_mode disable without allow_insecure is refused" proves the
@@ -298,7 +298,7 @@ verifies from the host and between containers.
 **Helpers for tests.** `testenv.CAFile`, `testenv.CertDir`, `testenv.RootCAs`, `testenv.TLSConfig` and
 `testenv.HTTPClient` give a client that trusts exactly the stack's CA; `testenv.PgDSN(tb, database)` and
 `testenv.PgBouncerDSNFor` build verify-full DSNs; `testenv.SecureDatabase` and `testenv.SecureS3` set
-Quader's `database.ssl_mode`/`ssl_root_cert_file` and `storage.s3.endpoint`/`ca_file`. A new suite starts with
+Quader's `database.ssl_mode`/`ssl_root_cert_file` and the object-store client's `endpoint`/`ca_file` (`testenv.Connection` writes them into an element of `storage.connections`). A new suite starts with
 `func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }`.
 
 **Rotating a certificate in place.** [rotate-cert.sh](../../test/integration/rotate-cert.sh)

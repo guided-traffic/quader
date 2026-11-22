@@ -40,7 +40,7 @@ func TestR_BAK_021_RestoreStreamsWhenTheStoreCannotCopy(t *testing.T) {
 
 func sinkFor(t *testing.T, dst *destination, threshold, part int64, opts ...s3.SinkOption) *s3.BlobSink {
 	t.Helper()
-	cfg := dst.cfg.Storage.S3
+	cfg := firstS3(dst.cfg.Storage)
 	cfg.Multipart.Threshold, cfg.Multipart.PartSize = config.ByteSize(threshold), config.ByteSize(part)
 	c, err := s3.NewFromFactory(context.Background(), cfg, outbound.New(dst.cfg.Proxy.Outbound))
 	if err != nil {

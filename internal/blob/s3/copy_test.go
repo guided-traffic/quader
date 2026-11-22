@@ -58,7 +58,7 @@ func TestR_STOR_011_ServerSideCopy(t *testing.T) {
 		e := newEnv(t, nil)
 		rec := &copyRecorder{}
 		e.fake.fail = rec.handle
-		if err := e.client.Copy(ctx, "p/_uploads/s/data", "p/sha256/ab/cd/x", 100); err != nil {
+		if err := e.client.Copy(ctx, "p/_uploads/s/data", "p/sha256/ab/cd/x", 100, nil); err != nil {
 			t.Fatal(err)
 		}
 		if len(rec.copies) != 1 || rec.complete != 0 {
@@ -73,7 +73,10 @@ func TestR_STOR_011_ServerSideCopy(t *testing.T) {
 		rec := &copyRecorder{}
 		e.fake.fail = rec.handle
 		e.client.SetCopyLimits(5, 4)
-		if err := e.client.Copy(ctx, "src", "dst", 10); err != nil {
+		if err := put(e.client, "src", make([]byte, 10), blob.Checksum{}); err != nil { // the multipart copy carries the source's metadata over
+			t.Fatal(err)
+		}
+		if err := e.client.Copy(ctx, "src", "dst", 10, nil); err != nil {
 			t.Fatal(err)
 		}
 		if strings.Join(rec.parts, ",") != "1,2,3" || strings.Join(rec.ranges, ",") != "bytes=0-3,bytes=4-7,bytes=8-9" || rec.complete != 1 {
@@ -83,7 +86,7 @@ func TestR_STOR_011_ServerSideCopy(t *testing.T) {
 	t.Run("a missing source is not found", func(t *testing.T) {
 		e := newEnv(t, nil)
 		e.fake.fail = (&copyRecorder{missing: true}).handle
-		if err := e.client.Copy(ctx, "gone", "dst", 100); !errors.Is(err, blob.ErrNotFound) {
+		if err := e.client.Copy(ctx, "gone", "dst", 100, nil); !errors.Is(err, blob.ErrNotFound) {
 			t.Fatalf("err = %v", err)
 		}
 	})

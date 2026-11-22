@@ -76,7 +76,7 @@ func TestMemoryLimit(t *testing.T) {
 	t.Run("R-ARCH-005 a request may hold the download buffer, the object store's receive window and the overhead", func(t *testing.T) {
 		c := &config.Config{}
 		c.Storage.Download = config.StorageDownload{BufferSize: 256 << 10, HoldBack: 64 << 10}
-		c.Storage.S3.HTTP.ReceiveWindow = 256 << 10
+		c.Storage.ObjectStore.HTTP.ReceiveWindow = 256 << 10
 		if got := requestMemory(c); got != 640<<10 {
 			t.Fatalf("request memory %d, want 640 KiB", got)
 		}

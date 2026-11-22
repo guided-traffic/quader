@@ -19,7 +19,7 @@ The configuration keeps the split: `backup.target.credentials` is a section the 
 ([backups_api.go](../../internal/api/v1/backups_api.go) answers from `backup_run`, `system_state` and the configuration).
 
 The target client ([target.go](../../internal/blob/s3/target.go)) is built from `backup.target` alone and signs every request with
-`backup.target.credentials` or the default chain of the backup pod's environment; it has no path to `storage.s3.credentials`, so the
+`backup.target.credentials` or the default chain of the backup pod's environment; it has no path to the credential keys of `storage.connections`, so the
 runtime blob-store credential never signs a request to the target (R-BAK-015; `TestR_BAK_015_TargetSignsWithItsOwnCredential`,
 `TestR_BAK_015_TargetOwnCredentials`). `backup.target.ca_file` is the target's whole trust store, and a plain-http endpoint is refused
 without `allow_insecure_endpoint` (R-BAK-026). Every write, multipart start and copy repeats `backup.target.sse`; the preflight

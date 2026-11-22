@@ -3,7 +3,9 @@ package blob
 import (
 	"bytes"
 	"context"
+	"crypto/md5" //nolint:gosec // Content-MD5, a payload checksum of the probes
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -14,21 +16,33 @@ import (
 	"time"
 )
 
-// This file is the object-store check of R-STOR-035. The startup check is what
-// a replica runs before its first readiness; the conformance check is the
-// operator's evidence that a store meets assumptions A1 and A2 (and the
-// behaviour quader relies on besides): `quader admin storage check`, and the
+// This file is the object-store check of R-STOR-035, per connection. The startup check is what
+// a replica runs on each connection before its first readiness (startcheck.go adds the marker and the capabilities); the
+// conformance check is the operator's evidence that a store meets the assumptions A1 and A2 (and the
+// behaviour Quader relies on besides): `quader admin storage check`, and the
 // integration tier against every store of the CI matrix (R-STOR-030). It
-// changes nothing outside <prefix>/_probe/.
+// changes nothing outside <prefix>/_probe/ and the marker.
 
 // ConformanceOptions configure a check run.
 type ConformanceOptions struct {
-	// Prefix is storage.s3.prefix.
+	// Prefix is the connection's prefix.
 	Prefix string
 	// Replica names the probe objects: the replica ID, or any unique string.
 	Replica string
 	// HTTP fetches presigned URLs. It must come from internal/outbound.
 	HTTP *http.Client
+	// PayloadChecksum is the connection's payload_checksum, which the probes' writes carry: sha256, md5, or none (empty).
+	PayloadChecksum string
+	// Peers are the other connections of the configuration, for the server-side copy between two buckets of one endpoint
+	// (R-STOR-035 capability); empty skips that check.
+	Peers []ConformancePeer
+}
+
+// ConformancePeer is another connection whose bucket a server-side copy reads from.
+type ConformancePeer struct {
+	ID     string
+	Prefix string
+	Store  ObjectStore
 }
 
 // ConformanceEnv is what a check works with.
@@ -81,20 +95,35 @@ type ConformanceCheck struct {
 	// behaviour quader relies on besides.
 	Assumption string
 	// Optional marks a feature a store may lack, with a setting that works
-	// around it (DeleteObjects: storage.gc.batch_delete: false).
+	// around it (DeleteObjects: the connection's batch_delete: false) or a capability whose absence has a stated consequence.
 	Optional bool
-	Run      func(ctx context.Context, e *ConformanceEnv) error
+	// Capability marks a check whose result the start check records as a capability of the connection rather than refuses
+	// (R-STOR-035, Q-STOR-248): its failure is a finding, never a reason to stop.
+	Capability bool
+	Run        func(ctx context.Context, e *ConformanceEnv) error
 }
 
 // CheckResult is the outcome of one check.
 type CheckResult struct {
-	Name       string        `json:"name"`
-	Assumption string        `json:"assumption,omitempty"`
-	Optional   bool          `json:"optional,omitempty"`
-	OK         bool          `json:"ok"`
-	Error      string        `json:"error,omitempty"`
-	Duration   time.Duration `json:"-"`
+	Name       string `json:"name"`
+	Assumption string `json:"assumption,omitempty"`
+	Optional   bool   `json:"optional,omitempty"`
+	Capability bool   `json:"capability,omitempty"`
+	OK         bool   `json:"ok"`
+	Error      string `json:"error,omitempty"`
+	// Note is what a check that passed found besides: "strong" or "eventual (tolerated, A1)" for the visibility of an overwrite
+	// and a delete, "skipped" with its reason.
+	Note     string        `json:"note,omitempty"`
+	Duration time.Duration `json:"-"`
 }
+
+// noted is a check's finding that is no failure.
+type noted struct{ note string }
+
+func (n *noted) Error() string { return n.note }
+
+// note ends a check that passed with a finding.
+func note(s string) error { return &noted{note: s} }
 
 func payload(n int) []byte {
 	b := make([]byte, n)
@@ -103,7 +132,20 @@ func payload(n int) []byte {
 }
 
 func putBytes(ctx context.Context, s ObjectStore, key string, data []byte) error {
-	return s.Put(ctx, key, bytes.NewReader(data), int64(len(data)), Checksum{})
+	return s.Put(ctx, key, bytes.NewReader(data), int64(len(data)), Checksum{}, nil)
+}
+
+// probeChecksum is the payload checksum of data in the algorithm of a connection's payload_checksum.
+func probeChecksum(algorithm string, data []byte) Checksum {
+	switch algorithm {
+	case "sha256":
+		h := sha256.Sum256(data)
+		return Checksum{Algorithm: "sha256", Value: h[:]}
+	case "md5":
+		h := md5.Sum(data) //nolint:gosec // Content-MD5, the payload checksum of a store without additional checksums
+		return Checksum{Algorithm: "md5", Value: h[:]}
+	}
+	return Checksum{}
 }
 
 func readAll(ctx context.Context, s ObjectStore, key string, rng *ByteRange) ([]byte, error) {
@@ -119,16 +161,25 @@ func wantMissing(ctx context.Context, s ObjectStore, key string) error {
 	if _, err := s.Head(ctx, key); !errors.Is(err, ErrNotFound) {
 		return wrongAnswer("Head of a missing key", err)
 	}
-	if _, _, err := s.Get(ctx, key, nil); !errors.Is(err, ErrNotFound) {
+	body, _, err := s.Get(ctx, key, nil)
+	if err == nil {
+		_ = body.Close()
+	}
+	if !errors.Is(err, ErrNotFound) {
 		return wrongAnswer("Get of a missing key", err)
 	}
 	return nil
 }
 
+// notMissing is a read that found an object where none should be: the call succeeded.
+type notMissing struct{ what string }
+
+func (e *notMissing) Error() string { return e.what + " succeeded, want ErrNotFound" }
+
 // wrongAnswer reports a call that should have failed with ErrNotFound.
 func wrongAnswer(what string, err error) error {
 	if err == nil {
-		return fmt.Errorf("%s succeeded, want ErrNotFound", what)
+		return &notMissing{what: what}
 	}
 	return fmt.Errorf("%s returned %w, want ErrNotFound", what, err)
 }
@@ -159,9 +210,9 @@ func ConformanceChecks() []ConformanceCheck {
 		{Name: "a listing after a key starts behind it", Assumption: "A1", Run: checkStartAfter},
 		{Name: "list the blob prefix", Assumption: "A1", Run: checkListKeyPrefix},
 		{Name: "a missing key reads as not found", Assumption: "A1", Run: checkMissing},
-		{Name: "an overwrite is visible to the next read", Assumption: "A1", Run: checkOverwrite},
+		{Name: "an overwrite is visible to the next read (strong or eventual)", Assumption: "A1", Run: checkOverwrite},
 		{Name: "a new object is listed by the next list", Assumption: "A1", Run: checkListAfterWrite},
-		{Name: "a deleted object is gone for the next read and list", Assumption: "A1", Run: checkReadAfterDelete},
+		{Name: "a deleted object is gone for the next read and list (strong or eventual)", Assumption: "A1", Run: checkReadAfterDelete},
 		{Name: "deleting a missing key succeeds", Assumption: "A1", Run: checkDeleteMissing},
 		{Name: "concurrent writes of identical bytes leave those bytes", Assumption: "A6", Run: checkConcurrentSameBytes},
 		{Name: "a ranged read returns exactly the range", Run: checkRange},
@@ -171,6 +222,10 @@ func ConformanceChecks() []ConformanceCheck {
 		{Name: "an aborted multipart upload leaves no object and no upload", Assumption: "A2", Run: checkAbort},
 		{Name: "DeleteObjects removes several keys with one request", Optional: true, Run: checkDeleteMany},
 		{Name: "a presigned URL serves the object", Run: checkPresign},
+		{Name: "a write with a wrong payload checksum is refused", Optional: true, Capability: true, Run: checkChecksumEnforced},
+		{Name: "an object's metadata survives its write", Optional: true, Capability: true, Run: checkMetadata},
+		{Name: "a copy onto itself replaces the metadata and keeps the object's bytes", Optional: true, Capability: true, Run: checkCopyReplacesMetadata},
+		{Name: "a server-side copy from each other connection on this endpoint", Optional: true, Capability: true, Run: checkPeerCopies},
 	}
 }
 
@@ -190,7 +245,14 @@ func RunCheck(ctx context.Context, store ObjectStore, opts ConformanceOptions, c
 	defer e.cleanup(ctx)
 	start := time.Now()
 	err := c.Run(ctx, e)
-	r := CheckResult{Name: c.Name, Assumption: c.Assumption, Optional: c.Optional, OK: err == nil, Duration: time.Since(start)}
+	var n *noted
+	if errors.As(err, &n) {
+		err = nil
+	}
+	r := CheckResult{Name: c.Name, Assumption: c.Assumption, Optional: c.Optional, Capability: c.Capability, OK: err == nil, Duration: time.Since(start)}
+	if n != nil {
+		r.Note = n.note
+	}
 	if err != nil {
 		r.Error = err.Error()
 	}
@@ -198,15 +260,16 @@ func RunCheck(ctx context.Context, store ObjectStore, opts ConformanceOptions, c
 }
 
 func checkProbe(ctx context.Context, e *ConformanceEnv) error {
-	return probe(ctx, e.Store, e.Opts.Prefix, e.Opts.Replica)
+	return probe(ctx, e.Store, e.Opts.Prefix, e.Opts.Replica, e.Opts.PayloadChecksum)
 }
 
 // probe is the startup check: write, read back, compare, delete the probe
-// object (R-STOR-035). The key is <prefix>/_probe/<replica>.
-func probe(ctx context.Context, s ObjectStore, prefix, replica string) error {
+// object (R-STOR-035). The key is <prefix>/_probe/<replica>. The write carries the connection's payload checksum, so a store
+// that refuses it fails here (checksumRefusal).
+func probe(ctx context.Context, s ObjectStore, prefix, replica, algorithm string) error {
 	key := probePrefix(prefix) + replica
 	data := payload(1024)
-	if err := putBytes(ctx, s, key, data); err != nil {
+	if err := s.Put(ctx, key, bytes.NewReader(data), int64(len(data)), probeChecksum(algorithm, data), nil); err != nil {
 		return fmt.Errorf("write %s: %w", key, err)
 	}
 	got, err := readAll(ctx, s, key, nil)
@@ -258,10 +321,20 @@ func checkMissing(ctx context.Context, e *ConformanceEnv) error {
 	return wantMissing(ctx, e.Store, e.Key("missing"))
 }
 
+// The visibility of an overwrite and a delete (A1, Q-STOR-249): Quader requires read-after-write only for new objects and
+// tolerates an eventual overwrite or delete, so the check reports which it found and fails only on what no store may do.
+const (
+	visibilityStrong   = "strong"
+	visibilityEventual = "eventual (tolerated, A1)"
+)
+
 func checkOverwrite(ctx context.Context, e *ConformanceEnv) error {
 	key := e.Key("overwrite")
+	eventual := false
+	var all [][]byte
 	for i := 0; i < 5; i++ {
 		data := payload(100 + i)
+		all = append(all, data)
 		if err := putBytes(ctx, e.Store, key, data); err != nil {
 			return err
 		}
@@ -270,17 +343,28 @@ func checkOverwrite(ctx context.Context, e *ConformanceEnv) error {
 			return err
 		}
 		if !bytes.Equal(got, data) {
-			return fmt.Errorf("round %d: the read after an overwrite returned the earlier content", i)
+			known := false
+			for _, earlier := range all {
+				known = known || bytes.Equal(got, earlier)
+			}
+			if !known {
+				return fmt.Errorf("round %d: the read after an overwrite returned bytes that were never written (assumption A2)", i)
+			}
+			eventual = true
+			continue
 		}
 		info, err := e.Store.Head(ctx, key)
 		if err != nil {
 			return err
 		}
 		if info.Size != int64(len(data)) {
-			return fmt.Errorf("round %d: Head after an overwrite reports %d bytes, want %d", i, info.Size, len(data))
+			eventual = true
 		}
 	}
-	return nil
+	if eventual {
+		return note(visibilityEventual + ": a read after an overwrite returned the earlier content")
+	}
+	return note(visibilityStrong)
 }
 
 func checkListAfterWrite(ctx context.Context, e *ConformanceEnv) error {
@@ -307,16 +391,20 @@ func checkReadAfterDelete(ctx context.Context, e *ConformanceEnv) error {
 		return err
 	}
 	if err := wantMissing(ctx, e.Store, key); err != nil {
-		return fmt.Errorf("after delete: %w", err)
+		var nm *notMissing
+		if !errors.As(err, &nm) {
+			return fmt.Errorf("after delete: %w", err)
+		}
+		return note(visibilityEventual + ": a read right after the delete still found the object")
 	}
 	ok, err := listHas(ctx, e.Store, key, key)
 	if err != nil {
 		return err
 	}
 	if ok {
-		return errors.New("the object is still listed right after its delete")
+		return note(visibilityEventual + ": the object was still listed right after its delete")
 	}
-	return nil
+	return note(visibilityStrong)
 }
 
 func checkDeleteMissing(ctx context.Context, e *ConformanceEnv) error {
@@ -385,7 +473,7 @@ func checkCopy(ctx context.Context, e *ConformanceEnv) error {
 	if err := putBytes(ctx, e.Store, dst, payload(10)); err != nil {
 		return err
 	}
-	if err := e.Store.Copy(ctx, src, dst, int64(len(data))); err != nil {
+	if err := e.Store.Copy(ctx, src, dst, int64(len(data)), nil); err != nil {
 		return fmt.Errorf("copy: %w", err)
 	}
 	got, err := readAll(ctx, e.Store, dst, nil)
@@ -398,7 +486,7 @@ func checkCopy(ctx context.Context, e *ConformanceEnv) error {
 	if _, err := e.Store.Head(ctx, src); err != nil {
 		return fmt.Errorf("the source after the copy: %w", err)
 	}
-	switch err := e.Store.Copy(ctx, e.Key("copy-missing"), dst, 1); {
+	switch err := e.Store.Copy(ctx, e.Key("copy-missing"), dst, 1, nil); {
 	case err == nil:
 		return errors.New("copy of a missing source succeeded")
 	case !errors.Is(err, ErrNotFound):
@@ -412,7 +500,7 @@ const multipartPart = 5 << 20
 
 func checkMultipart(ctx context.Context, e *ConformanceEnv) error {
 	key := e.Key("multipart")
-	id, err := e.Store.CreateMultipart(ctx, key, "")
+	id, err := e.Store.CreateMultipart(ctx, key, "", nil)
 	if err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
@@ -471,7 +559,7 @@ func checkMultipart(ctx context.Context, e *ConformanceEnv) error {
 // check, because a finalize would then store the stale writer's bytes under the digest of the recorded ones.
 func checkPartIdentity(ctx context.Context, e *ConformanceEnv) error {
 	key := e.Key("partidentity")
-	id, err := e.Store.CreateMultipart(ctx, key, "")
+	id, err := e.Store.CreateMultipart(ctx, key, "", nil)
 	if err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
@@ -512,7 +600,7 @@ func checkPartIdentity(ctx context.Context, e *ConformanceEnv) error {
 
 func checkAbort(ctx context.Context, e *ConformanceEnv) error {
 	key := e.Key("aborted")
-	id, err := e.Store.CreateMultipart(ctx, key, "")
+	id, err := e.Store.CreateMultipart(ctx, key, "", nil)
 	if err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
@@ -548,7 +636,7 @@ func checkDeleteMany(ctx context.Context, e *ConformanceEnv) error {
 	}
 	failed, err := e.Store.DeleteMany(ctx, append(keys, e.Key("many-missing")))
 	if err != nil {
-		return fmt.Errorf("%w (a store without DeleteObjects needs storage.gc.batch_delete: false)", err)
+		return fmt.Errorf("%w (a store without DeleteObjects needs batch_delete: false on its connection)", err)
 	}
 	if len(failed) > 0 {
 		return fmt.Errorf("DeleteObjects did not delete %v", failed)
@@ -598,7 +686,12 @@ func checkPresign(ctx context.Context, e *ConformanceEnv) error {
 // then list <prefix>/sha256/ with one key, and the part-identity check of a multipart upload (a part number sent twice). It makes one attempt; the error is a
 // *StoreError for the store's answers.
 func StartupCheck(ctx context.Context, s ObjectStore, prefix, replica string) error {
-	if err := probe(ctx, s, prefix, replica); err != nil {
+	return startupCheck(ctx, s, prefix, replica, "")
+}
+
+// startupCheck is StartupCheck whose probe write carries the payload checksum of algorithm.
+func startupCheck(ctx context.Context, s ObjectStore, prefix, replica, algorithm string) error {
+	if err := probe(ctx, s, prefix, replica, algorithm); err != nil {
 		return err
 	}
 	if _, err := s.List(ctx, KeyPrefix(prefix), ListOptions{Max: 1}); err != nil {
@@ -633,6 +726,12 @@ func WithAwaitBackoff(initial, max time.Duration) AwaitOption {
 // minute; the replica stays not ready and does not exit, so a store outage does
 // not turn into a crash loop.
 func AwaitStartupCheck(ctx context.Context, s ObjectStore, prefix, replica string, log *slog.Logger, opts ...AwaitOption) error {
+	return await(ctx, func(ctx context.Context) error { return StartupCheck(ctx, s, prefix, replica) }, log, opts...)
+}
+
+// await repeats check until it passes, returns a configuration error at once and retries a transient one with backoff, as
+// AwaitStartupCheck says.
+func await(ctx context.Context, check func(context.Context) error, log *slog.Logger, opts ...AwaitOption) error {
 	o := awaitOptions{initial: 500 * time.Millisecond, max: 30 * time.Second}
 	for _, f := range opts {
 		f(&o)
@@ -640,7 +739,7 @@ func AwaitStartupCheck(ctx context.Context, s ObjectStore, prefix, replica strin
 	backoff := o.initial
 	var lastLog time.Time
 	for {
-		err := StartupCheck(ctx, s, prefix, replica)
+		err := check(ctx)
 		if err == nil {
 			return nil
 		}

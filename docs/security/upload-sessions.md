@@ -67,7 +67,7 @@ Everything a session stages is below `<prefix>/_uploads/<session-id>/`, apart fr
 
 | Object | Content | Checked when it is used |
 |---|---|---|
-| `data` | the multipart upload of the parts (created with the first part) | the parts carry the payload checksum (`storage.s3.payload_checksum`), the store verifies each on arrival; `CompleteMultipartUpload` names the recorded ETags; the completed object's size must equal the received count |
+| `data` | the multipart upload of the parts (created with the first part) | the parts carry the payload checksum (`storage.connections[].payload_checksum`), and a store that enforces it (`capabilities.payloadChecksumEnforced`, R-STOR-035) verifies each on arrival; the assembled object's copy is recorded as not verified, which the scrub reads whole first (R-STOR-052); `CompleteMultipartUpload` names the recorded ETags; the completed object's size must equal the received count |
 | `tail-<writer>` | one segment of the bytes after the last part, fewer than one part in all; a blob of less than one part is its single segment or the merge of its segments | each segment is read back once, by the request that completes the part, through a reader that checks the recorded size (a longer object fails at once) and SHA-256; a mismatch, a missing object or a longer one aborts the session and answers an internal error |
 
 A request that lost its claim and still writes its segment writes it under its own token's key, so it cannot replace a segment the session

@@ -93,10 +93,12 @@ func TestR_STOR_011_ConcurrentStartsNeverExceedTheCapOfOpenSessions(t *testing.T
 // The count of a start and the listing of the cleaning are served by their indexes at the size where it matters.
 func TestR_STOR_011_TheCapCountAndTheCleaningListingUseTheirIndexes(t *testing.T) {
 	w := newWorld(t)
-	w.p.exec(t, `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, principal_id, hash_state, part_size, s3_upload_id, state, received, last_activity_at)
+	// a session stays on its connection (storage.md R-STOR-054), whose row it refers to
+	w.p.exec(t, `INSERT INTO quader.storage_connections (id, bucket, prefix) VALUES ('default', 'blobs', 'quader') ON CONFLICT DO NOTHING`)
+	w.p.exec(t, `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, principal_id, hash_state, part_size, s3_upload_id, state, received, last_activity_at, connection_id)
 		SELECT gen_random_uuid(), CASE WHEN g % 2 = 0 THEN $1::bigint ELSE $2::bigint END, $1::bigint,
 		       CASE WHEN g % 7 = 0 THEN NULL ELSE ('00000000-0000-4000-8000-' || lpad((g % 400)::text, 12, '0'))::uuid END,
-		       '\x00', 16777216, '', (ARRAY['open','completing','assembled','done','aborted'])[1 + g % 5], 1 + g % 3, now() - (g || ' seconds')::interval
+		       '\x00', 16777216, '', (ARRAY['open','completing','assembled','done','aborted'])[1 + g % 5], 1 + g % 3, now() - (g || ' seconds')::interval, 'default'
 		FROM generate_series(1, 60000) g`, w.p.repo, w.p.other)
 	w.p.exec(t, "ANALYZE quader.upload_sessions")
 	plan := func(sql string, args ...any) string {

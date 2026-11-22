@@ -116,7 +116,7 @@ func (d *destination) objectsInBlobPrefix() int {
 	token := ""
 	c := d.blobClient()
 	for {
-		page, err := c.List(context.Background(), d.cfg.Storage.S3.Prefix+"/sha256/", blob.ListOptions{Token: token})
+		page, err := c.List(context.Background(), firstS3(d.cfg.Storage).Prefix+"/sha256/", blob.ListOptions{Token: token})
 		if err != nil {
 			return count
 		}

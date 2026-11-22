@@ -270,7 +270,7 @@ sealed-column registry of R-ARCH-021.
 |---|---|---|
 | `data` (default) | Every row of the snapshot | Loaded as exported |
 | `blobs` | Only for `blobs`: the rows of digests referenced in the snapshot (R-BAK-006) | Loaded; unreferenced or deleting rows never exist after a restore |
-| `transient` | Not exported | Empty |
+| `transient` | Not exported | Empty, but for the rows a fix-up of R-BAK-022 records: the copies of the restored blobs and their connection (`blob_copies`, `storage_connections`, R-BAK-030) |
 | `schema` | Not exported; the manifest records the steps | Recreated by migrations (R-BAK-023) |
 
 - The set of exported tables comes from the PostgreSQL catalog inside the snapshot: every ordinary
@@ -1683,9 +1683,12 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 What the backup and the restore do when the installation keeps its blobs on several connections ([storage.md](storage.md) R-STOR-050
-to R-STOR-063). Specified, not built; until then the backup reads the one store of `storage.s3` (`StoreSource`,
-[internal/backup/blobsource.go](../../internal/backup/blobsource.go)) and the restore writes into one (`BlobSink`,
-[internal/blob/s3/blobsink.go](../../internal/blob/s3/blobsink.go)).
+to R-STOR-063). Specified, not built; until then the backup reads the first element of `storage.connections` (`StoreSource`,
+[internal/backup/blobsource.go](../../internal/backup/blobsource.go)), the restore writes into it (`BlobSink`,
+[internal/blob/s3/blobsink.go](../../internal/blob/s3/blobsink.go)), and the fix-up `storage-copies`
+([storage_copies.go](../../internal/backup/fixup/storage_copies.go)) records every restored live blob as a copy of the connection
+`default`, which the first replica that configures it binds to its bucket and prefix, as after the migration
+([storage.md](storage.md) Q-STOR-250).
 
 - **Which copy a backup reads** ([Q-BAK-62](#q-bak-62--a-backup-reads-one-copy-per-blob-the-one-that-allows-a-server-side-copy-first)).
   For each pinned digest the run takes the copies of the snapshot's `blob_copies` in state `present` on connections in its own

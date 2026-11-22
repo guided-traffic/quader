@@ -26,7 +26,7 @@ func servableEnv(extra ...string) []string {
 		"QUADER_PROCESS_ROLE=web",
 		"QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]",
 		"QUADER_VALKEY_SENTINEL_PRIMARY_NAME=quader",
-		"QUADER_STORAGE_S3_BUCKET=blobs",
+		"QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]",
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/keys/2026-10.key\"]",
 		"QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 	}, extra...)...)
@@ -475,7 +475,7 @@ func TestSectionRules(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-021 a missing key ring stops serve but not migrate", func(t *testing.T) {
-		env := minimalEnv("QUADER_PROCESS_ROLE=web", "QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s:1\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=t", "QUADER_STORAGE_S3_BUCKET=b")
+		env := minimalEnv("QUADER_PROCESS_ROLE=web", "QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s:1\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=t", "QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"b\"}]")
 		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: env, Command: CommandServe})
 		containsAll(t, issuesOf(t, err), "secrets.encryption_key_files", "secrets.active_key_id")
 		if _, err := Load(Options{ReadFile: fakeFS(nil), Environ: env, Command: CommandMigrate}); err != nil {
@@ -487,7 +487,7 @@ func TestSectionRules(t *testing.T) {
 		containsAll(t, issuesOf(t, err), "secrets.active_key_id", "2027-01")
 	})
 	t.Run("R-ARCH-031 sentinel mode needs addresses and a primary name", func(t *testing.T) {
-		env := minimalEnv("QUADER_PROCESS_ROLE=web", "QUADER_STORAGE_S3_BUCKET=b", "QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/k/a.key\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=a")
+		env := minimalEnv("QUADER_PROCESS_ROLE=web", "QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"b\"}]", "QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/k/a.key\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=a")
 		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: env, Command: CommandServe})
 		containsAll(t, issuesOf(t, err), "valkey.sentinel.addresses", "valkey.sentinel.primary_name")
 	})

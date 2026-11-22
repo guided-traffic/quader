@@ -99,9 +99,18 @@ func TestR_BAK_021_RestoreEndToEnd(t *testing.T) {
 		}
 	})
 
-	t.Run("R-BAK-001 transient tables are empty", func(t *testing.T) {
+	t.Run("R-BAK-001 transient tables are empty, but for the copies of the restored blobs and their connection", func(t *testing.T) {
+		// The restore's fix-up records a copy of every restored live blob and the connection it lies on; nothing else of the
+		// two tables comes back (storage.md R-STOR-047, backup-and-restore.md R-BAK-030).
+		recorded := map[string]bool{"storage_connections": true, "blob_copies": true}
+		if got, want := s.Number("SELECT count(*) FROM blob_copies"), s.Number("SELECT count(*) FROM blobs WHERE state = 'live'"); got != want {
+			t.Errorf("blob_copies holds %d rows for %d live blobs", got, want)
+		}
+		if got := s.Number("SELECT count(*) FROM storage_connections"); got != 1 {
+			t.Errorf("storage_connections holds %d rows, want the one connection the restore wrote into", got)
+		}
 		for _, tb := range tables.All() {
-			if tb.Class != tables.Transient {
+			if tb.Class != tables.Transient || recorded[tb.Name] {
 				continue
 			}
 			if got := s.Number("SELECT count(*) FROM " + pgx.Identifier{tb.Name}.Sanitize()); got != 0 {

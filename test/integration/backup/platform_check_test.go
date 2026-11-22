@@ -35,7 +35,7 @@ func TestR_HA_023_PlatformCheckAgainstTheStack(t *testing.T) {
 	t.Cleanup(db.Close)
 
 	o := testenv.S3Config(t)
-	cfg := blobtest.Storage(t, t.TempDir()).S3
+	cfg := blobtest.S3(t)
 	cfg.Endpoint, cfg.Region, cfg.Bucket, cfg.ForcePathStyle, cfg.CAFile = o.Endpoint, o.Region, o.BlobsBucket, true, testenv.CAFile(t)
 	dir := t.TempDir()
 	cfg.Credentials = config.StorageS3Credentials{

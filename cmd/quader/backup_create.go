@@ -78,13 +78,17 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 	}
 	defer db.Close()
 	factory := outbound.New(cfg.Proxy.Outbound)
-	sourceCfg := cfg.Storage.S3
+	sourceCfg, err := cfg.Storage.FirstClient()
+	if err != nil {
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+	}
+	blobCfg := sourceCfg
 	if cfg.Backup.Source.SeparateCredentials {
 		sourceCfg.Credentials = cfg.Backup.Source.Credentials
 	}
 	blobs, err := s3.NewFromFactory(ctx, sourceCfg, factory)
 	if err != nil {
-		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.s3: %w", err))
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.connections: %w", err))
 	}
 	tgt, layout, err := openTarget(ctx, e)
 	if err != nil {
@@ -104,14 +108,14 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 		Clock: retention.RunSweepClock{Runs: store}, Log: e.log,
 	}
 	info := buildinfo.Get()
-	endpoint := config.NormalizeEndpoint(cfg.Storage.S3.Endpoint)
+	endpoint := config.NormalizeEndpoint(blobCfg.Endpoint)
 	pipeline, err := create.New(create.Deps{
 		Cfg:       cfg.Backup,
-		SourceRef: format.StorageRef{Endpoint: endpoint, Bucket: cfg.Storage.S3.Bucket, Prefix: cfg.Storage.S3.Prefix},
+		SourceRef: format.StorageRef{Endpoint: endpoint, Bucket: blobCfg.Bucket, Prefix: blobCfg.Prefix},
 		Instance:  e.instance, JobName: jobName(e.environ), Version: info.Version, Revision: info.Commit, BackupRole: cfg.Database.BackupRole,
 		Store: store, Prune: stage, Facts: facts, Grants: facts, Pins: facts, BlobState: facts,
 		Snapshot: backup.NewPGSnapshotter(db),
-		Source:   backup.NewStoreSource(blobs, cfg.Storage.S3.Prefix, endpoint, cfg.Storage.S3.Bucket),
+		Source:   backup.NewStoreSource(blobs, blobCfg.Prefix, endpoint, blobCfg.Bucket),
 		Target:   tgt, Events: events,
 		Metrics: backup.NewMetrics(metrics), Log: e.log,
 	})

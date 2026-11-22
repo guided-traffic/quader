@@ -18,14 +18,14 @@ rotation reaches a running process. The configuration keys are listed in the ref
 | every role (`api`, `packages`, `worker`) and the Jobs to PostgreSQL | `database.ssl_mode`, `ssl_root_cert_file`, `ssl_cert_file`, `ssl_key_file` | `verify-full` | chain and host name against the roots | on each new connection |
 | every role to Valkey data nodes | `valkey.tls.mode`, `ca_file`, `cert_file`, `key_file`, `server_name` | `verify-full`, the system roots when no `ca_file` | chain and host name | on each handshake |
 | every role to Sentinels | `valkey.sentinel.tls` (follows `valkey.tls`) | `true` | as the data nodes | on each handshake |
-| every role and the Jobs of the backup lane to the object store | `storage.s3.endpoint`, `storage.s3.ca_file` | an endpoint without a scheme is `https` ([Q-STOR-15](../spec/storage.md#q-stor-15--object-store-endpoint-without-a-scheme)) | `ca_file` only when it is set; else the outbound factory's trust store (the system roots while `proxy.outbound.tls.use_system_roots`, plus `proxy.outbound.tls.ca_files`) | on each check of the outbound transport |
+| every role and the Jobs of the backup lane to the object store | `storage.connections[].endpoint`, `storage.connections[].ca_file` | an endpoint without a scheme is `https` ([Q-STOR-15](../spec/storage.md#q-stor-15--object-store-endpoint-without-a-scheme)) | `ca_file` only when it is set; else the outbound factory's trust store (the system roots while `proxy.outbound.tls.use_system_roots`, plus `proxy.outbound.tls.ca_files`) | on each check of the outbound transport |
 | outbound HTTP clients | `proxy.outbound.tls` | system roots, `min_version` `1.2` | chain and host name | at most every 10 s on use |
 | OTLP span export | `tracing.ca_file`, `tracing.protocol` | off until `tracing.enabled` | the system roots, or `ca_file` (refused with an `http://` endpoint) | **once, at start** ([H-69](#h-69--tracingca_file-is-read-once-at-start)) |
 | worker to the scanner's listener, scanner to the scan listener of `packages` ([link_tls.go](../../internal/httpserver/link_tls.go), [outbound/link.go](../../internal/outbound/link.go)) | `server.internal_tls.ca_file`, `vulnerabilities.images.scanner`, `vulnerabilities.images.registry` ([R-ARCH-038](../spec/architecture.md#r-arch-038--tls-between-quaders-pods)) | each end's own kind's pair, mutual TLS; plain HTTP with the chart's `tls.enabled: false` ([H-1043](image-scanning.md#h-1043--with-tlsenabled-false-the-scanners-links-are-not-authenticated)) | both ends: the chain against the internal CA, and the other kind's name listed exactly among the certificate's DNS names (`<fullname>-vuln-scanner-trivy`, `-malware-scanner-clamav`, `-worker`, `-packages`, `.<namespace>.svc`; [Q-ARCH-552](../spec/architecture.md#q-arch-552--each-end-of-a-link-requires-one-name-listed-exactly-in-the-other-ends-certificate), [H-1072](#h-1072--the-name-check-is-as-strong-as-the-issuers-rule-of-who-may-request-a-name)) | every `reload_interval`, for the next handshake; the worker opens a connection per call |
 
 Plaintext needs an explicit switch on each of these: `database.allow_insecure` for `disable`, `allow` and `prefer`,
 `valkey.allow_insecure` for `valkey.tls.mode: disable` and `valkey.sentinel.tls: false`,
-`storage.s3.allow_insecure_endpoint` for an `http://` object-store endpoint, `tracing.allow_insecure` for an OTLP endpoint
+`storage.connections[].allow_insecure_endpoint` for an `http://` object-store endpoint, `tracing.allow_insecure` for an OTLP endpoint
 that is not `https://`. With tracing enabled, the endpoint in effect (`tracing.endpoint`, else `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`
 or `OTEL_EXPORTER_OTLP_ENDPOINT`) must be `https://`, and `OTEL_EXPORTER_OTLP_INSECURE=true` (or the `TRACES` variant) is refused,
 unless `tracing.allow_insecure` is `true`; a `tracing.ca_file` with a plaintext endpoint is refused even then, because it
@@ -74,8 +74,8 @@ symlink) and a file rewritten in place both work. The mechanism is one package, 
   ([postgres/connect.go](../../internal/meta/postgres/connect.go), `newDBTLS`; [cluster/valkey_tls.go](../../internal/cluster/valkey_tls.go),
   `newValkeyTLS`). A CA file of `proxy.outbound.tls.ca_files` that does not load at start does not end the process: the
   factory reports it, the `outbound` readiness check holds the first readiness, and the object store waits for the file and
-  retries (any other outbound configuration error ends the start) ([app.go](../../internal/app/app.go), `bootstrap`; [wire_blob.go](../../internal/app/wire_blob.go), `startBlob`).
-  `storage.s3.ca_file` is different: a file that does not load at start is a configuration error of the object store, and
+  retries (any other outbound configuration error ends the start) ([app.go](../../internal/app/app.go), `bootstrap`; [wire_blob.go](../../internal/app/wire_blob.go), `wireBlob`).
+  `storage.connections[].ca_file` is different: a file that does not load at start is a configuration error of the object store, and
   the process ends.
 - A **connection keeps what it negotiated**. A rotation reaches the next handshake or the next connection; open connections
   keep their certificate ([H-65](#h-65--a-rotated-out-certificate-keeps-serving-open-connections)).
@@ -116,10 +116,10 @@ stays unready with the `valkey` check `config_error` until it is fixed. A handsh
 replica becomes ready degraded after `valkey.startup_answer_timeout` ([Q-HA-331](../spec/ha-and-helm.md#q-ha-331--an-answer-is-the-login-or-its-refusal-and-the-first-connection-also-writes-the-probe-key-and-runs-the-take-script)).
 
 **Object store** ([blob/s3/client.go](../../internal/blob/s3/client.go)). Quader's object-store client takes its trust from
-`storage.s3.ca_file` when it is set; that file is the whole trust store of the client, neither the system roots nor
+`storage.connections[].ca_file` when it is set; that file is the whole trust store of the client, neither the system roots nor
 `proxy.outbound.tls.ca_files` are added, and it is reloaded like any other bundle. Without `ca_file` the client uses the
 outbound factory's trust store ([outbound/factory.go](../../internal/outbound/factory.go), `Client`), so a bundle in
-`proxy.outbound.tls.ca_files` also vouches for the object store. A proxy credential file is refused rather than ignored (`storage.s3.http.proxy_credentials_file`).
+`proxy.outbound.tls.ca_files` also vouches for the object store. A proxy credential file is refused rather than ignored (`storage.object_store.http.proxy_credentials_file`).
 
 **Outbound HTTP** ([outbound/trust.go](../../internal/outbound/trust.go), [outbound/factory.go](../../internal/outbound/factory.go)).
 `proxy.outbound.tls.use_system_roots` (default `true`) and `ca_files` form the trust store; `min_version` is `1.2`

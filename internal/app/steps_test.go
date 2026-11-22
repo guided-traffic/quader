@@ -80,7 +80,7 @@ func TestR_ARCH_024_AMissingPrerequisiteIsAStartupError(t *testing.T) {
 	t.Run("R-ARCH-024 the real step list refuses a role that drops an area another area needs, naming both", func(t *testing.T) {
 		// dropped area -> the area that needs what it builds
 		needs := map[Area]Area{
-			AreaKeys: AreaBlob, AreaPostgres: AreaAudit, AreaAudit: AreaInfra, AreaBlob: AreaInfra, AreaValkey: AreaCoordination,
+			AreaKeys: AreaBlob, AreaPostgres: AreaAudit, AreaAudit: AreaBlob, AreaBlob: AreaInfra, AreaValkey: AreaCoordination,
 			AreaCoordination: AreaInfra, AreaInfra: AreaKeyRing, AreaFormatPorts: AreaExposure, AreaExposure: AreaRepository, AreaRepository: AreaVirtual, AreaInvalidation: AreaProxy,
 			AreaIdentity: AreaAuthz, AreaAuthz: AreaOwnership, AreaFiles: AreaProxyEngine, AreaLimits: AreaLogin, AreaProxy: AreaProxyEngine, AreaProxyEngine: AreaFormatHost, AreaSessions: AreaLogin,
 		}
@@ -258,7 +258,7 @@ func TestR_ARCH_024_AStepRefusesANilInput(t *testing.T) {
 			want string
 		}{
 			"audit":        {second(a.wireAudit(ctx, postgresArea{})), "audit: no database"},
-			"blob":         {second(a.wireBlob(ctx, keysArea{}, postgresArea{})), "blob: no outbound factory, no database"},
+			"blob":         {second(a.wireBlob(ctx, keysArea{}, postgresArea{}, auditArea{})), "blob: no outbound factory, no database"},
 			"valkey":       {second(a.wireValkey(ctx, postgresArea{})), "valkey: no database"},
 			"coordination": {second(a.wireCoordination(ctx, keysArea{}, postgresArea{}, valkeyArea{})), "coordination: no key ring, no database, no valkey client"},
 			"infra":        {second(a.wireInfra(ctx, keysArea{}, postgresArea{}, auditArea{}, blobArea{}, coordArea{})), "infra: no database"},

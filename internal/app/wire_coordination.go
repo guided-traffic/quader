@@ -149,6 +149,7 @@ func (a *App) replicaSnapshot() cluster.ReplicaSnapshot {
 			out.Valkey = b
 		}
 	}
+	out.ObjectStore = a.objectStoreView()
 	out.Runtime = replicaRuntime(a.tele.runtime.Sample())
 	return out
 }

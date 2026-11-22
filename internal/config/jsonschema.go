@@ -158,16 +158,23 @@ func elementSchema(t reflect.Type) map[string]any {
 		name, _, _ := strings.Cut(f.Tag.Get("yaml"), ",")
 		p := map[string]any{}
 		ft := elementFieldType(f.Type)
-		switch ft.Kind() {
-		case reflect.String:
+		switch {
+		case ft == durTyp: // the text forms, as a key of the tree has them (schemaNode)
 			p["type"] = "string"
-		case reflect.Bool:
+			p["pattern"] = `^[0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$`
+			p["x-quader-type"] = "duration"
+		case ft == sizeTyp:
+			p["type"] = []string{"string", "integer"}
+			p["x-quader-type"] = "bytes"
+		case ft.Kind() == reflect.String:
+			p["type"] = "string"
+		case ft.Kind() == reflect.Bool:
 			p["type"] = "boolean"
-		case reflect.Int, reflect.Int32, reflect.Int64:
+		case ft.Kind() == reflect.Int, ft.Kind() == reflect.Int32, ft.Kind() == reflect.Int64:
 			p["type"] = "integer"
-		case reflect.Float64:
+		case ft.Kind() == reflect.Float64:
 			p["type"] = "number"
-		case reflect.Slice:
+		case ft.Kind() == reflect.Slice:
 			p["type"] = "array"
 			p["items"] = map[string]any{"type": "string"}
 		}

@@ -19,7 +19,18 @@ import (
 
 type noDB struct{}
 
-func (noDB) InTx(context.Context, func(meta.Tx) error) error { return context.Canceled }
+func (noDB) InTx(ctx context.Context, fn func(meta.Tx) error) error { return fn(nil) }
+
+// oneCopy answers the copies of every blob with one present copy of size bytes on the connection default; a read needs
+// nothing else of the rows (R-STOR-055).
+type oneCopy struct {
+	blob.Rows
+	size int64
+}
+
+func (r oneCopy) Copies(_ context.Context, _ meta.Tx, d blob.Digest) ([]blob.Copy, error) {
+	return []blob.Copy{{Connection: config.DefaultConnectionID, ObjectKey: blob.Key("quader", d), StoredSize: r.size, State: blob.CopyPresent}}, nil
+}
 
 // TestNuGetReadmePathMemory reads a stored package through the ranged reader of the NuGet package view
 // (one Open per ReadAt, Q-NUGET-48) inside one request: however many ranged reads the zip reader makes,
@@ -45,7 +56,7 @@ func TestNuGetReadmePathMemory(t *testing.T) {
 		d[0] = 7
 		var peak, opens int
 		var guard *httpserver.MemoryGuard
-		store, err := blob.New(cfg, mem, noDB{}, blob.WithMemory(func(ctx context.Context, n int64) func() {
+		store, err := blob.New(cfg, blob.SingleConnection("quader", mem), noDB{}, blob.WithRows(oneCopy{size: int64(pkg.Len())}), blob.WithMemory(func(ctx context.Context, n int64) func() {
 			undo := httpserver.SettleMemory(ctx, n)
 			opens++
 			peak = max(peak, guard.InUse())
@@ -54,7 +65,7 @@ func TestNuGetReadmePathMemory(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mem.Set(store.Key(d), pkg.Bytes(), time.Now())
+		mem.Set(blob.Key("quader", d), pkg.Bytes(), time.Now())
 		guard = httpserver.NewMemoryGuard(httpserver.MemoryGuardConfig{
 			Limit: 1 << 30, RequestBytes: requestMemory(&config.Config{Storage: cfg}), Overhead: requestOverhead,
 			Read: func() (uint64, uint64) { return 0, 0 },

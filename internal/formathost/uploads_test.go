@@ -319,7 +319,7 @@ func TestR_STOR_011_FinalizeCommitsTheStagedBlobInTheTransactionThatEndsTheSessi
 	var endedItem int64
 	sum := [32]byte{1, 2, 3}
 	f.svc.finalize = func(commit uploads.CommitFunc) (uploads.Result, error) {
-		staged := blob.Staged(blob.Digests{SHA256: blob.Digest(sum), Size: 11}, "p/_uploads/x/data")
+		staged := blob.Staged("default", blob.Digests{SHA256: blob.Digest(sum), Size: 11}, "p/_uploads/x/data")
 		return uploads.Result{}, commit(t.Context(), staged, func(_ context.Context, tx meta.Tx, item int64) error {
 			ended, doneIn, endedItem = true, tx, item
 			return nil

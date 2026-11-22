@@ -124,7 +124,10 @@ type rows interface {
 
 var errAborted = errors.New("the upload session was aborted")
 
-type pgRows struct{ db blob.DB }
+type pgRows struct {
+	db   blob.DB
+	conn string // the connection a new session records (upload_sessions.connection_id)
+}
 
 var _ rows = pgRows{}
 
@@ -161,7 +164,7 @@ func (p pgRows) insert(ctx context.Context, r row, maxOpen int) (started bool, e
 		}
 		n, err := qs.UploadInsertSession(ctx, q.UploadInsertSessionParams{
 			ID: r.ID.String(), RepoID: r.RepoID, AddressedRepoID: r.AddressedID, Binding: r.Binding, PrincipalID: r.Principal,
-			HashState: r.HashState, PartSize: r.PartSize, S3UploadID: r.UploadID, MaxOpen: int64(maxOpen),
+			HashState: r.HashState, PartSize: r.PartSize, S3UploadID: r.UploadID, MaxOpen: int64(maxOpen), ConnectionID: p.conn,
 		})
 		started = n > 0
 		return err

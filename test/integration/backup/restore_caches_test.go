@@ -25,13 +25,13 @@ func sourceOf(t *testing.T, stack *testenv.Stack, excludeCaches bool) *source {
 		t.Fatal(err)
 	}
 	cfg := loaded.Config
-	client, err := s3.NewFromFactory(context.Background(), cfg.Storage.S3, outbound.New(cfg.Proxy.Outbound))
+	client, err := s3.NewFromFactory(context.Background(), firstS3(cfg.Storage), outbound.New(cfg.Proxy.Outbound))
 	if err != nil {
 		t.Fatal(err)
 	}
 	fetch := func(d format.Digest) []byte {
 		h := d.Hex()
-		rc, _, err := client.Get(context.Background(), cfg.Storage.S3.Prefix+"/sha256/"+h[0:2]+"/"+h[2:4]+"/"+h, nil)
+		rc, _, err := client.Get(context.Background(), firstS3(cfg.Storage).Prefix+"/sha256/"+h[0:2]+"/"+h[2:4]+"/"+h, nil)
 		if err != nil {
 			t.Fatalf("blob %s of the source: %v", h, err)
 		}

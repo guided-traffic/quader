@@ -45,11 +45,12 @@ const (
 // what to do next.
 var errRollback = errors.New("rollback")
 
-// Commit runs the commit protocol of R-STOR-005: it makes sure a live blob row
-// exists whose object is in the bucket, and runs link in the transaction that
-// holds the row's FOR SHARE lock. The guarantee: a committed reference points
-// at a live row whose object exists. No lock is held across a transfer to the
-// object store.
+// Commit runs the commit protocol of R-STOR-005 and R-STOR-053: it makes sure a live blob row
+// exists whose object lies on storage.replication.min_copies connections, and runs link in the transaction that
+// holds the row's FOR SHARE lock. The guarantee: a committed reference points at a live row that had at least min_copies
+// present copies when the reference was committed, each written before its row. The link round records a copy row for every
+// object this commit wrote and a queue row for every other connection that holds every blob. No lock is held across a
+// transfer to the object store.
 //
 // link may be nil to commit the blob alone.
 func (s *Store) Commit(ctx context.Context, sp *Spooled, link LinkFunc) (CommitResult, error) {
@@ -63,7 +64,8 @@ type member struct {
 	sp      *Spooled
 	res     CommitResult
 	putDone bool
-	putAt   time.Time
+	putAt   time.Time   // the end of the earliest of the writes, from which the insert bound counts (R-STOR-053)
+	writes  []copyWrite // the objects this commit wrote, one per connection
 	act     action
 	ins     bool
 }
@@ -163,25 +165,58 @@ func distinctMembers(sps []*Spooled) (ms []*member, index []int) {
 func (s *Store) settle(ctx context.Context, m *member) error {
 	switch m.act {
 	case actPut:
-		if err := s.putObject(ctx, m.sp); err != nil {
+		writes, err := s.writeObjects(ctx, m.sp)
+		if len(writes) > 0 {
+			m.res.Wrote = true // the objects are left to the orphan sweep when the commit fails (R-STOR-053)
+		}
+		if err != nil {
 			return err
 		}
-		m.putDone, m.putAt, m.res.Wrote = true, s.now(), true
+		m.writes, m.putDone = writes, true
+		m.putAt = writes[0].at
+		for _, w := range writes[1:] {
+			if w.at.Before(m.putAt) {
+				m.putAt = w.at
+			}
+		}
 	case actRepair:
-		if err := s.putObject(ctx, m.sp); err != nil {
+		writes, err := s.writeObjects(ctx, m.sp)
+		if len(writes) > 0 {
+			m.res.Wrote = true
+		}
+		if err != nil {
 			return err
 		}
-		m.res.Wrote = true
-		return s.db.InTx(ctx, func(tx meta.Tx) error {
-			return s.rows.MarkOK(ctx, tx, m.sp.SHA256)
-		})
+		return s.repair(ctx, m.sp.SHA256, writes)
 	case actWaitDeleting:
-		// A GC delete may still land on the key: the object we wrote (if any)
-		// is not trustworthy, so write it again after the row is gone.
-		m.putDone = false
+		// A GC delete may still land on the key: the objects we wrote (if any)
+		// are not trustworthy, so write them again after the row is gone.
+		m.putDone, m.writes = false, nil
 		return s.waitGone(ctx, m.sp.SHA256)
 	}
 	return nil
+}
+
+// repair records the objects the repair case wrote for a live blob without a present copy (R-STOR-053): their copy rows
+// become present and the blob, by the derivation of R-STOR-052, ok.
+func (s *Store) repair(ctx context.Context, d Digest, writes []copyWrite) error {
+	var dm damage
+	err := s.db.InTx(ctx, func(tx meta.Tx) error {
+		dm = damage{}
+		state, found, err := s.rows.LockForMark(ctx, tx, d)
+		if err != nil || !found || state != "live" {
+			return err // a collection claimed it meanwhile: the next round sees the claim
+		}
+		if err := s.recordWrites(ctx, tx, d, writes); err != nil {
+			return err
+		}
+		dm, err = s.rederive(ctx, tx, d)
+		return err
+	})
+	if err == nil {
+		s.report(ctx, d, dm)
+	}
+	return err
 }
 
 // commitRound is one pass of the protocol's loop body in one transaction. It
@@ -214,10 +249,28 @@ func (s *Store) commitRound(ctx context.Context, ms []*member, link LinkFunc, wi
 					continue
 				}
 				m.ins = true
+				if err := s.recordWrites(ctx, tx, m.sp.SHA256, m.writes); err != nil {
+					return err
+				}
 			case state == "deleting":
 				m.act, pending = actWaitDeleting, true
 			case status != "ok":
 				m.act, pending = actRepair, true
+			case m.putDone:
+				// a deduplication hit after our own write (a concurrent uploader inserted the row): the objects written within
+				// the insert bound are copies too (R-STOR-053); an older one may have met a collection's delete and is left to the
+				// orphan sweep
+				var fresh []copyWrite
+				for _, w := range m.writes {
+					if s.now().Sub(w.at) <= window {
+						fresh = append(fresh, w)
+					}
+				}
+				if len(fresh) > 0 {
+					if err := s.recordWrites(ctx, tx, m.sp.SHA256, fresh); err != nil {
+						return err
+					}
+				}
 			}
 		}
 		if pending {

@@ -69,7 +69,7 @@ func (a *App) cacheBytes() int64 {
 // memory slots (Q-ARCH-240): the buffer of a verified download, the object
 // store's receive window and the overhead.
 func requestMemory(c *config.Config) int64 {
-	return blob.DownloadBufferBytes(c.Storage.Download) + int64(c.Storage.S3.HTTP.ReceiveWindow) + requestOverhead
+	return blob.DownloadBufferBytes(c.Storage.Download) + int64(c.Storage.ObjectStore.HTTP.ReceiveWindow) + requestOverhead
 }
 
 // kernelGate returns the reader of the kernel's memory of the replica's cgroup

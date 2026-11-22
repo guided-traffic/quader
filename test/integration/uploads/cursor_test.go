@@ -21,7 +21,7 @@ func TestR_STOR_011_SuccessiveSweepRunsProgressThroughTheStagingArea(t *testing.
 	up := config.StorageUploads{SessionTTL: time.Hour, SessionMaxAge: 20 * time.Second}
 	// a directory that sorts after every session of the test
 	ghost := "ffffffff-ffff-4fff-8fff-ffffffffffff"
-	if err := w.e.raw.Put(ctx, blob.SessionKey(w.e.prefix, ghost, "tail-x"), bytes.NewReader([]byte("x")), 1, blob.Checksum{}); err != nil {
+	if err := w.e.raw.Put(ctx, blob.SessionKey(w.e.prefix, ghost, "tail-x"), bytes.NewReader([]byte("x")), 1, blob.Checksum{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(21 * time.Second)
@@ -36,7 +36,7 @@ func TestR_STOR_011_SuccessiveSweepRunsProgressThroughTheStagingArea(t *testing.
 	}
 	run := func() {
 		t.Helper()
-		c := blob.NewCollector(r.cfg.GC, r.cfg.S3.Prefix, w.e.raw, w.p.db, blob.WithCollectorLogger(quiet), blob.WithUploadSessions(up), blob.WithSessionStepLimits(1, 2))
+		c := blob.NewCollector(r.cfg.GC, r.cfg.Connections[0].KeyPrefix(), w.e.raw, w.p.db, blob.WithCollectorLogger(quiet), blob.WithUploadSessions(up), blob.WithSessionStepLimits(1, 2))
 		if _, err := c.Run(ctx, blob.RunOptions{Mode: blob.GCFull}); err != nil {
 			t.Fatal(err)
 		}

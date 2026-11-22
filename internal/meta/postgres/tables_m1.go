@@ -22,6 +22,8 @@ func init() {
 	tables.Register("audit_event", tables.Data, tables.Options{})
 	tables.Register("audit_policy", tables.Data, tables.Options{})
 	tables.Register("revocation_outbox", tables.Data, tables.Options{})
+	// the connections that hold an outbox row's journal object (00106, storage.md R-STOR-059): they describe the source's connections
+	tables.Register("revocation_outbox_shipped", tables.Transient, tables.Options{})
 
 	// Identity (00007_identity, R-AUTH-016 to R-AUTH-023, R-AUTH-040). A principal
 	// names its creator, a foreign key into its own table: a restore loads

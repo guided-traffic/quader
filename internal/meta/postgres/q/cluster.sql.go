@@ -124,7 +124,7 @@ func (q *Queries) ListClusterEpochs(ctx context.Context, areas []string) ([]Clus
 }
 
 const listReplicas = `-- name: ListReplicas :many
-SELECT r.instance_uid, r.name, r.version, r.revision, r.roles, r.state, r.checks, r.leases, r.secret_key_ids, r.active_secret_key_id, r.node, r.valkey, r.pool, r.started_at, r.heartbeat_at, r.runtime, (r.heartbeat_at < now() - make_interval(secs => $1::float8))::bool AS lost
+SELECT r.instance_uid, r.name, r.version, r.revision, r.roles, r.state, r.checks, r.leases, r.secret_key_ids, r.active_secret_key_id, r.node, r.valkey, r.pool, r.started_at, r.heartbeat_at, r.runtime, r.object_store, (r.heartbeat_at < now() - make_interval(secs => $1::float8))::bool AS lost
   FROM replica r
  WHERE NOT (r.state = 'draining' AND r.heartbeat_at < now() - make_interval(secs => $1::float8))
  ORDER BY r.roles, r.name
@@ -147,6 +147,7 @@ type ListReplicasRow struct {
 	StartedAt         pgtype.Timestamptz
 	HeartbeatAt       pgtype.Timestamptz
 	Runtime           json.RawMessage
+	ObjectStore       json.RawMessage
 	Lost              bool
 }
 
@@ -179,6 +180,7 @@ func (q *Queries) ListReplicas(ctx context.Context, staleSecs float64) ([]ListRe
 			&i.StartedAt,
 			&i.HeartbeatAt,
 			&i.Runtime,
+			&i.ObjectStore,
 			&i.Lost,
 		); err != nil {
 			return nil, err
@@ -421,16 +423,16 @@ func (q *Queries) SetReplicaState(ctx context.Context, arg SetReplicaStateParams
 
 const upsertReplica = `-- name: UpsertReplica :exec
 INSERT INTO replica (instance_uid, name, version, revision, roles, state, checks, leases,
-                     secret_key_ids, active_secret_key_id, node, valkey, pool, runtime, started_at, heartbeat_at)
+                     secret_key_ids, active_secret_key_id, node, valkey, pool, runtime, object_store, started_at, heartbeat_at)
 VALUES ($1::text::uuid, $2::text, $3::text, $4::text,
         $5::text[], $6::text, $7::text::jsonb, $8::text::jsonb,
         $9::text[], $10::text,
         NULLIF($11::text, ''), $12::text::jsonb, NULLIF($13::text, ''),
-        $14::text::jsonb, $15::timestamptz, now())
+        $14::text::jsonb, $15::text::jsonb, $16::timestamptz, now())
 ON CONFLICT (instance_uid) DO UPDATE
    SET state = CASE WHEN replica.state = 'draining' THEN replica.state ELSE EXCLUDED.state END, checks = EXCLUDED.checks, leases = EXCLUDED.leases,
        secret_key_ids = EXCLUDED.secret_key_ids, active_secret_key_id = EXCLUDED.active_secret_key_id,
-       valkey = EXCLUDED.valkey, runtime = EXCLUDED.runtime, heartbeat_at = now()
+       valkey = EXCLUDED.valkey, runtime = EXCLUDED.runtime, object_store = EXCLUDED.object_store, heartbeat_at = now()
 `
 
 type UpsertReplicaParams struct {
@@ -448,6 +450,7 @@ type UpsertReplicaParams struct {
 	Valkey            string
 	Pool              string
 	Runtime           string
+	ObjectStore       string
 	StartedAt         pgtype.Timestamptz
 }
 
@@ -472,6 +475,7 @@ func (q *Queries) UpsertReplica(ctx context.Context, arg UpsertReplicaParams) er
 		arg.Valkey,
 		arg.Pool,
 		arg.Runtime,
+		arg.ObjectStore,
 		arg.StartedAt,
 	)
 	return err

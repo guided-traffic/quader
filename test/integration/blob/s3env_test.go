@@ -57,9 +57,10 @@ func optional(name, def string) string {
 	return def
 }
 
-// s3Env is the object store under test.
+// s3Env is the object store under test: one connection, default.
 type s3Env struct {
-	cfg     config.StorageS3
+	conn    config.StorageConnection // the element of the connection
+	cfg     config.StorageS3         // its client's configuration
 	factory *outbound.Factory
 	http    *http.Client
 	raw     blob.ObjectStore // the client, without a breaker
@@ -78,29 +79,29 @@ func newS3(tb testing.TB, name string) *s3Env {
 		}
 		return p
 	}
-	cfg := blobtest.Storage(tb, dir).S3
-	cfg.Endpoint = testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT")
-	cfg.Region = testenv.Get(tb, "QUADER_TEST_S3_REGION")
-	cfg.Bucket = testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS")
-	cfg.ForcePathStyle = testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
-	cfg.AllowInsecureEndpoint = false
-	cfg.CAFile = testenv.CAFile(tb) // the gateway is HTTPS-only, signed by the stack's CA
-	cfg.Prefix = "it-blob/" + runID(tb) + "/" + name
-	cfg.PayloadChecksum = optional("QUADER_TEST_S3_PAYLOAD_CHECKSUM", cfg.PayloadChecksum)
-	cfg.Checksums.RequestCalculation = optional("QUADER_TEST_S3_REQUEST_CHECKSUM", cfg.Checksums.RequestCalculation)
-	cfg.Checksums.ResponseValidation = optional("QUADER_TEST_S3_RESPONSE_CHECKSUM", cfg.Checksums.ResponseValidation)
-	cfg.Credentials = config.StorageS3Credentials{
-		Source:              "static",
-		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
-		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
-	}
+	prefix := "it-blob/" + runID(tb) + "/" + name
+	batch := optional("QUADER_TEST_S3_BATCH_DELETE", "true") == "true"
+	conn := config.StorageConnection{
+		Endpoint: testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT"), Region: testenv.Get(tb, "QUADER_TEST_S3_REGION"),
+		Bucket: testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS"), Prefix: &prefix,
+		ForcePathStyle:             testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true",
+		CAFile:                     testenv.CAFile(tb), // the gateway is HTTPS-only, signed by the stack's CA
+		PayloadChecksum:            optional("QUADER_TEST_S3_PAYLOAD_CHECKSUM", "sha256"),
+		RequestChecksumCalculation: optional("QUADER_TEST_S3_REQUEST_CHECKSUM", "when_supported"),
+		ResponseChecksumValidation: optional("QUADER_TEST_S3_RESPONSE_CHECKSUM", "when_supported"),
+		BatchDelete:                &batch,
+		CredentialsSource:          "static",
+		AccessKeyIDFile:            writeSecret("access-key", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
+		SecretAccessKeyFile:        writeSecret("secret-key", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
+	}.WithDefaults()
+	cfg := config.ClientConfig(conn, blobtest.Storage(tb, dir).ObjectStore)
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
 	if err != nil {
 		tb.Fatalf("object store client: %v", err)
 	}
 	testenv.RemoveObjectsAtCleanup(tb, cfg.Bucket, cfg.Prefix)
-	e := &s3Env{cfg: cfg, factory: f, http: c.HTTPClient(), raw: c, prefix: cfg.Prefix}
+	e := &s3Env{conn: conn, cfg: cfg, factory: f, http: c.HTTPClient(), raw: c, prefix: cfg.Prefix}
 	return e
 }
 
@@ -128,10 +129,39 @@ func (e *s3Env) keys(tb testing.TB) []string {
 func (e *s3Env) storage(tb testing.TB) config.Storage {
 	tb.Helper()
 	cfg := blobtest.Storage(tb, tb.TempDir())
-	cfg.S3 = e.cfg
+	cfg.Connections = []config.StorageConnection{e.conn}
 	cfg.Upload.BlobWaitTimeout = 60 * time.Second
-	cfg.GC.BatchDelete = optional("QUADER_TEST_S3_BATCH_DELETE", "true") == "true"
 	return cfg
+}
+
+// connections is the one connection of a store of this env, reached through objects, recorded in the database of p (the
+// copy rows refer to it, R-STOR-052).
+func (e *s3Env) connections(tb testing.TB, cfg config.Storage, objects blob.ObjectStore) *blob.Connections {
+	tb.Helper()
+	conns, err := blob.NewConnections(blob.NewConnection(cfg.Connections[0], objects))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return conns
+}
+
+// newStore builds a store on this env's connection over the database and records the connection.
+func (e *s3Env) newStore(tb testing.TB, cfg config.Storage, objects blob.ObjectStore, db blob.DB, opts ...blob.Option) *blob.Store {
+	tb.Helper()
+	s, err := blob.New(cfg, e.connections(tb, cfg, objects), db, opts...)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	if err := s.RecordConnections(context.Background()); err != nil {
+		tb.Fatalf("record the connections: %v", err)
+	}
+	return s
+}
+
+// collector builds a collector on this env's connection.
+func collector(cfg config.Storage, objects blob.ObjectStore, db blob.DB, opts ...blob.CollectorOption) *blob.Collector {
+	c := cfg.Connections[0]
+	return blob.NewCollector(cfg.GC, c.KeyPrefix(), objects, db, append([]blob.CollectorOption{blob.WithBatchDelete(c.BatchDeletes())}, opts...)...)
 }
 
 // newClient builds a client for another configuration of the same store.

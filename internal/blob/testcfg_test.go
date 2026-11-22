@@ -14,7 +14,7 @@ func testStorage(tb testing.TB, dir string) config.Storage {
 		ReadFile: func(string) ([]byte, error) { return nil, fs.ErrNotExist },
 		Environ: []string{
 			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader",
-			"QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_STORAGE_SPOOL_DIR=" + dir,
+			"QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]", "QUADER_STORAGE_SPOOL_DIR=" + dir,
 		},
 		Command: config.CommandMigrate,
 	})

@@ -74,15 +74,25 @@ func TestConformance(t *testing.T) {
 			t.Fatalf("startup check: %v", err)
 		}
 	})
-	t.Run("R-STOR-035 a store that serves an old version after an overwrite fails A1", func(t *testing.T) {
+	t.Run("R-STOR-035 a store that serves an old version after an overwrite is reported eventual and tolerated (A1, Q-STOR-249)", func(t *testing.T) {
 		m := blobtest.New()
 		stale := &staleStore{Store: m}
+		seen := false
 		for _, r := range blob.RunConformance(context.Background(), stale, conformanceOpts(m)) {
-			if strings.Contains(r.Name, "overwrite") && r.OK {
-				t.Fatal("a stale read passed the overwrite check")
+			if !strings.Contains(r.Name, "overwrite") {
+				continue
 			}
-			if strings.Contains(r.Name, "overwrite") && !strings.Contains(r.Error, "earlier content") {
-				t.Fatalf("unexpected error %q", r.Error)
+			seen = true
+			if !r.OK || !strings.HasPrefix(r.Note, "eventual (tolerated, A1)") {
+				t.Fatalf("%+v", r)
+			}
+		}
+		if !seen {
+			t.Fatal("no overwrite check ran")
+		}
+		for _, r := range blob.RunConformance(context.Background(), m, conformanceOpts(m)) {
+			if strings.Contains(r.Name, "overwrite") && r.Note != "strong" {
+				t.Fatalf("a strongly consistent store: %+v", r)
 			}
 		}
 	})

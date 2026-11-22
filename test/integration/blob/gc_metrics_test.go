@@ -31,7 +31,7 @@ func TestGCLastSuccessMetric(t *testing.T) {
 	p := newPG(t)
 	r := newReplica(t, e, p, nil)
 	m := observability.NewMetrics("worker")
-	c := blob.NewCollector(r.cfg.GC, r.cfg.S3.Prefix, r.obj, p.db, blob.WithCollectorLogger(quiet), blob.WithCollectorMetrics(blob.NewMetrics(m)))
+	c := collector(r.cfg, r.obj, p.db, blob.WithCollectorLogger(quiet), blob.WithCollectorMetrics(blob.NewMetrics(m)))
 	ctx := context.Background()
 
 	t.Run("R-OPS-007 a dry run does not move quader_gc_last_success_timestamp_seconds", func(t *testing.T) {

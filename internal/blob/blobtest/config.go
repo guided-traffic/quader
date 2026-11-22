@@ -16,7 +16,7 @@ func Storage(tb testing.TB, spoolDir string) config.Storage {
 		ReadFile: func(string) ([]byte, error) { return nil, fs.ErrNotExist },
 		Environ: []string{
 			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader",
-			"QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_STORAGE_SPOOL_DIR=" + spoolDir,
+			"QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]", "QUADER_STORAGE_SPOOL_DIR=" + spoolDir,
 		},
 		Command: config.CommandMigrate,
 	})
@@ -24,4 +24,12 @@ func Storage(tb testing.TB, spoolDir string) config.Storage {
 		tb.Fatalf("storage defaults: %v", err)
 	}
 	return l.Config.Storage
+}
+
+// S3 is the client configuration of the default storage connection with every default applied (config.ClientConfig of
+// Storage's one connection and its shared client settings); tests set the endpoint, the bucket and the credentials.
+func S3(tb testing.TB) config.StorageS3 {
+	tb.Helper()
+	s := Storage(tb, tb.TempDir())
+	return config.ClientConfig(s.Connections[0], s.ObjectStore)
 }

@@ -59,32 +59,74 @@ func IsNoSuchUpload(err error) bool {
 // as the store does for the writes it makes.
 func MapStoreError(err error) error { return mapStoreErr(err) }
 
-// Staged is a blob whose bytes are in the bucket already, at the staging key, with the digests of the whole content as the session
-// computed them while the bytes arrived. It is committed like a spooled body (Commit, CommitAll): the commit protocol's object
-// write is a server-side copy of the staging object to the content address, and a blob that is stored already copies nothing
-// (R-STOR-011 finalize step 3). No byte passes through the replica. The caller removes the staging object after the commit.
-func Staged(d Digests, key string) *Spooled { return &Spooled{Digests: d, staged: key} }
+// Staged is a blob whose bytes are on the connection conn already, at the staging key, with the digests of the whole content as
+// the session computed them while the bytes arrived. It is committed like a spooled body (Commit, CommitAll): the commit
+// protocol's object write is a server-side copy of the staging object to the content address on the same connection, and a
+// blob that is stored already copies nothing (R-STOR-011 finalize step 3, R-STOR-054). No byte passes through the replica
+// unless storage.replication.min_copies asks for more copies. The caller removes the staging object after the commit.
+func Staged(conn string, d Digests, key string) *Spooled {
+	return &Spooled{Digests: d, staged: key, stagedOn: conn}
+}
 
 // StagedKey is the key of the staging object of a blob made by [Staged], empty for a spooled body.
 func (s *Spooled) StagedKey() string { return s.staged }
 
-// putStaged is the object write of a staged blob.
-func (s *Store) putStaged(ctx context.Context, sp *Spooled) error {
-	key := s.Key(sp.SHA256)
-	if err := s.objects.Copy(ctx, sp.staged, key, sp.Size); err != nil {
+// putStaged is the object write of a staged blob (R-STOR-054): the server-side copy on the session's connection, confirmed by
+// its size, recorded present and not verified (the scrub reads it first). With min_copies above 1 the content object is then
+// streamed through the replica's spool to the next writable connections, hashed against the session's digests; those copies
+// are verified where the connection enforces its payload checksum.
+func (s *Store) putStaged(ctx context.Context, sp *Spooled) ([]copyWrite, error) {
+	c, ok := s.conns.Get(sp.stagedOn)
+	if !ok {
+		return nil, storeUnavailable(fmt.Errorf("the connection %q of the upload session is not configured on this replica", sp.stagedOn))
+	}
+	key := c.ObjectKey(sp.SHA256)
+	if err := c.Objects().Copy(ctx, sp.staged, key, sp.Size, nil); err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return fmt.Errorf("copy %s: %w", sp.staged, ErrStagingGone)
+			return nil, fmt.Errorf("copy %s: %w", sp.staged, ErrStagingGone)
 		}
-		return mapStoreErr(err)
+		return nil, mapStoreErr(err)
 	}
-	info, err := s.objects.Head(ctx, key)
+	info, err := c.Objects().Head(ctx, key)
 	if err != nil {
-		return mapStoreErr(err)
+		return nil, mapStoreErr(err)
 	}
-	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say
-		return fmt.Errorf("object %s has %d bytes after the copy, expected %d", key, info.Size, sp.Size)
+	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say; stage 1 stores the blob's bytes
+		return nil, fmt.Errorf("object %s on connection %s has %d bytes after the copy, expected %d", key, c.ID(), info.Size, sp.Size)
 	}
-	return nil
+	writes := []copyWrite{{conn: c, key: key, storedSize: sp.Size, at: s.now()}}
+	need := s.minCopies() - 1
+	if need == 0 {
+		return writes, nil
+	}
+	var others []*Connection
+	for _, o := range s.conns.Writable() {
+		if o != c {
+			others = append(others, o)
+		}
+	}
+	if len(others) < need {
+		return writes, s.notEnoughConnections(nil)
+	}
+	body, _, err := c.Read(ctx, Copy{Connection: c.ID(), ObjectKey: key, StoredSize: sp.Size}, nil)
+	if err != nil {
+		return writes, mapStoreErr(err)
+	}
+	local, err := s.spool.Ingest(ctx, body, IngestOptions{
+		ContentLength: sp.Size, MaxSize: sp.Size,
+		Expect: Expected{SHA256: sp.SHA256[:], SHA1: sp.SHA1[:], MD5: sp.MD5[:], SHA512: sp.SHA512[:]},
+	})
+	_ = body.Close()
+	if err != nil {
+		if errors.Is(err, ErrDigestMismatch) || errors.Is(err, ErrLengthMismatch) {
+			// the staged content is not the session's: the finalize fails and the session stays assembled for the client's retry
+			return writes, storeUnavailable(fmt.Errorf("the content object of the session on connection %s is not the blob: %w", c.ID(), err))
+		}
+		return writes, err
+	}
+	defer local.Close()
+	more, err := s.writeTo(ctx, local, others, need)
+	return append(writes, more...), err
 }
 
 // errNotReadable is what a reader of a staged blob returns: its bytes are in the bucket, not in the spool.

@@ -39,7 +39,14 @@ func newReplica(tb testing.TB, e *s3Env, p *pgEnv, mutate func(*config.Storage))
 	if mutate != nil {
 		mutate(&cfg)
 	}
-	store, err := blob.New(cfg, e.raw, p.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond))
+	conns, err := blob.NewConnections(blob.NewConnection(cfg.Connections[0], e.raw))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	store, err := blob.New(cfg, conns, p.db, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond))
+	if err == nil {
+		err = store.RecordConnections(context.Background()) // the sessions and the copy rows refer to the connection's row
+	}
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -435,7 +442,7 @@ func TestR_STOR_011_ARequestOfAnotherPrincipalRepositoryOrBindingAnswers404(t *t
 }
 
 func collector(r *replica, w *world, up config.StorageUploads) *blob.Collector {
-	return blob.NewCollector(r.cfg.GC, r.cfg.S3.Prefix, w.e.raw, w.p.db, blob.WithCollectorLogger(quiet), blob.WithUploadSessions(up))
+	return blob.NewCollector(r.cfg.GC, r.cfg.Connections[0].KeyPrefix(), w.e.raw, w.p.db, blob.WithCollectorLogger(quiet), blob.WithUploadSessions(up))
 }
 
 // A session idle for longer than session_ttl, and an open session older than session_max_age, are aborted by the next collection
@@ -500,15 +507,15 @@ func TestR_STOR_011_TheSweepRemovesWhatNoSessionStandsFor(t *testing.T) {
 	ctx := context.Background()
 	ghost := uuid.NewString()
 	ghostTail := blob.SessionKey(w.e.prefix, ghost, "tail-"+uuid.NewString())
-	if err := w.e.raw.Put(ctx, ghostTail, bytes.NewReader([]byte("x")), 1, blob.Checksum{}); err != nil {
+	if err := w.e.raw.Put(ctx, ghostTail, bytes.NewReader([]byte("x")), 1, blob.Checksum{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	ghostData := blob.SessionKey(w.e.prefix, ghost, "data")
-	if _, err := w.e.raw.CreateMultipart(ctx, ghostData, ""); err != nil {
+	if _, err := w.e.raw.CreateMultipart(ctx, ghostData, "", nil); err != nil {
 		t.Fatal(err)
 	}
 	foreign := blob.UploadsPrefix(w.e.prefix) + "not-a-session/keep"
-	if err := w.e.raw.Put(ctx, foreign, bytes.NewReader([]byte("x")), 1, blob.Checksum{}); err != nil {
+	if err := w.e.raw.Put(ctx, foreign, bytes.NewReader([]byte("x")), 1, blob.Checksum{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	// the maximum age is short, so that what is planted is older than it when the session below starts, which is younger
@@ -578,11 +585,11 @@ func TestR_STOR_011_AMultipartServerSideCopyYieldsTheSourcesBytes(t *testing.T) 
 	}
 	data := random(11 * mib)
 	src, dst := blob.SessionKey(w.e.prefix, uuid.NewString(), "data"), blob.SessionKey(w.e.prefix, uuid.NewString(), "data")
-	if err := w.e.raw.Put(ctx, src, bytes.NewReader(data), int64(len(data)), blob.Checksum{}); err != nil {
+	if err := w.e.raw.Put(ctx, src, bytes.NewReader(data), int64(len(data)), blob.Checksum{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	c.SetCopyLimits(5*mib, 5*mib) // three parts: 5, 5 and 1 MiB
-	if err := w.e.raw.Copy(ctx, src, dst, int64(len(data))); err != nil {
+	if err := w.e.raw.Copy(ctx, src, dst, int64(len(data)), nil); err != nil {
 		t.Fatal(err)
 	}
 	rc, _, err := w.e.raw.Get(ctx, dst, nil)
@@ -597,7 +604,7 @@ func TestR_STOR_011_AMultipartServerSideCopyYieldsTheSourcesBytes(t *testing.T) 
 	if !bytes.Equal(got.Bytes(), data) {
 		t.Fatalf("the copy has %d bytes that differ from the source's %d", got.Len(), len(data))
 	}
-	if err := w.e.raw.Copy(ctx, src+"-missing", dst, 1); !errors.Is(err, blob.ErrNotFound) {
+	if err := w.e.raw.Copy(ctx, src+"-missing", dst, 1, nil); !errors.Is(err, blob.ErrNotFound) {
 		t.Fatalf("copy of a missing source: %v", err)
 	}
 }

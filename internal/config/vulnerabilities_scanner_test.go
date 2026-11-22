@@ -70,13 +70,13 @@ func TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile(t *t
 		testRegistryURL,
 		"QUADER_DATABASE_PASSWORD_FILE=/var/run/secrets/quader/db/password",
 		"QUADER_VALKEY_PASSWORD_FILE=/var/run/secrets/quader/valkey/password",
-		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",
+		"QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"b\",\"credentials_source\":\"static\"}]",
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[]",
 	}
 	if err := loadRole(t, "scanner", env...); err != nil {
 		t.Fatalf("the scanner: %v", err)
 	}
-	containsAll(t, issuesOf(t, loadRole(t, "packages", env...)), "secrets.encryption_key_files is required", "storage.s3.credentials")
+	containsAll(t, issuesOf(t, loadRole(t, "packages", env...)), "secrets.encryption_key_files is required", "credentials_source static needs")
 	// What the role reads is still validated.
 	containsAll(t, issuesOf(t, loadRole(t, "scanner", testRegistryURL, "QUADER_SERVER_LISTEN=nonsense")), "server.listen")
 	for _, path := range []string{"server.listen", "server.internal_tls.ca_file", "vulnerabilities.images.registry.url", "storage.spool.max_bytes", "health.check_interval"} {
@@ -84,7 +84,7 @@ func TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile(t *t
 			t.Errorf("the scanner does not read %s", path)
 		}
 	}
-	for _, path := range []string{"database.password_file", "valkey.password_file", "storage.s3.bucket", "secrets.encryption_key_files", "auth.oidc.issuer", "proxy.outbound.proxy_from_environment", "vulnerabilities.sources.osv.mode"} {
+	for _, path := range []string{"database.password_file", "valkey.password_file", "storage.connections", "secrets.encryption_key_files", "auth.oidc.issuer", "proxy.outbound.proxy_from_environment", "vulnerabilities.sources.osv.mode"} {
 		if ScannerReads(path, ScannerKindTrivy) {
 			t.Errorf("the scanner reads %s", path)
 		}

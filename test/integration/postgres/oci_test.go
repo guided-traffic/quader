@@ -70,18 +70,20 @@ func TestOCIMigrations(t *testing.T) {
 	t.Run("an upload session belongs to the repository it writes to and the one addressed", func(t *testing.T) {
 		target := f.repo("oci-target", "oci", "local")
 		addressed := f.repo("oci-virtual", "oci", "virtual")
-		const ins = `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, binding, hash_state, part_size, s3_upload_id, state%s)
-			VALUES ($1, $2, $3, $4, '\x00', 16777216, 'upload-1', $5%s)`
+		// a session stays on its connection (storage.md R-STOR-054), whose row it refers to
+		mustExec(t, admin, `INSERT INTO quader.storage_connections (id, bucket, prefix) VALUES ('default', 'blobs', 'quader') ON CONFLICT DO NOTHING`)
+		const ins = `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, binding, hash_state, part_size, s3_upload_id, state, connection_id%s)
+			VALUES ($1, $2, $3, $4, '\x00', 16777216, 'upload-1', $5, 'default'%s)`
 		plain := strings.NewReplacer("%s", "")
 		mustExec(t, admin, plain.Replace(ins), "0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a11", target, addressed, "team/app", "open")
 		wantState(t, admin, "23514", plain.Replace(ins), "0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a12", target, addressed, strings.Repeat("a", 513), "open")
 		wantState(t, admin, "23514", plain.Replace(ins), "0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a13", target, addressed, "app", "paused")
 		wantState(t, admin, "23503", plain.Replace(ins), "0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a14", target, addressed+1000, "app", "open")
 		// A tail is shorter than a part, and a segment of it has a size and a checksum (00057).
-		wantState(t, admin, "23514", `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, hash_state, part_size, s3_upload_id, state, tail_size)
-			VALUES ('0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a15', $1, $2, '\x00', 1000, '', 'open', 1000)`, target, addressed)
-		mustExec(t, admin, `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, hash_state, part_size, s3_upload_id, state, tail_size)
-			VALUES ('0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a17', $1, $2, '\x00', 1000, '', 'open', 999)`, target, addressed)
+		wantState(t, admin, "23514", `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, hash_state, part_size, s3_upload_id, state, tail_size, connection_id)
+			VALUES ('0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a15', $1, $2, '\x00', 1000, '', 'open', 1000, 'default')`, target, addressed)
+		mustExec(t, admin, `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, hash_state, part_size, s3_upload_id, state, tail_size, connection_id)
+			VALUES ('0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a17', $1, $2, '\x00', 1000, '', 'open', 999, 'default')`, target, addressed)
 		const seg = `INSERT INTO quader.upload_session_tails (session_id, seq, writer, size, sha256) VALUES ($1, $2, gen_random_uuid(), $3, decode(repeat('ab', $4), 'hex'))`
 		mustExec(t, admin, seg, "0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a17", 1, 10, 32)
 		wantState(t, admin, "23505", seg, "0e4b8d38-39a4-4d3e-9c1e-5a0d0f6c2a17", 1, 10, 32)

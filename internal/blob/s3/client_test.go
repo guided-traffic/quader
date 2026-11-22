@@ -35,6 +35,7 @@ type fakeS3 struct {
 	t       *testing.T
 	mu      sync.Mutex
 	objects map[string][]byte
+	meta    map[string]map[string]string // the x-amz-meta-* headers of an object, lower case, without the prefix
 	// fail, when set, may answer a request itself; it returns true if it did.
 	fail     func(w http.ResponseWriter, r *http.Request) bool
 	requests []*http.Request
@@ -61,9 +62,14 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := strings.TrimPrefix(r.URL.Path, "/b/")
 	switch r.Method {
 	case http.MethodPut:
+		if src := r.Header.Get("x-amz-copy-source"); src != "" {
+			f.copyObject(w, r, key, src)
+			return
+		}
 		body, _ := io.ReadAll(r.Body)
 		f.mu.Lock()
 		f.objects[key] = body
+		f.setMeta(key, metaOf(r.Header))
 		f.mu.Unlock()
 		w.Header().Set("ETag", `"x"`)
 	case http.MethodGet, http.MethodHead:
@@ -75,6 +81,11 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Length", itoa(len(b)))
+		f.mu.Lock()
+		for k, v := range f.meta[key] {
+			w.Header().Set("x-amz-meta-"+k, v)
+		}
+		f.mu.Unlock()
 		w.Header().Set("ETag", `"x"`)
 		if r.Method == http.MethodGet {
 			_, _ = w.Write(b)
@@ -117,7 +128,7 @@ func newEnv(t *testing.T, mutate func(*config.StorageS3)) *env {
 		}
 		return p
 	}
-	cfg := blobtest.Storage(t, dir).S3
+	cfg := blobtest.S3(t)
 	cfg.Endpoint, cfg.Region, cfg.Bucket = srv.URL, "us-east-1", "b"
 	cfg.AllowInsecureEndpoint, cfg.ForcePathStyle = true, true
 	cfg.Retry = config.StorageS3Retry{MaxAttempts: 5, MaxBackoff: 20 * time.Millisecond}
@@ -137,7 +148,7 @@ func newEnv(t *testing.T, mutate func(*config.StorageS3)) *env {
 }
 
 func put(c *s3.Client, key string, data []byte, sum blob.Checksum) error {
-	return c.Put(context.Background(), key, bytes.NewReader(data), int64(len(data)), sum)
+	return c.Put(context.Background(), key, bytes.NewReader(data), int64(len(data)), sum, nil)
 }
 
 func slowDown(n int32) func(http.ResponseWriter, *http.Request) bool {
@@ -274,7 +285,7 @@ func TestErrorMapping(t *testing.T) {
 		e := newEnv(t, nil)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := e.client.Put(ctx, "k", bytes.NewReader([]byte("x")), 1, blob.Checksum{})
+		err := e.client.Put(ctx, "k", bytes.NewReader([]byte("x")), 1, blob.Checksum{}, nil)
 		if !errors.Is(err, context.Canceled) || blob.IsTransient(err) {
 			t.Fatalf("got %v", err)
 		}
@@ -508,13 +519,13 @@ func TestConfiguration(t *testing.T) {
 	})
 	// The presign primitive that R-STOR-014 will use; the redirect itself is not built (P2), so the test does not name
 	// the requirement and does not count as its evidence.
-	t.Run("a presigned URL names the bucket, the key and the validity, and honours presign.endpoint", func(t *testing.T) {
-		e := newEnv(t, func(c *config.StorageS3) { c.Presign.Endpoint = "https://blobs.example.com" })
+	t.Run("a presigned URL names the connection's endpoint, the bucket, the key and the validity", func(t *testing.T) {
+		e := newEnv(t, nil)
 		u, err := e.client.Presign(context.Background(), "quader/sha256/aa/bb/x", 60*time.Second)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, want := range []string{"https://blobs.example.com/b/quader/sha256/aa/bb/x", "X-Amz-Expires=60", "X-Amz-Signature="} {
+		for _, want := range []string{e.srv.URL + "/b/quader/sha256/aa/bb/x", "X-Amz-Expires=60", "X-Amz-Signature="} {
 			if !strings.Contains(u, want) {
 				t.Errorf("missing %q in %s", want, u)
 			}

@@ -55,7 +55,10 @@ func storageRestoreVersionsCmd(args []string, s streams) error {
 		return backupExit(err)
 	}
 	defer db.Close()
-	s3cfg := cfg.Storage.S3
+	s3cfg, err := cfg.Storage.FirstClient()
+	if err != nil {
+		return backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+	}
 	if *creds != "" {
 		if s3cfg.Credentials, err = replay.LoadCredentials(*creds); err != nil {
 			return backup.Fail(backup.ExitUsage, backup.CodeConfig, err)

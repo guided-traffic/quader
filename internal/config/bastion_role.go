@@ -550,7 +550,7 @@ func LoadBastion(opts Options) (*BastionLoaded, error) {
 }
 
 // StorageS3 returns the object-store client configuration of the bucket backend (R-BAS-030): the keys of the
-// Bastion's bucket on the defaults of storage.s3 (timeouts, retries, checksums), the endpoint reached over TLS
+// Bastion's bucket on the defaults of an object-store client (timeouts, retries, checksums), the endpoint reached over TLS
 // only and the credentials of cache.bucket.credentials. The cache bucket uses no server-side encryption setting
 // of its own, so the bucket's default applies.
 func (b BastionCacheBucket) StorageS3() StorageS3 {

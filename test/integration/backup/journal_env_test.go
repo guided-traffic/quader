@@ -169,7 +169,7 @@ func newJEnv(t *testing.T) *jenv {
 
 	// The journal lives in the blob bucket under a prefix of this test.
 	o := testenv.S3Config(t)
-	cfg := blobtest.Storage(t, t.TempDir()).S3
+	cfg := blobtest.S3(t)
 	cfg.Endpoint, cfg.Region, cfg.Bucket, cfg.ForcePathStyle, cfg.CAFile = o.Endpoint, o.Region, o.BlobsBucket, true, testenv.CAFile(t)
 	raw := make([]byte, 4)
 	_, _ = rand.Read(raw)

@@ -23,23 +23,33 @@ type OpenOptions struct {
 
 // Open opens the content of a blob for reading. size is the blob row's size.
 //
+// The read takes the blob's present copies on the connections this replica configures, in list order, a draining
+// connection's last, and leaves out a connection whose circuit is open (R-STOR-055). A copy is left for the next one before
+// the first byte, when its connection answers "no such object", fails transiently or answers with a size other than the
+// copy's stored size; a failure after the first byte aborts the response, and the client's retry or resume takes the next copy
+// (Q-STOR-232). With no copy to take the read answers 503: ErrNotFound (content_unavailable) when no configured connection
+// holds a present copy, the store's 503 when the copies' connections fail; neither marks anything.
+//
 // A full read is verified unless storage.download.verify is false
 // (R-STOR-013, Q-STOR-6): the SHA-256 of the bytes is computed while they are
 // read and the last storage.download.hold_back bytes are not released before the
 // body has ended and the digest matched. On a mismatch the reader returns
 // ErrCorrupt instead of the held bytes, so the caller aborts the response and
-// the client sees a truncated transfer, never a complete corrupted file.
+// the client sees a truncated transfer, never a complete corrupted file. A verified read stamps its copy's verified_at at
+// most once a day (Q-STOR-233).
 //
-// Only evidence about the stored object marks the blob corrupt: a Content-Length
-// different from the blob's size, or a body read to its end with another digest.
-// A transport error aborts the same way but changes no status. A store that answers
-// that the object does not exist marks the blob missing and returns ErrNotFound
-// (R-HA-024, R-STOR-027).
+// Only evidence about a stored object marks its copy: "no such object" marks it missing, a size other than its stored size
+// or a body read to its end with another digest corrupt; the blob's content state follows from its copies (R-STOR-052), so a
+// copy's damage changes the blob only when no other copy is present. A transport error or an open circuit marks nothing.
 //
 // The reader is charged to the memory of the request of ctx (WithMemory) from
 // before the object store is asked until it is closed: DownloadCost of the
 // object, or RangeCost of the range.
 func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (io.ReadCloser, error) {
+	copies, err := s.Copies(ctx, d)
+	if err != nil {
+		return nil, err
+	}
 	undo := func() {}
 	if s.memory != nil {
 		cost := DownloadCost(s.cfg, size)
@@ -48,28 +58,55 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 		}
 		undo = s.memory(ctx, cost)
 	}
-	body, info, err := s.objects.Get(ctx, s.Key(d), o.Range)
-	if err != nil {
-		undo()
-		if errors.Is(err, ErrNotFound) {
-			s.markMissing(ctx, d)
+	var unavailable error // the last transient failure or open circuit
+	var corrupt error     // the last copy found of another size
+	for _, cp := range s.conns.readOrder(copies) {
+		if cp.State != CopyPresent {
+			continue
 		}
-		return nil, mapStoreErr(err)
+		c, _ := s.conns.Get(cp.Connection)
+		if after, rejecting := c.Rejecting(); rejecting {
+			unavailable = &circuitOpenError{retry: after}
+			continue
+		}
+		body, info, err := c.Read(ctx, cp, o.Range)
+		switch {
+		case errors.Is(err, ErrNotFound):
+			s.metrics.fellOver(c.ID(), fallOverNotFound)
+			s.copyGone(ctx, d, c, cp)
+			continue
+		case err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) && ctx.Err() != nil:
+			undo()
+			return nil, err // the caller gave up
+		case err != nil:
+			s.metrics.fellOver(c.ID(), fallOverUnavailable)
+			unavailable = err
+			continue
+		}
+		if info.Size >= 0 && info.Size != cp.StoredSize { // -1: the response did not say; the digest check at the end decides
+			_ = body.Close()
+			s.metrics.fellOver(c.ID(), fallOverSize)
+			s.markCopy(ctx, d, c.ID(), CopyCorrupt)
+			corrupt = fmt.Errorf("%w: the object on connection %s has %d bytes, its copy row says %d", ErrCorrupt, c.ID(), info.Size, cp.StoredSize)
+			continue
+		}
+		if o.Range != nil || (!s.cfg.Download.Verify && !o.Verify) {
+			return &chargedBody{ReadCloser: body, undo: undo}, nil
+		}
+		return &verifyReader{
+			src: body, store: s, ctx: ctx, digest: d, size: cp.StoredSize, copy: cp, undo: undo,
+			hash: sha256.New(), hold: int(s.cfg.Download.HoldBack),
+			capacity: verifyBuffer(int(s.cfg.Download.BufferSize), int(s.cfg.Download.HoldBack), cp.StoredSize),
+		}, nil
 	}
-	if o.Range != nil || (!s.cfg.Download.Verify && !o.Verify) {
-		return &chargedBody{ReadCloser: body, undo: undo}, nil
+	undo()
+	switch {
+	case unavailable != nil:
+		return nil, mapStoreErr(unavailable)
+	case corrupt != nil:
+		return nil, corrupt
 	}
-	if info.Size >= 0 && info.Size != size { // -1: the response did not say; the digest check at the end decides
-		_ = body.Close()
-		undo()
-		s.markDamaged(ctx, d, "corrupt")
-		return nil, fmt.Errorf("%w: the object has %d bytes, the blob row says %d", ErrCorrupt, info.Size, size)
-	}
-	return &verifyReader{
-		src: body, store: s, ctx: ctx, digest: d, size: size, undo: undo,
-		hash: sha256.New(), hold: int(s.cfg.Download.HoldBack),
-		capacity: verifyBuffer(int(s.cfg.Download.BufferSize), int(s.cfg.Download.HoldBack), size),
-	}, nil
+	return nil, fmt.Errorf("%w: no connection of this replica holds a present copy of %s", ErrNotFound, d.Hex())
 }
 
 // chargedBody gives the memory of a reader back when it is closed.
@@ -96,28 +133,25 @@ func verifyBuffer(bufferSize, hold int, size int64) int {
 	return c
 }
 
-// markMissing records a read the store answered with "no such object": evidence about the object, as the 404 of the
-// scrub's existence check is (R-STOR-027). The row says missing from then on, every reader of the blob sees it in
-// PostgreSQL, and a commit of the same content writes the object again (R-STOR-005, R-HA-024).
+// copyGone records a read that a connection answered with "no such object": evidence about that copy (R-STOR-055). The copy
+// is missing from then on, its repair is queued, and the blob is missing only when no other copy is present; a commit of the
+// same content writes the object again (R-STOR-005, R-HA-024).
 //
-// A commit of the same content may have written the object again between the read and the mark; the mark, which
-// changes only an ok row, would then undo that repair. So the object is looked for once more after a mark, and a row
-// whose object is there again is ok (Q-STOR-151). Whichever order the repair and the mark take, the row ends ok when
-// the object is there: a repair after the look sets ok itself.
-func (s *Store) markMissing(ctx context.Context, d Digest) {
-	if !s.markDamaged(ctx, d, "missing") {
+// A repair may have written the object again between the read and the mark; the mark, which changes only a present copy,
+// would then undo it. So the object is looked for once more on the same connection after a mark, and a copy whose object is
+// there again with its stored size is present (Q-STOR-151). Whichever order the repair and the mark take, the copy ends
+// present when the object is there: a repair after the look sets it present itself.
+func (s *Store) copyGone(ctx context.Context, d Digest, c *Connection, cp Copy) {
+	if !s.markCopy(ctx, d, c.ID(), CopyMissing) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
-	if _, err := s.objects.Head(ctx, s.Key(d)); err != nil {
-		return // gone, or the store cannot say: the mark stays
+	info, err := c.Objects().Head(ctx, cp.ObjectKey)
+	if err != nil || (info.Size >= 0 && info.Size != cp.StoredSize) {
+		return // gone, of another size, or the store cannot say: the mark stays
 	}
-	if err := s.db.InTx(ctx, func(tx meta.Tx) error { return s.rows.MarkOK(ctx, tx, d) }); err != nil {
-		s.log.Error("could not mark a blob ok whose object is there again", "sha256", d.Hex(), "error", err)
-		return
-	}
-	s.log.Info("the object of a blob that a read found missing is there again", "sha256", d.Hex())
+	s.copyBack(ctx, d, c.ID())
 }
 
 // MissingRecheckInterval is how long a blob marked missing is answered from PostgreSQL alone before a read asks the object
@@ -125,20 +159,26 @@ func (s *Store) markMissing(ctx context.Context, d Digest) {
 // whose read looks. Per blob and across replicas, the store is asked at most once per interval.
 const MissingRecheckInterval = 30 * time.Second
 
-// RecheckMissing looks for the object of a blob marked missing once more, so that a mark does not outlive the loss it
-// records (Q-STOR-153): an object that is back (an operator restored it, or the store answered 404 for objects that exist,
-// as with a wrong storage.s3.prefix that was corrected) turns the row ok, and the caller serves it. At most one read per blob
-// and MissingRecheckInterval asks the store, whichever replica: the read whose statement moves the row's checked_at, the time
-// of its last existence check (R-STOR-027); every other read is refused from PostgreSQL as before (R-STOR-012). It reports
-// whether the row is ok now; a blob that is not marked missing, an object that is still gone, one of another size and a store
-// that cannot answer are false, and the interval starts again.
-func (s *Store) RecheckMissing(ctx context.Context, d Digest, size int64) bool {
+// RecheckMissing looks for the objects of a blob marked missing once more, so that a mark does not outlive the loss it
+// records (Q-STOR-153, R-STOR-055): each missing copy on a connection of this replica whose circuit is closed is asked with
+// one HeadObject, and an object that is back with the copy's stored size (an operator restored it, or the store answered 404
+// for objects that exist, as with a wrong prefix that was corrected) sets that copy present and the blob ok, and the caller
+// serves it. At most one read per blob and MissingRecheckInterval asks the store, whichever replica: the read whose statement
+// moves the row's checked_at, the recheck claim of a blob without a present copy; every other read is refused from
+// PostgreSQL as before (R-STOR-012). It reports whether the row is ok now; a blob that is not marked missing, objects that are
+// still gone, of another size, and a store that cannot answer are false, and the interval starts again. size is the blob's
+// size, which each copy's stored size replaces for its own check.
+func (s *Store) RecheckMissing(ctx context.Context, d Digest, _ int64) bool {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 	var claimed bool
+	var copies []Copy
 	if err := s.db.InTx(ctx, func(tx meta.Tx) error {
 		var err error
-		claimed, err = s.rows.ClaimRecheck(ctx, tx, d, MissingRecheckInterval)
+		if claimed, err = s.rows.ClaimRecheck(ctx, tx, d, MissingRecheckInterval); err != nil || !claimed {
+			return err
+		}
+		copies, err = s.rows.Copies(ctx, tx, d)
 		return err
 	}); err != nil {
 		s.log.Warn("could not claim the recheck of a blob marked missing", "sha256", d.Hex(), "error", err)
@@ -147,54 +187,34 @@ func (s *Store) RecheckMissing(ctx context.Context, d Digest, size int64) bool {
 	if !claimed {
 		return false
 	}
-	info, err := s.objects.Head(ctx, s.Key(d))
-	switch {
-	case errors.Is(err, ErrNotFound):
-		return false
-	case err != nil:
-		s.log.Warn("could not recheck a blob marked missing", "sha256", d.Hex(), "error", err)
-		return false
-	case info.Size >= 0 && info.Size != size:
-		s.log.Error("the object of a blob marked missing is back with another size", "sha256", d.Hex(), "size", info.Size, "want", size)
-		return false
-	}
-	if err := s.db.InTx(ctx, func(tx meta.Tx) error { return s.rows.MarkOK(ctx, tx, d) }); err != nil {
-		s.log.Error("could not mark a blob ok whose object is there again", "sha256", d.Hex(), "error", err)
-		return false
-	}
-	s.log.Info("the object of a blob marked missing is there again", "sha256", d.Hex())
-	return true
-}
-
-// markDamaged records a detection: content_status leaves 'ok', the counter
-// grows and the hook (the audit event) runs. It only ever changes a live row
-// that was ok, so a repair or a concurrent detection is not overwritten. It
-// reports whether the row changed.
-func (s *Store) markDamaged(ctx context.Context, d Digest, status string) bool {
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-	defer cancel()
-	var changed bool
-	err := s.db.InTx(ctx, func(tx meta.Tx) error {
-		var err error
-		changed, err = s.rows.MarkDamaged(ctx, tx, d, status)
-		return err
-	})
-	if err != nil {
-		s.log.Error("could not mark a blob damaged", "sha256", d.Hex(), "status", status, "error", err)
-		return false
-	}
-	if changed {
-		s.metrics.damage(status)
-		msg := "stored object failed verification"
-		if status == "missing" {
-			msg = "the object of a blob is missing from the object store"
+	back := false
+	for _, cp := range s.conns.readOrder(copies) {
+		if cp.State != CopyMissing {
+			continue
 		}
-		s.log.Error(msg, "sha256", d.Hex(), "status", status)
-		if s.onDamage != nil {
-			s.onDamage(ctx, d, status)
+		c, _ := s.conns.Get(cp.Connection)
+		if _, rejecting := c.Rejecting(); rejecting {
+			continue
 		}
+		info, err := c.Objects().Head(ctx, cp.ObjectKey)
+		switch {
+		case errors.Is(err, ErrNotFound):
+			continue
+		case err != nil:
+			s.log.Warn("could not recheck a copy of a blob marked missing", "sha256", d.Hex(), "connection", c.ID(), "error", err)
+			continue
+		case info.Size >= 0 && info.Size != cp.StoredSize:
+			s.log.Error("the object of a copy marked missing is back with another size", "sha256", d.Hex(), "connection", c.ID(),
+				"size", info.Size, "want", cp.StoredSize)
+			continue
+		}
+		back = s.copyBack(ctx, d, c.ID()) || back
 	}
-	return changed
+	if !back {
+		return false
+	}
+	row, err := s.Lookup(ctx, d)
+	return err == nil && row.ContentStatus == StatusOK
 }
 
 // verifyReader hashes what it reads and withholds the last hold bytes. It reads
@@ -206,7 +226,8 @@ type verifyReader struct {
 	store    *Store
 	ctx      context.Context
 	digest   Digest
-	size     int64
+	size     int64 // the copy's stored size
+	copy     Copy  // the copy the bytes come from
 	hash     hash.Hash
 	hold     int
 	capacity int
@@ -296,15 +317,18 @@ func (v *verifyReader) fill() {
 	v.ready = max(0, v.k-v.hold)
 }
 
-// finish compares the complete body with the blob row.
+// finish compares the complete body with the blob and the copy: a match stamps the copy verified (Q-STOR-233), a mismatch
+// marks it corrupt (R-STOR-055).
 func (v *verifyReader) finish() error {
 	var sum Digest
 	v.hash.Sum(sum[:0])
 	if v.total == v.size && sum == v.digest {
+		v.store.stampVerified(v.ctx, v.digest, v.copy)
 		return nil
 	}
-	v.store.markDamaged(v.ctx, v.digest, "corrupt")
-	return fmt.Errorf("%w: read %d bytes with SHA-256 %s, expected %d bytes with %s", ErrCorrupt, v.total, sum.Hex(), v.size, v.digest.Hex())
+	v.store.markCopy(v.ctx, v.digest, v.copy.Connection, CopyCorrupt)
+	return fmt.Errorf("%w: read %d bytes with SHA-256 %s from connection %s, expected %d bytes with %s", ErrCorrupt, v.total, sum.Hex(),
+		v.copy.Connection, v.size, v.digest.Hex())
 }
 
 // Close closes the source and releases the buffer.

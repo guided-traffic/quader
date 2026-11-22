@@ -30,7 +30,7 @@ import (
 // names, and the replayer over the restore's own session.
 func realJournal(cfg *config.Config) func(context.Context, restore.JournalEnv) (restore.Journal, error) {
 	return func(ctx context.Context, e restore.JournalEnv) (restore.Journal, error) {
-		s3cfg := cfg.Storage.S3
+		s3cfg := firstS3(cfg.Storage)
 		s3cfg.Bucket, s3cfg.Prefix = e.SourceBucket, e.SourcePrefix
 		reader, err := replay.OpenJournal(ctx, s3cfg, outbound.New(cfg.Proxy.Outbound), e.CredentialsFile)
 		if err != nil {
@@ -100,11 +100,11 @@ func TestR_BAK_029_RevocationsSurviveTheRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := loaded.Config
-	client, err := s3.NewFromFactory(ctx, cfg.Storage.S3, outbound.New(cfg.Proxy.Outbound))
+	client, err := s3.NewFromFactory(ctx, firstS3(cfg.Storage), outbound.New(cfg.Proxy.Outbound))
 	if err != nil {
 		t.Fatal(err)
 	}
-	in := &install{t: t, dbName: e.stack.Database(), dbCfg: cfg.Database, s3cfg: cfg.Storage.S3, obj: client, client: client, prefix: e.prefix}
+	in := &install{t: t, dbName: e.stack.Database(), dbCfg: cfg.Database, s3cfg: firstS3(cfg.Storage), obj: client, client: client, prefix: e.prefix}
 	in.s3cfg.Prefix = e.prefix
 	in.dbCfg.Preflight.AllowSuperuser = true
 	tc := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), "none")

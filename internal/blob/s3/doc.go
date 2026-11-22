@@ -6,7 +6,7 @@
 // adds what the SDK does not do for quader: the credential sources of R-STOR-031
 // (static credentials read from files and re-read when they change, web
 // identity, role assumption), the stall detection of R-STOR-033 (a transfer
-// fails when no byte moves for storage.s3.http.idle_transfer_timeout) and the
+// fails when no byte moves for storage.object_store.http.idle_transfer_timeout) and the
 // classification of errors for the circuit breaker (blob.StoreError).
 //
 // Multipart orchestration is not here: quader's own part loop lives in

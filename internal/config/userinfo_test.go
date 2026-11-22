@@ -91,27 +91,6 @@ func TestEdgeSectionRules(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-013 the URL keys of storage.s3 refuse user information and hide the password", func(t *testing.T) {
-		for _, c := range []struct{ yaml, key, hint string }{
-			{"endpoint: https://ak:s3cr3t-pw@s3.example", "storage.s3.endpoint", "storage.s3.credentials.access_key_id_file"},
-			{"credentials:\n      sts_endpoint: https://ak:s3cr3t-pw@sts.example", "storage.s3.credentials.sts_endpoint", ""},
-			{"presign:\n      endpoint: https://ak:s3cr3t-pw@blobs.example", "storage.s3.presign.endpoint", ""},
-			{"http:\n      proxy_url: http://ak:s3cr3t-pw@proxy.example:3128", "storage.s3.http.proxy_url", "storage.s3.http.proxy_credentials_file"},
-		} {
-			_, err := loadEdge(t, "storage:\n  s3:\n    "+c.yaml+"\n")
-			if err == nil || !strings.Contains(err.Error(), c.key) || !strings.Contains(err.Error(), "user information") {
-				t.Errorf("%s: err = %v", c.key, err)
-				continue
-			}
-			if strings.Contains(err.Error(), "s3cr3t-pw") {
-				t.Errorf("%s: the message prints the password: %v", c.key, err)
-			}
-			if c.hint != "" && !strings.Contains(err.Error(), c.hint) {
-				t.Errorf("%s: no hint %s in %v", c.key, c.hint, err)
-			}
-		}
-	})
-
 	t.Run("R-OPS-005 a base_url with user information is refused and the message hides the password", func(t *testing.T) {
 		_, err := loadEdge(t, "server:\n  base_url: https://u:s3cr3t-pw@quader.example\n")
 		if err == nil || !strings.Contains(err.Error(), "server.base_url") || strings.Contains(err.Error(), "s3cr3t-pw") {

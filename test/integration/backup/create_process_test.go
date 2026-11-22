@@ -19,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -34,10 +35,7 @@ func (in *install) processEnv(t *testing.T, r *rig, extra ...string) []string {
 		"QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=quader",
 		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/keys/2026-10.key\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 		"QUADER_SERVER_OPS_LISTEN=127.0.0.1:0", "QUADER_LOG_LEVEL=warn",
-		"QUADER_STORAGE_S3_ENDPOINT="+s.Endpoint, "QUADER_STORAGE_S3_REGION="+s.Region, "QUADER_STORAGE_S3_BUCKET="+s.Bucket,
-		"QUADER_STORAGE_S3_PREFIX="+s.Prefix, "QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE="+s.CAFile,
-		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static", "QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE="+s.Credentials.AccessKeyIDFile,
-		"QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE="+s.Credentials.SecretAccessKeyFile,
+		"QUADER_STORAGE_CONNECTIONS="+connectionsJSON(t, s),
 		"QUADER_BACKUP_TARGET_ENDPOINT="+b.Endpoint, "QUADER_BACKUP_TARGET_REGION="+b.Region, "QUADER_BACKUP_TARGET_BUCKET="+b.Bucket,
 		"QUADER_BACKUP_TARGET_PREFIX="+b.Prefix, "QUADER_BACKUP_TARGET_FORCE_PATH_STYLE=true", "QUADER_BACKUP_TARGET_CA_FILE="+b.CAFile,
 		"QUADER_BACKUP_TARGET_CREDENTIALS_SOURCE=static", "QUADER_BACKUP_TARGET_CREDENTIALS_ACCESS_KEY_ID_FILE="+b.Credentials.AccessKeyIDFile,
@@ -194,4 +192,17 @@ func TestR_BAK_010_AKilledRunIsTakenOverAfterItsLease(t *testing.T) {
 	if got := len(listManifests(t, r)); got != 1 {
 		t.Fatalf("the target holds %d manifests, want exactly the retry's", got)
 	}
+}
+
+// connectionsJSON is QUADER_STORAGE_CONNECTIONS of the one connection whose client configuration is s (storage.md R-STOR-050).
+func connectionsJSON(t *testing.T, s config.StorageS3) string {
+	t.Helper()
+	b, err := json.Marshal([]map[string]any{{
+		"endpoint": s.Endpoint, "region": s.Region, "bucket": s.Bucket, "prefix": s.Prefix, "force_path_style": true, "ca_file": s.CAFile,
+		"credentials_source": "static", "access_key_id_file": s.Credentials.AccessKeyIDFile, "secret_access_key_file": s.Credentials.SecretAccessKeyFile,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
 }

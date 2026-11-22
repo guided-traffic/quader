@@ -26,11 +26,13 @@ import (
 
 type object struct {
 	data     []byte
+	meta     blob.Metadata
 	modified time.Time
 }
 
 type upload struct {
 	key       string
+	meta      blob.Metadata
 	initiated time.Time
 	parts     map[int][]byte
 }
@@ -53,6 +55,10 @@ type Store struct {
 	fault   func(op, key string) error
 	getBody func(io.ReadCloser) io.ReadCloser
 	counts  map[string]int
+
+	// endpoint and bucket place the store among the buckets of one endpoint (NewEndpoint); nil for a store of its own.
+	endpoint *Endpoint
+	bucket   string
 }
 
 var _ blob.ObjectStore = (*Store)(nil)
@@ -165,7 +171,7 @@ func etag(data []byte) string {
 }
 
 // Put implements blob.ObjectStore.
-func (s *Store) Put(_ context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum) error {
+func (s *Store) Put(_ context.Context, key string, body io.ReadSeeker, size int64, sum blob.Checksum, md blob.Metadata) error {
 	if err := s.enter("put", key); err != nil {
 		return err
 	}
@@ -180,13 +186,13 @@ func (s *Store) Put(_ context.Context, key string, body io.ReadSeeker, size int6
 		return err
 	}
 	s.mu.Lock()
-	s.objects[key] = &object{data: data, modified: s.Now()}
+	s.objects[key] = &object{data: data, meta: cloneMeta(md), modified: s.Now()}
 	s.mu.Unlock()
 	return nil
 }
 
 // CreateMultipart implements blob.ObjectStore.
-func (s *Store) CreateMultipart(_ context.Context, key, _ string) (string, error) {
+func (s *Store) CreateMultipart(_ context.Context, key, _ string, md blob.Metadata) (string, error) {
 	if err := s.enter("create_multipart", key); err != nil {
 		return "", err
 	}
@@ -194,7 +200,7 @@ func (s *Store) CreateMultipart(_ context.Context, key, _ string) (string, error
 	defer s.mu.Unlock()
 	s.nextID++
 	id := "upload-" + strconv.Itoa(s.nextID)
-	s.uploads[id] = &upload{key: key, initiated: s.Now(), parts: map[int][]byte{}}
+	s.uploads[id] = &upload{key: key, meta: cloneMeta(md), initiated: s.Now(), parts: map[int][]byte{}}
 	return id, nil
 }
 
@@ -249,7 +255,7 @@ func (s *Store) CompleteMultipart(_ context.Context, key, id string, parts []blo
 		all = append(all, data...)
 	}
 	delete(s.uploads, id)
-	s.objects[key] = &object{data: all, modified: s.Now()}
+	s.objects[key] = &object{data: all, meta: u.meta, modified: s.Now()}
 	return nil
 }
 
@@ -265,7 +271,7 @@ func (s *Store) AbortMultipart(_ context.Context, key, id string) error {
 }
 
 // Copy implements blob.ObjectStore.
-func (s *Store) Copy(_ context.Context, srcKey, dstKey string, size int64) error {
+func (s *Store) Copy(_ context.Context, srcKey, dstKey string, size int64, md blob.Metadata) error {
 	if err := s.enter("copy", srcKey); err != nil {
 		return err
 	}
@@ -278,7 +284,7 @@ func (s *Store) Copy(_ context.Context, srcKey, dstKey string, size int64) error
 	if size >= 0 && int64(len(o.data)) != size {
 		return fmt.Errorf("copy of %s: the object has %d bytes, declared %d", srcKey, len(o.data), size)
 	}
-	s.objects[dstKey] = &object{data: bytes.Clone(o.data), modified: s.Now()}
+	s.objects[dstKey] = copied(o, md, s.Now())
 	return nil
 }
 
@@ -293,7 +299,7 @@ func (s *Store) Head(_ context.Context, key string) (blob.ObjectInfo, error) {
 	if !ok {
 		return blob.ObjectInfo{}, blob.ErrNotFound
 	}
-	return blob.ObjectInfo{Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified}, nil
+	return blob.ObjectInfo{Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified, Metadata: cloneMeta(o.meta)}, nil
 }
 
 // Get implements blob.ObjectStore.
@@ -307,7 +313,7 @@ func (s *Store) Get(_ context.Context, key string, rng *blob.ByteRange) (io.Read
 	if !ok {
 		return nil, blob.ObjectInfo{}, blob.ErrNotFound
 	}
-	info := blob.ObjectInfo{Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified}
+	info := blob.ObjectInfo{Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified, Metadata: cloneMeta(o.meta)}
 	if s.UnknownSize {
 		info.Size = -1
 	}

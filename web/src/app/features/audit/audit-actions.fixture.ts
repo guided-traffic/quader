@@ -179,6 +179,8 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'system.maintenance_mode_changed',
   'system.restore.journal_replayed',
   'system.restored',
+  'system.storage.connection_added',
+  'system.storage.connection_forgotten',
   'system.storage.versions_restored',
   'system.task_triggered',
   'technicaltoken.created',

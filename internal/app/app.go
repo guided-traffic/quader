@@ -170,16 +170,18 @@ type App struct {
 	// built, and frozen, before the area that owns the service is wired.
 	auditStore late[*audit.Store]
 	gc         late[*blob.Collector]
-	repoSvc    late[*repository.Service]
-	itemStore  late[*items.Store]
-	tokenSvc   late[*token.Service]
-	folder     late[*invalidation.Folder]
-	reseal     late[resealDeps]
-	host       late[formats.Host]
-	semver2    late[*nugetdata.Semver2]
-	ociSweep   late[*ocidata.Sweeper]
-	debRemote  late[*debdata.RemoteJobs]
-	debIndexer late[*debdata.Indexer]
+	// objectStores is the replica's ordered set of object-store connections, for the registry's object-store view (R-STOR-060).
+	objectStores late[*blob.Connections]
+	repoSvc      late[*repository.Service]
+	itemStore    late[*items.Store]
+	tokenSvc     late[*token.Service]
+	folder       late[*invalidation.Folder]
+	reseal       late[resealDeps]
+	host         late[formats.Host]
+	semver2      late[*nugetdata.Semver2]
+	ociSweep     late[*ocidata.Sweeper]
+	debRemote    late[*debdata.RemoteJobs]
+	debIndexer   late[*debdata.Indexer]
 	// ansibleReindex is the handler of the job ansible-reindex (wire_ansible.go).
 	ansibleReindex late[jobs.Handler]
 	// ansibleDocsFill is the handler of the job ansible-docs-fill (wire_ansible.go).

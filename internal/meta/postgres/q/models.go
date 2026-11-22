@@ -339,7 +339,28 @@ type Blob struct {
 	StateChangedAt  pgtype.Timestamptz
 	ObjectDeletedAt pgtype.Timestamptz
 	CheckedAt       pgtype.Timestamptz
-	DeepCheckedAt   pgtype.Timestamptz
+}
+
+type BlobCopy struct {
+	Sha256         []byte
+	ConnectionID   string
+	ObjectKey      string
+	StoredSize     int64
+	StorageKeyID   pgtype.Text
+	State          string
+	CreatedAt      pgtype.Timestamptz
+	VerifiedAt     pgtype.Timestamptz
+	CheckedAt      pgtype.Timestamptz
+	StateChangedAt pgtype.Timestamptz
+}
+
+type BlobCopyQueue struct {
+	ConnectionID  string
+	Sha256        []byte
+	EnqueuedAt    pgtype.Timestamptz
+	Attempts      int32
+	NextAttemptAt pgtype.Timestamptz
+	LastError     pgtype.Text
 }
 
 type BlobGcQueue struct {
@@ -1229,6 +1250,7 @@ type Replica struct {
 	StartedAt         pgtype.Timestamptz
 	HeartbeatAt       pgtype.Timestamptz
 	Runtime           json.RawMessage
+	ObjectStore       json.RawMessage
 }
 
 type Repository struct {
@@ -1271,6 +1293,11 @@ type RevocationOutbox struct {
 	At    pgtype.Timestamptz
 	Event string
 	Entry json.RawMessage
+}
+
+type RevocationOutboxShipped struct {
+	OutboxID     pgtype.UUID
+	ConnectionID string
 }
 
 type ScannerReplica struct {
@@ -1530,6 +1557,20 @@ type SigningWork struct {
 	Code      pgtype.Text
 }
 
+type StorageConnection struct {
+	ID             string
+	Bucket         string
+	Prefix         string
+	Encrypted      bool
+	Capabilities   json.RawMessage
+	FirstSeenAt    pgtype.Timestamptz
+	FilledAt       pgtype.Timestamptz
+	DrainedAt      pgtype.Timestamptz
+	RetiredAt      pgtype.Timestamptz
+	PassStartedAt  pgtype.Timestamptz
+	LastFullPassAt pgtype.Timestamptz
+}
+
 type StorageUsageDelta struct {
 	ID            int64
 	RepoID        pgtype.Int8
@@ -1616,6 +1657,7 @@ type UploadSession struct {
 	LastActivityAt  pgtype.Timestamptz
 	ItemID          pgtype.Int8
 	Cleaned         bool
+	ConnectionID    string
 }
 
 type UploadSessionPart struct {

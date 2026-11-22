@@ -54,8 +54,8 @@ func TestR_BAK_020_Preconditions(t *testing.T) {
 	t.Run("R-BAK-020 a foreign object under the blob prefix exits 6 at check 5", func(t *testing.T) {
 		dst := src.destination()
 		c := dst.blobClient()
-		key := dst.cfg.Storage.S3.Prefix + "/stray.txt"
-		if err := c.Put(context.Background(), key, strings.NewReader("x"), 1, blob.Checksum{}); err != nil {
+		key := firstS3(dst.cfg.Storage).Prefix + "/stray.txt"
+		if err := c.Put(context.Background(), key, strings.NewReader("x"), 1, blob.Checksum{}, nil); err != nil {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { _ = c.Delete(context.Background(), key) })

@@ -127,23 +127,41 @@ func newInstall(t *testing.T) *install {
 	testenv.RemoveObjectsAtCleanup(t, in.s3cfg.Bucket, in.prefix)
 
 	storage := blobtest.Storage(t, t.TempDir())
-	storage.S3 = in.s3cfg
+	storage.Connections = []config.StorageConnection{connectionOf(in.s3cfg)}
 	storage.Upload.BlobWaitTimeout = 60 * time.Second
 	storage.GC.GracePeriod = 0
 	storage.GC.DeleteSettle = 150 * time.Millisecond
 	storage.GC.HandoverDelay = 1200 * time.Millisecond
 	storage.GC.BatchSize = 25
 	in.gc = storage.GC
-	in.store, err = blob.New(storage, in.obj, in.web, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond))
+	conns, err := blob.NewConnections(blob.NewConnection(storage.Connections[0], in.obj))
 	if err != nil {
 		t.Fatal(err)
 	}
-	in.coll = blob.NewCollector(storage.GC, storage.S3.Prefix, in.obj, in.web, blob.WithCollectorLogger(quiet))
+	in.store, err = blob.New(storage, conns, in.web, blob.WithLogger(quiet), blob.WithWaitPoll(25*time.Millisecond))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// the copy rows refer to the connection's row (R-STOR-052)
+	if err := in.store.RecordConnections(ctx); err != nil {
+		t.Fatal(err)
+	}
+	in.coll = blob.NewCollector(storage.GC, in.s3cfg.Prefix, in.obj, in.web, blob.WithCollectorLogger(quiet))
 	return in
 }
 
+// connectionOf is the element of the one connection default whose client configuration is cfg (storage.md R-STOR-050).
+func connectionOf(cfg config.StorageS3) config.StorageConnection {
+	p := cfg.Prefix
+	return config.StorageConnection{
+		Endpoint: cfg.Endpoint, Region: cfg.Region, Bucket: cfg.Bucket, Prefix: &p, ForcePathStyle: cfg.ForcePathStyle,
+		AllowInsecureEndpoint: cfg.AllowInsecureEndpoint, CAFile: cfg.CAFile, PayloadChecksum: cfg.PayloadChecksum,
+		CredentialsSource: cfg.Credentials.Source, AccessKeyIDFile: cfg.Credentials.AccessKeyIDFile, SecretAccessKeyFile: cfg.Credentials.SecretAccessKeyFile,
+	}.WithDefaults()
+}
+
 func sourceConfig(t testing.TB, dir string) config.StorageS3 {
-	cfg := blobtest.Storage(t, dir).S3
+	cfg := blobtest.S3(t)
 	cfg.Endpoint = testenv.Get(t, "QUADER_TEST_S3_ENDPOINT")
 	cfg.Region = testenv.Get(t, "QUADER_TEST_S3_REGION")
 	cfg.Bucket = testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS")
@@ -254,7 +272,7 @@ func (in *install) backupConfig(t testing.TB) config.Backup {
 	l, err := config.Load(config.Options{
 		ReadFile: func(string) ([]byte, error) { return nil, fs.ErrNotExist },
 		Environ: []string{
-			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_S3_BUCKET=blobs",
+			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_CONNECTIONS=[{\"bucket\":\"blobs\"}]",
 			"QUADER_BACKUP_TARGET_BUCKET=" + testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"),
 		},
 		Command: config.CommandBackup,
@@ -376,4 +394,14 @@ func pgConfig(t testing.TB, dir, name string) config.Database {
 		ServerKeepalive: config.DatabaseServerKeepalive{Idle: 60 * time.Second, Interval: 10 * time.Second, Count: 6},
 		Preflight:       config.DatabasePreflight{ConnectionBudget: "enforce", ReservedConnections: 10, AllowSuperuser: true},
 	}
+}
+
+// firstS3 is the client configuration of the first connection of a storage configuration loaded for the stack; it panics
+// when its files cannot be read, which a test configuration never has.
+func firstS3(s config.Storage) config.StorageS3 {
+	c, err := s.FirstClient()
+	if err != nil {
+		panic(err)
+	}
+	return c
 }

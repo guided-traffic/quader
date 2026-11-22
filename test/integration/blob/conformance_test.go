@@ -19,7 +19,7 @@ import (
 //	go test -tags integration -run Conformance ./test/integration/blob/...
 func TestConformance(t *testing.T) {
 	e := newS3(t, "conformance")
-	opts := blob.ConformanceOptions{Prefix: e.prefix, Replica: "it-" + runID(t), HTTP: e.http}
+	opts := blob.ConformanceOptions{Prefix: e.prefix, Replica: "it-" + runID(t), HTTP: e.http, PayloadChecksum: e.conn.PayloadChecksum}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -35,8 +35,14 @@ func TestConformance(t *testing.T) {
 		}
 		t.Run(name+c.Name, func(t *testing.T) {
 			r := blob.RunCheck(ctx, e.raw, opts, c)
-			if !r.OK {
+			switch {
+			case !r.OK && c.Capability:
+				// a capability the store lacks has a stated consequence and is recorded, not refused (R-STOR-035, Q-STOR-248)
+				t.Logf("capability absent: %s", r.Error)
+			case !r.OK:
 				t.Fatal(r.Error)
+			case r.Note != "":
+				t.Logf("%s: %s", c.Name, r.Note)
 			}
 		})
 	}
