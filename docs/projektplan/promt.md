@@ -1648,7 +1648,9 @@ runs are in `git log`; this section holds the current state.
   flush between its steps, with exact counts). **By the development agent on the commit as it landed, each
   exit 0:** build, the full unit run, generate-check, the evidence, links and check, the complexity check,
   the lint; the area `limits` whole under the lock by its agent (114 s). The owner's UI backend started
-  with it before the push. **Its release was cut at 03:07.** **What the second recurrence taught:** the plan had carried the first
+  with it before the push. **Its release was cut at 03:07,** image and chart were published at 03:13, and
+  **the owner's installation runs it since 03:15** (read on the cluster at 03:15: every Deployment ready, no
+  restart, no error line; its replicas started fresh, so the buffers' growth is gone with them). **What the second recurrence taught:** the plan had carried the first
   failure as an open finding whose cause was not known, with the instruction to print the rows at the next
   one; the printed row and the replica's log were what made it solvable in twenty minutes. **Not known:**
   the windows' width on the runners; how much the buffers of long-running replicas had grown. **The rest of
