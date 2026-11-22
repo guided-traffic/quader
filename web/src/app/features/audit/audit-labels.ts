@@ -365,6 +365,12 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.system.storage.connection_added:Object-store connection seen for the first time`;
     case 'system.storage.connection_forgotten':
       return $localize`:@@audit.action.system.storage.connection_forgotten:Object-store connection forgotten`;
+    case 'system.storage.key_generation_added':
+      return $localize`:@@audit.action.system.storage.key_generation_added:New generation of a storage key drawn`;
+    case 'system.storage.keys_exported':
+      return $localize`:@@audit.action.system.storage.keys_exported:Storage keys exported`;
+    case 'system.storage.keys_imported':
+      return $localize`:@@audit.action.system.storage.keys_imported:Storage keys imported`;
     case 'system.storage.versions_restored':
       return $localize`:@@audit.action.system.storage.versions_restored:Deleted storage objects restored`;
     case 'system.task_triggered':

@@ -27,7 +27,7 @@ parallel: it says which package owns which file, which seams join them, how a re
   is true of the closure is: `go list -deps ./internal/bastion/server` also holds `internal/meta`, `meta/postgres`, `meta/postgres/q`,
   `backup/tables`, `formats/catalog` (through `internal/cluster`, whose change log and locks share its package with the Valkey client),
   `internal/audit`, `auth/scope`, `ci/claims`, `ci/reason` (through `internal/httpserver`'s request context) and `internal/blob` (through
-  `blob/s3`). They are compiled in and never started; `bastionTransitive()` lists each with its importer and reason, any other package that
+  `blob/s3`; it brings `blob/blobcrypt` again, which the cache imports itself, for `blob.Store.CopyDataKey`). They are compiled in and never started; `bastionTransitive()` lists each with its importer and reason, any other package that
   enters the closure fails the rule with the chain, and `TestR_BAS_001_TheRoleOpensNoConnectionToPostgreSQL`
   ([server](../../internal/bastion/server/nopostgres_test.go)) starts the role with a trap where PostgreSQL would be. Narrowing them means
   splitting those three platform packages ([H-473](../spec/bastion.md#h-473--the-roles-binary-contains-packages-of-the-main-installation-it-never-starts));

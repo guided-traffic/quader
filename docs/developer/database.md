@@ -762,6 +762,20 @@ The statements are in [signing_attest.sql](../../internal/meta/postgres/queries/
 signature with `identity_id`, and stage 1's discovery (`SignatureDiscoverItems`) leaves the job's referrer manifests out. The number 00105
 follows 00104_signature_releases.
 
+## The keys of encrypted stored content (00107)
+
+[00107_storage_keys](../../internal/meta/postgres/migrations/00107_storage_keys.sql) is an expand step of package 2 of the encryption of
+stored content ([stored-content-encryption.md](stored-content-encryption.md#package-2-the-keys-as-built), [spec](../spec/storage.md)
+R-STOR-083): `storage_keys`, a row per storage key or name key ever drawn or imported, never deleted, with the key sealed by the key ring under
+its `key_id` (the sealed column `keys.Column()`); CHECKs that the identifier names the row's kind, connection and generation (Q-STOR-324), a
+unique key per connection, kind and generation and a partial unique index of the active key per connection and kind, which decides two
+replicas that draw at once; no foreign key, since `storage_connections` is transient in a backup and a key outlives its connection. Export
+class `data` ([tables_storage_keys.go](../../internal/meta/postgres/tables_storage_keys.go)). It also adds `storage_connections.keyed_names`,
+`upload_sessions.sealed_data_key` (the sealed column `keys.SessionColumn()`) and `sealed_segments`, `upload_session_parts.stored_size` and
+`stored_sha256`, which package 3 writes, and the row `storage_keys` of `cluster_epoch`. The statements are in
+[storage_keys.sql](../../internal/meta/postgres/queries/storage_keys.sql). No column is a revision. The number 00107 follows
+00106_object_store_connections.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

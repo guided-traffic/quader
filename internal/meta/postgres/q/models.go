@@ -1569,6 +1569,18 @@ type StorageConnection struct {
 	RetiredAt      pgtype.Timestamptz
 	PassStartedAt  pgtype.Timestamptz
 	LastFullPassAt pgtype.Timestamptz
+	KeyedNames     bool
+}
+
+type StorageKey struct {
+	KeyID        string
+	ConnectionID string
+	Kind         string
+	Generation   int32
+	SealedKey    string
+	State        string
+	CreatedAt    pgtype.Timestamptz
+	RetiredAt    pgtype.Timestamptz
 }
 
 type StorageUsageDelta struct {
@@ -1658,14 +1670,18 @@ type UploadSession struct {
 	ItemID          pgtype.Int8
 	Cleaned         bool
 	ConnectionID    string
+	SealedDataKey   pgtype.Text
+	SealedSegments  int64
 }
 
 type UploadSessionPart struct {
-	SessionID  pgtype.UUID
-	PartNumber int32
-	Size       int64
-	Etag       string
-	Sha256     []byte
+	SessionID    pgtype.UUID
+	PartNumber   int32
+	Size         int64
+	Etag         string
+	Sha256       []byte
+	StoredSize   pgtype.Int8
+	StoredSha256 []byte
 }
 
 type UploadSessionTail struct {

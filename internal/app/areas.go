@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/blob"
+	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/files"
@@ -56,8 +57,9 @@ type auditArea struct {
 // blobArea is the blob store; gc is the collector and nil on a replica that
 // claims no jobs.
 type blobArea struct {
-	store *blob.Store
-	gc    *blob.Collector
+	store       *blob.Store
+	gc          *blob.Collector
+	storageKeys *storagekeys.Holder // the keys of the encrypted connections (wire_storage_keys.go)
 }
 
 // valkeyArea is the Valkey client; it never blocks on an unreachable Valkey

@@ -3,8 +3,8 @@
 Status: specified on 2026-11-22, not built ([bastion.md](../spec/bastion.md#the-handover-per-blob) R-BAS-070 to R-BAS-079;
 [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096;
 [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward)).
-Nothing of it runs: no forward is answered with a handover, `blob.Store.CopyDataKey` does not exist, and a Bastion makes no request to the
-main installation's object store. Every gap below is dormant until the design is built and an administrator switches the handover on for a
+Nothing of it runs: no forward is answered with a handover, `blob.Store.CopyDataKey` exists (encryption's package 2) but nothing calls it,
+and a Bastion makes no request to the main installation's object store. Every gap below is dormant until the design is built and an administrator switches the handover on for a
 Bastion registration; the sections describe that design.
 
 The perspective of this page is what changes in the trust between the main installation, a Bastion in the DMZ and the object store when a

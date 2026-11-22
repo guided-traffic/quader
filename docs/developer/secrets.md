@@ -90,9 +90,11 @@ the composition root calls before it serves.
 | `repository_secrets.sealed` ([secret_columns.go](../../internal/repository/secret_columns.go)) | `repo_id,field` | the remote settings of a repository: the password of the upstream credential (R-REPO-033) | `repository.ResealSecrets` ([secrets_store.go](../../internal/repository/secrets_store.go)): the walk over the column in batches of one transaction each; a value that does not open is counted as failed and left alone. The task handler `secrets-reencrypt` in [wire_api.go](../../internal/app/wire_api.go) calls it and fails the job when a value failed |
 | `deb_signing_keys.private_key` ([tables_deb.go](../../internal/formatdata/deb/tables_deb.go)) | `id` | the private key of a Debian repository's signing key; NULL once the key is retired | `debdata.ResealSigningKeys` ([reseal.go](../../internal/formatdata/deb/reseal.go)): the same walk, called by the same task handler |
 | `signing_identities.sealed_key` ([key.go](../../internal/signing/key/key.go)) | `id` | the private key of a signing identity uploaded in the admin area (R-SIG-047); NULL for the identity of the Helm values | `signingkey.Reseal` ([key.go](../../internal/signing/key/key.go)): the same walk, called by the same task handler |
+| `storage_keys.sealed_key` ([columns.go](../../internal/blob/keys/columns.go)) | `key_id` | a storage key or name key of an encrypted connection (R-STOR-083); never NULL, never deleted | `keys.Reseal` ([reseal.go](../../internal/blob/keys/reseal.go)): the same walk over both columns of the storage keys, called by the same task handler through `resealStorageKeys` ([wire_storage_keys.go](../../internal/app/wire_storage_keys.go)) |
+| `upload_sessions.sealed_data_key` ([columns.go](../../internal/blob/keys/columns.go)) | `id` | the data key of an open upload session on an encrypted connection (R-STOR-081), sealed and opened with `keys.SealSessionKey` and `keys.OpenSessionKey`; NULL on a plain connection, and nothing writes it before package 3 of the encryption | `keys.Reseal`, as above |
 
 The handler fails the job permanently, naming the column, when a column is registered without a walk of its own; the job's
-result `columns` is the number of registered columns (three).
+result `columns` is the number of registered columns (five).
 
 For `repository_secrets.sealed` the row key is `secrets.Row(<repository id as text>, <JSON pointer of the field>)`. `repository.SealSecret` and
 `repository.OpenSecret` are the only callers of `Seal` and `Open` for this column, so the row key is built in one place.

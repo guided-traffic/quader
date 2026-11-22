@@ -9393,7 +9393,7 @@
     </unit>
     <unit id="audit.category.system">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:377</note>
       </notes>
       <segment>
         <source>System</source>
@@ -17893,7 +17893,7 @@
     </unit>
     <unit id="audit.category.config">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:379</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -18542,7 +18542,7 @@
     </unit>
     <unit id="audit.outcome.success">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:384</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:390</note>
       </notes>
       <segment>
         <source>Success</source>
@@ -24028,7 +24028,7 @@
     </unit>
     <unit id="audit.category.webhook">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:381</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -29032,6 +29032,33 @@
         <target>Objektspeicher-Verbindung aufgegeben</target>
       </segment>
     </unit>
+    <unit id="audit.action.system.storage.key_generation_added">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
+      </notes>
+      <segment>
+        <source>New generation of a storage key drawn</source>
+        <target>Neue Generation eines Speicherschlüssels erzeugt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.system.storage.keys_exported">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
+      </notes>
+      <segment>
+        <source>Storage keys exported</source>
+        <target>Speicherschlüssel exportiert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.system.storage.keys_imported">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
+      </notes>
+      <segment>
+        <source>Storage keys imported</source>
+        <target>Speicherschlüssel importiert</target>
+      </segment>
+    </unit>
     <unit id="audit.action.system.storage.versions_restored">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:275</note>
@@ -30444,7 +30471,7 @@
     </unit>
     <unit id="audit.outcome.denied">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:388</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:394</note>
       </notes>
       <segment>
         <source>Denied</source>
@@ -30583,7 +30610,7 @@
     </unit>
     <unit id="audit.category.content">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -30827,7 +30854,7 @@
     </unit>
     <unit id="audit.outcome.failure">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:386</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:392</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -35445,7 +35472,7 @@
     </unit>
     <unit id="audit.outcome.warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:392</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:398</note>
       </notes>
       <segment>
         <source>Warning</source>

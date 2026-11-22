@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/audit"
@@ -233,7 +234,8 @@ type resealDeps struct {
 // (R-ARCH-021, R-OPS-019): no schedule, and the trigger refuses it while the key
 // rings of the live replicas are incompatible (internal/api/v1). The job reseals
 // every value of the sealed-column registry that is not under the active key. The
-// sealed columns are the repository secrets, the private keys of the Debian signing keys and the uploaded keys of the signing identity: the job walks each in batches
+// sealed columns are the repository secrets, the private keys of the Debian signing keys, the uploaded keys of the signing identity, and the storage keys
+// with the open upload sessions' data keys (wire_storage_keys.go): the job walks each in batches
 // of one transaction each and fails when a value could not be opened (a key the
 // ring lacks, a moved or damaged value); a column registered later without a walk
 // of its own fails the job permanently and names it. The handler finds the
@@ -244,7 +246,8 @@ func (a *App) registerSecretsReencrypt(r *jobs.Registry) {
 		Queue: "maintenance", DedupMode: jobs.Exclusive, MaxAttempts: 3,
 		Handler: a.reseal.handler("key ring", func(ctx context.Context, d resealDeps, run *jobs.Run) error {
 			for _, col := range secrets.Columns() {
-				if c := col.String(); c != repository.RepositorySecrets.String() && c != debdata.SigningKeys.String() && c != signingkey.Column().String() {
+				if c := col.String(); c != repository.RepositorySecrets.String() && c != debdata.SigningKeys.String() && c != signingkey.Column().String() &&
+					!slices.Contains(storageKeyColumns(), c) {
 					return jobs.Permanent(fmt.Errorf("re-encryption of %s is not implemented yet", col))
 				}
 			}
@@ -267,6 +270,14 @@ func (a *App) registerSecretsReencrypt(r *jobs.Registry) {
 			res.Resealed += ident.Resealed
 			res.Current += ident.Current
 			res.Failed += ident.Failed
+			// The storage keys and the open sessions' data keys (storage.md R-STOR-084 step 3).
+			skeys, err := resealStorageKeys(ctx, d)
+			if err != nil {
+				return err
+			}
+			res.Resealed += skeys.Resealed
+			res.Current += skeys.Current
+			res.Failed += skeys.Failed
 			if err := run.SetResult(map[string]int64{"columns": int64(len(secrets.Columns())), "resealed": res.Resealed, "current": res.Current, "failed": res.Failed}); err != nil {
 				return err
 			}

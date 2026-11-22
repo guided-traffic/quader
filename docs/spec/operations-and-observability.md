@@ -2086,6 +2086,9 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.storage.connection_added` | T | — | A replica saw a connection id for the first time ([storage.md](storage.md) R-STOR-051); actor `system:replica` | `connection`, `bucket`, `prefix` |
 | `system.storage.connection_drained` | T | — | A draining connection holds no copy any more (R-STOR-056); actor `system:worker` | `connection`, `copiesDeleted` |
 | `system.storage.connection_forgotten` | T | — | `quader admin storage forget-connection` gave a connection up (R-STOR-051); actor `system:admin` | `connection`, `copiesForgotten`, `blobsMissing` |
+| `system.storage.keys_exported` | T | — | `quader admin storage keys export` printed the rows of `storage_keys`, sealed ([storage.md](storage.md) R-STOR-085); written in the transaction that read them, before the document leaves; actor `system:admin` | `connection` (empty for every connection), `keys`, `rootKeyIds` |
+| `system.storage.keys_imported` | T | — | `quader admin storage keys import` added the missing rows of an export and kept the equal ones (R-STOR-085); actor `system:admin` | `connections`, `inserted`, `kept`, `sourceInstallation`, `otherInstallation` |
+| `system.storage.key_generation_added` | T | — | `quader admin storage keys new-generation` made generation n + 1 of a connection's storage key active and retired generation n (R-STOR-083); actor `system:admin` | `connection`, `keyId`, `generation`, `retiredKeyId` |
 | `system.storage.versions_restored` | T | — | `quader admin storage restore-versions` removed delete markers from the blob bucket (R-HA-025 step 5, Q-HA-270); actor `system:admin`; none for a dry run or a run that removed nothing | `before`, `markersRemoved`, `restored`, `remaining` |
 | `audit.exported` | T | — | R-OPS-017 | `from`, `to`, `filters`, `format` |
 | `webhook.created`, `webhook.updated`, `webhook.deleted` | T | — | R-OPS-038 | `changes` |

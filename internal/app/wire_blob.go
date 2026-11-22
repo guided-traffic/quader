@@ -71,8 +71,12 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 	if err != nil {
 		return blobArea{}, fmt.Errorf("object store: %w", err)
 	}
+	skeys, err := a.newStorageKeys(ctx, keys.ring, db, log)
+	if err != nil {
+		return blobArea{}, err
+	}
 	store, err := blob.New(cfg, conns, db, blob.WithLogger(log), blob.WithMetrics(bm), blob.WithMemory(httpserver.SettleMemory),
-		blob.WithConnectionAdded(connectionAdded(au.rec)))
+		blob.WithConnectionAdded(connectionAdded(au.rec)), blob.WithStorageKeys(skeys))
 	if err != nil {
 		return blobArea{}, err
 	}
@@ -93,13 +97,16 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 		}
 		return blobArea{}, fmt.Errorf("object store startup check: %w", err)
 	}
+	if err := a.ensureStorageKeys(ctx, skeys, conns, log); err != nil {
+		return blobArea{}, err
+	}
 	if a.cfg.Health.RequireObjectStore {
 		a.health.AddReadiness("objectStore", check, false)
 	} else {
 		a.health.AddReported("objectStore", check)
 	}
 
-	area := blobArea{store: store}
+	area := blobArea{store: store, storageKeys: skeys}
 	// The upload sessions (R-STOR-011): a replica that accepts uploads continues any session; the collection run of a worker
 	// expires them. A session starts and stays on the first connection that takes uploads (R-STOR-054).
 	first := conns.Targets()[0]

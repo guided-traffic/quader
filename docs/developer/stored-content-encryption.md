@@ -1,8 +1,9 @@
 # Encryption of stored content: the build plan
 
 Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built));
-package 5, the Bastion's cache, built on 2026-11-22 on it ([below](#package-5-the-bastions-cache-as-built)); nothing of the main
-installation calls the format yet; packages 2, 3, 4 and 6 not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
+package 2, the keys, built on 2026-11-22 ([below](#package-2-the-keys-as-built)); package 5, the Bastion's cache, built on 2026-11-22 on the
+format ([below](#package-5-the-bastions-cache-as-built)); no object of the main installation is written or read in the format yet, and no
+connection can be encrypted; packages 3, 4 and 6 not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
 R-STOR-091; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072;
 [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring),
@@ -38,7 +39,7 @@ at the same time are disjoint.
 | Package | After | What it builds | Owns |
 |---|---|---|---|
 | **1 · The format and its tools** | nothing; it can start before stage 1 lands | The codec of R-STOR-076 to R-STOR-078: segments, the final segment, `S(L)` and its inverse, the range planner, the nonce derivation of R-STOR-080, the record (encode, decode, wrap, unwrap, commitment), the keyed name of R-STOR-086, the tail segments of R-STOR-081, a reader that runs the checks of R-STOR-077 in their order with named errors; the vector files and the independent check of R-STOR-079 (run once, the result recorded below); the five fuzz targets, the nightly job of R-STOR-091 and its Makefile target | `internal/blob/blobcrypt/` (new), `tools/blobvectors/` (new), the job `fuzz-stored-format` in `.github/workflows/performance.yml`, a Makefile block `fuzz-stored-format` |
-| **2 · The keys** | stage 1's package A (the table `storage_connections`, the connection set, the marker and the start check) | The migration of R-STOR-083 (`storage_keys`, `storage_connections.keyed_names`, `upload_sessions.sealed_data_key` and `sealed_segments`, the stored columns of `upload_session_parts`); the two sealed columns registered; drawing keys at first sight with the refusal over a used location; holding them per replica, the change area `storage_keys` and the re-read for an unknown identifier; `quader admin storage keys export`, `import` and `new-generation` with their audit events (R-STOR-085); `CopyDataKey` and its architecture rule (R-STOR-083; the callers it allows are `internal/blob` and `internal/downloadlinks`, the handover's package, R-STOR-096 and [bastion-handover.md](bastion-handover.md)) | `internal/blob/keys/` (new), the stage's migration and `queries/storage_keys.sql` under `internal/meta/postgres/`, `cmd/quader/admin_storage_keys.go`, `internal/app/wire_storage_keys.go`, the change area in `internal/cluster/areas.go`, the rule in `internal/archtest` |
+| **2 · The keys** (built, [below](#package-2-the-keys-as-built)) | stage 1's package A (the table `storage_connections`, the connection set, the marker and the start check) | The migration of R-STOR-083 (`storage_keys`, `storage_connections.keyed_names`, `upload_sessions.sealed_data_key` and `sealed_segments`, the stored columns of `upload_session_parts`); the two sealed columns registered; drawing keys at first sight with the refusal over a used location; holding them per replica, the change area `storage_keys` and the re-read for an unknown identifier; `quader admin storage keys export`, `import` and `new-generation` with their audit events (R-STOR-085); `CopyDataKey` and its architecture rule (R-STOR-083; the callers it allows are `internal/blob` and `internal/downloadlinks`, the handover's package, R-STOR-096 and [bastion-handover.md](bastion-handover.md)) | `internal/blob/keys/` (new), the stage's migration and `queries/storage_keys.sql` under `internal/meta/postgres/`, `cmd/quader/admin_storage_keys.go`, `internal/app/wire_storage_keys.go`, the change area in `internal/cluster/areas.go`, the rule in `internal/archtest` |
 | **3 · Encrypted connections in the store, and the sessions** | 1, 2, and stage 1's packages A and B | `encrypted: true` accepted with `keyed_names` and the part-size rule (R-STOR-075); the start check's requirement of `metadata`; the naming function for keyed names; the connection's encrypting writer and decrypting reader: the commit's writes with the record and `HeadObject`'s check, the copy row's `stored_size` and `storage_key_id` (R-STOR-080); whole and ranged reads, the marks, `unknown_key`, the metric (R-STOR-082); the sessions with the sealed data key, the tails, the counter and both finalize paths (R-STOR-081); the conformance pass with an encrypted connection; the integration case of a rotation (R-STOR-084) | `internal/config/storage.go` (stage 2's rules), `internal/blob` (all files but `gc*.go`, `sweep.go` and the packages `blobcrypt`, `keys`, `reconcile`, `scrub`, `verify`), `internal/blob/s3`, `internal/blob/blobtest`, `internal/uploads`, `internal/app/wire_blob.go`, `test/integration/blob/rotation_test.go`, the encrypted pass in `test/integration/blob/conformance_test.go` |
 | **4 · The jobs, the backup and the restore** | 3, and stage 1's packages B (orphan sweep), C (reconciliation), D (scrub, operator check) and E (backup, restore) | The reconciliation's four cases and the spool for streams into an encrypted connection, the scrub's marks and repair, the orphan sweep's reading of the record, the operator check's record (R-STOR-087); the pool with records, `verify --deep` with and without `--key-ring`, the restore's table and its drawing of keys (R-BAK-031); the integration cases of the jobs and of the backup | `internal/blob/reconcile/`, `internal/blob/scrub/`, `internal/blob/sweep.go`, `internal/blob/verify`, `internal/backup`, `cmd/quader/backup_*.go`, `test/integration/blob/encrypted_jobs_test.go`, `test/integration/backup/encrypted_test.go` |
 | **5 · The Bastion's cache** | 1 | R-BAS-061: the encrypted layout below the key's tree, the sealed entries, the audit spool in the format, the sweep of other trees; `bastion.cache.encryption_key_file`; `secrets.cacheKey` in the Bastion's chart and its render tests | `internal/bastion/cache`, `internal/config/bastion_role.go`, `deploy/helm/quader-bastion`, the Bastion's chart tests under `test/chart` |
@@ -66,7 +67,7 @@ HKDF-SHA-256, HMAC-SHA-256, SHA-256), which `TestThePackageImportsTheStandardLib
 | [errors.go](../../internal/blob/blobcrypt/errors.go) | `Reason` (the label `reason` of R-STOR-082), `Error`, the sentinels `ErrFormat` to `ErrDigest`, `ReasonOf`, `Reason.MarksCorrupt` (all but `unknown_key`) |
 
 What packages 2 to 6 build on: package 2 opens a sealed row into `NewStorageKey(id, raw)` and draws keys with `NewKey(crypto/rand.Reader)`;
-`CopyDataKey` returns the `DataKey` that `Open` yields. Package 3 writes a part or a whole object with `NewSection` over a section of the
+`CopyDataKey` returns the `DataKey` that `Open` yields (both built, [below](#package-2-the-keys-as-built)). Package 3 writes a part or a whole object with `NewSection` over a section of the
 spool (the payload checksum is a first pass over the same `Section`, the SDK's retry a `Seek` to 0), makes the record with `Wrap` and
 `Metadata`, checks a `HeadObject` with `Open`, reads with `Open` and `NewReader` or `PlanRange`, `Open` (the total as `ObjectSize`) and
 `NewRangeReader`, counts a failure by `ReasonOf` and marks by `MarksCorrupt`; a session seals its data key's `Key.Bytes()` into its row,
@@ -76,6 +77,99 @@ writer and readers. Package 6's offline tool reads a record file (the object's m
 
 A failure of the body is an `*Error` with its reason; a body that ends early is a transport error with `io.ErrUnexpectedEOF` in its chain and
 no reason, which marks nothing; a body longer than the object is `size`. A failed key lookup passes through as it is.
+
+## Package 2: the keys as built
+
+[R-STOR-083](../spec/storage.md#r-stor-083--the-storage-keys-and-the-name-keys) to R-STOR-085, with the builder's decisions Q-STOR-324 to
+Q-STOR-329. Nothing of it runs on an installation yet: `encrypted: true` is refused at start until package 3, so no replica draws or holds a
+key, and the holder of every replica stays empty. An installation with plain connections only gets the migration `00107_storage_keys` (an
+empty table, four columns and one row of `cluster_epoch`), an empty holder in its blob area, two more columns that the task
+`secrets-reencrypt` walks (both empty) and three commands; its start and its downloads do nothing new.
+
+| File | Responsibility |
+|---|---|
+| [00107_storage_keys.sql](../../internal/meta/postgres/migrations/00107_storage_keys.sql) | `storage_keys` with the CHECKs of Q-STOR-324 and the partial unique index of the active key; `storage_connections.keyed_names`; `upload_sessions.sealed_data_key` and `sealed_segments`; `upload_session_parts.stored_size` and `stored_sha256`; the row `storage_keys` of `cluster_epoch` |
+| [storage_keys.sql](../../internal/meta/postgres/queries/storage_keys.sql), [tables_storage_keys.go](../../internal/meta/postgres/tables_storage_keys.go) | the statements of the package (the insert is `ON CONFLICT DO NOTHING`); the table is export class `data` |
+| [keys/ids.go](../../internal/blob/keys/ids.go) | the kinds and states, `ParseID` (an identifier names kind, connection and generation), the drawing of an identifier |
+| [keys/columns.go](../../internal/blob/keys/columns.go) | the two sealed columns registered with `internal/secrets` (`Column`, `SessionColumn`), `SealSessionKey` and `OpenSessionKey` for package 3, the seal and the opening of a row, `Refusal` |
+| [keys/rows.go](../../internal/blob/keys/rows.go) | `Row`, the interface `Rows` and its PostgreSQL implementation `PG` |
+| [keys/holder.go](../../internal/blob/keys/holder.go) | `Holder`: the keys of one replica by identifier, `Load`, `Active`, `NameKey`, `Lookup` with the re-read at most once per 10 s per connection, `ApplyChange` and `FlushArea` of the change area `storage_keys` (a `cluster.Listener`; the name is `keys.ChangeArea`, since nothing below `internal/blob` imports `internal/cluster`, R-STOR-046), `Close` |
+| [keys/draw.go](../../internal/blob/keys/draw.go) | `Ensure`: the drawing at first sight, `LocationUsed` (one listing of `sha256/` and of `keyed/`) and the refusal |
+| [keys/generation.go](../../internal/blob/keys/generation.go) | `NewGeneration` |
+| [keys/export.go](../../internal/blob/keys/export.go) | `Document`, `Export`, `ReadDocument`, `Import` and `ImportError` |
+| [keys/reseal.go](../../internal/blob/keys/reseal.go) | `Reseal`: the walks of `secrets-reencrypt` over both columns |
+| [keys/keystest/db.go](../../internal/blob/keys/keystest/db.go) | the simulated tables of the unit tests (the identifier rule and the three unique constraints) |
+| [blob/datakey.go](../../internal/blob/datakey.go) | `StorageKeys` (what the store asks of the holder), `WithStorageKeys`, `CopyDataKey` |
+| [admin_storage_keys.go](../../cmd/quader/admin_storage_keys.go) | `quader admin storage keys export`, `import`, `new-generation` |
+| [wire_storage_keys.go](../../internal/app/wire_storage_keys.go) | the holder of the blob area, `ensureStorageKeys`, the listener of the change area, the walk of `secrets-reencrypt` |
+| [archtest/datakey.go](../../internal/archtest/datakey.go) | `CheckDataKeyCallers`, the rule of R-STOR-096 |
+| [events_storage.go](../../internal/audit/events_storage.go), [audit-labels.ts](../../web/src/app/features/audit/audit-labels.ts) | the three audit events and their plain names in the audit log's filter (with both translation files and the fixture the Go test writes, R-UI-037) |
+
+**At a start** (the blob area, [wire_blob.go](../../internal/app/wire_blob.go)): the holder is built over the database and the key ring before
+the store, which takes it with `blob.WithStorageKeys`; the connections are recorded and checked as before; then `ensureStorageKeys` runs
+`Holder.Ensure` for every encrypted connection in list order before the replica turns ready (Q-STOR-326). `Ensure` reads the connection's
+rows; when it lacks the active storage key, or the name key with keyed names, and does not drain, it lists `sha256/` and `keyed/` (one key
+each), reads the rows again in a transaction, refuses when the location holds an object and the rows are still missing, and otherwise draws
+32 bytes per key from `crypto/rand`, seals each under its new identifier with the key ring (`storage_keys.sealed_key`, row `key_id`),
+destroys the key and inserts the rows; then it loads the rows into memory. Two replicas that draw at the same moment insert one row of each
+kind: the unique constraints let the slower insert insert nothing, and it reads the winner's rows in the same transaction; a replica commits
+its rows before it wraps anything under them, so its objects never look to another replica like those of an earlier database. A refusal
+(a used location, a key the ring cannot open) ends the start; a failure of the database or the store is retried. The infrastructure bundle
+then adds the holder as a listener of the change log ([wire_keys.go](../../internal/app/wire_keys.go)), which exists only after the blob area.
+Which encrypted connection gets keyed names is `keyedNames`, true with `encrypted: true` until the element carries `keyed_names` (package 3).
+
+**While it runs:** a change of the area `storage_keys` (payload `{"connection": "<id>"}`) marks the connection, and the next `Active` reads its
+rows again; a record that names an identifier the replica does not hold makes `Lookup` read them again, at once after a change and otherwise
+at most once per 10 seconds, and returns nil (`unknown_key`) when they do not hold it. Rows are never deleted, so a held key is never replaced
+or dropped; `Close` destroys every key when the replica stops. `CopyDataKey` finds the present copy on the connection and the blob's size,
+sends one `HeadObject` and runs `blobcrypt.Open` with the holder's `Lookup`; it marks nothing.
+
+**The commands** (with the runtime database role, like `storage verify`): `export [--connection <id>]` reads the rows and writes
+`system.storage.keys_exported` in one transaction, then prints the document (Q-STOR-329); it needs no key ring. `import <file>
+[--other-installation]` reads the file (bounded, strict JSON, the identifier rule), opens every value with the configured ring, and in one
+transaction that locks the kinds of each connection keeps equal rows, refuses another value under an existing identifier or another
+identifier at an existing place, inserts the rest retired and makes the highest generation active (Q-STOR-325), announces the area per
+connection and writes `system.storage.keys_imported`. `new-generation --connection <id>` locks the connection's storage keys, opens the active
+one with the ring (Q-STOR-328), draws generation `n + 1`, retires `n`, inserts `n + 1`, announces the area and writes
+`system.storage.key_generation_added`. Both writing commands print the reminder to export. Every refusal exits `2` with a sentence that
+names identifiers and root keys; a database that does not answer exits `75`.
+
+**What package 3 builds on.** The writer asks `Holder.Active(ctx, connection)` for the storage key to `blobcrypt.Wrap` under and
+`Holder.NameKey(connection)` for `blobcrypt.KeyedName`; the reader passes `Holder.Lookup(ctx, connection)` to `blobcrypt.Open` (extend
+`blob.StorageKeys`, which holds `Lookup` only, with the two). A session seals its data key into `upload_sessions.sealed_data_key` with
+`keys.SealSessionKey(ring, sessionID, key)` and opens it with `keys.OpenSessionKey`; the walk of a rotation already covers the column. The
+element's `keyed_names` replaces `keyedNames` in [wire_storage_keys.go](../../internal/app/wire_storage_keys.go), and
+`storage_connections.keyed_names` waits for `RecordConnections` to write and compare it as a fixed property. A key is never to be logged or
+put in an error: the holder's keys render their identifier only.
+
+**Tests and their cost**, measured on 2026-11-22 in the unit job's mode (`go test -race -covermode=atomic -coverpkg=./...`) on the development
+machine, and the integration case under the stack's lock:
+
+| Test | Tier | Data | Time |
+|---|---|---|---|
+| `TestR_STOR_083_TheFirstReplicaDrawsTheKeysAndOthersReadThem`, `…AUsedLocationWithoutKeysRefusesTheStart`, `…ANewGenerationReachesEveryReplica`, `…NoKeyLeavesTheHolder`, `…AKeyTheRingCannotOpenStopsTheStart`, `…TheSealedColumnsAreRegistered`, `…TheHolderFollowsTheRegisteredChangeArea`, `TestR_STOR_084_TheWalkResealsBothColumnsAndChangesNoKey`, `TestKeyIdentifiers` | unit, `internal/blob/keys` (keystest, blobtest) | keys of 32 bytes, objects of a few bytes | 0.04 s |
+| `TestR_STOR_083_CopyDataKeyOpensTheRecordOfThePresentCopy` | unit, `internal/blob` (the fake database, two in-memory stores) | objects of up to 1,200 bytes | 0.02 s |
+| `TestR_STOR_085_TheExportAndTheImportRoundTrip`, `TestR_STOR_085_AnImportThatDoesNotFitExitsTwoAndWritesNothing`, `TestR_STOR_083_NewGenerationIsAuditedAndAnnounced` | unit, `cmd/quader` (keystest) | three keys, files of about 2 KB | 0.03 s |
+| `TestR_STOR_096_CopyDataKeyHasTwoCallers` | unit, `internal/archtest` (a fixture and the tree's syntax) | ten small files | 0.1 s besides the `go list` of the tree the package's other tests run anyway |
+| `TestR_STOR_083_TheStorageKeysInPostgreSQL` (the migration's rules, two replicas drawing at the same moment, the re-encryption of both columns at a rotation of the root, a new generation through the change area) | integration, `test/integration/blob` | a database of its own, eight rows | 0.8 s, most of it the migration of the database |
+
+The unit job gains about 0.2 s and one package's start (about 2 s of process time for `internal/blob/keys`, almost all of it the start of a
+binary built with the race detector and the module's coverage); the integration shard that runs `blob` about 1 s; `TestSecretsReencryptTask`
+of the area `repository` counts five columns instead of three and costs nothing more. No chart test, end-to-end leg or nightly job is added;
+with 25 formats the cost is the same, since no format sees a key.
+
+**Every defence taken out once**, one at a time, and the test that failed: the unique constraints of the table (the integration case's
+drawing at the same moment and its migration subtest); the simulation's unique constraints (`…a replica that loses the race to insert reads
+the winner's rows`); `ON CONFLICT DO NOTHING` (the integration case's drawing at the same moment); the refusal over a used location
+(`TestR_STOR_083_AUsedLocationWithoutKeysRefusesTheStart` and `…NoKeyLeavesTheHolder`); the second read of the rows after the listing (`…an
+object another replica wrote under the keys it drew meanwhile is no reason to refuse`); the import's opening of every value before a write
+(four cases of `TestR_STOR_085_AnImportThatDoesNotFitExitsTwoAndWritesNothing`: a ring without the root key, a ring whose key of that name is
+another, a changed value, a moved value); the import's check of another installation, of an existing key's value and of the identifier rule
+(one case each); the table's identifier rule (the integration case's migration subtest); the ring check of a new generation
+(`…NoKeyLeavesTheHolder`); the rule of `CopyDataKey` and its refusal of a subpackage (`TestR_STOR_096_CopyDataKeyHasTwoCallers`); the re-read
+bound (`…a replica that missed the change reads the rows again …`); the change area's mark (the unit test and the integration case's change
+area subtest); `Close` destroying the keys (`…Close destroys every key`); the walk over `upload_sessions.sealed_data_key` (the unit and the
+integration walk).
 
 ## Package 5: the Bastion's cache as built
 

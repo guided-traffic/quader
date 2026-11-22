@@ -1819,8 +1819,8 @@ after the model of the segment chain of his s3-encryption-proxy, bound to the co
 specification with test vectors, fuzzing and an offline tool that reads a blob without a running Quader. This replaces his decision of
 2026-11-06, which imported that proxy's storage format and Go module; nothing of it was built, and its eleven open points are answered by the
 section [Encryption of stored content](#encryption-of-stored-content) (R-STOR-075 to R-STOR-091). Stage 2 of the owner's topic, on the seams
-of stage 1 (R-STOR-062); its format is built (`internal/blob/blobcrypt`, R-STOR-076 to R-STOR-079), nothing calls it yet, and the rest is
-specified, not built. Raised from P2 to P1 with the topic, as stages 1 and 3 were.
+of stage 1 (R-STOR-062); its format (`internal/blob/blobcrypt`, R-STOR-076 to R-STOR-079) and its keys (`internal/blob/keys`, R-STOR-083 to
+R-STOR-085) are built, no object is written or read in the format yet, and the rest is specified, not built. Raised from P2 to P1 with the topic, as stages 1 and 3 were.
 
 Why: a provider, its operators and whoever can read or copy a connection's bucket see ciphertext only, under names that do not tell which
 file is stored, while the key stays with Quader; and a changed object fails authentication on every read, ranged reads included, which
@@ -4129,7 +4129,12 @@ this section is the specification. His answers that this section carries out
 **Status.** The format is built: the package `internal/blob/blobcrypt` holds the codec of R-STOR-076 to R-STOR-079, the tail segments of
 R-STOR-081 and the keyed name of R-STOR-086, with the vector files, their independent check and the fuzz targets of R-STOR-079 and the
 nightly job of R-STOR-091 (package 1 of the developer page). The Bastion's cache seals with it once its chart gives it a key
-([bastion.md](bastion.md) R-BAS-061, package 5, built); nothing of the main installation calls it yet. Everything else is specified, not built, and until it is
+([bastion.md](bastion.md) R-BAS-061, package 5, built). The keys are built (package 2, on 2026-11-22): the migration of R-STOR-083 with the
+table `storage_keys` and its two sealed columns, the drawing at a connection's first sight with the refusal over a used location, the keys a
+replica holds with the change area `storage_keys` and the re-read for an unknown identifier, `quader admin storage keys export`, `import` and
+`new-generation` with their audit events (R-STOR-085), and `blob.Store.CopyDataKey` with its architecture rule (`internal/blob/keys`,
+[admin_storage_keys.go](../../cmd/quader/admin_storage_keys.go)); since no connection can be encrypted yet, no replica draws a key, and no
+object of the main installation is written or read in the format. Everything else is specified, not built, and until it is
 built `encrypted: true` is refused at start (R-STOR-050). The rest needs stage 1 on `main` first;
 the order of the packages is on the developer page [stored-content-encryption.md](../developer/stored-content-encryption.md). Its
 security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
@@ -4545,6 +4550,11 @@ Acceptance criteria (unit, `internal/blob`, the in-memory store):
 ### R-STOR-083 · The storage keys and the name keys
 Priority: **P1** · Covers: STOR-022
 
+**Built** on 2026-11-22 (package 2 of [stored-content-encryption.md](../developer/stored-content-encryption.md#package-2-the-keys-as-built)):
+[internal/blob/keys](../../internal/blob/keys/doc.go), the migration `00107_storage_keys`, `blob.Store.CopyDataKey` and its rule in
+`internal/archtest`. What needs an encrypting writer (a new upload under a new generation) is package 3's; until it lands no connection is
+encrypted and no key is drawn on a running installation.
+
 The storage keys lie once: a sealed row of the database per connection and generation (the owner's decision 15 (a)), sealed by the key ring
 like every other secret of the database (decision 4 (a))
 ([Q-STOR-309](#q-stor-309--a-storage-key-is-a-row-with-an-identifier-of-its-own-drawn-at-the-connections-first-start-never-deleted),
@@ -4556,23 +4566,32 @@ CREATE TABLE storage_keys (                 -- export class data: every backup h
     connection_id text NOT NULL,             -- no foreign key: storage_connections is transient in a backup, the keys are not
     kind          text NOT NULL CHECK (kind IN ('storage', 'name')),
     generation    integer NOT NULL CHECK (generation BETWEEN 1 AND 999999),   -- always 1 for a name key
-    sealed_key    text NOT NULL,             -- the 32 bytes sealed with the key ring: table storage_keys, column sealed_key, row (key_id)
+    sealed_key    text NOT NULL CHECK (length(sealed_key) <= 512),  -- the 32 bytes sealed with the key ring: table storage_keys, column sealed_key, row (key_id)
     state         text NOT NULL CHECK (state IN ('active', 'retired')),     -- active: wraps new objects (storage) or names them (name)
     created_at    timestamptz NOT NULL DEFAULT now(),
     retired_at    timestamptz,
-    UNIQUE (connection_id, kind, generation)
+    UNIQUE (connection_id, kind, generation),
+    -- the identifier names the kind, the connection and the generation (Q-STOR-324)
+    CHECK (key_id = CASE kind WHEN 'storage' THEN 'sk-' || connection_id || '-' || generation || '-'
+                              ELSE 'nk-' || connection_id || '-' END || right(key_id, 8)),
+    CHECK (kind = 'storage' OR generation = 1),
+    CHECK ((state = 'retired') = (retired_at IS NOT NULL))
 );
 CREATE UNIQUE INDEX storage_keys_active ON storage_keys (connection_id, kind) WHERE state = 'active';
 
 ALTER TABLE storage_connections ADD COLUMN keyed_names boolean NOT NULL DEFAULT false;     -- R-STOR-075
-ALTER TABLE upload_sessions ADD COLUMN sealed_data_key text;                                -- R-STOR-081; sealed, NULL on a plain connection
-ALTER TABLE upload_sessions ADD COLUMN sealed_segments bigint NOT NULL DEFAULT 0;           -- R-STOR-081
-ALTER TABLE upload_session_parts ADD COLUMN stored_size bigint, ADD COLUMN stored_sha256 bytea;  -- R-STOR-081
+ALTER TABLE upload_sessions ADD COLUMN sealed_data_key text CHECK (length(sealed_data_key) <= 512);  -- R-STOR-081; sealed, NULL on a plain connection
+ALTER TABLE upload_sessions ADD COLUMN sealed_segments bigint NOT NULL DEFAULT 0 CHECK (sealed_segments >= 0);  -- R-STOR-081
+ALTER TABLE upload_session_parts ADD COLUMN stored_size bigint CHECK (stored_size > 0),
+                                 ADD COLUMN stored_sha256 bytea CHECK (stored_sha256 IS NULL OR octet_length(stored_sha256) = 32);  -- R-STOR-081
+INSERT INTO cluster_epoch (area) VALUES ('storage_keys');                                    -- the change area below
 ```
 
 - **The sealed columns** `storage_keys.sealed_key` (row key `key_id`) and `upload_sessions.sealed_data_key` (row key `id`) are registered with
   `internal/secrets` ([architecture.md](architecture.md) R-ARCH-021), so the per-key counts, the canary check, the compatibility check of the
-  replicas' rings and the re-encrypt task cover them without a line of their own. A sealed key moved to another row does not open.
+  replicas' rings and the re-encrypt task cover them without a line of their own. A sealed key moved to another row does not open, and since
+  the identifier names the connection, the kind and the generation, which the table holds the row to, a key cannot be given to another
+  connection either ([Q-STOR-324](#q-stor-324--the-identifier-of-a-key-names-its-kind-connection-and-generation-and-the-table-holds-the-row-to-it)).
 - **Identifiers.** A storage key is `sk-<connection id>-<generation>-<8 random hex>`, a name key `nk-<connection id>-<8 random hex>`: the random
   part makes a key drawn again for the same connection and generation (after a database was lost) a different identifier, so it never opens an
   object of its predecessor by mistake.
@@ -4582,7 +4601,11 @@ ALTER TABLE upload_session_parts ADD COLUMN stored_size bigint, ADD COLUMN store
   draw when the connection's location already holds an object below `sha256/` or `keyed/` (one listing of each with one key): such objects were
   written under keys of an earlier database, and the start stops as a configuration error: "connection archive holds objects but the database
   has no storage keys for it; import the exported storage keys (quader admin storage keys import) or empty the location (storage.md R-STOR-083)".
-- **A further generation** only on command: `quader admin storage keys new-generation --connection <id>` inserts generation `n + 1` `active`
+  The rows are read again after the listing, in the transaction that would insert, so an object another replica wrote under the keys it drew
+  meanwhile is no reason to refuse; the refusal holds for a missing name key as well ("… has no name key for it …"). A replica holds the keys
+  of every encrypted connection before it turns ready, and a draining connection draws nothing ([Q-STOR-326](#q-stor-326--a-replica-holds-the-keys-of-every-encrypted-connection-before-it-turns-ready-and-a-draining-one-draws-nothing)).
+- **A further generation** only on command: `quader admin storage keys new-generation --connection <id>` opens generation `n` with the
+  command's key ring (so the new key is sealed under a ring the installation uses, [Q-STOR-328](#q-stor-328--a-new-generation-needs-a-key-ring-that-opens-the-generation-it-retires)), inserts generation `n + 1` `active`
   and sets generation `n` `retired` in one transaction, writes the audit event `system.storage.key_generation_added` (actor `system:admin`,
   with the identifiers) and prints the reminder to export (R-STOR-085). New objects are wrapped under it from the moment a replica learns it;
   older generations keep opening what they wrapped. The name key has no generations.
@@ -4602,8 +4625,9 @@ ALTER TABLE upload_session_parts ADD COLUMN stored_size bigint, ADD COLUMN store
 - **The room for the handover** of decision 12 (b) ([Q-STOR-320](#q-stor-320--the-handovers-room-is-one-function-of-the-store-that-nothing-calls-in-this-stage)):
   `blob.Store.CopyDataKey(ctx, digest, connectionID) (blobcrypt.DataKey, error)` opens the record of the present copy on that connection
   (one `HeadObject`) and returns the copy's data key with its plaintext size and commitment, after steps 1 to 6 of R-STOR-077. Nothing calls it
-  in this stage; an architecture test (`internal/archtest`) allows calls from `internal/blob` and from the handover's package only, which is
-  `internal/downloadlinks` (R-STOR-096, Q-STOR-340). `DataKey` renders nothing of the key when logged.
+  yet (its caller is package 4 of the handover); an architecture test (`internal/archtest`, `CheckDataKeyCallers`) allows calls from
+  `internal/blob` and from the handover's package only, which is `internal/downloadlinks` (R-STOR-096, Q-STOR-340, [Q-STOR-327](#q-stor-327--the-rule-of-copydatakey-reads-the-syntax-of-every-package-and-reserves-the-methods-name)). `DataKey`
+  renders nothing of the key when logged.
 
 Acceptance criteria:
 
@@ -4646,6 +4670,9 @@ Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the sta
 ### R-STOR-085 · Export, import, loss and leak of the keys
 Priority: **P1** · Covers: STOR-022
 
+**Built** on 2026-11-22 (package 2): the export and the import in [internal/blob/keys](../../internal/blob/keys/export.go), the commands in
+[admin_storage_keys.go](../../cmd/quader/admin_storage_keys.go).
+
 - **Export** ([Q-STOR-312](#q-stor-312--the-export-is-one-document-of-sealed-rows-and-the-import-adds-missing-rows)):
   `quader admin storage keys export [--connection <id>]` prints to standard output one JSON document of the rows of `storage_keys`, sealed as
   they lie; it opens nothing and needs no key ring:
@@ -4661,10 +4688,14 @@ Priority: **P1** · Covers: STOR-022
 
   *(example values)*. `rootKeyIds` names the root keys the values are sealed with. The document is kept beside the key ring's escrow copy:
   with the ring it opens every storage key, without it nothing (R-STOR-090). It runs where `admin storage verify` runs (the database role
-  `web`); `system.storage.keys_exported` is audited.
+  `web`); `system.storage.keys_exported` is audited in the transaction that reads the rows, before the document leaves, and an export of a
+  connection that has no rows exits `2` ([Q-STOR-329](#q-stor-329--the-export-is-audited-in-the-transaction-that-reads-it-before-the-document-leaves)).
 - **Import**: `quader admin storage keys import <file>` opens every value with the configured ring (so a wrong ring is refused before
   anything is written), inserts the rows that are missing, keeps the rows that are equal, and refuses a row whose identifier exists with another
-  value or a file of another installation (`--other-installation` accepts one, for a recovery into a new installation). It is the way back
+  value or a file of another installation (`--other-installation` accepts one, for a recovery into a new installation). Of a connection's
+  storage keys, the database's and the file's, the highest generation is active afterwards ([Q-STOR-325](#q-stor-325--an-import-inserts-what-is-missing-as-retired-and-makes-the-highest-generation-of-each-connection-active)); a row whose connection, kind
+  and generation the database holds under another identifier refuses the import as well. Every refusal exits `2`, writes nothing and names
+  identifiers and root keys only. It is the way back
   after a database restored to a point before a connection or a generation existed, and the input of the offline tool (R-STOR-089).
   `system.storage.keys_imported` is audited.
 - **What the loss of each key costs:**
@@ -8673,6 +8704,107 @@ Context: R-STOR-091 said that a dispatch with `closing=true` runs the job for 30
 
 **Choice:** (a). **Applied in the spec:** R-STOR-091; code: the job `fuzz-stored-format` of
 [performance.yml](../../.github/workflows/performance.yml) and the Makefile block `fuzz-stored-format`.
+
+### Q-STOR-324 · The identifier of a key names its kind, connection and generation, and the table holds the row to it
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-083 seals a key under the row key `key_id`, so the key ring's additional data binds the table, the column and the identifier,
+and the identifier is `sk-<connection>-<generation>-<random>` or `nk-<connection>-<random>`. The columns `connection_id`, `kind` and
+`generation` were bound to nothing: a writer of the database, or a file to import, could give a sealed storage key of one connection another
+`connection_id`, and a replica would then hold one connection's key as another's, which R-STOR-078's row "the object copied to another
+connection" relies on not to happen.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The identifier is the truth: CHECKs of the table that `key_id` is the kind's prefix, `connection_id`, the generation of a storage key and 8 hex digits, and that a name key has generation 1; the holder and the import check the same with `keys.ParseID` (chosen) | Three columns that follow from one | The seal's binding to the identifier binds the connection, the kind and the generation with it; the database refuses a changed column, the import a changed file | Two CHECKs beyond the DDL as first written |
+| (b) The code checks, the table does not | As (a) without the CHECKs | The DDL as first written | A database writer is held by the replica's check alone |
+| (c) The seal's row key is the identifier and the three columns | `secrets.Register("storage_keys", "key_id,connection_id,kind,generation", …)` | The key ring binds all four | A composite row key for columns that follow from one; the export and every walk carry four parts |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-083 (the DDL); code: `ParseID` of [ids.go](../../internal/blob/keys/ids.go), the CHECKs of
+[00107_storage_keys.sql](../../internal/meta/postgres/migrations/00107_storage_keys.sql), `checkKeys` of [export.go](../../internal/blob/keys/export.go).
+
+### Q-STOR-325 · An import inserts what is missing as retired and makes the highest generation of each connection active
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-085 says the import inserts the rows that are missing and keeps the rows that are equal; the table holds one active storage
+key per connection. A database restored to a point before generation `n + 1` was drawn has generation `n` active, while the export lists `n`
+retired and `n + 1` active: inserting `n + 1` as the file says conflicts, and the state of the equal row `n` differs between the two.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A missing row goes in retired; afterwards the storage key of the highest generation of the connection, of the database's and the file's, is active and the others retired, and a name key is active; an equal row keeps the database's state before that rule; a row whose connection, kind and generation the database holds under another identifier refuses the import (chosen) | Generations only grow | One rule whatever the order of exports and restores; the replicas wrap under the newest key the installation ever drew | An older generation the database had active is retired when the file brings a newer one |
+| (b) The file's states win | The export's view | Simple | An older export would make an older generation active again over one drawn after it |
+| (c) The database's states win, missing rows retired | Nothing active changes | Never moves the active key | After a restore to before generation `n + 1` the replicas go on wrapping under `n`, and the newest key only reads |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-085; code: `Import` and `activateHighest` of [export.go](../../internal/blob/keys/export.go).
+
+### Q-STOR-326 · A replica holds the keys of every encrypted connection before it turns ready, and a draining one draws nothing
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-083 draws the keys when a replica first records an encrypted connection, refuses over a used location, and loads the rows
+after the start check. Open were the place in the start, what a store that cannot be listed does to it, and what a draining connection and a
+missing name key get.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) After the start checks and before readiness, for every encrypted connection in list order: draw what a connection without drain lacks, then load its rows; a failure of the database or the store is retried and holds the start, a refusal (a used location without keys, a key the ring cannot open) ends it; the refusal holds for every kind it would draw, the name key included (chosen) | One place, before any read or write | No replica serves a copy of an encrypted connection whose keys it lacks, and none counts `unknown_key` for a key it never loaded; a draining connection takes no write, so it needs no new key | A new encrypted connection whose store cannot be listed at its first start holds the replica's start back |
+| (b) In the start check's callback per connection, also after readiness | When the connection's check passes | An unreachable new store holds nothing back | A refusal after readiness cannot end the start; every reader and writer would need a state "without keys" |
+| (c) Lazily, at a connection's first write or read | No step at start | Nothing at start | The refusal over a used location would come as a failed upload |
+
+**Choice:** (a). Revisit when encrypted connections run (package 3): (b) if a new encrypted connection's store is often unreachable at its
+first start. **Applied in the spec:** R-STOR-083; code: `Ensure` of [draw.go](../../internal/blob/keys/draw.go), `ensureStorageKeys` of
+[wire_storage_keys.go](../../internal/app/wire_storage_keys.go).
+
+### Q-STOR-327 · The rule of CopyDataKey reads the syntax of every package and reserves the method's name
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-083 and R-STOR-096 ask for an architecture test that fails for a call of `CopyDataKey` from any package but `internal/blob`
+and `internal/downloadlinks`. The rules of `internal/archtest` read either the import graph (`go list`) or typed syntax (`LoadTyped`, seconds
+per run).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Syntax below `internal/` and `cmd/`: every selector `CopyDataKey` and every string literal that holds the name, outside the two packages (their subpackages refused too), the test files and the trees the rules leave out (chosen) | The name is reserved | Catches a call, a method value, a call through an interface or an embedding and a call by reflection; milliseconds; a fixture shows each | A method of that name on another type elsewhere is refused as well |
+| (b) Typed: the selections of `(*blob.Store).CopyDataKey` only | Exact | No false positive | Misses a call through an interface and by reflection; seconds per run |
+| (c) An import rule | No import of `internal/blob` outside the two | Cheap | Every format and the item store import `internal/blob` |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-083, R-STOR-096; code: `CheckDataKeyCallers` of
+[datakey.go](../../internal/archtest/datakey.go), `TestR_STOR_096_CopyDataKeyHasTwoCallers`.
+
+### Q-STOR-328 · A new generation needs a key ring that opens the generation it retires
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: `quader admin storage keys new-generation` seals the new key with the command's key ring. A command run with a ring the replicas do
+not hold (another installation's files, a wrong `active_key_id`) would seal a key no replica opens: every replica that learns of it fails to
+load it and goes on wrapping under the retired generation.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The command opens the active generation with its ring before it draws; a failure exits `2` and names the root key (chosen) | The ring proves itself | A key sealed under a ring the installation does not use is never written | One open more per command |
+| (b) Seal and trust the configuration | — | Simpler | The failure shows on every replica, after the commit, as a key that does not load |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-083; code: `NewGeneration` of [generation.go](../../internal/blob/keys/generation.go).
+
+### Q-STOR-329 · The export is audited in the transaction that reads it, before the document leaves
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-085 audits `system.storage.keys_exported`, without saying when; the export is the one copy of the sealed keys that leaves the
+database on purpose.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read the rows and write the event in one transaction, then print; `--connection` with an id that has no rows exits `2`, and an export of every connection of an installation without keys prints a document without keys (chosen) | No export without its trace | The audit trail names every export that left; a mistyped id is not taken for an empty connection | An export whose printing fails after the commit is audited though nothing left |
+| (b) Print, then audit | The trace follows | The trail lists only exports that left whole | A failed insert leaves an export without a trace |
+| (c) An asynchronous event | The usual event of a read | Never fails the command | An export could leave without a trace |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-085; code: `Export` of [export.go](../../internal/blob/keys/export.go), `runKeysExport` of
+[admin_storage_keys.go](../../cmd/quader/admin_storage_keys.go).
 
 ### Q-STOR-340 · The handover is decided in the package of the links, the one caller of CopyDataKey besides the store
 

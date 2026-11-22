@@ -19,6 +19,7 @@ commands:
   post-restore --restored-to <time> [--credentials-file <path>]   clean up after a point-in-time restore (R-HA-025)
   storage verify [--since <time>] [--json]     check that the object of every stored blob is in the object store (R-HA-024, R-HA-025)
   storage restore-versions --before <time> [--credentials-file <path>] [--dry-run]   make the objects deleted after a point-in-time restore point current again (R-HA-025)
+  storage keys export|import <file>|new-generation --connection <id>   keep, bring back or renew the storage keys of the encrypted connections (R-STOR-083, R-STOR-085)
   maintenance pause-deletions --reason <text> | resume-deletions   set or clear the deletion pause (R-HA-025)
   backup check [--json]                        verify the declared platform protection: archive_mode, bucket versioning (R-HA-023)
   npm reinstate <projectKey>/<repoKey> <name>@<version>   put back a version a journal replay withheld (R-NPM-047)

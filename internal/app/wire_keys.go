@@ -46,6 +46,7 @@ func (a *App) wireInfra(_ context.Context, keys keysArea, pg postgresArea, au au
 		given("outbound factory", in.out), given("audit recorder", in.rec)); err != nil {
 		return infra{}, err
 	}
+	listenStorageKeys(bl, co)
 	// The exported accessors of the replica (Blobs, Queue, Caches, Changes, Signals)
 	// read these; wireInfra is their only writer.
 	in.sys = sysstate.New(sysstate.Options{

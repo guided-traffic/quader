@@ -73,6 +73,7 @@ func bastionTransitive() map[string]transitiveEntry {
 		"internal/backup/target":   {[]string{"internal/blob/s3"}, "internal/blob/s3 implements the backup target port (target.go, target_writer.go, target_copy.go) in the package that owns the AWS SDK; the Bastion's cache uses the S3 client only, never the target"},
 		"internal/backup/format":   {[]string{"internal/blob/s3"}, "internal/blob/s3 names the digest type of the restore's blob sink (blobsink.go) in the package that owns the AWS SDK; the Bastion's cache uses the S3 client only, never the sink"},
 		"internal/blob":            {[]string{"internal/blob/s3"}, "internal/blob/s3 implements the blob store interface of the main installation; the Bastion's cache uses the S3 client only, never the interface"},
+		"internal/blob/blobcrypt":  {[]string{"internal/blob/s3"}, "internal/blob, which internal/blob/s3 brings in, names the stored format's keys (blob.Store.CopyDataKey returns a blobcrypt.DataKey, storage.md R-STOR-083); a leaf of the standard library, which the Bastion's cache imports directly anyway (R-BAS-061)"},
 	}
 }
 

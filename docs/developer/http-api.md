@@ -544,8 +544,9 @@ share one database and one Valkey.
   At start-up `verifyKeyRingCanaries` ([wire_api.go](../../internal/app/wire_api.go)) refuses a ring that lacks a key that sealed
   values reference, seeds the canary of every key ID that has none, and refuses a ring that cannot open an existing canary.
   The job body of `secrets-reencrypt` ([wire_api.go](../../internal/app/wire_api.go), `registerSecretsReencrypt`) calls
-  the walks of the three registered sealed columns (`repository.ResealSecrets` for `repository_secrets.sealed`,
-  `debdata.ResealSigningKeys` for `deb_signing_keys.private_key`, `signingkey.Reseal` for `signing_identities.sealed_key`) and
+  the walks of the five registered sealed columns (`repository.ResealSecrets` for `repository_secrets.sealed`,
+  `debdata.ResealSigningKeys` for `deb_signing_keys.private_key`, `signingkey.Reseal` for `signing_identities.sealed_key`, `keys.Reseal` for
+  `storage_keys.sealed_key` and `upload_sessions.sealed_data_key`) and
   records `columns` (the number of registered columns), `resealed`, `current` and `failed` as its result; it fails permanently
   when `failed` is above zero (a value the ring of this replica cannot open is left as it is), and fails permanently, naming the
   column, for a column registered later without a walk of its own. A feature that registers another column writes its walk

@@ -30,6 +30,7 @@ type Store struct {
 	onAdded   ConnectionAddedFunc
 	spoolOpts []SpoolOption
 	memory    func(ctx context.Context, n int64) (undo func())
+	keys      StorageKeys // the replica's storage keys (datakey.go); nil before stage 2 wires them
 }
 
 // Option configures a Store.

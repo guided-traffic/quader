@@ -2,9 +2,12 @@
 
 Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-083 to R-STOR-085, R-STOR-089, R-STOR-090;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031;
-[bastion.md](../spec/bastion.md) R-BAS-061). The Bastion's cache key is built ([security/bastion.md](bastion.md#with-a-cache-key)); the keys
-of the main installation are not, and until they are the key ring seals the upstream credentials and signing keys only, as
-[data-and-secret-flow.md](data-and-secret-flow.md) describes.
+[bastion.md](../spec/bastion.md) R-BAS-061). The Bastion's cache key is built ([security/bastion.md](bastion.md#with-a-cache-key)). The
+keys of the main installation are built (package 2 of [stored-content-encryption.md](../developer/stored-content-encryption.md#package-2-the-keys-as-built),
+2026-11-22): the rows of `storage_keys` with their two sealed columns, the drawing with its refusal, the keys a replica holds, the export,
+the import, a new generation and `blob.Store.CopyDataKey`. Since `encrypted: true` is still refused at start, no connection is encrypted, no
+key is drawn on a running installation, and the key ring seals the upstream credentials and signing keys only, as
+[data-and-secret-flow.md](data-and-secret-flow.md) describes; every "live with `encrypted: true`" below starts with package 3.
 
 The perspective of this page is the keys of encrypted connections: where each lies, which process opens it, how it rotates, and what its loss
 or its leak costs and needs. The format they protect is [stored-content-format.md](stored-content-format.md).
@@ -64,6 +67,19 @@ to draw keys over a location that already holds objects.
 - What a record and a segment withstand once their keys are safe: [stored-content-format.md](stored-content-format.md).
 - [H-74](privilege-footprint.md#h-74--the-default-object-store-credential-chain-can-reach-node-metadata): the object-store credential chain;
   a bucket's credential is not a key of its content, and an encrypted connection's credential reads ciphertext only.
+
+### H-1328 · The refusal over a used location sees current objects only
+
+Component: the drawing of keys at a connection's first sight ([storage.md](../spec/storage.md) R-STOR-083,
+[Q-STOR-326](../spec/storage.md#q-stor-326--a-replica-holds-the-keys-of-every-encrypted-connection-before-it-turns-ready-and-a-draining-one-draws-nothing)),
+`LocationUsed` in [draw.go](../../internal/blob/keys/draw.go). Subject: the objects that keys of an earlier database wrapped and that are not
+current. The listing that guards the drawing lists the current objects below `sha256/` and `keyed/`, one key each; a versioned bucket whose
+earlier objects were all deleted (only noncurrent versions remain) looks empty, and a replica draws new keys over it. A later
+`restore-versions` ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-025) makes such an object current again with a record that names a key the
+database lacks: reads fall over and mark nothing, `QuaderStorageUnknownKey` fires, until the export that holds the row is imported. Dormant
+until package 3 accepts `encrypted: true`; then live only where a database was lost without its export, over a versioned bucket whose objects
+were deleted. Listing the versions as well would need `s3:ListBucketVersions`, which the runtime credential does not have
+([privilege-footprint.md](privilege-footprint.md)).
 
 ### H-1304 · Every pod that holds the key ring opens every blob of every encrypted connection
 

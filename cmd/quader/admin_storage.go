@@ -18,11 +18,13 @@ const storageUsage = `usage: quader admin storage verify [--since <RFC 3339 time
        quader admin storage restore-versions --before <RFC 3339 time> [--credentials-file <path>] [--dry-run] [--concurrency N] [--json] [--config <file>]
        quader admin storage check [--connection <id>] [--json] [--config <file>]
        quader admin storage forget-connection <id> [--json] [--config <file>]
+       quader admin storage keys export|import|new-generation ... (quader admin storage keys for its usage)
 
 verify             check that the object of every live blob is in the object store, and list the items that reference each blob without one (R-HA-024, R-HA-025)
 restore-versions   remove the delete markers younger than t from the objects of the blobs that have none, so that a point-in-time restore of the database finds its objects again (R-HA-025 step 5)
 check              run the conformance check and the capabilities on every object-store connection, or the one named (R-STOR-035); exit 5 when a check that is not optional failed
 forget-connection  give up a connection that is gone for good: its copy and queue rows go, its id is retired, no object is deleted (R-STOR-051); exit 2 while a live replica has it
+keys               export, import and draw a new generation of the storage keys of the encrypted connections (R-STOR-083, R-STOR-085)
 
 exit codes: 0 every object is there, 1 failed, 2 usage or configuration, 5 a blob has no object or another size, 75 temporary (the database or the store could not be reached or answered)`
 
@@ -38,6 +40,8 @@ func storageCmd(args []string, s streams) error {
 			return storageCheckCmd(args[1:], s)
 		case "forget-connection":
 			return storageForgetCmd(args[1:], s)
+		case "keys":
+			return storageKeysCmd(args[1:], s)
 		}
 	}
 	return usageError{storageUsage}
