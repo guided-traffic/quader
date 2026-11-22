@@ -1925,7 +1925,38 @@ runs are in `git log`; this section holds the current state.
   count as not run. From 14:38 the tree was package A with the chart's commit on top, whose code is the same.
   **All seventeen run again on the final commit of the landing stack,** with the areas the repair touches. The
   rule from it is in section 3.
-- **In work since 15:15: package D of the several connections, the scrub** (the scrub per copy with its repair
+- **Package D of the several connections, the scrub, reported at 16:48 and lands after the reconciliation** (one
+  commit of the type `feat`; its builder worked from 15:15 to 16:48; every gate exits 0, with seven integration
+  areas and the web gates, since the API changed). **Built:** an hourly job with one reader per connection,
+  each held to that connection's bytes a second; copies never verified first, then the oldest; a copy is
+  judged by its bytes alone, length and SHA-256; a match stamps it verified, a mismatch or a missing object
+  sets the mark a download sets; **a damaged copy is replaced in the same run from a present copy of another
+  connection, read back whole, and recorded only while its row is still the one found damaged;** a transient
+  error leaves the copy due, an open circuit ends that connection's reader for the run. The list of the
+  damaged blobs over the API with its two scopes and a recheck that reads every copy now and writes no
+  object. `admin storage verify` and `restore-versions` per connection. The gauge of overdue copies, counted
+  from the database on every replica, so the scrub's alert reads real series. The tests that named the
+  scrub's requirement for other things name what they test; the evidence record was not touched, the scrub's
+  own tests keep its line true. Decisions Q-STOR-265 to Q-STOR-269 (a copy counts as overdue a day past its
+  period, so a large connection in a steady state does not trip the alert; a blob is lost only on evidence).
+  Gaps H-1269 (a store that applies an overwrite late can pass the read-back and still serve old bytes from
+  another node), H-1270 (a failed repair waits for the reconciliation), H-1271 (no audit event on a
+  detection). **Decided by the development agent on its question:** the audit event of a detected damage is
+  built with this package, with its label and translations, and not left to the last package, because an
+  auditor reads integrity events and the gap would be the package's own; its brief had allowed no web file
+  beside the generated API types, which was too narrow. **Before it lands,** after the reconciliation has been
+  moved onto the landing stack: its builder moves it onto that, uses the reconciliation's mark of a damaged
+  copy and drops its own (both had written one), adapts two calls of the changed signature, and adds the
+  event. **For the owner's installation:** the first run reads every object once (every copy is unverified
+  after the migration) at up to 50 MiB a second and writes nothing; an object that is already gone or
+  altered in his bucket shows at once as a missing or damaged blob with the critical alert, and with one
+  connection nothing repairs it (a remote's item is fetched again, a local one answers 503 until uploaded
+  again); **if his gateway answers 404 for objects that exist while a run goes, each such copy is marked
+  missing and heals only by a read or the recheck, not by the scrub, since a marked copy is never due
+  again** (a behaviour to look at on his cluster after the first run). **Not verified:** anything on his
+  gateway; a store that applies overwrites late (simulated); the repair above the multipart threshold against
+  a real store; the job run through the job framework from end to end; the new endpoints on a running
+  replica. What it was at its start: (the scrub per copy with its repair
   from another connection, the damaged blobs' API with its two scopes, `admin storage verify` and
   `restore-versions` per connection, the renames that make the scrub's evidence true, and the metrics two of
   the chart's alerts wait for). It goes before package B because since package A no job reads the stored
