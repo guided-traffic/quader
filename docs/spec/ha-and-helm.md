@@ -4750,14 +4750,14 @@ config:
       failure_threshold: 5
       open_duration: 5s
   storage:                              # storage.md
-    connections:                        # one to eight (storage.md R-STOR-050, R-HA-072); list order = write and read order
-      - id: default                     # the default; never changes
-        bucket: ""                      # required unless secrets.storageConnections[].bucketKey; example: quader-blobs
-        prefix: quader                 # the default of storage.md
-        region: ""                      # example: eu-central-1
-        endpoint: ""                    # AWS resolution; example: https://minio.quader.svc:9000
-        force_path_style: false         # true for MinIO, SeaweedFS and Ceph RGW
-        credentials_source: default     # default | webIdentity | static
+    s3:
+      bucket: ""                        # required; example: quader-blobs
+      prefix: quader                   # the default of storage.md
+      region: ""                        # example: eu-central-1
+      endpoint: ""                      # AWS resolution; example: https://minio.quader.svc:9000
+      force_path_style: false           # true for MinIO, SeaweedFS and Ceph RGW
+      credentials:
+        source: default                 # default | webIdentity | static
         role_arn: ""
     upload:
       max_size: 10GiB                   # must fit the spool
@@ -4909,18 +4909,14 @@ secrets:
     existingSecret: ""                  # no client certificate
     certKey: tls.crt
     keyKey: tls.key
-  storageConnections: []                # one entry per connection that needs a Secret (R-HA-072); example:
-  #  - connectionId: default            # matches config.storage.connections[].id
-  #    existingSecret: quader-s3        # the static credential, or an S3 provisioner's Secret when a *Key is set
-  #    accessKeyIdKey: access-key-id    # example (provisioner Secret): AWS_ACCESS_KEY_ID
-  #    secretAccessKeyKey: secret-access-key
-  #    sessionTokenKey: ""
-  #    bucketKey: ""                    # example (provisioner Secret): S3_BUCKET; set = the element's bucket_file
-  #    regionKey: ""                    # example: S3_REGION
-  #    endpointKey: ""                  # example: S3_ENDPOINT (a host without scheme, which Quader reaches over https)
-  #    ca: {existingSecret: "", key: ca.crt}               # the connection's ca_file; empty = the outbound trust store
-  #    backupSource: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}   # backup pods only; read-only login (R-BAK-030)
-  #    journalReader: {existingSecret: "", accessKeyIdKey: access-key-id, secretAccessKeyKey: secret-access-key}  # post-restore and restore Jobs only; lists object versions (R-HA-023)
+  s3:
+    existingSecret: ""                  # required with credentials.source static; also the Secret of an S3 provisioner when a *Key below is set
+    accessKeyIdKey: access-key-id       # example (provisioner Secret): AWS_ACCESS_KEY_ID
+    secretAccessKeyKey: secret-access-key  # example (provisioner Secret): AWS_SECRET_ACCESS_KEY
+    bucketKey: ""                       # the bucket comes from config.storage.s3.bucket; example (provisioner Secret): S3_BUCKET; set = QUADER_STORAGE_S3_BUCKET reads this key of the Secret
+    regionKey: ""                       # config.storage.s3.region; example (provisioner Secret): S3_REGION; set = QUADER_STORAGE_S3_REGION reads this key
+    endpointKey: ""                     # config.storage.s3.endpoint; example (provisioner Secret): S3_ENDPOINT (a host without scheme, which Quader reaches over https); set = QUADER_STORAGE_S3_ENDPOINT reads this key
+    sessionTokenKey: ""
   valkey:
     existingSecret: ""                  # required; example: quader-valkey
     usernameKey: username               # a missing key = the "default" user
@@ -4929,6 +4925,9 @@ secrets:
     existingSecret: ""                  # Sentinels without authentication; example: quader-valkey-sentinel
     usernameKey: ""                     # empty = no Sentinel user, the file is not mounted
     passwordKey: password
+  s3CA:
+    existingSecret: ""                  # empty = the outbound trust store (system roots plus config.proxy.outbound.tls.ca_files); example: quader-s3-tls. Renders storage.s3.ca_file
+    key: ca.crt
   valkeyCA:
     existingSecret: ""                  # empty = system roots plus trustedCA; example: quader-valkey-ca
     key: ca.crt
@@ -4941,6 +4940,14 @@ secrets:
     accessKeyIdKey: access-key-id
     secretAccessKeyKey: secret-access-key
     sessionTokenKey: ""                 # empty = no session token
+  backupSource:
+    existingSecret: ""                  # required with config.storage.s3.credentials.source static and backup.enabled; the backup pods only. A login that may only read the blob bucket (s3:GetObject, s3:ListBucket), so a compromised backup pod cannot write the blobs or the journal (R-BAK-015, Q-HA-160)
+    accessKeyIdKey: access-key-id
+    secretAccessKeyKey: secret-access-key
+  journalReader:
+    existingSecret: ""                  # required with journalCredentials.source static of postRestore or restore; those Jobs only. A login that may list the object versions of the blob bucket (s3:ListBucketVersions), which the runtime credential deliberately lacks (R-HA-023)
+    accessKeyIdKey: access-key-id
+    secretAccessKeyKey: secret-access-key
   backupTargetCA:
     existingSecret: ""                  # empty = the system trust store; the backup and restore pods only; example: quader-backup-target-tls. Renders backup.target.ca_file (Q-HA-146)
     key: ca.crt
@@ -4962,7 +4969,7 @@ trustedCA:
   existingSecret: ""                    # empty = no bundle; at most one of existingSecret and existingConfigMap; example: corp-ca-bundle
   existingConfigMap: ""                 # example: corp-ca-bundle (a trust-manager Bundle target)
   keys: [ca-bundle.crt]                 # the files of the source that are mounted, each a PEM bundle; they are added to config.proxy.outbound.tls.ca_files
-  useForObjectStore: false              # true also sets the ca_file of every connection without its own ca (R-HA-072) to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
+  useForObjectStore: false              # true also sets storage.s3.ca_file to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
 
 # ── Trust anchors of the signatures on artifacts (R-SIG-018) ──────────────────────
 # Who the installation trusts as a signer, beside the shipped anchors and those an administrator adds in the UI. The chart renders
@@ -5207,7 +5214,7 @@ postRestore:
   restoredTo: ""                        # required with enabled, the time t the platform restore went to, RFC 3339; example: "2026-10-28T09:15:00Z"
   skipRevocationJournal: false          # only when the source's bucket is gone (R-BAK-024)
   journalCredentials:
-    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (the `journalReader` of each entry of secrets.storageConnections, R-HA-072) (Q-HA-150)
+    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (secrets.journalReader) (Q-HA-150)
   backoffLimit: 2                       # a retry applies the clean-up again; its steps are safe to repeat
   activeDeadlineSeconds: 0              # 0 = not rendered
   terminationGracePeriodSeconds: 60     # at least 30
@@ -5267,7 +5274,7 @@ restore:
   skipRevocationJournal: false          # only when the source bucket is gone (R-BAK-024, H-37)
   extraArgs: []                         # example: [--check] for a dry run of the preconditions (R-BAK-020)
   journalCredentials:
-    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (the `journalReader` of each entry of secrets.storageConnections, R-HA-072); anything but runtime keeps a deletion with the runtime credential from hiding a journal entry (R-BAK-015, Q-HA-159)
+    source: runtime                     # runtime (the blob store's credential, a plain listing) | default (the identity of the Job's ServiceAccount lists object versions) | static (secrets.journalReader); anything but runtime keeps a deletion with the runtime credential from hiding a journal entry (R-BAK-015, Q-HA-159)
   backoffLimit: 2                       # evictions are not counted, every retry resumes (R-BAK-021)
   activeDeadlineSeconds: 0              # 0 = not rendered
   terminationGracePeriodSeconds: 60     # at least 30; time to stop at the next safe point (Q-HA-147)

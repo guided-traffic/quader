@@ -2118,7 +2118,6 @@ config:
       negative_max_entries: 100000      # per replica
       sweep_interval: 5m
       access_resolution: 1h
-      fill_wait_max: 10m                # 30s to 1h; how long a replica waits for another replica's fill (R-BAS-054; specified, not built)
       bucket:
         endpoint: ""                    # AWS resolution; example: https://object.storage.eu01.onstackit.cloud
         region: ""                      # example: eu01
