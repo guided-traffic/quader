@@ -2242,6 +2242,11 @@ runs are in `git log`; this section holds the current state.
   the top of `main` and its builder is at work on it; package F, the encryption's package 3 and the
   Bastion's P3 are active within the minute. The load is 5. His installation and its Bastion run the newest
   release, ready.
+- **The timer's check on 2026-11-23 at 00:14:** the release of the Bastion's two packages is published since
+  00:13; on his cluster the Bastion has taken it and the main installation's upgrade runs, so the two speak
+  different versions of the interface in these minutes. Its run has no failed job. The four builders (the
+  links' second package, package F, the encryption's package 3, the Bastion's P3) are active within two
+  minutes; none has reported. The load is 52 on 20 cores.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
