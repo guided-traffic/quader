@@ -224,9 +224,15 @@ all four columns green.
 
 - ⚪ Push and pull replication between installations
 - ⚪ Query language for files, packages and properties
-- ⚪ Presigned download redirects for large artifacts
-- ⚪ Client-side encryption of the stored content in the format of s3-encryption-proxy, imported as a module; Quader then always
-  streams downloads itself ([R-STOR-048](../spec/storage.md#r-stor-048--client-side-encryption-of-stored-content), the ticket with its open decisions)
+- 🟡 Delivery of large downloads by signed links of the object store, a switch of the installation (the owner's decision of
+  2026-11-22; [R-STOR-014](../spec/storage.md#r-stor-014--delivery-by-signed-links-of-the-object-store-the-installations-switch), specified, its first
+  package in work)
+- 🟡 Several object store connections with a reconciliation between them and a scrub that repairs (the owner's decision of 2026-11-22;
+  being specified)
+- ⚪ Client-side encryption of the stored content in a format of Quader's own, per connection, with the key ring as the root, a
+  storage key per connection and a data key per object (the owner's decisions of 2026-11-22, which replace the import decided on
+  2026-11-06; [R-STOR-048](../spec/storage.md#r-stor-048--client-side-encryption-of-stored-content) is rewritten when it is specified, after the
+  connections)
 - ⚪ Further storage back ends (Google Cloud Storage, Azure Blob Storage), sharding over several buckets
 - ⚪ Email notice of expiring tokens
 - ⚪ TLS from the edge proxy to the pods

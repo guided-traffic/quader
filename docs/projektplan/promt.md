@@ -1647,8 +1647,11 @@ runs are in `git log`; this section holds the current state.
   Bastion that serves every format and the storage topic by its stages; the timer of every 30 minutes is set
   again; no measurement against his object storage provider today; the walk through the open questions (16 in
   the list of "With the owner") is for the evening.
+- **In work since 2026-11-22, 11:29: package 1 of the signed links** (the format contract's field and the
+  kit's twentieth check). **The third stage's specification is on `main` since 11:28** ("With the owner", the
+  topic of 2026-11-22, has what it says, the planner's question for him and the build plan).
 - **In work since 2026-11-22, 10:51: the planners of the storage topic's first and third stage** (several
-  connections with the reconciliation and the scrub; signed links). The owner answered all fifteen decisions
+  connections with the reconciliation and the scrub; signed links; the third reported at 11:26). The owner answered all fifteen decisions
   of its working paper by 10:48, each as the development agent's favourite at that time, two of them changed
   that morning by his own objections ("With the owner", the topic of 2026-11-22). The planner of the second
   stage, encryption, starts when the first stage's specification is on `main`.
@@ -3527,6 +3530,15 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     on a kind cluster and with clients in containers, and nothing of it shows on his cluster. (a) the development
     agent adds the Bastion's chart under `apps/quader` once packages B and C are released, and he names a host
     and issues the Bastion's token in his admin area; (b) not on his cluster for now.
+18. **A speed limit keeps nearly every caller away from signed links (Q-LIM-97),** from the planner of the storage
+    topic's third stage on 2026-11-22. His decision 11 took the condition "no pace limit applies to the caller" as
+    the working paper put it, and every built-in profile but Unlimited sets a speed limit, so on a new
+    installation only administrators would get links. (a) keep the condition, the settings page names the
+    profiles it keeps away (specified meanwhile); (b) a speed limit does not stop a link: the transfer by a link
+    is not slowed, the budgets of an hour and a day are charged when the link is issued (the development agent's
+    recommendation: the condition was its own wording in the paper, a speed limit protects Quader's pods, which a
+    link's transfer does not pass, and with (a) the switch does next to nothing); (c) the Standard profile loses
+    its speed limit.
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
@@ -3556,7 +3568,7 @@ that reads the bucket**
   before it is built, among them the seam to Quader's own multipart uploads, the server-side copies, the object names
   that confirm a known file, the scope against the deduplication across repositories, and key custody and rotation);
   the presigned download redirect as a switch per repository, specified and of the second priority
-  ([R-STOR-014](../spec/storage.md#r-stor-014--presigned-download-redirect-per-repository)); the object store's own
+  ([R-STOR-014](../spec/storage.md#r-stor-014--delivery-by-signed-links-of-the-object-store-the-installations-switch)); the object store's own
   encryption (R-STOR-032). **What his list adds or reopens:** import or build (he doubts his decision of 2026-11-06);
   the delivery by signed links as an administrator's setting; several connections with encryption per connection; a
   Bastion with a read-only account of the bucket; a rotation of the installation's key; a key per project and per
@@ -3799,6 +3811,52 @@ that reads the bucket**
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
   and after the Bastion serves every format.
+  **Stage 3, signed links, is specified on `main` since 11:28** (its planner worked from 10:51 to 11:26; two
+  commits, rebased by the development agent over the Bastion's package A, with the developer page of the formats
+  and the count test merged by hand and the evidence regenerated; links, check, count test and build exit 0, the
+  wording scan clean; its worktree and branch are removed): R-STOR-014 rewritten in place and raised to the first
+  priority, R-STOR-070 to R-STOR-074, R-LIM-040, R-UI-200, R-UI-201, Q-STOR-280 to Q-STOR-294, Q-LIM-97 and 98,
+  Q-UI-950 to 955, Q-API-400, Q-ARCH-570, ADR-242 and ADR-243, the gaps H-1275 to H-1283 on a new security page.
+  **What it says:** one switch of the installation, off by default, kept in a row as the malware scan's is, at
+  every replica within two seconds; its details are the minimum size (1 MiB), a link's life (60 s, from 10 s to
+  an hour, never beyond the signing credential's) and a public address per connection; a repository opts out,
+  and through a virtual repository both the addressed one and the member that holds the file must allow links;
+  the stored and ignored `presignedDownloads` of a repository is refused from now on. **The serve point decides
+  in a fixed order, and every condition that fails streams as today:** the route declares that its clients check
+  a digest and the method is `GET`; not through a Bastion, not a scanner's read; the switch is on and nobody
+  opted out; malware, vulnerability and signature checks have passed on a settled verdict; a conditional request
+  and every range are answered by Quader; the file reaches the minimum size; the caller has no speed limit;
+  the download limits pass; a connection that is not encrypted holds a sound copy, is not failing and passed its
+  link check; the signing credential lives five seconds more. `HEAD` and the generic download path are never a
+  link. **The answer** is a 307 that is never cached, to a link signed for `GET`, `https` only, whose host is
+  none of Quader's hosts and below none of them, checked when saved and at every start. **The contradiction
+  between the two requirements about content headers is settled:** the object store can be asked for the content
+  type, the attachment's name and no caching, and the three headers it cannot carry guard Quader's origin, which
+  a link's host never is (gap H-1279). **A link check per connection** at every start and when the switch is
+  turned on establishes whether the store honours those overrides, which answers his provider's silence about
+  them: a connection that fails it streams. **Everything is counted when the link is issued** (a request, the
+  file's size, a download, the audit event with its way of delivery, a field of the request log); the lease of
+  parallel downloads ends with the 307. **The format declares per route whether its clients check a digest,** a
+  field of the route held by a twentieth check of the kit after the pattern of the nineteenth; a format to come
+  streams until it declares with evidence. Declared with evidence read in the clients' source: the registry's
+  blob, npm's tarball, Ansible Galaxy's collection artifact; not declared: NuGet and Debian (neither client was
+  read), a manifest by digest, the generic path, the ClamAV definitions. **The admin page** is a section
+  "Download links" of the storage settings, with each connection's reason where no link can be issued, the
+  profiles a speed limit keeps away, and a test link the administrator opens from a client's machine (Quader
+  sends no request itself, because the question is whether the clients' network reaches the store). **One
+  question of the planner is the owner's,** number 18 of the list above. **A second it put to him is decided by
+  the development agent:** Debian declares once the builder of the second package has shown, with one case of
+  altered bytes in the apt clients' end-to-end set (about 15 s, in its own leg), that apt refuses them; it is a
+  proof with the real tool, not a behaviour he would choose. **Build plan, three packages** (the developer page
+  of the download links): 1 the contract's field and the kit's check; 2 the serve point, the store and the
+  limits, the whole feature behind the API; 3 the API, the settings page and the repository's section. **In work
+  since 11:29: package 1.** Package 2 owns directories the Bastion's package B and the first stage's builders
+  work in, so it starts when B has landed and the first stage's build plan is known. **Its tests cost**
+  (estimates): about 3 s of unit tests, 10 to 20 ms per format in the kit, about 2 s of UI tests, about 3 s in
+  the integration area `blob`, one end-to-end case per format that declares (30 s `oci`, 20 s `npm`, 15 s
+  `ansible`), nothing elsewhere; with 25 formats a case of 15 to 30 s in the own leg of each format that
+  declares. **Not verified:** anything against his provider's bucket; whether the end-to-end client pods reach
+  the development store; the digest checks of Podman, CRI-O, pnpm, Yarn, apt and NuGet.
 
 **A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
 open questions are in the list above**
