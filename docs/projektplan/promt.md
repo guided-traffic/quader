@@ -1663,7 +1663,41 @@ runs are in `git log`; this section holds the current state.
   packages). **Next as agents become free:** the Bastion's package C resumed when B has landed, then the
   reading of the documentation of the object gateway in the owner's cluster, the Bastion's package D, the
   links' package 2.
-- **In work since 2026-11-22, 13:03: package 1 of the encryption, the format and its tools** (the codec, the
+- **In work since 2026-11-22, 14:00: package 5 of the encryption, the Bastion's cache** (everything the cache
+  writes to its store sealed in the format under one key file of its chart, off by default; it needs the
+  format alone).
+- **Landed on 2026-11-22 at 13:59: package 1 of the encryption, the format and its tools** (a commit of the type
+  `refactor`, no release; R-STOR-076 to R-STOR-079; decisions Q-STOR-321 to Q-STOR-323; its builder worked from
+  13:02 to 13:53). A package of its own that uses the standard library alone, held by a test: the stored size
+  and its inverse, the range planner, the nonces from a seed per write, a writer that keeps one segment in
+  memory and gives a retry the same bytes, the record with its wrap and its commitment, one reader for whole
+  reads, ranges and staging tails that releases a segment's bytes only after its tag has passed. Nothing calls
+  it yet, and an encrypted connection is still refused at start. **The independent check, in the order asked:**
+  its codec reproduced the specification's known answers at its first run; a check in another language that the
+  builder wrote rebuilt every positive case of the 35 vector files byte for byte and refused every negative one
+  with its reason; only then it opened the planner's implementation and ran it unchanged against the files, 34
+  of 34 (the planner's knows no tails, so the tail's case rests on the other two). **Every attack of the
+  specification's table has a test and a vector,** each with a reader that counts the bytes released before the
+  refusal; the builder removed each of fifteen defences in turn and a test failed for each, which found one
+  refusal that was missing (a body longer than the object) and, on reading again, an overflow in a bounds
+  check; both are repaired and tested. **Three sentences of the specification it corrected, each with a
+  decision:** a tail segment's nonce had no rule; a missing or malformed key identifier is a damaged record and
+  not an unknown key, since no import can bring such an identifier back; the fuzz job is not started by the
+  closing run, whose switch belongs to another workflow. Five fuzz targets, each run for 30 seconds without a
+  finding, and a nightly job for them. **Its gates, each exit 0:** build, the full unit run (its first run had
+  failed on the rule against package-level pointer variables, repaired), generate-check, the evidence, the
+  complexity check, the lint, the workflows' checks. **By the development agent on the rebased commit, each
+  exit 0:** build, the full unit run, generate-check, the evidence regenerated without a difference, links,
+  check and the count test, the complexity check, the chart's lint and its tests whole, the lint, the
+  workflows' test; the diff holds no name the white-label rule forbids and no hand-made line of the evidence
+  record; the wrap of the data key and the key types read by the development agent, which is a reading and no
+  review. **Its tests cost** 0.35 s of test time and about 2.4 s of process time in the unit job, nothing
+  elsewhere; the nightly job about 27 runner minutes (estimated, it has not run). **Not verified:** the nightly
+  job on the pipeline; the format's speed. Its worktree and branch are removed.
+- **The release with package C of the Bastion runs on the owner's installation since 13:58** (cut at 13:49,
+  image and chart published at 13:55; read on the cluster at 14:00: every Deployment ready, no restart). His
+  installation runs no Bastion, so the feature itself does not show there (number 17 of his list).
+ (the codec, the
   record, the keyed name, a reader that runs its checks in order, the vector files checked against a second
   implementation, five fuzz targets with a nightly job; a new package that nothing calls yet), **and a reading
   of the documentation of the object gateway that the owner's cluster runs** (what it supports of metadata, a
@@ -4076,8 +4110,8 @@ that reads the bucket**
   **Three questions of the planner are the owner's,** numbers 22 to 24 of the list above; the first of them
   takes back a side effect the development agent had told him (a provider's storage key deleted on leaving).
   **Build plan, six packages** (a new developer page of the stored content's encryption): 1 the format, its
-  vectors, fuzz targets and a nightly fuzz job, which can start at once; 2 the keys, after the first stage's
-  package A; 5 the Bastion's cache, after 1; 3 the store's writes and reads, which makes `encrypted: true`
+  vectors, fuzz targets and a nightly fuzz job, which can start at once (**landed at 13:59**); 2 the keys, after
+  the first stage's package A; 5 the Bastion's cache, after 1 (**in work since 14:00**); 3 the store's writes and reads, which makes `encrypted: true`
   accepted, after 1, 2 and the first stage's A and B; 4 the reconciliation, scrub, sweep, backup and restore
   under encryption, after 3 and the first stage's B to E; 6 the offline tool, the chart, the API's fields and
   the manual. **Its tests cost** (estimates): about 2.9 s of unit tests and 0.5 s of the chart's, about 10 s in
