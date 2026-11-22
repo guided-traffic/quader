@@ -76,11 +76,21 @@ type Marking struct {
 	// installation's rule for every format, and the Bastion reports every serve of
 	// such an entry from its cache.
 	Counted bool
+	// Package is the package the response belongs to, decoded ([HeaderPackage],
+	// R-BAS-081, R-BAS-082); empty for a response that belongs to none.
+	Package string
+	// PackageRead is the caller's shape on Package ([HeaderPackageRead]):
+	// [ReadFull] or [ReadPartial], set exactly with Package.
+	PackageRead Read
 }
 
 // Set writes the marking headers. A marking without a repository (a response
 // that addresses none, class pass) leaves [HeaderRepository] and [HeaderRead]
-// out; one that counted no download leaves [HeaderCounted] out.
+// out; one that counted no download leaves [HeaderCounted] out. A package is
+// written percent-encoded with its shape, which is [ReadPartial] unless
+// PackageRead is [ReadFull]; a marking without a package, or with a name
+// outside the bounds of [ValidPackage], leaves both package headers out, so the
+// response belongs to no package and claims less, never more (R-BAS-082).
 func (m Marking) Set(h http.Header) {
 	h.Set(HeaderClass, string(m.Class))
 	if m.Repository != "" {
@@ -93,6 +103,14 @@ func (m Marking) Set(h http.Header) {
 	h.Set(HeaderInterface, strconv.Itoa(m.Interface))
 	if m.Counted {
 		h.Set(HeaderCounted, CountedDownload)
+	}
+	if ValidPackage(m.Package) {
+		read := ReadPartial
+		if m.PackageRead == ReadFull {
+			read = ReadFull
+		}
+		h.Set(HeaderPackage, encodePackage(m.Package))
+		h.Set(HeaderPackageRead, string(read))
 	}
 }
 
@@ -114,7 +132,8 @@ var ErrMarking = errors.New("bastion marking: malformed")
 // ParseMarking reads the marking of a response. A response without [HeaderClass]
 // is unmarked: ok is false and the Bastion treats the response as the answer of a
 // proxy in front of the main installation (R-BAS-021). A marked response with a
-// malformed header is an error. Repository and read may be absent.
+// malformed header is an error. Repository and read may be absent, and so may
+// the package; parsePackage says what makes the package headers malformed.
 func ParseMarking(h http.Header) (m Marking, ok bool, err error) {
 	class := h.Get(HeaderClass)
 	if class == "" {
@@ -151,7 +170,39 @@ func ParseMarking(h http.Header) (m Marking, ok bool, err error) {
 		}
 		m.Counted = true
 	}
+	if m.Package, m.PackageRead, err = parsePackage(h); err != nil {
+		return Marking{}, true, err
+	}
 	return m, true, nil
+}
+
+// parsePackage reads [HeaderPackage] and [HeaderPackageRead] (R-BAS-082). Both
+// absent is a response that belongs to no package. It refuses one header without
+// the other, more than one value of either, a shape other than full or partial,
+// a name that does not decode strictly (decodePackage) and a decoded name
+// outside the bounds of [ValidPackage].
+func parsePackage(h http.Header) (string, Read, error) {
+	names, reads := h.Values(HeaderPackage), h.Values(HeaderPackageRead)
+	switch {
+	case len(names) == 0 && len(reads) == 0:
+		return "", "", nil
+	case len(names) == 0 || len(reads) == 0:
+		return "", "", fmt.Errorf("%w: %s and %s come together", ErrMarking, HeaderPackage, HeaderPackageRead)
+	case len(names) > 1 || len(reads) > 1:
+		return "", "", fmt.Errorf("%w: more than one %s or %s", ErrMarking, HeaderPackage, HeaderPackageRead)
+	}
+	read := Read(reads[0])
+	if read != ReadFull && read != ReadPartial {
+		return "", "", fmt.Errorf("%w: %s %q", ErrMarking, HeaderPackageRead, reads[0])
+	}
+	name, ok := decodePackage(names[0])
+	if !ok {
+		return "", "", fmt.Errorf("%w: %s %q does not decode", ErrMarking, HeaderPackage, names[0])
+	}
+	if !ValidPackage(name) {
+		return "", "", fmt.Errorf("%w: %s %q is outside the bounds of a package name", ErrMarking, HeaderPackage, names[0])
+	}
+	return name, read, nil
 }
 
 // SubjectKind says who a credential turned out to be (R-BAS-011, R-BAS-013).

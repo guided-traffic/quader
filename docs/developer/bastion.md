@@ -183,11 +183,12 @@ internal/bastionmain/ the main installation's seams (a domain package)
 |---|---|
 | [iface/version.go](../../internal/bastion/iface/version.go) | `InterfaceVersion` |
 | [iface/routes.go](../../internal/bastion/iface/routes.go) | the four route paths, the feed query parameters, the operation names, the mirrored path families |
-| [iface/headers.go](../../internal/bastion/iface/headers.go) | every header name of R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017 and R-BAS-059 (`Quader-Bastion-Counted`), the probe, route and counted values, the token prefix |
-| [iface/marking.go](../../internal/bastion/iface/marking.go) | `Class`, `Read`, `Marking` (Set, Parse, Strip; `Counted`), `SubjectKind`, `Subject` and its header form |
+| [iface/headers.go](../../internal/bastion/iface/headers.go) | every header name of R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017, R-BAS-059 (`Quader-Bastion-Counted`) and R-BAS-082 (`Quader-Bastion-Package`, `Quader-Bastion-Package-Read`), the probe, route and counted values, the token prefix |
+| [iface/marking.go](../../internal/bastion/iface/marking.go) | `Class`, `Read`, `Marking` (Set, Parse, Strip; `Counted`; `Package` and `PackageRead` with the five refusals of R-BAS-082 in `parsePackage`), `SubjectKind`, `Subject` and its header form |
+| [iface/package.go](../../internal/bastion/iface/package.go) | the package names of the interface: `ValidPackage`, `MaxPackageBytes` (512) and the strict percent-encoding of `Quader-Bastion-Package` (R-BAS-082) |
 | [iface/cursor.go](../../internal/bastion/iface/cursor.go) | `Cursor` and the synthetic `t:<RFC 3339>` form |
-| [iface/wire.go](../../internal/bastion/iface/wire.go) | the bodies of the handshake (with the format table `HandshakeFormats` and `BoundRepository`, R-BAS-057), check, feed and downloads, `FeedKind`, `DecodeStrict`, `Marshal` |
-| [iface/regtoken.go](../../internal/bastion/iface/regtoken.go) | the registry token's form below `/v2/` and the unverified reading of its anonymous claim (R-BAS-052, Q-BAS-185) |
+| [iface/wire.go](../../internal/bastion/iface/wire.go) | the bodies of the handshake (with the format table `HandshakeFormats` and `BoundRepository`, R-BAS-057), check (with `packages` in request and answer, always written, and the request's rules `CheckRequest.PackagesProblem`, R-BAS-083), feed and downloads, `FeedKind`, `DecodeStrict`, `Marshal` |
+| [iface/regtoken.go](../../internal/bastion/iface/regtoken.go) | the registry token's form below `/v2/` and the unverified reading of its claims: the anonymous claim (R-BAS-052, Q-BAS-185), the grant (`RegistryTokenGrant`, `RegistryGrant.Pulls`, Q-BAS-246) and the expiry (`RegistryTokenExpiry`, Q-BAS-252) |
 | [iface/problems.go](../../internal/bastion/iface/problems.go) | the problem codes of R-BAS-008, R-BAS-009, R-BAS-014 and R-BAS-029 |
 | [iface/surface_test.go](../../internal/bastion/iface/surface_test.go) | the generator of the surface and the guard of R-BAS-009 |
 | [answers/answers.go](../../internal/bastion/answers/answers.go) | `Answer`, `State.Check` (the four rules), `FeedLog` (Record, Prune, Reset) |
@@ -275,7 +276,9 @@ with fields and JSON tags, functions) into [testdata/interface.txt](../../intern
 first line. `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` fails when the code and the file differ. To change the interface:
 raise `InterfaceVersion`, then `go test ./internal/bastion/iface -run TestR_BAS_009 -update-interface`; the regeneration refuses to write
 a changed surface under an unchanged version. The OpenAPI document must name the new version in `x-quader-bastion-interface`
-(`LoadDocument` checks it), and the release notes announce it.
+(`LoadDocument` checks it), and the release notes announce it. The interface is at version 5 since the wire of the read shapes per package
+([bastion-package-shapes.md](bastion-package-shapes.md), P1): the two package headers of the marking, the check's `packages`, and the
+unverified reading of a registry token's grant and expiry.
 
 ## Shared state and the guard
 
@@ -467,7 +470,9 @@ applied by ID with the receipt time; `reset` empties the log and starts the hist
 marking. A test points a client at `main.URL()` with `main.CAFile(dir)` as `bastion.main.ca_file` (the real TLS path), issues
 tokens (`NewToken`, `NewTokenExpiring`, `Revoke`), adds feed entries (`AddEntry`, `Reset`), and switches the main installation
 (`SetVersion`, `SetBaseURLHonoured`, `SetDown`, `SetDelay`, `Force`, `SetForward`, `SetCheck`, `SetClock`). It records what arrived (`Forwards`,
-`Checks`, `Downloads`, `FeedReads`, `Headers`, `Calls`, `MaxInFlight`). `Faulty` wraps the client's transport through
+`Checks`, `Downloads`, `FeedReads`, `Headers`, `Calls`, `MaxInFlight`). A forward handler marks a response's package with
+`Mark(w, iface.Marking{…, Package, PackageRead})`, and the check refuses the pairs the main installation refuses
+(`CheckRequest.PackagesProblem` with `CheckMaxRepositories`, 16, answered `422`) before the check function sees them. `Faulty` wraps the client's transport through
 `mainclient.Options.WrapTransport` to cut the link without the fake. `MemSpool` is the audit spool of a test; `Value(metric)` reads a
 counter or gauge. [roletest](../../internal/bastion/roletest/roletest.go) builds the whole-role scenario on it.
 

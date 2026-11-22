@@ -305,6 +305,48 @@ func TestR_BAS_011_ACheckBodyIsValidated(t *testing.T) {
 	})
 }
 
+// TestR_BAS_083_ThePackagesOfACheckAreValidated: a pair whose repository is not named, more pairs than
+// bastions.check.max_repositories, a name of 513 bytes and a pair twice answer 422 with a field error at /packages/<i>
+// (Q-BAS-255); a valid request, and an unusable subject, answer the member packages as [].
+func TestR_BAS_083_ThePackagesOfACheckAreValidated(t *testing.T) {
+	var verdict error
+	cs := newCheckSetup(t, func(r *http.Request) (httpserver.Principal, error) {
+		if verdict != nil {
+			return httpserver.Principal{}, verdict
+		}
+		return checkedCaller(nil)(r)
+	})
+	body := func(pkgs string) string {
+		return `{"credential":"qdr_sat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all","it/npm-local"],"packages":[` + pkgs + `]}`
+	}
+	for name, c := range map[string]struct{ pkgs, pointer, code string }{
+		"a repository that is not named": {`{"repository":"it/npm-all","package":"a"},{"repository":"it/npm-partner","package":"a"}`, "/packages/1", "unknown_repository"},
+		"more than the bound of 3":       {`{"repository":"it/npm-all","package":"a"},{"repository":"it/npm-all","package":"b"},{"repository":"it/npm-all","package":"c"},{"repository":"it/npm-all","package":"d"}`, "/packages/3", "count"},
+		"a name of 513 bytes":            {`{"repository":"it/npm-all","package":"` + strings.Repeat("x", iface.MaxPackageBytes+1) + `"}`, "/packages/0", "invalid_package"},
+		"a pair twice":                   {`{"repository":"it/npm-local","package":"@acme/sdk"},{"repository":"it/npm-local","package":"@acme/sdk"}`, "/packages/1", "duplicate"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			w := cs.post(iface.PathCheck, body(c.pkgs))
+			var p struct {
+				Errors []errs.FieldError `json:"errors"`
+			}
+			if err := json.Unmarshal(w.Body.Bytes(), &p); err != nil || w.Code != http.StatusUnprocessableEntity || len(p.Errors) != 1 ||
+				p.Errors[0].Pointer != c.pointer || p.Errors[0].Code != c.code {
+				t.Errorf("%d %s, want 422 at %s with %s", w.Code, w.Body, c.pointer, c.code)
+			}
+		})
+	}
+	w := cs.post(iface.PathCheck, body(`{"repository":"it/npm-local","package":"@acme/sdk"},{"repository":"it/npm-all","package":"g++"}`))
+	raw := w.Body.String()
+	if ans := decodeCheck(t, w); len(ans.Packages) != 0 || !strings.Contains(raw, `"packages":[]`) {
+		t.Errorf("a valid request answers %s", raw)
+	}
+	verdict = errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "The token is not valid.")
+	if w := cs.post(iface.PathCheck, body(`{"repository":"it/npm-local","package":"@acme/sdk"}`)); !strings.Contains(w.Body.String(), `"packages":[]`) {
+		t.Errorf("an invalid subject answers %d %s", w.Code, w.Body)
+	}
+}
+
 // TestR_BAS_016_TheIntakeAnswers204AndRefusesAMalformedBody: the HTTP side of the intake; its rules are tested
 // in internal/bastionmain.
 func TestR_BAS_016_TheIntakeAnswers204AndRefusesAMalformedBody(t *testing.T) {

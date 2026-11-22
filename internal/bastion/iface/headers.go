@@ -40,6 +40,13 @@ const (
 	// it on the entry and reports every serve of that entry from its cache. It is
 	// a member of the [Marking] ([Marking.Counted]).
 	HeaderCounted = "Quader-Bastion-Counted"
+	// HeaderPackage is the package the response belongs to (R-BAS-081, R-BAS-082), percent-encoded by the rule of
+	// [Marking.Set]: present on a 200 or 304 of a Download, Metadata or Computed route whose request named exactly one
+	// package, absent everywhere else. It is a member of the [Marking] ([Marking.Package]).
+	HeaderPackage = "Quader-Bastion-Package"
+	// HeaderPackageRead is the caller's [Read] shape on the package of [HeaderPackage], [ReadFull] or [ReadPartial],
+	// present exactly with it (R-BAS-082). It is a member of the [Marking] ([Marking.PackageRead]).
+	HeaderPackageRead = "Quader-Bastion-Package-Read"
 )
 
 // HeaderPrefix starts every header of the interface. The main installation never

@@ -66,7 +66,8 @@ func (s *Server) BastionCheck(w http.ResponseWriter, r *http.Request, _ gen.Bast
 		httpserver.Problem(w, r, err)
 		return
 	}
-	ans := iface.CheckAnswer{Subject: subject, Repositories: map[string]iface.RepositoryRead{}}
+	// No pair is answered yet: the packages of the check (R-BAS-083) are the main installation's side of the read shapes per package.
+	ans := iface.CheckAnswer{Subject: subject, Repositories: map[string]iface.RepositoryRead{}, Packages: iface.PackageReads{}}
 	if subject.Kind != iface.SubjectToken && subject.Kind != iface.SubjectAnonymous {
 		// A subject that cannot be used carries no shapes; the Bastion answers its caller from the kind.
 		writeInterface(w, r, http.StatusOK, ans)
@@ -118,6 +119,10 @@ func (s *Server) checkRequest(req iface.CheckRequest) (netip.Addr, error) {
 	}
 	if req.Credential != nil && len(*req.Credential) > maxCredentialLen {
 		return netip.Addr{}, invalid("/credential", "too_long", "is longer than any credential")
+	}
+	// The pairs the check is asked about answer a field error at the first element that breaks a rule (R-BAS-083, Q-BAS-255).
+	if p := req.PackagesProblem(s.o.Bastion.Config.Check.MaxRepositories); p != nil {
+		return netip.Addr{}, invalid("/packages/"+strconv.Itoa(p.Index), p.Code, p.Detail)
 	}
 	return addr, nil
 }

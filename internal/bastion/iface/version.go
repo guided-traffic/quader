@@ -9,4 +9,7 @@ package iface
 // A change of this value belongs in the same change as the regenerated
 // testdata/interface.txt (go test ./internal/bastion/iface -run TestR_BAS_009
 // -update-interface), and the release notes announce it.
-const InterfaceVersion = 4
+//
+// Version 5 (R-BAS-087): the marking's package headers, the check's packages,
+// and the unverified reading of a registry token's grant and expiry.
+const InterfaceVersion = 5

@@ -13335,7 +13335,7 @@ paths:
         and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
         switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
         API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 4
+      x-quader-bastion-interface: 5
       x-quader-permission:
         bastion: true
       parameters:
@@ -13372,10 +13372,12 @@ paths:
         The Bastion interface (R-BAS-011, R-BAS-012). Validates the caller's credential as a direct request would (R-AUTH-023
         including the failed-credential throttle for `clientAddress`, `token.rejected` with that address) and answers the
         subject and, for at most `bastions.check.max_repositories` repository keys, the read shape `full`, `partial` or `none`
-        with the status the caller would receive. It writes no `authz.denied` events. A repository name without a project
-        (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; another
-        interface version answers `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 4
+        with the status the caller would receive, and for each requested (repository, package) pair the caller's package shape
+        `full` or `partial` (R-BAS-083). It writes no `authz.denied` events. A repository name without a project
+        (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
+        breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
+        `400 bastion_interface_mismatch`.
+      x-quader-bastion-interface: 5
       x-quader-permission:
         bastion: true
       parameters:
@@ -13425,7 +13427,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 4
+      x-quader-bastion-interface: 5
       x-quader-permission:
         bastion: true
       parameters:
@@ -13475,7 +13477,7 @@ paths:
         asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
         `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
-      x-quader-bastion-interface: 4
+      x-quader-bastion-interface: 5
       x-quader-permission:
         bastion: true
       parameters:
@@ -26092,7 +26094,7 @@ components:
     BastionCheckRequest:
       type: object
       additionalProperties: false
-      required: [credential, clientAddress, repositories]
+      required: [credential, clientAddress, repositories, packages]
       properties:
         credential:
           type: [string, "null"]
@@ -26103,10 +26105,30 @@ components:
           type: array
           items:
             type: string
+        packages:
+          type: array
+          description: >-
+            The (repository, package) pairs to answer for (R-BAS-083): at most `bastions.check.max_repositories`, each
+            repository named in `repositories`, no pair twice; empty when the Bastion asks about none.
+          items:
+            $ref: "#/components/schemas/BastionCheckPackage"
+    BastionCheckPackage:
+      type: object
+      additionalProperties: false
+      required: [repository, package]
+      properties:
+        repository:
+          type: string
+          example: web/docker
+        package:
+          type: string
+          minLength: 1
+          description: The package name, decoded, as the format's coordinates carry it; 1 to 512 bytes of UTF-8 without a control character.
+          example: library/nginx
     BastionCheckAnswer:
       type: object
       additionalProperties: false
-      required: [subject, repositories]
+      required: [subject, repositories, packages]
       properties:
         subject:
           $ref: "#/components/schemas/BastionSubject"
@@ -26114,6 +26136,26 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/BastionRepositoryRead"
+        packages:
+          type: array
+          description: One element per requested pair, in request order; empty for a subject that is not usable (R-BAS-083).
+          items:
+            $ref: "#/components/schemas/BastionPackageRead"
+    BastionPackageRead:
+      type: object
+      additionalProperties: false
+      required: [repository, package, read]
+      properties:
+        repository:
+          type: string
+          example: web/docker
+        package:
+          type: string
+          example: library/nginx
+        read:
+          type: string
+          enum: [full, partial]
+          description: The caller's package shape (R-BAS-080); a pair whose repository reads `none` reads `partial`.
     BastionSubject:
       type: object
       additionalProperties: false

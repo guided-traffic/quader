@@ -3759,6 +3759,15 @@ Acceptance criteria:
   a registry token granted `app` reading `app`: `Package-Read: full`.
 - Unit (`internal/bastion/iface`): `ParseMarking` refuses each of the five malformed cases above; `g++` round-trips as `g%2B%2B`.
 
+*As built on 2026-11-22, the wire (package P1 of [the build plan](../developer/bastion-package-shapes.md)):* `iface.HeaderPackage`,
+`iface.HeaderPackageRead`, `Marking.Package` and `Marking.PackageRead`; the bounds are `iface.ValidPackage` and `iface.MaxPackageBytes`
+(512), the encoding is in [package.go](../../internal/bastion/iface/package.go). Decoding strictly means: every byte is one of the
+verbatim set or starts `%XX` with two upper-case hexadecimal digits, and `%XX` never stands for a byte of the verbatim set, so a name has
+exactly one spelling on the wire (`%41` for `A` is refused). `Marking.Set` writes both headers only for a name within the bounds and
+writes `partial` unless `PackageRead` is `full`, so a defect at the writer claims less, never more. `ParseMarking` refuses the five cases
+(`TestR_BAS_082_ParseMarkingRefusesAMalformedPackage`, `TestR_BAS_082_TheMarkingCarriesThePackage`). Nothing writes the headers yet: the
+main installation's marking (P3) and the Bastion's reading of them (P4) are not built.
+
 ### R-BAS-083 · The check per package
 Priority: **P1** · Covers: quader-only
 
@@ -3779,7 +3788,8 @@ Priority: **P1** · Covers: quader-only
 
 - **Request rules.** The package is a decoded JSON string with the bounds of the header (R-BAS-082); its repository is named in
   `repositories`; no pair appears twice; at most `bastions.check.max_repositories` elements (16, the existing value, no new setting). A
-  violation answers `400` with a field error at `/packages/<i>`.
+  violation answers `422` with a field error at `/packages/<i>` for the first element that breaks a rule, as the check's other field errors
+  do ([Q-BAS-255](#q-bas-255--a-checks-package-that-breaks-a-rule-answers-422-as-the-checks-other-field-errors)).
 - **Answer rules.** One element per requested pair, in request order; an empty array for a subject that is not usable; a pair whose
   repository reads `none` reads `partial`. A credential with a registry grant is limited to its grant (R-BAS-080).
 - **The types.** The OpenAPI schemas `BastionCheckRequest` and `BastionCheckAnswer` gain the members; `x-quader-bastion-interface` is the
@@ -3789,7 +3799,16 @@ Acceptance criteria:
 
 - Unit (`internal/api/v1`), through the real authentication stage: a registry token granted `web/docker-local/app` asked about the packages
   `[app, other]` answers `full`, `partial`; a package whose repository is not named, more than 16 elements, or a name of 513 bytes answers
-  `400` at `/packages/<i>`; an `invalid` subject answers `packages: []`; a repository that reads `none` gives its packages `partial`.
+  `422` at `/packages/<i>`; an `invalid` subject answers `packages: []`; a repository that reads `none` gives its packages `partial`.
+
+*As built on 2026-11-22, the wire (package P1):* `iface.CheckRequest.Packages` (`iface.CheckPackages` of `iface.CheckPackage`) and
+`iface.CheckAnswer.Packages` (`iface.PackageReads` of `iface.PackageRead`); both are written `[]` when empty, whoever builds the body, so
+the member is always present. The request rules are `iface.CheckRequest.PackagesProblem`, shared by the main installation's check and the
+fake main installation of the Bastion's tests (`maintest`); its codes are `count`, `invalid_package`, `unknown_repository` and
+`duplicate`. The OpenAPI schemas `BastionCheckPackage` and `BastionPackageRead`. The main installation validates the pairs and answers
+`packages: []` to every check, so nothing changes for a caller until the main installation answers per pair (P3) and the Bastion asks
+(P4) (`TestR_BAS_083_ACheckRequestsPackagesAreValidated`, `TestR_BAS_083_TheCheckCarriesPackages`,
+`TestR_BAS_083_ThePackagesOfACheckAreValidated`). The criterion's answers per pair are P3's.
 
 ### R-BAS-084 · Package answers at the Bastion
 Priority: **P1** · Covers: quader-only
@@ -3930,6 +3949,19 @@ Acceptance criteria:
 - `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` sees the two headers, their values and the check's members under version 5; the
   OpenAPI document says `x-quader-bastion-interface: 5` on the four operations; `iface.RegistryTokenGrant` reads the grant of a token from the
   real `registrytoken` encoder; a token whose claims do not decode yields no grant, so its package answers are recorded `partial`.
+
+*As built on 2026-11-22 (package P1):* `iface.InterfaceVersion` is 5; [interface.txt](../../internal/bastion/iface/testdata/interface.txt)
+records the headers, the check's members, `ValidPackage`, `MaxPackageBytes` and the two readers, and the four operations say
+`x-quader-bastion-interface: 5`. `iface.RegistryTokenGrant` returns the entries of the claim `g` as `iface.RegistryGrant`, whose `Pulls`
+compares repository and image byte for byte with the pull bit `iface.RegistryGrantPull` (1); it also yields no grant for claims that
+name a system subject (the member `s` of a scan or blob token, which reaches one manifest or blob, never a whole image), which can only
+lower what is read. The expiry reader of Q-BAS-252 is kept: `iface.RegistryTokenExpiry` reads the member `exp`. Each reader decodes only
+the members it reads, so `RegistryTokenAnonymous` answers as before. Both are tested against tokens from the real encoder, entry by entry
+against what the verifier decodes (`TestR_BAS_087_TheGrantIsReadAsTheTokenServiceWritesIt`,
+`TestQ_BAS_252_TheExpiryIsReadAsTheTokenServiceWritesIt`); `maintest` speaks version 5, marks packages through `Main.Mark` and holds the
+check's pairs to the main installation's rules; the Bastion's client reads a package from a marking and sends a check's pairs
+(`TestR_BAS_087_TheClientAndTheFakeSpeakTheVersionWithPackages` in `internal/bastion/mainclient`). Nothing reads the grant or the expiry
+yet: the Bastion's recording of package answers and its use of the expiry are P4's. Nothing on `main` used version 5 before.
 
 ### R-BAS-088 · Tests and what they cost
 Priority: **P1** · Covers: quader-only
@@ -8143,7 +8175,8 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) One structured field | One header carrying both | One header | A second syntax in the interface |
 | (c) An opaque package key (a hash) | The Bastion sees no name | Hides names from the Bastion | The main installation cannot answer the check without inverting the hash; the Bastion sees the paths anyway |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-013, R-BAS-082.
+**Choice:** (a). **Applied in the spec:** R-BAS-013, R-BAS-082. *As built on 2026-11-22 (package P1):* `iface.HeaderPackage`,
+`iface.HeaderPackageRead`, with the strict decoding R-BAS-082's note describes.
 
 ### Q-BAS-243 · Package shapes have two values, and absent stays per repository
 
@@ -8198,7 +8231,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) Record `full` only when the token's unverified grant names (repository, package) with pull, checked when the answer is recorded (chosen) | `iface.RegistryTokenGrant` reads the claim `g` without verifying it | A defect at the main installation cannot open other images (the pattern of Q-BAS-198); trusting the unverified grant can only lower what is read; two opaque strings are compared, so no path grammar | The interface reads one more member of the token service's claims; a test with the real encoder holds the two together |
 | (b) The main installation alone | No reading at the Bastion | Smaller | Q-BAS-167's risk returns on a defect |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-052, R-BAS-084; Q-BAS-198 (extended).
+**Choice:** (a). **Applied in the spec:** R-BAS-052, R-BAS-084; Q-BAS-198 (extended). *As built on 2026-11-22, the reader only
+(package P1):* `iface.RegistryTokenGrant` and `RegistryGrant.Pulls` ([regtoken.go](../../internal/bastion/iface/regtoken.go)); the
+comparison at the recording of an answer is P4's.
 
 ### Q-BAS-247 · Bounds on package answers
 
@@ -8255,7 +8290,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) The read shapes per package take the next free version when they land, and the handover moves to the version after it (chosen) | Version 5 here, 6 for R-BAS-073 | The handover's dependencies are not on `main`; each build raises the version alone | The handover's specification and build plan change their number |
 | (b) One version for both | The two builds land under one number | One upgrade | Couples two unrelated builds |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-073, R-BAS-087.
+**Choice:** (a). **Applied in the spec:** R-BAS-073, R-BAS-087. *As built on 2026-11-22 (package P1):* `iface.InterfaceVersion` is 5.
 
 ### Q-BAS-252 · Option (b) of Q-BAS-202 is bundled
 
@@ -8266,7 +8301,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) Read a registry token's expiry from its unverified claims in the same version (chosen) | Q-BAS-202 option (b) | The claims reader is extended and the version raised anyway; it closes [H-1295](#h-1295--a-registry-token-past-its-expiry-is-counted-as-a-failed-authentication-on-a-replica-that-does-not-know-its-expiry) | Scope |
 | (b) Leave Q-BAS-202 as built | The expiry the main installation reported | Smaller | A later version change for it |
 
-**Choice:** (a); the builder may leave it out without touching the rest. **Applied in the spec:** R-BAS-087; Q-BAS-202.
+**Choice:** (a); the builder may leave it out without touching the rest. **Applied in the spec:** R-BAS-087; Q-BAS-202. *As built on
+2026-11-22 (package P1):* kept; `iface.RegistryTokenExpiry` reads the member `exp`. H-1295 stays open until the Bastion refuses by it
+(`registryTokenExpired` in [registry.go](../../internal/bastion/engine/registry.go), P4's).
 
 ### Q-BAS-253 · Limits and download events stay unchanged
 
@@ -8290,6 +8327,24 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) New end-to-end cases, npm included | A client case per changed behaviour | The real path | No client shows anything the replay does not; cost per format |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-088.
+
+### Q-BAS-255 · A check's package that breaks a rule answers 422, as the check's other field errors
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-BAS-083 asked for `400` with a field error at `/packages/<i>`. The check's other request rules (an address that is none, the
+count of `repositories`, a credential longer than any) already answer with a field error, and the main installation's problem answers give
+every error with field errors the status `422` (R-API's problem form, `errs.Invalid`); `400 malformed_request` is a body that does not read
+and a repository name without a project, neither with a field error.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `422` with the field error at `/packages/<i>` (chosen) | The same status and form as the check's other rules | One rule for every field error of the API; no exception in the problem form | The specification's first text said `400` |
+| (b) `400` with the field error, a status set by hand | As first specified | — | The only field error of the API with `400`; a Bastion never reads the status of a refused check apart from "not 200" |
+| (c) `400 malformed_request` without a field error | Like a body that does not read | No new form | The pointer to the element is lost |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-083; code: `checkRequest` in
+[bastion_check_api.go](../../internal/api/v1/bastion_check_api.go), `iface.CheckRequest.PackagesProblem`.
 
 ## What this does not cover
 

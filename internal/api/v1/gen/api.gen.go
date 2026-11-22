@@ -214,6 +214,24 @@ func (e BastionHandshakeFormatRateLimitedStatus) Valid() bool {
 	}
 }
 
+// Defines values for BastionPackageReadRead.
+const (
+	BastionPackageReadReadFull    BastionPackageReadRead = "full"
+	BastionPackageReadReadPartial BastionPackageReadRead = "partial"
+)
+
+// Valid indicates whether the value is a known member of the BastionPackageReadRead enum.
+func (e BastionPackageReadRead) Valid() bool {
+	switch e {
+	case BastionPackageReadReadFull:
+		return true
+	case BastionPackageReadReadPartial:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionRepositoryReadRead.
 const (
 	BastionRepositoryReadReadFull    BastionRepositoryReadRead = "full"
@@ -7590,8 +7608,17 @@ type Bastion struct {
 
 // BastionCheckAnswer defines model for BastionCheckAnswer.
 type BastionCheckAnswer struct {
+	// Packages One element per requested pair, in request order; empty for a subject that is not usable (R-BAS-083).
+	Packages     []BastionPackageRead             `json:"packages"`
 	Repositories map[string]BastionRepositoryRead `json:"repositories"`
 	Subject      BastionSubject                   `json:"subject"`
+}
+
+// BastionCheckPackage defines model for BastionCheckPackage.
+type BastionCheckPackage struct {
+	// Package The package name, decoded, as the format's coordinates carry it; 1 to 512 bytes of UTF-8 without a control character.
+	Package    string `json:"package"`
+	Repository string `json:"repository"`
 }
 
 // BastionCheckRequest defines model for BastionCheckRequest.
@@ -7599,8 +7626,11 @@ type BastionCheckRequest struct {
 	ClientAddress string `json:"clientAddress"`
 
 	// Credential The token string the caller presented, or `null` for an anonymous caller.
-	Credential   *string  `json:"credential"`
-	Repositories []string `json:"repositories"`
+	Credential *string `json:"credential"`
+
+	// Packages The (repository, package) pairs to answer for (R-BAS-083): at most `bastions.check.max_repositories`, each repository named in `repositories`, no pair twice; empty when the Bastion asks about none.
+	Packages     []BastionCheckPackage `json:"packages"`
+	Repositories []string              `json:"repositories"`
 }
 
 // BastionContact defines model for BastionContact.
@@ -7712,6 +7742,18 @@ type BastionHandshakeFormatRateLimitedStatus int
 type BastionList struct {
 	Items []Bastion `json:"items"`
 }
+
+// BastionPackageRead defines model for BastionPackageRead.
+type BastionPackageRead struct {
+	Package string `json:"package"`
+
+	// Read The caller's package shape (R-BAS-080); a pair whose repository reads `none` reads `partial`.
+	Read       BastionPackageReadRead `json:"read"`
+	Repository string                 `json:"repository"`
+}
+
+// BastionPackageReadRead The caller's package shape (R-BAS-080); a pair whose repository reads `none` reads `partial`.
+type BastionPackageReadRead string
 
 // BastionPatch The read-only members of `Bastion` are accepted and ignored.
 type BastionPatch struct {

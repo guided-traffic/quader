@@ -6,7 +6,9 @@
 // What it models of the main installation: the Bastion token check (401 bastion_token_invalid), the interface
 // version check (400 bastion_interface_mismatch), the handshake with the response base URL derived from the
 // forwarded headers of R-BAS-017, the feed with its lookback, entry IDs, paging and reset (R-BAS-015), the
-// downloads intake, and the recording of every request the Bastion sent. What it does not model: users,
+// downloads intake, the rules of a check's packages (R-BAS-083), and the recording of every request the Bastion sent. A
+// forward handler marks a response, its package and the caller's shape on it included (R-BAS-082), with [Main.Mark]; the
+// check function answers the pairs it is asked about. What it does not model: users,
 // policies, repositories, formats. The check answer and the forwarded answer are functions the test sets, and so are
 // the handshake's format table and bound repository (R-BAS-057), which are data of the main installation's formats.
 package maintest
@@ -39,6 +41,10 @@ const Release = "0.0.0-maintest"
 
 // Lookback is the feed lookback of the fake (bastions.feed.lookback).
 const Lookback = 5 * time.Minute
+
+// CheckMaxRepositories is the fake's bastions.check.max_repositories, the default: the bound of a check's packages
+// (R-BAS-083).
+const CheckMaxRepositories = 16
 
 // Main is the fake main installation.
 type Main struct {
@@ -518,6 +524,12 @@ func (m *Main) checkOp(w http.ResponseWriter, r *http.Request) {
 	var req iface.CheckRequest
 	if err := iface.DecodeStrict(r.Body, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// The packages are held to the main installation's rules, so a Bastion that asks about a pair the main installation
+	// refuses meets the refusal here (R-BAS-083).
+	if p := req.PackagesProblem(CheckMaxRepositories); p != nil {
+		http.Error(w, fmt.Sprintf("/packages/%d: %s", p.Index, p.Code), http.StatusUnprocessableEntity)
 		return
 	}
 	m.mu.Lock()

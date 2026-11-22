@@ -185,6 +185,67 @@ type CheckRequest struct {
 	// answer for, at most bastions.check.max_repositories. A name without a
 	// project is refused with 400 malformed_request (R-BAS-011).
 	Repositories []string `json:"repositories"`
+	// Packages are the (repository, package) pairs to answer for (R-BAS-083),
+	// each repository named in Repositories; always present, [] when none.
+	// [CheckRequest.PackagesProblem] holds the rules.
+	Packages CheckPackages `json:"packages"`
+}
+
+// CheckPackage is one pair of a check request's packages (R-BAS-083).
+type CheckPackage struct {
+	// Repository is a qualified name of the request's repositories.
+	Repository string `json:"repository"`
+	// Package is the package name, decoded, within the bounds of [ValidPackage].
+	Package string `json:"package"`
+}
+
+// CheckPackages is the member packages of a check request. It is written as []
+// when it holds nothing: the member is always present (R-BAS-083).
+type CheckPackages []CheckPackage
+
+// MarshalJSON writes the pairs, and [] for none.
+func (p CheckPackages) MarshalJSON() ([]byte, error) {
+	if p == nil {
+		return []byte("[]"), nil
+	}
+	return Marshal([]CheckPackage(p))
+}
+
+// PackageProblem is the first rule of R-BAS-083 the packages of a check request
+// break: the index of the element, a code (count, invalid_package,
+// unknown_repository or duplicate) and a sentence for the field error at
+// /packages/<Index>.
+type PackageProblem struct {
+	Index  int
+	Code   string
+	Detail string
+}
+
+// PackagesProblem checks the packages of the request (R-BAS-083) and returns
+// the first rule an element breaks, or nil: at most maxPairs elements (the main
+// installation's bastions.check.max_repositories); a package name within the
+// bounds of [ValidPackage]; a repository the request's repositories name; no pair
+// twice. The repositories themselves are the caller's to validate.
+func (r CheckRequest) PackagesProblem(maxPairs int) *PackageProblem {
+	named := make(map[string]bool, len(r.Repositories))
+	for _, repo := range r.Repositories {
+		named[repo] = true
+	}
+	seen := make(map[CheckPackage]bool, len(r.Packages))
+	for i, p := range r.Packages {
+		switch {
+		case i >= maxPairs:
+			return &PackageProblem{Index: i, Code: "count", Detail: fmt.Sprintf("must name at most %d packages", maxPairs)}
+		case !ValidPackage(p.Package):
+			return &PackageProblem{Index: i, Code: "invalid_package", Detail: fmt.Sprintf("must be a package name of 1 to %d bytes of UTF-8 without a control character", MaxPackageBytes)}
+		case !named[p.Repository]:
+			return &PackageProblem{Index: i, Code: "unknown_repository", Detail: "must name a repository of repositories"}
+		case seen[p]:
+			return &PackageProblem{Index: i, Code: "duplicate", Detail: "names a pair twice"}
+		}
+		seen[p] = true
+	}
+	return nil
 }
 
 // CheckAnswer is the answer of the check (R-BAS-011).
@@ -192,6 +253,30 @@ type CheckAnswer struct {
 	Subject Subject `json:"subject"`
 	// Repositories maps every requested qualified name to the caller's shape on it.
 	Repositories map[string]RepositoryRead `json:"repositories"`
+	// Packages holds one element per requested pair, in request order, and none
+	// for a subject that is not usable (R-BAS-083); always present.
+	Packages PackageReads `json:"packages"`
+}
+
+// PackageRead is the shape of a subject on one package of a repository
+// (R-BAS-080, R-BAS-083): [ReadFull] or [ReadPartial], never [ReadNone]; a pair
+// whose repository reads none reads partial.
+type PackageRead struct {
+	Repository string `json:"repository"`
+	Package    string `json:"package"`
+	Read       Read   `json:"read"`
+}
+
+// PackageReads is the member packages of a check answer. It is written as []
+// when it holds nothing: the member is always present (R-BAS-083).
+type PackageReads []PackageRead
+
+// MarshalJSON writes the shapes, and [] for none.
+func (p PackageReads) MarshalJSON() ([]byte, error) {
+	if p == nil {
+		return []byte("[]"), nil
+	}
+	return Marshal([]PackageRead(p))
 }
 
 // RepositoryRead is the shape of a subject on one repository and, for none, the

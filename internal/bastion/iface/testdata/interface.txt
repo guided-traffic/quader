@@ -1,4 +1,4 @@
-interface version 4
+interface version 5
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -41,6 +41,8 @@ const HeaderForwardedHost = "X-Forwarded-Host"
 const HeaderForwardedPort = "X-Forwarded-Port"
 const HeaderForwardedProto = "X-Forwarded-Proto"
 const HeaderInterface = "Quader-Bastion-Interface"
+const HeaderPackage = "Quader-Bastion-Package"
+const HeaderPackageRead = "Quader-Bastion-Package-Read"
 const HeaderPrefix = "Quader-Bastion-"
 const HeaderProbe = "Quader-Bastion-Probe"
 const HeaderRead = "Quader-Bastion-Read"
@@ -48,6 +50,7 @@ const HeaderReplica = "Quader-Bastion-Replica"
 const HeaderRepository = "Quader-Bastion-Repository"
 const HeaderRoute = "Quader-Bastion-Route"
 const HeaderSubject = "Quader-Bastion-Subject"
+const MaxPackageBytes = 512
 const MaxRegistryTokenBytes = 4096
 const MediaType = "application/json"
 const OperationCheck = "check"
@@ -67,6 +70,7 @@ const QueryLimit = "limit"
 const ReadFull Read = "full"
 const ReadNone Read = "none"
 const ReadPartial Read = "partial"
+const RegistryGrantPull = 1
 const RegistryTokenPrefix = "qdr_rgt_"
 const RouteReadWithBody = "read-with-body"
 const SubjectAnonymous SubjectKind = "anonymous"
@@ -78,6 +82,8 @@ const SyntheticCursorPrefix = "t:"
 const TokenPrefix = "qdr_bst_"
 const TokenTypeBST = "bst"
 const UserAgentPrefix = "quader-bastion/"
+func (CheckPackages) MarshalJSON() ([]byte, error)
+func (CheckRequest) PackagesProblem(maxPairs int) *PackageProblem
 func (Class) Valid() bool
 func (Cursor) String() string
 func (Cursor) Synthetic() bool
@@ -86,7 +92,9 @@ func (HandshakeFormats) Lookup(id string) HandshakeFormat
 func (HandshakeFormats) RegistryRoot() (HandshakeFormat, bool)
 func (HandshakeFormats) Validate() error
 func (Marking) Set(h http.Header)
+func (PackageReads) MarshalJSON() ([]byte, error)
 func (Read) Valid() bool
+func (RegistryGrant) Pulls(repository, pkg string) bool
 func (Subject) Header() string
 func DecodeStrict(r io.Reader, v any) error
 func Marshal(v any) ([]byte, error)
@@ -94,14 +102,23 @@ func ParseCursor(s string) (Cursor, error)
 func ParseMarking(h http.Header) (m Marking, ok bool, err error)
 func ParseSubjectHeader(v string) (Subject, error)
 func RegistryTokenAnonymous(s string) bool
+func RegistryTokenExpiry(s string) (time.Time, bool)
+func RegistryTokenGrant(s string) (RegistryGrant, bool)
 func RegistryTokenWellFormed(s string) bool
 func StripMarking(h http.Header)
+func ValidPackage(name string) bool
 type CheckAnswer struct
+type CheckAnswer: field Packages PackageReads `json:"packages"`
 type CheckAnswer: field Repositories map[string]RepositoryRead `json:"repositories"`
 type CheckAnswer: field Subject Subject `json:"subject"`
+type CheckPackage struct
+type CheckPackage: field Package string `json:"package"`
+type CheckPackage: field Repository string `json:"repository"`
+type CheckPackages []CheckPackage
 type CheckRequest struct
 type CheckRequest: field ClientAddress string `json:"clientAddress"`
 type CheckRequest: field Credential *string `json:"credential"`
+type CheckRequest: field Packages CheckPackages `json:"packages"`
 type CheckRequest: field Repositories []string `json:"repositories"`
 type Class string
 type Cursor struct
@@ -165,10 +182,26 @@ type Marking struct
 type Marking: field Class Class
 type Marking: field Counted bool
 type Marking: field Interface int
+type Marking: field Package string
+type Marking: field PackageRead Read
 type Marking: field Read Read
 type Marking: field Repository string
 type Marking: field Subject Subject
+type PackageProblem struct
+type PackageProblem: field Code string
+type PackageProblem: field Detail string
+type PackageProblem: field Index int
+type PackageRead struct
+type PackageRead: field Package string `json:"package"`
+type PackageRead: field Read Read `json:"read"`
+type PackageRead: field Repository string `json:"repository"`
+type PackageReads []PackageRead
 type Read string
+type RegistryGrant []RegistryGrantEntry
+type RegistryGrantEntry struct
+type RegistryGrantEntry: field Actions int `json:"a"`
+type RegistryGrantEntry: field Name string `json:"n"`
+type RegistryGrantEntry: field Repository string `json:"r"`
 type RepositoryRead struct
 type RepositoryRead: field Read Read `json:"read"`
 type RepositoryRead: field Status int `json:"status,omitempty"`

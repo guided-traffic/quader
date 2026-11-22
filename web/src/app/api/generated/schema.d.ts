@@ -4826,9 +4826,11 @@ export interface paths {
          * @description The Bastion interface (R-BAS-011, R-BAS-012). Validates the caller's credential as a direct request would (R-AUTH-023
          *     including the failed-credential throttle for `clientAddress`, `token.rejected` with that address) and answers the
          *     subject and, for at most `bastions.check.max_repositories` repository keys, the read shape `full`, `partial` or `none`
-         *     with the status the caller would receive. It writes no `authz.denied` events. A repository name without a project
-         *     (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; another
-         *     interface version answers `400 bastion_interface_mismatch`.
+         *     with the status the caller would receive, and for each requested (repository, package) pair the caller's package shape
+         *     `full` or `partial` (R-BAS-083). It writes no `authz.denied` events. A repository name without a project
+         *     (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
+         *     breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
+         *     `400 bastion_interface_mismatch`.
          */
         post: operations["bastionCheck"];
         delete?: never;
@@ -11863,12 +11865,36 @@ export interface components {
             credential: string | null;
             clientAddress: string;
             repositories: string[];
+            /** @description The (repository, package) pairs to answer for (R-BAS-083): at most `bastions.check.max_repositories`, each repository named in `repositories`, no pair twice; empty when the Bastion asks about none. */
+            packages: components["schemas"]["BastionCheckPackage"][];
+        };
+        BastionCheckPackage: {
+            /** @example web/docker */
+            repository: string;
+            /**
+             * @description The package name, decoded, as the format's coordinates carry it; 1 to 512 bytes of UTF-8 without a control character.
+             * @example library/nginx
+             */
+            package: string;
         };
         BastionCheckAnswer: {
             subject: components["schemas"]["BastionSubject"];
             repositories: {
                 [key: string]: components["schemas"]["BastionRepositoryRead"];
             };
+            /** @description One element per requested pair, in request order; empty for a subject that is not usable (R-BAS-083). */
+            packages: components["schemas"]["BastionPackageRead"][];
+        };
+        BastionPackageRead: {
+            /** @example web/docker */
+            repository: string;
+            /** @example library/nginx */
+            package: string;
+            /**
+             * @description The caller's package shape (R-BAS-080); a pair whose repository reads `none` reads `partial`.
+             * @enum {string}
+             */
+            read: "full" | "partial";
         };
         BastionSubject: {
             /** @enum {string} */
