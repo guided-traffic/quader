@@ -128,11 +128,13 @@ The configuration is a list `storage.connections` of flat elements and the share
 validates what the configuration says (R-STOR-050), `config.ResolveConnections` reads the files of a provisioner's Secret
 (`bucket_file`, `region_file`, `endpoint_file`) and checks the location rule again where the clients are built
 ([Q-STOR-251](../spec/storage.md#q-stor-251--the-files-of-a-connections-location-are-read-when-the-clients-are-built-not-when-the-configuration-is-loaded)),
-and `config.ClientConfig(element, objectStore)` is the `config.StorageS3` of one connection's client, the type the backup target and the
+and `config.ClientConfig(position, element, objectStore)` is the `config.StorageS3` of one connection's client, the type the backup target and the
 Bastion's bucket use as well. The operator commands and the backup reach the first connection (`Storage.FirstClient`) until packages D and
-E teach them the others.
+E teach them the others. An error that names a setting of a connection has the form of the validation,
+`storage.connections[<n>] (<id>): <key>` (`StorageS3.Names`, filled by `ClientConfig`, and `Connection.Element` in the blob store);
+the backup target's errors name `backup.target.<key>` and the Bastion's `bastion.cache.bucket.<key>`.
 
-`s3.NewFromFactory(ctx, config.ClientConfig(el, cfg.ObjectStore), outboundFactory)` takes its HTTP client from `internal/outbound` (purpose
+`s3.NewFromFactory(ctx, config.ClientConfig(i, el, cfg.ObjectStore), outboundFactory)` takes its HTTP client from `internal/outbound` (purpose
 `objectstore`) with the connect and response-header timeouts and the proxy of `storage.object_store.http`. Retries are the SDK's
 standard retryer (`retry.max_attempts`, `retry.max_backoff`). A transfer in which no byte moves for
 `http.idle_transfer_timeout` is cancelled (`idle.go`). Credentials (the connection's `credentials_source`):

@@ -92,7 +92,7 @@ func newRestorer(env *backupEnv) (backup.Restorer, error) {
 	}
 	client, err := s3.NewFromFactory(ctx, blobCfg, out)
 	if err != nil {
-		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.connections: %w", err))
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err) // the error names the connection and its key
 	}
 	ring, err := secrets.Load(cfg.Secrets)
 	if err != nil {
@@ -110,7 +110,7 @@ func newRestorer(env *backupEnv) (backup.Restorer, error) {
 	return restore.New(restore.Deps{
 		Session: session, Target: tgt, Layout: format.Layout{Prefix: cfg.Backup.Target.Prefix},
 		TargetEndpoint: tgt.Endpoint(), TargetBucket: tgt.Bucket(),
-		Blobs: s3.NewBlobSink(client, blobCfg, int64(cfg.Backup.Copy.PartSize)), Keys: ring,
+		Blobs: s3.NewBlobSink(client, blobCfg, int64(cfg.Backup.Copy.PartSize)), Connection: cfg.Storage.Connections[0].WithDefaults().ID, Keys: ring,
 		Items: app.RestoreItems(cfg, env.log), Journal: restoreJournal(cfg, out, env.log), Config: cfg.Backup, Log: env.log, Out: env.stdout, Pod: env.instance,
 	}), nil
 }

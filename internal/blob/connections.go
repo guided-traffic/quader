@@ -37,6 +37,12 @@ func (c *Connection) ID() string { return c.cfg.ID }
 // Position is the connection's place in this replica's list, 1 for the first: its write and read order (Q-STOR-221).
 func (c *Connection) Position() int { return c.position }
 
+// Element names the connection's element in an error as the validation of the configuration names it:
+// "storage.connections[0] (default):", the index counted from 0 like the list's.
+func (c *Connection) Element() string {
+	return fmt.Sprintf("storage.connections[%d] (%s):", max(c.position-1, 0), c.ID())
+}
+
 // Config is the connection's element with its defaults and its files read.
 func (c *Connection) Config() config.StorageConnection { return c.cfg }
 

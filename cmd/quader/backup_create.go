@@ -88,7 +88,7 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 	}
 	blobs, err := s3.NewFromFactory(ctx, sourceCfg, factory)
 	if err != nil {
-		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.connections: %w", err))
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err) // the error names the connection and its key
 	}
 	tgt, layout, err := openTarget(ctx, e)
 	if err != nil {

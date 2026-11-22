@@ -94,7 +94,7 @@ func newS3(tb testing.TB, name string) *s3Env {
 		AccessKeyIDFile:            writeSecret("access-key", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
 		SecretAccessKeyFile:        writeSecret("secret-key", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
 	}.WithDefaults()
-	cfg := config.ClientConfig(conn, blobtest.Storage(tb, dir).ObjectStore)
+	cfg := config.ClientConfig(0, conn, blobtest.Storage(tb, dir).ObjectStore)
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
 	if err != nil {

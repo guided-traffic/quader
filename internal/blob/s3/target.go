@@ -42,7 +42,7 @@ const deleteBatch = 1000
 const minPart int64 = 5 << 20
 
 // Target is the target.Store of the backup lane (R-BAK-002) over one bucket. It has its own client, credential chain and
-// retry settings, built from backup.target only: it never reads storage.s3 and so never uses the runtime blob-store
+// retry settings, built from backup.target only: it never reads a storage connection and so never uses the runtime blob-store
 // credential (R-BAK-015). Every write carries backup.target.sse (R-BAK-026).
 //
 // Keys are the full object keys; the caller joins backup.target.prefix, as the pool and backup paths of R-BAK-002 do.
@@ -95,11 +95,12 @@ func WithIdleTimeout(d time.Duration) TargetOption { return func(t *Target) { t.
 func WithSingleCopyLimit(n int64) TargetOption { return func(t *Target) { t.copyMax = n } }
 
 // targetStorage maps backup.target to the object-store section the shared client code reads. The transport, retry and
-// checksum settings are the defaults of storage.s3 (the target has no keys for them); nothing is taken from the live
-// storage.s3 section.
+// checksum settings are fixed here (the target has no keys for them); nothing is taken from a storage connection. Its errors
+// name the keys of backup.target.
 func targetStorage(b config.Backup) config.StorageS3 {
 	t := b.Target
 	return config.StorageS3{
+		Names:    config.StorageS3Names{Settings: "backup.target"},
 		Endpoint: t.Endpoint, Region: t.Region, Bucket: t.Bucket, Prefix: t.Prefix, ForcePathStyle: t.ForcePathStyle,
 		AllowInsecureEndpoint: t.AllowInsecureEndpoint, CAFile: t.CAFile, StorageClass: t.StorageClass,
 		PayloadChecksum: "none",
@@ -114,10 +115,10 @@ func targetStorage(b config.Backup) config.StorageS3 {
 	}
 }
 
-// targetConfigError names the backup.target key of a configuration error the shared client reports under storage.s3.
+// targetConfigError places an error of the shared client under backup.target, unless it names a key of backup.target already.
 func targetConfigError(err error) error {
-	if errors.Is(err, errNoRegion) {
-		return fmt.Errorf("backup.target.region is required (%w)", errNoRegion)
+	if strings.HasPrefix(err.Error(), "backup.target.") {
+		return err
 	}
 	return fmt.Errorf("backup.target: %w", err)
 }

@@ -35,7 +35,10 @@ type Deps struct {
 	// TargetEndpoint and TargetBucket name the target for a server-side copy into the blob store.
 	TargetEndpoint, TargetBucket string
 	Blobs                        BlobStore
-	Keys                         *secrets.KeyRing
+	// Connection is the id of the connection Blobs writes into (the first element of storage.connections): a marker of the
+	// backup's installation below its prefix must name it (check 5). Empty checks the installation only.
+	Connection string
+	Keys       *secrets.KeyRing
 	// Items builds the storage delete path the remote-cache purgers empty caches through (fixup.Env.Items, R-BAK-008) on the
 	// restore's session; nil means this binary cannot, and a restore that must purge fails at step 7.
 	Items func(ctx context.Context, db meta.Runner, rec audit.Recorder) (fixup.CacheEraser, error)

@@ -29,7 +29,7 @@ type BlobSink struct {
 	mem      *memBudget
 }
 
-// maxInMemory caps the objects the sink buffers whole, whatever storage.s3.multipart.threshold says: a restore streams with many
+// maxInMemory caps the objects the sink buffers whole, whatever storage.object_store.multipart.threshold says: a restore streams with many
 // workers at once, and the threshold (100 MiB by default) times the workers would not fit the Job's memory.
 const maxInMemory int64 = 8 << 20
 
@@ -89,7 +89,7 @@ func (s *BlobSink) PeakBuffered() int64 {
 	return s.mem.peak
 }
 
-// NewBlobSink wraps the blob-store client c of storage.s3 (cfg.Prefix is the key prefix). copyPart is backup.copy.part_size,
+// NewBlobSink wraps the client c of the connection a restore writes into (cfg.Prefix is the key prefix). copyPart is backup.copy.part_size,
 // the part size of a server-side copy above 5 GiB.
 func NewBlobSink(c *Client, cfg config.StorageS3, copyPart int64, opts ...SinkOption) *BlobSink {
 	if copyPart <= 0 {
@@ -243,11 +243,13 @@ func (s *BlobSink) root() string {
 	return s.prefix + "/"
 }
 
-// FirstForeign returns the first thing below the blob prefix that is neither a probe object nor, with allowBlobs, a blob:
-// the first object directly below the prefix or the first key prefix other than _probe/ (and sha256/). It lists with a
-// delimiter, so a prefix full of blobs costs one request (R-BAK-020 check 5).
+// FirstForeign returns the first thing below the blob prefix that is neither a probe object, nor the connection's marker
+// <prefix>/_connection (which Marker reads), nor, with allowBlobs, a blob: the first other object directly below the prefix
+// or the first key prefix other than _probe/ (and sha256/). It lists with a delimiter, so a prefix full of blobs costs one
+// request (R-BAK-020 check 5, R-BAK-030).
 func (s *BlobSink) FirstForeign(ctx context.Context, allowBlobs bool) (string, error) {
 	root := s.root()
+	marker := blob.MarkerKey(s.prefix)
 	token := ""
 	for {
 		page, err := s.c.List(ctx, root, blob.ListOptions{Delimiter: "/", Token: token})
@@ -255,7 +257,9 @@ func (s *BlobSink) FirstForeign(ctx context.Context, allowBlobs bool) (string, e
 			return "", err
 		}
 		for _, o := range page.Objects {
-			return o.Key, nil
+			if o.Key != marker {
+				return o.Key, nil
+			}
 		}
 		for _, p := range page.Prefixes {
 			name := strings.TrimPrefix(p, root)
@@ -269,6 +273,12 @@ func (s *BlobSink) FirstForeign(ctx context.Context, allowBlobs bool) (string, e
 		}
 		token = page.Next
 	}
+}
+
+// Marker reads the connection's marker <prefix>/_connection (storage.md R-STOR-051): found is false when there is none, and
+// an object there that is no marker is blob.ErrNotMarker (R-BAK-030 check 5).
+func (s *BlobSink) Marker(ctx context.Context) (blob.Marker, bool, error) {
+	return blob.ReadMarker(ctx, s.c, s.prefix)
 }
 
 // Probe writes and deletes the object <prefix>/_probe/<name> (R-BAK-020 check 7).

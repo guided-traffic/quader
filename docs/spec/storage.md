@@ -3523,7 +3523,7 @@ Priority: **P1** · Covers: STOR-012
 - **The record.** The first replica that starts with a connection inserts its row in `storage_connections` (R-STOR-052) with the
   properties that decide where and how its data lies: `bucket`, `prefix` and `encrypted`. These are fixed once the connection holds a
   copy (the owner's decision 7). A replica whose element differs from the row in one of them while the connection holds a copy refuses to
-  start: "connection default holds 412093 copies in quader-blobs/quader; its bucket, prefix and encrypted property are fixed. To move the
+  start: "storage.connections[0] (default): bucket, prefix and encrypted are fixed: the connection holds 412093 copies in quader-blobs/quader. To move the
   data, add a connection with another id and set drain: true on this one (storage.md R-STOR-051)". A row without a copy takes the new
   values. Endpoint, region, credentials, CA, checksum and tuning keys may change at any rollout
   ([Q-STOR-224](#q-stor-224--bucket-prefix-and-encrypted-are-fixed-endpoint-and-credentials-may-change-and-a-marker-names-the-location)).
@@ -3561,7 +3561,7 @@ Priority: **P1** · Covers: STOR-012
   connection's copy and queue rows, recomputes the content state of every blob it held (one without a present copy elsewhere becomes
   `missing`, R-STOR-052), sets `retired_at`, writes the audit event `system.storage.connection_forgotten` with the counts, and never
   deletes an object.
-- **Identifiers are not reused.** A configuration that names a `retired` id is refused at start ("connection id archive was retired on
+- **Identifiers are not reused.** A configuration that names a `retired` id is refused at start ("storage.connections[1] (archive): id: the connection id archive was retired on
   2026-12-03; choose another id"), so a row of history, and stage 2's keys of that connection, never meet another bucket.
 - Audit events (the registry of [operations-and-observability.md](operations-and-observability.md) R-OPS-014): `system.storage.connection_added`
   (first sight, actor `system:replica`), `system.storage.connection_drained` (actor `system:worker`, with the copies deleted) and

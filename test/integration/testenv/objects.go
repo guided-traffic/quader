@@ -19,7 +19,7 @@ import (
 // happens behind quader's back (an out-of-band deletion, ha-and-helm.md R-HA-024).
 func (s *Stack) objects(tb testing.TB) (blob.ObjectStore, string) {
 	tb.Helper()
-	cfg := config.ClientConfig(Connection(tb, tb.TempDir(), s.ObjectPrefix()), blobtest.Storage(tb, tb.TempDir()).ObjectStore)
+	cfg := config.ClientConfig(0, Connection(tb, tb.TempDir(), s.ObjectPrefix()), blobtest.Storage(tb, tb.TempDir()).ObjectStore)
 	c, err := s3.NewFromFactory(context.Background(), cfg, outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}}))
 	if err != nil {
 		tb.Fatalf("object store client: %v", err)

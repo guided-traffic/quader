@@ -1688,7 +1688,9 @@ to R-STOR-063). Specified, not built; until then the backup reads the first elem
 [internal/blob/s3/blobsink.go](../../internal/blob/s3/blobsink.go)), and the fix-up `storage-copies`
 ([storage_copies.go](../../internal/backup/fixup/storage_copies.go)) records every restored live blob as a copy of the connection
 `default`, which the first replica that configures it binds to its bucket and prefix, as after the migration
-([storage.md](storage.md) Q-STOR-250).
+([storage.md](storage.md) Q-STOR-250). Check 5 below is built for that first element: it accepts the marker `_connection` of the
+backup's installation when it names the connection the restore writes into, and refuses a marker of another installation or
+connection with a sentence that says whose it is ([checks.go](../../internal/backup/restore/checks.go), `checkBlobPrefix`).
 
 - **Which copy a backup reads** ([Q-BAK-62](#q-bak-62--a-backup-reads-one-copy-per-blob-the-one-that-allows-a-server-side-copy-first)).
   For each pinned digest the run takes the copies of the snapshot's `blob_copies` in state `present` on connections in its own
@@ -1715,7 +1717,8 @@ to R-STOR-063). Specified, not built; until then the backup reads the first elem
   and no queue row: the reconciliation's first pass (storage.md R-STOR-056) finds every other connection's gaps and fills them after the
   workers start; until then those connections show their backlog.
 - **R-BAK-020's checks per connection.** Check 5 requires every configured connection's prefix to be empty except `_probe/` and the
-  marker `_connection` (a marker of the backup's installation is accepted, one of another installation refuses, storage.md R-STOR-051);
+  marker `_connection` (a marker of the backup's installation that names that connection is accepted, one of another installation or
+  of another connection refuses, since a replica of the restored installation would refuse it too, storage.md R-STOR-051);
   check 7 probes every configured connection; check 8 lists the journal on at least one of the source's connections.
 - **The revocation journal** is read from every reachable connection of `manifest.source.connections` and merged by key (storage.md
   R-STOR-059); `--journal-credentials-file` holds one credential per source connection. `--skip-revocation-journal` is for the disaster

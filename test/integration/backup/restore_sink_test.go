@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/outbound"
@@ -128,6 +129,29 @@ func TestR_BAK_021_BlobSink(t *testing.T) {
 		}
 		if key, err := sink.FirstForeign(ctx, true); err != nil || key != "" {
 			t.Fatalf("after a probe: %q, %v", key, err)
+		}
+	})
+
+	t.Run("R-BAK-020 check 5: the listing leaves the connection's marker to Marker, which reads it, and still finds another object at the prefix root", func(t *testing.T) {
+		prefix, c := firstS3(dst.cfg.Storage).Prefix, dst.blobClient()
+		put := func(key string, data []byte) {
+			t.Helper()
+			if err := c.Put(ctx, key, bytes.NewReader(data), int64(len(data)), blob.Checksum{}, nil); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = c.Delete(context.Background(), key) })
+		}
+		put(blob.MarkerKey(prefix), []byte(`{"installationId":"inst-a","connectionId":"default","createdAt":"2026-11-22T00:00:00Z"}`))
+		if key, err := sink.FirstForeign(ctx, true); err != nil || key != "" {
+			t.Fatalf("the marker was taken for a foreign object: %q, %v", key, err)
+		}
+		m, found, err := sink.Marker(ctx)
+		if err != nil || !found || m.InstallationID != "inst-a" || m.ConnectionID != "default" || m.Key != blob.MarkerKey(prefix) {
+			t.Fatalf("marker %+v, found %v, %v", m, found, err)
+		}
+		put(prefix+"/stray", []byte("x"))
+		if key, err := sink.FirstForeign(ctx, true); err != nil || key != prefix+"/stray" {
+			t.Fatalf("another object beside the marker: %q, %v", key, err)
 		}
 	})
 }

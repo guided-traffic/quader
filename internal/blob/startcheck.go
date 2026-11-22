@@ -28,11 +28,40 @@ func MarkerKey(prefix string) string {
 	return prefix + "/" + markerName
 }
 
-// marker is the content of a connection's marker (R-STOR-051).
-type marker struct {
+// Marker is the content of a connection's marker <prefix>/_connection (R-STOR-051): the installation and the connection the
+// location belongs to.
+type Marker struct {
 	InstallationID string    `json:"installationId"`
 	ConnectionID   string    `json:"connectionId"`
 	CreatedAt      time.Time `json:"createdAt"`
+	// Key is the object the marker was read from; it is not stored in the marker.
+	Key string `json:"-"`
+}
+
+// ErrNotMarker is the error of ReadMarker for an object at the marker's key that is no marker of a connection.
+var ErrNotMarker = errors.New("no marker of a connection")
+
+// ReadMarker reads the marker below prefix (R-STOR-051): found is false when there is none, an object there that is not a
+// marker is ErrNotMarker, and any other error is the store's.
+func ReadMarker(ctx context.Context, s ObjectStore, prefix string) (m Marker, found bool, err error) {
+	key := MarkerKey(prefix)
+	body, _, err := s.Get(ctx, key, nil)
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return Marker{}, false, nil
+	case err != nil:
+		return Marker{}, false, fmt.Errorf("read the marker %s: %w", key, err)
+	}
+	data, err := io.ReadAll(io.LimitReader(body, 64<<10))
+	_ = body.Close()
+	if err != nil {
+		return Marker{}, false, fmt.Errorf("read the marker %s: %w", key, err)
+	}
+	if json.Unmarshal(data, &m) != nil || m.InstallationID == "" || m.ConnectionID == "" {
+		return Marker{Key: key}, true, fmt.Errorf("%s: %w", key, ErrNotMarker)
+	}
+	m.Key = key
+	return m, true, nil
 }
 
 // StartCheckOptions configure the start check of the connections.
@@ -94,7 +123,7 @@ func CheckConnection(ctx context.Context, c *Connection, peers []*Connection, o 
 			if fallsOver(err) {
 				return caps, err
 			}
-			return caps, fmt.Errorf("storage.connections (%s): DeleteObjects failed; set batch_delete: false for a store without it: %w", c.ID(), err)
+			return caps, fmt.Errorf("%s batch_delete: DeleteObjects failed; set batch_delete: false for a store without it: %w", c.Element(), err)
 		}
 		caps.BatchDelete = true
 	}
@@ -148,8 +177,8 @@ func checksumRefusal(c *Connection, err error) error {
 	}
 	cfg := c.Config()
 	return &StoreError{Op: se.Op, Key: se.Key, Code: se.Code, Status: se.Status, Kind: KindConfig, Err: fmt.Errorf(
-		"storage.connections (%s): the store refuses a write with payload_checksum: %s and request_checksum_calculation: %s; try payload_checksum: md5 or none, or request_checksum_calculation: when_required (R-STOR-035): %w",
-		c.ID(), cfg.PayloadChecksum, cfg.RequestChecksumCalculation, se.Err)}
+		"%s payload_checksum: the store refuses a write with payload_checksum: %s and request_checksum_calculation: %s; try payload_checksum: md5 or none, or request_checksum_calculation: when_required (R-STOR-035): %w",
+		c.Element(), cfg.PayloadChecksum, cfg.RequestChecksumCalculation, se.Err)}
 }
 
 // checkMarker reads the connection's marker (R-STOR-051): absent, it is written, with a warning when the connection holds
@@ -157,10 +186,15 @@ func checksumRefusal(c *Connection, err error) error {
 // unreadable, the connection is refused as a configuration error naming both.
 func checkMarker(ctx context.Context, c *Connection, o StartCheckOptions) error {
 	key := MarkerKey(c.Prefix())
-	body, _, err := c.Objects().Get(ctx, key, nil)
+	m, found, err := ReadMarker(ctx, c.Objects(), c.Prefix())
 	switch {
-	case errors.Is(err, ErrNotFound):
-		data, _ := json.Marshal(marker{InstallationID: o.Installation, ConnectionID: c.ID(), CreatedAt: time.Now().UTC().Truncate(time.Second)})
+	case errors.Is(err, ErrNotMarker):
+		return fmt.Errorf("%s %s/%s holds an object %s that is no marker of a connection; a location belongs to one connection of one installation (R-STOR-051)",
+			c.Element(), c.Bucket(), c.Prefix(), key)
+	case err != nil:
+		return err
+	case !found:
+		data, _ := json.Marshal(Marker{InstallationID: o.Installation, ConnectionID: c.ID(), CreatedAt: time.Now().UTC().Truncate(time.Second)})
 		alg := c.PayloadChecksum()
 		if err := c.Objects().Put(ctx, key, bytes.NewReader(data), int64(len(data)), probeChecksum(alg, data), nil); err != nil {
 			return fmt.Errorf("write the marker %s: %w", key, err)
@@ -172,24 +206,12 @@ func checkMarker(ctx context.Context, c *Connection, o StartCheckOptions) error 
 			}
 		}
 		return nil
-	case err != nil:
-		return fmt.Errorf("read the marker %s: %w", key, err)
-	}
-	data, rerr := io.ReadAll(io.LimitReader(body, 64<<10))
-	_ = body.Close()
-	if rerr != nil {
-		return fmt.Errorf("read the marker %s: %w", key, rerr)
-	}
-	var m marker
-	if json.Unmarshal(data, &m) != nil || m.InstallationID == "" || m.ConnectionID == "" {
-		return fmt.Errorf("storage.connections (%s): %s/%s holds an object %s that is no marker of a connection; a location belongs to one connection of one installation (R-STOR-051)",
-			c.ID(), c.Bucket(), c.Prefix(), key)
 	}
 	if m.InstallationID == o.Installation && m.ConnectionID == c.ID() {
 		return nil
 	}
-	return fmt.Errorf("storage.connections (%s): %s/%s is connection '%s' of installation %s; a location belongs to one connection of one installation. Remove the object %s only if that installation is gone (R-STOR-051)",
-		c.ID(), c.Bucket(), c.Prefix(), m.ConnectionID, m.InstallationID, key)
+	return fmt.Errorf("%s %s/%s is connection '%s' of installation %s; a location belongs to one connection of one installation. Remove the object %s only if that installation is gone (R-STOR-051)",
+		c.Element(), c.Bucket(), c.Prefix(), m.ConnectionID, m.InstallationID, key)
 }
 
 // probeChecksumEnforced writes a probe with a wrong payload checksum: refused, the store enforces the checksum; accepted, it

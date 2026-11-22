@@ -363,7 +363,7 @@ func TestTransfer(t *testing.T) {
 			t.Fatal("the multipart upload was left open")
 		}
 	})
-	t.Run("R-STOR-006 at most storage.s3.multipart.concurrency parts are in flight", func(t *testing.T) {
+	t.Run("R-STOR-006 at most storage.object_store.multipart.concurrency parts are in flight", func(t *testing.T) {
 		f := newFixture(t, multipart)
 		var inflight, peak atomic.Int32
 		f.mem.SetFault(func(op, _ string) error {

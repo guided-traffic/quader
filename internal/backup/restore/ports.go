@@ -6,6 +6,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
@@ -42,9 +43,12 @@ var _ Session = (*postgres.RestoreSession)(nil)
 // and the probe of check 7. internal/blob/s3.BlobSink implements it.
 type BlobStore interface {
 	backup.BlobSink
-	// FirstForeign returns the first key below the blob prefix that is not a probe object, and with allowBlobs not below
-	// sha256/ either; empty when there is none (R-BAK-020 check 5).
+	// FirstForeign returns the first key below the blob prefix that is neither a probe object nor the connection's marker
+	// <prefix>/_connection, and with allowBlobs not below sha256/ either; empty when there is none (R-BAK-020 check 5).
 	FirstForeign(ctx context.Context, allowBlobs bool) (string, error)
+	// Marker reads the connection's marker <prefix>/_connection: found is false when there is none, an object there that is
+	// no marker is blob.ErrNotMarker (storage.md R-STOR-051, R-BAK-030 check 5).
+	Marker(ctx context.Context) (m blob.Marker, found bool, err error)
 	// Probe writes and deletes <prefix>/_probe/<name> (R-BAK-020 check 7).
 	Probe(ctx context.Context, name string) error
 }

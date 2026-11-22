@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
@@ -187,7 +188,10 @@ func (r *Restorer) checkDatabase(ctx context.Context, st *state) error {
 	return nil
 }
 
-// checkBlobPrefix is check 5: the blob prefix holds nothing but probe objects, and after an anchor the blobs of this restore.
+// checkBlobPrefix is check 5: the blob prefix holds nothing but probe objects, the marker of the connection the restore writes
+// into when it belongs to the installation of the backup (backup-and-restore.md R-BAK-030, storage.md R-STOR-051), and after
+// an anchor the blobs of this restore. The restored installation keeps the backup's installation id (R-BAK-022), so a replica
+// that starts on it accepts that marker; a marker of another installation, or of another connection, would stop it.
 func (r *Restorer) checkBlobPrefix(ctx context.Context, st *state) error {
 	key, err := r.d.Blobs.FirstForeign(ctx, st.anchored)
 	if err != nil {
@@ -195,6 +199,23 @@ func (r *Restorer) checkBlobPrefix(ctx context.Context, st *state) error {
 	}
 	if key != "" {
 		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf("the blob prefix is not empty: found %q", key))
+	}
+	m, found, err := r.d.Blobs.Marker(ctx)
+	switch {
+	case errors.Is(err, blob.ErrNotMarker):
+		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf("the blob prefix is not empty: %w", err))
+	case err != nil:
+		return err
+	case !found:
+		return nil
+	case m.InstallationID != st.m.InstallationID:
+		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf(
+			"the blob prefix holds the marker %s of connection '%s' of installation %s, and this backup belongs to installation %s: a location belongs to one connection of one installation (storage.md R-STOR-051). Restore into an empty prefix, or delete the marker only if installation %s is gone",
+			m.Key, m.ConnectionID, m.InstallationID, st.m.InstallationID, m.InstallationID))
+	case r.d.Connection != "" && m.ConnectionID != r.d.Connection:
+		return checkFailure(5, "blob prefix", backup.CodeBlobPrefixNotEmpty, fmt.Errorf(
+			"the blob prefix holds the marker %s of connection '%s' of this backup's installation, and the restore writes into connection '%s': a location belongs to one connection (storage.md R-STOR-051). Name the connection '%s' in storage.connections, or restore into an empty prefix",
+			m.Key, m.ConnectionID, r.d.Connection, m.ConnectionID))
 	}
 	return nil
 }

@@ -31,5 +31,5 @@ func Storage(tb testing.TB, spoolDir string) config.Storage {
 func S3(tb testing.TB) config.StorageS3 {
 	tb.Helper()
 	s := Storage(tb, tb.TempDir())
-	return config.ClientConfig(s.Connections[0], s.ObjectStore)
+	return config.ClientConfig(0, s.Connections[0], s.ObjectStore)
 }

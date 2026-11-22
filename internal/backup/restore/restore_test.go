@@ -22,6 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/target"
 	"github.com/guided-traffic/quader/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/meta"
@@ -141,6 +142,8 @@ type fakeBlobs struct {
 	allowSeen  bool
 	// progressSet records that a copy source carried the Progress callback.
 	progressSet bool
+	// marker is the connection's marker below the blob prefix; nil for none.
+	marker *blob.Marker
 }
 
 func (b *fakeBlobs) Has(_ context.Context, d format.Digest, size int64) (bool, error) {
@@ -184,6 +187,14 @@ func (b *fakeBlobs) CopyFrom(_ context.Context, ref target.ObjectRef, _ format.D
 func (b *fakeBlobs) FirstForeign(_ context.Context, allow bool) (string, error) {
 	b.allowSeen = allow
 	return b.foreign, nil
+}
+
+// Marker is the connection's marker below the blob prefix: b.marker, or none.
+func (b *fakeBlobs) Marker(context.Context) (blob.Marker, bool, error) {
+	if b.marker == nil {
+		return blob.Marker{}, false, nil
+	}
+	return *b.marker, true, nil
 }
 func (b *fakeBlobs) Probe(context.Context, string) error { return b.probeErr }
 
@@ -317,7 +328,7 @@ func (e *env) restorer() *Restorer {
 	cfg.Copy.Concurrency = 3
 	cfg.Copy.ServerSide = "auto"
 	return New(Deps{
-		Session: e.sess, Target: e.mem, Layout: e.layout, Blobs: e.blobs, Keys: e.ring, Config: cfg, Out: &e.out, Pod: "pod",
+		Session: e.sess, Target: e.mem, Layout: e.layout, Blobs: e.blobs, Connection: "default", Keys: e.ring, Config: cfg, Out: &e.out, Pod: "pod",
 		TargetBucket: "backups",
 		Journal:      func(context.Context, JournalEnv) (Journal, error) { return e.jrn, nil },
 		Registry:     nil,
@@ -432,6 +443,35 @@ func TestR_BAK_020_Checks(t *testing.T) {
 		e := newEnv(t)
 		e.blobs.foreign = "quader/stray"
 		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "quader/stray")
+	})
+	// The marker <prefix>/_connection of storage.md R-STOR-051 (backup-and-restore.md R-BAK-030): the restored installation keeps
+	// the backup's installation id (R-BAK-022), so that installation's marker of the connection the restore writes into stays.
+	marker := func(installation, connection string) *blob.Marker {
+		return &blob.Marker{InstallationID: installation, ConnectionID: connection, Key: "quader/_connection"}
+	}
+	t.Run("R-BAK-020 check 5: the marker of the backup's installation and of the connection the restore writes into is accepted", func(t *testing.T) {
+		e := newEnv(t)
+		e.blobs.marker = marker("inst", "default")
+		if err := e.check(backup.RestoreOptions{}); err != nil {
+			t.Fatalf("the backup's own marker was refused: %v", err)
+		}
+	})
+	t.Run("R-BAK-020 check 5: a marker of another installation fails and says whose it is", func(t *testing.T) {
+		e := newEnv(t)
+		e.blobs.marker = marker("other-inst", "default")
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "quader/_connection",
+			"of installation other-inst, and this backup belongs to installation inst", "delete the marker only if installation other-inst is gone")
+	})
+	t.Run("R-BAK-020 check 5: beside the backup's marker, another object at the prefix root still fails", func(t *testing.T) {
+		e := newEnv(t)
+		e.blobs.marker = marker("inst", "default")
+		e.blobs.foreign = "quader/stray"
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "quader/stray")
+	})
+	t.Run("R-BAK-020 check 5: the backup's marker of another connection fails and names both", func(t *testing.T) {
+		e := newEnv(t)
+		e.blobs.marker = marker("inst", "archive")
+		wantExit(t, e.check(backup.RestoreOptions{}), backup.ExitPrecondition, "check 5", "connection 'archive'", "writes into connection 'default'")
 	})
 	t.Run("R-BAK-020 check 6: an unsupported server and a credential that does not own the schema", func(t *testing.T) {
 		e := newEnv(t)

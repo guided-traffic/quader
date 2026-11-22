@@ -51,17 +51,17 @@ func (c *Client) long() *awss3.Client {
 var _ blob.ObjectStore = (*Client)(nil)
 
 // NewFromFactory builds a client whose HTTP goes through the outbound factory
-// with the purpose objectstore and the timeouts of storage.s3.http.
+// with the purpose objectstore and the timeouts of cfg.HTTP (storage.object_store.http for a connection).
 //
-// storage.s3.ca_file, when set, is the object store's whole trust store: the
+// cfg.CAFile (a connection's ca_file), when set, is the object store's whole trust store: the
 // client verifies the endpoint against that bundle only, not against the system
 // roots or proxy.outbound.tls.ca_files, and the factory re-reads the file
 // without a restart (R-ARCH-035, R-STOR-030). A bundle that does not load at
 // start is a configuration error.
 //
-// Three settings of storage.s3.http need options the factory does not have yet
+// Three HTTP settings need options the factory does not have yet
 // (max_connections, tls_handshake_timeout, idle_conn_timeout use its defaults),
-// and storage.s3.http.proxy_credentials_file needs a credential the proxy hook
+// and proxy_credentials_file needs a credential the proxy hook
 // can re-read; a proxy_credentials_file is refused rather than ignored: until
 // the outbound layer takes a proxy credential, use a proxy that authenticates by
 // address.
@@ -99,12 +99,12 @@ func factoryClient(cfg config.StorageS3, f *outbound.Factory) (*http.Client, err
 	if cfg.CAFile != "" {
 		trust, err := f.TrustStore(outbound.PurposeObjectStore, cfg.CAFile)
 		if err != nil {
-			return nil, fmt.Errorf("storage.s3.ca_file: %w", err)
+			return nil, fmt.Errorf("%s: %w", cfg.Setting("ca_file"), err)
 		}
 		opts = append(opts, outbound.WithRootCAs(trust))
 	}
 	if cfg.HTTP.ProxyCredentialsFile != "" {
-		return nil, errors.New("storage.s3.http.proxy_credentials_file is not supported yet: the outbound layer cannot send a proxy credential read from a file; use a proxy that authenticates by source address")
+		return nil, fmt.Errorf("%s is not supported yet: the outbound layer cannot send a proxy credential read from a file; use a proxy that authenticates by source address", cfg.HTTPSetting("proxy_credentials_file"))
 	}
 	opts = append(opts,
 		outbound.WithConnectTimeout(cfg.HTTP.DialTimeout),
@@ -114,7 +114,7 @@ func factoryClient(cfg config.StorageS3, f *outbound.Factory) (*http.Client, err
 	if cfg.HTTP.ProxyURL != "" {
 		u, err := url.Parse(cfg.HTTP.ProxyURL)
 		if err != nil {
-			return nil, fmt.Errorf("storage.s3.http.proxy_url: %w", err)
+			return nil, fmt.Errorf("%s: %w", cfg.HTTPSetting("proxy_url"), err)
 		}
 		var bypass []string
 		for _, h := range strings.Split(cfg.HTTP.NoProxy, ",") {
@@ -131,7 +131,7 @@ func factoryClient(cfg config.StorageS3, f *outbound.Factory) (*http.Client, err
 // internal/outbound.
 func New(ctx context.Context, cfg config.StorageS3, hc *http.Client) (*Client, error) {
 	if cfg.Bucket == "" {
-		return nil, errors.New("storage.s3.bucket is required")
+		return nil, fmt.Errorf("%s is required", cfg.Setting("bucket"))
 	}
 	// An endpoint without a scheme is a host and means https:// (R-STOR-030).
 	cfg.Endpoint = config.NormalizeEndpoint(cfg.Endpoint)
@@ -154,7 +154,7 @@ func New(ctx context.Context, cfg config.StorageS3, hc *http.Client) (*Client, e
 }
 
 // HTTPClient returns the HTTP client the object store is reached with: the same
-// trust store (storage.s3.ca_file or the factory's), proxy and timeouts. A caller
+// trust store (the connection's ca_file or the factory's), proxy and timeouts. A caller
 // that fetches a presigned URL itself, such as the conformance check of
 // R-STOR-035, uses it, so the fetch verifies the store the way the client does.
 func (c *Client) HTTPClient() *http.Client { return c.http }
@@ -167,13 +167,13 @@ func checkEndpoint(cfg config.StorageS3) error {
 	}
 	u, err := url.Parse(cfg.Endpoint)
 	if err != nil || u.Host == "" {
-		return fmt.Errorf("storage.s3.endpoint %q is not an absolute URL", cfg.Endpoint)
+		return fmt.Errorf("%s %q is not an absolute URL", cfg.Setting("endpoint"), cfg.Endpoint)
 	}
 	if u.Scheme == "http" && !cfg.AllowInsecureEndpoint {
-		return errors.New("storage.s3.endpoint uses http: set storage.s3.allow_insecure_endpoint to allow it")
+		return fmt.Errorf("%s uses http: set allow_insecure_endpoint: true beside it to allow it", cfg.Setting("endpoint"))
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("storage.s3.endpoint %q must be an https URL", cfg.Endpoint)
+		return fmt.Errorf("%s %q must be an https URL", cfg.Setting("endpoint"), cfg.Endpoint)
 	}
 	return nil
 }
@@ -189,7 +189,7 @@ func retryer(cfg config.StorageS3Retry) func() aws.Retryer {
 
 func b64(b []byte) *string { return aws.String(base64.StdEncoding.EncodeToString(b)) }
 
-// sse applies storage.s3.sse to a write.
+// sse applies the server-side encryption of the client (a connection's sse_mode) to a write.
 type sseFields struct {
 	mode   types.ServerSideEncryption
 	key    *string

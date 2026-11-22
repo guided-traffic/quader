@@ -50,6 +50,36 @@ type StorageS3 struct {
 	CircuitBreaker        StorageS3Breaker     `yaml:"circuit_breaker"`
 	Multipart             StorageS3Multipart   `yaml:"multipart"`
 	StartupCheck          bool                 `yaml:"startup_check" default:"true" doc:"Object-store conformance check before the first readiness (R-STOR-035)."`
+	Names                 StorageS3Names       `yaml:"names" doc:"Where the client's settings are written in the configuration, for the errors that name one; set by whoever builds the client."`
+}
+
+// StorageS3Names says where the settings of one S3 client are written in the configuration, so that an error names the key
+// an operator sets: [ClientConfig] fills it for a connection, the backup target and the Bastion's cache bucket for theirs.
+type StorageS3Names struct {
+	Settings string `yaml:"settings" default:"" doc:"The client's own settings: storage.connections[<n>] (<id>): for a connection, backup.target, bastion.cache.bucket."`
+	HTTP     string `yaml:"http" default:"" doc:"Its HTTP settings: storage.object_store.http for a connection."`
+}
+
+// Setting names one of the client's own settings in an error, as the validation of the configuration names it:
+// "storage.connections[0] (default): ca_file", "backup.target.ca_file".
+func (s StorageS3) Setting(name string) string { return joinSetting(s.Names.Settings, name) }
+
+// HTTPSetting names one of the client's HTTP settings in an error: "storage.object_store.http.proxy_url" for a connection.
+func (s StorageS3) HTTPSetting(name string) string {
+	if s.Names.HTTP == "" {
+		return joinSetting(s.Names.Settings, "http."+name)
+	}
+	return joinSetting(s.Names.HTTP, name)
+}
+
+func joinSetting(base, name string) string {
+	switch {
+	case base == "":
+		return "object store " + name
+	case strings.HasSuffix(base, ":"):
+		return base + " " + name
+	}
+	return base + "." + name
 }
 
 // StorageS3Checksums are the SDK's checksum behaviours.
@@ -261,12 +291,14 @@ func (c StorageConnection) KeyPrefix() string {
 // BatchDeletes reports whether the connection deletes with DeleteObjects (true when left out).
 func (c StorageConnection) BatchDeletes() bool { return c.BatchDelete == nil || *c.BatchDelete }
 
-// ClientConfig is the client configuration of one connection: the element's keys and the shared settings of
-// storage.object_store (Q-STOR-220). The element should carry its defaults (WithDefaults) and its resolved files
-// ([ResolveConnection]).
-func ClientConfig(c StorageConnection, o StorageObjectStore) StorageS3 {
+// ClientConfig is the client configuration of the connection at position i of storage.connections: the element's keys and
+// the shared settings of storage.object_store (Q-STOR-220), with the names its errors give a setting
+// ("storage.connections[0] (default): ca_file", as the validation names them). The element should carry its defaults
+// (WithDefaults) and its resolved files ([ResolveConnections]).
+func ClientConfig(i int, c StorageConnection, o StorageObjectStore) StorageS3 {
 	c = c.WithDefaults()
 	return StorageS3{
+		Names:    StorageS3Names{Settings: "storage." + connectionKey(i, c.ID), HTTP: "storage.object_store.http"},
 		Endpoint: c.Endpoint, Region: c.Region, Bucket: c.Bucket, Prefix: c.KeyPrefix(),
 		ForcePathStyle: c.ForcePathStyle, AllowInsecureEndpoint: c.AllowInsecureEndpoint, CAFile: c.CAFile,
 		StorageClass: c.StorageClass, PayloadChecksum: c.PayloadChecksum,

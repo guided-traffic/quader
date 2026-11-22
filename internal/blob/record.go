@@ -56,8 +56,8 @@ func (s *Store) recordConnection(ctx context.Context, c *Connection) error {
 		r := rows[0]
 		switch {
 		case r.RetiredAt.Valid:
-			return refusal("storage.connections (%s): connection id %s was retired on %s; choose another id (storage.md R-STOR-051)",
-				c.ID(), c.ID(), r.RetiredAt.Time.UTC().Format(time.DateOnly))
+			return refusal("%s id: the connection id %s was retired on %s; choose another id (storage.md R-STOR-051)",
+				c.Element(), c.ID(), r.RetiredAt.Time.UTC().Format(time.DateOnly))
 		case inserted > 0:
 			s.log.Info("an object-store connection was seen for the first time", "connection", c.ID(), "bucket", c.Bucket(), "prefix", c.Prefix())
 			return s.connectionAdded(ctx, tx, c.ID())
@@ -75,8 +75,8 @@ func (s *Store) recordConnection(ctx context.Context, c *Connection) error {
 			if err != nil {
 				return err
 			}
-			return refusal("connection %s holds %d copies in %s/%s; its bucket, prefix and encrypted property are fixed. To move the data, add a connection with another id and set drain: true on this one (storage.md R-STOR-051)",
-				c.ID(), n, r.Bucket, r.Prefix)
+			return refusal("%s bucket, prefix and encrypted are fixed: the connection holds %d copies in %s/%s. To move the data, add a connection with another id and set drain: true on this one (storage.md R-STOR-051)",
+				c.Element(), n, r.Bucket, r.Prefix)
 		}
 		s.log.Info("a connection without copies takes the bucket and prefix of its element", "connection", c.ID(),
 			"bucket", c.Bucket(), "prefix", c.Prefix(), "was_bucket", r.Bucket, "was_prefix", r.Prefix)

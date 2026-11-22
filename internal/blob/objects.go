@@ -94,7 +94,7 @@ func IsCredentialRejection(err error) bool {
 }
 
 // Checksum is the payload checksum a request carries for the store to verify
-// (R-STOR-006, storage.s3.payload_checksum).
+// (R-STOR-006, the payload_checksum of a connection).
 type Checksum struct {
 	// Algorithm is "sha256", "md5" or empty for none.
 	Algorithm string

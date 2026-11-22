@@ -218,5 +218,5 @@ func (s Storage) FirstClient() (StorageS3, error) {
 	if err != nil {
 		return StorageS3{}, err
 	}
-	return ClientConfig(conns[0], s.ObjectStore), nil
+	return ClientConfig(0, conns[0], s.ObjectStore), nil
 }

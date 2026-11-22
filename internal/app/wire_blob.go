@@ -57,10 +57,10 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 	log := a.log.With("component", "blob")
 	clients := map[string]*s3.Client{}
 	var list []*blob.Connection
-	for _, el := range resolved {
-		client, err := s3.NewFromFactory(ctx, config.ClientConfig(el, cfg.ObjectStore), out)
+	for i, el := range resolved {
+		client, err := s3.NewFromFactory(ctx, config.ClientConfig(i, el, cfg.ObjectStore), out)
 		if err != nil {
-			return blobArea{}, fmt.Errorf("object-store connection %s: %w", el.ID, err)
+			return blobArea{}, err // the error names the connection and its key: storage.connections[i] (id): ca_file
 		}
 		guard := blob.NewGuard(client, cfg.ObjectStore.CircuitBreaker, blob.WithGuardMetrics(bm), blob.WithGuardConnection(el.ID),
 			blob.WithGuardLogger(log, el.CredentialsSource))

@@ -491,6 +491,15 @@ func TestR_STOR_035_TheStartCheckPerConnection(t *testing.T) {
 		if _, err := blob.CheckConnection(ctx, renamed, nil, opts); err == nil {
 			t.Fatal("another connection id on the location passed")
 		}
+		if err := m.Put(ctx, "quader/_connection", strings.NewReader("{}"), 2, blob.Checksum{}, nil); err != nil {
+			t.Fatal(err)
+		}
+		if _, found, err := blob.ReadMarker(ctx, m, "quader"); !found || !errors.Is(err, blob.ErrNotMarker) {
+			t.Fatalf("an object that is no marker: found %v, %v", found, err)
+		}
+		if _, err := blob.CheckConnection(ctx, c, nil, opts); err == nil || !strings.Contains(err.Error(), "storage.connections[0] (archive): quader-blobs/quader holds an object quader/_connection that is no marker") {
+			t.Fatalf("an object that is no marker: %v", err)
+		}
 	})
 	t.Run("R-STOR-035 a refused payload checksum is a configuration error naming the keys and the values to try; an accepted wrong checksum is recorded", func(t *testing.T) {
 		m := blobtest.New()

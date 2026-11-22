@@ -323,7 +323,7 @@ func newS3(t *testing.T) *s3Env {
 	// the free space of the machine running the tests.
 	cfg.Spool.MinFreeBytes = 0
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
-	s3cfg := config.ClientConfig(cfg.Connections[0], cfg.ObjectStore)
+	s3cfg := config.ClientConfig(0, cfg.Connections[0], cfg.ObjectStore)
 	c, err := s3.NewFromFactory(context.Background(), s3cfg, f)
 	if err != nil {
 		t.Fatalf("object store client: %v", err)

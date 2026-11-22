@@ -555,6 +555,7 @@ func LoadBastion(opts Options) (*BastionLoaded, error) {
 // of its own, so the bucket's default applies.
 func (b BastionCacheBucket) StorageS3() StorageS3 {
 	s := mustDefaults[StorageS3]()
+	s.Names = StorageS3Names{Settings: "bastion.cache.bucket"}
 	s.Endpoint, s.Region, s.Bucket, s.Prefix = b.Endpoint, b.Region, b.Bucket, b.Prefix
 	s.ForcePathStyle, s.AllowInsecureEndpoint, s.CAFile = b.ForcePathStyle, false, b.CAFile
 	s.Credentials = StorageS3Credentials{

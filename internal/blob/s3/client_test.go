@@ -492,28 +492,29 @@ func TestConfiguration(t *testing.T) {
 	t.Run("R-STOR-030 the bucket is required", func(t *testing.T) {
 		cfg := base(t)
 		cfg.Bucket = ""
-		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "storage.s3.bucket") {
+		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "storage.connections[0] (default): bucket is required") {
 			t.Fatalf("got %v", err)
 		}
 	})
 	t.Run("R-STOR-030 a region is required", func(t *testing.T) {
 		cfg := base(t)
 		cfg.Region = ""
-		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "storage.s3.region") {
+		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "storage.connections[0] (default): region is required") {
 			t.Fatalf("got %v", err)
 		}
 	})
-	t.Run("R-STOR-030 a CA file that does not load is a configuration error naming storage.s3.ca_file", func(t *testing.T) {
-		cfg := base(t)
-		cfg.CAFile = filepath.Join(t.TempDir(), "missing-ca.pem")
-		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "storage.s3.ca_file") {
+	t.Run("R-STOR-050 a CA file that does not load is a configuration error naming the connection and its key ca_file", func(t *testing.T) {
+		el := config.StorageConnection{ID: "secondary", Bucket: "b", Region: "us-east-1", CAFile: filepath.Join(t.TempDir(), "missing-ca.pem")}
+		cfg := config.ClientConfig(1, el, blobtest.Storage(t, t.TempDir()).ObjectStore)
+		_, err := s3.NewFromFactory(context.Background(), cfg, hc())
+		if err == nil || !strings.HasPrefix(err.Error(), "storage.connections[1] (secondary): ca_file: ") || strings.Contains(err.Error(), "storage.s3") {
 			t.Fatalf("got %v", err)
 		}
 	})
 	t.Run("R-STOR-033 a proxy credentials file is refused until the outbound layer can send it, not ignored", func(t *testing.T) {
 		cfg := base(t)
 		cfg.HTTP.ProxyCredentialsFile = "/etc/quader/proxy-credentials"
-		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "proxy_credentials_file") {
+		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "storage.object_store.http.proxy_credentials_file") {
 			t.Fatalf("got %v", err)
 		}
 	})

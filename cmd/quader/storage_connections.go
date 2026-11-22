@@ -57,8 +57,8 @@ func storageCheckCmd(args []string, s streams) error {
 	f := outbound.New(env.cfg.Proxy.Outbound)
 	clients := make([]*s3.Client, len(resolved))
 	for i, el := range resolved {
-		if clients[i], err = s3.NewFromFactory(ctx, config.ClientConfig(el, cfg.ObjectStore), f); err != nil {
-			return backup.Fail(backup.ExitUsage, backup.CodeConfig, fmt.Errorf("storage.connections[%d] (%s): %w", i, el.ID, err))
+		if clients[i], err = s3.NewFromFactory(ctx, config.ClientConfig(i, el, cfg.ObjectStore), f); err != nil {
+			return backup.Fail(backup.ExitUsage, backup.CodeConfig, err) // the error names the connection and its key
 		}
 	}
 	var reports []connectionCheck
@@ -107,21 +107,14 @@ func storageCheckCmd(args []string, s streams) error {
 
 // readMarker reports the marker of a connection as the check finds it: absent, or the installation and the connection it names.
 func readMarker(ctx context.Context, c blob.ObjectStore, prefix string) string {
-	body, _, err := c.Get(ctx, blob.MarkerKey(prefix), nil)
+	m, found, err := blob.ReadMarker(ctx, c, prefix)
 	switch {
-	case errors.Is(err, blob.ErrNotFound):
-		return "absent: the first replica that starts with the connection writes it"
+	case errors.Is(err, blob.ErrNotMarker):
+		return "present, and no marker of a connection"
 	case err != nil:
 		return "not read: " + err.Error()
-	}
-	defer body.Close()
-	var m struct {
-		InstallationID string `json:"installationId"`
-		ConnectionID   string `json:"connectionId"`
-	}
-	data, err := io.ReadAll(io.LimitReader(body, 64<<10))
-	if err != nil || json.Unmarshal(data, &m) != nil || m.InstallationID == "" {
-		return "present, and no marker of a connection"
+	case !found:
+		return "absent: the first replica that starts with the connection writes it"
 	}
 	return fmt.Sprintf("connection %s of installation %s", m.ConnectionID, m.InstallationID)
 }

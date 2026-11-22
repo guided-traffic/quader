@@ -40,14 +40,14 @@ func TestCAFile(t *testing.T) {
 
 	const every = 50 * time.Millisecond
 	// The factory trusts only the system roots: the endpoint verifies through
-	// storage.s3.ca_file alone.
+	// the connection's ca_file alone.
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true, MinVersion: "1.2"}}, outbound.WithTrustCheckEvery(every))
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("R-STOR-030 R-ARCH-035 an https endpoint verifies against storage.s3.ca_file", func(t *testing.T) {
+	t.Run("R-STOR-030 R-ARCH-035 an https endpoint verifies against the connection's ca_file", func(t *testing.T) {
 		if err := put(c, "k", []byte("x"), blob.Checksum{}); err != nil {
 			t.Fatal(err)
 		}
