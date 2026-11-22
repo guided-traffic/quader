@@ -3538,7 +3538,39 @@ that reads the bucket**
   scanner reads through Quader and would need no key; the backup and a Bastion at the bucket would. *Tests:*
   every wish can be shown at the unit tier with the in-memory store (two stores, its fault hook) and one
   integration case each; none is specific to a format, so none needs an end-to-end leg. **Findings on the way
-  are in section 8** (the scrub and the orphan sweep are not built). **Next:** the
+  are in section 8** (the scrub and the orphan sweep are not built). **The first ended at 08:48** (the encryption
+  proxy at its release 5.4.2, read in its code and documents; the attack cases, a part-by-part upload and the
+  dependency resolution run in throwaway modules, nothing against a live object store). **What R-STOR-048 says of
+  it is outdated in four points:** its module path carries the major version since 5.3.0, so a release can be
+  required by its tag; the owner's sketch is a released package of the proxy since 5.4.0, with the interface the
+  specification describes; the versions of the object store's client library it needs are newer than named; and
+  the format accepts a re-wrap that rewrites only the metadata. *The format:* AES-256-GCM over segments of 64 KiB,
+  each with a random nonce, each authenticated together with the format's identifier, the exact object key and
+  its index; a sealed trailer with the plain length and a CRC32C; one data key per object, wrapped once, in four
+  metadata keys of the object. *It stops* (each run against the codec): truncation, reordering, a dropped
+  segment, a segment of another object, a whole object copied to another key, a swapped metadata block. *It does
+  not stop:* an older genuine version put back under the same key (its documented gap), and it does not bind
+  the bucket; a commitment to the key is addressed nowhere. *Keys:* a plain AES key is the one provider that
+  encrypts (a key service is decided there and not built); the key is read once at the start; no job re-wraps
+  or re-encrypts, by its decisions; exactly one wrap per object, and its rules forbid a fifth metadata key; no
+  hierarchy, no key per bucket or request. In its Go packages the key is an interface a caller implements.
+  *As a proxy:* one backend, no replication, the state of a multipart upload in one process's memory, copies
+  refused, no link of the backend handed out. *As Go packages:* encrypting, decrypting, a ranged read and the
+  authenticated length work without its HTTP layer, and so does an upload driven part by part that another
+  replica continues (run). *What it promises:* stored data stays readable within a major version and may break
+  at the next without a migration; the Go interface is explicitly no promise, and one signature changed in a
+  minor release. *What an import costs:* the codec's packages use the standard library alone (about 90 KB of the
+  binary); the released glue package raises eighteen modules of the object store's client library in Quader and
+  adds one of a version below 1 (about 380 KB); the same licence family and the same Go version. *Its size and
+  quality:* the format's core is 1,497 lines of 18,051; 93.3 % coverage in its pipeline; known-answer vectors for
+  short objects as constants in Go; no fuzz target; reading each other's objects is tested in both directions
+  on each of its pull requests. **The two facts that constrain the decision most:** the binding to the object
+  key rules out Quader's finalize by a server-side copy and the backup's copies unless they re-encrypt, whether
+  the format is imported or rebuilt to the same specification; and one wrap per object conflicts with keys per
+  project and repository on deduplicated blobs unless the hierarchy lives in Quader's database and not on the
+  object. A middle way exists: import the codec alone and bind to a name of Quader's choosing, which the proxy
+  then cannot read. **Not verified:** anything against a live object store; whether the upload library resends
+  identical bytes for a retried part; whether a missing key commitment can be used in Quader's setting. **Next:** the
   evaluation as a working paper he answers in, as for the malware scan and the signatures (standing rules): his
   wishes as read, what is satisfiable and at which price, and the decisions with options and a recommendation each.
 
