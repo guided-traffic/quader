@@ -3570,7 +3570,30 @@ that reads the bucket**
   project and repository on deduplicated blobs unless the hierarchy lives in Quader's database and not on the
   object. A middle way exists: import the codec alone and bind to a name of Quader's choosing, which the proxy
   then cannot read. **Not verified:** anything against a live object store; whether the upload library resends
-  identical bytes for a retried part; whether a missing key commitment can be used in Quader's setting. **Next:** the
+  identical bytes for a retried part; whether a missing key commitment can be used in Quader's setting. **The
+  fourth ended at 08:52** (the state of the art, from the tools' source, official documents and anonymous requests
+  to public registries; each fact marked with its kind of source, seventeen points not verified). *Clients and
+  signed links:* the large public registries redirect a blob's `GET` and answer `HEAD` themselves; nearly every
+  client drops its credential on a redirect to another host, but the image clients written in Go keep it for a
+  subdomain of the registry's host, and an object store refuses a signed link that arrives with a credential, so
+  the links' host must not be a subdomain of Quader's own; a link signed for `GET` fails on `HEAD`; a link lives
+  no longer than the credential that signed it and cannot be revoked alone; the object store's log names the
+  signer and not who used the link. Most formats' clients verify a digest after the download; a plain download
+  tool does not. *Client-side encryption:* the object store vendor's own client treats ranged reads as
+  unauthenticated and buffers before it releases plain bytes, which a segmented format avoids; **a commitment to
+  the key matters wherever somebody who can write the object's metadata can swap the wrapped key**; one reused
+  nonce loses the authentication, so a retried part must never reuse nonces with other bytes; a wrapped key in
+  the object's metadata can be changed only by copying the object (atomic to 5 GB, in parts above). *Key
+  hierarchies:* every key service read rotates a key-encryption key by adding a version and re-wrapping the level
+  below, none re-encrypts content. **Bare SHA-256 object names let anyone who may list the bucket confirm that a
+  known file is stored,** and no policy of an object store can scope a bucket whose names carry no tenant.
+  *Several stores:* **no product that was read replicates one store across providers** (the reference registry has
+  one backend, a group of blob stores elsewhere only spreads writes); the providers differ in conditional
+  writes, checksum defaults and object lock, and none offers a SHA-256 over a whole multipart object. Recorded
+  outages of object stores lasted from one hour to more than seven. *Integrity:* an object store's checksums
+  cover transport and storage, not who wrote the bytes; versioning and object lock are what stop a credential
+  from replacing an object. **Not verified, among others:** the owner's own provider and five other European
+  ones; two rules of signed links that rest on secondary reports; the digest checks of several clients. **Next:** the
   evaluation as a working paper he answers in, as for the malware scan and the signatures (standing rules): his
   wishes as read, what is satisfiable and at which price, and the decisions with options and a recommendation each.
 
