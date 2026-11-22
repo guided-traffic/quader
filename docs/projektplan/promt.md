@@ -2106,7 +2106,13 @@ runs are in `git log`; this section holds the current state.
   recovery drill on a cluster, whose fifth step hands the per-connection file to the command; the labels on
   the screen. Five index rows of package B's decisions were missing and are added by the development agent
   into its commit. **The landing's gates were started at 22:27 and stopped in the same minute:** the load
-  was 64 on 20 cores, two builders' lint runs at once; they start when it has fallen below 16.
+  was 64 on 20 cores, two builders' lint runs at once; they start when it has fallen below 16. **It stayed
+  above 30, so at 22:41 they started in a lighter form:** the full unit run and the lint, the two that take
+  every core, are taken from the stacking's run on the same code (the top differs from it by documents and
+  five index rows); the landing worktree runs the build, the vet, the generated code, the evidence's four
+  steps, the complexity, the chart's lint and tests, the API's client and the translation source, the web's
+  lint and tests, the vet of the end-to-end code, and eight integration areas under the lock (the query
+  budget, overload, `blob`, `uploads`, `backup`, `postgres`, `files`, `restoreversions`).
 - **In work since 19:27: package 2 of the signed links** (the serve point, the store and the limits: the
   decision of R-STOR-070 after the gates and the admission, the row of the settings with its audit event
   and the replica's snapshot, the host rule, the connection's choice from the copies the item lookup
