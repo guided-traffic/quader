@@ -3847,7 +3847,19 @@ that reads the bucket**
   commit, the reconciliation or the garbage collection may rest on a conditional write; the start check of a
   connection establishes what it supports; and the wrap at the object (decision 2) is right for a second reason,
   since under an eventually consistent overwrite the object a read gets always carries its own wrap. Both
-  planners at work were told at 11:10, with the findings' file. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
+  planners at work were told at 11:10, with the findings' file. **A wrong assumption of the development agent,
+  found at 12:01 in his deployment repository and on his cluster:** his own installation does not keep its blobs at
+  that provider. It claims a bucket from the object store inside his cluster (a Ceph object gateway, Ceph 19.2.3
+  as read from the cluster, with the credentials in a Secret the bucket's provisioner writes and the cluster's
+  own CA). The provider he named is the one he cannot offer for a test today, so it is what he has in mind
+  beside it, not what runs. What follows: the in-cluster gateway is the store the first connection of his
+  installation meets, and it was not researched either; the start check per connection establishes on his
+  cluster what it supports as soon as the release with package A runs there, without anybody calling it by
+  hand; its address is inside the cluster, so signed links need a public address there before a client outside
+  can follow one; his chart follows every new release on its own, so the values of his installation are
+  rewritten to the list of connections in the step the release with package A and the chart is published (the
+  chart refuses the old values at rendering, which leaves the running pods in place until then). A reading of
+  that gateway's documentation is queued behind the planner of the second stage. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
   the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
