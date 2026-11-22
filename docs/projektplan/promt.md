@@ -573,6 +573,18 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
+  checked by the development agent): (1) **the scrub of stored content and the orphan sweep of the content addresses are
+  not built** (R-STOR-027, R-STOR-026; no job kind, no list of damaged blobs; the developer page of the blob store says
+  so), while the evidence lists R-STOR-027 as implemented, through the claims of its part about a lost object in the
+  remote cache; the scrub is what the gap H-11 names as its mitigation, so a changed byte in the bucket is found today
+  only when a full download reads it; (2) a repository's `storage.presignedDownloads` is stored and has no effect, also
+  on a remote repository that keeps nothing, where R-STOR-014 wants a 422, and `storage.s3.presign.ttl` and `min_size`
+  are read by nothing; (3) the object store's own encryption (R-STOR-032) is built on every write and copy, is not
+  marked implemented, has no test that names it, and the chart reaches it through the configuration block alone;
+  (4) the journal's shipper uses the plain client and not the guarded one, so it passes the circuit breaker and the
+  metrics by; (5) the finalize of an upload session checks its server-side copy by size alone (the gap H-591, known).
+  None is repaired; (1) and (2) belong to what the storage topic decides, (3) and (4) wait for a batch.
 - **The signatures, measured with real clients on 2026-11-21** (confirmed by reproduction; commands and outputs in
   [developer/signatures.md](../developer/signatures.md#defects-found)): (1) no real NuGet signature is readable, neither of `dotnet nuget sign`
   nor of nuget.org, because both name the signer by `subjectKeyIdentifier` and the parser of `nugetcms` takes only issuer and serial; every
@@ -3501,7 +3513,32 @@ that reads the bucket**
   not read again without a restart: a rotation is two rollouts, the re-encrypt task and the old key's removal.
   It can derive a key family per purpose. A key per project kept as a sealed column would fit it unchanged (the
   research's inference); a hierarchy, a reload and a way to hand keys to a Bastion do not exist. The backup's
-  own encryption covers the database files alone and is not built. **Next:** the
+  own encryption covers the database files alone and is not built. **The second ended at 08:47** (the store, read
+  in the code at the commit of that morning, nothing run). *One bucket by construction:* one block of the
+  configuration, one client, one circuit breaker, one readiness check, metrics without a label for the store,
+  and the specification says so too (R-STOR-030; its assumption A4 allows a one-way replication to a passive
+  bucket); the research lists seventeen places that would have to learn of a second connection. A blob's row
+  holds no location, no key identifier and no wrapped key, and its content state is one value per blob.
+  *References:* foreign keys and no counter; which repositories reference a blob is cheap, which blobs a
+  repository references is cheap for live items and the remote cache alone; and a reference is added without
+  any write to the store (a deduplication hit, a link, an image mounted across repositories, a deploy by
+  checksum), which is where a key per repository meets the deduplication. *The seam:* the store's interface
+  (thirteen methods) carries no object metadata anywhere, which is where the proxy's format keeps the wrapped
+  data key. **Encrypting the content as the store stands would mark every blob corrupt:** the commit, the
+  download, the recheck, the verification, the backup and the restore compare the stored object's size with
+  the plain size of the row, and the backup's streamed copy, the restore and the deep verification hash the
+  stored bytes against the plain digest (the specification's open point 8 names the listing's sizes alone).
+  *A rotation meets versioning and backups:* noncurrent versions and the objects of a backup's pool keep the old
+  wrap, so a retired key has to outlive both. *A second connection meets* the upload sessions (one multipart
+  upload and the staging and its copy in one bucket), the garbage collection (a delete that reaches one store
+  of two leaves an orphan nothing sweeps, and one store's open circuit stops the run) and the one content state
+  per blob. *A Bastion at the bucket:* the object names carry no project and no repository, so no policy of the
+  store can narrow a read-only account to some repositories; the start check writes a probe, which such an
+  account cannot; nothing holds a blob back from the garbage collection for a reader outside. The malware
+  scanner reads through Quader and would need no key; the backup and a Bastion at the bucket would. *Tests:*
+  every wish can be shown at the unit tier with the in-memory store (two stores, its fault hook) and one
+  integration case each; none is specific to a format, so none needs an end-to-end leg. **Findings on the way
+  are in section 8** (the scrub and the orphan sweep are not built). **Next:** the
   evaluation as a working paper he answers in, as for the malware scan and the signatures (standing rules): his
   wishes as read, what is satisfiable and at which price, and the decisions with options and a recommendation each.
 
