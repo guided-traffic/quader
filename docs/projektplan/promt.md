@@ -2069,7 +2069,33 @@ runs are in `git log`; this section holds the current state.
   Helm arguments and so dropped its own image tag; green with the image under the tag the set expects, which
   is the pipeline's). No defect of the chart or of package A, no new commit; its cluster, image and
   kubeconfig are gone.
-- **In work since 14:46: package C of the several connections, the reconciliation** (the job with its queue and
+- **Package C of the several connections, the reconciliation, reported at 16:18 and lands after the stack that
+  waits** (one commit of the type `feat` on the chart's commit; its builder worked from 14:46 to 16:18; no
+  migration). **Built:** the job `storage-reconcile`, exclusive, every minute, not scheduled in read-only
+  maintenance; an upload that leaves a gap wakes it, at most once a second per replica. The queue takes due
+  rows oldest first and a source that is verified before one that is not; the store copies itself only where
+  the start check recorded that the pair can, and a refusal sends the pair to streaming for the run; a
+  streamed copy checks the digest before the object is completed; a source that is missing or holds other
+  bytes is marked and the next one tried; failures back off under five fixed reasons. The pass queues gaps,
+  records full passes and when a connection is filled. Drain, retire, the journal's pass, the metrics and the
+  audit event of a drained connection are built; **the backlog alert reads real series now.** Decisions
+  Q-STOR-255 to Q-STOR-259 (a streamed copy holds one part in memory, 64 MiB per run by default, because the
+  worker's spool is too small for a blob of 10 GiB; a gap is queued only where another connection holds a
+  present copy, so with one connection the queue stays empty). Gaps: H-1258 is closed; H-1261 (until the scrub
+  exists only a download verifies a copy the store made itself, so a drain beside such copies waits); H-1262
+  (the backup and the operator's verify read the first connection alone, the finding already in "Open
+  findings"). **Its gates** exit 0; the store's integration area failed once in a collection test while its
+  own chart test loaded the machine and passed alone and in a second whole run. Tests added: unit tests of
+  0.3 s, one integration case of 3.7 s with in-memory stores, one of 1.1 s against two real buckets of the
+  integration stack (the store copies across the two buckets and keeps the metadata); about 6 s more for the
+  integration job. **For the owner's installation with one connection:** one run a minute that finds nothing
+  to copy, one batch query per thousand blobs an hour, and the single maintenance slot taken for a moment
+  each minute. **Not verified:** the job on a real worker from end to end; anything on his object gateway.
+  **Before it lands** its builder adapts it to the repair below it (one call of the changed signature, its
+  own helper for a connection's name), extracts the translation source instead of the two units written by
+  hand, and exports the gauge of a detached connection, which nobody exports yet and its state query gives.
+  What it was at its start:
+  (the job with its queue and
   its pass, copies made by the store and copies streamed through Quader, the bound on inserts, drain, retire,
   the journal's pass, its metrics, and the integration case against two real buckets of the integration
   stack). Its builder works on top of the two commits that are not on `main` yet, which the development agent
