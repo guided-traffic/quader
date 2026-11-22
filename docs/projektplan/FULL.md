@@ -83,7 +83,7 @@ follow the [roadmap's format order](../coverage/roadmap.md#p1-format-expansion-o
 - 🟢 Image vulnerability scanning: operating-system and language packages inside images (Trivy in client mode in a worker job), with the findings, report and blocking of beta phase 6 ([vulnerability-scanning.md](../spec/vulnerability-scanning.md#images))
 - 🟢 Integration tests (protocol over HTTP across three replicas, the counting stub registry, the conformance suite)
 - 🟢 E2E tests: push and pull with Docker and Podman through local, remote (both modes) and virtual repositories on several replicas, an upload interrupted by a drain (nightly set `oci-long`), a mirror pass on n replicas, the closing set `oci-closing` (Valkey stopped, Docker Hub read-only)
-- ⚪ Tag caps and kept tag revisions (with the repository caps), promotion, foreign layers, tag resolution by push time, labels and layer history, exposure rules and the Bastion for the format
+- ⚪ Tag caps and kept tag revisions (with the repository caps), promotion, foreign layers, tag resolution by push time, labels and layer history, exposure rules for the format (the Bastion for the format is specified and in work since 2026-11-22, by the owner's decision that a Bastion serves every format)
 
 ### F5 · Helm charts stored as OCI artifacts
 - ⚪ Chart artifact type on top of F4
@@ -215,8 +215,9 @@ all four columns green.
   merge verified member releases and re-sign; the screens, the setup and the guides; clients Debian 13 and 12, Ubuntu 24.04 and 22.04.
   Evidence: [deb.md](../developer/deb.md#what-is-built-and-what-is-not). Stays: local source packages, snapshots, debug-symbol and
   installer packages, `dput`, translations and `Contents` for local and virtual repositories, mirrors of flat archives, `Valid-Until` on
-  Quader's own releases, keys in a key service, Debian vulnerability matching, copy and move, exposure rules, the Bastion and nested virtual
-  repositories (debian.md, Deferred); the nightly set `deb-long`, the Debian pass beside clients and under a drain in the e2e sets, a build
+  Quader's own releases, keys in a key service, Debian vulnerability matching, copy and move, exposure rules and nested virtual
+  repositories (debian.md, Deferred; the Bastion for the format is specified and in work since 2026-11-22, by the owner's decision that a
+  Bastion serves every format); the nightly set `deb-long`, the Debian pass beside clients and under a drain in the e2e sets, a build
   trigger on a change of claims (H-725) and the metric `quader_deb_remote_parse_total`.
 
 ## E · Further platform work (P2)

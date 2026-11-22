@@ -573,6 +573,14 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **The Bastion, read on 2026-11-22 by the planner of "a Bastion serves every format"** (in the code, nothing run):
+  (1) the specification said a Bastion serves no Debian, and the code forwards every path below `/api/<format>/`,
+  so Debian, Ansible Galaxy and the ClamAV definitions reach clients through a Bastion today, while the feed has
+  no entry for their withdrawals: a deleted Debian package or a removed collection version stays servable from a
+  Bastion's cache until its revalidation, up to ten minutes by default (a malware finding has its entry and is
+  not affected); (2) the client setup offers a Bastion as the target of an OCI repository, and its snippets get
+  a 404 there. Both are repaired by the packages in work (the feed's entries in package B, the registry's paths
+  in B and C); neither is repaired alone.
 - **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
   checked by the development agent): (1) **the scrub of stored content and the orphan sweep of the content addresses are
   not built** (R-STOR-027, R-STOR-026; no job kind, no list of damaged blobs; the developer page of the blob store says
@@ -1629,10 +1637,12 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
-- **In work since 2026-11-22, 09:52: the planner of "a Bastion serves every format",** the owner's decision of
-  09:46 ("With the owner", decided on 2026-11-22): images and Debian were kept from the Bastion by two
-  deferrals of the development agent, not by a decision of his. Its specification lands on `main` when it
-  reports; builders follow.
+- **In work since 2026-11-22, 10:26: package A of "a Bastion serves every format"** (the two contracts and the
+  kit's nineteenth check; one builder in a worktree). The owner decided it at 09:46 ("With the owner", decided
+  on 2026-11-22): images and Debian were kept from the Bastion by two deferrals of the development agent, not
+  by a decision of his. **Its specification is on `main` since 10:26** (planner 09:52 to 10:25; what it says,
+  its three questions and its build plan are in that entry). Packages B and C follow in parallel when A has
+  landed, D after them.
 - **The owner's topic of 2026-11-22, 08:25, is researched and its working paper is with him since 09:02:** the
   encryption and integrity of the stored content, the delivery by signed links, several object stores, a
   Bastion that reads the bucket, and a hierarchy of keys. Four researches ran from 08:30 and ended at
@@ -3457,6 +3467,19 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     development agent; what is left to decide is whether the formats' repeated integration tests move into the format
     contract's kit, and the other candidates of the measurement).
 13. **What frees a release once the full gate returns** (below; a question for later).
+14. **Image pulls through a Bastion and the main installation's miss limit (Q-BAS-167),** from the planner of
+    "a Bastion serves every format" on 2026-11-22: a registry token's read shape is capped at partial, so every warm
+    pull costs the main installation one small request per layer, counted against the miss limit of the client's
+    address (300 a minute by default; a cluster behind one address can reach it in a rollout). (a) build it so
+    now (specified, the planner's recommendation); (b) answers per package at once, which removes those requests
+    for images and for callers with restricted rights of npm and NuGet, the larger change.
+15. **ClamAV installations with a client certificate through a Bastion (Q-BAS-176):** (a) through a Bastion they
+    update anonymously or with a token, and certificates work against the main installation's certificate endpoint
+    alone (specified); (b) the Bastion checks a certificate and vouches for it, against his rule that Quader takes
+    no certificate from a header; (c) TLS passed through to the main installation, without a cache.
+16. **A Docker Engine's mirror address through a Bastion (Q-BAS-178):** (a) one Bastion release per bound host,
+    which learns its repository from the main installation (specified); (b) not offered; (c) the bindings in the
+    Bastion's chart.
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
@@ -3935,6 +3958,39 @@ open questions are in the list above**
   feed, the download events and the security page; every sentence that says a Bastion does not serve a format;
   the tests by the rule that they stay runnable; a build plan. **Not verified:** whether a Bastion forwards
   Debian's paths today (the specification excludes it, a research found no code that refuses them).
+  **Specified on `main` since 10:26** (its planner worked from 09:52 to 10:25; two commits of documents, rebased
+  and landed by the development agent after the links, the check, the evidence regenerated without a
+  difference and the wording scan; its worktree and branch are removed): R-BAS-050 to R-BAS-060, Q-BAS-165 to
+  Q-BAS-180, the gaps H-1242 to H-1248, ADR-238; the interface between Bastion and main installation rises to
+  its fourth version; the Bastion's parts of Q-OCI-23, Q-DEB-26 and Q-ANS-25 are superseded in place, their
+  statements about exposure rules and Debian's vulnerability matching stay. **What it says:** a Bastion serves
+  every format's read paths, `/api/<format>/…`, `/files/…` and `/v2/…` at its own host root, read-only, without
+  knowledge of a format in its code. A token request goes to the main installation's token service, the
+  Bastion holds no key; a registry token is checked by the main installation and its read shape is capped at
+  partial (without the cap a token for one image would read every cached image of the repository); an
+  anonymous token counts as no credential. An image's routes are cached by their kinds (a manifest by tag
+  and the tag list as documents, a manifest by digest and a blob as artifacts, referrers never), and the
+  registry's headers survive a hit. A resumed download of a large layer streams from the spool, and a second
+  caller of a running fill follows it. Debian's signed indexes pass unchanged and the by-hash paths keep an
+  `apt update` consistent. The ClamAV definitions are served anonymously or with a token, never with a client
+  certificate. **A format to come needs no decision of its own:** the handshake carries a table of facts per
+  format, the format contract gains the declaration of them, and a nineteenth check of the kit holds it.
+  Withdrawals of images, Debian and Ansible content reach every Bastion through the feed within seconds. **Read
+  in the code by the planner:** Debian, Ansible Galaxy and the ClamAV definitions are forwarded by a Bastion
+  today, against what the specification said (section 8); `/v2/` is refused on both sides; an image's digest
+  would never be cached (the entity tag's form), the registry's headers are dropped on a hit, every 401 marks
+  a credential invalid, and the check would refuse every registry token. **Left for its last package, by the
+  planner's choice and right:** the four manual pages that say a Bastion serves no Debian and no images, because
+  the manual describes what a running installation does. **Three questions of the planner for the owner,** each
+  specified with its recommendation, are numbers 14 to 16 of the list above. **Its tests cost** (estimates):
+  under 4 s of unit tests, about 20 ms per format in the kit, about 10 s in the integration area `bastion`,
+  about 100 s in the end-to-end leg `oci` (60 of them a Bastion release in the leg), nothing in the Bastion's
+  own legs; with 25 formats about half a second of the kit and no further leg. **Build plan, four packages**
+  (the developer page of the Bastion): A the two contracts and the kit's check; B the main installation's side
+  and C the Bastion's side, in parallel after A; D the client case on kind and the manual. **In work since
+  10:26: package A.** **Not verified:** any run with a real client; whether the token service sees a Bastion's
+  host; how the image clients take a challenge without a scope; whether the largest definition file is above
+  the bound for documents.
 
 **Decided by the owner on 2026-11-21, waiting to be built**
 
