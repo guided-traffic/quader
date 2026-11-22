@@ -2236,6 +2236,12 @@ runs are in `git log`; this section holds the current state.
   the lint and six integration areas are left; the links' builder moves its commit onto the new top; the
   three builders started at 23:09 to 23:11 and the writer of the key destruction's specification are all
   active within the minute. The load is 28.
+- **The timer's check at 23:44:** the run of the stack of four has no failed job, with one integration
+  shard and the layout checks left; the three commits that wait for it (the Bastion's two packages and the
+  key destruction's specification) stand gated in the landing worktree. The links' second package stands on
+  the top of `main` and its builder is at work on it; package F, the encryption's package 3 and the
+  Bastion's P3 are active within the minute. The load is 5. His installation and its Bastion run the newest
+  release, ready.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
