@@ -1775,7 +1775,43 @@ runs are in `git log`; this section holds the current state.
   code, with a block of identifiers of its own (R-BAS-070 to 089, Q-BAS-230 to 269, R-STOR-095 to 099,
   Q-STOR-340 to 359, ADR-250 to 253, H-1340 to 1369), and it brings back the questions that are the owner's.
   With it four agents are at work: the Bastion's package D, package 5 of the encryption, the chart's package
-  of the several connections, and this planner.
+  of the several connections, and this planner. **It reported at 15:07** (one commit of documents; it worked
+  from 14:22 to 15:06; rebased onto `main` by the development agent without a conflict, in the landing gates
+  since 15:07; **it is pushed together with the several connections, after the Bastion's package D has had
+  its end-to-end legs,** because its commit changes the count test and so starts a run that would end
+  them). R-BAS-070 to R-BAS-079, R-STOR-095 and R-STOR-096, Q-BAS-230 to Q-BAS-239, Q-STOR-340 to Q-STOR-347,
+  ADR-250, the gaps H-1340 to H-1345 on a new security page, a build plan on a developer page of its own.
+  **What it says.** *Who asks:* on a miss a Bastion adds to its ordinary forward a header that offers to take
+  a handover, with the largest size it can take. *Who decides:* the main installation decides that forward
+  exactly as today (the caller's credential, the gates, the admission, the counting) and only at the serve
+  point, behind the admission, answers a handover instead of the bytes: the file's own answer with every
+  header and no body, and one header that carries the link, its expiry, the connection, the digest, the sizes
+  and, for an encrypted copy alone, the data key. The interface rises to its fifth version. *The conditions,
+  in a fixed order:* the Bastion offered and its registration has the switch on (per registration, off unless
+  turned on, no chart value: the side the keys leave decides); an artifact; the content sound and every gate
+  passed; no range; the size between the links' smallest size and what the Bastion can take; the admission; a
+  copy on a connection whose link works, a plain copy before an encrypted one, so that no key leaves where a
+  plain copy serves; the data key read from the object; the credential valid for five more seconds; and for
+  an encrypted copy **an audit event written in its own transaction before the answer, so that no key leaves
+  without its record.** *The Bastion's read:* a client of its own without a credential and without the
+  interface's headers, which follows no redirect and refuses Quader's own hosts; the bytes go through the fill
+  that exists (a plain copy against its digest, an encrypted one through the format's reader with the handed
+  key); the key is destroyed after the read and written nowhere. *Failures:* before the first byte the forward
+  is sent again without the offer; after it the fill goes on from the main installation by a range; a digest
+  that fails at the end cuts the callers and marks the blob for fills through the main installation; after a
+  failure of the network a replica offers nothing for 60 seconds. *Counting:* when the handover is given, as
+  for a client's link. No new value in either chart; one alert comes with the build. No end-to-end case, since
+  no client behaves differently. **Decided by the planner, open to the owner's objection, the two that weigh
+  most:** a repository's opt-out of signed links does not reach handovers (Q-STOR-345: the opt-out exists for
+  formats whose clients check a digest, and a Bastion always checks), and a single blob is not rewritten
+  under a new key after its key was handed (Q-STOR-347: older versions and the backups keep the old content
+  anyway; the audit trail names every key that left). **Its question for the owner** is number 26 of his
+  list. **Not verified:** anything against a real object store; whether the integration suite's Bastion
+  trusts the stack's CA without more work; the header size the main installation's ingress lets through (the
+  handover's header is estimated at about 3 KiB); the throughput of the decryption. **Found by it in the
+  documents, repaired by the development agent at the landing:** the index of the architecture decisions
+  lacks the rows of four records whose bodies exist, and the security pages' table of gaps lacks the row of
+  the signed links' page.
 - **The timer's check at 14:21:** nothing has reported since package A; of the integration areas the
   development agent runs on A's rebased commit, the first five passed (the three of Ansible, Debian local and
   remote) and the others run, one lock per area; the owner's installation runs the newest release (read at
@@ -3951,6 +3987,15 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     downloads alone; still, (a) he brings the gateway to 19.2.7 or newer before the switch for signed links is
     turned on there (the development agent's advice); (b) he leaves it. Whatever he chooses for Quader, the
     defect concerns every other use of signed upload links on that gateway.
+26. **Whether a speed limit stops a handover to a Bastion as it stops a signed link to a client (Q-STOR-343),**
+    from the planner of the handover on 2026-11-22; put to him right after question 18, whose twin it is.
+    Specified: (a) no; the transfer from the store to a Bastion never passes the `packages` pods, a Bastion's
+    answers from its cache were never paced, and the budgets of the hour and the day are charged when the
+    handover is given. (b) Yes, as for links; then on a new installation next to no caller gets a handover,
+    because every built-in profile but Unlimited sets a speed limit. The planner's and the development agent's
+    recommendation is (a). **To be told to him with it, not a decision of Quader's:** the object gateway of his
+    cluster has an address inside the cluster alone, so a Bastion of his reads from it only once his network
+    gives the gateway an address the DMZ reaches (the same holds for signed links to clients outside).
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
