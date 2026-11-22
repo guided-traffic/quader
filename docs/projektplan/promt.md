@@ -2159,7 +2159,8 @@ runs are in `git log`; this section holds the current state.
   its gates again; the links' second package has its commit on a clean tree and has not moved onto the top
   yet, active three minutes ago; the writer of the Bastion's specification is at work. The run of the
   trace has no failed job and its release is not cut yet, so the plan's commits wait. The load is 4. His
-  UI's backend is ready on the trace's state.
+  UI's backend is ready on the trace's state. **His installation runs the trace's release since 21:55**
+  (the upgrade succeeded; read from the follower at 22:00).
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -4733,7 +4734,21 @@ for full readers today; a subject at its limits keeps reading warm content until
 findings of the planner about today's code, read and not run: the first read of a cached entry by a credential
 without an answer costs two requests where an uncached path costs one, a timing signal for a narrowed reader;
 and a blocked full reader's answer keeps being renewed by the background refresh. **In work since 21:39: the
-writer of its specification** (documents only, one commit, with the build plan's page).
+writer of its specification** (documents only, one commit, with the build plan's page). **Written at 21:59**
+(one commit of the type `docs`; its writer worked from 21:39 to 21:59; the evidence's four steps, the chart's
+tests and the full unit run exit 0, the count test with 1,226 requirements): R-BAS-080 to R-BAS-088, Q-BAS-240
+to Q-BAS-254 with Q-BAS-167 superseded in place, the gaps H-1380 to H-1384 and the request-per-layer gap
+retitled, ADR-254, the build plan's page `docs/developer/bastion-package-shapes.md`, and the handover's interface
+version moved from 5 to 6. Q-BAS-244 names the change of Q-BAS-18 and Q-BAS-18 points to it. Moved onto `main`
+in the landing worktree at 22:00, links and evidence checked again; **it is pushed when the trace's run has
+ended,** since its count test is code and a push would cancel the run. **In work since 22:00, on the
+specification's commit: packages P1 and P2 of it,** side by side: the wire (the interface's fifth version,
+the two headers of the marking, the check's members, the unverified reader of a registry token's grant; after
+it both sides speak the new version and nothing behaves differently) and the decision point with the kit's
+twenty-first check (the read shape per package beside the repository's, held against the decision point over
+the whole fixture; the check for every format, with the repair of any format that fails it). The main
+installation's side must not land before the second. Builders with a test load: the stacking, the links,
+and these two.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
