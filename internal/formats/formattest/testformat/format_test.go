@@ -310,6 +310,65 @@ func TestR_STOR_071_KitCheck20(t *testing.T) {
 	})
 }
 
+// TestR_BAS_086_KitCheck21: each of the two defects of what a format owes a reader of one package fails check 21 and no other check, and
+// a format with package names cannot pass it without OtherPackage or skip it. That npm, NuGet, OCI, Debian, Ansible Galaxy and the
+// ClamAV definitions pass it, each with its OtherPackage, and that generic skips it, is each format's TestR_ARCH_010_Conformance.
+//
+// As for checks 19 and 20, a case runs every check but check 6 (Inspect against crafted inputs of gigabytes, which neither defect
+// touches), on the fixture check 19's test built.
+func TestR_BAS_086_KitCheck21(t *testing.T) {
+	notInspect := slices.DeleteFunc(formattest.Checks(), func(c formattest.Check) bool { return c == formattest.CheckInspect })
+	base := sharedFixture()
+	for _, c := range []struct {
+		name   string
+		defect testformat.Defect
+		match  string
+	}{
+		{"a package document that lists the other packages while it decides its own alone", testformat.ListsAnotherPackage, `the body differs between a reader of the repository and a reader of "left-pad" alone`},
+		{"a package document that asks a decision after its status line", testformat.DecidesAfterItsStatusLine, `WikiReadable of the package "left-pad" at "left-pad" came after the status line`},
+	} {
+		t.Run("R-BAS-086 "+c.name+" fails check 21 and no other check", func(t *testing.T) {
+			rep := formattest.EvaluateChecks(testformat.With(c.defect), base, notInspect...)
+			if failed := rep.Failed(); !slices.Equal(failed, []formattest.Check{formattest.CheckPackageShape}) {
+				t.Fatalf("failed checks = %v, want check 21 alone:\n%v", failed, rep)
+			}
+			if got := strings.Join(rep.Result(formattest.CheckPackageShape).Failures, "\n"); !strings.Contains(got, c.match) {
+				t.Fatalf("failures do not say %q:\n%s", c.match, got)
+			}
+		})
+	}
+	check21 := func(edit func(*formattest.Fixture)) formattest.Result {
+		fx := base // a copy; the edits replace fields, never write through them
+		edit(&fx)
+		return formattest.EvaluateChecks(testformat.New(), fx, formattest.CheckPackageShape).Result(formattest.CheckPackageShape)
+	}
+	for _, c := range []struct {
+		name  string
+		edit  func(*formattest.Fixture)
+		match string
+	}{
+		{"a fixture of a format with package names without OtherPackage fails check 21", func(fx *formattest.Fixture) { fx.OtherPackage = nil }, "names no OtherPackage"},
+		{"check 21 cannot be skipped by a format with package names", func(fx *formattest.Fixture) {
+			fx.Skip = map[formattest.Check]string{formattest.CheckPackageShape: "not applicable"}
+		}, "the format has 7 routes"},
+		{"an OtherPackage whose seed stores no package row fails check 21", func(fx *formattest.Fixture) {
+			fx.OtherPackage = &formattest.OtherPackage{Name: "right-pad", Seed: func(*formattest.Host) error { return nil }}
+		}, `stores no package row "right-pad"`},
+		{"an OtherPackage that a case reads fails check 21", func(fx *formattest.Fixture) {
+			fx.OtherPackage = &formattest.OtherPackage{Name: "left-pad", Seed: func(h *formattest.Host) error { return testformat.Publish(t.Context(), h, "left-pad", "2.0.0") }}
+		}, `the answer belongs to "left-pad", the fixture's OtherPackage`},
+		{"a fixture whose cases decide no single package fails check 21", func(fx *formattest.Fixture) {
+			fx.Content = slices.DeleteFunc(slices.Clone(fx.Content), func(c formattest.ContentCase) bool { return c.Path != "-/all" && c.Path != "-/search" })
+		}, "compared no reader of a package"},
+	} {
+		t.Run("R-BAS-086 "+c.name, func(t *testing.T) {
+			if got := strings.Join(check21(c.edit).Failures, "\n"); !strings.Contains(got, c.match) {
+				t.Fatalf("check 21 does not say %q:\n%s", c.match, got)
+			}
+		})
+	}
+}
+
 func FuzzR_ARCH_028_Match(f *testing.F) { formattest.FuzzMatch(f, testformat.New()) }
 
 func FuzzR_ARCH_028_Inspect(f *testing.F) {

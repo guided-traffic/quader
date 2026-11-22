@@ -16,21 +16,36 @@ import (
 	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
-// upload stores a generated package in the suite through the upload route of the Host, the way a client does.
+// upload stores a generated package of hello in the suite through the upload route of the Host, the way a client does.
 func upload(version, suite string) func(h *formattest.Host) error {
 	return func(h *formattest.Host) error {
 		d, err := debgen.Build(debgen.Hello("hello", version, "amd64"))
 		if err != nil {
 			return err
 		}
-		q := url.Values{"distribution": {suite}, "component": {"main"}}
-		r, err := h.Serve(context.Background(), http.MethodPut, "upload/hello_"+version+"_amd64.deb", bytes.NewReader(d.Bytes), false,
-			func(r *http.Request) { r.URL.RawQuery = q.Encode() })
-		if err == nil && r.Code != http.StatusCreated && r.Code != http.StatusOK {
-			err = fmt.Errorf("upload %s: status %d: %s", version, r.Code, r.Body.String())
-		}
-		return err
+		return uploadDeb(h, "hello", version, suite, d.Bytes)
 	}
+}
+
+// uploadOther stores libxml2-utils 2.9.14-1 in the suite stable, the package check 21 seeds beside every case's own (R-BAS-086); the
+// package is generated once.
+func uploadOther(t testing.TB) func(h *formattest.Host) error {
+	d, err := debgen.Build(debgen.Hello("libxml2-utils", "2.9.14-1", "amd64"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return func(h *formattest.Host) error { return uploadDeb(h, "libxml2-utils", "2.9.14-1", "stable", d.Bytes) }
+}
+
+// uploadDeb stores a package file in the suite through the upload route of the Host.
+func uploadDeb(h *formattest.Host, name, version, suite string, deb []byte) error {
+	q := url.Values{"distribution": {suite}, "component": {"main"}}
+	r, err := h.Serve(context.Background(), http.MethodPut, "upload/"+name+"_"+version+"_amd64.deb", bytes.NewReader(deb), false,
+		func(r *http.Request) { r.URL.RawQuery = q.Encode() })
+	if err == nil && r.Code != http.StatusCreated && r.Code != http.StatusOK {
+		err = fmt.Errorf("upload %s %s: status %d: %s", name, version, r.Code, r.Body.String())
+	}
+	return err
 }
 
 // armoredKey is the block the fixture's port serves as the repository's public key (R-DEB-018).
@@ -126,6 +141,10 @@ func conformance(t testing.TB) formattest.Fixture {
 		NoDocument: "an APT archive has no document per package: PackageDocumentPath reports ok false (R-DEB-001, Q-REPO-270)",
 		Names:      []formattest.NameCase{{Spellings: []string{"hello"}}, {Spellings: []string{"libxml2-utils"}}},
 		Inspect:    inspectDeb("pool/h/hello/hello_1.0-1_amd64.deb"),
+
+		// The package beside every content case's own, for check 21 (R-BAS-086): no case reads it.
+		OtherPackage: &formattest.OtherPackage{Name: "libxml2-utils", Seed: uploadOther(t)},
+
 		Content: []formattest.ContentCase{
 			{Name: "release document", Path: "dists/stable/InRelease", Status: http.StatusNotFound},
 			{Name: "index", Path: "dists/stable/main/binary-amd64/Packages.gz", Status: http.StatusNotFound},

@@ -179,6 +179,15 @@ const (
 	// a strong ETag that names a revision instead of the content address: check 20. Its test lists the route in NoBastion, the
 	// exemption check 19 grants such an answer; check 20 grants none (Q-STOR-296).
 	DeclaresUnaddressedBody Defect = "declares-unaddressed-body"
+	// ListsAnotherPackage lets the package document list the other packages of the repository the caller may read (through the read
+	// scope, as a listing does) while the route decides only the package it answers for: the main installation would name the answer
+	// that package's, and a Bastion would share the repository reader's copy, which lists the others, with a reader of the package
+	// alone. Check 21 (bastion.md R-BAS-081, R-BAS-086).
+	ListsAnotherPackage Defect = "lists-another-package"
+	// DecidesAfterItsStatusLine lets the package document route ask Host.WikiReadable after it wrote the document: the main
+	// installation names the package of an answer from the decisions it holds at the status line, so a later decision would not
+	// count. Check 21 (bastion.md R-BAS-081, R-BAS-086).
+	DecidesAfterItsStatusLine Defect = "decides-after-its-status-line"
 )
 
 // UndeclaredHeader is the protocol header the defect UndeclaredReplayHeader puts on the package document.
@@ -264,6 +273,8 @@ func (f Format) has(x string) bool { return f.flags[x] }
 type Store interface {
 	SetTag(pkg, tag, version string)
 	Tags(pkg string) map[string]string
+	// Names are the packages that hold a tag, sorted; only the defect ListsAnotherPackage reads them.
+	Names() []string
 	// AddVersion and Versions keep the versions of a package outside the package rows; only the defect
 	// VersionsOutsideRows uses them.
 	AddVersion(pkg, version string)
@@ -307,6 +318,18 @@ func (m *MemStore) SetTag(pkg, tag, version string) {
 		m.tags[pkg] = map[string]string{}
 	}
 	m.tags[pkg][tag] = version
+}
+
+// Names implements Store.
+func (m *MemStore) Names() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]string, 0, len(m.tags))
+	for k := range m.tags {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Tags implements Store.
@@ -847,8 +870,36 @@ func (f Format) document(ctx context.Context, rq *formats.Request, name string) 
 	if f.has(string(WithWiki)) && (f.has(string(LeaksWiki)) || rq.Host.WikiReadable(ctx, rq, f.documentTarget(name, formats.ActionRead))) {
 		doc["readme"] = ReadmeSample
 	}
+	if f.has(string(ListsAnotherPackage)) {
+		others, err := f.otherPackages(ctx, rq, name)
+		if err != nil {
+			return nil, false, err
+		}
+		doc["others"] = others
+	}
 	b, err := json.Marshal(doc)
 	return b, true, err
+}
+
+// otherPackages lists the packages of the repository besides name that the caller may read, through the read scope as a listing
+// decides its rows (ListsAnotherPackage).
+func (f Format) otherPackages(ctx context.Context, rq *formats.Request, name string) ([]string, error) {
+	st, ok := rq.Host.FormatData(ID).(Store)
+	if !ok {
+		return nil, nil
+	}
+	scope, err := rq.Host.Resolver().ReadScope(ctx, rq, []qname.Repo{rq.Repo.Name})
+	if err != nil {
+		return nil, err
+	}
+	all := scope.Shape(rq.Repo.Name) == formats.ReadAll
+	others := []string{}
+	for _, n := range st.Names() {
+		if n != name && (all || scope.MayRead(rq.Repo.Name, n, "")) {
+			others = append(others, n)
+		}
+	}
+	return others, nil
 }
 
 // versionRows reads the live versions of a package and the revision of its row; the defect VersionsOutsideRows reads
@@ -942,6 +993,9 @@ func (f Format) docGet(ctx context.Context, rq *formats.Request, w http.Response
 	w.Header().Set("Content-Type", "application/json")
 	err = f.writeDocument(w, rq, doc)
 	f.strip(w)
+	if err == nil && f.has(string(DecidesAfterItsStatusLine)) {
+		_ = rq.Host.WikiReadable(ctx, rq, f.documentTarget(name, formats.ActionRead))
+	}
 	return err
 }
 

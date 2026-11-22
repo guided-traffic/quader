@@ -3,6 +3,7 @@ package authz
 import (
 	"context"
 
+	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/repository"
@@ -77,12 +78,7 @@ const maxReachDepth = 16
 //   - An anonymous subject is none until a visibility level admits it.
 func (e *Engine) ReachOn(_ context.Context, idx *Index, sub Subject, keys []qname.Repo) (map[qname.Repo]ReachResult, error) {
 	out := make(map[qname.Repo]ReachResult, len(keys))
-	st := e.newEvalState(idx, sub)
-	// The same state without content:metadata-read: the shape of what the grants alone let the subject read,
-	// which is what an artifact read is decided on.
-	art := *st
-	art.metadata = false
-	c := &reachCtx{st: st, art: &art, allEndpoint: e.exposesEverything(sub.Endpoint)}
+	c := e.newReachCtx(idx, sub)
 	for _, k := range keys {
 		out[k] = e.reachOf(c, k)
 	}
@@ -92,6 +88,16 @@ func (e *Engine) ReachOn(_ context.Context, idx *Index, sub Subject, keys []qnam
 type reachCtx struct {
 	st, art     *evalState
 	allEndpoint bool
+}
+
+// newReachCtx derives what the reach of a subject is decided on, once for every key it is asked about.
+func (e *Engine) newReachCtx(idx *Index, sub Subject) *reachCtx {
+	st := e.newEvalState(idx, sub)
+	// The same state without content:metadata-read: the shape of what the grants alone let the subject read,
+	// which is what an artifact read is decided on.
+	art := *st
+	art.metadata = false
+	return &reachCtx{st: st, art: &art, allEndpoint: e.exposesEverything(sub.Endpoint)}
 }
 
 // reachNone builds the refusal a read of key gets, from the decision point itself.
@@ -140,9 +146,11 @@ func (e *Engine) leafReach(c *reachCtx, r *repoInfo, addressed qname.Repo) Reach
 		return ReachPartial
 	}
 	// A full read includes the wiki: a document shared between callers of a full read never carries a README to a caller without it
-	// (R-BAS-012, Q-BAS-149). A subject that reads every artifact and not the wiki is partial.
+	// (R-BAS-012, Q-BAS-149). A subject that reads every artifact and not the wiki is partial. The wiki is read in full only where its
+	// shape is ReadAll: the question about the repository alone is allowed by a grant or a token scope narrowed by package, which a
+	// coordinate without a package matches (R-AUTHZ-005), so it would let the level of the artifacts stand for the wiki's.
 	wiki := Coordinate{Repository: r.Name, Kind: KindMetadata, Actions: []Action{Read}, Part: PartWiki, Addressed: addressed}
-	if e.evaluateWith(c.st.idx, sub, c.st, wiki).Outcome != Allow {
+	if e.readShapeOf(c.st, sub, r, c.allEndpoint, PartWiki) != ReadAll || e.evaluateWith(c.st.idx, sub, c.st, wiki).Outcome != Allow {
 		return ReachPartial
 	}
 	if r.Class == repository.Remote {
@@ -152,8 +160,62 @@ func (e *Engine) leafReach(c *reachCtx, r *repoInfo, addressed qname.Repo) Reach
 		if d.Outcome != Allow {
 			return ReachPartial
 		}
+		// The fill of a frozen mirror needs its action on every package and path: the question about the repository alone is
+		// allowed by a deploy grant narrowed by package or path, whatever its patterns say.
+		if a, _ := populateAction(r); a != Read && !e.actsEverywhere(c.st, sub, r, a) {
+			return ReachPartial
+		}
 	}
 	return ReachFull
+}
+
+// actsEverywhere reports whether the subject holds the action on every package and every path of the repository: content:bypass,
+// or the repository's account, a project role or a grant without a pattern that gives it (a contribution's grant or inline grant
+// without a pattern for a CI subject), under a token scope with an element that admits it on the repository without a pattern. It
+// never answers true where a decision of the action on some package or path could refuse. The populate check of a frozen mirror
+// asks it: a coordinate without a package and a path matches every grant whatever its patterns say (R-AUTHZ-005).
+func (e *Engine) actsEverywhere(st *evalState, sub Subject, r *repoInfo, a Action) bool {
+	if st.bypass {
+		return true
+	}
+	if !e.scopeAdmitsEverywhere(sub.Scope, a, r) {
+		return false
+	}
+	if st.isCI {
+		return e.ciActsEverywhere(st.ci, st.idx, r, a)
+	}
+	if roleActions(st.roleIn(r.proj), r).Has(a) {
+		return true
+	}
+	if g, ok := st.idx.accountGrantOf(st.sub, r.ID); ok && g.actions.Has(a) {
+		return true
+	}
+	for _, p := range st.pset {
+		for _, g := range st.idx.grantsFor(r.ID, p) {
+			if g.actions.Has(a) && g.res.unrestrictedPackages() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// scopeAdmitsEverywhere reports whether a token scope admits the action on every package and path of the repository: no scope,
+// inherit, or an element without package and path patterns that names the repository and lists the action.
+func (e *Engine) scopeAdmitsEverywhere(sc *scope.Scope, a Action, r *repoInfo) bool {
+	if sc == nil || sc.Inherit {
+		return true
+	}
+	for _, el := range sc.Repositories {
+		acts, bad := ParseActions(el.Actions)
+		if len(bad) > 0 || !acts.Has(a) || len(el.Packages.Include)+len(el.Packages.Exclude)+len(el.Paths.Include)+len(el.Paths.Exclude) > 0 {
+			continue
+		}
+		if e.compile.selectorsMatch(el.Repositories, instanceContext, r.repoView) {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *Engine) reachVirtual(c *reachCtx, v *repoInfo) ReachResult {

@@ -184,8 +184,11 @@ The main installation marks the response of a recognized Bastion request (R-BAS-
   remote member that could not tell on the way; every other `404` is `pass` ([Q-BAS-70](../spec/bastion.md#q-bas-70--absent-is-derived-from-the-notes-of-the-cores-lookups-and-only-for-a-full-reader)).
   The residual risk is [H-441](../spec/bastion.md#h-441--absent-rests-on-the-notes-of-the-cores-lookups-not-on-the-routes).
 - **`full` is checked against the decision point.** A full shape never meets a refused read: `TestR_BAS_012_ShapeAgreesWithTheDecisionPoint`
-  asks the decision point for every read of its fixture, and `content:metadata-read` alone, a scope that narrows, exposure rules and a
-  missing populate right are all `partial`.
+  asks the decision point for every read of its fixture, the wiki of every package included, and `content:metadata-read` alone, a scope
+  that narrows, exposure rules and a missing populate right are all `partial`. So are a wiki read and a fill of a frozen mirror that only a
+  grant or a scope narrowed by package allows: until the build of R-BAS-080 (2026-11-22) both were asked on a coordinate without a package,
+  which such a grant matches, and the repository shape was `full` while the wiki or the fill of another package was refused. A package
+  shape (R-BAS-080, `PackageReachOn`) is held the same way by `TestR_BAS_080_PackageShapeAgreesWithTheDecisionPoint`.
 - **A shared document is the same for every full reader.** Kit check 12 sends each `Metadata` and `Computed` document as a user, a
   service account and the anonymous caller, each with its own request context and its own credential, client, session and forwarded
   headers except those the answer names in `Vary`; npm's `-/whoami` and `-/ping`, which differed, are `Volatile`.

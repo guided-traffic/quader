@@ -238,6 +238,8 @@ func conformance(f *Format) formattest.Fixture {
 			"nuget.symbols":                "the symbol server is P1 (R-NUGET-021) and answers 501 until built; the symbol push is served (R-NUGET-020)",
 		},
 		Changes: nugetChanges(f),
+		// The package beside every content case's own, for check 21 (R-BAS-086): no case reads it.
+		OtherPackage: &formattest.OtherPackage{Name: "newtonsoft.json", Seed: seedOtherPackage},
 		Names: []formattest.NameCase{
 			{Spellings: []string{"Acme.Widgets", "acme.widgets", "ACME.WIDGETS"}},
 			{Spellings: []string{"Newtonsoft.Json", "newtonsoft.json"}},
@@ -364,6 +366,13 @@ func seedWidgets(h *formattest.Host) error {
 	}
 	putFiles(h)
 	return nil
+}
+
+// seedOtherPackage stores version 13.0.3 of newtonsoft.json, the package check 21 seeds beside every case's own (R-BAS-086).
+func seedOtherPackage(h *formattest.Host) error {
+	st := h.FormatData(ID).(*docStore)
+	st.bind(h)
+	return st.commit(h, "newtonsoft.json", registrationVersion("Newtonsoft.Json", "13.0.3", true, `{"description":"Json for .NET."}`))
 }
 
 // seedTwoWidgets stores versions 1.2.3 and 1.3.0 of acme.widgets, for the documents that list more than one version.

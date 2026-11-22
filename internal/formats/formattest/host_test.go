@@ -569,3 +569,61 @@ type fakeUploads struct{ formats.UploadSessions }
 func (fakeUploads) Start(_ context.Context, _ *formats.Request, target formats.RepoRef, binding string) (formats.UploadSession, error) {
 	return formats.UploadSession{ID: uuid.New(), Target: target, Binding: binding}, nil
 }
+
+// TestR_BAS_086_TheHostRecordsTheDecisionsOfARequest: the kit's host records every rights decision of the request ServeRequest runs, in
+// order, with the package it named and whether the status line was out (kit check 21, R-BAS-081): Authorize allowed and refused,
+// WikiReadable, each path of PathsAllowed in the package Classify places it in, and each MayRead row of its read scope; the next request
+// starts afresh.
+func TestR_BAS_086_TheHostRecordsTheDecisionsOfARequest(t *testing.T) {
+	ctx := context.Background()
+	h := formattest.NewHost(testformat.With(testformat.DecidesAfterItsStatusLine), formattest.HostOptions{
+		Data: &testformat.MemStore{},
+		Allow: func(t formats.Target) error {
+			if t.Package == "right-pad" {
+				return errs.E(errs.NotFound, errs.CodeNotFound, "refused")
+			}
+			return nil
+		},
+	})
+	if err := testformat.Publish(ctx, h, "left-pad", "1.0.0"); err != nil {
+		t.Fatal(err)
+	}
+	rq, err := h.NewRequest(ctx, http.MethodGet, "left-pad", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp := h.ServeRequest(rq, false); resp.Code != http.StatusOK {
+		t.Fatalf("status %d", resp.Code)
+	}
+	_ = h.Authorize(ctx, rq, formats.Target{Package: "right-pad", Path: "right-pad", Actions: []formats.Action{formats.ActionRead}})
+	if _, err := h.PathsAllowed(ctx, rq, formats.ActionRead, []string{"left-pad/-/left-pad-1.0.0.tgz", "-/all"}); err != nil {
+		t.Fatal(err)
+	}
+	scope, err := h.Resolver().ReadScope(ctx, rq, []qname.Repo{rq.Repo.Name})
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope.MayRead(rq.Repo.Name, "right-pad", "")
+	want := []formattest.Decision{
+		{Via: "Authorize", Package: "left-pad", Path: "left-pad", Allowed: true},
+		{Via: "MayRead", Package: "left-pad", Version: "1.0.0", Allowed: true},
+		{Via: "WikiReadable", Package: "left-pad", Path: "left-pad", Allowed: true, AfterStatus: true},
+		{Via: "Authorize", Package: "right-pad", Path: "right-pad"},
+		{Via: "PathsAllowed", Package: "left-pad", Version: "1.0.0", Path: "left-pad/-/left-pad-1.0.0.tgz", Allowed: true},
+		{Via: "PathsAllowed", Path: "-/all", Allowed: true},
+		{Via: "MayRead", Package: "right-pad"},
+	}
+	got := h.Decisions()
+	if len(got) != len(want) {
+		t.Fatalf("decisions = %+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("decision %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+	h.ServeRequest(rq, false)
+	if got := h.Decisions(); len(got) != 3 {
+		t.Errorf("the next request starts with %d decisions of its own, want 3: %+v", len(got), got)
+	}
+}

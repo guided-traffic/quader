@@ -35,6 +35,10 @@ func conformance() formattest.Fixture {
 		NoDocument:  "a database has no document of its own: the container route serves the version in use (R-CLAMAV-007)",
 		Names:       []formattest.NameCase{{Spellings: []string{"daily"}}, {Spellings: []string{"main"}}, {Spellings: []string{"bytecode"}}},
 		OptionNames: []string{"QUADER_TOKEN"},
+
+		// The database beside every content case's own, for check 21 (R-BAS-086): bytecode in use with its signature, which no case reads.
+		OtherPackage: &formattest.OtherPackage{Name: "bytecode", Seed: seedInUse("bytecode", true, 335)},
+
 		Content: []formattest.ContentCase{
 			{Name: "the container in use", Path: "daily.cvd", Seed: seedInUse("daily", true, 28189, 28190)},
 			{Name: "a container without a set in use", Path: "main.cvd", Status: http.StatusNotFound},

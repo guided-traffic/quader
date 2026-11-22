@@ -2373,7 +2373,8 @@ H-1340 to H-1345.
 
 **Status:** Decided by the development agent on 2026-11-22, after the owner's word that its favourite is built and not what was built first
 ([Q-BAS-167](spec/bastion.md#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial),
-option (b)); the mechanisms Q-BAS-240 to Q-BAS-254 decided by the development agent. Specified, not built. Narrows
+option (b)); the mechanisms Q-BAS-240 to Q-BAS-254, and Q-BAS-260 and Q-BAS-261 of its build, decided by the development agent.
+Specified; the decision point and the format contract (`PackageReachOn`, kit check 21) built on 2026-11-22, the rest not built. Narrows
 [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table)'s cap of a
 registry token at `partial` to the repository, and changes the condition of the owner's
 [Q-BAS-18](spec/bastion.md#q-bas-18--metadata-shared-for-confirmed-full-readers-filtered-documents-per-caller) from a full read of the
@@ -2421,9 +2422,9 @@ interface version shared with the handover.
 answer, Q-BAS-245 (d)); path-pattern grants that take the gain away from real installations (Q-BAS-240); revalidation traffic from
 `content` entries per repository (Q-BAS-249).
 
-**Spec:** [bastion.md](spec/bastion.md) R-BAS-080 to R-BAS-088, Q-BAS-240 to Q-BAS-254, Q-BAS-167, and the edits of R-BAS-011, R-BAS-012,
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-080 to R-BAS-088, Q-BAS-240 to Q-BAS-254, Q-BAS-260, Q-BAS-261, Q-BAS-167, and the edits of R-BAS-011, R-BAS-012,
 R-BAS-013, R-BAS-020, R-BAS-022, R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-BAS-074, Q-BAS-18,
-Q-BAS-198, Q-BAS-200, Q-BAS-202; the gaps H-1242 and H-1380 to H-1384; [developer/bastion-package-shapes.md](developer/bastion-package-shapes.md).
+Q-BAS-198, Q-BAS-200, Q-BAS-202; the gaps H-1242, H-1380 to H-1384 and H-1390; [developer/bastion-package-shapes.md](developer/bastion-package-shapes.md).
 
 ## Design invariants
 
@@ -11010,6 +11011,8 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-BAS-253](spec/bastion.md#q-bas-253--limits-and-download-events-stay-unchanged) | Do limits and download events change? Decided by the development agent | (a) no | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
 | [Q-BAS-254](spec/bastion.md#q-bas-254--the-tests) | Which tests? Decided by the development agent | (a) unit tests, kit check 21, the changed integration assertions, the OCI end-to-end warm assertion tightened, a measurement once | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
 | [Q-BAS-255](spec/bastion.md#q-bas-255--a-checks-package-that-breaks-a-rule-answers-422-as-the-checks-other-field-errors) | Which status answers a check's package that breaks a rule? Decided by the builder | (a) `422` with the field error at `/packages/<i>`, as the check's other field errors | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-260](spec/bastion.md#q-bas-260--the-fill-of-a-package-is-decided-without-a-path) | On which coordinate is the fill of a package decided? Decided by the development agent during the build | (a) on the package without a path, so a fill narrowed by path is `partial` | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-261](spec/bastion.md#q-bas-261--kit-check-21s-reader-of-one-package-has-no-path-pattern) | How does kit check 21 model the reader of one package? Decided by the development agent during the build | (a) `Allow` by package with `VersionsByPath` false, as the decision point says for a reader `full` on a package | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
 | [Q-STOR-340](spec/storage.md#q-stor-340--the-handover-is-decided-in-the-package-of-the-links-the-one-caller-of-copydatakey-besides-the-store) | The handover is decided in the package of the links, the one caller of CopyDataKey besides the store. Decided by the planner | (a) `internal/downloadlinks`, `ServeOptions.Handover`; the architecture test allows `CopyDataKey` from it and `internal/blob` | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-341](spec/storage.md#q-stor-341--a-plain-copy-is-handed-before-an-encrypted-one) | A plain copy is handed before an encrypted one. Decided by the planner | (a) the first plain copy in the read order, else the first encrypted one | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-342](spec/storage.md#q-stor-342--the-details-of-the-installations-links-hold-for-a-handover) | The details of the installation's links hold for a handover. Decided by the planner | (a) `minSize`, `linkLifeSeconds` and the public addresses of R-STOR-014 | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |

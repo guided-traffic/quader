@@ -80,6 +80,10 @@ type HostOptions struct {
 	// WikiDenied makes the Host answer as for a caller who reads the artifacts and not the wiki (R-AUTHZ-034): WikiReadable is
 	// false and Authorize refuses a target whose part is the wiki as a missing resource. Check 15 sets it.
 	WikiDenied bool
+	// NoPathPatterns says Allow decides like the grants of a caller that carry no path pattern on the repository: the read scope's
+	// VersionsByPath is false, as the decision point answers for a reader whose shape on a package is full (bastion.md R-BAS-080,
+	// condition 2). Check 21 sets it for its reader of one package.
+	NoPathPatterns bool
 	// Subject is who acts on every request the Host builds; the zero value is a
 	// subject without a name, which is neither anonymous nor authenticated.
 	Subject authz.Subject
@@ -124,7 +128,73 @@ type Host struct {
 	// recorded are the paths of the items whose download a format recorded itself (ItemStore.RecordDownload), in order.
 	recorded  []string
 	violation []string
+	// decisions are the rights decisions of the last request ServeRequest ran, in the order they were made, and statusOut
+	// says that its status line is out (check 21).
+	decisions []Decision
+	statusOut bool
 }
+
+// Decision is one rights decision a format asked of the Host while a request ran (check 21, bastion.md R-BAS-081): a call of
+// Authorize, whether it allowed or refused; a question of WikiReadable; a path of PathsAllowed, with the package the format's
+// Classify places it in; a row of the read scope's MayRead.
+type Decision struct {
+	// Via names the call: "Authorize", "WikiReadable", "PathsAllowed" or "MayRead".
+	Via string
+	// Package is the package the decision named, "" for a package-less one; Version and Path are the rest of its coordinate.
+	Package, Version, Path string
+	// Allowed is the answer.
+	Allowed bool
+	// AfterStatus says the status line of the request was out when the decision was made.
+	AfterStatus bool
+}
+
+// noteDecision records a decision of the running request.
+func (h *Host) noteDecision(d Decision) {
+	h.mu.Lock()
+	d.AfterStatus = h.statusOut
+	h.decisions = append(h.decisions, d)
+	h.mu.Unlock()
+}
+
+// Decisions returns the rights decisions of the last request [Host.ServeRequest] ran, in the order they were made.
+func (h *Host) Decisions() []Decision {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]Decision(nil), h.decisions...)
+}
+
+// noteStatus records that the status line of the running request is out.
+func (h *Host) noteStatus() {
+	h.mu.Lock()
+	h.statusOut = true
+	h.mu.Unlock()
+}
+
+// statusLine is the response writer ServeRequest hands the route: it tells the Host when the status line goes out, so that a
+// decision made after it is told apart (check 21).
+type statusLine struct {
+	http.ResponseWriter
+	h *Host
+}
+
+func (w statusLine) WriteHeader(code int) {
+	if code >= http.StatusOK {
+		w.h.noteStatus()
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w statusLine) Write(p []byte) (int, error) {
+	w.h.noteStatus()
+	return w.ResponseWriter.Write(p)
+}
+
+func (w statusLine) Flush() {
+	w.h.noteStatus()
+	_ = http.NewResponseController(w.ResponseWriter).Flush()
+}
+
+func (w statusLine) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 // AuthorizeCall is one call of Host.Authorize.
 type AuthorizeCall struct {
@@ -297,6 +367,12 @@ func (h *Host) Authorize(_ context.Context, rq *formats.Request, t formats.Targe
 	h.mu.Lock()
 	h.authz = append(h.authz, AuthorizeCall{Route: rq.Route.Name, Target: t, Repo: rq.Repo.Name.String(), Addressed: rq.Addressed().String()})
 	h.mu.Unlock()
+	err := h.authorize(t)
+	h.noteDecision(Decision{Via: "Authorize", Package: t.Package, Version: t.Version, Path: t.Path, Allowed: err == nil})
+	return err
+}
+
+func (h *Host) authorize(t formats.Target) error {
 	if t.Part == authz.PartWiki && h.opts.WikiDenied {
 		return authz.NotFound()
 	}
@@ -307,19 +383,27 @@ func (h *Host) Authorize(_ context.Context, rq *formats.Request, t formats.Targe
 }
 
 // WikiReadable implements formats.Host: false when the options say the caller may not read the wiki, else what Allow says of
-// the target as a read. It is a question and records no Authorize call.
+// the target as a read. It is a question and records no Authorize call; it is one of the request's decisions (check 21).
 func (h *Host) WikiReadable(_ context.Context, _ *formats.Request, t formats.Target) bool {
-	if h.opts.WikiDenied {
-		return false
+	ok := !h.opts.WikiDenied
+	if ok {
+		t.Part, t.Actions = authz.PartWiki, []formats.Action{formats.ActionRead}
+		ok = h.opts.Allow == nil || h.opts.Allow(t) == nil
 	}
-	t.Part, t.Actions = authz.PartWiki, []formats.Action{formats.ActionRead}
-	return h.opts.Allow == nil || h.opts.Allow(t) == nil
+	h.noteDecision(Decision{Via: "WikiReadable", Package: t.Package, Version: t.Version, Path: t.Path, Allowed: ok})
+	return ok
 }
 
 // PathsAllowed implements formats.Host: the Allow function of the options decides each path with the coordinate the format's Classify
-// gives it, and nothing is recorded as an Authorize call (the listing form writes no audit event).
+// gives it, and nothing is recorded as an Authorize call (the listing form writes no audit event). Each path is one of the request's
+// decisions, in the package Classify places it in (check 21).
 func (h *Host) PathsAllowed(_ context.Context, _ *formats.Request, a formats.Action, paths []string) ([]bool, error) {
-	return h.allowedPaths(a, paths), nil
+	out := h.allowedPaths(a, paths)
+	for i, p := range paths {
+		info := h.f.Classify(formats.Path{Path: p})
+		h.noteDecision(Decision{Via: "PathsAllowed", Package: info.Package, Version: info.Version, Path: p, Allowed: out[i]})
+	}
+	return out, nil
 }
 
 func (h *Host) allowedPaths(a formats.Action, paths []string) []bool {
@@ -400,9 +484,18 @@ func (s kitScope) Shape(qname.Repo) formats.ReadShape {
 	return formats.ReadRows
 }
 
-func (s kitScope) VersionsByPath(qname.Repo) bool { return s.h.opts.Allow != nil }
+func (s kitScope) VersionsByPath(qname.Repo) bool {
+	return s.h.opts.Allow != nil && !s.h.opts.NoPathPatterns
+}
 
-func (s kitScope) MayRead(_ qname.Repo, pkg, version string) bool {
+// MayRead implements formats.ReadScope; each row it decides is one of the request's decisions (check 21).
+func (s kitScope) MayRead(repo qname.Repo, pkg, version string) bool {
+	ok := s.mayRead(repo, pkg, version)
+	s.h.noteDecision(Decision{Via: "MayRead", Package: pkg, Version: version, Allowed: ok})
+	return ok
+}
+
+func (s kitScope) mayRead(_ qname.Repo, pkg, version string) bool {
 	allow := s.h.opts.Allow
 	if allow == nil {
 		return true
@@ -713,13 +806,15 @@ func (h *Host) ServeRequest(rq *formats.Request, sameOrigin bool) *Response {
 	h.mu.Lock()
 	h.routes = append(h.routes, rq.Route.Name)
 	h.reads, h.served, h.servedPaths = nil, false, nil
+	h.decisions, h.statusOut = nil, false
 	h.mu.Unlock()
 
 	rec := httptest.NewRecorder()
-	formats.ServeRoute(h.f, rec, rq, sameOrigin)
+	formats.ServeRoute(h.f, statusLine{ResponseWriter: rec, h: h}, rq, sameOrigin)
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	h.statusOut = false // a decision after the request returned is none of its own
 	if !rq.Route.Kind.ServesContent() {
 		if h.served {
 			h.violation = append(h.violation, fmt.Sprintf("route %q of kind %s served a stored item", rq.Route.Name, rq.Route.Kind))

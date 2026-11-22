@@ -17,7 +17,8 @@ released blob, is specified in [The handover per blob](#the-handover-per-blob) (
 gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), not built; it lifts Q-BAS-10 for that and for
 nothing else. The development agent's decision of 2026-11-22 on Q-BAS-167, option (b), a read shape per package for a registry token and
 for every reader narrowed by package, is specified in [Read shapes per package](#read-shapes-per-package) (R-BAS-080 to R-BAS-088,
-Q-BAS-240 to Q-BAS-254, H-1380 to H-1384), not built; it amends in place R-BAS-011, R-BAS-012, R-BAS-013, R-BAS-020, R-BAS-022,
+Q-BAS-240 to Q-BAS-254, Q-BAS-260 and Q-BAS-261, H-1380 to H-1384 and H-1390); its decision point and its format contract (R-BAS-080,
+R-BAS-086) are built, the rest is not; it amends in place R-BAS-011, R-BAS-012, R-BAS-013, R-BAS-020, R-BAS-022,
 R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-BAS-074, the deferred table, Q-BAS-198, Q-BAS-200 and
 H-1242, and takes the interface's version 5, so that the handover takes 6.
 
@@ -3077,7 +3078,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
 | `absent` comes from the core's lookups | the negative cache (R-BAS-024) | built (Q-BAS-70) |
-| Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086, specified, not built) |
+| Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086) |
 
 - **The contract's addition** (an ADR, [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table)):
   `catalog.Facts.Bastion` of the type `catalog.BastionFacts` with `ReplayHeaders []string` (canonical header names, none of the core's
@@ -3604,7 +3605,8 @@ Bastion a fourth kind of answer, the caller's shape on one package of a reposito
 - **The format contract** gains kit check 21: what a reader of only the response's package receives equals what a reader of the whole
   repository receives (R-BAS-086). **The interface** takes the next version, 5 (R-BAS-087).
 
-Status: specified on 2026-11-22, not built. The planner's design was read against `main` on 2026-11-22; the build plan is
+Status: specified on 2026-11-22; the decision point and the format contract (package 2 of the build plan: R-BAS-080, R-BAS-086) built
+on 2026-11-22, the rest not built. The planner's design was read against `main` on 2026-11-22; the build plan is
 [developer/bastion-package-shapes.md](../developer/bastion-package-shapes.md); the decisions are
 [Q-BAS-240](#q-bas-240--what-full-on-a-package-means) to [Q-BAS-254](#q-bas-254--the-tests); the gaps are
 [H-1380](#h-1380--changes-the-feed-does-not-carry-reach-registry-token-and-package-narrowed-readers-within-the-revalidation-periods-no-longer-at-their-next-read)
@@ -3704,6 +3706,27 @@ Acceptance criteria:
   `x`, and `partial` on both with a path pattern; a token scope listing `@acme/*` gives `full`; an endpoint with exposure rules gives
   `partial`; a remote repository without the populate right gives `partial`, and `full` with it; a virtual repository with an unreadable
   member gives `partial`; no wiki read gives `partial`; `content:metadata-read` alone gives `partial`.
+
+*As built on 2026-11-22* ([reach_package.go](../../internal/authz/reach_package.go), [Q-BAS-260](#q-bas-260--the-fill-of-a-package-is-decided-without-a-path)):
+`authz.PackageReacher` with `Engine.PackageReachOn(ctx, idx, sub, repo, pkgs) (map[string]Reach, error)`, `ReachFull` or `ReachPartial` for
+each name, an empty name partial. It derives the subject's state once, asks the repository's reach first (`full` and `none` decide every
+package), and then the five conditions per package: `exposesEverything`; `readsByPath` on the state without `content:metadata-read`, since
+that capability never reads an artifact and would hide a grant's path pattern; the read scope's own `MayRead(R, P, "")` on that state and
+`MayReadWiki(R, P, "")` on the full one; for a remote repository `populate` on P without a path, so that a fill narrowed by path patterns is
+refused. A virtual repository asks its gate for a metadata and an artifact read and every member as `reachVirtual` does. The fixture of the
+reach (`reachFixture` in [reach_test.go](../../internal/authz/reach_test.go)) has 26 subjects, 3 endpoints, 16 repository keys and 4 packages;
+it gained the case of each condition: an exposure rule with a version range, a grant of a package document's path alone, an auditor with
+member grants and a path-pattern grant, a fill narrowed by package, an external user and a scoped internal token reading one package of a
+repository whose wiki is `internal`, a reader of a nested virtual repository's leaves without its gate. Each of the five conditions, the virtual
+gate's artifact read, the members' rule and the nested gate was taken out once, and `TestR_BAS_080_PackageShapeAgreesWithTheDecisionPoint`
+failed each time. **The build found two holes in `ReachOn` (R-BAS-012), closed in the same change:** the wiki and the fill of a frozen mirror
+were decided on a coordinate without a package and a path, which a grant or a token scope narrowed by package matches whatever its
+patterns say (R-AUTHZ-005). An external user with a grant on `@a/*` of a repository whose artifacts are `public` and whose wiki is
+`internal`, an internal user's token scoped to `@a/*` there, and a reader whose `deploy` on a frozen mirror is narrowed to `@acme/*` were
+`full` on the repository while the wiki, or the fill, of another package was refused, so the marking would have let a Bastion share a
+document with a README, or a remote's document, with them. `ReachOn` now asks the wiki's own read shape (`readShapeOf` with the part wiki) and,
+for a frozen mirror, the action on every package and path (`actsEverywhere`); `TestR_BAS_012_ShapeAgreesWithTheDecisionPoint` asks the wiki of
+every package as well, and fails without either change.
 
 ### R-BAS-081 · The package of a response
 Priority: **P1** · Covers: quader-only
@@ -3922,6 +3945,17 @@ Acceptance criteria:
 - Unit (`internal/formats/formattest/testformat`): the defects `ListsAnotherPackage` and `DecidesAfterItsStatusLine` each fail check 21 and no
   other check (`TestR_BAS_086_KitCheck21`); every format's `TestR_ARCH_010_Conformance` runs it, with `Fixture.OtherPackage` for npm, NuGet,
   OCI, Debian, Ansible Galaxy and the ClamAV definitions.
+
+*As built on 2026-11-22* ([checks_package.go](../../internal/formats/formattest/checks_package.go), [Q-BAS-261](#q-bas-261--kit-check-21s-reader-of-one-package-has-no-path-pattern)):
+`formattest.CheckPackageShape`. The kit's host records every decision of a request in order (`Host.Decisions()`: `Authorize` allowed or
+refused, `WikiReadable`, each path of `PathsAllowed` in the package `Classify` gives it, each `MayRead` row of its read scope) and whether the
+status line was out (`ServeRequest` hands the route a writer that tells it). The package is derived by R-BAS-081's rule. The reader of only P
+is the host's `Allow` refusing every other package and every path in no package, with the read scope's `VersionsByPath` false
+(`HostOptions.NoPathPatterns`), and is served on the same seeded host with its renditions forgotten. `Fixture.OtherPackage` is a `Name` and a
+`Seed`; the check holds the seed to a package row of the name, refuses a case whose status changes with it stored or whose answer belongs to
+it, and fails a format with package names that compares no case. A format with routes or package names cannot skip it; generic skips it with its reason. npm, NuGet, OCI, Debian,
+Ansible Galaxy and the ClamAV definitions passed it as they were: no handler decided after its status line and none drew on another package
+without a package-less decision, so no format was repaired. It runs over the local class only ([H-1390](#h-1390--kit-check-21-runs-over-the-local-class-only)).
 
 ### R-BAS-087 · The interface version
 Priority: **P1** · Covers: quader-only
@@ -8151,7 +8185,9 @@ Context: a package shape must never let the Bastion serve a byte the main instal
 **Choice:** (a). **Rationale:** it is the decision point's own rule, made per package. The development agent would revisit it if a
 measurement showed that path-pattern grants take the gain away from real installations.
 
-**Applied in the spec:** R-BAS-080.
+**Applied in the spec:** R-BAS-080. *As built:* `authz.Engine.PackageReachOn`; the fill of a package is decided without a path
+([Q-BAS-260](#q-bas-260--the-fill-of-a-package-is-decided-without-a-path)), and the rule's agreement with the decision point is
+`TestR_BAS_080_PackageShapeAgreesWithTheDecisionPoint`.
 
 ### Q-BAS-241 · How the main installation learns a response's package
 
@@ -8187,7 +8223,8 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) `full` or `partial`; `none` folds into `partial`; negative entries stay for full readers of the repository (chosen) | No local refusal per package | A local refusal would happen only for cached entries, which is a timing signal (Q-BAS-124) | A reader who can read nothing of a package pays a conditional request per read |
 | (b) Three values with a status | A `none` per package refused at the Bastion | Fewer requests for refused readers | Tells which hidden packages the Bastion holds |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-080, R-BAS-082, R-BAS-083.
+**Choice:** (a). **Applied in the spec:** R-BAS-080, R-BAS-082, R-BAS-083. *As built* at the decision point: `PackageReachOn` answers
+`ReachFull` or `ReachPartial` only, and `ReachPartial` for every package of a repository whose reach is `none`.
 
 ### Q-BAS-244 · Documents are shared per package
 
@@ -8279,7 +8316,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A route member `Listing` | A route declares that it lists other packages | Explicit | A speculative member no format needs today |
 | (c) Check 12 only | Nothing new | Nothing to build | Check 12 compares only callers who read everything |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-058, R-BAS-081, R-BAS-086.
+**Choice:** (a). **Applied in the spec:** R-BAS-058, R-BAS-081, R-BAS-086. *As built:* kit check 21
+(`formattest.CheckPackageShape`), `Fixture.OtherPackage` in every format with package names, and the two `testformat` defects; the reader of
+one package is modeled as [Q-BAS-261](#q-bas-261--kit-check-21s-reader-of-one-package-has-no-path-pattern) says.
 
 ### Q-BAS-251 · The version numbering against the handover
 
@@ -8345,6 +8384,43 @@ and a repository name without a project, neither with a field error.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-083; code: `checkRequest` in
 [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go), `iface.CheckRequest.PackagesProblem`.
+
+### Q-BAS-260 · The fill of a package is decided without a path
+
+Status: **Decided by the development agent** during the build of R-BAS-080 — selected from the options below; the owner sees it when it is
+built.
+
+Context: condition 5 of R-BAS-080 asks the populate right "for P". The populate check of R-AUTHZ-008 decides `read` and, for a frozen mirror,
+`deploy` on a coordinate. A `deploy` grant may be narrowed by package and by path, and the build found that `ReachOn` asked it on a
+coordinate without a package and a path, which every narrowed grant matches (R-AUTHZ-005).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Decided on P without a path (chosen) | `populate` on `Coordinate{Package: P}`: a grant or a scope with a path pattern does not match a coordinate without a path (Q-AUTHZ-250), so a fill narrowed by path is `partial` | Covers every path of P: without a path pattern the decision comes from the package patterns alone, as conditions 2 and 3 argue for the read | A fill narrowed by path is `partial` on every package, as a read narrowed by path is |
+| (b) On the package document's path | `populate` with `atPackage` | A fill narrowed to the document's folder could be `full` | A fill pattern that admits the document's path and not a tarball's would be `full` while the tarball's fill is refused |
+| (c) On the repository alone | As `ReachOn` did | No new coordinate | Every narrowed `deploy` grant matches it: `full` where a fill is refused |
+
+**Choice:** (a). **Rationale:** it fails closed exactly where a path pattern could tell two paths of P apart, the argument condition 2 makes
+for the read. `ReachOn` asks a frozen mirror's action on every package and path (`actsEverywhere`) for the same reason.
+
+**Applied in the spec:** R-BAS-080 (as built).
+
+### Q-BAS-261 · Kit check 21's reader of one package has no path pattern
+
+Status: **Decided by the development agent** during the build of R-BAS-086 — selected from the options below; the owner sees it when it is
+built.
+
+Context: the kit's read scope says `VersionsByPath` true for every caller whose `Allow` is set, the conservative stand-in of a grant with
+path patterns. With it, NuGet's documents for the reader of one package took the filtering path of Q-NUGET-120, whose validator is the
+digest of the content and not the revision, so check 21 found the `ETag` different though the body was the same. A reader whose package
+shape is `full` has no path pattern on the repository (condition 2 of R-BAS-080), and the decision point says `VersionsByPath` false for it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reader of only P is `Allow` by package with `VersionsByPath` false (`HostOptions.NoPathPatterns`) (chosen) | The kit models the subject the marking would call `full` on P | The check compares what a Bastion would share: a document marked for P is shared only with readers `full` on P, none of whom has a path pattern | A format whose filtering path differs for a caller with path patterns is held by check 13's control run, not here |
+| (b) `VersionsByPath` true, as for every other `Allow` | The kit's default | Nothing new in the host | Fails NuGet for a caller the marking never calls `full` on a package; the repair would change a validator Q-NUGET-120 chose against leaking hidden versions |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-086 (as built).
 
 ## What this does not cover
 
@@ -9132,3 +9208,18 @@ a cached hidden path from a missing one by timing, and registry tokens make fres
 signal per package, because a caller with a known `partial` shape gets the conditional request without a check. What makes it real: a
 narrowed reader with fresh registry tokens timing first reads of hidden paths. What would close it, a separate decision: answering the
 first read with the conditional request and learning a `none` shape in the background.
+
+### H-1390 · Kit check 21 runs over the local class only
+
+Stage: R-BAS-086, the format contract that the package of a response rests on (R-BAS-081). Subject: the documents of packages a reader of one
+package may not read, served by a remote or a virtual repository.
+
+Dormant until the marking per package (R-BAS-082) is built; then live for every remote and virtual repository a Bastion serves. Check 21
+serves the fixture's content cases on a local host, so it does not run the handlers of the other classes (the remote and virtual handlers
+of npm, NuGet, Debian and Ansible Galaxy, OCI's virtual read) nor the routes a fixture lists in `NoContent` (Debian's indexes and by-hash
+files, the flat directories, a virtual repository's member paths; NuGet's operations not built; Ansible Galaxy's role routes; npm's audit
+and its deferred routes). They were read on 2026-11-22 for a decision after a write (a scan of every handler for a decision after its first
+`WriteHeader`, `Write` or `Serve`) and none was found; Debian's indexes decide a package-less read. What makes it real: a remote or virtual
+handler that renders a document from another package's data, or decides after its status line, without a local twin that a case reaches.
+What would close it: check 21 over the `Remote` and `Merge` fixtures, as check 13 serves them, once the kit's hosts of those classes can
+serve a document whole.

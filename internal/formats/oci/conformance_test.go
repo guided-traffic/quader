@@ -77,6 +77,14 @@ func conformance() formattest.Fixture {
 		Protocol:   protocol,
 		Inspect:    formattest.InspectJSON("team/app/_manifests/" + digestZero),
 		Names:      []formattest.NameCase{{Spellings: []string{"library/nginx"}}, {Spellings: []string{"a__b/c-d"}}},
+		// The image beside every content case's own, for check 21 (R-BAS-086): the same blobs and manifest under another name, which
+		// no case reads.
+		OtherPackage: &formattest.OtherPackage{Name: "other", Seed: func(h *formattest.Host) error {
+			bind(h)
+			h.PutItem(BlobPath("other", sha(seedConfig)), "application/octet-stream", seedConfig)
+			h.PutItem(BlobPath("other", sha(seedLayer)), "application/octet-stream", seedLayer)
+			return pushManifest(h, "other/manifests/1", seedManifest)
+		}},
 		Content: []formattest.ContentCase{
 			{Name: "manifest by tag", Path: "app/manifests/1", Seed: seed},
 			{Name: "manifest by tag, HEAD", Method: http.MethodHead, Path: "app/manifests/1", Seed: seed},

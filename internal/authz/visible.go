@@ -220,13 +220,20 @@ func (e *Engine) exposesEverything(endpoint string) bool {
 // content:bypass, the token scope and the ceiling. It never answers ReadAll where evaluate would
 // refuse some row, and never ReadNone where it would allow one.
 func (e *Engine) readShape(st *evalState, sub Subject, r *repoInfo, allEndpoint bool) ReadShape {
+	return e.readShapeOf(st, sub, r, allEndpoint, PartArtifacts)
+}
+
+// readShapeOf is readShape for a part of the repository (R-AUTHZ-034): the artifacts, or the wiki, whose level may differ from
+// theirs. A grant, a role, the repository's account and content:bypass read both parts alike; only the level that reads is the
+// part's own (leveledBy), so the wiki's shape is ReadAll exactly where every package's wiki read is allowed.
+func (e *Engine) readShapeOf(st *evalState, sub Subject, r *repoInfo, allEndpoint bool, part Part) ReadShape {
 	if r == nil || r.Class == repository.Virtual {
 		return ReadNone
 	}
 	if isCertificate(sub) {
 		// The certificate subject reads by its fixed rule only (certificate.go): every package of a repository it may read, or none.
 		switch {
-		case !certificateReads(r, Read, PartArtifacts):
+		case !certificateReads(r, Read, part):
 			return ReadNone
 		case allEndpoint:
 			return ReadAll
@@ -234,13 +241,17 @@ func (e *Engine) readShape(st *evalState, sub Subject, r *repoInfo, allEndpoint 
 		return ReadRows
 	}
 	scoped := sub.Scope != nil && !sub.Scope.Inherit
+	level := r.artifacts
+	if part == PartWiki {
+		level = r.wiki
+	}
 	// A level reads every package of the repository (R-AUTHZ-035 rule 4, rule 7): public for every subject and without a scope,
 	// internal for an internal subject within a scope that does not narrow.
 	levelAll, levelAny := false, false
 	switch {
-	case r.artifacts == LevelPublic:
+	case level == LevelPublic:
 		levelAll, levelAny = true, true
-	case r.artifacts == LevelInternal && sub.Internal():
+	case level == LevelInternal && sub.Internal():
 		levelAll, levelAny = !scoped, true
 	}
 	if levelAll && allEndpoint {

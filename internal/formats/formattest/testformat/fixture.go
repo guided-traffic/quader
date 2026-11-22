@@ -162,6 +162,8 @@ func Fixture() formattest.Fixture {
 				},
 			},
 		},
+		// The package beside every content case's own, for check 21 (R-BAS-086): no case reads it.
+		OtherPackage: &formattest.OtherPackage{Name: "right-pad", Seed: publish("right-pad", "1.0.0")},
 		Names: []formattest.NameCase{
 			{Spellings: []string{"left-pad", "Left-Pad", "LEFT-PAD"}},
 			{Spellings: []string{"@scope/name", "@Scope/Name"}},

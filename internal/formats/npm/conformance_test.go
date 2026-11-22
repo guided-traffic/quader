@@ -99,6 +99,7 @@ func conformance(t *testing.T) formattest.Fixture {
 			return serveOK(h, method, strings.ReplaceAll(path, "{rev}", rev), []byte(body), 200)
 		}
 	}
+	otherDoc := publishDoc(t, "underscore", "1.13.6", "latest")
 	return formattest.Fixture{
 		WikiSamples: []string{"readme of lodash 4.17.20", "readme of lodash 4.17.21"},
 		Signatures:  signatureCases(t, bind),
@@ -246,6 +247,11 @@ func conformance(t *testing.T) formattest.Fixture {
 			"npm.deferred.delete":   "an endpoint npm defines and quader does not implement: it answers 404 and changes nothing",
 			"npm.deferred.post":     "an endpoint npm defines and quader does not implement: it answers 501 and changes nothing",
 		},
+		// The package beside every content case's own, for check 21 (R-BAS-086): no case reads it. Its publish is built once.
+		OtherPackage: &formattest.OtherPackage{Name: "underscore", Seed: func(h *formattest.Host) error {
+			bind(h)
+			return serveOK(h, http.MethodPut, "underscore", otherDoc, 201)
+		}},
 		Names: []formattest.NameCase{
 			{Spellings: []string{"lodash"}}, {Spellings: []string{"@acme/ui"}}, {Spellings: []string{"JSONStream"}},
 		},

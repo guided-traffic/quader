@@ -315,11 +315,13 @@ and attestations and OCI's tags list are, because they carry no `ETag` yet
 ([H-1249](../spec/bastion.md#h-1249--five-documents-of-npm-and-oci-carry-no-validator-so-a-bastion-fetches-them-whole-once-per-metadata-period)).
 A format that needs a path family INV-6 does not have, or a host root beyond the bound-host prefixes of R-EP-006, needs a decision.
 
-**Read shapes per package: kit check 21 (specified, not built).** A Bastion will serve a reader of one package that package's documents and
-artifacts from its cache ([R-BAS-080 to R-BAS-088](../spec/bastion.md#read-shapes-per-package)). The main installation learns the package of
-a response from the rights decisions your handlers make through the host, with no code of yours: `Host.Authorize` with `Target.Package`,
-`Host.WikiReadable`, `Host.PathsAllowed` and the `MayRead` rows of the read scope ([R-BAS-081](../spec/bastion.md#r-bas-081--the-package-of-a-response)).
-Kit check 21 ([R-BAS-086](../spec/bastion.md#r-bas-086--what-a-format-owes-kit-check-21)) holds three duties:
+**Read shapes per package: kit check 21.** A Bastion will serve a reader of one package that package's documents and artifacts from its
+cache ([R-BAS-080 to R-BAS-088](../spec/bastion.md#read-shapes-per-package); the check is built, the Bastion's and the marking's sides are
+not yet). The main installation learns the package of a response from the rights decisions your handlers make through the host, with no code
+of yours: `Host.Authorize` with `Target.Package`, `Host.WikiReadable`, `Host.PathsAllowed` and the `MayRead` rows of the read scope
+([R-BAS-081](../spec/bastion.md#r-bas-081--the-package-of-a-response)). Kit check 21
+([R-BAS-086](../spec/bastion.md#r-bas-086--what-a-format-owes-kit-check-21), [checks_package.go](../../internal/formats/formattest/checks_package.go))
+holds three duties:
 
 | The Bastion relies on | So |
 |---|---|
@@ -327,8 +329,15 @@ Kit check 21 ([R-BAS-086](../spec/bastion.md#r-bas-086--what-a-format-owes-kit-c
 | A response that draws on packages other than the one it was decided for also decides a package-less read | call `Host.Authorize` with a target that names no package for such a response (npm's audit and signature handlers do); the response then carries no package and is shared only with readers of the whole repository |
 | A reader of only the response's package receives the same status, body, `ETag`, `Content-Type`, `Content-Encoding`, `Vary` and `Cache-Control` as a reader of the whole repository | a document that lists or depends on another package must take the package-less decision above |
 
-The check seeds `Fixture.OtherPackage`, a package other than each case's own, which a format with package names must set; generic skips it
-with its reason. The testformat defects `ListsAnotherPackage` and `DecidesAfterItsStatusLine` each fail it alone. The build plan is
+The check stores `Fixture.OtherPackage` (a `Name` and a `Seed`) after each case's own seed, serves the case as the fixture's caller, derives the
+package from the decisions the kit's host recorded (`h.Decisions()`: one package named by every decision, none package-less), and serves it once
+more on the same host as a reader of that package alone: `Allow` refuses every other package and every path in no package, and the read scope
+reports `VersionsByPath` false (`HostOptions.NoPathPatterns`), as the decision point does for a reader whose package shape is full (condition 2
+of R-BAS-080). A format with package names must set `OtherPackage` and may not skip the check; the seed must store a package row of its name, no
+case's answer may belong to it, and at least one case must be compared. Generic skips it with its reason. The testformat defects
+`ListsAnotherPackage` and `DecidesAfterItsStatusLine` each fail it alone (`TestR_BAS_086_KitCheck21`). npm, NuGet, OCI, Debian, Ansible Galaxy
+and the ClamAV definitions passed it as they were, with no handler changed; their second packages are `underscore`, `newtonsoft.json`, the image
+`other` (the same blobs under another name), `libxml2-utils`, `community.general` and the database `bytecode`. The build plan is
 [bastion-package-shapes.md](bastion-package-shapes.md).
 
 ## What a signed link needs of a format
@@ -430,10 +439,11 @@ The fixture ([kit.go](../../internal/formats/formattest/kit.go)) holds what only
 | `NoDocument` | 10 | The reason a format has no package document (an APT archive: its upstream has none per package, Q-REPO-270): `PackageDocumentPath` must then report no path for every sample name, and the names are held to their normalization alone |
 | `OptionNames` | 8 | Literal client option names a template may spell although they contain `token`, `password` or `_auth` |
 | `Signatures` | 18 | A `SignatureCase` per kind the format declares at least: the kind's name, the stored path, a `Commit` that stores the signed sample through the host (or the `Body` of a remote's stored document) and the candidates `Detect` must name ([signatures.md](signatures.md#check-18)); for a signature that follows its subject (OCI), `RemoveSubject` removes the subject the way a client does and the kit holds that the sample went with it (R-SIG-025) |
+| `OtherPackage` | 21 | A package beside the one each content case reads: its normalized `Name` and a `Seed` that publishes it the way a client does, so that the host holds its package row; required with package names, and no case's answer may belong to it (R-BAS-086) |
 | `GateCases` | 18 | A `GateCase` per row of the format's classification for the signature gate (R-SIG-063): a `Seed` that stores the item (and what `Gate` reads of the data port), its `Path`, the `GateKind` it wants and, for an artifact covered by another, the stored paths of what covers it (`Covering`), and whether Quader's receipt attestation is about it (`Attested`, R-SIG-044). Required of a format that declares signature kinds, with at least one `Attested` case when the declaration attests something; a format without signatures is held to `GateNone` and to no attestation subject over its content cases |
 | `Skip` | all | The checks that do not apply, each with the reason |
 
-### The checks (1 to 13, 15 and 17 to 20; check 14, the vulnerability corpus, runs in the vulnerability tests; check 16 is in [usage-and-limits.md](usage-and-limits.md))
+### The checks (1 to 13, 15 and 17 to 21; check 14, the vulnerability corpus, runs in the vulnerability tests; check 16 is in [usage-and-limits.md](usage-and-limits.md))
 
 | # | The kit does | Fails when |
 |---|---|---|
@@ -453,10 +463,11 @@ The fixture ([kit.go](../../internal/formats/formattest/kit.go)) holds what only
 | 18 | Every kind of the format's signature declaration has a case of `Fixture.Signatures`; each case is stored through a fresh host (or handed over as a remote's document), the kit builds the `SignatureEvent` from what was stored and runs `Detect`; every wanted candidate is named with its source, location, part, role, subject and object, and every named one has a valid role, source and scheme, a location, a subject and at most `MaxSignatureRaw` bytes; no live version's lead item is a carrier the case names (a signature embedded in its subject's own file excepted); a format that declares none detects nothing over the items its content cases seed; each `GateCase` is seeded on a fresh host and `Gate` must name its kind and the covering items' digests and `AttestationSubjects` attest it exactly when the case says (under a name), and a format without signatures answers `GateNone` and no attestation subject over the items its content cases seed ([checks_signatures.go](../../internal/formats/formattest/checks_signatures.go)) | A kind without a case, a candidate not named, a signature that became a version (`testformat.SignatureVersion`), no declaration (`testformat.NoSignatureDeclaration`), no gate case, a signature file named an artifact (`testformat.GatesAttachment`), an artifact named `GateNone` (`testformat.PassesArtifact`), a signature file attested (`testformat.AttestsSignature`) |
 | 19 ([R-BAS-058](../spec/bastion.md#r-bas-058--what-a-format-owes-a-bastion-and-kit-check-19)) | Every content case of a `Download`, `Metadata` or `Computed` route again, on a fresh seeded host, for a Bastion ([checks_bastion.go](../../internal/formats/formattest/checks_bastion.go)): every header of a `200`, `206` or `304` against `catalog.RepresentationHeaders()`, `catalog.PerRequestHeaders()` and `catalog.Facts.Bastion.ReplayHeaders`; a `Download` answer's `Content-Length` and content-address `ETag` against its body; a document served again with its own `ETag` in `If-None-Match`; the format's `WriteError` of a rate limit against `catalog.Facts.Bastion.RateLimited()`; the `NoBastion` entries (Q-BAS-184) | An undeclared header (`testformat.UndeclaredReplayHeader`), a `Download` answer without a content address (`DownloadWithoutContentAddress`, and a format that writes its downloads itself, `WritesOwnDownload`), a document without an `ETag` or that answers its own `200` (`DocumentIgnoresConditional`), another status for a rate limit (`RateLimitedStatusDiffers`), a route of those kinds without a case that served, an exemption it does not need |
 | 20 ([R-STOR-071](../spec/storage.md#r-stor-071--the-format-declares-whether-its-clients-check-a-digest)) | Every `GET` content case of a route that declares `Route.ClientDigest.Checks` again, on a fresh seeded host ([checks_links.go](../../internal/formats/formattest/checks_links.go), Q-STOR-295): each `200` against the items `Items().Serve` served (`h.ServedPaths()`), its body, its `ETag` and the SHA-256 of the stored item; a format that declares nothing passes | A declaring route without a `GET` case answered `200` (`testformat.DeclaresUnservedBody`, whose route `NoContent` lists), a `200` not served through `Items().Serve`, without a body, whose `ETag` is no content address of its body (`DeclaresUnaddressedBody`, whose route `NoBastion` lists) or whose body is not the stored blob |
+| 21 ([R-BAS-086](../spec/bastion.md#r-bas-086--what-a-format-owes-kit-check-21)) | Every `GET` and `HEAD` content case below `400` of a `Download`, `Metadata` or `Computed` route again, on a fresh host seeded with the case and `OtherPackage` ([checks_package.go](../../internal/formats/formattest/checks_package.go)): the decisions the request made (`h.Decisions()`: `Authorize`, `WikiReadable`, each path of `PathsAllowed`, each `MayRead` row) and where the status line fell among them; when one package P is named by every decision and none is package-less (R-BAS-081), the case again on the same host, renditions forgotten, as a reader of P alone (`Allow` refuses every other package and every path in no package, `NoPathPatterns`) | A decision after the status line (`testformat.DecidesAfterItsStatusLine`); the status, the bytes or `ETag`, `Content-Type`, `Content-Encoding`, `Vary` or `Cache-Control` differ between the two readers (`testformat.ListsAnotherPackage`); with package names, no `OtherPackage`, a seed that stores no package row of its name, a case whose status changes with it stored, a case whose answer belongs to it, or no case compared |
 | 17 | Every content case of a `Download` route the fixture serves with `GET`, again on a host whose `Serve` answers each of the malware gate's three answers (`HostOptions.Admit`; [checks_malware.go](../../internal/formats/formattest/checks_malware.go), [malware.md](malware.md#the-gate)) | Another status than `403`, `403`, `503`; no `Cache-Control: no-store`; no `Retry-After` on the `503`; the item served after the refusal (`testformat.WritesOwnDownload`, `testformat.RendersBareErrors`) |
 
-A skip without a reason fails the check. So does a skip the format contradicts: checks 1, 3, 7, 12, 13 and 19 with routes, 4 with a remote adapter, 5 with a virtual
-adapter, 6 with an `Upload` route, 8 with clients, setup templates or a guide, 9 with package names or a route that writes, 10 with package names, 11 with a
+A skip without a reason fails the check. So does a skip the format contradicts: checks 1, 3, 7, 12, 13, 19 and 21 with routes, 4 with a remote adapter, 5 with a virtual
+adapter, 6 with an `Upload` route, 8 with clients, setup templates or a guide, 9 with package names or a route that writes, 10 and 21 with package names, 11 with a
 view adapter, 15 with wiki content, 16 and 17 with a `Download` route, 20 with a route that declares `ClientDigest.Checks`, and checks 2 and 18 always. npm and NuGet skip nothing (`TestR_ARCH_010_NoCheckIsSkipped` in each package); Debian's fixture declares no skip either ([conformance_test.go](../../internal/formats/deb/conformance_test.go), the merge check 5 runs over its virtual adapter), though no test of its own pins that. A check with nothing to run over and no skip fails: that is how a later generic remote
 class cannot pass vacuously ([generic's test](../../internal/formats/generic/conformance_test.go) shows the skips of a format with no routes).
 
@@ -465,7 +476,8 @@ class cannot pass vacuously ([generic's test](../../internal/formats/generic/con
 [`formattest.NewHost(f, HostOptions)`](../../internal/formats/formattest/host.go) implements `formats.Host`: items ([store.go](../../internal/formats/formattest/store.go)), package rows
 with `rev_seq`, links on a fixed base URL (`DefaultBaseURL`), renditions and notifications as logs, an authorization table (`Allow`, with every call recorded),
 the format's data port, and `Remote` and `Resolver` from the options (`MemRemote` is a ready remote over fixed documents; unset, they answer "not supported" like the
-production host before an engine is bound). It mirrors production where a format can tell the difference:
+production host before an engine is bound). `h.Decisions()` returns the rights decisions of the last request `ServeRequest` ran, in order, each with whether the status
+line was out (`ServeRequest` hands the route a writer that tells the host), for check 21. It mirrors production where a format can tell the difference:
 
 - the package writer raises `rev_seq` once per package per transaction, however many calls touch it; `EnsureLocked` of a new package starts at 1 and does not bump an
   existing one; `BumpRevision` is idempotent within the transaction (Q-ARCH-212); it attaches `metadata_changed` once per raised package, `Notify` accepts the areas of
@@ -500,7 +512,8 @@ kit's cases, and a format may answer such an input with its own 400.
 `Defect` per check that breaks the rule the check exists for (`AmbiguousRoutes`, `CleaningMatch`, `ContentMetadata`, `NondeterministicRewrite`, `UpstreamLeak`, `MergeLastWins`,
 `InspectAccepts`, `InspectWrongKind`, `InspectHeap`, `TarballVolatile`, `TemplateCredential`, `NoInstallTemplate`, `NoGuide`, `GuideCredential`, `TagWithoutRevision`,
 `NamesCaseSensitive`, `WrongDocumentPath`, `AdminReadsPackages`, `NotifiesUndeclared`, `ReadsOtherRepository`, `SignatureVersion`, `NoSignatureDeclaration`,
-`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`, `RateLimitedStatusDiffers`, `DeclaresUnservedBody`, `DeclaresUnaddressedBody`;
+`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`, `RateLimitedStatusDiffers`, `DeclaresUnservedBody`, `DeclaresUnaddressedBody`,
+`ListsAnotherPackage`, `DecidesAfterItsStatusLine`;
 the options `SearchReadsPackages` and `DeclaresClientDigest`, a declaration on the tarball route, are conforming variants).
 Its documents carry the SHA-256 of their bytes as `ETag` and answer it `304`, as check 19 asks. Every way a declaring route can miss check 20 is one checks 16 and 19
 catch as well, unless the route carries their exemption, so each defect of check 20 is tested with the fixture entry such a format would carry, `NoContent` or
@@ -522,6 +535,10 @@ kit's tightened limits: it must not panic, finish within its deadline, fail only
 - That a route handler decides authorization on the right action and package: check 13 holds every target to a canonical path of its package and every
   served file to a read at its path, but not that the action is the one R-AUTHZ-007 names; the host records every `Authorize` call (`h.Authorizations()`),
   and a format's own test asserts on them.
+- What a remote or a virtual repository's handlers decide for a reader of one package: check 21 serves the content cases on a local host, so the
+  handlers of the other classes (npm's, NuGet's, Debian's and Ansible Galaxy's remote and virtual handlers, OCI's virtual read) and the routes
+  `NoContent` lists are not run by it; they were read for a decision after a write, and none was found
+  ([H-1390](../spec/bastion.md#h-1390--kit-check-21-runs-over-the-local-class-only)).
 - Whether a client really checks what a route declares (`Route.ClientDigest`): check 20 holds the route's answers to the stored blob, never
   the client; the declaration rests on its `Evidence`, and the table test makes every change of it a reviewed one.
 - The dispatcher's order of checks and the error shapes of the chain: [dispatcher_test.go](../../internal/api/dispatch/dispatcher_test.go).

@@ -70,6 +70,7 @@ security view is [permissions.md](../security/permissions.md).
 | [settings.go](../../internal/authz/settings.go) | `SettingsHook`, the `repository.Hooks` that records `authz.settings.changed` in the transaction of a repository update (R-AUTHZ-031) |
 | [populate.go](../../internal/authz/populate.go) | The populate check of R-AUTHZ-008 (`MayPopulateOn`, `PopulateOn`) and `MemberUsableOn` of R-AUTHZ-015 |
 | [reach.go](../../internal/authz/reach.go) | `Reacher` and `Engine.ReachOn`: the read shape of a repository for a Bastion, full, partial or none with the refusal a read gets ([Read shapes](#read-shapes)) |
+| [reach_package.go](../../internal/authz/reach_package.go) | `PackageReacher` and `Engine.PackageReachOn`: the read shape of packages of one repository for a Bastion, full or partial ([Read shapes](#read-shapes), R-BAS-080) |
 | [ownership.go](../../internal/authz/ownership.go) | Package ownership: `Ownership` with `CheckTx`, `ClaimTx`, `EnforceTx` for writers, `PrecheckWrite` (the same rule read-only, in a transaction of its own, for a writer that decides before it reads a body; Q-ARCH-226), the owner operations `Owners`, `AddOwner`, `RemoveOwner`, `OwnedBy` (`changeAllowed`: an owner, `manage` or `content:bypass`; an owner's token whose scope does not inherit passes the owner path only where `scopeReachesName` finds `manage` on the name in the scope, Q-AUTHZ-240), and `OwnershipHook` for the repository deletion |
 | [ownership.sql](../../internal/meta/postgres/queries/ownership.sql) | The statements of ownership: the locked read of a claim, the claim (`INSERT … ON CONFLICT DO NOTHING`), owners, release, the deletion of a domain, the list by owner |
 | [audit.go](../../internal/authz/audit.go), [events_authz.go](../../internal/audit/events_authz.go) | The decision audit, the event registry entries |
@@ -369,7 +370,7 @@ request on the index the decision used, and the check operation of the Bastion i
 
 | Repository | `ReachFull` | `ReachNone` | `ReachPartial` |
 |---|---|---|---|
-| local, remote | `readShape` over the grants alone and the levels is `ReadAll` (an unrestricted read grant, `content:bypass` or a level that admits the subject, no narrowing scope, an endpoint in mode all); the subject also reads the repository's wiki (R-BAS-012, Q-BAS-149: a coordinate with the part wiki is allowed); for a remote repository also the populate check (`populate`, R-AUTHZ-008) | `readShape` is `ReadNone`, an anonymous subject on a repository whose artifacts are not `public`, the endpoint does not expose the key, an unknown key | everything else: rows decided one by one (exposure rules, a scope that lists elements, a path-only grant), the artifacts read without the wiki, no populate right, the session cookie, `content:metadata-read` without a grant |
+| local, remote | `readShape` over the grants alone and the levels is `ReadAll` (an unrestricted read grant, `content:bypass` or a level that admits the subject, no narrowing scope, an endpoint in mode all); the subject also reads the wiki of every package (R-BAS-012, Q-BAS-149: `readShapeOf` with the part wiki is `ReadAll`, which asks the wiki's own level, and a coordinate with the part wiki is allowed); for a remote repository also the populate check (`populate`, R-AUTHZ-008), and for a frozen mirror its action on every package and path (`actsEverywhere`) | `readShape` is `ReadNone`, an anonymous subject on a repository whose artifacts are not `public`, the endpoint does not expose the key, an unknown key | everything else: rows decided one by one (exposure rules, a scope that lists elements, a path-only grant), the artifacts read without the wiki, a wiki read only through a grant or scope narrowed by package, no populate right or a fill narrowed by package or path, the session cookie, `content:metadata-read` without a grant |
 | virtual | the gate (`read` on it, as a metadata and as an artifact read) admits and every member, recursively, is `ReachFull` on the terms of a read through the virtual repository (`Addressed`); a nested virtual repository is a member whose own gate is asked as such | the gate refuses (the anonymous rule 6 included) or no member is readable; no member at all | everything else |
 
 `content:metadata-read` is left out of the shape used for `ReachFull` (`evalState.metadata` cleared), because it reads no artifact
@@ -377,10 +378,38 @@ request on the index the decision used, and the check operation of the Bastion i
 key gets from `evaluate` (401 for anonymous, 403 only where the repository does not hide, 404 otherwise), so the status the Bastion
 replays is the main installation's own.
 
+A question about the repository alone, a coordinate without a package and a path, matches every grant and token scope whatever its patterns
+say (R-AUTHZ-005). So the wiki and the fill of a frozen mirror are not decided on such a coordinate alone: the build of R-BAS-080 found that
+an external user with a grant on `@a/*` of a repository whose artifacts are `public` and whose wiki is `internal`, an internal user's token
+scoped to `@a/*` there, and a reader whose `deploy` on a frozen mirror is narrowed to `@acme/*` were `ReachFull`, while the wiki of another
+package, or its fill, was refused. They are partial now (`readShapeOf` with `PartWiki`, `actsEverywhere`); the subjects `ext`, `carol scoped
+to @a/*` and `filler` of `reachFixture` hold it.
+
+`Engine.PackageReachOn(ctx, idx, sub, repo, pkgs)` ([reach_package.go](../../internal/authz/reach_package.go)) answers R-BAS-080: the
+read shape of each package of one repository, `ReachFull` or `ReachPartial` (never `ReachNone`, Q-BAS-243; an empty name is partial). A full
+shape on the repository is full on every package, a none shape partial on every package. Otherwise:
+
+| Repository | `ReachFull` on package P | `ReachPartial` |
+|---|---|---|
+| local, remote | all five: (1) the endpoint exposes everything (`exposesEverything`); (2) `readsByPath` is false, decided on the state without `content:metadata-read`, which never reads an artifact; (3) `readScope.MayRead(R, P, "")` on that state, the package document's path; (4) `readScope.MayReadWiki(R, P, "")` on the full state; (5) for a remote repository, `populate` on P without a path, so a fill narrowed by path patterns is refused | everything else, and any path pattern of a grant or a scope on R for every package (the conservative rule of Q-BAS-240) |
+| virtual | its gate admits a metadata and an artifact read, and every member, recursively (depth 16), is full on P as a read through it (`Addressed`); a nested virtual repository's gate is asked as a member's read; a member the index does not hold makes it partial | everything else |
+
+Conditions 2 and 3 together cover every version: a version is decided on the package document's path and on its file's path (Q-AUTHZ-255),
+and without a path pattern both decisions come from the package patterns alone. `authz.Subject` holds no registry grant, so the caller (the
+marking and the check, R-BAS-082, R-BAS-083) limits a registry token to its grant. The function derives the subject's state once and asks
+the repository's reach first; each package then costs at most a handful of decisions per member.
+
 The invariants (a full shape never meets a refused read, a none shape never an allowed one) are held by
-`TestR_BAS_012_ShapeAgreesWithTheDecisionPoint` ([reach_test.go](../../internal/authz/reach_test.go)): it asks `DecideOn` and
-`MayPopulateOn` for every subject, endpoint, repository, package, version, path and request kind of its fixture, for the anonymous subject as well. Change `readShape`, `populate`, the virtual rules of `evaluate` or `MemberUsableOn` and that test is the one to run; add the case
-that your change introduces to its fixture (`reachFixture`) before you change the rule.
+`TestR_BAS_012_ShapeAgreesWithTheDecisionPoint` ([reach_test.go](../../internal/authz/reach_test.go)): it asks `DecideOn`, `WikiReadableOn` and
+`MayPopulateOn` for every subject, endpoint, repository, package and request kind of its fixture, at the versions and paths of `packageReads`
+(a version and a path in pairs, which reach each exposure rule and path pattern of the fixture), for the anonymous subject as well; a partial
+reach asserts nothing and is not scanned, and a scan stops at the first read that refutes its reach.
+`TestR_BAS_080_PackageShapeAgreesWithTheDecisionPoint` holds a full package shape to every read of the package (metadata, artifact and wiki of
+every version at every path, the package's document and tarballs among them, and the fill of a remote member) over the same fixture, and
+`TestR_BAS_080_PackageShapes` pins the named cases. Each of the five conditions, the virtual gate's artifact read, the members' rule and the nested
+gate was taken out once, and the agreement test failed each time. Change `readShape`, `readsByPath`, `populate`, the virtual rules of `evaluate` or
+`MemberUsableOn` and those tests are the ones to run; add the case that your change introduces to their fixture (`reachFixture`, subjects in
+`reachSubjects`) before you change the rule.
 
 ## Package ownership
 

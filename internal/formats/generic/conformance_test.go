@@ -39,6 +39,8 @@ func conformance(t testing.TB) formattest.Fixture {
 			formattest.CheckShared:     "no routes: the documents of /files/ are the generic layer's, listed per caller by R-STOR-017",
 			formattest.CheckAuthzPaths: "no routes: /files/ decides every request on its canonical path (R-EP-014), tested with the generic layer",
 			formattest.CheckBastion:    "no routes: a Bastion keeps what /files/ answers by the marking of the generic layer (R-BAS-013), whose files carry their content address (R-STOR-012)",
+			formattest.CheckPackageShape: "no routes and no package names: /files/ decides through files.Access and names no package, so only the repository's read " +
+				"shape applies to what a Bastion keeps of it (R-BAS-081)",
 		},
 	}
 }

@@ -269,6 +269,35 @@ func (e *Engine) ciReadShape(g CIGrantSet, idx *Index, r *repoInfo) (anyRead, un
 	return anyRead, unrestricted
 }
 
+// ciActsEverywhere is actsEverywhere's grant part for a CI subject: a contribution that admits the action and a grant of its
+// principals, or an inline grant, that gives it on the repository without a pattern.
+func (e *Engine) ciActsEverywhere(g CIGrantSet, idx *Index, r *repoInfo, a Action) bool {
+	for i := range g.contributions {
+		c := &g.contributions[i]
+		if !c.admits(a) {
+			continue
+		}
+		for _, id := range append([]string{c.pid}, c.groups...) {
+			if id == "" {
+				continue
+			}
+			for _, gr := range idx.grantsFor(r.ID, id) {
+				if gr.actions.Has(a) && (c.project == "" || gr.project == c.project) && gr.res.unrestrictedPackages() {
+					return true
+				}
+			}
+		}
+		for _, ig := range c.inlineFor(r) {
+			narrowed := (ig.Packages != nil && len(ig.Packages.Include)+len(ig.Packages.Exclude) > 0) ||
+				(ig.Paths != nil && len(ig.Paths.Include)+len(ig.Paths.Exclude) > 0)
+			if !narrowed && e.inlineAllows(qname.Context{}, ig, a, r, true, "", "") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ciReadsByPath is readsByPath for a CI subject: a contribution's grant or inline grant that gives read on the repository
 // and narrows paths, unless another one reads every package and path of it (Q-AUTHZ-255).
 func (e *Engine) ciReadsByPath(g CIGrantSet, idx *Index, r *repoInfo) bool {

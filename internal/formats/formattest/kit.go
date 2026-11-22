@@ -50,7 +50,7 @@ const CheckMalware Check = 17
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
 	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware, CheckSignatures,
-	CheckBastion, CheckLinks,
+	CheckBastion, CheckLinks, CheckPackageShape,
 }
 
 // name is the short name of the check.
@@ -94,6 +94,8 @@ func (c Check) name() string {
 		return "bastion"
 	case CheckLinks:
 		return "signed links"
+	case CheckPackageShape:
+		return "package shapes"
 	}
 	return "unknown"
 }
@@ -104,7 +106,7 @@ func (c Check) servesDownloads() bool { return c == CheckAdmission || c == Check
 // judgesRoutes reports whether the check judges every route of a format, so that a format with routes cannot skip it.
 func (c Check) judgesRoutes() bool {
 	switch c {
-	case CheckAmbiguity, CheckHeaders, CheckClassify, CheckShared, CheckAuthzPaths, CheckBastion:
+	case CheckAmbiguity, CheckHeaders, CheckClassify, CheckShared, CheckAuthzPaths, CheckBastion, CheckPackageShape:
 		return true
 	}
 	return false
@@ -196,6 +198,9 @@ type Fixture struct {
 	OptionNames []string
 	// Signatures are the signed samples of check 18: one case at least per kind the format declares (R-SIG-022).
 	Signatures []SignatureCase
+	// OtherPackage is the second package of check 21 (bastion.md R-BAS-086): a package beside the one a content case reads, stored
+	// after the case's own seed. Required for a format with package names; a format without them leaves it nil.
+	OtherPackage *OtherPackage
 	// GateCases are the stored items check 18 asks the format's Gate about (signatures.md R-SIG-063): one per row of the format's
 	// classification, each with the kind and the covering items it expects. A format that declares signature kinds names at least
 	// one; a format without signatures needs none, and the kit holds it to GateNone over every content case.
@@ -472,6 +477,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.bastion()
 	case CheckLinks:
 		r.links()
+	case CheckPackageShape:
+		r.packageShapes()
 	}
 	return res
 }
@@ -525,7 +532,7 @@ func (r *run) skipProblem(c Check, reason string) string {
 		return fmt.Sprintf("%s is skipped (%s) and the format has package names or a route that writes", c, reason)
 	case c == CheckSetup && (len(r.d.Clients) > 0 || len(r.f.SetupTemplates()) > 0 || len(r.f.Guide()) > 0):
 		return fmt.Sprintf("%s is skipped (%s) and the format has clients, setup templates or a guide", c, reason)
-	case c == CheckNames && r.d.PackageNames:
+	case (c == CheckNames || c == CheckPackageShape) && r.d.PackageNames:
 		return fmt.Sprintf("%s is skipped (%s) and the format has package names", c, reason)
 	case c == CheckView && r.f.View() != nil:
 		return fmt.Sprintf("%s is skipped (%s) and the format has a view adapter", c, reason)

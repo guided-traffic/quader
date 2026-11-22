@@ -2,11 +2,13 @@ package ansible
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
@@ -61,8 +63,10 @@ func conformance(t testing.TB) formattest.Fixture {
 			// The package of a role of a remote's upstream (R-ANS-020, Q-ANS-36).
 			{Spellings: []string{"role/16"}},
 		},
-		OptionNames: optionNames(),
-		Inspect:     formattest.InspectTarGz("collections/acme/tools/acme-tools-1.0.0.tar.gz", "MANIFEST.json"),
+		// The collection beside every content case's own, for check 21 (R-BAS-086): the one acme.tools depends on, which no case reads.
+		OtherPackage: &formattest.OtherPackage{Name: "community.general", Seed: publishOther()},
+		OptionNames:  optionNames(),
+		Inspect:      formattest.InspectTarGz("collections/acme/tools/acme-tools-1.0.0.tar.gz", "MANIFEST.json"),
 		Content: []formattest.ContentCase{
 			{Name: "root", Path: ""},
 			{Name: "collection", Path: "v3/collections/acme/tools/", Seed: seed("1.0.0")},
@@ -98,6 +102,22 @@ func conformance(t testing.TB) formattest.Fixture {
 			Versions: versions, Package: "acme.tools",
 			Seed: func(h *formattest.Host) error { return seed(versions...)(h) },
 		},
+	}
+}
+
+// publishOther publishes community.general 8.0.0 through the route, the collection check 21 stores beside every case's own
+// (R-BAS-086); the archive is built once.
+func publishOther() func(h *formattest.Host) error {
+	spec := collectionSpec("8.0.0")
+	spec.Namespace, spec.Name, spec.Dependencies = "community", "general", nil
+	spec.Files = map[string]string{"README.md": "# general 8.0.0\n", "meta/runtime.yml": "---\nrequires_ansible: '>=2.14.0'\n"}
+	archive := collectiontest.Build(spec)
+	return func(h *formattest.Host) error {
+		r, err := publish(h, archive, true, "")
+		if err == nil && r.Code != http.StatusAccepted {
+			err = fmt.Errorf("publish community.general 8.0.0: status %d: %s", r.Code, r.Body.String())
+		}
+		return err
 	}
 }
 
