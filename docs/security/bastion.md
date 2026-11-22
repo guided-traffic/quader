@@ -32,6 +32,7 @@ and its permissions in [permissions.md](permissions.md); the rules are in the sp
 | Cached artifacts under their SHA-256, shared documents, negative entries, and per-caller documents in memory only (R-BAS-022 to R-BAS-024) | Any credential for the main installation's object store, PostgreSQL or upstream registries (R-BAS-030); the chart does not limit where its pods connect ([H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)) |
 | The signing key for its records in Valkey and the bucket (R-BAS-032) | A right to write Kubernetes Secrets or to issue tokens (R-BAS-006, R-BAS-045) |
 | The cache key, when its chart gives one (`secrets.cacheKey`): every object of its cache store is then an object of the stored format under keys derived from it ([below](#with-a-cache-key), R-BAS-061; [stored-content-visibility.md](stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)) | Any key of the main installation's stored content ([stored-content-keys.md](stored-content-keys.md)) |
+| With the handover switched on for its registration, for the length of one read: the link of one object of the main installation's store and, on an encrypted connection, that object's data key (R-BAS-070 to R-BAS-079, specified, not built; [bastion-handover.md](bastion-handover.md)) | An account of the main installation's store, a storage key, a name key or anything of the key ring; a data key it was not handed for a caller's fill |
 
 Every decision about a caller is the main installation's. A miss is forwarded with the caller's own credential and decided by
 the main installation's own route; a cached artifact is served only after a `full` read answer or a conditional request with the
@@ -332,6 +333,14 @@ registry token's shape itself as well (Q-BAS-198). What it changes in the trust 
 | Larger content | Gigabyte layers make the existing bounds matter more: a fill holds a budget slot and spool for its transfer, a caller of a running fill follows the spool after its own permission check, never on another's | R-BAS-054, Q-BAS-172 |
 | A format's facts and a bound host come from the handshake | What headers are replayed, which status a refusal takes and which repository a bound host names are the main installation's statements over the Bastion token's channel, not the Bastion's configuration | R-BAS-057, Q-BAS-170, Q-BAS-178 |
 
+## The handover per blob
+
+The owner's decision 12 (b) of 2026-11-22 ([spec/bastion.md](../spec/bastion.md#the-handover-per-blob), R-BAS-070 to R-BAS-079), specified
+and not built: with the handover switched on for its registration, a Bastion that misses a large file may be answered with a link of the main
+installation's object store and, for a copy on an encrypted connection, that copy's data key, and reads the file from the store itself. It
+lifts Q-BAS-10 for that and for nothing else. Its perspective, its boundary and its gaps (H-1340 to H-1345) are on
+[bastion-handover.md](bastion-handover.md).
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
@@ -498,5 +507,7 @@ What makes it real: a flaw that lets an attacker run code in a Bastion process, 
 for the Bastion pods. What closes it is the cluster operator's own egress policy for the Bastion pods, admitting what R-BAS-047
 lists: DNS; the main installation's addresses (`bastion.main.url`, and `bastion.main.packages_url` where set) on their ports;
 Valkey and its Sentinels while Valkey is configured; the cache bucket with the bucket backend, and its credential endpoint with
-`credentials.source` `webIdentity` or `default`; the span collector while tracing is enabled. The chart's counterpart for the
-main installation's pods is [H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods).
+`credentials.source` `webIdentity` or `default`; the span collector while tracing is enabled; and, once the handover is built and switched on
+for the registration, the public address of every connection of the main installation a handover may name
+([bastion-handover.md](bastion-handover.md)). The chart's counterpart for the main installation's pods is
+[H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods).

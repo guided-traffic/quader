@@ -12,7 +12,10 @@ format as the main installation does is specified in [Every format](#every-forma
 Q-BAS-195 to Q-BAS-207, H-1242 to H-1249, H-1290, H-1295, H-1296) and built: the two contracts and kit check 19 (R-BAS-058 and the wire of
 R-BAS-057), the main installation's side, the Bastion's side, and the client case on kind with the manual (R-BAS-060); it
 supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, R-BAS-022, R-BAS-029, R-BAS-039 and the deferred table
-said about the formats a Bastion leaves out.
+said about the formats a Bastion leaves out. The owner's decision 12 (b) of the same day, the handover of a link and of the data key per
+released blob, is specified in [The handover per blob](#the-handover-per-blob) (R-BAS-070 to R-BAS-079, Q-BAS-230 to Q-BAS-239, and the
+gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), not built; it lifts Q-BAS-10 for that and for
+nothing else.
 
 This page specifies the Quader Bastion: a second, smaller deployment of Quader that is exposed to the internet, gives external
 parties read access to the content of a main installation with the main installation's own tokens, keeps a cache of what it
@@ -113,7 +116,8 @@ NuGet client's source-credential model and is checked by the e2e suite (R-BAS-04
    │   /v2/… (R-BAS-051)                                                           │
    │                               marked (R-BAS-013), writes refused (R-BAS-014)  │
    │   /api/v1/bastion/handshake | check | feed | downloads   (R-BAS-008)          │
-   │   PostgreSQL, Valkey, object store: never reached by the Bastion              │
+   │   PostgreSQL, Valkey: never reached by the Bastion; the object store: only    │
+   │   by a link handed for one blob (R-BAS-070)                                   │
    └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -131,9 +135,9 @@ by the main installation, except the few answers of its own of R-BAS-029.
 |---|---|---|---|
 | Caller (anyone on the internet) | its own credential, and what the main installation lets that credential read | forwarded headers, any decision, any write | the Bastion's ingress and its stage 2 (R-BAS-035 to R-BAS-037); the main installation's decision on every answer |
 | HAProxy Ingress of the Bastion | the client address it writes, when its addresses are in the Bastion's `server.trusted_proxies` | anything else | R-BAS-019, [architecture.md](architecture.md) R-ARCH-006 |
-| Bastion replica | the Bastion token, the signing key, the cached bytes, the client address it reports | users, tokens, policies (it holds none); every write to the main installation except download events | the Bastion interface (R-BAS-005, R-BAS-008) |
+| Bastion replica | the Bastion token, the signing key, the cached bytes, the client address it reports; with the handover, for one read, the link of one object and, on an encrypted connection, that object's data key (R-BAS-076) | users, tokens, policies (it holds none); every write to the main installation except download events; any credential or key of the main installation's store above one object's data key | the Bastion interface (R-BAS-005, R-BAS-008); the main installation's serve point ([storage.md](storage.md) R-STOR-095) |
 | Valkey of the Bastion | block list, counters, fetch locks, answers it stores but cannot forge (signed) | granting anything: a forged or altered answer fails its signature | R-BAS-034 |
-| Cache backend (own bucket or volume) | bytes and signed entries | the main installation's object store, which the Bastion cannot read | R-BAS-030, R-BAS-032 |
+| Cache backend (own bucket or volume) | bytes and signed entries | the main installation's object store, which the Bastion reads only by a link handed for one blob (R-BAS-070) | R-BAS-030, R-BAS-032 |
 | Main installation | every decision about a caller, every rendered byte, the audit trail | — | — |
 | Administrator of the main installation (`endpoints:write`) | issuing and revoking Bastion tokens | — | R-BAS-004, R-BAS-007 |
 
@@ -153,7 +157,8 @@ Priority: **MVP** · Covers: DIST-024
 - The Bastion is the role `bastion` of the one `quader` image (INV-1, INV-2): `quader serve --role bastion`
   ([Q-BAS-22](#q-bas-22--the-bastion-is-a-role-of-the-quader-image)). The role enables the Bastion's client listener, its ops
   listener, the Bastion engine of this page and, when configured, the Valkey client. It enables no other subsystem: no
-  PostgreSQL pool, no object-store client for the main installation's blobs, no job runner, no format plug-in route table, no
+  PostgreSQL pool, no object-store client for the main installation's blobs (a link handed for one blob is read by a plain `https`
+  client that holds no credential of the store, R-BAS-074), no job runner, no format plug-in route table, no
   management API, no UI, no login, no session, no remote repository. "Enables" is the operative word: the platform packages the
   role shares (the Valkey client in `internal/cluster`, the listeners in `internal/httpserver`, the S3 client in
   `internal/blob/s3`) import packages of the main installation (the PostgreSQL store, the audit types, the scope and CI claim
@@ -191,7 +196,7 @@ Acceptance criteria:
   `bastion`; with the keys above, `bastion.main.url` and the token file it starts, and `ss -ltn` in its pod shows `:8443` and
   `:8081` only.
 - A Bastion pod opens no connection to any PostgreSQL port and makes no request to the main installation's bucket during the
-  whole e2e suite (the object store's access log). The role started with a trap listening where a
+  whole e2e suite (the object store's access log), whose registrations have the handover off (R-BAS-071). The role started with a trap listening where a
   PostgreSQL client of the process would look sees no connection and exports no database metric
   (`TestR_BAS_001_TheRoleOpensNoConnectionToPostgreSQL`).
 - The import rule names every package of the main installation in the role's dependency closure, with the platform package that
@@ -1436,8 +1441,9 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 The cache holds a small part of the artifacts, never the main installation's object store, which the Bastion cannot read
-(owner, [Q-BAS-10](#q-bas-10--the-cache-an-own-bucket-or-a-local-volume-never-the-main-installations-object-store)). The chart
-chooses the backend (`bastion.cache.backend`):
+(owner, [Q-BAS-10](#q-bas-10--the-cache-an-own-bucket-or-a-local-volume-never-the-main-installations-object-store)). *Lifted in part
+by the owner on 2026-11-22 (decision 12 (b)): a fill may read one blob of the main installation's store by a link handed for it
+(R-BAS-070); the cache itself is unchanged.* The chart chooses the backend (`bastion.cache.backend`):
 
 - **`bucket`**: an S3 bucket of the Bastion's own, shared by every replica (credentials from `secrets.cacheBucket` or workload
   identity; a bucket of the guided-traffic stackit-s3-provisioner, or SeaweedFS in the local profile). Layout below `prefix`:
@@ -1552,7 +1558,8 @@ of the owner's topic; built on 2026-11-22 in `internal/bastion/cache` over the f
 byte, with the builder's decisions
 [Q-BAS-212](#q-bas-212--the-record-of-a-cached-object-lies-in-front-of-its-body-in-the-same-object) to
 [Q-BAS-215](#q-bas-215--the-sweep-of-other-layouts-deletes-them-in-a-replicas-first-hour-and-while-it-still-finds-some). It does not change
-what the Bastion may read: never the main installation's object store (Q-BAS-10); the handover of decision 12 (b) is a later planner's.
+what the Bastion may read: never the main installation's object store (Q-BAS-10) but by the handover of decision 12 (b)
+(R-BAS-070), whose fills it keeps in this format like every fill.
 
 - **The key.** `secrets.cacheKey` of the Bastion's chart (`existingSecret`, `key`, default empty) is mounted at
   `/var/run/secrets/quader/cache-key/`, beside the chart's other Secrets, and named by `bastion.cache.encryption_key_file` (managed by the
@@ -2445,7 +2452,8 @@ Bastion pods, with `policyTypes: [Ingress]`:
   [H-522](../security/bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). An operator who restricts egress lets
   the Bastion pods reach DNS; the main installation's addresses (`bastion.main.url`, and `bastion.main.packages_url` where set)
   on their ports; Valkey and its Sentinels while `valkey.mode` is not `none`; the cache bucket with the bucket backend, and its
-  credential endpoint with `credentials.source` `webIdentity` or `default`; and the span collector while tracing is enabled. The
+  credential endpoint with `credentials.source` `webIdentity` or `default`; the span collector while tracing is enabled; and, while its
+  registration's handover is on, the public address of every connection of the main installation a handover may name (R-BAS-078). The
   Bastion contacts no upstream registry, no OIDC issuer and no PostgreSQL (R-BAS-001).
 
 Acceptance criteria:
@@ -2614,8 +2622,8 @@ Priority: **MVP** · Covers: DIST-024
   Galaxy, the ClamAV definitions, and every format to come), `/files/<projectKey>/<repoKey>/…`, and the registry root `/v2/…` at the
   host root of the Bastion's `server.base_url` (R-BAS-051). On a host the main installation binds to one repository, the Bastion whose
   base URL is that host serves the bound-host prefixes of the bound repository's format (R-BAS-057).
-- **What stays.** The Bastion is read-only (R-BAS-014), has no web interface (R-BAS-003), keeps its own cache and never reaches the main
-  installation's object store (R-BAS-030), and its code holds no knowledge of a format: what is particular to a format reaches it as the
+- **What stays.** The Bastion is read-only (R-BAS-014), has no web interface (R-BAS-003), keeps its own cache and reaches the main
+  installation's object store only by a link handed for one blob (R-BAS-030, R-BAS-070), and its code holds no knowledge of a format: what is particular to a format reaches it as the
   main installation's marking of a response (R-BAS-013) or as the format's facts in the handshake (R-BAS-057). The registry root is a path
   family of INV-6, like `/files/`, and the Bastion knows families, not formats.
 - **A format to come** is served by every Bastion without a decision of its own when it keeps the duties of R-BAS-058, which kit check 19
@@ -2841,7 +2849,8 @@ address, committed, the last 64 KiB of every transfer withheld until then. Three
 - **Across replicas** (the bucket backend with Valkey), a caller whose replica finds another replica's fetch lock waits while the holder
   keeps extending the lock, up to `bastion.cache.fill_wait_max`, sending nothing, then decides again, which is a hit once the other fill
   committed, or fetches itself ([H-1245](#h-1245--a-caller-on-another-replica-waits-for-a-running-fill-without-a-byte-up-to-fill_wait_max)).
-- A fill holds its budget slot until the main installation's body ends ([H-1244](#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer)).
+- A fill holds its budget slot until the main installation's body ends ([H-1244](#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer));
+  a fill read by a handover holds it for the handover's answer only (R-BAS-074).
   The defaults of `max_object_bytes` and `spool_max_bytes` (2 GiB each) stay; a layer above them is passed through on every request, and
   the manual's sizing of the cache names images.
 
@@ -3127,6 +3136,397 @@ Acceptance criteria:
   No Debian case runs on kind: the apt leg holds no Bastion release, and APT meets a Bastion with nothing the integration replay does not
   show ([developer/e2e.md](../developer/e2e.md#the-bastion-case-of-the-set-oci)).
 
+## The handover per blob
+
+The owner's decision 12 (b) of 2026-11-22 in his working paper on the stored content. His wish was "Ein Bastion kann auch einen
+Read-Only Account auf ein s3 Bucket bekommen und damit die Hauptinstanz weiter entlasten"; he chose instead: a Bastion gets no account
+of the store, and when it needs a blob it does not hold, the main installation may hand it, for that one blob, a short-lived signed link
+of the object store and, where the blob lies on an encrypted connection, the data key of that blob, so that the Bastion reads the bytes
+from the object store itself and the main installation's bandwidth is spared. It lifts his decision
+[Q-BAS-10](#q-bas-10--the-cache-an-own-bucket-or-a-local-volume-never-the-main-installations-object-store) for a link and a data key per
+released blob and for nothing else. Since a Bastion serves images ([Every format](#every-format)), its first fills are layers of
+gigabytes; the handover takes them off the main installation.
+
+Status: specified on 2026-11-22 by the planner, not built. It builds on specifications whose code is not on `main`: the serve point and
+the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
+[developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
+1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
+[developer/stored-content-encryption.md](../developer/stored-content-encryption.md)). The format's reader that opens an object with its
+data key is built (`internal/blob/blobcrypt`). The main installation's side is [storage.md](storage.md) R-STOR-095 and R-STOR-096; the
+security perspective is [security/bastion-handover.md](../security/bastion-handover.md) (H-1340 to H-1345); the build plan is
+[developer/bastion-handover.md](../developer/bastion-handover.md); the decisions are
+[Q-BAS-230](#q-bas-230--the-handover-is-an-answer-to-the-forward-of-a-miss) to
+[Q-BAS-239](#q-bas-239--the-tests-once-at-the-cheapest-tier-one-integration-case-no-end-to-end-case) and storage.md's Q-STOR-340 to
+Q-STOR-347; the record is
+[ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
+```text
+ caller ── GET of a file it may read ──► Bastion: a miss
+ Bastion ── the forward with the caller's credential and
+            Quader-Bastion-Handover: accept; max-size=<bytes> ─────────► main installation (default endpoint)
+                       decides as the caller's own request (R-BAS-013), the gates, the limits' Admit;
+                       picks a copy, a plain one first; signs a link for GET; for an encrypted copy opens
+                       its record (one HeadObject) and records bastion.data_key.handed; counts the download
+ Bastion ◄── 200, Content-Length: 0, the file's own headers, Quader-Bastion-Class: handover,
+             Quader-Bastion-Handover: <link, its expiry, digest, sizes[, data key]>   (the budget slot is free again)
+ Bastion ── GET <link>, no credential, no header of the interface ──► object store (the connection's public address)
+ Bastion ◄── the stored object: the bytes, or segments it opens with the data key
+ Bastion: verifies (the digest; on an encrypted copy every segment, the final segment and the digest), spools,
+          commits, serves the caller and every caller that follows the fill (R-BAS-054);
+          a failure: the bytes through the main installation (R-BAS-075)
+```
+
+<details>
+<summary>What exists today, and how it was read (2026-11-22)</summary>
+
+| Fact | Read in |
+|---|---|
+| The store signs a link for `GET` of one key for a life and takes no other option; its one caller is the conformance check | `ObjectStore.Presign` in [objects.go](../../internal/blob/objects.go) (line 197), [client.go](../../internal/blob/s3/client.go) (line 461), [conformance.go](../../internal/blob/conformance.go) (line 573) |
+| `blob.Store.Servable` and `blob.Store.CopyDataKey` do not exist yet; both are specified | [storage.md](storage.md) R-STOR-062, R-STOR-083; no match in `internal/blob` |
+| A stored file a format serves through the item store, and every file of `/files/`, is answered by `edge.ServeItem`, which runs `Admit` before it opens the object and writes the status line, and `Served` after a complete body | [content.go](../../internal/api/edge/content.go) (lines 16 to 29, 56 to 130), `itemStore.Serve` in [ingest.go](../../internal/formathost/ingest.go) (lines 387 to 444), [handler.go](../../internal/api/rawfiles/handler.go) (lines 283 to 292) |
+| A format sets headers of a stored file at its status line: OCI's `validatorWriter` writes `Docker-Content-Digest`, the `ETag` `"sha256:<hex>"` and the content type when a `200`, `206` or `304` goes out | [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go) (lines 46 to 66) |
+| The Bastion's client of the main installation follows no redirect and removes every `Quader-Bastion-*` header from an answer before the engine sees it | [client.go](../../internal/bastion/mainclient/client.go) (line 84), `Response` in [mainclient.go](../../internal/bastion/mainclient/mainclient.go) (line 183) |
+| The marking knows five classes, and `Class.Valid` refuses any other | [marking.go](../../internal/bastion/iface/marking.go) (lines 16 to 40) |
+| The interface is at version 4 | [version.go](../../internal/bastion/iface/version.go) (line 12) |
+| The format's package exports `KeyFromBytes`, `DataKey{Key, KeyID, Digest, Size}` and `NewReader(body, dataKey, verify)`, which releases a segment's plaintext only after its tag and holds the last segment's until the final segment and the SHA-256 have passed; `Open`, which reads a record, needs a lookup of storage keys | [keys.go](../../internal/blob/blobcrypt/keys.go) (lines 38, 134), [read.go](../../internal/blob/blobcrypt/read.go) (line 42), [record.go](../../internal/blob/blobcrypt/record.go) (lines 94, 112) |
+| The engine ends a cached entry's service on a `content` entry of the feed and aborts no running fill | `withdrawn` in [entries.go](../../internal/bastion/engine/entries.go) (line 151), [readflow.go](../../internal/bastion/engine/readflow.go) (line 76) |
+| A registration's row holds its description only | [00032_bastion.sql](../../internal/meta/postgres/migrations/00032_bastion.sql) (lines 21 to 24) |
+| The recognition gives the serve point the registration's name and ID | `Recognition` in [recognition.go](../../internal/bastionmain/recognition.go) |
+| The metric names of R-BAS-040's table and the journaled events of R-HA-054's table are held to the code by tests, and the chart test lists R-BAS-041's alerts | [metrics_test.go](../../internal/bastion/metrics/metrics_test.go), [journal_list_test.go](../../internal/audit/journal_list_test.go), [bastion_test.go](../../test/chart/bastion_test.go) |
+| The integration suite's main installation keeps its blobs in the stack's object store, reached over `https` | `S3Config` in [role_test.go](../../test/integration/bastion/role_test.go), [up.sh](../../test/integration/up.sh) (line 76) |
+
+Not verified, and this is the gap: anything against an object store; whether the object gateway of the owner's cluster, which has an
+address inside the cluster only (read there on 2026-11-22 by the development agent), can be reached from a Bastion's network; how large a
+response header the main installation's ingress lets through (the handover's header is, by estimate, about 3 KiB with a link of temporary credentials,
+R-BAS-073).
+
+</details>
+
+### R-BAS-070 · The handover per blob: a link and a data key per released blob
+Priority: **P1** · Covers: quader-only
+
+- **What leaves the main installation, per handover:** one link signed for `GET` of one object on one connection, for the life of the
+  installation's links ([storage.md](storage.md) R-STOR-014's `linkLifeSeconds`, R-STOR-072); the blob's SHA-256, its size and its stored
+  size; the connection's identifier; and, only where the copy lies on an encrypted connection, that copy's data key. The answer that
+  carries them carries the file's own headers, as every forwarded answer does (R-BAS-073).
+- **What never leaves:** an account or a credential of the object store (the connection's credential signs the link at the main
+  installation and stays there, R-STOR-072); a storage key, a name key, a wrap or a record; anything of the key ring; a data key of any
+  other blob or of another copy (each encrypted copy has a data key of its own, R-STOR-087).
+- **A released blob** is one the main installation would stream to the same request: the caller may read it there and then (the forward
+  is decided as the caller's own request, R-BAS-013), its content is sound, the format's serve-time check passed, and every gate that
+  applies passed on a decided state ([storage.md](storage.md) R-STOR-095).
+- **For what:** a fill of the Bastion's cache (R-BAS-021, R-BAS-054). The Bastion reads the object whole, verifies it, keeps it and serves
+  it. Never a document, a range, a `HEAD`, a conditional answer, an answer of the registry's token service, or a file larger than the
+  Bastion would keep (R-BAS-072).
+- **Q-BAS-10 lifted for this and for nothing else.** The Bastion's cache stays its own (R-BAS-030); it holds no credential of the main
+  installation's store, lists nothing, writes nothing, and reads no object it was not handed a link for. R-BAS-001's rule that a Bastion
+  pod makes no request to the main installation's bucket holds while no registration's handover is on (R-BAS-071), as in the end-to-end
+  suite.
+- **Off by default**, switched per registration at the main installation (R-BAS-071).
+
+Acceptance criteria:
+
+- Integration (area `bastion`): with the handover on for the registration and the links' `minSize` 0, a cold `GET` through the Bastion
+  of a file of 64 KiB below `/files/` of a generic repository returns the file; the main installation's request log holds one line for it
+  with `delivery` `handover` and `response_bytes` 0; the Bastion's `quader_bastion_fill_bytes_total{source="store"}` rose by 65,536; a
+  second `GET` is a hit; with the handover off, the same cold `GET` is a forward whose line has no `delivery`
+  (`TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`).
+
+### R-BAS-071 · The switch: per registration at the main installation, off by default
+Priority: **P1** · Covers: quader-only
+
+- **Where** ([Q-BAS-232](#q-bas-232--the-switch-is-per-registration-at-the-main-installation-and-the-bastions-chart-has-none)): a member of
+  the registration, `handover`, kept at the main installation (`bastion.handover boolean NOT NULL DEFAULT false`), read by every replica
+  from a snapshot of the registrations that a change area refreshes within the bound of [architecture.md](architecture.md) R-ARCH-018
+  (2 s), so a forward costs no query for it. Neither chart has a value for it (R-BAS-078).
+- **API** (the operations of R-BAS-004): `GET /api/v1/bastions` and `GET /api/v1/bastions/{name}` show `handover`;
+  `PATCH /api/v1/bastions/{name}` takes `{"handover": true}` or `false` with `endpoints:write`; `POST /api/v1/bastions` does not take it, so
+  a new registration has the handover off.
+- **Audit and journal:** `bastion.handover.enabled` (transactional, not journaled) and `bastion.handover.disabled` (transactional, journaled
+  with the entry `{principalId, name}`); the journal's replay sets the member off, so a restore to a point before a switch-off keeps the
+  handover off (Q-BAS-145's pattern; R-HA-054's table gains the row with the code, since its test holds the table to the registry). The
+  feed carries no entry for either: the main installation decides each forward from its snapshot, and a Bastion learns the member at its
+  next handshake; both are listed in `noFeedEntry` with that reason (R-BAS-015).
+- **The handshake** (R-BAS-010) gains `"handover": <the member>`. The Bastion offers to take a handover only while it is true (R-BAS-072)
+  and exports it as `quader_bastion_handover_enabled` (R-BAS-075).
+- **The screen** (R-BAS-007, Q-BAS-95): the card of a registration shows a switch **Direct reads from the object store**, off as the value in
+  the field, with one sentence: "Large files go from the object store to this Bastion by a link per file, and for an encrypted store with
+  that file's key; the main installation decides and counts every download as before." While it is on, the card lists each connection with
+  whether it can serve a handover and its reason where not ([storage.md](storage.md) R-STOR-096), and links to the storage settings'
+  section **Download links**, whose details hold the minimum size, the links' life and the public addresses (R-STOR-014, R-UI-200). The
+  switch is never part of creating a registration.
+
+Acceptance criteria:
+
+- Unit (`internal/api/v1`, `internal/bastionmain`): `PATCH /api/v1/bastions/partners {"handover": true}` by a caller with
+  `endpoints:write` answers `200` and records `bastion.handover.enabled`, by one with `endpoints:read` `403`; `{"handover": false}` records
+  `bastion.handover.disabled` with its journal entry, and the replay of that entry sets the member off; `POST /api/v1/bastions` with
+  `handover` answers `400`; the handshake of `partners` says `"handover": true` after the change; `bastion.handover.disabled` is in
+  `noFeedEntry` (`TestR_BAS_071_TheSwitchIsPerRegistration`, `TestR_BAS_015_EveryJournaledEventIsClassified`).
+- Vitest: the card shows the switch off for a new registration and, once on, a connection's reason `not_https`.
+
+### R-BAS-072 · The Bastion offers to take a handover on a miss
+Priority: **P1** · Covers: quader-only
+
+- The Bastion adds `Quader-Bastion-Handover: accept; max-size=<n>` to every `GET` it forwards (R-BAS-021) and to its own conditional `GET`
+  (R-BAS-022: a `200` to it may be a handover), while all of these hold: the last handshake said `handover: true` (R-BAS-071); the replica
+  is not cooling down (R-BAS-075); and the request is no probe (R-BAS-014), no conditional request of a caller that follows a running fill
+  (R-BAS-054), no continuation and no forward that replaces a failed handover (R-BAS-075).
+- `n` is the smaller of `bastion.cache.max_object_bytes` and the bytes the spool can take at that moment (`spool_max_bytes` less the fills
+  in progress, R-BAS-030), so that the main installation hands over only what the Bastion would keep
+  ([Q-BAS-233](#q-bas-233--only-artifacts-the-bastion-keeps-are-handed-over)). A larger artifact is streamed by the main installation and
+  passed through as today (R-BAS-021); the manual's sizing says to raise both values for images with large layers (R-BAS-078).
+- The offer says nothing about the caller. The main installation ignores it on every answer it does not apply to ([storage.md](storage.md)
+  R-STOR-095), so the Bastion needs no knowledge of a route's kind to send it.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`): a cold `GET` sends the offer with `max-size` the smaller of the two values; a `HEAD`, a probe, the
+  conditional request of a follower, a continuation, a forward that replaces a failed handover, a request while the handshake says
+  `handover: false` and one while the replica cools down send none (`TestR_BAS_072_TheBastionOffersToTakeAHandover`).
+
+### R-BAS-073 · The handover answer and the interface version 5
+Priority: **P1** · Covers: quader-only
+
+- **The answer** to a forward the main installation hands over ([storage.md](storage.md) R-STOR-095;
+  [Q-BAS-231](#q-bas-231--the-handover-rides-in-a-marking-header-of-the-items-own-200-with-an-empty-body)): status `200`; the headers the
+  file's own `200` would carry, the format's included (an image's `Docker-Content-Digest` and its `ETag` `"sha256:<hex>"`);
+  `Content-Length: 0` and no body; the marking of R-BAS-013 with `Quader-Bastion-Class: handover`, `Quader-Bastion-Repository`,
+  `Quader-Bastion-Read`, `Quader-Bastion-Subject` and `Quader-Bastion-Counted: download`; and `Quader-Bastion-Handover: <value>`, the JSON
+  below in base64url without padding ([RFC 4648](https://www.rfc-editor.org/rfc/rfc4648) §5), at most 8 KiB:
+
+```json
+{
+  "link": "https://objects.example.com/quader-blobs/quader/sha256/9f/86/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=…&X-Amz-Date=20261122T100000Z&X-Amz-Expires=60&X-Amz-SignedHeaders=host&X-Amz-Signature=…",
+  "expiresAt": "2026-11-22T10:01:00Z",
+  "connection": "default",
+  "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "size": 5242880,
+  "storedSize": 5242880,
+  "encrypted": false
+}
+```
+
+*(example: a plain copy)*. For a copy on an encrypted connection `"encrypted": true`, `"storedSize": 5245188` (`S(L)` of
+[storage.md](storage.md) R-STOR-076) and `"dataKey": "<43 characters: the 32 bytes of the data key in base64url>"`, and the link names the
+object by its keyed name where the connection has keyed names (R-STOR-086).
+
+- **What the Bastion checks before it reads** (a failure is a bad answer, which ends in the forward of R-BAS-075): `link` is an absolute
+  `https` URL whose host is none of R-BAS-074's; `expiresAt` lies in the future; `connection` is an identifier of R-STOR-050; `sha256` is 64
+  hexadecimal digits and equals the content address of the answer's `ETag` (R-BAS-022); `size` is at most the `max-size` it offered;
+  `storedSize` equals `size` on a plain copy and `S(size)` on an encrypted one; `dataKey` is present exactly when `encrypted` is true and holds
+  32 bytes.
+- **The interface's additions** (R-BAS-009), which raise `iface.InterfaceVersion` to 5: the request header `Quader-Bastion-Handover` with the
+  value `accept; max-size=<n>`, the class `handover`, the response header `Quader-Bastion-Handover` with the value above, and the handshake's
+  member `handover` (R-BAS-071). The types are `iface.HandoverOffer` and `iface.Handover`, each with its encoding and its checks. Main
+  installation and Bastions are upgraded together, as for every version (R-BAS-009).
+- **Only a recognized forward that offered gets one.** The marking stage adds the class and the header to a recognized forward (R-BAS-008)
+  whose request carried the offer, and to nothing else; a request without a valid Bastion token that sends the header is an ordinary request
+  and gets the file, as R-BAS-008 says of every `Quader-Bastion-*` header. The Bastion's client removes every `Quader-Bastion-*` header from
+  an answer before the engine sees it (R-BAS-021), so the value never reaches a caller, and the engine has no path that writes a `handover`
+  answer's status or headers to a caller (R-BAS-074).
+- **Redaction.** `Quader-Bastion-Handover` is redacted like `Authorization` in every log, span and support bundle of both sides
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-013's rule for header names gains it); neither side's request log
+  keeps a header (R-OPS-010).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/iface`): a plain and an encrypted value round-trip; a value with an `http` link, a data key of 31 bytes, a data key
+  on a plain copy, a digest that is not 64 hexadecimal digits, a `storedSize` that is not `S(size)` on an encrypted copy, or more than 8 KiB is
+  refused; `handover` is a valid class; the interface's file holds version 5 and the four additions
+  (`TestR_BAS_073_TheHandoverValue`, `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion`).
+- Unit (`internal/api/bastionmark`): the class and the header are added only to a recognized forward that offered; an ordinary request that
+  sends `Quader-Bastion-Handover: accept; max-size=1048576` gets the file and no `Quader-Bastion-` header
+  (`TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover`).
+
+### R-BAS-074 · The direct read and its verification
+Priority: **P1** · Covers: quader-only
+
+- **The fill's source.** A `handover` answer starts the fill of R-BAS-021 with the object store as its source instead of the answer's body.
+  The answer's body is empty, so its budget slot is free at once, and the direct read holds no slot of the budget towards the main
+  installation (R-BAS-025), which narrows [H-1244](#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer)
+  for what is handed over. Everything else of the fill stays: the spool and its bound (R-BAS-030), the stall bound of 60 s, the withheld
+  tail towards every caller (R-BAS-021), the callers that follow the fill on their own permission and the ranged misses served from the
+  spool (R-BAS-054), the fetch lock across replicas (R-BAS-025), and the commit's check of the SHA-256 against the content address of the
+  `ETag` (R-BAS-032).
+- **The link client** (`internal/bastion/handover`), a client of its own and never the client of the main installation: TLS verified against
+  the system roots and the trust of `bastion.main.ca_file` (the chart's `trustedCA`), read again without a restart
+  ([Q-BAS-237](#q-bas-237--the-store-is-trusted-with-the-charts-trust-bundle)); the timeouts `bastion.main.connect_timeout` and
+  `bastion.main.response_header_timeout`; no redirect followed (a redirect is a failure before the first byte); no cookie; no `Authorization`,
+  no credential of a caller, no header of the interface and no forwarded header; `User-Agent: quader-bastion/<release>`. It refuses a link
+  that is not `https` or whose host is the host of `server.base_url`, `bastion.main.url` or `bastion.main.packages_url`, so that nothing meant
+  for Quader leaves on the path that carries no Bastion token and no link leads back into Quader. The address policy of the upstream clients
+  does not apply, as for the connection to the main installation ([H-446](#h-446--the-connection-to-the-main-installation-is-not-under-the-egress-address-policy)):
+  the host comes from the main installation.
+- **One `GET` of the whole object**, from byte 0. Before the first byte the status is `200` and `Content-Length` equals `storedSize`.
+- **A plain copy:** the bytes go into the spool as they arrive; the commit compares their SHA-256 with `sha256` and with the `ETag`'s content
+  address, and no caller receives the last 64 KiB before it (R-BAS-021).
+- **An encrypted copy** ([Q-BAS-234](#q-bas-234--the-bastion-opens-the-object-with-the-handed-data-key-alone)): the Bastion builds the data key
+  from `dataKey`, `sha256` and `size` and reads through the format's reader with the digest checked (`blobcrypt.NewReader`,
+  [storage.md](storage.md) R-STOR-082): a segment's plaintext reaches the spool only after its tag, the last data segment's only after the
+  final segment's length and digest and the plaintext's SHA-256 have matched; then the commit checks as for every fill. The Bastion reads no
+  record: it holds no storage key, and the main installation opened the record before it handed the key (steps 1 to 6 of R-STOR-077, in
+  `CopyDataKey`); a body that is not the object under that key fails at its first segment.
+- **What is kept** is an artifact entry as for an `artifact` answer (R-BAS-022): the content address, the size, the replay headers taken from
+  the handover answer (R-BAS-057's rules), the repository, `validatedAt` the time the forward left, and `Counted` from the marking. With a
+  cache key it is encrypted under the Bastion's own key (R-BAS-061).
+- **Reported downloads.** The main installation counted the download when it handed over ([storage.md](storage.md) R-STOR-095). The leader's
+  caller is that download; the callers that follow the fill and every later hit are reported by the Bastion, as today (R-BAS-059).
+- **Never passed to a caller.** The engine consumes a `handover` answer; a value it cannot use ends in the forward of R-BAS-075, never in a
+  status or a header for the caller.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/handover`, `internal/bastion/engine`, the engine's double of the client and a TLS test store): a plain object of
+  192 KiB and an encrypted one (written with the format's writer under a data key the double hands over) are read, committed and served,
+  each caller's last 64 KiB after the commit; a second caller of the running fill follows it; the double's budget slot is free before the
+  read ends; the link client sends no `Authorization` and no `Quader-` header, follows no redirect, and refuses an `http` link and a link on
+  the Bastion's own host (`TestR_BAS_074_TheDirectReadAndItsVerification`).
+
+### R-BAS-075 · A direct read that fails
+Priority: **P1** · Covers: quader-only
+
+Every failure of the direct read ends in the bytes through the main installation or in the refusal of a fill that exists today
+([Q-BAS-235](#q-bas-235--a-failure-before-the-first-byte-is-a-forward-after-it-a-continuation-by-a-range)):
+
+- **Before the first byte** (a link the store refuses or that has expired, a connect, name or TLS error, a timeout, a status other than
+  `200`, another length, a redirect, a value R-BAS-073 refuses, a spool that cannot take the size, and on an encrypted copy a first segment
+  that does not open): the Bastion sends the forward again without the offer and goes on as for a miss today; the caller sees a delay. The main
+  installation counts and charges that second answer too ([security/bastion-handover.md](../security/bastion-handover.md) H-1342).
+- **After the first byte** (a cut, the stall bound, on an encrypted copy a later segment that does not open): the fill continues from the main
+  installation with a forward of the Bastion's own `Range: bytes=<n>-` and `If-Range: <the ETag>`, without the offer, where `n` is the length
+  in the spool (on an encrypted copy a multiple of 65,536, since a segment's plaintext reaches the spool only after its tag); a `206` with
+  `Content-Range: bytes <n>-<size − 1>/<size>` and the same `ETag` continues the spool, anything else fails the fill as a fill fails today
+  (the callers cut before their last 64 KiB, nothing kept). The main installation counts no download for a `206` that starts after byte 0
+  (Q-BAS-186), charges its bytes, and on an encrypted copy its ranged read re-reads the failed segment, so a damaged copy is marked and fallen
+  over there (R-STOR-082). The commit's SHA-256 decides as for every fill.
+- **A digest that differs at the end** (a plain copy changed in the bucket, the bytes of another object): the fill fails as every fill does,
+  and the cache key is marked for `bastion.cache.artifact_revalidate_after`; its next fills send no offer, so the main installation's
+  verifying read (R-STOR-013) meets the copy and marks it.
+- **The cooldown** ([Q-BAS-236](#q-bas-236--a-replica-that-cannot-read-the-store-offers-no-handover-for-a-minute)). After a failure before the
+  first byte whose cause is the network or the store (connect, name, TLS, timeout, a `403` or `5xx` of the store, another length), the
+  replica sends no offer for 60 s, so a Bastion whose network does not reach the store costs one more forward per replica and minute, not
+  one per miss.
+- **Metrics** (the builder adds them to R-BAS-040's table with the code, which a test holds to it): `quader_bastion_handovers_total{outcome}`
+  with `read` (read from the store and committed), `fallback` (failed before the first byte), `continued` (finished through the main
+  installation), `refused` (the bytes failed verification); `quader_bastion_fill_bytes_total{source}` with `main` and `store`; the gauges
+  `quader_bastion_handover_enabled` (the handshake's member) and `quader_bastion_handover_cooldown` (1 while the replica sends no offer).
+  The request log of the Bastion names the outcome in `bastion_handover`, never the link.
+- **The alert** `QuaderBastionHandoverFailing` (warning, `for: 15m`): fallbacks, continuations or refusals within 15 minutes and no `read`,
+  that is the Bastion's network does not reach the store or the store's answers fail (the builder adds the row to R-BAS-041's table and the
+  name to the chart test's list).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, the engine's double and a TLS test store): a link the store refuses with `403` ends in a forward without
+  the offer whose bytes the caller receives, counts `fallback` and starts the cooldown (the engine's field set to 1 s in the test); a cut after
+  128 KiB of a plain object, and a flipped third segment of an encrypted one, continue with `Range: bytes=131072-` and `If-Range`, and the
+  caller receives the whole blob; a plain object replaced by other bytes of the same length cuts every caller before its last 64 KiB, keeps
+  nothing, and the next miss of the key sends no offer (`TestR_BAS_075_ADirectReadThatFails`).
+- Chart: `QuaderBastionHandoverFailing` fires on a series of fallbacks without a read and stays silent on reads (`promtool test rules`,
+  `TestR_BAS_041_PromtoolRules`).
+
+### R-BAS-076 · The data key at the Bastion: held for one read, written nowhere
+Priority: **P1** · Covers: quader-only
+
+- The data key lives in the memory of the replica that reads, from the start of the direct read to its end, whatever the end; then it is
+  destroyed (`blobcrypt.Key.Destroy`). The handover's value lives in the request's memory until the read starts.
+- It is written to no object of the cache store, no file of the spool, no Valkey key, no log record, no metric, no span and no line of the
+  audit spool; its `String` and `LogValue` render nothing of it (the format's package). The link appears in no log either.
+- A data key is never needed again: a revalidation is a conditional request (R-BAS-022), a refill is a new forward. What the Bastion keeps of a
+  handed blob is what it keeps of every fill: the plaintext in its cache, encrypted under its own cache key where its chart gives one
+  (R-BAS-061).
+- Go's AES implementation keeps an expanded key schedule that no code can erase, so the memory of a Bastion pod holds the data keys of its
+  current direct reads, as the memory of the main installation's pods holds theirs
+  ([security/stored-content-keys.md](../security/stored-content-keys.md) H-1309). What a taken-over Bastion gains is
+  [security/bastion-handover.md](../security/bastion-handover.md) H-1340.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, `internal/bastion/handover`): after a read that ends whole, one that fails before its first byte and one
+  that fails after it, the data key is destroyed (a hook of the test counts it), and no object of the cache, no file of the spool, no
+  record of the captured log and no metric of the test's registry holds the key's bytes in hexadecimal or base64url
+  (`TestR_BAS_076_TheDataKeyIsWrittenNowhere`).
+
+### R-BAS-077 · A blob withdrawn while its link lives
+Priority: **P1** · Covers: quader-only
+
+- The main installation decides when the forward arrives. A decision taken after it (the blob deleted, a malware find or a withdrawn release,
+  a narrowed signature gate, a vulnerability block, a lowered visibility, a revoked grant or token) does not stop a direct read that has begun,
+  as it does not stop a forwarded fill today ([Q-BAS-238](#q-bas-238--a-blob-withdrawn-during-a-fill-is-treated-as-in-a-forwarded-fill)): the
+  fill completes, its caller and the callers that followed it receive the blob, and the entry is committed with a `validatedAt` from before
+  the change. The feed's entry (R-BAS-015: `content`, `grants`, `token`, `principal`) then refuses the entry to every later caller (R-BAS-020,
+  R-BAS-022, Q-BAS-122), whose request asks the main installation and gets its refusal.
+- A read that starts after the object is gone (a deletion the collection completed, [storage.md](storage.md) R-STOR-024) gets the store's
+  `404`, a failure before the first byte: the forward that replaces it gets the main installation's refusal (R-BAS-075).
+- The link is used once, at once. A link taken out of a Bastion serves its object to whoever holds it for the rest of its life
+  ([H-12](storage.md#h-12--presigned-download-urls-are-bearer-capabilities)), which is the installation's `linkLifeSeconds` (60 s unless the
+  administrator sets 10 s to an hour). A data key outlives the withdrawal of its blob wherever the blob's ciphertext stays
+  ([security/bastion-handover.md](../security/bastion-handover.md) H-1340).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`): a `content` entry for the repository that arrives while a direct read runs leaves the fill's callers
+  served and the entry committed, and the next caller's request for the key is a conditional request whose refusal is replayed
+  (`TestR_BAS_077_AWithdrawalDuringADirectRead`).
+
+### R-BAS-078 · The operator's side: the charts, the admin area, the manual and the egress
+Priority: **P1** · Covers: quader-only
+
+- **No value in either chart** (Q-BAS-232). The switch is the registration's member at the main installation (R-BAS-071), and the links'
+  details are the installation's ([storage.md](storage.md) R-STOR-014). The Bastion's chart holds what the link client needs already: its trust
+  bundle (`trustedCA`) and the timeouts of `config.bastion.main`. Its change, made with the build: the alert of R-BAS-075 in the
+  PrometheusRule with its promtool test, and the comment of `trustedCA.existingSecret` (today "trust for the main installation, Valkey and the
+  bucket"), which gains the main installation's object store, in the chart's `values.yaml` and in R-BAS-046's block together, which the values
+  test compares.
+- **The admin area:** the card's switch and the connections' reasons (R-BAS-071); the links' details on the storage settings page
+  (R-STOR-014, [api-and-ui.md](api-and-ui.md) R-UI-200), whose test link the administrator opens from a machine of the Bastion's network to
+  see whether it reaches a connection's public address, an encrypted connection's included ([storage.md](storage.md) R-STOR-074, R-STOR-096).
+- **The egress.** The chart renders no egress rule (R-BAS-047, [H-522](../security/bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)).
+  An operator who restricts the Bastion pods' egress admits, while the handover is on, the public address of every connection a handover may
+  name (R-STOR-074: its public address, or its endpoint without one), on its port.
+- **The manual** (`docs/manual/admin/bastion.md`, a section "Direct reads from the object store"): when to switch it on (images and other
+  large files read through the Bastion); what must hold first (each connection's public address reachable from the Bastion's network, `https`,
+  with a certificate the Bastion trusts through the system roots or `trustedCA`; the test link opened from that network); what leaves the main
+  installation (a link per file, and for an encrypted connection that file's data key); what to do when a Bastion is taken over (switch the
+  handover off, revoke its token, and for encrypted content whose bucket or backup target its holder may read, a new connection that the
+  reconciliation fills with new data keys, [security/stored-content-keys.md](../security/stored-content-keys.md) H-1311); and the sizing
+  (`max_object_bytes` and `spool_max_bytes` at least the largest layer). It lands with the build, as the repository's documentation rule says.
+
+Acceptance criteria:
+
+- Chart render tests: the PrometheusRule holds `QuaderBastionHandoverFailing` scoped to the release; no value of either chart is added
+  (`TestR_BAS_041_PrometheusRuleAlerts`, `TestR_BAS_046_ValuesReferenceIsTheSpecBlock`).
+
+### R-BAS-079 · Tests of the handover and what they cost
+Priority: **P1** · Covers: quader-only
+
+By the owner's rule "Tests stay runnable" of 2026-11-20: each behaviour once, at the cheapest tier
+([Q-BAS-239](#q-bas-239--the-tests-once-at-the-cheapest-tier-one-integration-case-no-end-to-end-case)). Nothing of it depends on a format:
+the main installation hands over a stored file of any format through one serve point, and the Bastion reads artifacts without knowing a
+format. The run times are the planner's estimates; the builder records the measured ones on
+[developer/bastion-handover.md](../developer/bastion-handover.md).
+
+| Tier | Test | Data | Run time (estimate) |
+|---|---|---|---|
+| unit, `internal/bastion/iface` | the value, the offer, the class, the interface's file (R-BAS-073) | none | under 0.1 s |
+| unit, `internal/downloadlinks`, `internal/api/edge`, `internal/formathost`, `internal/api/rawfiles` | the conditions of R-STOR-095 one by one, the choice of the copy, what is counted and charged, the link check's two results (R-STOR-095, R-STOR-096) | the in-memory store, objects of 1 KiB | about 1 s |
+| unit, `internal/api/bastionmark`, `internal/bastionmain`, `internal/api/v1` | the marking only on an offer, the switch, its events and replay, the handshake's member (R-BAS-071, R-BAS-073) | none | about 0.5 s |
+| unit, `internal/downloadlinks` with an encrypted connection, `internal/archtest` | the data key from `CopyDataKey`, the trace before the answer, a failed insert streams, the callers of `CopyDataKey` (R-STOR-096) | objects of 1 KiB | about 0.4 s |
+| unit, `internal/bastion/handover`, `internal/bastion/engine` | the read, its verification, its failures, the continuation, the mark, the cooldown, the key written nowhere, a withdrawal during a read (R-BAS-072, R-BAS-074 to R-BAS-077) | objects up to 256 KiB, made in memory | about 1.5 s |
+| chart | the alert's promtool case and its name in the list (R-BAS-075, R-BAS-078) | none | about 0.2 s |
+| Vitest | the card's switch and reasons (R-BAS-071) | fixtures | about 0.5 s |
+| integration, area `bastion` | one case (R-BAS-070) against the stack's object store: a cold fill by a handover, a hit, a fallback with an unreachable public address; once encrypted connections exist, the same with an encrypted connection | one file of 64 KiB | about 3 s, and about 2 s more |
+| measurement, once before landing (not a test) | `docker pull` of an image with a layer of about 300 MiB through a Bastion with the handover on, against the local stack: bytes the main installation sent against bytes the store sent | real clients | minutes, once |
+
+- **What each leg gains** (estimates): the unit job about 3.7 s; the web unit job about 0.5 s; the chart test about 0.2 s; the integration
+  shard that holds the area `bastion` about 5 s; every end-to-end leg and the nightly nothing.
+- **With 25 formats:** the same. No test is per format, no leg loads a client image for it.
+
+Acceptance criteria:
+
+- The tests named in R-BAS-070 to R-BAS-078 and in [storage.md](storage.md) R-STOR-095 and R-STOR-096 pass in their tiers.
+
 ## Deferred
 
 | Item | Note |
@@ -3150,6 +3550,8 @@ Acceptance criteria:
   and, through forwarded requests, only what the credentials of callers passing through it can read; it sees those credentials
   in transit, and below `/v2/` the registry tokens the main installation's token service issues to them, in the token service's
   answer it passes on and keeps nowhere (R-BAS-051). It holds no credential for PostgreSQL, the main installation's object store or upstream registries (R-BAS-030).
+  With the handover it holds, for the length of one read, the link of one object and, on an encrypted connection, that object's data key
+  (R-BAS-076); what it gains by keeping them is [security/bastion-handover.md](../security/bastion-handover.md).
   Whether it can open a connection to them is the cluster operator's egress policy: the chart renders none (R-BAS-047,
   [H-522](../security/bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)).
 - **Where abuse stops.** At the network provider for bandwidth (H-382), at HAProxy Ingress for coarse rates (R-BAS-038), at the
@@ -3327,7 +3729,10 @@ condition.
 
 ### Q-BAS-10 · The cache: an own bucket or a local volume, never the main installation's object store
 
-Status: **Decided by the owner on 2026-11-02** — option (a).
+Status: **Decided by the owner on 2026-11-02** — option (a). **Lifted in part by the owner on 2026-11-22** (decision 12 (b) of his working
+paper on the stored content): a Bastion may read one blob of the main installation's store by a link the main installation hands it for
+that blob, with the blob's data key where it lies on an encrypted connection, and nothing else; the cache stays its own
+([The handover per blob](#the-handover-per-blob), R-BAS-070).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3341,7 +3746,7 @@ cannot read; its backend is chosen in the chart, a bucket of the Bastion's own s
 replica, with size limit, eviction by last access and the metadata revalidation period configurable." The development agent
 records no revisit condition.
 
-**Applied in the spec:** R-BAS-030, R-BAS-031, R-BAS-046.
+**Applied in the spec:** R-BAS-030, R-BAS-031, R-BAS-046; the part lifted on 2026-11-22: R-BAS-070 to R-BAS-079.
 
 ### Q-BAS-11 · Valkey is optional, and without it budgets are divided by the replicas
 
@@ -7081,6 +7486,175 @@ finding other trees lists everything below `bc-`, the replica's own tree include
 
 **Choice:** (a). **Applied in the spec:** R-BAS-061; code: [foreign.go](../../internal/bastion/cache/foreign.go).
 
+### Q-BAS-230 · The handover is an answer to the forward of a miss
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That a Bastion gets a link
+and the data key per released blob is the owner's (2026-11-22, decision 12 (b)).
+
+Context: a handover must be decided as the caller's own request, with the gates, the limits and the counting, which is what the main
+installation does with a forward today (R-BAS-013). The Bastion holds the caller's credential for the length of the request only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The forward of a miss carries an offer, and the main installation answers it with the handover instead of the bytes where the conditions hold (chosen) | One round trip | Every rule of a forward holds unchanged: authentication, the decision, the gates, `Admit`, the counting, the marking; no second decision path | The handover rides on the package routes; a class and two headers raise the interface's version |
+| (b) A new interface operation `POST /api/v1/bastion/handover` with the caller's credential and the path | An interface call of its own | The key only on an interface route | The operation would decide a download outside the route that serves it: a second decision path beside every format's |
+| (c) The forward answers with a ticket, and a second call with the Bastion token fetches the link and the key | Two steps | The key never on a request that carried a caller's credential | Two round trips per fill and a ticket kept between them, for nothing: the caller's credential is the Bastion's to see anyway |
+
+**Choice:** (a). **Rationale:** the forward is where the main installation already decides a download for this caller; the handover is a
+different answer to the same decision. The planner would revisit this if a handover had to be given without a caller's request (a prefetch).
+
+**Applied in the spec:** R-BAS-070, R-BAS-072, R-BAS-073; [storage.md](storage.md) R-STOR-095.
+
+### Q-BAS-231 · The handover rides in a marking header of the item's own 200 with an empty body
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a format sets headers of a stored file at its status line (OCI's `validatorWriter` writes `Docker-Content-Digest`, the `ETag` and the
+content type, [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go) lines 46 to 66), and the Bastion keeps those headers with
+its entry (R-BAS-057). The Bastion's client removes every `Quader-Bastion-*` header from an answer before the engine sees it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The item's `200` with every header it would carry, `Content-Length: 0`, the class `handover` and the value in `Quader-Bastion-Handover` (chosen) | The answer the file would get, without its bytes | The file's headers arrive as with the bytes, through the format's own writers; the value travels in a header the existing strip keeps from every caller; a defect that passed the answer on would give a client an empty `200` whose digest check fails, not a key | A secret in a response header, which no request log keeps and the redaction rule must name |
+| (b) A JSON body of a media type of its own with the value and the file's headers | No secret in a header | | The formats' writers rewrite the content type at the status line; the file's headers would be copied into a body per format; a body passed on by a defect would hand a client the key |
+| (c) A `307` to the link with the key in a header | A client's answer | | A `307` is what a client follows: a defect would send a caller to the store, and the key would stand beside a `Location` |
+
+**Choice:** (a). **Rationale:** the failure of a defect is what decides: with (a) it is a broken download, with (b) and (c) a key or a link
+in a caller's hands.
+
+**Applied in the spec:** R-BAS-073.
+
+### Q-BAS-232 · The switch is per registration at the main installation, and the Bastion's chart has none
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: what leaves the main installation is its own decision. Several Bastions of one installation can stand in zones of different trust (a
+partner's network, the company's DMZ), and the Bastions screen has a card per registration (Q-BAS-95). Simple by default: one switch in the
+plain path, details on demand.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A member `handover` of the registration, off by default, on its card; no value in either chart (chosen) | The administrator who registers a Bastion decides what it receives | Per Bastion, in one place, one switch | A Bastion's operator who knows his network cannot reach the store has no switch of his own; the cooldown bounds the cost (R-BAS-075) |
+| (b) One switch of the installation | Every Bastion or none | One switch | Every Bastion receives keys once one should |
+| (c) The installation's switch and the registration's | Two levels | A stop for all at once | Two switches where one does the job; the cards are turned off one by one, at most `bastions.max_registrations` |
+| (d) A value of the Bastion's chart | The DMZ opts in | The DMZ's operator decides | The DMZ would decide that keys leave the main installation |
+
+**Choice:** (a). The `PATCH` asks no recent authentication: the switch hands nothing to anybody but the operator's own Bastion, it is
+audited, and its switch-off is journaled. **Rationale:** the decision belongs to the side the keys leave. The planner would revisit (c) if an
+installation ran many Bastions.
+
+**Applied in the spec:** R-BAS-071, R-BAS-078.
+
+### Q-BAS-233 · Only artifacts the Bastion keeps are handed over
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the Bastion keeps an artifact under its content address within `max_object_bytes` and the spool (R-BAS-021, R-BAS-030); a document is
+shared or private by the caller's shape (R-BAS-023), and a private one is kept in memory only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A whole `GET` of a `Download` route or of a file of `/files/`, up to the size the Bastion offers (chosen) | The fills the Bastion keeps | The bytes a handover moves are the large ones; every handed blob is kept and served from the cache again; one class to handle | Layers above `max_object_bytes` still pass through the main installation on every request until the operator raises the bound |
+| (b) Documents too (an image's tag, the ClamAV containers) | A few large documents | | A private document is never kept, so a handover would move it once per caller; a document's rendition is not always the stored blob |
+| (c) Also files the Bastion passes through, verified while they stream | The largest layers too | | A pass-through with a verification and a hold-back of its own beside the fill, and every pull of such a layer contacts the store again |
+
+**Choice:** (a). **Rationale:** a handover is worth its round trips where the bytes stay at the Bastion. The planner would revisit (c) once a
+measurement shows layers above the bound.
+
+**Applied in the spec:** R-BAS-070, R-BAS-072; [storage.md](storage.md) R-STOR-095.
+
+### Q-BAS-234 · The Bastion opens the object with the handed data key alone
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the format's reader opens an object with a data key, its digest and its size (`blobcrypt.NewReader`); the record's wrap opens only
+under the connection's storage key, which never leaves the main installation; the main installation opens the record in `CopyDataKey` (steps 1
+to 6 of R-STOR-077). The segment key derives from the data key (R-STOR-076). Gap H-1302 asked the planner of the handover whether a
+commitment in the body is needed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The data key with the digest and the sizes; the Bastion checks every segment, the final segment and the digest, and reads no record (chosen) | The format's reader as built | Nothing the Bastion cannot open; a body under another key fails at its first segment | The Bastion cannot tell a changed record from a changed body, and needs neither |
+| (b) The segment key derived from the data key instead | A key that opens the segments only | Less than the data key | The data key opens nothing more of a released blob (the staging tails it also opens are gone once the blob exists, R-STOR-081); a reader entry and vectors of their own for no gain |
+| (c) The data key, and the Bastion also compares the record's commitment | A second check | | The commitment binds a record to a key; the Bastion reads under the key the main installation took from the record, so no body is read under two keys |
+
+**Choice:** (a). **Rationale:** what protects the bytes is the authentication of the segments under the one key the record names; the
+handover adds no second key, so H-1302 stays dormant and no commitment in the body is needed for it.
+
+**Applied in the spec:** R-BAS-074; [security/stored-content-format.md](../security/stored-content-format.md) H-1302.
+
+### Q-BAS-235 · A failure before the first byte is a forward, after it a continuation by a range
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a direct read of a large layer can fail at its start (the Bastion's network does not reach the store, a refused link) or in its middle
+(a cut connection, a stall), while other callers follow the fill (R-BAS-054).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Before the first byte the forward again without the offer; after it a forward with the Bastion's own `Range` from the spooled length and `If-Range`, which continues the spool; a digest that fails at the end fails the fill and marks the key (chosen) | The main installation finishes what the store did not | No caller sees a failure of the store's path while the main installation can serve; a continued fill fetches no byte twice; on an encrypted copy the main installation's ranged read meets the failed segment and marks a damaged copy | A failed handover is counted or charged again (H-1342); a fill has a second source |
+| (b) Every failure fails the fill, and the client's retry is a new miss | | Simple | A cut at 90 % of a gigabyte cuts every follower and costs a second transfer; a network that cannot reach the store fails every first pull |
+| (c) The direct read resumes with a range of the store | | The main installation stays out | A link's life spent or a second link; the failure that cut the read may persist |
+
+**Choice:** (a). **Rationale:** the handover is a way to spare the main installation, never a new way to fail a download.
+
+**Applied in the spec:** R-BAS-075.
+
+### Q-BAS-236 · A replica that cannot read the store offers no handover for a minute
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per replica and for every connection, 60 s after a failure of the network or the store before the first byte (chosen) | A pause | A Bastion whose network does not reach the store costs one more forward per replica and minute | One unreachable connection pauses the handovers of the reachable ones on that replica |
+| (b) Per connection: the offer names the connections to avoid | Precise | | A list in the offer, another member of the interface, state per connection at the Bastion |
+| (c) No pause | | | Every miss waits for a connect timeout first |
+
+**Choice:** (a); the 60 s are a field of the engine, which a test shortens, not a value of the chart. **Rationale:** a store unreachable from
+the DMZ is a configuration fault that the alert of R-BAS-075 reports; the pause only keeps its cost low until it is fixed.
+
+**Applied in the spec:** R-BAS-075.
+
+### Q-BAS-237 · The store is trusted with the chart's trust bundle
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The system roots and `bastion.main.ca_file`, the chart's `trustedCA` (chosen) | One bundle for the main installation, its store, Valkey and the bucket | No value; an operator's own CA is added once, an in-cluster gateway's CA as well | A CA added for the main installation also vouches for the store |
+| (b) A bundle of its own (`trustedStoreCA`) | Separate trust | | A value for an expert case in the plain path |
+| (c) The system roots only | | | A store under the operator's own CA could never serve a handover |
+
+**Choice:** (a). **Rationale:** the integrity of the bytes does not rest on it (a body under another key fails at its first segment, a plain
+body at its digest); TLS keeps a plain body and the link from the network, and the operator's CAs are trusted for that already.
+
+**Applied in the spec:** R-BAS-074, R-BAS-078.
+
+### Q-BAS-238 · A blob withdrawn during a fill is treated as in a forwarded fill
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The running fill completes, and the feed's entry refuses the entry to every later caller (chosen) | The rule of a forwarded fill | No new window: a forwarded fill has the same one today | The callers of the running fill receive a blob withdrawn during its transfer |
+| (b) A feed entry for the repository aborts its running fills | A shorter window | | Callers cut; a `grants` entry would cut every fill |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-077.
+
+### Q-BAS-239 · The tests: once at the cheapest tier, one integration case, no end-to-end case
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the owner's rule "Tests stay runnable" of 2026-11-20. A client sees an artifact from the Bastion as before; what changes is between
+the Bastion, the main installation and the store.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Unit tests for the wire, the main installation's conditions, the Bastion's read and its failures; one integration case in the area `bastion` against the stack's object store; no end-to-end case (chosen) | Each behaviour once | Nothing a real client does differs; about 5 s in one integration shard | The store of an owner's installation is not exercised; the measurement and the test link are |
+| (b) An end-to-end case with `docker pull` through a Bastion with the handover on | The real path | | A Bastion release with the switch and a public address the kind pods reach: about 100 s in the leg `oci` for what the integration case shows |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-079.
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -7663,7 +8237,8 @@ both for about twenty seconds. Sixteen anonymous requests for distinct cold laye
 ([H-450](#h-450--a-fill-that-does-not-fit-the-spool-is-passed-through-unkept-and-a-request-answered-from-the-spool-fails)).
 What bounds it: the per-address request and miss limits, `max_object_bytes`, and the 60 s without a byte after which a fill is
 abandoned. What makes it real: an attacker below the limits, from several addresses, naming distinct large layers that exist; [H-472](#h-472--a-fill-goes-on-after-its-client-has-left)
-says that it need not wait for them.
+says that it need not wait for them. Narrowed by the handover (R-BAS-074): a fill read from the object store frees its budget slot with the
+handover's answer, so where a registration's handover is on, such fills hold the spool and no slot; the spool's part stays.
 
 ### H-1245 · A caller on another replica waits for a running fill without a byte up to fill_wait_max
 

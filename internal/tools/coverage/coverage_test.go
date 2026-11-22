@@ -103,9 +103,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1160 since bastion.md's Every format (R-BAS-050 to R-BAS-060, eleven MVP requirements of 2026-11-22); 1168 since the
 		// download links of storage.md (R-STOR-070 to R-STOR-074, R-LIM-040, R-UI-200, R-UI-201, and R-STOR-014 from P2 to P1). 1186 since the
 		// several object-store connections of storage.md (R-STOR-050 to R-STOR-063, R-HA-072, R-BAK-030, R-UI-196, R-UI-197). 1205 since the
-		// encryption of stored content (R-STOR-075 to R-STOR-091, R-BAK-031, R-BAS-061, and R-STOR-048 from P2 to P1).
-		if len(m.Reqs) != 1205 || count[prioMVP] != 718 || count[prioP1] != 448 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1205 (718, 448, 39)",
+		// encryption of stored content (R-STOR-075 to R-STOR-091, R-BAK-031, R-BAS-061, and R-STOR-048 from P2 to P1). 1217 since the
+		// handover per blob to a Bastion (R-BAS-070 to R-BAS-079, R-STOR-095, R-STOR-096, twelve P1 requirements).
+		if len(m.Reqs) != 1217 || count[prioMVP] != 718 || count[prioP1] != 460 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1217 (718, 460, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

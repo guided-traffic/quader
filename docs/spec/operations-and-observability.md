@@ -1529,7 +1529,7 @@ consumers can rely on every key being present.
 | `limits_outcome` | `admitted`, `limited:<figure>`, `would_limit:<figure>` (mode `audit`), `paced`, `blocked`; else `null` |
 | `bytes_cached` | Cached bytes of the request (R-LIM-006), `0` when none; `null` off the protocol paths |
 | `bytes_uncached` | Uncached bytes charged to the request as a leader (R-LIM-006), `0` when none; `null` off the protocol paths |
-| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; specified, not built); `null` for every other request |
+| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; specified, not built); `handover` for a download a Bastion's forward was answered with a handover, status `200` without a body ([storage.md](storage.md) R-STOR-095; specified, not built); `null` for every other request |
 
 </details>
 

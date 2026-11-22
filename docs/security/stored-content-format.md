@@ -106,8 +106,10 @@ holders are the pods of [stored-content-keys.md](stored-content-keys.md)); the a
 Component: the commitment ([storage.md](../spec/storage.md) R-STOR-077, Q-STOR-304). Subject: a body that more than one record or reader
 could stand for. The commitment makes each record name exactly one data key; it does not make the body name one, because it lies in the
 metadata. In this stage every copy has its own data key and record, and only Quader makes records, so no body has two. It becomes real when a
-body is read under more than one record or key: the handover of a data key to a Bastion (decision 12 (b), a later planner) and a later level of
-keys per project (decision 3). Dormant; the later planner decides whether a commitment in the body is needed then.
+body is read under more than one record or key, as a later level of keys per project (decision 3) would. Dormant. The handover of a data key to
+a Bastion (decision 12 (b), [bastion.md](../spec/bastion.md) R-BAS-074) does not make it real: the main installation opens the record before
+it hands the key, and the Bastion reads the body under that one key and reads no record, so its planner decided on 2026-11-22 that no
+commitment in the body is needed for it (Q-BAS-234).
 
 ### H-1303 · A copy of an encrypted bucket that drops the metadata cannot be read
 

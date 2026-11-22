@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 657 of 1,205 spec requirements are implemented: a passing test names them and no
+**Status.** 657 of 1,217 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 798 specified (506 of them implemented), 1,441 open.
-1,205 spec requirements: 765 cover catalog features, 440 cover none (`quader-only`, [listed at the
+1,217 spec requirements: 765 cover catalog features, 452 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>440 requirements</summary>
+<summary>452 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3158,6 +3158,16 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-057 | Format facts at the Bastion: the handshake's format table and bound hosts | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-058 (implemented) | What a format owes a Bastion, and kit check 19 | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-060 | Tests of the feature and what they cost | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-070 | The handover per blob: a link and a data key per released blob | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-071 | The switch: per registration at the main installation, off by default | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-072 | The Bastion offers to take a handover on a miss | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-073 | The handover answer and the interface version 5 | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-074 | The direct read and its verification | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-075 | A direct read that fails | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-076 | The data key at the Bastion: held for one read, written nowhere | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-077 | A blob withdrawn while its link lives | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-078 | The operator's side: the charts, the admin area, the manual and the egress | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-079 | Tests of the handover and what they cost | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 (implemented) | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 (implemented) | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 (implemented) | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |
@@ -3379,6 +3389,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-071 (implemented) | The format declares whether its clients check a digest | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-073 | What a link counts and records | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-095 | The handover to a Bastion at the serve point | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-096 | The connection a handover names, its link check and the trace of a data key | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-027 (implemented) | Integrity scrub | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-049 (implemented) | The storage of a project | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-036 (implemented) | Behavior during an object-store outage | MVP | [storage.md](../spec/storage.md) |

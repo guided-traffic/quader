@@ -71,6 +71,11 @@ with the directories each owns and what each needs verified with a real client b
 B and C run in parallel after A, in disjoint directories; C's integration tests in `test/integration/bastion` need B on the same
 commit, so C lands after B. The manual is changed by D and not before, because it describes what a running installation does.
 
+**The handover per blob (specified, not built).** The owner's decision 12 (b) of 2026-11-22, a link and the data key per released blob, so
+that a Bastion reads large files from the main installation's object store itself ([The handover per blob](../spec/bastion.md#the-handover-per-blob),
+R-BAS-070 to R-BAS-079). Its five packages, what each owns and after which package of the signed links, several connections and the
+encryption each starts, are on [bastion-handover.md](bastion-handover.md); it raises the interface to version 5.
+
 What package A left for B and C (the interface is at version 4; B fills the handshake's table and the counted marking, C reads them; a
 main installation that sends `"formats": []` gives the Bastion an empty table, which serves nothing below `/v2/` and gives every format the
 defaults):

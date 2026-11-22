@@ -29,13 +29,14 @@ or its leak costs and needs. The format they protect is [stored-content-format.m
 | The root (the key ring) | files of `secrets.encryption` in the pods that serve and in the restore Job; escrowed by the operator (R-BAK-028) | the pods it is mounted in, at start | the existing rotation: two rollouts, the re-encrypt task, the old key removed (R-STOR-084) |
 | A storage key | one sealed row of `storage_keys`; every backup of the database; the export | each replica that builds the blob area, at start or when a record names it; kept in memory for the replica's life | never itself; a further generation on command; its sealing at every rotation of the root |
 | A name key | as a storage key | as a storage key | never |
-| A data key | wrapped in its object's record, nowhere else | a writer for one write, a reader for one read | never |
+| A data key | wrapped in its object's record, nowhere else | a writer for one write, a reader for one read; handed by `CopyDataKey` to a Bastion, that Bastion for one read ([bastion-handover.md](bastion-handover.md)) | never |
 | An open session's data key | sealed in its `upload_sessions` row | the replica that serves a request of the session | resealed by the rotation like every sealed value |
 | The Bastion's cache key | a Secret of the Bastion's chart (`secrets.cacheKey`), mounted as a file; the storage key and name key derived from it in each replica's memory for its life | the Bastion's pods, at start | by replacing the file, which empties the cache; the new replicas' sweeps delete the old tree ([H-1326](../spec/bastion.md#h-1326--after-a-key-change-the-old-tree-stays-readable-to-a-holder-of-the-old-key-until-the-sweep-has-deleted-it)) |
 
 **Who holds nothing:** the backup pods (they copy ciphertext with its record and confirm it by size, R-BAK-031), the scanners (they read
-plaintext through Quader's scan listener), the migration Job, and the Bastion, which holds no key of the main installation; the export holds
-sealed values only.
+plaintext through Quader's scan listener), the migration Job, and the Bastion, which holds no storage key, no name key and nothing of the key
+ring; the export holds sealed values only. With the handover switched on for its registration, a Bastion holds the data key of one object for
+the length of one read ([bastion.md](../spec/bastion.md) R-BAS-076, [bastion-handover.md](bastion-handover.md)).
 
 ## Rotation, step by step
 
@@ -129,6 +130,9 @@ generation is rare (on command) and its command reminds the operator to export.
 
 Component: the data key of one object ([storage.md](../spec/storage.md) R-STOR-076, R-STOR-083). Subject: that object's content. No command
 writes one blob again with a new data key on the same connection; a leaked data key leaves that object readable to a holder of read access to
-the bucket until the connection is replaced. Dormant: no path of this stage hands a data key out. It becomes live with the handover of a data key
-per released blob to a Bastion (decision 12 (b), [storage.md](../spec/storage.md) R-STOR-083's `CopyDataKey`), whose planner decides whether a
-rewrite of one blob is needed.
+the bucket until the connection is replaced. Dormant while no Bastion registration has the handover on; then live for every blob of an encrypted
+connection handed to a Bastion (decision 12 (b), [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096, specified, not built), whose
+collection by a taken-over Bastion is [bastion-handover.md](bastion-handover.md#h-1340--a-taken-over-bastion-collects-the-data-keys-of-the-encrypted-blobs-filled-through-it)
+H-1340. Its planner decided on 2026-11-22 that no rewrite of one blob is built (Q-STOR-347): a rewrite would leave the noncurrent versions and
+the backups' pools under the old key, and the trail `bastion.data_key.handed` names every key that left, so a later rewrite can take exactly
+those blobs.

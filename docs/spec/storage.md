@@ -1328,6 +1328,10 @@ every file of `/files/`, and every route whose format's clients do not check a d
 | `linkLifeSeconds` | `60` | 10 to 3,600 | **Details** |
 | `publicAddresses` | none: each connection's link goes to the connection's own endpoint | per connection an `https` origin (R-STOR-074) | **Details**, one field per connection that can serve links, its endpoint shown as the value ([Q-STOR-281](#q-stor-281--the-public-address-for-links-is-a-setting-of-the-admin-area-per-connection)) |
 
+`minSize`, `linkLifeSeconds` and `publicAddresses` are also the details of a handover to a Bastion (R-STOR-095,
+[Q-STOR-342](#q-stor-342--the-details-of-the-installations-links-hold-for-a-handover)), which `enabled` does not govern: a handover is
+switched per Bastion registration ([bastion.md](bastion.md) R-BAS-071).
+
 - **Stored** in one row, as the malware scan's switch is (R-MAL-019, [00088_malware.sql](../../internal/meta/postgres/migrations/00088_malware.sql)
   lines 64 to 71):
 
@@ -1356,7 +1360,7 @@ every file of `/files/`, and every route whose format's clients do not check a d
 
   | Method | Path | What | Permission |
   |---|---|---|---|
-  | GET | `/api/v1/download-links/settings` | `{"enabled", "minSize", "linkLifeSeconds", "connections": [{"name", "encrypted", "endpoint", "publicAddress", "usable", "reasons": [{"code", "detail"}]}], "routes": [{"format", "route"}], "version", "updatedAt", "updatedBy"}`: every connection with whether it can serve links now and why not (R-STOR-074), and the routes whose clients check a digest (R-STOR-071) | `settings:read` |
+  | GET | `/api/v1/download-links/settings` | `{"enabled", "minSize", "linkLifeSeconds", "connections": [{"name", "encrypted", "endpoint", "publicAddress", "usable", "reasons": [{"code", "detail"}], "handoverUsable", "handoverReasons": [{"code", "detail"}]}], "routes": [{"format", "route"}], "version", "updatedAt", "updatedBy"}`: every connection with whether it can serve links now and why not (R-STOR-074), and whether it can serve a handover to a Bastion and why not (R-STOR-096), and the routes whose clients check a digest (R-STOR-071) | `settings:read` |
   | PATCH | `/api/v1/download-links/settings` | a merge patch of `enabled`, `minSize`, `linkLifeSeconds` and `publicAddresses` (a connection's `null` returns it to its endpoint), `If-Match` | `settings:write` |
   | POST | `/api/v1/download-links/test` | `{"connection", "publicAddress"}` as entered, saved or not: a test link (R-STOR-074) | `settings:write` |
   | GET | `/api/v1/download-links/switch` | `{"enabled", "formats"}`: whether the switch is on and the formats with a route whose clients check a digest, for the repository's settings page (R-UI-201) | every signed-in caller |
@@ -1429,7 +1433,8 @@ themselves say so.
 2. **Not through a Bastion.** The request carries no recognized Bastion token (`bastionmain.RecognitionFrom`,
    [recognition.go](../../internal/bastionmain/recognition.go) lines 46 to 47, set by the recognition stage before authentication). A
    Bastion does not follow a redirect ([client.go](../../internal/bastion/mainclient/client.go) lines 82 to 84), caches what it serves,
-   and would hand its caller in the DMZ the main installation's object store.
+   and would hand its caller in the DMZ the main installation's object store. A Bastion's request may get a handover instead, which the
+   Bastion reads itself and never hands on (R-STOR-095).
 3. **Not a system read.** The scanners' reads (`systemRead`, [system_read.go](../../internal/formathost/system_read.go) lines 13 to 15)
    are streamed.
 4. **The switch and the opt-out.** The installation's switch is on, and neither the addressed repository nor the repository that holds
@@ -1659,17 +1664,21 @@ which is not encrypted ([R-STOR-048](#r-stor-048--client-side-encryption-of-stor
   of Quader nor below one (R-STOR-072), and its link check passed on the replica. Each replica decides it from its own configuration at
   start and at every refresh of the settings' snapshot; a replica that finds a connection unable logs it once per change (`warn`, the
   reason and the host it collides with) and sets the gauge of R-STOR-073 to 0. The settings' answer names the reasons per connection:
-  `encrypted`, `not_https`, `quader_host` (with the host), `link_check_failed` (with what the store answered).
+  `encrypted`, `not_https`, `quader_host` (with the host), `link_check_failed` (with what the store answered). Whether a connection can serve
+  a handover to a Bastion is R-STOR-096: the same address rules and the first part of the link check, on encrypted connections too.
 - **The link check** ([Q-STOR-294](#q-stor-294--each-connection-proves-at-start-that-a-link-with-the-overrides-works)): a check of the
   store's conformance (R-STOR-035) that every replica serving downloads runs for each connection at its start, whether or not the rest of
   the start-up check runs, and again when the switch is turned on: it writes a probe object of R-STOR-001's family `_probe/`, signs a
   link with the three overrides against the connection's endpoint, fetches it, and passes when the answer is `200` with the probe's bytes
   and the three overridden headers; then it deletes the probe. A store that refuses or ignores an override fails it. A failed link check
-  takes the connection out of links on that replica and stops nothing else: the downloads stream. It is the extended `checkPresign` of
+  takes the connection out of links on that replica and stops nothing else: the downloads stream. It records its two parts apart, the link
+  works and the link honours the overrides, because a handover needs the first only (R-STOR-096,
+  [Q-STOR-346](#q-stor-346--the-link-check-tells-whether-a-link-works-apart-from-whether-it-honours-the-overrides)). It is the extended `checkPresign` of
   [conformance.go](../../internal/blob/conformance.go), marked optional so that its failure fails no start.
 - **The test link** ([Q-UI-952](api-and-ui.md#q-ui-952--the-test-is-a-link-the-administrator-opens-from-a-client-of-his-network)),
   `POST /api/v1/download-links/test` with a connection and an address as entered, saved or not: the API checks the address as a save
-  would (`422`), answers `409 connection_unavailable` for a connection that is failing or encrypted, writes the probe
+  would (`422`), answers `409 connection_unavailable` for a connection that is failing (*changed on 2026-11-22 by R-STOR-096: an
+  encrypted connection is tested too, since a Bastion reads it by a link; its probe is plain*), writes the probe
   `_probe/link-test-<random>` with the 44 bytes `Quader download link test: this link works.\n` on that connection, and answers
   `{"url", "expiresAt", "command"}`: a link to it, signed against the entered address with a life of 60 s and the file name
   `quader-link-test.txt`, and the `curl -fsS '<url>'` that fetches it. The administrator opens it in his browser or runs the command on a
@@ -1691,6 +1700,114 @@ Acceptance criteria:
   `{"enabled": true, "minSize": 0}` the leg's clients fetch a fresh one-file artifact through a `307` (Docker and Podman; npm, pnpm and
   Yarn; `ansible-galaxy`), and after its object was overwritten in the bucket with other bytes of the same length every one of them
   refuses it (`TestR_STOR_071_<Format>ClientsCheckALink`).
+
+### R-STOR-095 · The handover to a Bastion at the serve point
+Priority: **P1** · Covers: quader-only
+
+The owner's decision 12 (b) of 2026-11-22 ([bastion.md](bastion.md) R-BAS-070): for a forward of a Bastion, the main installation may
+answer a download with a link of the object store and, for a copy on an encrypted connection, the copy's data key, instead of the bytes;
+the Bastion reads the object itself. Specified, not built. The decision is made at the serve point of R-STOR-070 (`edge.ServeItem`, through
+`itemStore.Serve` for a format's routes and through `/files/`), in `internal/downloadlinks` beside the links'
+([Q-STOR-340](#q-stor-340--the-handover-is-decided-in-the-package-of-the-links-the-one-caller-of-copydatakey-besides-the-store));
+`edge.ServeItem` takes it as `ServeOptions.Handover`, which it calls after `Admit` and only for a `GET` that would carry the whole body.
+A Bastion's request never gets a link of R-STOR-072 (R-STOR-070 step 2); this is its own answer. Every condition that does not hold streams
+the download as today; the steps that answer by themselves say so.
+
+1. **The offer and the switch.** The request is a recognized forward of a Bastion (`bastionmain.RecognitionFrom`, no probe) that carries
+   `Quader-Bastion-Handover: accept; max-size=<n>` with a valid `n`, its method is `GET`, and its registration's `handover` is on in the
+   replica's snapshot ([bastion.md](bastion.md) R-BAS-071, R-BAS-072).
+2. **An artifact.** The serve is a stored file through the item store's serve of a route of the kind `Download`, or a file of `/files/`;
+   never a document, a system read, a remote repository's miss (streamed by the leader, R-REPO-041) or an answer a format writes itself.
+3. **The content and the gates**, as R-STOR-070 steps 5 and 6: the blob's content state is `ok`, the format's serve-time check passed, and
+   every gate that applies passed on a decided state (Q-STOR-284); a refusal and a wait answer as they do.
+4. **Conditionals and ranges** are answered by Quader as R-STOR-070 steps 7 and 8 say; a conditional request whose answer is the whole file
+   (`200`) goes on.
+5. **The size** is at least the links' `minSize` (R-STOR-014,
+   [Q-STOR-342](#q-stor-342--the-details-of-the-installations-links-hold-for-a-handover)) and at most `n`.
+6. **Admit** ([usage-and-limits.md](usage-and-limits.md) R-LIM-021): the hour and day windows and the parallel lease; a refusal is the
+   `429` it is today. A speed figure (`cachedBytesPerSecond`) is no condition
+   ([Q-STOR-343](#q-stor-343--a-speed-limit-does-not-stop-a-handover)).
+7. **A copy** on a connection that can serve a handover (R-STOR-096): of the copies `blob.Store.Servable` lists (R-STOR-062), the first on
+   a connection that is not encrypted, else the first on an encrypted one
+   ([Q-STOR-341](#q-stor-341--a-plain-copy-is-handed-before-an-encrypted-one)). None: the download streams.
+8. **The data key**, for a copy on an encrypted connection: `blob.Store.CopyDataKey` opens its record (one `HeadObject`, steps 1 to 6 of
+   R-STOR-077, R-STOR-083); a failure streams, and the stream's read meets the copy and marks it as R-STOR-082 says.
+9. **The credential and the signature**, as R-STOR-070 step 13: the signing credential lives at least 5 seconds more, and the link is signed
+   for `GET` of the copy's `object_key` against the connection's public address, with no override, for `linkLifeSeconds` bounded by the
+   credential (R-STOR-072); a failure streams.
+10. **The trace of a data key**, for a copy on an encrypted connection: `bastion.data_key.handed` is written in a transaction of its own
+    (R-STOR-096); a failure streams, and the data key is destroyed.
+11. **Issue** the answer of [bastion.md](bastion.md) R-BAS-073: the file's own `200` without its bytes, the class `handover` and the value
+    in `Quader-Bastion-Handover`.
+
+Steps 1 to 7 read the request, the item row, the request's charge and the replica's snapshots, as R-STOR-070's do; step 8 is one
+`HeadObject` and step 10 one insert, both for an encrypted copy only; signing is local. What a handover counts and charges, all at issuance,
+as a link does (R-STOR-073, [usage-and-limits.md](usage-and-limits.md) R-LIM-040 and Q-LIM-98), the caller being the forward's subject
+(R-LIM-003):
+
+- one download in the statistics (R-STOR-015) and the repository's activity, and the note of `Quader-Bastion-Counted: download`
+  ([bastion.md](bastion.md) Q-BAS-186), so that the Bastion reports what it serves of the blob afterwards (R-BAS-059);
+- the file's size as cached bytes of the budget key; the parallel lease ends with the answer;
+- `artifact.downloaded` under `audit.record_downloads` with `delivery: "handover"`, `bastion` (the registration's name), `connection`,
+  `encrypted` and `linkExpiresAt` in `details`, beside `path` and `sha256`;
+- the request log: status `200`, `delivery` `handover` ([operations-and-observability.md](operations-and-observability.md) R-OPS-010),
+  `bytes_cached` the size, `response_bytes` `0`;
+- `quader_storage_download_handovers_total{bastion, kind}` with `kind` `link` or `link_and_key`, and
+  `quader_storage_download_handovers_declined_total{reason}` for an offer that was streamed (`switch_off`, `not_artifact`, `gate`, `size`,
+  `connection`, `key`, `credential`, `signing`, `trace`); `bastion` is the registration's name, bounded by `bastions.max_registrations`.
+
+Acceptance criteria:
+
+- Unit (`internal/downloadlinks`, `internal/api/edge`, `internal/formathost`, the in-memory store with its signing, one table, under a
+  second): with every condition met a tarball `GET` of a recognized forward that offered is answered with the handover (`200`,
+  `Content-Length: 0`, the item's headers, the class `handover`, `Quader-Bastion-Counted`); each condition taken away alone streams the bytes:
+  no offer, the registration's handover off, the same request without a Bastion token, `HEAD`, a range, a size below `minSize`, a size above
+  `max-size`, a blob without a malware verdict under a gate that is not strict, an open circuit, a connection whose link check did not
+  answer, a credential that expires in 3 s; `If-None-Match` with the content address answers `304`; a used-up `cachedBytesPerHour` answers
+  `429` and no handover; a `cachedBytesPerSecond` does not stop one; one handover adds one download, the size to the charge's cached bytes and
+  one `artifact.downloaded` with `delivery: "handover"` (`TestR_STOR_095_TheConditionsOfAHandover`).
+- Unit (`internal/api/rawfiles`): a file of `/files/` is handed over like a format's artifact (`TestR_STOR_095_AFileOfFilesIsHandedOver`).
+
+### R-STOR-096 · The connection a handover names, its link check and the trace of a data key
+Priority: **P1** · Covers: quader-only
+
+- **A connection can serve a handover** when its public address (R-STOR-074) is `https`, the host of a link signed against it is no host of
+  Quader nor below one (R-STOR-072), and the first part of its link check passed on the replica: the probe's link answered `200` with the
+  probe's bytes ([Q-STOR-346](#q-stor-346--the-link-check-tells-whether-a-link-works-apart-from-whether-it-honours-the-overrides)). The
+  second part, whether the store honours the three overrides, matters to the clients' links only; a handover's link asks for none. An
+  encrypted connection can serve a handover: its probe objects are plain (Q-STOR-315), so its link check runs as on any connection. The link
+  check runs on every connection at every start of a replica that serves downloads, and when the switch of links or the handover of a
+  registration is turned on.
+- **The settings' answer** (`GET /api/v1/download-links/settings`, R-STOR-014) names per connection `handoverUsable` and `handoverReasons`
+  (`not_https`, `quader_host`, `link_check_failed`), which the Bastions screen shows ([bastion.md](bastion.md) R-BAS-071). The test link of
+  R-STOR-074 is offered for an encrypted connection as well, so the administrator tests from the Bastion's network the address a handover
+  names.
+- **The caller of `CopyDataKey`** (R-STOR-083's room): `internal/downloadlinks`, the handover's package; the architecture test allows calls
+  from `internal/blob` and `internal/downloadlinks` and fails every other. The returned `DataKey` is destroyed once its bytes are in the
+  answer.
+- **The trace of a data key** ([Q-STOR-344](#q-stor-344--every-data-key-handed-out-is-an-audit-event-written-before-it-leaves)):
+  `bastion.data_key.handed`, a transactional event (R-OPS-015) written in a transaction of its own before the answer leaves, whatever
+  `audit.record_downloads` says: actor the forward's caller (or `anonymous`), `source_ip` the caller's address (bastion.md R-BAS-017),
+  `repository` and `project`, `path`, and in `details` the registration (`bastion`), the replica (`Quader-Bastion-Replica`), `sha256`,
+  `connection`, `storageKeyId` (the identifier of the storage key that wrapped the data key) and `linkExpiresAt`; never the key, the wrap or the
+  link. It is not journaled. The audit trail therefore lists every data key a Bastion has received, which bounds what a taken-over Bastion
+  holds ([security/bastion-handover.md](../security/bastion-handover.md) H-1340). A handover of a plain copy writes none: its trace is
+  `artifact.downloaded` where downloads are audited, as a link's (R-STOR-073).
+- **No rewrite of one blob** under a new data key
+  ([Q-STOR-347](#q-stor-347--no-rewrite-of-one-blob-under-a-new-data-key-the-trail-names-every-key-that-left)): a data key that left stays
+  the key of its object until the connection is replaced (R-STOR-085,
+  [security/stored-content-keys.md](../security/stored-content-keys.md) H-1311); the trail names every one.
+
+Acceptance criteria:
+
+- Unit (`internal/downloadlinks`, the in-memory store with a plain and an encrypted connection): with a copy on each, the plain one is named
+  and no key is handed; with the encrypted copy alone, the handed data key is the copy's (it opens the object), `bastion.data_key.handed` is
+  written before the answer with its details and without the key, and a failing insert streams the download
+  (`TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`).
+- Unit (`internal/blob`): a store fake that ignores `response-content-disposition` passes the first part of the link check and fails the
+  second, so its connection can serve a handover and no link (`TestR_STOR_096_TheLinkCheckHasTwoParts`).
+- Unit (`internal/archtest`): a call of `CopyDataKey` from a package other than `internal/blob` and `internal/downloadlinks` fails
+  (`TestR_STOR_096_CopyDataKeyHasTwoCallers`).
 
 ### R-STOR-048 · Client-side encryption of stored content
 Priority: **P1** · Covers: STOR-022
@@ -3993,7 +4110,7 @@ this section is the specification. His answers that this section carries out
 | 7 Changing a connection | (a) Its properties are fixed once it holds data; switching encryption on or off is a new connection, also the same bucket under another prefix, which the reconciliation fills | R-STOR-087 |
 | 13 The Bastion's cache | (a) Encrypted in the same format once its chart gives it a key; off by default | [bastion.md](bastion.md) R-BAS-061 |
 | 15 Where the storage keys lie | (a) Once: a sealed row of the database per connection and generation, with a command that prints them sealed for safekeeping beside the key ring | R-STOR-083, R-STOR-085 |
-| 12 A Bastion and the main store | (b) A later planner specifies the handover of a short-lived link and the data key of one released blob; this section leaves the room: one function that yields a copy's data key to the main installation's own code | R-STOR-083 |
+| 12 A Bastion and the main store | (b) The handover of a short-lived link and of the data key of one released blob, specified on 2026-11-22 in R-STOR-095, R-STOR-096 and [bastion.md](bastion.md) R-BAS-070 to R-BAS-079; this section leaves the room: one function that yields a copy's data key to the main installation's own code | R-STOR-083 |
 
 **Status.** The format is built: the package `internal/blob/blobcrypt` holds the codec of R-STOR-076 to R-STOR-079, the tail segments of
 R-STOR-081 and the keyed name of R-STOR-086, with the vector files, their independent check and the fuzz targets of R-STOR-079 and the
@@ -4471,8 +4588,8 @@ ALTER TABLE upload_session_parts ADD COLUMN stored_size bigint, ADD COLUMN store
 - **The room for the handover** of decision 12 (b) ([Q-STOR-320](#q-stor-320--the-handovers-room-is-one-function-of-the-store-that-nothing-calls-in-this-stage)):
   `blob.Store.CopyDataKey(ctx, digest, connectionID) (blobcrypt.DataKey, error)` opens the record of the present copy on that connection
   (one `HeadObject`) and returns the copy's data key with its plaintext size and commitment, after steps 1 to 6 of R-STOR-077. Nothing calls it
-  in this stage; an architecture test (`internal/archtest`) allows calls from `internal/blob` and from the handover's package only, which the
-  later planner names. `DataKey` renders nothing of the key when logged.
+  in this stage; an architecture test (`internal/archtest`) allows calls from `internal/blob` and from the handover's package only, which is
+  `internal/downloadlinks` (R-STOR-096, Q-STOR-340). `DataKey` renders nothing of the key when logged.
 
 Acceptance criteria:
 
@@ -4554,7 +4671,7 @@ Priority: **P1** · Covers: STOR-022
   | The key ring with the database (or a backup) | Open every storage key; with read access to a bucket, every blob there | the rotation, and for each encrypted connection a new one that the reconciliation fills with new data keys, then the old drained |
   | A storage key | With read access to its bucket, every object it wrapped; with write access, objects that authenticate ([H-1301](../security/stored-content-format.md#h-1301--a-holder-of-a-storage-key-can-write-objects-that-authenticate)) | a new connection (also the same bucket under another prefix) that the reconciliation fills with new data keys, then the old one drained; a new generation alone protects nothing already written ([H-1307](../security/stored-content-keys.md#h-1307--a-leaked-storage-key-is-answered-by-a-refill-that-takes-as-long-as-the-data)) |
   | A name key | Confirm, by listing the bucket, that a known file is stored | a new connection |
-  | One data key | That one object's content, with read access to the bucket | none short of a new connection; dormant while nothing hands a data key out ([H-1311](../security/stored-content-keys.md#h-1311--a-leaked-data-key-of-one-blob-has-no-answer-short-of-a-new-connection)) |
+  | One data key | That one object's content, with read access to the bucket | none short of a new connection; live for every blob handed to a Bastion while its registration's handover is on (R-STOR-096, [bastion.md](bastion.md) R-BAS-070; [H-1311](../security/stored-content-keys.md#h-1311--a-leaked-data-key-of-one-blob-has-no-answer-short-of-a-new-connection)) |
 
 Acceptance criteria (unit, `cmd/quader` with the fake database):
 
@@ -4646,6 +4763,7 @@ Priority: **P1** · Covers: STOR-022
   ([Q-STOR-291](#q-stor-291--any-connection-that-is-not-encrypted-and-holds-a-sound-copy-serves-the-link)), which is why an installation that
   keeps a plain connection beside an encrypted one keeps its content in the clear at the plain provider
   ([H-1317](../security/stored-content-visibility.md#h-1317--a-plain-connection-beside-an-encrypted-one-keeps-the-content-in-the-clear)).
+  A handover to a Bastion may name an encrypted connection, with the copy's data key, where no plain copy can serve (R-STOR-095).
 - **The object store's own encryption** (R-STOR-032) stays possible beneath, per connection (`sse_mode`); it protects the provider's disks,
   not against the provider.
 - **Assumption A6** (R-STOR-035) changes wording: concurrent writes to one key carry the same content; on a plain connection identical bytes, on
@@ -8375,7 +8493,7 @@ data key per released blob to a Bastion is the owner's (decision 12 (b)) and is 
 
 **Choice:** (a). **Rationale:** the owner asked for the room; one function with a guard is the smallest room that can be tested.
 
-**Applied in the spec:** R-STOR-083.
+**Applied in the spec:** R-STOR-083; its caller is named by R-STOR-096 ([Q-STOR-340](#q-stor-340--the-handover-is-decided-in-the-package-of-the-links-the-one-caller-of-copydatakey-besides-the-store)).
 
 ### Q-STOR-321 · A staging tail's nonces take its session offset, and a tail holds at least one byte
 
@@ -8428,6 +8546,112 @@ Context: R-STOR-091 said that a dispatch with `closing=true` runs the job for 30
 
 **Choice:** (a). **Applied in the spec:** R-STOR-091; code: the job `fuzz-stored-format` of
 [performance.yml](../../.github/workflows/performance.yml) and the Makefile block `fuzz-stored-format`.
+
+### Q-STOR-340 · The handover is decided in the package of the links, the one caller of CopyDataKey besides the store
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That a Bastion gets a link
+and the data key per released blob is the owner's (2026-11-22, decision 12 (b)).
+
+Context: the links' decision lives in the domain package `internal/downloadlinks`, and `edge.ServeItem` takes it as an option
+([architecture.md](architecture.md) Q-ARCH-570): the public addresses, the host rule, the link check, the signing and the connections' state
+are there. Q-STOR-320 left `CopyDataKey` without a caller and asked this planner to name its package.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `internal/downloadlinks`, a file of its own beside the links' decision; `edge.ServeItem` takes `ServeOptions.Handover`; the architecture test allows `CopyDataKey` from it and from `internal/blob` (chosen) | One package signs every link the installation hands out | Nothing of the links' machinery is exported or copied; one place to review what leaves the main installation | One package with two answers |
+| (b) A package of its own, `internal/handover` | Separate | | The links' machinery shared through exports of their package, or duplicated |
+| (c) The main installation's side of the Bastion, `internal/bastionmain` | Bastion code together | | A package that knows the interface would sign links and open data keys |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-095, R-STOR-096, R-STOR-083.
+
+### Q-STOR-341 · A plain copy is handed before an encrypted one
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Of the copies a read would try now, the first on a connection that is not encrypted, else the first on an encrypted one (chosen) | A data key leaves only where no plain copy can serve | The owner's "the data key where the blob lies on an encrypted connection", read narrowly | The Bastion may read from a provider later in the list than the main installation would |
+| (b) The read order alone | The operator's order | | A data key leaves although a plain copy was there |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-095.
+
+### Q-STOR-342 · The details of the installation's links hold for a handover
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `minSize`, `linkLifeSeconds` and the public addresses of R-STOR-014 (chosen) | One set of details for every link the installation signs | Nothing new for the administrator; a test sets `minSize` 0 in the existing row and moves kilobytes | The minimum size of the clients' links and of handovers is one number |
+| (b) Details of their own | | Two thresholds | Three fields more for an expert case |
+| (c) Fixed values | | | A test could not use kilobytes |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-014, R-STOR-095.
+
+### Q-STOR-343 · A speed limit does not stop a handover
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; **put to the owner** beside his open question on
+[Q-LIM-97](usage-and-limits.md#q-lim-97--a-pace-figure-keeps-a-download-in-quader-in-both-modes); the choice is built meanwhile.
+
+Context: Q-LIM-97 (a) keeps a caller with `cachedBytesPerSecond` away from links, on the owner's condition for decision 11 ("für den
+Aufrufer gilt kein Tempolimit"). Decision 12 names no such condition. What a Bastion serves from its cache is charged nowhere and was never
+paced ([bastion.md](bastion.md) R-BAS-059); only its cold fills were paced, by the main installation's stream.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No condition; the hour and day windows are checked by `Admit`, and the size is charged at issuance (chosen) | A handover for every caller the conditions allow | The figure protects the `packages` pods, which a handover's transfer does not pass; the Bastion's hits were never paced | A paced caller's cold fill is not paced |
+| (b) As for links: a set figure keeps the download a stream | One rule for every link | Consistent with Q-LIM-97 (a) | Every built-in profile but Unlimited sets the figure: on a new installation a handover would reach almost no caller |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-095; [bastion.md](bastion.md) R-BAS-070.
+
+### Q-STOR-344 · Every data key handed out is an audit event written before it leaves
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bastion.data_key.handed`, transactional, in a transaction of its own before the answer, whatever `audit.record_downloads` says; a failed insert streams the download (chosen) | No key leaves without its record | The trail lists which keys each Bastion holds | One insert per handover of an encrypted copy |
+| (b) A detail of `artifact.downloaded` | No new event | | Asynchronous (a crashed replica loses its buffer, [security/audit.md](../security/audit.md) H-122) and switched off with `audit.record_downloads` |
+| (c) A metric only | | Cheap | Names no blob |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-095, R-STOR-096.
+
+### Q-STOR-345 · A repository's opt-out of links does not reach a handover
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `storage.downloadLinks: false` keeps the clients' links away; a handover is the registration's switch alone (chosen) | The member keeps its meaning | Only formats whose clients check a digest take the member (R-STOR-014); a handover reaches every format; the administrator who registers a Bastion decides what it receives | A project Owner cannot keep the data keys of his repository's encrypted blobs out of the DMZ |
+| (b) It stops handovers too | An Owner's say | | NuGet and Debian repositories cannot set the member (`not_applicable`); it would need another name and every format |
+
+**Choice:** (a). The planner would revisit this when a project needs it: then a member of its own, on every format.
+**Applied in the spec:** R-STOR-095.
+
+### Q-STOR-346 · The link check tells whether a link works apart from whether it honours the overrides
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two results: the probe's link answers `200` with its bytes, and it carries the three overridden headers (chosen) | A handover needs the first, a client's link both | A store that ignores an override still serves handovers | Two results to show |
+| (b) One result | | | A store that ignores `response-content-disposition` would serve no handover for no reason |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-074, R-STOR-096.
+
+### Q-STOR-347 · No rewrite of one blob under a new data key; the trail names every key that left
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: gap H-1311 asked the planner of the handover whether a rewrite of one blob is needed. The reconciliation's repair already writes a
+copy anew with a new data key under the same name (R-STOR-087); on a versioned bucket the older version stays, and a backup's pool keeps the
+object with its record ([backup-and-restore.md](backup-and-restore.md) R-BAK-031).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) None in this stage; the answer to a taken-over Bastion is its switch off, its token revoked and, where its holder may also read the bucket or a backup's target, a new connection that the reconciliation fills with new data keys (chosen) | The answer to a leaked storage key, applied to data keys | Nothing new to build; the trail of Q-STOR-344 names exactly the blobs concerned, so a later rewrite can take them | Until a refill, a kept data key opens its object wherever its ciphertext lies |
+| (b) A command that rewrites the blobs a Bastion received, from the trail, through the reconciliation's repair | A rewrite per blob | Narrows the window to the current version | Noncurrent versions and backups' pools keep the old ciphertext under the old key, so it closes nothing where the holder can read them |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-096; [security/stored-content-keys.md](../security/stored-content-keys.md) H-1311.
 
 ## What this does not cover
 

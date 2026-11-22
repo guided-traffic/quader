@@ -36,7 +36,8 @@ between the client and the object store.
 - It is issued only after everything a streamed download passes: authentication, the decision point with the endpoint's exposure, the
   format's serve-time check, the malware gate, the vulnerability block and the signature gate on decided passing states, and the check of
   the download limits (R-STOR-070). It is never issued for a request a Bastion forwarded, for a system read, for `HEAD`, a range, a
-  conditional answer, a file of `/files/`, or a route whose format's clients do not check a digest themselves.
+  conditional answer, a file of `/files/`, or a route whose format's clients do not check a digest themselves. A Bastion's request may get
+  a handover instead, which the Bastion reads and verifies itself and never hands on (R-STOR-095, [bastion-handover.md](bastion-handover.md)).
 - Its life is `linkLifeSeconds` (60 s unless the administrator sets up to an hour), bounded by the signing credential's own expiry
   (R-STOR-072). Within its life anyone who holds it can use it ([H-12](../spec/storage.md#h-12--presigned-download-urls-are-bearer-capabilities)).
 - Its host is never a host of Quader nor below one, so a client that keeps its credential for subdomains does not send it to the store
@@ -143,7 +144,8 @@ and the store refuses the link. What makes it real: an alias of Quader that is a
 ### H-1283 · The transfers of links spend the object store's own limits, which Quader shares and does not see
 
 Component: the object store's limits per account or project, the provider's. Subject: the whole installation. Dormant: live once the switch
-is on. A provider limits requests, concurrent requests and bandwidth of an account or project (the owner's provider documents 2,500
+is on, or once a Bastion registration's handover is, whose direct reads are transfers by link as well
+([bastion-handover.md](bastion-handover.md)). A provider limits requests, concurrent requests and bandwidth of an account or project (the owner's provider documents 2,500
 requests a second, 500 concurrent requests and 500 MB/s per project, read on 2026-11-22). A transfer by link counts against them as
 Quader's own reads and writes do, and Quader neither sees nor bounds it: many clients fetching large links at once can make the provider
 refuse or slow Quader's own uploads and reads. What makes it real: a burst of pulls by link, such as a fleet of nodes pulling one image,
