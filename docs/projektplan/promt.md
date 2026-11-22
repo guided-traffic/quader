@@ -2247,6 +2247,11 @@ runs are in `git log`; this section holds the current state.
   different versions of the interface in these minutes. Its run has no failed job. The four builders (the
   links' second package, package F, the encryption's package 3, the Bastion's P3) are active within two
   minutes; none has reported. The load is 52 on 20 cores.
+- **The timer's check at 00:44:** the run of the Bastion's two packages ended at 00:42 with every job green.
+  The landing's gates of the Bastion's P3 exit 0 up to the third of six integration areas. The links'
+  second package stands on a clean commit and its builder is at work; package F, the encryption's package
+  3 and the Bastion's P4 are in their work, active within two minutes. The load is 4. His installation
+  and its Bastion run the newest release, ready.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
