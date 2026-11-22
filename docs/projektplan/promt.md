@@ -284,6 +284,10 @@ Rules while building:
   shared parse; the copy of the chart's values file equals the chart's; a new method of the format contract
   joins the developer page's lists; a UI change is rendered at every width of the layout job on a stack of
   its own, and the translation source is extracted as the last step; the linter gets a stated time limit;
+  **a specification is landed like code** (the chart tests and the full unit run beside the evidence's checks and
+  the count test, because the specification's blocks are inputs of tests: two landings of 2026-11-22 without
+  them left the chart gate red for two and a half hours); the evidence record is written by the pipeline and
+  never by hand;
   and **a reader of a third party's format is proven with a fixture the real tool made, before it lands**
   (the measurement of the signatures with real clients found three defects that every test made in process
   had passed).
@@ -1662,10 +1666,77 @@ runs are in `git log`; this section holds the current state.
   packages). **Next as agents become free:** the Bastion's package C resumed when B has landed, then the
   reading of the documentation of the object gateway in the owner's cluster, the Bastion's package D, the
   links' package 2.
-- **In work since 2026-11-22, 12:06: the planner of the storage topic's second stage, encryption** (the format,
+- **The second stage's specification, encryption, is on `main` since 13:03** (its planner worked from 12:06 to
+  12:49; "With the owner", the topic of 2026-11-22, has what it says, its three questions for him and its build
+  plan of six packages; its first package, the format with its vectors and fuzz targets, needs nothing of the
+  first stage and starts when an agent is free).
+- **Reported at 12:49: the planner of the storage topic's second stage, encryption** (the format,
   the write and read paths under it, the storage keys and their rotation by the key ring, keyed names, what the
   reconciliation and the scrub do on an encrypted connection, backup and restore, the Bastion's cache, the
   offline tool; it builds on the first stage's contracts and has a block of identifiers of its own).
+- **The chart gate was red on `main` from 10:26 to 12:56, by two landings of specifications, and held back a
+  release** (the development agent's fault; found at 12:50 in the run of the Bastion's package B, whose job
+  `chart` failed and whose Semantic Release was skipped). Two chart tests hold the values blocks of the
+  specification equal to the charts' values. The specification of the Bastion that serves every format (10:26)
+  had put `fill_wait_max` into the Bastion's block, and the specification of the several connections (11:39) the
+  list of connections and their Secrets into the main chart's, before any chart carried them; both were landed
+  with the links, the check, the regenerated evidence and the count test, and without the chart tests. The
+  three runs between were of commits that release nothing and were each ended by the next push, so nothing
+  showed. **Repaired at 12:56:** both blocks show what the charts hold today (the whole of the chart tests and
+  the count test exit 0 on it), and the Bastion's package C and the chart's package of the connections bring
+  the new values together with the charts that carry them; both builders were told. A change of documents
+  under `docs/` alone starts no run, so the repair went out with the next push that carries a file outside it.
+  **The rule from it** (section 3): a specification is landed like code, with the chart tests and the full unit
+  run beside the evidence's own checks, because its blocks are inputs of tests; the second stage's
+  specification was the first landed so.
+- **Landed on 2026-11-22 at 12:31: package B of "a Bastion serves every format", the main installation's side**
+  (a commit of the type `fix`; decisions Q-BAS-186 to Q-BAS-190, gap H-1290; its builder worked from 11:18 to
+  12:26). **What an operator notices:** a Debian package, a collection version or an image deleted at the main
+  installation is withdrawn from a Bastion's cache through the feed within its bound, where a Bastion served
+  it for up to ten minutes more (the finding of section 8; Debian and Ansible Galaxy reach a Bastion today, an
+  image once package C is out). **Built for C:** the main installation lets a Bastion forward the registry
+  root; the token service and the catalog tell the marking their route; a write below the registry root is
+  refused in the registry's own form; a registry token's read shape is capped at partial at the marking and at
+  the check; a refusal for a missing scope keeps the accepted subject; the handshake carries the table of
+  formats and the bound repository; **every download the main installation counts is marked for the Bastion**
+  at the moment the answer's status line goes out: the item store's serve, the remote engine's artifact
+  answer, the generic download path, and the tag of a remote image. **A fault its builder met there:** the
+  registry counted a remote image's tag after writing its answer, so a warm pull through a Bastion would have
+  lost the tag's manifest from the audit; the count stands before the answer now, with a test that fails on
+  the old order. **The two points the planner had not verified, established by unit tests:** the decision point
+  does not see a registry token's grant, and a Bastion's host reaches the token service's check of the
+  service name. **Where specification and code disagreed, each settled by a decision of its builder:** the count
+  is recorded after the body, too late for a header (the note is made at the status line); the handshake gave
+  a Bastion no way to know a bound repository's format (only a binding the registry's match honours is named);
+  the check would have refused every registry token on a replica of the role `api` (the check's stage counts
+  its paths as served). **A gap it names (H-1290, dormant until C reports entries):** a miss the remote engine
+  passes through during an outage of the object store is marked counted although it is not counted, which can
+  only report too much. **Its gates, each exit 0:** build, the full unit run, generate-check, the evidence,
+  the complexity check, the lint; under the lock the areas `bastioniface`, `bastionreg`, `bastionsetup`,
+  `bastionshared`, `registry`, `ociremote`, `ocilocal`, `deblocal`, `debkeys`, `ansiblelocal` and the Bastion's
+  own (125 s). **By the development agent on the rebased commit, each exit 0:** build, the full unit run,
+  generate-check, the evidence regenerated without a difference, links, check and the count test, the
+  complexity check, the UI's install, the API's types regenerated without a difference, the UI tests and
+  lint, the lint; the index rows of the decisions' page merged by hand with both sides kept; the diff holds no
+  name the white-label rule forbids; **not run by the development agent: the chart tests, which were red on
+  `main` by its own earlier landings (the entry above).** The owner's UI backend started with it at the push.
+  **Its release was held back by that gate** and follows with the run of the push at 13:03. **Its tests cost**
+  about 0.3 s of the unit job, nothing in the integration or end-to-end legs. **Not verified:** any real client
+  through a Bastion (package C); a deployment that runs the role `api` apart (read and a unit test); whether
+  `apt update` works through a Bastion today. Its worktree and branch are removed.
+- **Package C of "a Bastion serves every format" is at work again since 12:32** with B's commit: its integration
+  area, the integration tests it planned, and the real clients on a stack of its own.
+- **The chart's part of package E of the several connections reported at 12:50 that it is ready and waits for
+  A** (one commit of the type `feat` in its worktree, amended at 12:58 to carry the specification's values block
+  with the chart). The chart renders the list of connections; each connection's Secrets are one entry matched by
+  its identifier and become files, so no Secret of the store reaches a pod as an environment variable any more;
+  the backup pods get a connection's address, CA and read login and never the runtime keys; the alerts per
+  connection are in, each with a rule test that fires and one that stays silent; the old values are refused at
+  rendering with a sentence that names the new keys, which leaves a running installation's pods in place. Its
+  decisions Q-HA-393 to Q-HA-398; **it gives an installation's values before and after, key by key,** which the
+  owner's installation is rewritten from. Open until A's commit exists: the tests that pass the rendered
+  configuration to the binary, the rest of its gates, and the proof of the development profile on a kind
+  cluster of its own. Its render tests add about 3 s to the chart's job (thirty refusals).
 - **Package C of "a Bastion serves every format" reported at 12:05 that it is ready and waits for B** (one commit
   of the type `feat` in its worktree; every gate that does not need B exits 0: build, the full unit run,
   generate-check, the evidence, the complexity check, the chart's lint and tests, the lint). **Built:** the
@@ -3612,6 +3683,18 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     installation will meet: (a) refused, with a message that names the object to delete (specified: two
     installations on one prefix delete each other's data through the collection and the sweep); (b) a warning,
     and the marker is taken over; (c) no marker.
+22. **Leaving a provider: whether a storage key can be destroyed (Q-STOR-309),** from the planner of the storage
+    topic's second stage on 2026-11-22. The development agent had told him that deleting a provider's storage key
+    makes what stays there unreadable. Specified: (a) storage keys are never deleted, because old versions of
+    objects and the pools of kept backups may still need them; (b) a command that destroys a key and is refused
+    while a kept backup names it (the planner's recommendation for the day an installation needs it); (c) deleted
+    on its own when the connection goes. So the side effect he was told is not built with (a).
+23. **A copy between two encrypted connections (Q-STOR-308):** (a) always a new data key, so a leak at one
+    connection never reaches another, at the price of the server-side copy between two encrypted connections of
+    one provider (specified); (b) the data key is carried and wrapped under the other storage key; (c) a setting.
+24. **Object names in a backup's pool (Q-BAK-65):** (a) the pool keeps digest names, so a reader of the backup's
+    target can confirm known files, which adds nothing while the database files beside them are plain
+    (specified); (b) keyed names in the pool, together with the backup's own encryption; (c) a plain pool.
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
@@ -3896,6 +3979,51 @@ that reads the bucket**
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
   and after the Bastion serves every format.
+  **Stage 2, encryption, is specified on `main` since 13:03** (its planner worked from 12:06 to 12:49; one commit,
+  rebased twice by the development agent, with the Bastion's decision blocks merged by hand; on the rebased
+  commit the whole of the chart tests, the full unit run, the evidence regenerated without a difference, links,
+  check and the count test exit 0, the wording scan clean; its worktree and branch are removed): R-STOR-048
+  rewritten in place and raised to the first priority, R-STOR-075 to R-STOR-091, R-BAK-031, R-BAS-061,
+  Q-STOR-300 to Q-STOR-320, Q-BAK-65 and 66, Q-BAS-210 and 211, Q-HA-415, Q-API-405, ADR-244 and ADR-245, the
+  gaps H-1300 to H-1318 on three new security pages (the format and what it withstands; the keys and who holds
+  them; what stays visible to the provider). **What it says.** *The switch:* `encrypted: true` on a connection,
+  off by default, with the detail of keyed names, on by default; both fixed once the connection holds data; an
+  operator handles no key. *The format:* AES-256-GCM over segments of 64 KiB, each with its stored nonce and
+  authenticated with the format, its index and a mark of the last one; a final segment carries the plain length
+  and the SHA-256; nothing is bound to the object's name, so the finalize's copy and the backup's pool never
+  decrypt. The stored size is the plain size plus 28 bytes per segment plus 68, with an exact inverse; the
+  plain limit is 4 TiB. *The record at the object:* four metadata keys written in the same request as the bytes:
+  the format, the storage key's identifier, the wrap, and a commitment to the data key; the wrap seals the data
+  key with the digest and the size, which is what lets the offline tool work under keyed names without a
+  database. *Reads:* every failure of the record or the size comes before the first byte; a ranged read is one
+  request and hands out no unauthenticated byte. *Writes:* nonces come from a seed per write, so a retried part
+  re-sends the same bytes without ciphertext being kept; an upload session seals its data key in its row; the
+  finalize copies with replaced metadata, and streams through the replica where the start check found that a
+  copy does not replace it. *Keys:* storage keys and name keys are sealed rows registered with the key ring, so
+  its canary, its compatibility check and its re-encrypt task cover them with nothing new built; a rotation of
+  the root re-seals rows and touches no object; commands export and import the sealed rows; **a record that
+  names an unknown storage key is not damage,** so the scrub never overwrites what an import could still open,
+  and raises a critical alert instead. *Between connections:* every copy into an encrypted connection gets a new
+  data key. *Backup:* the pool keeps the ciphertext with its record, so the backup's pod needs no key; a deep
+  verification checks the structure without the key ring and every segment with it. *The Bastion's cache*
+  encrypts everything in its store under one key file of its chart, off by default. *The offline tool* is a
+  command of the binary that lists, fetches and verifies blobs without a database. *The journal, the probes and
+  the marker* stay plain. **The known answers in the specification** were computed by an implementation the
+  planner wrote from the specification's text alone; the builder checks the vector files with a second one.
+  **Three questions of the planner are the owner's,** numbers 22 to 24 of the list above; the first of them
+  takes back a side effect the development agent had told him (a provider's storage key deleted on leaving).
+  **Build plan, six packages** (a new developer page of the stored content's encryption): 1 the format, its
+  vectors, fuzz targets and a nightly fuzz job, which can start at once; 2 the keys, after the first stage's
+  package A; 5 the Bastion's cache, after 1; 3 the store's writes and reads, which makes `encrypted: true`
+  accepted, after 1, 2 and the first stage's A and B; 4 the reconciliation, scrub, sweep, backup and restore
+  under encryption, after 3 and the first stage's B to E; 6 the offline tool, the chart, the API's fields and
+  the manual. **Its tests cost** (estimates): about 2.9 s of unit tests and 0.5 s of the chart's, about 10 s in
+  the integration area `blob` and 8 s in `backup`, 3 s in the conformance job, no end-to-end case, and about 27
+  minutes a night for five fuzz targets in a new nightly job (no nightly fuzz job exists today: the two
+  formats' fuzz legs run on a closing dispatch alone). **Not verified:** anything against an object store,
+  among them whether the object gateway of his cluster keeps metadata and replaces it on a copy; the speed of
+  the encryption on Quader's hardware; the first stage's seams, which exist in the specification alone until
+  its package A lands.
   **Stage 1, several connections, is specified on `main` since 11:39** (its planner worked from 10:51 to 11:38; two
   commits, rebased by the development agent over the third stage's specification and the Bastion's package A:
   the decisions' page, the security index and the count test merged by hand with both sides kept, the evidence

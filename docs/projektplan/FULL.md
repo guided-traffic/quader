@@ -231,8 +231,8 @@ all four columns green.
   [storage.md](../spec/storage.md#several-object-store-connections) R-STOR-050 to R-STOR-063, specified, its first package in work)
 - ⚪ Client-side encryption of the stored content in a format of Quader's own, per connection, with the key ring as the root, a
   storage key per connection and a data key per object (the owner's decisions of 2026-11-22, which replace the import decided on
-  2026-11-06; [R-STOR-048](../spec/storage.md#r-stor-048--client-side-encryption-of-stored-content) is rewritten when it is specified, after the
-  connections)
+  2026-11-06; specified on 2026-11-22: [storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
+  R-STOR-091; built after the connections)
 - ⚪ Further storage back ends (Google Cloud Storage, Azure Blob Storage), sharding over several buckets
 - ⚪ Email notice of expiring tokens
 - ⚪ TLS from the edge proxy to the pods
