@@ -1629,6 +1629,10 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
+- **In work since 2026-11-22, 09:52: the planner of "a Bastion serves every format",** the owner's decision of
+  09:46 ("With the owner", decided on 2026-11-22): images and Debian were kept from the Bastion by two
+  deferrals of the development agent, not by a decision of his. Its specification lands on `main` when it
+  reports; builders follow.
 - **The owner's topic of 2026-11-22, 08:25, is researched and its working paper is with him since 09:02:** the
   encryption and integrity of the stored content, the delivery by signed links, several object stores, a
   Bastion that reads the bucket, and a hierarchy of keys. Four researches ran from 08:30 and ended at
@@ -3613,7 +3617,7 @@ that reads the bucket**
   on, a provider changed and a damaged copy replaced; signed links as one switch of the installation, only where
   the format's client verifies a digest itself and no pace limit applies; no account and no key for the Bastion,
   and if it shall relieve the main installation, a link and the data key per released blob. **The favourites,
-  so that a later reading can tell where he deviated,** each option (a): (1) a format of Quader's own with test
+  so that a later reading can tell where he deviated,** each option (a) but decision 12, which is (b) since 09:53: (1) a format of Quader's own with test
   vectors, fuzzing and an offline tool, against importing the proxy's package, its codec alone, or extending the
   proxy first; (2) the wrapped data key in the database and in the object's metadata, bound to the digest, under
   the connection's storage key; (3) no level of keys per project or repository, with room for one later, against
@@ -3623,11 +3627,31 @@ that reads the bucket**
   new connection that the reconciliation fills; (8) an upload is done when one connection holds it, a minimum of
   copies as a detail; (9) connections are kept in the chart, the admin area shows them; (10) a scrub that reads
   every copy within a period and replaces a damaged one from another connection; (11) the switch for signed
-  links at the installation with its conditions, a repository can opt out; (12) the Bastion stays away from the
-  main store (the handover per blob as the way once it serves images or its first fills are measured to weigh);
+  links at the installation with its conditions, a repository can opt out; (12) at first the Bastion stays away from the
+  main store, and since his decision that it serves images the handover per blob, a link and the data key (b);
   (13) the Bastion's cache is encrypted in the same format once it has a key; (14) three stages, the connections
   and the scrub first, encryption second, the links beside the first. **Nothing is specified or built before his
   answers are read back** ("bitte auslesen").
+  **He has begun to answer:** decision 1 stands as (a) since 09:21 (read at 09:50; the page's own writes work).
+  **His two questions on reading it, at 09:46, and what followed.** (1) Why a Bastion serves neither Debian nor
+  images, with his decision that it shall serve everything (the entry "Decided by the owner on 2026-11-22"
+  below). With images served, the first fill of a Bastion is layers of gigabytes through the main installation,
+  so **the favourite of decision 12 changed from (a) to (b)**, the handover per blob, built after the Bastion
+  serves every format on today's path. (2) "Können wir vielleicht s3 Annotations nutzen anstatt bei einer
+  neu-verschlüsselung die Daten im s3 zu kopieren?" **Read in the provider's documentation the same hour** (the
+  feature exists since June 2026 and was not known to the development agent): named payloads of up to 1 MiB of
+  text at an object version, up to 1,000 of them, written, read and deleted by requests of their own without
+  changing the object or its entity tag; not settable with the upload, only after it; not versioned, an
+  overwrite or a delete is final; **not creatable or changeable on an object under object lock**, also not with
+  the bypass right; copied by a plain copy, not by a copy in parts; found at that one provider only (one search
+  for the S3-compatible stores, none found, not checked per store). **Answered:** they fit exactly the case of
+  changing the wrap at the object without copying it, but not as the base: one provider, no object lock, a
+  window after the upload without the wrap, no history. And in the favoured design the copy does not arise: a
+  rotation of the root re-seals one row per connection, a replaced storage key stays readable for what it
+  wrapped, and new data keys mean new bytes whatever carries the wrap. Because the database holds the
+  authoritative wrap, the copy at the object can become a capability of a connection later. **The paper was
+  published again at 09:53** with decision 12's new favourite, a fourth option of decision 2 (the copy at the
+  object in an annotation) and the facts about annotations.
 
 **A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
 open questions are in the list above**
@@ -3866,6 +3890,26 @@ open questions are in the list above**
   repeated inside the formats' e2e legs.
 - **What frees a release once the full gate returns** with the first stable release, when a format's client runs only on its
   own change and in the nightly (said to him on 2026-11-20 as a question for later; a green nightly on the commit is one way).
+
+**Decided by the owner on 2026-11-22, being specified**
+
+- **A Bastion serves every format as the main installation does** (2026-11-22, 09:46, on reading in the storage
+  topic's working paper that a Bastion serves neither images nor Debian): "Wieso liefert der Bastion kein Debian
+  oder Images, das ist doch total wichtig. Er soll alles liefern wie die Hauptinstanz." **Why it was not so** (read in
+  the specification the same hour): two deferrals that the development agent had decided for his walkthrough and
+  that he never saw as a question, Q-OCI-23 ("no exposure rules and no Bastion for the format in this phase", the
+  Bastion answers `/v2/` with 404 itself) and Q-DEB-26 (the same for Debian). Both give exposure rules as their
+  reason (which tags, and an endpoint's narrowed view of a signed index), which a Bastion on the default endpoint
+  does not need. **Read as:** the read paths of every format there is and every format to come; not the web
+  interface (his Q-BAS-14), no writes through a Bastion (R-BAS-014), and no access to the main installation's
+  object store (his Q-BAS-10 stands until he answers the working paper). **In work since 09:52: its planner,** in a
+  worktree, with the points to settle: the registry's path family at the Bastion's host root and its token flow
+  (the Bastion holds no key ring), what of an image is cached and how it is revalidated, layers of gigabytes;
+  Debian's signed indexes and what keeps an `apt update` consistent against a cache; the ClamAV definitions'
+  endpoint; a rule of the format contract so that a format to come is served without a decision of its own; the
+  feed, the download events and the security page; every sentence that says a Bastion does not serve a format;
+  the tests by the rule that they stay runnable; a build plan. **Not verified:** whether a Bastion forwards
+  Debian's paths today (the specification excludes it, a research found no code that refuses them).
 
 **Decided by the owner on 2026-11-21, waiting to be built**
 
