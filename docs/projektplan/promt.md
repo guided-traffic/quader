@@ -1988,6 +1988,17 @@ runs are in `git log`; this section holds the current state.
   run. Their release needs the owner's values rewritten in the file of his repository that now carries his
   uncommitted Bastion changes, and nothing is committed there until he says so; pushing them before would
   leave his installation's release refused by the chart. They are pushed when he has settled his repository.
+- **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
+  columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
+  keys per replica with a change area, the operator's commands to export, import and renew a key with their
+  audit events, and the one function that hands out a blob's data key with the architecture rule that
+  bounds its callers). On the top of the landing stack; migration 00107; Q-STOR-324 to 329, H-1328 to 1333.
+  A connection with `encrypted: true` stays refused until package 3. Its brief asks it to take each of its
+  defences out once and to say which test caught it, as the Bastion's cache did, and to run no two heavy
+  gates at once, since the owner works on the machine this evening. **The timer's check at 18:44:** of the
+  ten integration areas on the landing stack four have passed (the budget, the overload area, the store, the
+  limits) and none failed; the scrub's commit stands moved onto the reconciliation with a clean tree and
+  has not reported; package B is at work. Builders with a test load: package B, the scrub's move, the keys.
 - **The development agent's integration run on package A ended at 15:08: 33 areas passed, and the last
   fourteen did not run** (the second Bastion pair, npm, NuGet, the endpoints, the importer, publishing, the
   mirror API, overload, the query budget, the registry, the virtual repositories, Valkey, the CI area): they
