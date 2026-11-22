@@ -315,6 +315,22 @@ and attestations and OCI's tags list are, because they carry no `ETag` yet
 ([H-1249](../spec/bastion.md#h-1249--five-documents-of-npm-and-oci-carry-no-validator-so-a-bastion-fetches-them-whole-once-per-metadata-period)).
 A format that needs a path family INV-6 does not have, or a host root beyond the bound-host prefixes of R-EP-006, needs a decision.
 
+**Read shapes per package: kit check 21 (specified, not built).** A Bastion will serve a reader of one package that package's documents and
+artifacts from its cache ([R-BAS-080 to R-BAS-088](../spec/bastion.md#read-shapes-per-package)). The main installation learns the package of
+a response from the rights decisions your handlers make through the host, with no code of yours: `Host.Authorize` with `Target.Package`,
+`Host.WikiReadable`, `Host.PathsAllowed` and the `MayRead` rows of the read scope ([R-BAS-081](../spec/bastion.md#r-bas-081--the-package-of-a-response)).
+Kit check 21 ([R-BAS-086](../spec/bastion.md#r-bas-086--what-a-format-owes-kit-check-21)) holds three duties:
+
+| The Bastion relies on | So |
+|---|---|
+| Every rights decision of a content route is made before its status line | decide through the host first, then write; a decision after the status line fails the check |
+| A response that draws on packages other than the one it was decided for also decides a package-less read | call `Host.Authorize` with a target that names no package for such a response (npm's audit and signature handlers do); the response then carries no package and is shared only with readers of the whole repository |
+| A reader of only the response's package receives the same status, body, `ETag`, `Content-Type`, `Content-Encoding`, `Vary` and `Cache-Control` as a reader of the whole repository | a document that lists or depends on another package must take the package-less decision above |
+
+The check seeds `Fixture.OtherPackage`, a package other than each case's own, which a format with package names must set; generic skips it
+with its reason. The testformat defects `ListsAnotherPackage` and `DecidesAfterItsStatusLine` each fail it alone. The build plan is
+[bastion-package-shapes.md](bastion-package-shapes.md).
+
 ## What a signed link needs of a format
 
 With the installation's switch on, a download may be answered `307` to a signed link of the object store

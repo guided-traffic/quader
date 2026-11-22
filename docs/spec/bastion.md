@@ -15,7 +15,11 @@ supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, 
 said about the formats a Bastion leaves out. The owner's decision 12 (b) of the same day, the handover of a link and of the data key per
 released blob, is specified in [The handover per blob](#the-handover-per-blob) (R-BAS-070 to R-BAS-079, Q-BAS-230 to Q-BAS-239, and the
 gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), not built; it lifts Q-BAS-10 for that and for
-nothing else.
+nothing else. The development agent's decision of 2026-11-22 on Q-BAS-167, option (b), a read shape per package for a registry token and
+for every reader narrowed by package, is specified in [Read shapes per package](#read-shapes-per-package) (R-BAS-080 to R-BAS-088,
+Q-BAS-240 to Q-BAS-254, H-1380 to H-1384), not built; it amends in place R-BAS-011, R-BAS-012, R-BAS-013, R-BAS-020, R-BAS-022,
+R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-BAS-074, the deferred table, Q-BAS-198, Q-BAS-200 and
+H-1242, and takes the interface's version 5, so that the handover takes 6.
 
 This page specifies the Quader Bastion: a second, smaller deployment of Quader that is exposed to the internet, gives external
 parties read access to the content of a main installation with the main installation's own tokens, keeps a cache of what it
@@ -636,6 +640,11 @@ content is cached and no fetch is needed (R-BAS-022, R-BAS-023).
   `repositories` object. A `none` always names a status, and `401` for an anonymous caller. A registry token is presented below `/v2/`
   and its shape capped at `partial` (R-BAS-052); the check's paths count as served on every replica, whatever families its role serves
   ([Q-BAS-190](#q-bas-190--the-checks-paths-count-as-served-on-every-replica)).
+- **Packages** (R-BAS-083, specified, not built). The request gains `packages`, a list of `{"repository", "package"}` pairs whose
+  repository is named in `repositories`, and the answer gains `packages`, one `{"repository", "package", "read"}` per requested pair in
+  request order, `read` being the caller's package shape of R-BAS-080 (`full` or `partial`; a pair whose repository reads `none` reads
+  `partial`), and an empty array for a subject that is not usable. Both members are always present. The Bastion sends a pair only for a
+  cached entry that names a package, when it holds no usable shape answer for the repository (R-BAS-085).
 
 ```yaml
 bastions:                              # the main installation's section (the Bastion's own is bastion)
@@ -672,6 +681,10 @@ answer lets the Bastion share a marked document with that caller and serve it ev
 a per-artifact question (R-BAS-022, R-BAS-023). Content that the format refuses at serve time (a tombstoned version, a blocked
 version) is not a matter of the shape; R-BAS-022's revalidation and R-BAS-015's content entries cover it.
 
+A subject whose shape on the repository is `partial` may still read one package of it in full: that shape per package is
+[R-BAS-080](#r-bas-080--read-shapes-per-package-at-the-decision-point) (specified, not built). A `full` shape on the repository is `full` on
+every package of it.
+
 Acceptance criteria:
 
 - `TestR_BAS_012_ShapeAgreesWithTheDecisionPoint`: over every subject, repository, package and version of the R-AUTHZ fixture,
@@ -703,6 +716,8 @@ recognized Bastion request; no format code is involved, because the dispatcher k
 | `Quader-Bastion-Subject` | `token=<token ID>; principal=<principal ID>; expires=<unix seconds>` (`expires` left out for a token that does not expire, [Q-BAS-49](#q-bas-49--the-interface-is-one-package-of-wire-types-four-details-of-the-contract-are-fixed-in-it)), or `anonymous`, or `invalid` on a `401` for a rejected credential |
 | `Quader-Bastion-Interface` | the main installation's interface version |
 | `Quader-Bastion-Counted` | `download` on a `200` whose serving counts a download at the main installation (R-BAS-059, Q-BAS-186); absent otherwise |
+| `Quader-Bastion-Package` | the package the response belongs to (R-BAS-081), percent-encoded: every byte outside `A–Z a–z 0–9 - . _ ~ @ /` as `%XX` with upper-case hexadecimal digits; decoded 1 to 512 bytes of valid UTF-8 without a control character. Present on a `200` or `304` of a `Download`, `Metadata` or `Computed` route, and on a handover's `200` (R-BAS-073), whose request named exactly one package; absent everywhere else, every refusal and every `404` included (R-BAS-082, specified, not built) |
+| `Quader-Bastion-Package-Read` | `full` or `partial`, exactly when `Quader-Bastion-Package` is present: `full` when `Quader-Bastion-Read` is `full` or the caller's package shape (R-BAS-080, with a registry token's grant applied) is `full` (R-BAS-082, specified, not built) |
 
 - `absent` is set only when the core's own lookups (the remote engine, through which a virtual repository's remote members
   answer, and the local lookup of a package or an item) know the item is missing for every subject; a refusal by the decision
@@ -717,6 +732,10 @@ recognized Bastion request; no format code is involved, because the dispatcher k
   headers of its own (credential, client, session, forwarded address), except the headers the first answer names in `Vary`, which
   all send alike - and compares status, bytes and validators.
   npm's `-/whoami` and `-/ping` answer by who asks and are `Volatile` since that check found them.
+  *Amended on 2026-11-22, specified, not built (R-BAS-082):* `shared` is set for a `200` or `304` of a `Metadata` or `Computed` route
+  when `Quader-Bastion-Read` is `full` **or** `Quader-Bastion-Package-Read` is `full`; kit check 21 (R-BAS-086) holds that a reader of
+  only the response's package receives what a reader of the whole repository receives. `absent` stays tied to a `full` shape on the
+  repository.
 - The headers are added only to Bastion requests and stripped from every other response, so an ordinary caller never learns
   its own shape.
 - Details the table leaves open ([Q-BAS-71](#q-bas-71--the-mark-stage-is-an-edge-package-and-learns-the-caller-from-the-authentication-stage)):
@@ -1065,10 +1084,12 @@ An answer is what the main installation said about a caller (owner,
 | Credential | credential key | `kind`, token ID, principal ID, token expiry | the check, or `Quader-Bastion-Subject` of any marked response |
 | Read shape | credential key, repository | `full`, `partial`, `none` with its status | the check, or `Quader-Bastion-Read` |
 | URL | credential key, cache key | allowed, or the stored refusal (status, headers, body) | a forwarded or conditional request for that URL |
+| Package (R-BAS-084, specified, not built) | credential key, repository, package | `full` or `partial` | the check's `packages`, or `Quader-Bastion-Package-Read` of a marked response whose `Quader-Bastion-Repository` is the request's repository; recorded only while the caller's shape on the repository is not `full` |
 
 A repository in an answer's key, in a cache entry and in a feed entry is the qualified name `<projectKey>/<repoKey>` of the
 address (R-BAS-018); the key of a read-shape answer is `<credential key>|<projectKey>/<repoKey>`, and its Valkey record is
-`ans:v1:shape:<sha256 of that key>` (R-BAS-034). Two repositories of the same key in two projects never share an answer.
+`ans:v1:shape:<sha256 of that key>` (R-BAS-034). Two repositories of the same key in two projects never share an answer. The key of a
+package answer is `<credential key>|<projectKey>/<repoKey>|<package>`, and its Valkey record is `ans:v1:package:<sha256 of that key>`.
 
 - **Validity** ([Q-BAS-32](#q-bas-32--answers-validate-themselves-against-the-feed-and-are-signed-in-valkey)). An answer obtained
   at `o` (the Bastion's clock when it sent the request) is usable while all of these hold:
@@ -1076,8 +1097,8 @@ address (R-BAS-018); the key of a read-shape answer is `<credential key>|<projec
      unreachable (R-BAS-027);
   2. `now <` the token's expiry, never extended;
   3. no feed entry that matches the answer was received after `o − 15 s`: a `token` entry naming its token, a `principal` entry
-     naming its principal, a `grants` entry for a read-shape or URL answer, a `content` entry naming its repository for a URL
-     answer; 15 s covers the main installation's revocation bound (at most 10 s, R-AUTH-023) and the clock skew between Bastion
+     naming its principal, a `grants` entry for a read-shape, package or URL answer, a `content` entry naming its repository for a URL
+     answer (a `content` entry leaves a package answer usable and makes the cache entry stale instead, R-BAS-022); 15 s covers the main installation's revocation bound (at most 10 s, R-AUTH-023) and the clock skew between Bastion
      replicas;
   4. `o` is not earlier than the start of the replica's feed history plus 15 s (R-BAS-026).
 - A refused or invalid answer is kept like an allowed one, so a refused caller costs the main installation one request per
@@ -1087,7 +1108,8 @@ address (R-BAS-018); the key of a read-shape answer is `<credential key>|<projec
   ([Q-BAS-124](#q-bas-124--a-404-that-is-not-marked-absent-is-never-kept-as-a-url-answer), which replaces [Q-BAS-80](#q-bas-80--a-404-that-answers-a-plain-fetch-is-not-kept-as-the-callers-url-answer)).
 - Answers live in the replica's memory (at most `bastion.answers.max_entries`, least recently used first) and, with Valkey, in
   Valkey as signed records (R-BAS-034). A replica may refresh an answer that a request uses in the last fifth of its period in
-  the background, with one collapsed request (the shape answer, through the check; URL answers renew by use, [Q-BAS-84](#q-bas-84--the-background-refresh-renews-shape-and-credential-answers-url-answers-renew-by-use)).
+  the background, with one collapsed request (the shape answer, through the check; URL answers renew by use, [Q-BAS-84](#q-bas-84--the-background-refresh-renews-shape-and-credential-answers-url-answers-renew-by-use);
+  package answers renew by use too, [Q-BAS-248](#q-bas-248--package-answers-renew-by-use)).
 
 ```yaml
 bastion:
@@ -1151,7 +1173,8 @@ for the bound (owner, Q-BAS-7):
 
 - **Entry.** Per cache key: the content address (SHA-256), size, the response headers to replay, the addressed repository, and
   `validatedAt`, the time the main installation last answered `200` or `304` for it. The bytes are stored once per content
-  address (R-BAS-030).
+  address (R-BAS-030). *Amended on 2026-11-22, specified, not built (R-BAS-084):* the entry also records `Package`, the `Quader-Bastion-Package` of the
+  `200` that filled it, replaced by every later `200` or `304` for the key and cleared by a marking without one.
 - **Shape first.** When the entry exists and the caller has no usable read-shape answer for its repository, the Bastion asks
   the check of R-BAS-011 for it, one request per credential and repository, collapsed; the shape then decides below. A caller
   whose credential the main installation called `invalid` gets the `401` of R-BAS-029.
@@ -1161,6 +1184,10 @@ for the bound (owner, Q-BAS-7):
     an entry's service while the main installation is unreachable and its periods are extended
     ([Q-BAS-122](#q-bas-122--a-content-entry-ends-the-service-of-a-cached-entry-also-while-the-main-installation-is-unreachable));
   - allowed: a usable read-shape answer `full` for the repository, or a usable URL answer `allowed` for the cache key.
+- *Amended on 2026-11-22, specified, not built (R-BAS-085):* **allowed** also holds with a usable package answer `full` on the entry's
+  package. A caller without a usable shape answer gets one check for the repository and, when the entry names a package, for that
+  package (collapsed per credential, repository and package). A caller whose usable shape answer is `partial` and who holds no package
+  answer for the entry's package gets the conditional request below, not a check; its marking supplies the package answer.
 - **Check** otherwise: a conditional `GET` with the caller's own credential and `If-None-Match: "<sha256>"` through the real
   route ([Q-BAS-27](#q-bas-27--a-cached-artifact-is-checked-through-the-real-route)). `304`: the bytes are served from the cache,
   and `validatedAt` and the caller's URL answer are renewed. `200`: the new bytes replace the entry and are served. A refusal:
@@ -1179,8 +1206,10 @@ for the bound (owner, Q-BAS-7):
 Acceptance criteria:
 
 - Warm cache, `$FULL` with a usable `full` answer: `npm ci` of 20 tarballs sends no request to the main installation.
-- Warm cache, `$PART` for `@acme/sdk` tarballs: 1 conditional request per tarball, each answered `304`, no tarball bytes from
-  the main installation; for a tarball outside `@acme/*` the main installation's `404` is replayed, and asked for again by each request.
+- Warm cache, `$PART` for `@acme/sdk` tarballs through `npm-all`: 1 conditional request per tarball, each answered `304`, no tarball
+  bytes from the main installation; for a tarball outside `@acme/*` the main installation's `404` is replayed, and asked for again by each
+  request. (`$PART` has no grant on `npm-remote`, so its package shape through `npm-all` stays `partial`; through `npm-local` it is `full`
+  on `@acme/sdk`, R-BAS-085.)
 - `$NONE` with a `none` answer on `npm-all`: the tarball request answers `404` without a request.
 - After `artifact_revalidate_after`, the next request for a cached tarball by `$FULL` sends one conditional request.
 
@@ -1201,6 +1230,10 @@ for the metadata period with each caller for whom the main installation confirme
   as its private copy; a refusal is replayed. A `304` marked `private` to the Bastion's own condition (the caller is a partial
   reader whose document is the same bytes) is answered with the entry's bytes as the caller's `200`, and the entry is not renewed
   ([Q-BAS-107](#q-bas-107--a-304-for-a-private-document-is-answered-with-the-shared-entrys-bytes)).
+  *Amended on 2026-11-22, specified, not built (R-BAS-085, [Q-BAS-244](#q-bas-244--documents-are-shared-per-package)):* a shared document
+  is also served without a request to a caller with a usable package answer `full` on the entry's package, under the same freshness rule;
+  the main installation marks such a caller's document `shared` (R-BAS-082). Which caller gets a check and which a conditional request is
+  R-BAS-022's amended rule.
 - **Private document** (`private`, a document filtered for the caller): never shared. It goes to the main installation per
   caller with a conditional request on every use: the Bastion keeps the caller's last copy in memory only, under (credential
   key, cache key), at most `bastion.cache.private_documents_max_bytes` per replica, and sends its validator; `304` serves the
@@ -1648,7 +1681,7 @@ it, the replicas share:
 | Block list (R-BAS-037) | `block:<address>`, TTL = remaining duration | per replica |
 | Rate-limit and failed-authentication counters (R-BAS-035, R-BAS-036) | R-ARCH-034's sliding windows, limiters `bastion.<name>` | per replica, at the configured value ÷ `bastion.replicas` |
 | Fetch coordination (R-BAS-025), sweep lease (R-BAS-031) | `flight:<…>`, `sweep` | per replica |
-| The main installation's answers (R-BAS-020), negative entries (R-BAS-024) | `ans:<kind>:<sha256 of the key>`, TTL = remaining validity, signed (R-BAS-032) | per replica |
+| The main installation's answers (R-BAS-020; the kinds credential, shape, URL and, specified and not built, package of R-BAS-084), negative entries (R-BAS-024) | `ans:<kind>:<sha256 of the key>`, TTL = remaining validity, signed (R-BAS-032) | per replica |
 
 - This refines INV-3 for the Bastion: its Valkey holds positive authorization results of the main installation, by the
   owner's decision, and only in a form it cannot forge ([Q-BAS-32](#q-bas-32--answers-validate-themselves-against-the-feed-and-are-signed-in-valkey));
@@ -1864,7 +1897,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_interface_mismatch` | gauge | — |
 | `quader_bastion_interface_version` | gauge | `side` (`bastion`, `main`) |
 | `quader_bastion_grace_period_seconds`, `quader_bastion_answer_period_seconds` | gauge | — |
-| `quader_bastion_answers` | gauge | `kind` (`credential`, `shape`, `url`) |
+| `quader_bastion_answers` | gauge | `kind` (`credential`, `shape`, `url`, and `package` once R-BAS-084 is built) |
 | `quader_bastion_answers_total` | counter | `kind`, `result` (`hit`, `miss`, `expired`, `dropped`, `bad_signature`) |
 | `quader_bastion_feed_lag_seconds` | gauge | — |
 | `quader_bastion_feed_entries_applied_total` | counter | `kind` |
@@ -1890,6 +1923,8 @@ carries an address, a token, a path or a repository's name):
   `quader_bastion_bytes_served_total{source="cache"}`; requests to the main installation are
   `quader_bastion_main_requests_total` (the observability item of phase 5b).
 - `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` are the shared ones.
+- The value `package` of `kind` (R-BAS-084, specified, not built) is the one addition of the read shapes per package; no label carries a
+  package's name.
 
 Acceptance criteria:
 
@@ -2725,15 +2760,24 @@ Priority: **MVP** · Covers: DIST-025
 - **Checked by the main installation.** A forward carries it unchanged; the check of R-BAS-011 hands a credential with the prefix
   `qdr_rgt_` to the authentication stage on a path below `/v2/` (`/v2/bastion-check`, served by no route), every other credential on
   `/api/bastion-check` as today, so the stage verifies the MAC, the expiry, the endpoint and the token behind it (R-OCI-005).
-- **Its read shape is at most `partial`**, at the marking (R-BAS-013) and at the check: a grant names image names and never a whole
-  repository, and the decision point does not see the grant, which the enforcement point in front of `/v2/` checks (Q-OCI-56). A `full`
-  answer would let a token granted one image read every cached image of the repository from the Bastion. So a registry token is never
-  served a shared document or a negative entry, and every cached artifact it reads is served after a conditional request with the token
-  through the real route, answered `304` without a transfer (R-BAS-022; the cost is
-  [H-1242](#h-1242--every-warm-read-with-a-registry-token-costs-the-main-installation-a-conditional-request-per-manifest-and-blob)).
-  A Quader token presented directly below `/v2/` (Basic or Bearer, R-OCI-004) is a token like any other and may be `full`. The Bastion
-  records at most `partial` for a registry token whatever the main installation marks
+- **Its read shape on the repository is at most `partial`**, at the marking (R-BAS-013) and at the check: a grant names image names and
+  never a whole repository, and the decision point does not see the grant, which the enforcement point in front of `/v2/` checks
+  (Q-OCI-56). A `full` answer on the repository would let a token granted one image read every cached image of the repository from the
+  Bastion. So a registry token is never served a negative entry. A Quader token presented directly below `/v2/` (Basic or Bearer,
+  R-OCI-004) is a token like any other and may be `full`. The Bastion records at most `partial` on the repository for a registry token
+  whatever the main installation marks
   ([Q-BAS-198](#q-bas-198--the-bastion-caps-a-registry-tokens-shape-and-reads-insufficient_scope-itself)).
+- **Its read shape on a package of its grant may be `full`** (*amended on 2026-11-22, specified, not built:* R-BAS-080 to R-BAS-085,
+  [Q-BAS-167](#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial) option (b)). The
+  main installation limits the package shape of a credential with a registry grant to the pairs (repository, image) its grant allows to
+  pull (`Grant.Allows`), at the marking and at the check. The Bastion records a package answer `full` for a registry token only when the
+  token's grant, read from its claims without verifying them (the claim `g`, entries `{r, n, a}` with pull as bit 1, payload version 1,
+  `iface.RegistryTokenGrant`), names that repository and package with pull; otherwise it records `partial`, whatever the main
+  installation marks ([Q-BAS-246](#q-bas-246--the-bastions-own-guard-for-registry-tokens)). Trusting the unverified grant can only lower
+  what is read. A token granted one image is then served that image's cached tag documents, manifests, blobs, tags list and cosign tags
+  without a request (R-BAS-085), and every other image's after a request to the main installation; until then every cached artifact it
+  reads is served after a conditional request with the token through the real route, answered `304` without a transfer (R-BAS-022; the
+  cost is [H-1242](#h-1242--every-pull-with-a-registry-token-costs-the-main-installation-its-token-request-and-one-check)).
 - **An anonymous registry token is the anonymous caller** ([Q-BAS-168](#q-bas-168--an-anonymous-registry-token-is-the-anonymous-caller-at-the-bastion)).
   The Bastion decodes the payload of R-OCI-005 (`1:<key id>:<claims>`) without verifying it, and a token whose claims name the anonymous
   principal is dropped from the request: its answers are those of `anonymous` (R-BAS-019), shared by every anonymous caller, and it is
@@ -2821,7 +2865,8 @@ Acceptance criteria:
 
 - Integration (area `bastion`): with an image of one config and one layer of 1 KiB each pushed to `web/docker-local` through the main
   installation, a pull through the Bastion with a user's registry token fills the manifest by digest and both blobs, a second pull with a
-  new registry token sends one conditional request per artifact and no artifact bytes, a `HEAD` of the tag answered from the cache for a
+  new registry token sends one conditional request per artifact and no artifact bytes (once R-BAS-085 is built: one check below `/v2/`
+  besides the token step and no conditional request), a `HEAD` of the tag answered from the cache for a
   direct Quader token carries `Docker-Content-Digest`, and a tags list of 3 tags with `n=2` served from the cache carries its `Link`
   (`TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion`, with R-BAS-051's replays; a second registry token is a second's
   wait away, because a token names the second it was issued in and the same token's URL answers serve without a request).
@@ -2845,7 +2890,10 @@ address, committed, the last 64 KiB of every transfer withheld until then. Three
 - **A second caller follows the running fill.** A caller of a cache key whose artifact fill runs on its replica gets its own permission
   first (a usable `full` answer, or a conditional request naming the fill's content address answered `304`; a refusal is replayed) and
   is then served from the spool like the leader's client, instead of waiting 30 s and being answered `503 bastion_busy`. A registry-token
-  caller of a layer that fifty pods ask for at once therefore costs one transfer and fifty conditional requests.
+  caller of a layer that fifty pods ask for at once therefore costs one transfer and fifty conditional requests. *Amended on 2026-11-22,
+  specified, not built (R-BAS-085):* a usable `full` answer also means a package answer `full` on the fill's package, which the leader's
+  marking supplies, so fifty pods whose registry tokens each hold such an answer follow the fill without a request; a token that has none
+  yet still pays its one request (a check or a conditional request, R-BAS-022).
 - **Across replicas** (the bucket backend with Valkey), a caller whose replica finds another replica's fetch lock waits while the holder
   keeps extending the lock, up to `bastion.cache.fill_wait_max`, sending nothing, then decides again, which is a hit once the other fill
   committed, or fetches itself ([H-1245](#h-1245--a-caller-on-another-replica-waits-for-a-running-fill-without-a-byte-up-to-fill_wait_max)).
@@ -3029,6 +3077,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
 | `absent` comes from the core's lookups | the negative cache (R-BAS-024) | built (Q-BAS-70) |
+| Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086, specified, not built) |
 
 - **The contract's addition** (an ADR, [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table)):
   `catalog.Facts.Bastion` of the type `catalog.BastionFacts` with `ReplayHeaders []string` (canonical header names, none of the core's
@@ -3085,7 +3134,8 @@ The existing rules hold for every format: a hit at the Bastion is not counted at
   installation's own audit trail would hold for the same requests.
 - **Usage and limits.** What a Bastion forwards is charged at the main installation to the caller's subject (R-LIM-003), the token
   requests by the token service's own rule and the conditional requests of a registry token as requests of the token's subject; what the
-  Bastion serves from its cache is charged nowhere.
+  Bastion serves from its cache is charged nowhere. Once the read shapes per package are built, a warm pull with a registry token is charged
+  its token request and one check instead of a conditional request per manifest and blob (R-BAS-085, Q-BAS-253).
 - **Audit.** `artifact.downloaded` with `details.origin: bastion`, the request path as `path` (`/v2/web/docker/library/nginx/blobs/sha256:…`)
   and the qualified repository, as for every format (R-BAS-016). The interface version is 4 (R-BAS-057).
 
@@ -3285,14 +3335,15 @@ Acceptance criteria:
   conditional request of a follower, a continuation, a forward that replaces a failed handover, a request while the handshake says
   `handover: false` and one while the replica cools down send none (`TestR_BAS_072_TheBastionOffersToTakeAHandover`).
 
-### R-BAS-073 · The handover answer and the interface version 5
+### R-BAS-073 · The handover answer and the interface version 6
 Priority: **P1** · Covers: quader-only
 
 - **The answer** to a forward the main installation hands over ([storage.md](storage.md) R-STOR-095;
   [Q-BAS-231](#q-bas-231--the-handover-rides-in-a-marking-header-of-the-items-own-200-with-an-empty-body)): status `200`; the headers the
   file's own `200` would carry, the format's included (an image's `Docker-Content-Digest` and its `ETag` `"sha256:<hex>"`);
   `Content-Length: 0` and no body; the marking of R-BAS-013 with `Quader-Bastion-Class: handover`, `Quader-Bastion-Repository`,
-  `Quader-Bastion-Read`, `Quader-Bastion-Subject` and `Quader-Bastion-Counted: download`; and `Quader-Bastion-Handover: <value>`, the JSON
+  `Quader-Bastion-Read`, `Quader-Bastion-Subject`, `Quader-Bastion-Counted: download` and, where the request named exactly one package,
+  `Quader-Bastion-Package` and `Quader-Bastion-Package-Read` (R-BAS-082); and `Quader-Bastion-Handover: <value>`, the JSON
   below in base64url without padding ([RFC 4648](https://www.rfc-editor.org/rfc/rfc4648) §5), at most 8 KiB:
 
 ```json
@@ -3316,7 +3367,8 @@ object by its keyed name where the connection has keyed names (R-STOR-086).
   hexadecimal digits and equals the content address of the answer's `ETag` (R-BAS-022); `size` is at most the `max-size` it offered;
   `storedSize` equals `size` on a plain copy and `S(size)` on an encrypted one; `dataKey` is present exactly when `encrypted` is true and holds
   32 bytes.
-- **The interface's additions** (R-BAS-009), which raise `iface.InterfaceVersion` to 5: the request header `Quader-Bastion-Handover` with the
+- **The interface's additions** (R-BAS-009), which raise `iface.InterfaceVersion` to 6, the version after the read shapes per package
+  (R-BAS-087, [Q-BAS-251](#q-bas-251--the-version-numbering-against-the-handover); *amended on 2026-11-22: it said 5*): the request header `Quader-Bastion-Handover` with the
   value `accept; max-size=<n>`, the class `handover`, the response header `Quader-Bastion-Handover` with the value above, and the handshake's
   member `handover` (R-BAS-071). The types are `iface.HandoverOffer` and `iface.Handover`, each with its encoding and its checks. Main
   installation and Bastions are upgraded together, as for every version (R-BAS-009).
@@ -3333,7 +3385,7 @@ Acceptance criteria:
 
 - Unit (`internal/bastion/iface`): a plain and an encrypted value round-trip; a value with an `http` link, a data key of 31 bytes, a data key
   on a plain copy, a digest that is not 64 hexadecimal digits, a `storedSize` that is not `S(size)` on an encrypted copy, or more than 8 KiB is
-  refused; `handover` is a valid class; the interface's file holds version 5 and the four additions
+  refused; `handover` is a valid class; the interface's file holds version 6 and the four additions
   (`TestR_BAS_073_TheHandoverValue`, `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion`).
 - Unit (`internal/api/bastionmark`): the class and the header are added only to a recognized forward that offered; an ordinary request that
   sends `Quader-Bastion-Handover: accept; max-size=1048576` gets the file and no `Quader-Bastion-` header
@@ -3368,8 +3420,10 @@ Priority: **P1** · Covers: quader-only
   record: it holds no storage key, and the main installation opened the record before it handed the key (steps 1 to 6 of R-STOR-077, in
   `CopyDataKey`); a body that is not the object under that key fails at its first segment.
 - **What is kept** is an artifact entry as for an `artifact` answer (R-BAS-022): the content address, the size, the replay headers taken from
-  the handover answer (R-BAS-057's rules), the repository, `validatedAt` the time the forward left, and `Counted` from the marking. With a
-  cache key it is encrypted under the Bastion's own key (R-BAS-061).
+  the handover answer (R-BAS-057's rules), the repository, `validatedAt` the time the forward left, `Counted` from the marking, and
+  `Package` from the marking's `Quader-Bastion-Package` (R-BAS-084). With a cache key it is encrypted under the Bastion's own key (R-BAS-061).
+- **Callers that follow the fill** do so on their own permission (R-BAS-054), a package answer `full` on the fill's package included
+  (R-BAS-085).
 - **Reported downloads.** The main installation counted the download when it handed over ([storage.md](storage.md) R-STOR-095). The leader's
   caller is that download; the callers that follow the fill and every later hit are reported by the Bastion, as today (R-BAS-059).
 - **Never passed to a caller.** The engine consumes a `handover` answer; a value it cannot use ends in the forward of R-BAS-075, never in a
@@ -3527,12 +3581,389 @@ Acceptance criteria:
 
 - The tests named in R-BAS-070 to R-BAS-078 and in [storage.md](storage.md) R-STOR-095 and R-STOR-096 pass in their tiers.
 
+## Read shapes per package
+
+The development agent's decision of 2026-11-22 on [Q-BAS-167](#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial),
+option (b), after the owner's word that its favourite is built and not what was built first. A registry token, and every reader narrowed by
+package, reads the whole repository rarely and one package of it often. Today the Bastion knows only the caller's shape on the repository,
+so such a caller is served every cached artifact after a conditional request: a warm pull of an image of ten layers costs the main
+installation twelve requests against the miss limit of the client's address
+([H-1242](#h-1242--every-pull-with-a-registry-token-costs-the-main-installation-its-token-request-and-one-check)). This section gives the
+Bastion a fourth kind of answer, the caller's shape on one package of a repository, and the entries the package they belong to.
+
+- **The main installation's core already knows a response's package.** Every format decides the reads of its package through the host
+  (`Host.Authorize` with `Target.Package`), and the core notes that package for a recognized Bastion request as it notes `absent` and
+  `counted` today (R-BAS-081). No format code is involved.
+- **The marking** gains two headers: the response's package and the caller's shape on it, `full` or `partial` (R-BAS-082). **The check**
+  can be asked about (repository, package) pairs (R-BAS-083). For a registry token the main installation limits the package shape to the
+  token's grant, and the Bastion compares it with the grant it reads without verifying it (R-BAS-052, Q-BAS-246).
+- **The Bastion** keeps package answers keyed by (credential, repository, package) and records the package on each cache entry. An entry of
+  package P is served without a request to a caller with a usable `full` answer on P (R-BAS-084, R-BAS-085). Such an answer follows the same
+  four validity rules and the same feed as a `full` answer on the repository, so nothing is served longer than today's rules allow a full
+  reader.
+- **The format contract** gains kit check 21: what a reader of only the response's package receives equals what a reader of the whole
+  repository receives (R-BAS-086). **The interface** takes the next version, 5 (R-BAS-087).
+
+Status: specified on 2026-11-22, not built. The planner's design was read against `main` on 2026-11-22; the build plan is
+[developer/bastion-package-shapes.md](../developer/bastion-package-shapes.md); the decisions are
+[Q-BAS-240](#q-bas-240--what-full-on-a-package-means) to [Q-BAS-254](#q-bas-254--the-tests); the gaps are
+[H-1380](#h-1380--changes-the-feed-does-not-carry-reach-registry-token-and-package-narrowed-readers-within-the-revalidation-periods-no-longer-at-their-next-read)
+to [H-1384](#h-1384--the-first-read-of-a-cached-entry-by-a-credential-without-a-shape-answer-costs-two-requests-an-uncached-one-costs-one)
+and the new text of H-1242; the record is
+[ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant).
+
+**What disappears** (derived from reading the read flow and from the measurement of 2026-11-22 on smaller images, not measured for ten
+layers; R-BAS-088's measurement writes the numbers down). The image has a single platform, a config and ten layers, its content is not
+`public`, and the Bastion answers the anonymous version check or `HEAD` itself (no request). "Warm" means every entry is cached and within
+its revalidation period. Requests to the main installation per pull:
+
+| Client (token step) | Before, cold | Before, warm | After, cold | After, warm |
+|---|---|---|---|---|
+| Podman (`GET /v2/_token`: 1) | 13: token, tag, config, 10 layers; all transferred | 13: token, tag (forwarded and transferred, `private`), 11 conditional requests answered `304`; 14 when a full reader's `shared` tag entry exists (one check more) | 13; the tag is now kept `shared` | **2**: token and one check |
+| Docker 29 (probe and `POST`: 2) | 14 | 14 (15) | 14 | **3** |
+| containerd and the kubelet (probe and `POST`: 2; `HEAD` of the tag, manifest by digest) | 15 | 15 (16) | 15 | **3** |
+
+- The 11 to 12 conditional requests per pull and the forward of the tag's document disappear. The token request (with its probe for a
+  `POST`) stays, and so does the first read of each new registry token: the check.
+- Revalidation is amortized: one conditional request per tag per `metadata_revalidate_after` (1 minute) and one per artifact per
+  `artifact_revalidate_after` (10 minutes), paid by whichever caller arrives first.
+- A rollout behind one address (300 misses a minute): about 20 to 23 pulls a minute before, about 100 (Docker, the kubelet) or 150 (Podman)
+  after.
+- npm, a reader narrowed to `@acme/*` in every member, running `npm ci` of 20 `@acme` tarballs: 21 requests per run before (1 check and 20
+  conditional requests); after, 20 for the first run in a period (1 check, then 19 conditional requests that each supply a package answer)
+  and none for every later run with the same token within the period.
+
+<details>
+<summary>What exists today, and how it was read (2026-11-22)</summary>
+
+| # | What the code does today | Read in |
+|---|---|---|
+| 1 | The marking computes one shape per request: the caller's shape on the addressed repository, in `Decided`, before the handler runs. A credential with a registry grant is limited to `partial` | [mark.go](../../internal/api/bastionmark/mark.go) (lines 106 to 117, 200 to 216), [shape.go](../../internal/bastionmain/shape.go) (lines 26 to 31) |
+| 2 | A `Metadata` or `Computed` response is `shared` only when that repository shape is `full`; `absent` needs `full` | [mark.go](../../internal/api/bastionmark/mark.go) (lines 238 to 259) |
+| 3 | The decision point classifies reach per repository only. `full` needs `ReadAll` (no package or path pattern), the wiki, the populate right and an endpoint that exposes everything; a virtual repository needs its gate and every member | [reach.go](../../internal/authz/reach.go) (lines 78 to 211), [visible.go](../../internal/authz/visible.go) (lines 206 to 216, 222 to 289, 302 to 350) |
+| 4 | The dispatcher's coarse decision is per repository. The package is decided inside the handler through `Host.Authorize(ctx, rq, Target{Package…})`, which already calls `bastionmain.NoteUnknown` on a refusal. OCI authorizes the image name as the package. Package documents filter versions through `CallerVersions` (`ReadScope.Shape`, `VersionsByPath`, `MayRead`) | [dispatcher.go](../../internal/api/dispatch/dispatcher.go) (lines 279 to 338), [host.go](../../internal/formathost/host.go) (lines 227 to 287), [handlers_blob.go](../../internal/formats/oci/handlers_blob.go) (line 34), [virtual_read.go](../../internal/formats/oci/virtual_read.go) (lines 202, 258, 405), [handlers_tags.go](../../internal/formats/oci/handlers_tags.go) (line 72), [versions.go](../../internal/formats/versions.go) (lines 34 to 44) |
+| 5 | The enforcement point in front of `/v2/` checks the registry grant per request on (repository, image) taken from the dispatcher's match; `authz.Subject` has no field for the grant | [enforce.go](../../internal/api/registry/enforce.go) (lines 391 to 428), [grant.go](../../internal/auth/registrytoken/grant.go) (lines 81 to 88); R-BAS-052 |
+| 6 | The check answers per repository and limits registry tokens to `partial` | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) (lines 87 to 97), [wire.go](../../internal/bastion/iface/wire.go) (lines 176 to 203) |
+| 7 | The Bastion keeps three kinds of answers (credential, shape, URL) under the credential key; four validity rules apply; a `grants` entry stales shape and URL answers, a `content` entry stales URL answers and the entry's freshness; answers live in a memory LRU of `max_entries` (200,000) and are signed in Valkey with a TTL of the period plus the grace period | [answers.go](../../internal/bastion/answers/answers.go) (lines 92 to 110, 237 to 266), [answerstore.go](../../internal/bastion/engine/answerstore.go) (lines 158 to 188, 252 to 268), [entries.go](../../internal/bastion/engine/entries.go) (lines 135 to 153), [bastion_role.go](../../internal/config/bastion_role.go) (line 91) |
+| 8 | A cached entry is served when the shape is `full` or a URL answer allows it, and the entry is fresh and not withdrawn; with no answer at all, the check comes first and the conditional request second | [readflow.go](../../internal/bastion/engine/readflow.go) (lines 35 to 58, 70 to 106) |
+| 9 | The Bastion records at most `partial` for a registry token (`capRead`) and keeps the reported expiry | [registry.go](../../internal/bastion/engine/registry.go) (lines 72 to 94), [forward.go](../../internal/bastion/engine/forward.go) (lines 194 to 201), [background.go](../../internal/bastion/engine/background.go) (line 79) |
+| 10 | Entries are keyed by path, query and `Vary` values, with one object per content address; an entry is written only from a marked `200` or `304` for its own key, and a follower follows only a fill of its own key | [entries.go](../../internal/bastion/engine/entries.go) (lines 17 to 36), [forward.go](../../internal/bastion/engine/forward.go) (lines 447 to 458), [readflow.go](../../internal/bastion/engine/readflow.go) (lines 377 to 383), [cache.go](../../internal/bastion/cache/cache.go) (lines 65 to 82) |
+| 11 | A blob is readable through an image name only when an item of that name holds it | [formats/oci.md](formats/oci.md) R-OCI-010 |
+| 12 | Every serve of a counted entry is reported to the main installation, and the intake writes only `artifact.downloaded` | [readflow.go](../../internal/bastion/engine/readflow.go) (lines 155 to 169), [downloads.go](../../internal/bastionmain/downloads.go) (lines 83 to 144), [stats.go](../../internal/items/stats.go) (lines 182 to 189) |
+| 13 | A `304` is answered before `Admit`, so download limits never act on a conditional; a Bastion's hits are counted nowhere (R-LIM-001, "Later") | [content.go](../../internal/api/edge/content.go) (lines 73 to 107), [usage-and-limits.md](usage-and-limits.md) R-LIM-001 |
+| 14 | The interface is at version 4; equal versions are required, and a mismatch makes the Bastion treat the main installation as unreachable | [version.go](../../internal/bastion/iface/version.go) (line 12); R-BAS-009, R-BAS-027, R-BAS-028 |
+| 15 | Measured warm pulls with registry tokens: one `304` conditional request per artifact, a forward for the token and for the tag's document (`private`), and one probe for `POST /v2/_token` | [developer/bastion.md](../developer/bastion.md#the-real-clients-through-a-bastion) |
+| 16 | Kit check 12 compares documents only between three callers who read everything; the kit's host records `Authorize` calls | [checks_shared.go](../../internal/formats/formattest/checks_shared.go) (lines 111 to 207), [host.go](../../internal/formats/formattest/host.go) (lines 296 to 332) |
+
+Not verified, and this is the gap: the request counts above for ten layers, and whether Docker 29 always uses `POST` with a probe and whether
+the third forward of the measured warm pull was a version check sent with the token; that every format's content handlers decide all reads
+through the host before their status line (found by search in OCI, npm, NuGet and Ansible Galaxy, not traced handler by handler; kit check 21
+shows it); that `Target.Package` equals the enforcement point's `route.Target.Image` for every `/v2/` route, bound hosts and the cache view
+included, and that the token service names the bound repository in grant entries (read in [token.go](../../internal/api/registry/token.go),
+lines 159 to 167); that `Host.Authorize` runs on the `304` path of formats that render their own documents (read only for the item store,
+[ingest.go](../../internal/formathost/ingest.go) line 191); whether Debian's pool files and the documents of Ansible Galaxy and the ClamAV
+definitions name a package in their targets; that an older replica ignores the member `package` of an entry
+([sign.go](../../internal/bastion/cache/sign.go) line 93) and of a Valkey record ([answerstore.go](../../internal/bastion/engine/answerstore.go)
+line 145); the cost of computing a package shape for each response marked to a `partial` caller; whether the conservative rule (a path
+pattern on the repository makes every package `partial`) takes the gain away from real installations; that nothing on `main` uses version 5
+when this lands.
+
+</details>
+
+### R-BAS-080 · Read shapes per package at the decision point
+Priority: **P1** · Covers: quader-only
+
+- **The package shape** of subject S on the addressed repository R and package P, where P is the name as the format's coordinates carry it
+  (`authz.Coordinate.Package`), is computed by `authz.Engine.PackageReachOn(ctx, idx, sub, repo, pkgs)` beside `ReachOn`
+  ([Q-BAS-240](#q-bas-240--what-full-on-a-package-means)):
+  - A `full` shape on R is `full` on every package. A `none` shape on R is `partial` on every package on the wire, never `none`
+    ([Q-BAS-243](#q-bas-243--package-shapes-have-two-values-and-absent-stays-per-repository)).
+  - **R local or remote:** `full` when all five hold: (1) the endpoint exposes everything (`exposesEverything`); (2) no path pattern can
+    tell two paths of R apart for S (`readsByPath(R)` is false); (3) on the artifact state, with `content:metadata-read` left out, the read
+    of P is allowed, decided as `ReadScope.MayRead(R, P, "")` decides it; (4) the wiki of P is readable (`MayReadWiki(R, P, "")`); (5) for
+    a remote repository, S has the populate right for P. Otherwise `partial`. Conditions 2 and 3 together cover every version: a version is
+    decided on the package's path and on its file's path (Q-AUTHZ-255), and without a path pattern both decisions come from the package
+    patterns alone.
+  - **R virtual:** `full` when the gate read of R is allowed for metadata and for artifacts, and every member, recursively (depth 16, as
+    `reachVirtual`), is `full` on P with R as the addressed repository. Otherwise `partial`.
+  - **A credential with a registry grant:** `full` only where the grant allows pull on (R, P) (`Grant.Allows`); applied by the marking
+    and the check (R-BAS-082, R-BAS-083), since `authz.Subject` holds no grant.
+- **Whom it serves:** every caller whose shape on the repository is `partial`: registry tokens; personal, service-account and CI tokens
+  narrowed by package patterns in a grant or in a token scope; CI contributions narrowed by package. A reader with a `full` shape on the
+  repository needs no computation. The anonymous caller gains nothing in practice, because visibility levels are per repository.
+- **The limit of the rule.** A reader narrowed in one member and without rights in another member of a virtual repository stays `partial`
+  on that repository's packages: `$PART` through `npm-all` has no grant on `npm-remote` and is `partial` there, and through `npm-local` it is
+  `full` on `@acme/sdk`. Any path pattern of a grant on R makes every package of R `partial` for that subject.
+
+Acceptance criteria:
+
+- `TestR_BAS_080_PackageShapeAgreesWithTheDecisionPoint` (`internal/authz`), over every subject, endpoint, repository, package, version and
+  path of the reach fixture (15 subjects, 3 endpoints, 15 repository keys, 4 packages): a `full` package shape never meets a refused read
+  (metadata, artifact or wiki) of any version or path of that package, and a `full` repository shape implies `full` on every package.
+- `TestR_BAS_080_PackageShapes`: a grant `packages.include: ["@acme/*"]` on a local repository is `full` on `@acme/sdk` and `partial` on
+  `x`, and `partial` on both with a path pattern; a token scope listing `@acme/*` gives `full`; an endpoint with exposure rules gives
+  `partial`; a remote repository without the populate right gives `partial`, and `full` with it; a virtual repository with an unreadable
+  member gives `partial`; no wiki read gives `partial`; `content:metadata-read` alone gives `partial`.
+
+### R-BAS-081 · The package of a response
+Priority: **P1** · Covers: quader-only
+
+- **The core notes the package of every rights decision** of a recognized Bastion request into the request's `Absence` record
+  (`bastionmain.NotePackage(ctx, pkg)`), with no format code ([Q-BAS-241](#q-bas-241--how-the-main-installation-learns-a-responses-package)):
+  `Host.Authorize`, whether it allows or refuses; `Host.WikiReadable`; each path of `Host.PathsAllowed`, through the format's `Classify`;
+  and each `MayRead` and `MayReadWiki` row of the read scope that `formathost/virtual.go` hands out.
+- **The response's package is P** exactly when at least one decision named P, every decision named P, and none named no package. The record
+  is read at the status line, as `absent` and `counted` are.
+- **What a format owes** is kit check 21 (R-BAS-086): every decision of a content route before its status line; a response that draws on
+  packages other than the one it was decided for also decides a package-less read (`Host.Authorize` with a target that names no package, as
+  npm's audit and signature handlers do), so that it carries no package; a reader of only the response's package receives the same status,
+  body and validators as a reader of the whole repository.
+- `/files/` decides through `files.Access`, not through the host, and names no package: only the repository shape applies there. For OCI the
+  image name the handlers authorize is the enforcement point's `route.Target.Image`, and a test holds the two equal.
+
+Acceptance criteria:
+
+- Unit (`internal/formathost`, `internal/bastionmain`): `Authorize(P)` twice yields P; `Authorize(P)` and `MayRead(Q)` yield none;
+  `Authorize(P)` and a package-less `Authorize` yield none; a refused `Authorize(Q)` after P yields none; `PathsAllowed` over paths of P
+  yields P; `WikiReadable(P)` yields P.
+- Unit (`internal/api/bastionmark`, every format registered), through the dispatcher's registry handler with tokens from the real signer:
+  `GET /v2/web/docker-local/app/blobs/sha256:…` is marked `Quader-Bastion-Package: app`, equal to the enforcement point's image, also on a
+  bound host; a `/files/` download, npm's root and npm's search carry no package.
+
+### R-BAS-082 · The marking per package
+Priority: **P1** · Covers: quader-only
+
+- **Headers** ([Q-BAS-242](#q-bas-242--the-wire-of-the-marking)): `Quader-Bastion-Package` and `Quader-Bastion-Package-Read` as in
+  R-BAS-013's table: the package percent-encoded (every byte outside `A–Z a–z 0–9 - . _ ~ @ /` as `%XX` with upper-case hexadecimal digits;
+  decoded 1 to 512 bytes, valid UTF-8, no control character), present on a `200` or `304` of a `Download`, `Metadata` or `Computed` route
+  and on a handover's `200` (R-BAS-073) whose request named exactly one package (R-BAS-081), absent everywhere else, every refusal and
+  every `404` included; `-Package-Read` is present exactly with it and is `full` when `Quader-Bastion-Read` is `full` or the package shape
+  of R-BAS-080, with a registry token's grant applied, is `full`. Like every `Quader-Bastion-` header they are stripped for every other
+  caller.
+- **The class rule.** `shared` for a `200` or `304` of a `Metadata` or `Computed` route when `Quader-Bastion-Read: full` **or**
+  `Quader-Bastion-Package-Read: full` ([Q-BAS-244](#q-bas-244--documents-are-shared-per-package)). `absent` stays tied to a `full` shape on
+  the repository.
+- **The types.** `iface.Marking` gains `Package string` (decoded) and `PackageRead Read` (only `full` or `partial`). `ParseMarking` refuses
+  one header without the other, more than one value of either, any other value of `-Package-Read`, a value that does not decode strictly,
+  and a decoded name outside the bounds.
+- **Examples.** A registry token granted `library/nginx` reading a blob: `Quader-Bastion-Read: partial`, `Quader-Bastion-Package:
+  library/nginx`, `Quader-Bastion-Package-Read: full`. npm sends `@acme/sdk` unencoded; Debian's `g++` becomes `g%2B%2B`.
+- **Where it is computed.** The marking keeps the subject and the index of `Decided` and computes the package shape at the status line
+  (`ShapeResolver.PackageShapes`, `bastionmain.CapRegistryPackage` for the grant).
+
+Acceptance criteria:
+
+- Unit (`internal/api/bastionmark`): a token granted read on `npm-local` with `@acme/*`, reading a tarball of `@acme/sdk` through
+  `web/npm-local`: `Read: partial`, `Package: @acme/sdk`, `Package-Read: full`, and its package document `Class: shared`; through
+  `web/npm-all`: `Package-Read: partial` and `private`; `$FULL`: `Read: full`, `Package-Read: full`; a `404` and a refusal carry no package;
+  a registry token granted `app` reading `app`: `Package-Read: full`.
+- Unit (`internal/bastion/iface`): `ParseMarking` refuses each of the five malformed cases above; `g++` round-trips as `g%2B%2B`.
+
+### R-BAS-083 · The check per package
+Priority: **P1** · Covers: quader-only
+
+`POST /api/v1/bastion/check` (R-BAS-011) gains one member in the request and one in the answer, both always present:
+
+```json
+{"credential": "qdr_rgt_…", "clientAddress": "203.0.113.7", "repositories": ["web/docker"],
+ "packages": [{"repository": "web/docker", "package": "library/nginx"}]}
+```
+
+```json
+{"subject": {"kind": "token", "tokenId": "0192…", "principalId": "0191…", "expiresAt": "2026-11-22T10:05:00Z"},
+ "repositories": {"web/docker": {"read": "partial"}},
+ "packages": [{"repository": "web/docker", "package": "library/nginx", "read": "full"}]}
+```
+
+*(example request and answer)*
+
+- **Request rules.** The package is a decoded JSON string with the bounds of the header (R-BAS-082); its repository is named in
+  `repositories`; no pair appears twice; at most `bastions.check.max_repositories` elements (16, the existing value, no new setting). A
+  violation answers `400` with a field error at `/packages/<i>`.
+- **Answer rules.** One element per requested pair, in request order; an empty array for a subject that is not usable; a pair whose
+  repository reads `none` reads `partial`. A credential with a registry grant is limited to its grant (R-BAS-080).
+- **The types.** The OpenAPI schemas `BastionCheckRequest` and `BastionCheckAnswer` gain the members; `x-quader-bastion-interface` is the
+  new version on all four operations (R-BAS-087); `iface.CheckRequest.Packages` and `iface.CheckAnswer.Packages`.
+
+Acceptance criteria:
+
+- Unit (`internal/api/v1`), through the real authentication stage: a registry token granted `web/docker-local/app` asked about the packages
+  `[app, other]` answers `full`, `partial`; a package whose repository is not named, more than 16 elements, or a name of 513 bytes answers
+  `400` at `/packages/<i>`; an `invalid` subject answers `packages: []`; a repository that reads `none` gives its packages `partial`.
+
+### R-BAS-084 · Package answers at the Bastion
+Priority: **P1** · Covers: quader-only
+
+| | Rule |
+|---|---|
+| Kind | `answers.Package`, a fourth kind beside credential, shape and URL (R-BAS-020) |
+| Key | `<credential key>\|<projectKey>/<repoKey>\|<package>`; in memory `package\|…`; in Valkey `quader-bastion:<prefix>:ans:v1:package:<sha256 of the key>`, signed, with a TTL of the period plus the grace period, as every answer |
+| Recorded from | (a) the marking of any forward, conditional request or handover answer whose `Quader-Bastion-Repository` equals the request's repository; (b) the check's `packages`. Only while the caller's shape on the repository is not `full`, since a `full` answer on the repository covers every package. For a registry token `full` is recorded only when the token's unverified grant names (repository, package) with pull, otherwise `partial` ([Q-BAS-246](#q-bas-246--the-bastions-own-guard-for-registry-tokens)); this is checked when the answer is recorded, so no part of the grant is kept |
+| Validity | the four rules of R-BAS-020, unchanged. Rule 2 ends a registry token's package answer with the token, at most 300 s after its issue, never extended, also not in the grace period. Rule 3: `token`, `principal` and `grants` entries match package answers; `content` entries do not, and make the cache entry stale instead (R-BAS-022, [Q-BAS-249](#q-bas-249--the-feed-is-unchanged)) |
+| Renewal | by use ([Q-BAS-248](#q-bas-248--package-answers-renew-by-use)): no background refresh; once the answer has expired, the next read sends one conditional request, and its marking renews the answer |
+| Bound per caller | no count of its own ([Q-BAS-247](#q-bas-247--bounds-on-package-answers)): each package answer needs a marked response or a check, and each of those is a miss of the caller's address (300 a minute); a registry token can be `full` on at most its grant's 16 entries |
+| Bound in total | `bastion.answers.max_entries` (200,000 per replica), shared by every kind, least recently used first; at the bound an answer of any kind is evicted and its caller pays one request at its next read. A warm pull leaves about 3 answers (credential, shape, package) instead of about 14 (credential, shape, 12 URL answers) |
+| Cache entries | keys unchanged; `cache.Entry` gains `Package string` (omitted when empty, signed with the entry), set from the marking of the `200` that filled the entry, replaced by every later `200` or `304` for the key, cleared by a marking without a package. A replica of the previous release decodes an entry with `json.Unmarshal`, ignores the member and serves by the repository shape only |
+
+- `storedCheck` rebuilds the package answer as well. No new configuration value on either side.
+
+Acceptance criteria:
+
+- `TestR_BAS_084_PackageAnswers` (`internal/bastion/engine`, `internal/bastion/answers`): an answer obtained before a `grants` entry is not
+  used after it; a `token` entry naming the Quader token behind a registry token drops its package answers; the answer is unusable at the
+  registry token's expiry; with the local shared store an answer recorded on replica A serves on B; a registry token whose unverified grant
+  does not name (repository, package) is recorded `partial` although the marking says `full` (tokens from the real `registrytoken`
+  encoder).
+
+### R-BAS-085 · Serving per package
+Priority: **P1** · Covers: quader-only
+
+**The read flow** for a request whose cache key has an entry E with package P, repository R and credential C
+([Q-BAS-245](#q-bas-245--when-the-bastion-asks)):
+
+1. C's shape on R is `none`: refused without a request (unchanged).
+2. **Allowed** means: C's shape on R is `full`, or P is set and C's package answer on (R, P) is `full`, or C's URL answer allows this key.
+3. Allowed, not withdrawn, and fresh (or the main installation unreachable): served from the cache.
+4. C has **no usable shape answer on R**: one check with `repositories: [R]` and, when P is set, `packages: [{R, P}]`, collapsed per
+   (credential, repository, package); then steps 2 and 3, otherwise the conditional request.
+5. C has a **usable shape answer on R that is not `full`**, P is set, and C has no package answer on (R, P): the conditional request, not a
+   check; its marking supplies the package answer. This step costs no extra round trip, so a narrowed caller cannot tell a cached package
+   from an uncached one by timing.
+6. Otherwise: the conditional request (unchanged).
+
+- **Followers of a running fill** (R-BAS-054, Q-BAS-200): a usable `full` answer also means a package answer `full` on the fill's package,
+  which the leader's marking supplies. Negative entries and private documents are unchanged.
+- **What a `full` answer on image I of repository R covers:** the tag documents of I (`Metadata`, `shared`), its manifests by digest with an
+  index's child manifests (`Download`), its blobs, its tags list, and its cosign tags `sha256-<hex>.sig` and `.att`: every entry whose last
+  marking named I.
+- **Blobs shared between images.** A blob request always names an image (`/v2/<p>/<r>/<name>/blobs/<digest>`), and the main installation
+  answers it only when an item of that name holds the blob (R-OCI-010). The Bastion stores the bytes once per content address but keeps
+  entries per cache key, each written only after a marked `200` or `304` for that key and carrying the package of that marking; no path serves
+  bytes by digest alone, and the referrers list (`Volatile`) and the catalog are passed on and never kept. The evidence for a blob is the
+  path, which names I, and the main installation's answer for that path. A token granted `library/nginx` asking for
+  `/v2/web/docker/library/redis/blobs/sha256:X`, the same bytes as an nginx layer, meets another cache key whose entry is marked
+  `library/redis`; its package answer on redis is `partial` (the main installation's limit and the Bastion's comparison with the grant); the
+  Bastion sends a conditional request or, without an entry, a forward, and replays the main installation's `401 insufficient_scope`, which
+  is not kept. Such a request costs what an uncached path costs today: one request.
+- **Every gate at the main installation's download** ([Q-BAS-249](#q-bas-249--the-feed-is-unchanged)):
+
+| Gate | On a forward or conditional request | When a `full` package answer serves from the cache | Bound |
+|---|---|---|---|
+| Credential valid (expiry, revocation, owner disabled; for a registry token the token behind it) | the authentication stage | a package answer carries the token ID (of the Quader token behind a registry token), the principal ID and the expiry; a `token` or `principal` entry drops it, rule 2 ends it at the expiry | 3 s (R-BAS-026); the expiry exactly; during an outage `period + grace`, never past the expiry (H-383) |
+| The decision point: grants, roles, levels, token scope, CI, exposure, populate right | the coarse check and `Authorize` | the answer is computed on the same index; a `grants` entry follows a policy, role, member, lowered visibility, settings, exposure, a repository moved, disabled or deleted, or a claim change; a `principal` entry a group change or the external flag; either drops it | 3 s |
+| The registry grant | the enforcement point | `full` only within the grant, limited at the main installation and compared at the Bastion; the grant does not change during the token's life | the token's life |
+| Repository patterns, members, pin rules (R-REPO-005, R-REPO-061); global claims (R-REPO-025) | `Authorize` | `repository.narrowed` or `claims_changed` yields a `content` (or `grants`) entry; the entry is no longer fresh, so the next read is a conditional request the gates judge | 3 s |
+| The format's serve-time checks (unpublish, a deleted manifest, Debian's withholding, Ansible Galaxy's deletion) | the serve | `content` entries (Q-BAS-175) | 3 s; withdrawals the feed does not carry: `artifact_revalidate_after` (H-385) |
+| The malware gate (R-MAL-018) | the serve | a find or a withdrawn release yields `content`; the switch turned on is not in the feed (H-1102) | 3 s, or 10 min |
+| The vulnerability block (R-VULN-033 to R-VULN-037) | the serve | a block set in triage yields `content`; an automatic block is not in the feed (H-385) | 3 s, or 10 min |
+| The signature gate (R-SIG-063, R-SIG-064) | the serve (manifests) | withdrawn releases and narrowed trust yield `content`; a pending `503` is never kept | 3 s |
+| Download limits (byte budgets, parallel downloads, a block) and request figures | `Admit` (never on a `304`); stage 7 | not applied to hits, as for full readers today (R-LIM-001); because package answers renew by use, the renewing conditional request of a blocked or limited subject is refused within one period | at most `answers.period` ([H-1381](#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers)) |
+| Download recording | `Served` | the Bastion's download events (R-BAS-039, R-BAS-059) | buffered |
+
+A `full` package answer obeys exactly the validity rules of a `full` answer on the repository, and the entry the same freshness and
+withdrawal rules (`fresh`, `withdrawn`, Q-BAS-122). What changes is who gets those bounds: registry tokens and narrowed readers, who until
+now asked the main installation per artifact and met every gate at every pull
+([H-1380](#h-1380--changes-the-feed-does-not-carry-reach-registry-token-and-package-narrowed-readers-within-the-revalidation-periods-no-longer-at-their-next-read)).
+
+- **Downloads, limits and the audit trail** ([Q-BAS-253](#q-bas-253--limits-and-download-events-stay-unchanged)): download records keep
+  their shape and number. A serve after a `304` is reported today (R-BAS-039) and a hit after the change is reported the same way, with the
+  token ID (of the Quader token behind a registry token), the principal, the client address, the repository, the request path and the
+  SHA-256; download events carry no package. The main installation no longer sees its request-log lines of the 11 to 12 conditional
+  requests per pull nor charges them to the subject's request figures (`requestsPerSecond`, `requestsPerHour` are charged 3 requests instead
+  of 14 per warm pull); the token request is still logged and charged; `cachedBytesPerHour`, `bytesPerDay` and `parallelDownloads` are
+  unchanged, since a `304` carries no body and is answered before `Admit`, and hits are counted nowhere (R-LIM-001).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, over the engine's double `fakeMain`): an entry of P is served without a request to a credential holding a
+  `full` answer on P, and not so to one holding `full` on Q; `TestR_BAS_085_AWarmPullWithANewRegistryTokenCostsOneCheck`: a tag document and
+  11 blobs cost exactly 1 check and 0 conditional requests; `TestR_BAS_085_NoRoundTripTellsACachedPackageFromAnUncachedOne`: with a known
+  `partial` shape on the repository, a cached and an uncached path of an unreadable package each cost exactly one request and no check is
+  sent; after a `content` entry the next read of a caller `full` on the package is a conditional request; a follower of a running fill with
+  `full` on the fill's package follows it without a request.
+- Integration (area `bastion`): in `TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion` the second pull with a new registry
+  token sends one request below `/v2/` (a check) besides the token step and no conditional request; a second replayed `npm ci` through
+  `web/npm-local` within the period sends nothing; R-BAS-022's criterion for `$PART` through `npm-all` stays as a regression test.
+- End-to-end (set `oci`): the warm assertion of `TestOCI_R_BAS_051_ThroughABastion` is tightened to at most one request below `/v2/` besides
+  the token step.
+
+### R-BAS-086 · What a format owes: kit check 21
+Priority: **P1** · Covers: quader-only
+
+- **Kit check 21** ([Q-BAS-250](#q-bas-250--the-format-contract)) runs over every `GET` and `HEAD` content case below `400` of a `Download`,
+  `Metadata` or `Computed` route: it seeds `Fixture.OtherPackage` (a package other than the case's own, required for a format with package
+  names; generic skips the check with its reason), serves the case as a reader of the repository, and derives P from the decisions the kit's
+  host recorded. When P is set it serves the case again as a reader of only P. Status, body, `ETag`, `Content-Type`, `Content-Encoding`,
+  `Vary` and `Cache-Control` must be equal, and no decision may be recorded after the status line.
+- The kit's host records `MayRead`, `PathsAllowed` and `WikiReadable` besides `Authorize`, and the status line; the duties are the row of
+  R-BAS-058's table and [developer/formats.md](../developer/formats.md#what-a-bastion-needs-of-a-format).
+
+Acceptance criteria:
+
+- Unit (`internal/formats/formattest/testformat`): the defects `ListsAnotherPackage` and `DecidesAfterItsStatusLine` each fail check 21 and no
+  other check (`TestR_BAS_086_KitCheck21`); every format's `TestR_ARCH_010_Conformance` runs it, with `Fixture.OtherPackage` for npm, NuGet,
+  OCI, Debian, Ansible Galaxy and the ClamAV definitions.
+
+### R-BAS-087 · The interface version
+Priority: **P1** · Covers: quader-only
+
+- The two headers of R-BAS-082, their values and the check's members of R-BAS-083 raise `iface.InterfaceVersion` to the next version, 5,
+  with the reading of the token's grant (`iface.RegistryTokenGrant`, beside `RegistryTokenAnonymous`) and, if its builder keeps it, of the
+  token's expiry ([Q-BAS-252](#q-bas-252--option-b-of-q-bas-202-is-bundled)). The interface file and the four OpenAPI operations carry it.
+  The handover (R-BAS-073), specified and not built, takes the version after it, 6
+  ([Q-BAS-251](#q-bas-251--the-version-numbering-against-the-handover)).
+- **At a mismatch** nothing changes and nothing is owed (R-BAS-009, R-BAS-027, R-BAS-028): the main installation answers `400
+  bastion_interface_mismatch`, a Bastion replica treats it as unreachable and raises `QuaderBastionInterfaceMismatch`; callers with live
+  answers (credential, shape, package, URL) get warm content for up to `period + grace`, never past a token's expiry or a withdrawal the feed
+  carried; every image pull fails with `503 main_unreachable` for the window, because the token request is a forward and a new registry token
+  is a stranger, while npm and NuGet callers whose tokens were seen in the last period keep installing warm content. A rolling update of the
+  main installation's replicas makes a Bastion replica switch to unreachable and back, as today. A Bastion rolled back to version 4 that
+  shares a bucket with version 5 replicas ignores the member `package` of entries.
+- **Order:** the main installation first, the Bastion releases at once after it; the window lasts as long as the Bastion's rollout.
+- **Where this meets the handover** (R-BAS-070 to R-BAS-079): its answer's marking carries the two package headers (R-BAS-073), the entry kept
+  from it records `Package` (R-BAS-074), a follower of a direct read may follow on a `full` package answer (R-BAS-054), a withdrawal during a
+  direct read stops later package answers through the same feed entries (R-BAS-077), and warm reads send fewer conditional requests, so the
+  main installation is offered fewer handovers (a `304` never carried one).
+
+Acceptance criteria:
+
+- `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` sees the two headers, their values and the check's members under version 5; the
+  OpenAPI document says `x-quader-bastion-interface: 5` on the four operations; `iface.RegistryTokenGrant` reads the grant of a token from the
+  real `registrytoken` encoder; a token whose claims do not decode yields no grant, so its package answers are recorded `partial`.
+
+### R-BAS-088 · Tests and what they cost
+Priority: **P1** · Covers: quader-only
+
+By the owner's rule "Tests stay runnable" of 2026-11-20: each behaviour once, at the cheapest tier
+([Q-BAS-254](#q-bas-254--the-tests)). Times marked [J] are the planner's estimates; the builder records the measured ones on
+[developer/bastion-package-shapes.md](../developer/bastion-package-shapes.md).
+
+| Tier | Test | Data | Run time |
+|---|---|---|---|
+| unit, `internal/bastion/iface` | the markings and their refusals, the check's bodies, the grant reader with the real encoder, the interface file (R-BAS-082, R-BAS-083, R-BAS-087) | none | under 0.1 s [J] |
+| unit, `internal/authz` | the agreement test over the reach fixture and the named shapes (R-BAS-080) | none; about 50,000 decisions in memory | about 0.2 s [J] |
+| kit, every format | check 21 (R-BAS-086) | the fixture's content cases and one second package | about 40 ms per format [J]; the defects about 0.1 s, joining the table that builds the fixture once |
+| unit, `internal/api/bastionmark`, `internal/bastionmain`, `internal/formathost`, `internal/api/v1` | the notes, the marking, the grant limit, the image equal to the enforcement point's, the check per package (R-BAS-081 to R-BAS-083) | hundreds of bytes | about 0.4 s [J] |
+| unit, `internal/bastion/engine`, `internal/bastion/answers` | R-BAS-084, R-BAS-085 over `fakeMain` | bytes | about 0.6 s [J] |
+| integration, area `bastion` | the changed assertions of the OCI and npm replays (R-BAS-085) | existing (two blobs of 1 KiB) | about −0.1 s (fewer requests) |
+| e2e, set `oci` | the warm assertion tightened | existing | 0 s |
+| measurement, once (not a test) | Docker, Podman and `crictl` warm pulls through a local Bastion before and after, counting `quader_bastion_main_requests_total` by kind; the numbers written on [developer/bastion.md](../developer/bastion.md#the-real-clients-through-a-bastion) | real clients | minutes, once |
+
+- **What each leg gains** [J]: the unit job about 1.3 s; the integration shard that holds the area `bastion` about −0.1 s; e2e `oci` 0 s;
+  `npm`, `bastion`, `bastion-long` and every other leg 0 s; chart and web 0 s.
+- **With 25 formats** [J]: check 21 about 1 s in all, and one second-package seed per format; nothing else grows with the number of formats.
+  No new end-to-end case: no client shows anything the replay does not.
+
+Acceptance criteria:
+
+- The tests named in R-BAS-080 to R-BAS-087 pass in their tiers; the measurement ran once, after the main installation's side and before the
+  Bastion's side lands, and its numbers are written down.
+
 ## Deferred
 
 | Item | Note |
 |---|---|
 | Host-root bindings at the Bastion | *Superseded on 2026-11-22.* The registry root `/v2/` is served at the Bastion's own host root (R-BAS-051), and a host the main installation binds to one repository is served by a Bastion whose base URL is that host (R-BAS-057, Q-BAS-178). Terraform's discovery joins with its format, through the same bound-host prefixes. |
-| Answers per package for a narrowed reader | A registry token, and every reader narrowed by package patterns, is answered per URL: a warm read costs the main installation a conditional request per artifact ([H-1242](#h-1242--every-warm-read-with-a-registry-token-costs-the-main-installation-a-conditional-request-per-manifest-and-blob), Q-BAS-167 option (b)). |
 | Several base URLs per Bastion | One `server.base_url` per Bastion; a second host is a second release of the chart. |
 | A Bastion in front of a Bastion | Not supported: a Bastion's upstream is a main installation, which alone has the interface. |
 | An address binding of the Bastion token | The main installation accepts the token from any address (H-386); a list of allowed client addresses on the registration is not specified. |
@@ -3886,7 +4317,9 @@ Status: **Decided by the owner on 2026-11-02** — option (a).
 | (a) Marked documents shared with confirmed full readers (chosen) | A filtered document is never shared and goes per caller with a conditional request | Most callers read whole repositories; nobody sees another's view | Two document paths |
 | (b) Every document per caller | Conditional request on every use | One path | The main installation carries every document request |
 
-**Choice:** (a), the owner's decision.
+**Choice:** (a), the owner's decision. *On 2026-11-22 the development agent's [Q-BAS-244](#q-bas-244--documents-are-shared-per-package)
+changed the condition of this choice from a full read of the repository to a full read of the repository or of the package the document
+belongs to (specified, not built); named to the owner the same day.*
 
 **Rationale:** the owner's words: "the main installation marks a document that is the same for every caller who reads the whole
 repository; the Bastion serves that copy for the metadata period to each caller for whom the main installation confirmed a full
@@ -6762,8 +7195,9 @@ sign.
 
 ### Q-BAS-167 · A registry token is checked by the main installation, and its read shape is at most partial
 
-Status: **Decided by the planner in the owner's absence** — selected from the options below. **Put to the owner as a question on
-2026-11-22** (the cost of option (a) is something he would notice under load); the recommendation (a) is built in meanwhile.
+Status: **Decided by the development agent on 2026-11-22**, after the owner's word that its favourite is built and not what was built
+first: option (b); built as (a) until R-BAS-080 to R-BAS-088 are. *Superseded in place on 2026-11-22: decided by the planner in the
+owner's absence, put to the owner as a question the same day, with (a) recommended and built meanwhile.*
 
 Context: almost every image client reads with registry tokens of five minutes (R-OCI-005). A grant names image names and is checked by the
 enforcement point in front of `/v2/`, not by the decision point that computes a read shape ([mark.go](../../internal/api/bastionmark/mark.go)
@@ -6772,15 +7206,20 @@ the repository.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) An opaque credential checked by forwards and the check, its shape capped at `partial` (chosen) | Every cached artifact is served after a conditional request with the token (`304`, no transfer) | Exact; no change of the decision point or the interface beyond the cap; every byte of a warm pull comes from the Bastion | A warm pull costs the main installation one request per manifest and blob, and counts against the address's miss limit ([H-1242](#h-1242--every-warm-read-with-a-registry-token-costs-the-main-installation-a-conditional-request-per-manifest-and-blob)) |
-| (b) Read shapes per package: the marking names the package of a response and the caller's shape on it, the check answers per package | A token granted `library/nginx` is `full` on that image, served from the cache without a request | Takes the requests off the main installation for images, and for every reader narrowed by package patterns (npm's `$PART`) | A new shape in the decision point, a new member of the interface, entries keyed by package; the larger change |
+| (a) An opaque credential checked by forwards and the check, its shape capped at `partial` (built) | Every cached artifact is served after a conditional request with the token (`304`, no transfer) | Exact; no change of the decision point or the interface beyond the cap; every byte of a warm pull comes from the Bastion | A warm pull costs the main installation one request per manifest and blob, and counts against the address's miss limit ([H-1242](#h-1242--every-pull-with-a-registry-token-costs-the-main-installation-its-token-request-and-one-check)) |
+| (b) Read shapes per package: the marking names the package of a response and the caller's shape on it, the check answers per package (chosen) | A token granted `library/nginx` is `full` on that image, served from the cache without a request | Takes the requests off the main installation for images, and for every reader narrowed by package patterns (npm's `$PART`) | A new shape in the decision point, a new member of the interface, entries keyed by package; the larger change |
 | (c) Asymmetric registry tokens the Bastion verifies | The Bastion reads the grant and keys answers by the Quader token behind it | No request for a token's warm reads | A change of the token's signature; the Bastion would need the registry's path grammar to read the grant, format knowledge it must not hold |
 
-**Choice:** (a), and (b) as the revisit once a measurement through a Bastion shows the conditional requests matter (the miss limit
-reached behind one address, or the main installation's request rate). **Rationale:** correctness first and the smaller change; (a) already
-moves every byte off the main installation.
+**Choice:** (b), specified in [Read shapes per package](#read-shapes-per-package) and decided in detail in Q-BAS-240 to Q-BAS-254; (a)
+stays built until R-BAS-080 to R-BAS-088 are. **Rationale:** the first use of a public Bastion is a cluster pulling images behind one
+address, and under (a) each warm pull of an image of ten layers costs the main installation twelve requests against that address's miss
+limit of 300 a minute, so a rollout of about twenty pulls a minute reaches it; (b) brings a warm pull to its token request and one check
+(about 100 pulls a minute behind one address) and keeps correctness, because a package answer is the main installation's statement about
+the caller, limited to the grant on both sides. With a single platform, a config and ten layers, a warm Docker pull falls from 14 requests
+to 3 (derived from the read flow, not measured; R-BAS-088's measurement writes the numbers down). *Superseded in place on 2026-11-22: the choice was (a), with (b) as the revisit once
+a measurement showed the conditional requests matter; the rationale was correctness first and the smaller change.*
 
-**Applied in the spec:** R-BAS-052, R-BAS-053; Deferred.
+**Applied in the spec:** R-BAS-052, R-BAS-053, R-BAS-080 to R-BAS-088; Deferred (its row removed).
 
 ### Q-BAS-168 · An anonymous registry token is the anonymous caller at the Bastion
 
@@ -7250,6 +7689,9 @@ say who a `401 insufficient_scope` was for. Both are the main installation's sid
 | (c) Refuse a registry token below `/v2/` that the main installation marks `full` | A check | Finds the defect | A refusal of a pull for a defect of the other side |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-052; code: `capRead` and `insufficientScope` in [registry.go](../../internal/bastion/engine/registry.go).
+*Extended on 2026-11-22 to package answers, specified, not built ([Q-BAS-246](#q-bas-246--the-bastions-own-guard-for-registry-tokens),
+R-BAS-084):* the cap on the repository stays, and a package answer `full` for a registry token is recorded only where the token's
+unverified grant names the repository and the package with pull; otherwise `partial`, whatever the main installation marks.
 
 ### Q-BAS-199 · A format table the Bastion cannot rely on fails the handshake
 
@@ -7278,6 +7720,9 @@ of an artifact fill do (R-BAS-054). A document is shared only with full readers 
 | (c) No following of documents | Wait for every document | Simple | A `freshclam` storm of a cold container answers `503 bastion_busy` after 30 s |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-054; code: `followFill` in [fill.go](../../internal/bastion/engine/fill.go).
+*Extended on 2026-11-22, specified, not built (R-BAS-085):* a usable `full` answer for a document fill also means a package answer `full`
+on the fill's package, which the leader's marking supplies; such a document is the same bytes for a reader of that package in full as for
+a reader of the whole repository (kit check 21, R-BAS-086).
 
 ### Q-BAS-201 · The engine's tests of Every format run over the engine's double of the client
 
@@ -7305,7 +7750,9 @@ Context: R-BAS-052 refuses a request with a registry token past "the expiry the 
 | (c) The answers' own expiry only | No memory | Nothing new | Every expired token costs a request and a counted failure |
 
 **Choice:** (a). The builder would revisit (b) with the next change of the interface. **Applied in the spec:** R-BAS-052; code:
-`noteRegistryToken` and `registryTokenExpired` in [registry.go](../../internal/bastion/engine/registry.go).
+`noteRegistryToken` and `registryTokenExpired` in [registry.go](../../internal/bastion/engine/registry.go). *On 2026-11-22 that change
+came: [Q-BAS-252](#q-bas-252--option-b-of-q-bas-202-is-bundled) bundles (b) with the read shapes per package (specified, not built), and a
+builder may leave it out without touching the rest.*
 
 ### Q-BAS-203 · The Galaxy clients' scheme Token is a credential of the protocol family, keyed apart
 
@@ -7654,6 +8101,195 @@ the Bastion, the main installation and the store.
 | (b) An end-to-end case with `docker pull` through a Bastion with the handover on | The real path | | A Bastion release with the switch and a public address the kind pods reach: about 100 s in the leg `oci` for what the integration case shows |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-079.
+
+### Q-BAS-240 · What "full on a package" means
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+Context: a package shape must never let the Bastion serve a byte the main installation would refuse the caller
+([Read shapes per package](#read-shapes-per-package)). The decision point decides a version on the package's path and on its file's path
+(Q-AUTHZ-255), and through a virtual repository it resolves to different members for different callers.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every version and path of P in every member, the wiki, the populate right, no path pattern on the repository, an endpoint that exposes everything (chosen) | The decision point's rule of a `full` repository shape, made per package | Agrees with the decision point by construction; one test proves it | Conservative: any path-pattern grant on the repository makes every package `partial` |
+| (b) Judged per member, where the item lies | `full` on P where the member that holds it is readable | More readers gain | Through a virtual repository the main installation resolves to different members for different callers, so the same path may hold other bytes |
+| (c) Send the grant patterns to the Bastion | The Bastion matches names itself | No check needed | A copy of policy at the Bastion (against Q-BAS-1); package-name matching would be format knowledge |
+
+**Choice:** (a). **Rationale:** it is the decision point's own rule, made per package. The development agent would revisit it if a
+measurement showed that path-pattern grants take the gain away from real installations.
+
+**Applied in the spec:** R-BAS-080.
+
+### Q-BAS-241 · How the main installation learns a response's package
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The core notes the package of every rights decision the host makes; the response has a package when exactly one was named and no package-less decision was made (chosen) | `bastionmain.NotePackage` from `Host.Authorize`, `WikiReadable`, `PathsAllowed` and the read scope | No format code; every format already decides through the host; a format to come gets it for free | Relies on decisions coming before the status line, which kit check 21 holds ([H-1383](#h-1383--per-package-sharing-rests-on-the-cores-notes-and-kit-check-21)) |
+| (b) A route declaration naming the package parameter, checked by the kit | Explicit per route | Explicit | A declaration per route of every format; the declaration and the actual decision can drift apart |
+| (c) The format's `Classify` of the request path, or the enforcement point's image | No notes | No notes needed | Request paths are not item paths; works for OCI only |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-081.
+
+### Q-BAS-242 · The wire of the marking
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Quader-Bastion-Package` (percent-encoded) and `Quader-Bastion-Package-Read` (chosen) | Two headers beside `-Repository` and `-Read` | Mirrors `-Repository` and `-Read`; can be read in logs | Two headers |
+| (b) One structured field | One header carrying both | One header | A second syntax in the interface |
+| (c) An opaque package key (a hash) | The Bastion sees no name | Hides names from the Bastion | The main installation cannot answer the check without inverting the hash; the Bastion sees the paths anyway |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-013, R-BAS-082.
+
+### Q-BAS-243 · Package shapes have two values, and absent stays per repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `full` or `partial`; `none` folds into `partial`; negative entries stay for full readers of the repository (chosen) | No local refusal per package | A local refusal would happen only for cached entries, which is a timing signal (Q-BAS-124) | A reader who can read nothing of a package pays a conditional request per read |
+| (b) Three values with a status | A `none` per package refused at the Bastion | Fewer requests for refused readers | Tells which hidden packages the Bastion holds |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-080, R-BAS-082, R-BAS-083.
+
+### Q-BAS-244 · Documents are shared per package
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built. It changes
+[Q-BAS-18](#q-bas-18--metadata-shared-for-confirmed-full-readers-filtered-documents-per-caller)'s condition from a full read of the
+repository to a full read of the repository or of the package the document belongs to; named to the owner on 2026-11-22.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A caller `full` on a package is served the `shared` document of that package (chosen) | The main installation marks it `shared`, the Bastion serves it on a `full` package answer | A warm pull costs no conditional request for the tag; npm's package documents are served from the cache | Q-BAS-18 says "a full read of the repository"; this becomes "of the repository, or of the package the document belongs to" |
+| (b) Artifacts only | Documents stay per caller for a narrowed reader | Q-BAS-18 untouched | One conditional request per tag and package document per use; a warm pull costs about 4 requests instead of 3 |
+
+**Choice:** (a). **Rationale:** kit check 21 makes the document of a reader of the package identical to the repository reader's, so the
+reason behind Q-BAS-18, that nobody sees another's view, still holds.
+
+**Applied in the spec:** R-BAS-013, R-BAS-023, R-BAS-082; Q-BAS-18 (a dated sentence).
+
+### Q-BAS-245 · When the Bastion asks
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built. It qualifies the
+wording of Q-BAS-167's option (b), "served from the cache without a request": a warm pull keeps one check per new registry token.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A check with the entry's package only when the shape on the repository is unknown; a conditional request when it is known and `partial` (chosen) | R-BAS-085's steps 4 and 5 | 3 requests per warm pull; no new timing signal | Each new registry token's first read still costs one check |
+| (b) A check whenever a package answer is missing | One rule | Simpler | An extra round trip only for cached entries: a timing signal per package |
+| (c) Markings only, the check unchanged | No member of the check | No change of the check | 4 requests per warm pull (a check, then a conditional request) |
+| (d) The token service's answer carries the new token's answers | Answers arrive with the token | 2 requests per warm pull | A second way for answers to enter; the Bastion would have to take the token's key from a header or read the token service's body |
+
+**Choice:** (a). **Rationale:** the fewest requests that add no timing signal. The development agent would revisit (d) once a measurement
+shows that the check matters (Q-BAS-167's own criterion).
+
+**Applied in the spec:** R-BAS-022, R-BAS-085.
+
+### Q-BAS-246 · The Bastion's own guard for registry tokens
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Record `full` only when the token's unverified grant names (repository, package) with pull, checked when the answer is recorded (chosen) | `iface.RegistryTokenGrant` reads the claim `g` without verifying it | A defect at the main installation cannot open other images (the pattern of Q-BAS-198); trusting the unverified grant can only lower what is read; two opaque strings are compared, so no path grammar | The interface reads one more member of the token service's claims; a test with the real encoder holds the two together |
+| (b) The main installation alone | No reading at the Bastion | Smaller | Q-BAS-167's risk returns on a defect |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-052, R-BAS-084; Q-BAS-198 (extended).
+
+### Q-BAS-247 · Bounds on package answers
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The shared LRU of `max_entries`; no count per credential (chosen) | Package answers are one more kind in the bound every answer shares | Answers per pull fall from about 14 to about 3; the miss limit bounds the rate | One credential can evict others' answers, as it can today with URL answers |
+| (b) A bound per credential | A count of package answers per credential | Isolation | A new setting; npm readers of many packages would run into it |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-084.
+
+### Q-BAS-248 · Package answers renew by use
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) By use, as URL answers do (Q-BAS-84) (chosen) | Once the answer has expired, the next read sends a conditional request whose marking renews it | Registry tokens gain nothing from a refresh; the main installation's limits act within one period ([H-1381](#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers)) | A long-lived narrowed token pays one conditional request per package per period |
+| (b) By the background refresh, as shape answers | A collapsed check in the last fifth of the period | No request on the read path | Keeps a blocked subject's answer alive without the limits being consulted |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-020, R-BAS-084.
+
+### Q-BAS-249 · The feed is unchanged
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The feed as it is: `grants` also matches package answers, and `content` stays per repository (chosen) | No feed change | No new feed format | A `content` entry makes every entry of the repository stale, not only those of the package |
+| (b) `content` entries per package | A new feed format | Fewer revalidations | A change of the feed and of every producer of its entries for a cost no measurement has shown |
+
+**Choice:** (a). The development agent would revisit (b) if revalidation traffic shows up in a measurement. **Applied in the spec:**
+R-BAS-020, R-BAS-084, R-BAS-085.
+
+### Q-BAS-250 · The format contract
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Kit check 21 with `Fixture.OtherPackage`; a response that draws on other packages also decides a package-less read (chosen) | The kit compares a reader of the repository with a reader of only the response's package | No new route member; uses a mechanism every format has; a format to come is held by the kit | Each format with package names adds one seed |
+| (b) A route member `Listing` | A route declares that it lists other packages | Explicit | A speculative member no format needs today |
+| (c) Check 12 only | Nothing new | Nothing to build | Check 12 compares only callers who read everything |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-058, R-BAS-081, R-BAS-086.
+
+### Q-BAS-251 · The version numbering against the handover
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The read shapes per package take the next free version when they land, and the handover moves to the version after it (chosen) | Version 5 here, 6 for R-BAS-073 | The handover's dependencies are not on `main`; each build raises the version alone | The handover's specification and build plan change their number |
+| (b) One version for both | The two builds land under one number | One upgrade | Couples two unrelated builds |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-073, R-BAS-087.
+
+### Q-BAS-252 · Option (b) of Q-BAS-202 is bundled
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read a registry token's expiry from its unverified claims in the same version (chosen) | Q-BAS-202 option (b) | The claims reader is extended and the version raised anyway; it closes [H-1295](#h-1295--a-registry-token-past-its-expiry-is-counted-as-a-failed-authentication-on-a-replica-that-does-not-know-its-expiry) | Scope |
+| (b) Leave Q-BAS-202 as built | The expiry the main installation reported | Smaller | A later version change for it |
+
+**Choice:** (a); the builder may leave it out without touching the rest. **Applied in the spec:** R-BAS-087; Q-BAS-202.
+
+### Q-BAS-253 · Limits and download events stay unchanged
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Hits are charged nowhere (R-LIM-001), and download events carry no package (chosen) | As today | No decision of usage-and-limits.md changes | The main installation no longer charges the conditional requests a warm pull no longer sends |
+| (b) Charge reported downloads at the intake | The Bastion's reports count against the subject's limits | The limits see Bastion hits | Changes a decision of [usage-and-limits.md](usage-and-limits.md) |
+| (c) A package member in the download events | The events name the package | — | Adds nothing the path does not say |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-059, R-BAS-085.
+
+### Q-BAS-254 · The tests
+
+Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Unit tests, kit check 21, the changed integration assertions, the OCI end-to-end warm assertion tightened, and a measurement once (chosen) | Each behaviour once at the cheapest tier | About 1.3 s in the unit job, nothing per format beyond check 21's seed | The real clients' numbers come from one measurement |
+| (b) New end-to-end cases, npm included | A client case per changed behaviour | The real path | No client shows anything the replay does not; cost per format |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-088.
 
 ## What this does not cover
 
@@ -8200,19 +8836,26 @@ artifact the Bastion cached before stays servable from its cache until its next 
 says of the withdrawals the feed does not carry. A find (`malware.found`) and a withdrawn release reach it through the feed within seconds.
 What makes it real: content that was served before the switch, read through a Bastion in the minutes after it.
 
-### H-1242 · Every warm read with a registry token costs the main installation a conditional request per manifest and blob
+### H-1242 · Every pull with a registry token costs the main installation its token request and one check
 
-Stage: R-BAS-052 and R-BAS-022, a cached artifact read with a registry token. Subject: the request load on the main installation and the
-miss limit of the caller's address (R-BAS-035), not a confidentiality property.
+Stage: R-BAS-052, R-BAS-022 and R-BAS-085, a cached image read with a registry token. Subject: the request load on the main installation
+and the miss limit of the caller's address (R-BAS-035), not a confidentiality property.
 
-Live for every image pulled through a Bastion with a registry token, which is almost every pull (R-BAS-052 is built).
-A registry token's shape is at most `partial` ([Q-BAS-167](#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial)),
-and a client takes a new one for each pull, so each pull costs a token request and one conditional request per manifest and blob, each
-answered `304` without a transfer, and each counted as a miss of the address. A warm pull of an image of ten layers is twelve requests to
-the main installation and twelve of the address's 300 misses a minute. A reader narrowed by package patterns pays the same per artifact
-today (R-BAS-022). What makes it real: many nodes behind one address pulling at once (a rollout through a NAT), which reaches the miss
-limit (`429 TOOMANYREQUESTS`, which clients retry), or a main installation for which these requests matter. What closes it: read shapes
-per package (Q-BAS-167 option (b)); meanwhile `bastion.blocking.exempt_cidrs` or a higher miss limit for such an address.
+Live for every image pulled through a Bastion with a registry token, which is almost every pull. A client takes a new registry token for
+each pull, and a new token is a stranger to the Bastion. *Today* (R-BAS-052 built, R-BAS-080 to R-BAS-088 not): its shape is at most
+`partial`, so a warm pull costs a token request and one conditional request per manifest and blob, each answered `304` without a transfer
+and each counted as a miss of the address: a warm pull of an image of ten layers is twelve requests to the main installation and twelve of
+the address's 300 misses a minute, and a reader narrowed by package patterns pays the same per artifact (R-BAS-022). *Once the read shapes
+per package are built* ([Q-BAS-167](#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial)
+option (b)), the token is `full` on the images of its grant, and a warm pull costs the token request (with its probe for a `POST`) and one
+check: 2 requests for Podman, 3 for Docker and the kubelet, instead of 13 to 15 (derived from the read flow, not measured; R-BAS-088's
+measurement writes the numbers down). The miss limit of one address is then reached at about 100 kubelet pulls a minute instead of about
+20. What makes it real: many nodes behind one address pulling at once (a rollout through a NAT), which reaches the miss limit
+(`429 TOOMANYREQUESTS`, which clients retry), or a main installation for which these requests matter. What would close more, outside the
+design of R-BAS-080 to R-BAS-088: keeping a `204 read-with-body` probe answer of `POST /v2/_token` as the `403` and `404` probe answers
+are kept (one request less per Docker or kubelet pull), and answers carried in the token service's answer
+([Q-BAS-245](#q-bas-245--when-the-bastion-asks) option (d)); meanwhile `bastion.blocking.exempt_cidrs` or a higher miss limit for such an
+address.
 
 ### H-1243 · A plain index path of a Debian remote without by-hash can disagree with the InRelease a Bastion serves
 
@@ -8371,3 +9014,66 @@ Whoever runs code in a Bastion pod, or reads its memory or its mounted Secrets, 
 key protects the cache against a holder of the store (the bucket's credential, its provider, a copy or a snapshot of a volume), not against
 the pod. What makes it real: a flaw that lets an attacker run code in a Bastion process, which then also holds the callers' credentials in
 transit ([H-386](#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events)).
+
+### H-1380 · Changes the feed does not carry reach registry-token and package-narrowed readers within the revalidation periods, no longer at their next read
+
+Stage: R-BAS-085 and R-BAS-022, a cached entry served on a `full` package answer. Subject: registry tokens and readers narrowed by package,
+for content the main installation stopped serving by a change no feed entry carries.
+
+Dormant until R-BAS-080 to R-BAS-088 are built; then live for every image pulled with a registry token and every reader `full` on a package.
+Until now such a caller asked the main installation for every cached artifact, so every gate judged every pull. With a package answer it is
+served from the cache under the rules of a full reader, and a change the feed does not carry reaches it within `artifact_revalidate_after`
+(10 minutes) for artifacts and `metadata_revalidate_after` (1 minute) for documents, as
+[H-385](#h-385--a-withdrawal-the-feed-does-not-carry-reaches-the-bastion-within-the-artifact-revalidation-period) and
+[H-1102](#h-1102--the-bastion-serves-what-it-cached-for-up-to-ten-minutes-after-the-switch-is-turned-on) already allow full readers. What
+makes it real: an automatic vulnerability block, the malware scanning's switch turned on, or an upstream withdrawal during a rollout that
+pulls through a Bastion. What narrows it: shorter periods, and a transactional event for automatic blocks, which would put that case into
+the feed.
+
+### H-1381 · The main installation's limits and blocks do not reach hits from per-package answers
+
+Stage: R-BAS-084 and R-BAS-085; [usage-and-limits.md](usage-and-limits.md) R-LIM-001 and R-LIM-025. Subject: a subject at its request
+figures, or blocked, that reads through a Bastion.
+
+Dormant until R-BAS-084 and R-BAS-085 are built; then live. Hits are charged nowhere (R-LIM-001, "Later"), so a subject at its request
+figures or blocked (R-LIM-025) keeps reading warm content through a Bastion until its package answer expires, at most `answers.period`
+(5 minutes); the conditional request that would renew the answer is then refused (Q-BAS-248). **A finding about today's code, read and not
+run:** the same holds today without end for a full reader, because the background refresh renews its shape answer through the check, and the
+check consults no limit (`refreshShape` in [background.go](../../internal/bastion/engine/background.go), lines 14 to 53;
+[bastion_check_api.go](../../internal/api/v1/bastion_check_api.go)). What makes it real: a blocked or limited subject with a usable answer
+at a Bastion. What would close the finding: the check consulting the subject's block and request figures, or shape answers renewed by use.
+
+### H-1382 · Whoever holds the Bastion token learns a held credential's shape per package
+
+Stage: the check of R-BAS-083. Subject: the read rights of a credential the holder of the Bastion token already holds; it widens
+[H-386](#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events).
+
+Dormant until R-BAS-083 is built, and then until a Bastion token leaks. The holder can ask the check for any credential it holds about any
+(repository, package) pair and learns `full` or `partial` for each. That tells it no more than requesting content with that credential
+would, and it cannot make the main installation mark or decide anything differently. What makes it real: a taken-over Bastion pod or a
+leaked Secret; revoking the token ends it.
+
+### H-1383 · Per-package sharing rests on the core's notes and kit check 21
+
+Stage: R-BAS-081, R-BAS-082 and R-BAS-086, the package of a response and the class `shared` for a reader of one package. Subject: the
+documents of packages a reader of one package may not read.
+
+Dormant: once built, every format passes check 21. What makes it real: a route of a format that decides another package after its status
+line, or that lists other packages without a package-less decision, together with a fixture whose cases or second package do not exercise
+it. A response the main installation renders for a reader of the whole repository could then be marked with one package and shared with a
+reader of only that package. What holds it: kit check 21 over every content case with a second package seeded, and its two `testformat`
+defects.
+
+### H-1384 · The first read of a cached entry by a credential without a shape answer costs two requests, an uncached one costs one
+
+Stage: R-BAS-022, the read flow for a credential the Bastion has no shape answer for. Subject: whether a path hidden from a narrowed reader
+is cached at the Bastion.
+
+**A finding about today's code, read and not run** ([readflow.go](../../internal/bastion/engine/readflow.go), lines 92 to 105),
+present today and not widened by R-BAS-080 to R-BAS-088. A credential without a shape answer that reads a cached entry costs a check and
+then a conditional request; one that reads an uncached path costs one forward. A narrowed reader with a fresh credential can therefore tell
+a cached hidden path from a missing one by timing, and registry tokens make fresh credentials cheap. This undermines what
+[Q-BAS-124](#q-bas-124--a-404-that-is-not-marked-absent-is-never-kept-as-a-url-answer) aims for. R-BAS-085 step 5 does not add the same
+signal per package, because a caller with a known `partial` shape gets the conditional request without a check. What makes it real: a
+narrowed reader with fresh registry tokens timing first reads of hidden paths. What would close it, a separate decision: answering the
+first read with the conditional request and learning a `none` shape in the background.

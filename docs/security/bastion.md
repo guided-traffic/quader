@@ -57,7 +57,8 @@ whose disagreement with the main installation could serve bytes.
   For a token of an internal caller - a personal token of a user not flagged external, a service account's technical token, a CI
   token - that is every `internal` repository besides its grants; a token of a user flagged external reads its grants and what is
   `public` ([visibility.md](visibility.md#what-a-leaked-credential-reads), H-884, H-1052). The shape of the answer is the decision
-  point's (R-BAS-012), a narrowed reader never receives a shared document (R-BAS-023), and a revocation at the main installation
+  point's (R-BAS-012), a narrowed reader never receives a shared document (R-BAS-023) except, once the read shapes per package are
+  built, the document of a package it reads in full ([below](#read-shapes-per-package)), and a revocation at the main installation
   reaches every Bastion replica within the feed's poll interval and one round trip (R-BAS-026). During an outage of the main
   installation a revoked token reads on for the grace period (H-383).
 - **Writes.** None reach the main installation as writes: the Bastion sends a bodiless probe, the main installation answers `403
@@ -317,7 +318,8 @@ The owner's decision of 2026-11-22 that a Bastion serves every format as the mai
 ([spec/bastion.md](../spec/bastion.md#every-format), R-BAS-050 to R-BAS-060). Both sides are built. The main installation's side: its
 backstop admits `/v2/`, a registry token's shape is capped at `partial` at the marking and the check, and the marking tells a Bastion when
 a download was counted. The Bastion's side: the rows held by the engine name their tests in the table above, and the Bastion caps a
-registry token's shape itself as well (Q-BAS-198). What it changes in the trust boundary:
+registry token's shape itself as well (Q-BAS-198). The cap stays on the repository when the read shapes per package let a registry token be
+`full` on the images of its grant ([below](#read-shapes-per-package), specified, not built). What it changes in the trust boundary:
 
 | Change | What it means for trust | Held by |
 |---|---|---|
@@ -340,6 +342,28 @@ and not built: with the handover switched on for its registration, a Bastion tha
 installation's object store and, for a copy on an encrypted connection, that copy's data key, and reads the file from the store itself. It
 lifts Q-BAS-10 for that and for nothing else. Its perspective, its boundary and its gaps (H-1340 to H-1345) are on
 [bastion-handover.md](bastion-handover.md).
+
+## Read shapes per package
+
+The development agent's decision of 2026-11-22 on Q-BAS-167, option (b) ([spec/bastion.md](../spec/bastion.md#read-shapes-per-package),
+R-BAS-080 to R-BAS-088), specified and not built: a registry token, and every reader narrowed by package, can be `full` on one package of a
+repository, and the Bastion serves that package's cached entries to it without asking the main installation. What it changes in the trust
+boundary:
+
+| Change | What it means for trust | Held by |
+|---|---|---|
+| A fourth kind of answer, the caller's shape on one package | A package answer is the main installation's statement about the caller, computed by the decision point on the same index as every other (`PackageReachOn`) and dropped by the same feed entries; no copy of a grant or a policy reaches the Bastion (Q-BAS-1 holds). It obeys the four validity rules of a `full` answer on the repository and is renewed only by use, so its holder is served no longer than a full reader is | R-BAS-080, R-BAS-084, Q-BAS-240, Q-BAS-248 |
+| A registry token can be `full` on the images of its grant | The main installation limits the package shape to the grant, and the Bastion records `full` only where the token's grant, read without verifying it, names the repository and the image with pull; a defect on either side alone cannot open another image, and trusting the unverified grant can only lower what is read. The cap on the repository stays (Q-BAS-198) | R-BAS-052, R-BAS-084, Q-BAS-246 |
+| Blobs shared between images | Entries stay per cache key and carry the package of the marking that validated them; a blob is reached only through a path that names an image, and a token's answer for any other image is `partial`, so it meets the main installation's `401 insufficient_scope`; no path serves bytes by digest alone | R-BAS-085, R-OCI-010 |
+| A document is shared with a reader of its package | The main installation marks it `shared` for a reader `full` on its package; kit check 21 holds that such a reader receives what a reader of the whole repository receives. The rule rests on the core's notes of the host's decisions ([H-1383](../spec/bastion.md#h-1383--per-package-sharing-rests-on-the-cores-notes-and-kit-check-21)) | R-BAS-081, R-BAS-082, R-BAS-086, Q-BAS-244 |
+| No new timing signal | A caller whose shape on the repository is known and `partial` gets a conditional request, not a check, for an entry whose package it has no answer for, so a cached and an uncached path cost one request each. The signal of a first read by a fresh credential exists today ([H-1384](../spec/bastion.md#h-1384--the-first-read-of-a-cached-entry-by-a-credential-without-a-shape-answer-costs-two-requests-an-uncached-one-costs-one)) | R-BAS-085, Q-BAS-243, Q-BAS-245 |
+| The gates of the main installation see fewer pulls | A reader `full` on a package meets the gates at the fills and revalidations of the entries, not at every pull; what the feed does not carry reaches it within the revalidation periods ([H-1380](../spec/bastion.md#h-1380--changes-the-feed-does-not-carry-reach-registry-token-and-package-narrowed-readers-within-the-revalidation-periods-no-longer-at-their-next-read)), and the limits and blocks at the renewal of its answer ([H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers)) | R-BAS-085 |
+| The check answers per package | The holder of the Bastion token learns a held credential's shape per package, no more than requesting content with it would tell ([H-1382](../spec/bastion.md#h-1382--whoever-holds-the-bastion-token-learns-a-held-credentials-shape-per-package)) | R-BAS-083 |
+
+An attacker with a token for one image gains reads of that image's cached entries without the main installation seeing each read, for at
+most the token's life; its downloads are still reported. It gains no read of another image's entries, no read by digest, no hidden name
+(package answers come from grants, never from existence, and there is no `none` per package) and no new timing signal. Every pull costs the
+main installation its token request and one check instead of a request per manifest and blob.
 
 ## What this does not cover
 
@@ -437,9 +461,9 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
   estimate of a limit admits more than the limit in a minute that spans a boundary;
 - [H-464](../spec/bastion.md#h-464--a-client-that-sends-accept-encoding-gzip-was-asked-about-at-the-main-installation-on-every-artifact-read-cause-not-found): a client that sends
   `Accept-Encoding: gzip` was asked about at the main installation on every artifact read, cause not found;
-- [H-1242](../spec/bastion.md#h-1242--every-warm-read-with-a-registry-token-costs-the-main-installation-a-conditional-request-per-manifest-and-blob):
-  every warm read with a registry token costs the main installation a conditional request per manifest and blob (live for every image
-  pulled with a registry token);
+- [H-1242](../spec/bastion.md#h-1242--every-pull-with-a-registry-token-costs-the-main-installation-its-token-request-and-one-check):
+  every pull with a registry token costs the main installation its token request and one check once the read shapes per package are built,
+  and a conditional request per manifest and blob until then (live for every image pulled with a registry token);
 - [H-1243](../spec/bastion.md#h-1243--a-plain-index-path-of-a-debian-remote-without-by-hash-can-disagree-with-the-inrelease-a-bastion-serves):
   a plain index path of a Debian remote without by-hash can disagree with the `InRelease` a Bastion serves (live for such remotes);
 - [H-1244](../spec/bastion.md#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer):
@@ -467,7 +491,20 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
   after a key change the old tree stays readable to a holder of the old key until the sweep has deleted it (live after every key change;
   it matters for a leaked key);
 - [H-1327](../spec/bastion.md#h-1327--a-taken-over-bastion-pod-holds-the-cache-key): a taken-over Bastion pod holds the cache key (live
-  wherever a cache key is set).
+  wherever a cache key is set);
+- [H-1380](../spec/bastion.md#h-1380--changes-the-feed-does-not-carry-reach-registry-token-and-package-narrowed-readers-within-the-revalidation-periods-no-longer-at-their-next-read):
+  changes the feed does not carry reach registry-token and package-narrowed readers within the revalidation periods (dormant until the read
+  shapes per package are built, then live for every image pulled with a registry token);
+- [H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers): the main
+  installation's limits and blocks do not reach hits from package answers before their renewal (dormant until built; the same for full
+  readers today without end, a finding read in the code and not run);
+- [H-1382](../spec/bastion.md#h-1382--whoever-holds-the-bastion-token-learns-a-held-credentials-shape-per-package): whoever holds the Bastion
+  token learns a held credential's shape per package (dormant until built and a token leaks);
+- [H-1383](../spec/bastion.md#h-1383--per-package-sharing-rests-on-the-cores-notes-and-kit-check-21): sharing per package rests on the
+  core's notes and kit check 21 (dormant while every format passes check 21);
+- [H-1384](../spec/bastion.md#h-1384--the-first-read-of-a-cached-entry-by-a-credential-without-a-shape-answer-costs-two-requests-an-uncached-one-costs-one):
+  the first read of a cached entry by a credential without a shape answer costs two requests, an uncached one costs one (live today, a
+  finding read in the code and not run).
 
 This page does not describe the main installation's own mechanisms that the Bastion relies on (the decision point, token
 validation, the revocation journal); their pages and gaps are linked above.

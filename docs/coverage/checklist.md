@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 657 of 1,217 spec requirements are implemented: a passing test names them and no
+**Status.** 657 of 1,226 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 798 specified (506 of them implemented), 1,441 open.
-1,217 spec requirements: 765 cover catalog features, 452 cover none (`quader-only`, [listed at the
+1,226 spec requirements: 765 cover catalog features, 461 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>452 requirements</summary>
+<summary>461 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3161,13 +3161,22 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-070 | The handover per blob: a link and a data key per released blob | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-071 | The switch: per registration at the main installation, off by default | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-072 | The Bastion offers to take a handover on a miss | P1 | [bastion.md](../spec/bastion.md) |
-| R-BAS-073 | The handover answer and the interface version 5 | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-073 | The handover answer and the interface version 6 | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-074 | The direct read and its verification | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-075 | A direct read that fails | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-076 | The data key at the Bastion: held for one read, written nowhere | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-077 | A blob withdrawn while its link lives | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-078 | The operator's side: the charts, the admin area, the manual and the egress | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-079 | Tests of the handover and what they cost | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-080 | Read shapes per package at the decision point | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-081 | The package of a response | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-082 | The marking per package | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-083 | The check per package | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-084 | Package answers at the Bastion | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-085 | Serving per package | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-086 | What a format owes: kit check 21 | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-087 | The interface version | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-088 | Tests and what they cost | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 (implemented) | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 (implemented) | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 (implemented) | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

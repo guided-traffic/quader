@@ -232,6 +232,7 @@ checked every earlier decision against them:
 | [ADR-244](#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring) | Encrypted connections: Quader's own segment format bound to the content, the wrapped key once at the object, a storage key per connection under the key ring | Accepted (owner decisions of 2026-11-22, decisions 1 (a), 2 (e), 3 (a), 4 (a), 5 (a) with his note, 6 (a), 7 (a) and 15 (a) of his |
 | [ADR-245](#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart) | The Bastion's cache is encrypted in the stored format under one key from its chart | Accepted (owner decision of 2026-11-22, decision 13 (a) of his working paper on the stored content); the mechanisms decided by |
 | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) | The handover per blob to a Bastion: a link and the data key of one released blob, in the answer to its forward | Accepted (owner decision of 2026-11-22); the mechanisms decided by the planner in the owner's absence — put to the owner |
+| [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) | Read shapes per package at a Bastion: a registry token is full on the images of its grant | Decided by the development agent on 2026-11-22 after the owner's word that its favourite is built; specified, not built |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -2081,7 +2082,8 @@ signed content between repositories (Q-SIG-211 (c)).
 ### ADR-238 · A Bastion serves every format: the registry root, the formats' Bastion facts and the handshake's format table
 
 **Status:** The scope is the owner's decision of 2026-11-22; the design was decided by the planner in the owner's absence. An addition
-to the format contract (`ContractVersion` stays 10) and the Bastion interface's version 4. Built on 2026-11-22: the two contracts and
+to the format contract (`ContractVersion` stays 10) and the Bastion interface's version 4. The registry token's cap at `partial` is
+narrowed to the repository by [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) (Q-BAS-167 decided as (b) on 2026-11-22, specified, not built). Built on 2026-11-22: the two contracts and
 kit check 19 (`catalog.Facts.Bastion`, `catalog.RepresentationHeaders`, `catalog.PerRequestHeaders`, `catalog.Facts.BoundPrefixes`; the
 handshake's `formats` and `boundRepository`, `Quader-Bastion-Counted`, the registry token's form; the builder's decisions Q-BAS-181 to
 Q-BAS-185). Built the same day: the main installation's side (the backstop admits `/v2/`, the token service and the catalog tell the
@@ -2330,7 +2332,7 @@ with a data key alone, while its record opens only under the connection's storag
 **Decision.**
 - The Bastion offers on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, `n` what it would keep), and the main installation answers
   the forward, decided as ever, with the file's own `200` without its bytes, the class `handover` and a marking header that carries the link,
-  its expiry, the digest, the sizes and, for a copy on an encrypted connection, its data key; the interface rises to version 5
+  its expiry, the digest, the sizes and, for a copy on an encrypted connection, its data key; the interface rises to version 6, after the read shapes per package took 5 ([ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant); *amended on 2026-11-22: it said 5*)
   ([bastion.md](spec/bastion.md) R-BAS-072, R-BAS-073, Q-BAS-230, Q-BAS-231).
 - A switch per Bastion registration at the main installation, off by default, on the registration's card; no value in either chart; the
   links' details (minimum size, life, public addresses) are the installation's (R-BAS-071, R-BAS-078, Q-BAS-232;
@@ -2366,6 +2368,62 @@ registrations'); the owner's answer on the speed figures (Q-LIM-97, Q-STOR-343).
 R-STOR-096, Q-STOR-340 to Q-STOR-347, and the edits of R-STOR-014, R-STOR-070, R-STOR-074, R-STOR-083, R-STOR-085, R-STOR-088;
 [operations-and-observability.md](spec/operations-and-observability.md) R-OPS-010; [security/bastion-handover.md](security/bastion-handover.md)
 H-1340 to H-1345.
+
+### ADR-254 · Read shapes per package at a Bastion: a registry token is full on the images of its grant
+
+**Status:** Decided by the development agent on 2026-11-22, after the owner's word that its favourite is built and not what was built first
+([Q-BAS-167](spec/bastion.md#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial),
+option (b)); the mechanisms Q-BAS-240 to Q-BAS-254 decided by the development agent. Specified, not built. Narrows
+[ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table)'s cap of a
+registry token at `partial` to the repository, and changes the condition of the owner's
+[Q-BAS-18](spec/bastion.md#q-bas-18--metadata-shared-for-confirmed-full-readers-filtered-documents-per-caller) from a full read of the
+repository to a full read of the repository or of the package a document belongs to (Q-BAS-244; named to the owner on 2026-11-22).
+
+**Context.** Almost every image client reads with a registry token of five minutes, taken anew for each pull. Its shape is capped at
+`partial` because a grant names images and the decision point does not see it, so every warm pull of an image of ten layers costs the main
+installation twelve conditional requests against the miss limit of the client's address (300 a minute), and a rollout behind one address
+reaches it at about twenty pulls a minute. Every reader narrowed by package patterns pays the same per artifact. In the code every format
+already decides its package through the host (`Host.Authorize` with `Target.Package`), the core already notes `absent` and `counted` for a
+recognized Bastion request, and the decision point classifies reach per repository only.
+
+**Decision.**
+- The decision point computes a package shape (`PackageReachOn`): `full` when the endpoint exposes everything, no path pattern tells two
+  paths of the repository apart, the read of the package is allowed on the artifact state, its wiki is readable and, for a remote, the
+  populate right holds; through a virtual repository its gate and every member; for a registry token only within its grant
+  ([bastion.md](spec/bastion.md) R-BAS-080, Q-BAS-240, Q-BAS-243).
+- The core notes the package of every rights decision the host makes; a response belongs to P when every decision named P and none named no
+  package. The marking gains `Quader-Bastion-Package` and `Quader-Bastion-Package-Read`, and a document is `shared` also for a reader `full`
+  on its package; the check answers per (repository, package) pair (R-BAS-081 to R-BAS-083, Q-BAS-241, Q-BAS-242, Q-BAS-244).
+- The Bastion keeps a fourth kind of answer per (credential, repository, package) under the rules and the feed of every answer, renewed by
+  use, records a registry token's `full` only where its unverified grant names the pair, and records the package on each cache entry; an
+  entry of P is served without a request to a caller `full` on P. A caller with a known `partial` shape gets a conditional request, not a
+  check, so no timing tells a cached package from an uncached one (R-BAS-084, R-BAS-085, Q-BAS-245 to Q-BAS-249).
+- Kit check 21 holds every format to it: decisions before the status line, a package-less decision for a response that draws on other
+  packages, the same answer for a reader of the package as for a reader of the repository (R-BAS-086, Q-BAS-250).
+- The interface takes version 5 and the handover moves to 6; the reading of a token's expiry from its claims is bundled (R-BAS-087,
+  Q-BAS-251, Q-BAS-252). Limits and download events stay as they are (Q-BAS-253).
+
+**Consequences.** A warm image pull costs the main installation its token request and one check: 3 requests for Docker and the kubelet, 2
+for Podman, instead of 13 to 15 (derived from the read flow, measured once when built), and a rollout behind one address reaches the miss
+limit at about 100 pulls a minute. A warm `npm ci` by a reader narrowed in every member costs nothing within the period. Registry-token and
+package-narrowed readers get the bounds of a full reader: what the feed does not carry reaches them within the revalidation periods
+(H-1380), and the limits and blocks at the renewal of their answer (H-1381). The check tells the holder of the Bastion token a held
+credential's shape per package (H-1382), and the sharing per package rests on the core's notes and check 21 (H-1383). About 1.3 s of unit
+tests, one second-package seed per format, no new end-to-end case.
+
+**Alternatives considered.** Keeping the cap and paying the requests (Q-BAS-167 (a), built until this is); asymmetric registry tokens the
+Bastion verifies (format knowledge at the Bastion); judging a package per member; sending grant patterns to the Bastion; a route declaration
+of the package parameter; an opaque package key; three package values with a status; artifacts only; a check whenever a package answer is
+missing; answers carried in the token service's answer; a bound per credential; a background refresh; `content` entries per package; one
+interface version shared with the handover.
+
+**Revisit condition:** a measurement in which the remaining check per new registry token matters (then answers in the token service's
+answer, Q-BAS-245 (d)); path-pattern grants that take the gain away from real installations (Q-BAS-240); revalidation traffic from
+`content` entries per repository (Q-BAS-249).
+
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-080 to R-BAS-088, Q-BAS-240 to Q-BAS-254, Q-BAS-167, and the edits of R-BAS-011, R-BAS-012,
+R-BAS-013, R-BAS-020, R-BAS-022, R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-BAS-074, Q-BAS-18,
+Q-BAS-198, Q-BAS-200, Q-BAS-202; the gaps H-1242 and H-1380 to H-1384; [developer/bastion-package-shapes.md](developer/bastion-package-shapes.md).
 
 ## Design invariants
 
@@ -10777,7 +10835,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-BAS-164](spec/bastion.md#q-bas-164--the-malware-scannings-events-in-the-feed-a-find-and-a-withdrawn-release-are-content) | How does a find reach the Bastions? | (a) `content` for every repository that holds the blob | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-BAS-165](spec/bastion.md#q-bas-165--the-registry-root-is-a-path-family-of-the-bastion-at-its-own-host-root) | Where does a Bastion serve container images? Decided by the planner | (a) `/v2/` at the Bastion's own host root, a path family like `/files/` | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
 | [Q-BAS-166](spec/bastion.md#q-bas-166--the-token-service-at-a-bastion-is-the-main-installations-reached-by-a-forward) | Who answers the registry's token flow at a Bastion? Decided by the planner | (a) the main installation's token service, reached by a forward with the caller's credential | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
-| [Q-BAS-167](spec/bastion.md#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial) | How is a registry token checked at a Bastion? Decided by the planner; put to the owner | (a) an opaque credential checked by forwards and the check, its read shape at most `partial`; read shapes per package as the revisit | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
+| [Q-BAS-167](spec/bastion.md#q-bas-167--a-registry-token-is-checked-by-the-main-installation-and-its-read-shape-is-at-most-partial) | How is a registry token checked at a Bastion? Decided by the development agent on 2026-11-22 after the owner's word that its favourite is built; built as (a) until R-BAS-080 to R-BAS-088 are | (b) read shapes per package: the marking names the package of a response and the caller's shape on it, the check answers per package | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
 | [Q-BAS-168](spec/bastion.md#q-bas-168--an-anonymous-registry-token-is-the-anonymous-caller-at-the-bastion) | What is an anonymous registry token at a Bastion? Decided by the planner | (a) the anonymous caller: the payload's principal kind read without verification, the token dropped | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
 | [Q-BAS-169](spec/bastion.md#q-bas-169--the-bastions-own-answers-below-v2-are-in-the-distributions-error-shape) | Which shape have the Bastion's own answers below `/v2/`? Decided by the planner | (a) the distribution's error body with the API version header | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
 | [Q-BAS-170](spec/bastion.md#q-bas-170--a-formats-facts-reach-the-bastion-in-the-handshake) | How does a Bastion learn a format's facts? Decided by the planner | (a) a table of the handshake; the interface rises to version 4 | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) |
@@ -10914,6 +10972,21 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-BAS-237](spec/bastion.md#q-bas-237--the-store-is-trusted-with-the-charts-trust-bundle) | The store is trusted with the chart's trust bundle. Decided by the planner | (a) the system roots and `bastion.main.ca_file` | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-BAS-238](spec/bastion.md#q-bas-238--a-blob-withdrawn-during-a-fill-is-treated-as-in-a-forwarded-fill) | A blob withdrawn during a fill is treated as in a forwarded fill. Decided by the planner | (a) the running fill completes, the feed's entry refuses the entry to every later caller | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-BAS-239](spec/bastion.md#q-bas-239--the-tests-once-at-the-cheapest-tier-one-integration-case-no-end-to-end-case) | The tests: once at the cheapest tier, one integration case, no end-to-end case. Decided by the planner | (a) unit tests, one integration case in the area `bastion`, no end-to-end case | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
+| [Q-BAS-240](spec/bastion.md#q-bas-240--what-full-on-a-package-means) | What does "full on a package" mean? Decided by the development agent | (a) every version and path of the package in every member, the wiki, the populate right, no path pattern on the repository, an endpoint that exposes everything | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-241](spec/bastion.md#q-bas-241--how-the-main-installation-learns-a-responses-package) | How does the main installation learn a response's package? Decided by the development agent | (a) the core notes the package of every rights decision the host makes | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-242](spec/bastion.md#q-bas-242--the-wire-of-the-marking) | What is the wire of the marking per package? Decided by the development agent | (a) `Quader-Bastion-Package` (percent-encoded) and `Quader-Bastion-Package-Read` | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-243](spec/bastion.md#q-bas-243--package-shapes-have-two-values-and-absent-stays-per-repository) | How many values has a package shape? Decided by the development agent | (a) `full` or `partial`; `none` folds into `partial`; `absent` stays per repository | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-244](spec/bastion.md#q-bas-244--documents-are-shared-per-package) | Are documents shared with a reader of one package? Decided by the development agent; changes the condition of the owner's Q-BAS-18 | (a) yes, the `shared` document of its package | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-245](spec/bastion.md#q-bas-245--when-the-bastion-asks) | When does the Bastion ask the main installation? Decided by the development agent | (a) a check with the package only when the shape on the repository is unknown, a conditional request when it is known and `partial` | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-246](spec/bastion.md#q-bas-246--the-bastions-own-guard-for-registry-tokens) | Does the Bastion guard a registry token's package answer itself? Decided by the development agent | (a) `full` only where the token's unverified grant names the pair with pull | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-247](spec/bastion.md#q-bas-247--bounds-on-package-answers) | How are package answers bounded? Decided by the development agent | (a) the shared LRU of `max_entries`, no count per credential | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-248](spec/bastion.md#q-bas-248--package-answers-renew-by-use) | How are package answers renewed? Decided by the development agent | (a) by use, as URL answers | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-249](spec/bastion.md#q-bas-249--the-feed-is-unchanged) | Does the feed change? Decided by the development agent | (a) no: `grants` also matches package answers, `content` stays per repository | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-250](spec/bastion.md#q-bas-250--the-format-contract) | What does a format owe? Decided by the development agent | (a) kit check 21 with `Fixture.OtherPackage` | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-251](spec/bastion.md#q-bas-251--the-version-numbering-against-the-handover) | Which interface version? Decided by the development agent | (a) the next free one, 5; the handover moves to 6 | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-252](spec/bastion.md#q-bas-252--option-b-of-q-bas-202-is-bundled) | Is Q-BAS-202 option (b) bundled? Decided by the development agent | (a) yes; the builder may leave it out | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-253](spec/bastion.md#q-bas-253--limits-and-download-events-stay-unchanged) | Do limits and download events change? Decided by the development agent | (a) no | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
+| [Q-BAS-254](spec/bastion.md#q-bas-254--the-tests) | Which tests? Decided by the development agent | (a) unit tests, kit check 21, the changed integration assertions, the OCI end-to-end warm assertion tightened, a measurement once | [ADR-254](#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant) |
 | [Q-STOR-340](spec/storage.md#q-stor-340--the-handover-is-decided-in-the-package-of-the-links-the-one-caller-of-copydatakey-besides-the-store) | The handover is decided in the package of the links, the one caller of CopyDataKey besides the store. Decided by the planner | (a) `internal/downloadlinks`, `ServeOptions.Handover`; the architecture test allows `CopyDataKey` from it and `internal/blob` | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-341](spec/storage.md#q-stor-341--a-plain-copy-is-handed-before-an-encrypted-one) | A plain copy is handed before an encrypted one. Decided by the planner | (a) the first plain copy in the read order, else the first encrypted one | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-342](spec/storage.md#q-stor-342--the-details-of-the-installations-links-hold-for-a-handover) | The details of the installation's links hold for a handover. Decided by the planner | (a) `minSize`, `linkLifeSeconds` and the public addresses of R-STOR-014 | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
