@@ -4891,7 +4891,7 @@ store's packages may not import the journal's. Three of the design's unverified 
 (the reconciliation sets the retirement, an unrecorded connection is answered alike, a prune records what
 the check reads). **A gap the design had not seen, H-1375,** found by the writer: whoever holds a
 connection's runtime credential can write journal entries, and the replay as designed destroys the keys of
-any connection, also of a live one that alone holds a blob. **Decided by the development agent at 23:42:**
+any connection, also of a live one that alone holds a blob. **Decided by the development agent at 23:41:**
 the replay destroys keys only of a connection the restoring configuration does not name; an entry for a
 configured connection is skipped and reported. What stays of the gap is the early destruction of an
 already retired connection's keys. The writer amends its commit with it. One unit test failed once under a
