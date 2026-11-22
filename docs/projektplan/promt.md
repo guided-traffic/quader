@@ -3727,7 +3727,7 @@ that reads the bucket**
   (decision 7); it costs next to nothing, because the plain name exists for the connections that are not
   encrypted anyway, and on a connection that is not encrypted it is not offered, since the content there is
   readable in any case. **Not answered:** the eight readings; every reading is covered by a decision he took. **The question which stores
-  his own installation shall get, answered in the chat at 10:58: (c),** one connection for now and the second
+  his own installation shall get, answered in the chat at 10:57: (c),** one connection for now and the second
   later. What follows: his own provider is the first to be measured against, and it was the one not researched,
   so a research of its object storage reads its documentation since 10:58 (what it supports of copies with new
   metadata, checksums, conditional writes, versioning and object lock, signed links; nothing is called at the
