@@ -103,6 +103,9 @@ var sharedTypes = map[string]bool{
 	// Of signatures on artifacts, a change of an anchor is journaled when it narrows (switched off, material removed) and the
 	// switch for project Owners when it is turned off (Q-SIG-42).
 	"signature.anchor.updated": true, "signature.settings.changed": true,
+	// The switch of the signed links of the object store is journaled when it is switched off and not when it is switched on
+	// (storage.md R-STOR-014).
+	"storage.download_links.changed": true,
 }
 
 var namePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,2}$`)

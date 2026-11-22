@@ -215,6 +215,7 @@ func wiringSteps() []step {
 		newStep(AreaFiles, everyRole, (*App).wireFiles),
 		newStep(AreaDownloadLimits, everyRole, (*App).wireDownloadLimits),
 		newStep(AreaLimits, withListener, (*App).wireLimits),
+		newStep(AreaDownloadLinks, withListener, (*App).wireDownloadLinks),
 		newStep(AreaProxyEngine, onFilling, (*App).wireProxyEngine),
 		newStep(AreaVirtualEngine, withListener, (*App).wireVirtualEngine, withOptional(proxyEngineArea{})),
 		newStep(AreaFormatHost, onFilling, (*App).wireFormatHost),

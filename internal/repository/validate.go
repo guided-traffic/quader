@@ -138,15 +138,7 @@ func validateSections(v *validation, info catalog.Entry, d *Document) {
 	validateAnsible(v, info, d)
 	validateVulnerabilities(v, info, d, na)
 	validateSignatures(v, info, d, na)
-	if len(d.Storage) > 0 {
-		trimmed := bytes.TrimSpace(d.Storage)
-		var probe map[string]json.RawMessage
-		if len(trimmed) == 0 || trimmed[0] != '{' || json.Unmarshal(trimmed, &probe) != nil {
-			v.add("/storage", codeInvalidValue, "must be a JSON object")
-		} else if raw, ok := probe["maxUploadSize"]; ok && !validByteLimit(raw) {
-			v.add("/storage/maxUploadSize", codeInvalidValue, "must be a non-negative integer number of bytes")
-		}
-	}
+	validateStorage(v, info, d)
 }
 
 // validateFormatSettings checks the settings member of the repository's format against

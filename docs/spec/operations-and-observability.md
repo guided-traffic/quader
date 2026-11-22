@@ -1531,7 +1531,7 @@ consumers can rely on every key being present.
 | `limits_outcome` | `admitted`, `limited:<figure>`, `would_limit:<figure>` (mode `audit`), `paced`, `blocked`; else `null` |
 | `bytes_cached` | Cached bytes of the request (R-LIM-006), `0` when none; `null` off the protocol paths |
 | `bytes_uncached` | Uncached bytes charged to the request as a leader (R-LIM-006), `0` when none; `null` off the protocol paths |
-| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; specified, not built); `handover` for a download a Bastion's forward was answered with a handover, status `200` without a body ([storage.md](storage.md) R-STOR-095; specified, not built); `null` for every other request |
+| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; built: `RequestInfo.SetDelivery`, [requestlog.go](../../internal/observability/requestlog.go)); `handover` for a download a Bastion's forward was answered with a handover, status `200` without a body ([storage.md](storage.md) R-STOR-095; specified, not built); `null` for every other request |
 
 </details>
 
@@ -2067,7 +2067,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `artifact.deployed` | T | yes | A file was stored in a local repository by any upload path | `path`, `sha256`, `size`, `overwritten` |
 | `artifact.deleted` | T | yes | A file was removed | `path`, `sha256`, `size` |
 | `artifact.delete_stopped` | A | — | The job of a large delete stopped because a batch was refused or the subject that asked was withdrawn ([storage.md](storage.md) R-STOR-018, Q-STOR-193); the subject as actor, the reason code as `reason`, outcome `denied`; what earlier batches removed stays removed | `path` (the root the request named), `reason`, `job`, `removed` |
-| `artifact.downloaded` | A | — | Only with `audit.record_downloads` | `path`, `sha256` |
+| `artifact.downloaded` | A | — | Only with `audit.record_downloads` | `path`, `sha256`; `delivery` (`link`) and `linkExpiresAt` for a download handed to a signed link of the object store ([storage.md](storage.md) R-STOR-073) |
 | `system.config_applied` | T | — | Configuration document applied (R-OPS-030, R-OPS-031) | `document`, `digest`, `summary`, `source` |
 | `system.config_exported` | A | — | R-OPS-032 | `kinds` |
 | `system.maintenance_mode_changed` | T | — | R-OPS-024 | `from`, `to`, `message` |
@@ -2085,6 +2085,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.deletions_paused` | T | — | The deletion pause was set by hand with `quader admin maintenance pause-deletions` ([ha-and-helm.md](ha-and-helm.md) R-HA-025, Q-HA-271); actor `system:admin`; none when it was already set | `reason` |
 | `system.deletions_resumed` | T | — | The deletion pause was cleared with `quader admin maintenance resume-deletions` (R-HA-025 step 7); actor `system:admin`; none when it was not set | `pausedAt`, `reason` |
 | `system.storage.connection_added` | T | — | A replica saw a connection id for the first time ([storage.md](storage.md) R-STOR-051); actor `system:replica` | `connection`, `bucket`, `prefix` |
+| `storage.download_links.changed` | T | when switched off | The switch of the delivery by signed links of the object store or its details changed ([storage.md](storage.md) R-STOR-014): the store of [internal/downloadlinks](../../internal/downloadlinks/store.go) records it in the transaction of the change; the entry `{"enabled": false}` switches the delivery off again after a restore | `before`, `after` (each `enabled`, `minSize`, `linkLifeSeconds`, `publicAddresses`) |
 | `system.storage.connection_drained` | T | — | A draining connection holds no copy any more (R-STOR-056); actor `system:worker` | `connection`, `copiesDeleted` |
 | `system.storage.connection_forgotten` | T | — | `quader admin storage forget-connection` gave a connection up (R-STOR-051); actor `system:admin` | `connection`, `copiesForgotten`, `blobsMissing` |
 | `system.storage.blob_damaged` | A | — | A read, the scrub, its recheck or the reconciliation's source found that no connection holds a blob whole any more: its content state left `ok` ([storage.md](storage.md) R-STOR-027, R-STOR-052); actor `system:replica`, outcome `warning`, reason `content_missing` or `content_corrupt`; asynchronous, written after the mark's transaction | `sha256`, `status` |

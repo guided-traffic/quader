@@ -294,12 +294,16 @@ func (g *Guard) ListMultipart(ctx context.Context, prefix string) (ups []Multipa
 // Presign implements ObjectStore. Signing is local work and sends no request, so it neither counts against the circuit nor
 // closes it; but a connection whose circuit is open signs no link (R-STOR-062, Q-STOR-245): a link to a store the replica
 // cannot reach would only move the failure to the client.
-func (g *Guard) Presign(ctx context.Context, key string, ttl time.Duration) (string, error) {
+func (g *Guard) Presign(ctx context.Context, key string, o PresignOptions) (Link, error) {
 	if after, rejecting := g.Rejecting(); rejecting {
-		return "", &circuitOpenError{retry: after}
+		return Link{}, &circuitOpenError{retry: after}
 	}
-	return g.inner.Presign(ctx, key, ttl)
+	return g.inner.Presign(ctx, key, o)
 }
+
+// Fetcher is the fetcher of the guarded store's links, nil when it has none: the link check fetches its probe's link with it, so
+// the fetch trusts the store as the store's own requests do (R-STOR-074).
+func (g *Guard) Fetcher() Fetcher { return FetcherOf(g.inner) }
 
 // ListMultipartPage implements [MultipartPager] when the guarded store does; a store that does not answers with the whole listing.
 func (g *Guard) ListMultipartPage(ctx context.Context, prefix string, after MultipartMarker, max int) (page []MultipartUpload, next MultipartMarker, err error) {

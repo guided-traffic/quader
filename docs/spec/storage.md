@@ -1301,18 +1301,20 @@ ausliefern lassen" and "Es gibt ein Flag um die Daten im s3 verschlüsselt abzul
 und können das nicht mehr durch s3 links machen". In his option: one switch of the installation in the admin area, off by default; it
 applies only where a link costs nothing (the connection is not encrypted, the format's client checks a digest itself, no pace limit
 applies to the caller, no Bastion is between, only `GET`); the minimum size, the link's life and the public host are details behind a
-disclosure; a repository can opt out. This block replaces the switch per repository it specified before
-([ADR-045](../decisions.md#adr-045--presigned-download-redirects-as-a-per-repository-opt-in-p2), superseded). Specified, not built.
+disclosure; a repository can opt out. *Changed on 2026-11-22 by [Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue), decided by the development agent after the
+owner left the open questions to it: a pace limit of the caller is no longer a condition; the hour and day budgets are charged at the
+issue.* This block replaces the switch per repository it specified before
+([ADR-045](../decisions.md#adr-045--presigned-download-redirects-as-a-per-repository-opt-in-p2), superseded). Built behind the API on
+2026-11-22 (package 2 of [developer/download-links.md](../developer/download-links.md#work-packages)); the operations below, the settings page
+and the repository's section on the screen are package 3 and not built.
 
-**What exists today** (read on 2026-11-22, updated with the connections of R-STOR-050): the store can sign a link (`ObjectStore.Presign`,
-[objects.go](../../internal/blob/objects.go); `PresignGetObject` against the connection's own endpoint,
-[client.go](../../internal/blob/s3/client.go) from line 453), `Connection.Presign` signs through the connection's guard and refuses while
-its circuit rejects ([connections.go](../../internal/blob/connections.go) from line 129, called by nothing yet), and the only caller of the
-store's is the conformance check `checkPresign` ([conformance.go](../../internal/blob/conformance.go) from line 652). No download is redirected: `edge.ServeItem` always
-streams ([content.go](../../internal/api/edge/content.go) lines 56 to 128). A repository's `storage.presignedDownloads` is stored and read
-by nothing: the member `storage` is opaque JSON ([document.go](../../internal/repository/document.go) lines 56 to 58), and its validation
-checks only that it is an object and `maxUploadSize` ([validate.go](../../internal/repository/validate.go) lines 141 to 148). The keys
-`storage.s3.presign.endpoint`, `ttl` and `min_size` went with `storage.s3`.
+**As built** (2026-11-22, package 2): the row `download_link_settings` (migration 00108) with its store, its audit event and the replay
+of a switch turned off ([internal/downloadlinks/store.go](../../internal/downloadlinks/store.go)), the replica's snapshot and its change
+area `download_link_settings` ([snapshot.go](../../internal/downloadlinks/snapshot.go)), the validation of a write
+(`downloadlinks.Validate`, [settings.go](../../internal/downloadlinks/settings.go)), the repository's member `storage.downloadLinks` with the
+closed object `storage` ([internal/repository/storage.go](../../internal/repository/storage.go)), and the serve point of R-STOR-070. The store
+is written by the operations of package 3, which are not built: until then nothing but a test and the end-to-end driver
+(`driver links on|off`, [links.go](../../test/e2e/cmd/driver/links.go)) writes the row, and a new installation keeps links off.
 
 **What the switch does.** A download that meets every condition of R-STOR-070 is answered `307 Temporary Redirect` to a link to the
 stored object, signed for `GET` (R-STOR-072); the client fetches the bytes from the object store. Everything else is answered by Quader
@@ -1406,13 +1408,21 @@ the repository that holds the item says `downloadLinks: false`:
 Acceptance criteria:
 
 - Integration (area `blob`, about 3 s, against the stack's object store): `PATCH /api/v1/download-links/settings` with
-  `{"enabled": true, "minSize": 0}` by an administrator answers `200`, by an auditor `403`, without `If-Match` `428`; a `GET` of an npm
-  tarball through another replica answers `307` within 2 s, with Valkey stopped as well, and the `Location` fetched by a plain HTTP client
-  returns the tarball's bytes; `{"enabled": false}` makes the next `GET` there `200` with the bytes within 2 s, and its audit event carries
-  the journal flag (`TestR_STOR_014_TheSwitchReachesEveryReplica`).
-- Unit (`internal/repository`): `{"storage": {"downloadLinks": false}}` on `npm-local` by its Owner is stored and records
+  `{"enabled": true, "minSize": 0}` by an administrator answers `200`, by an auditor `403`, without `If-Match` `428`; a `GET` of an OCI
+  blob through another replica answers `307` within 2 s, with Valkey stopped as well, and the `Location` fetched by a plain HTTP client
+  returns the blob's bytes; `{"enabled": false}` makes the next `GET` there `200` with the bytes within 2 s, and its audit event carries
+  the journal flag (`TestR_STOR_014_TheSwitchReachesEveryReplica`). *As built by package 2: the switch is written through the store the
+  operations write through, with Valkey stopped; the answers of the operations (`200`, `403`, `428`) are package 3's to add to the case
+  ([Q-STOR-353](#q-stor-353--the-cases-of-package-2-write-the-switch-through-the-store-and-the-end-to-end-cases-are-named-after-their-legs-sets)).*
+- Unit (`internal/downloadlinks`): a new installation is off with 1 MiB and 60 s; a write outside the ranges, an address that is not an
+  `https` origin or lies below a host of Quader, and a connection the installation does not have are refused; a merge patch's `null` returns
+  a connection to its endpoint (`TestR_STOR_014_TheSettings`).
+- Unit (`internal/repository`): `{"storage": {"downloadLinks": false}}` on `oci-local` by its Owner is stored and records
   `repository.narrowed`; `{"storage": {"presignedDownloads": true}}` answers `422` at `/storage/presignedDownloads`; `downloadLinks` on a
-  NuGet repository answers `422 not_applicable` (`TestR_STOR_014_TheRepositorysOptOut`).
+  NuGet repository answers `422 not_applicable` (`TestR_STOR_014_TheRepositorysOptOut`). *As built: the validation, the narrowing with
+  its part `downloadLinks`, the Owner's write, the snapshot's reading, the replay and the well-known repository's rule each at their
+  function, without a database; which formats take the member is the catalog's `ClientDigest`, derived from the routes by
+  `formats.Register` like `Mirror`.*
 
 ### R-STOR-070 · The conditions of one download, in the order of the serve point
 Priority: **P1** · Covers: STOR-032, STOR-033
@@ -1454,8 +1464,9 @@ themselves say so.
 8. **No range.** A request with a `Range` header, with or without `If-Range`, is answered by Quader: `206`, `200` or `416` as R-STOR-012
    says ([Q-STOR-285](#q-stor-285--quader-answers-every-request-with-a-range-itself)).
 9. **The size** of the item is at least `minSize`.
-10. **No pace figure.** The caller's budget key has no `cachedBytesPerSecond`, in `enforce` and in `audit` alike
-    ([usage-and-limits.md](usage-and-limits.md) R-LIM-040).
+10. **No pace figure is a condition** ([usage-and-limits.md](usage-and-limits.md) R-LIM-040, [Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)): a
+    caller whose budget key sets `cachedBytesPerSecond` gets a link as every other, in `enforce` and in `audit` alike; the transfer by a
+    link is not paced, and its size is charged to the hour and day budgets at the issue (step 14).
 11. **Admit.** The check before a download starts runs as for every download ([usage-and-limits.md](usage-and-limits.md) R-LIM-021):
     the hour and day windows and the parallel lease. A refusal is the `429` it is today, before any link.
 12. **A connection** that is not encrypted, holds the blob, is not failing and can serve links (R-STOR-074). The decision asks the
@@ -1468,16 +1479,34 @@ Steps 1 to 10 read the request, the item row, the request's charge and the repli
 is the round trip a streamed download takes as well, and steps 12 and 13 are local. A download handed to a link takes no request slot of
 the replica beyond its own answer, no copy buffer and no memory charge of the transfer.
 
+**As built** (2026-11-22, package 2): steps 1 to 6 and 8 to 10 in `itemStore.linkOptions`
+([download_links.go](../../internal/formathost/download_links.go)), called from `itemStore.Serve` after `serveChecks`, which reports whether
+every gate passed on a decided state (`sgate.Serve.RunDecided`, [serve.go](../../internal/signatures/gate/serve.go),
+[Q-STOR-350](#q-stor-350--a-gate-passed-on-a-decided-state-at-its-first-decision-a-download-that-waited-streams)); step 7 and step 11 in
+`edge.ServeItem`, which asks `ServeOptions.Link` after `Admit` for a `GET` answered `200` and writes the `307`
+([content.go](../../internal/api/edge/content.go)); steps 12 and 13 in `downloadlinks.Links.Sign` over the copies the item lookup read
+([links.go](../../internal/downloadlinks/links.go)); step 10 reads no figure, and step 14's charge is `limits.Charge.ChargeLink`
+([links.go](../../internal/limits/links.go)). A blob whose content state is not `ok` at step 5 is counted with the reason `connection`. An item
+whose copies a recheck of a missing blob dropped (`items.Store.Usable`) reads them with one statement before it is signed: the one case of
+a download by link that costs a second statement, as its stream would. `/files/` holds no input of the switch.
+
 Acceptance criteria:
 
 - Unit (`internal/formathost`, the in-memory object store with its signing and its `RoundTrip`, one table, under a second): with every
   condition met a tarball `GET` answers `307`; each condition taken away alone answers `200` with the bytes: a route without the
   declaration, a recognized Bastion request, the switch off, the holding member of a virtual repository opted out, a blob without a
-  malware verdict under a gate that is not strict, a `Range`, a size below `minSize`, a `cachedBytesPerSecond` in `audit`, an open
-  circuit, an encrypted connection (a fake of stage 1), a credential that expires in 3 s; `HEAD` answers `200` without a store request;
-  `If-None-Match` with the content address answers `304`; a used-up `cachedBytesPerHour` answers `429` and no link
-  (`TestR_STOR_070_TheConditionsOfALink`).
-- Unit (`internal/api/rawfiles`): with the switch on, every file of `/files/` is streamed (`TestR_STOR_070_FilesIsNeverALink`).
+  malware verdict under a gate that is not strict, a `Range`, a size below `minSize`, an open circuit, an encrypted connection (a fake of
+  stage 1), a credential that expires in 3 s; a caller with `cachedBytesPerSecond` gets `307` in `enforce` and in `audit` (Q-LIM-99);
+  `HEAD` answers `200` without a store request; `If-None-Match` with the content address answers `304`; a used-up `cachedBytesPerHour`
+  answers `429` and no link (`TestR_STOR_070_TheConditionsOfALink`).
+- Unit (`internal/api/rawfiles`): with the switch on, every file of `/files/` is streamed (`TestR_STOR_070_FilesIsNeverALink`). *As built:
+the switch is no input of the package, so the test holds its source to it: no file imports `internal/downloadlinks` and no
+`edge.ServeOptions` it builds sets `Link` or `Linked`.*
+- Unit (`internal/signatures/gate`): a writer's pass of the signature gate (Q-SIG-211) is decided, and its trace
+  (`signature.download_by_writer` and its count, Q-SIG-240) is written once by the decision, whether the download then goes by link or
+  streams; a verified pass writes none (`TestR_STOR_070_AWritersReadIsDecidedAndRecordedOnceLinkedOrStreamed`).
+- Integration (area `querybudget`): a download handed to a link costs the item lookup alone, one statement, as its stream does
+  (R-ARCH-027; `TestR_ARCH_027_ADownloadCostsOneStatement`, its case of a signed link).
 
 ### R-STOR-071 · The format declares whether its clients check a digest
 Priority: **P1** · Covers: quader-only
@@ -1495,9 +1524,11 @@ and `formats.ClientDigest` ([route.go](../../internal/formats/route.go)), the re
 [Q-STOR-295](#q-stor-295--kit-check-20-judges-every-200-a-declaring-route-answers-to-a-get-against-the-stored-blob-and-a-skip-while-a-route-declares-is-refused)),
 its two defects with the option `DeclaresClientDigest` in the test format
 ([Q-STOR-296](#q-stor-296--each-defect-of-check-20-takes-the-exemption-another-check-grants-its-route-so-that-it-fails-check-20-alone)), the three
-declarations of the table below and the table test. The contract's version stays 10. Nothing reads the declaration before the serve point
-of R-STOR-070 is built (package 2); the client families the table names as still to be shown are shown by that package's end-to-end cases
-before its serve point lands, and a family that takes altered bytes turns its route's declaration back then.
+declarations of the table below and the table test. The contract's version stays 10. The serve point of R-STOR-070 reads the declaration since package 2 (2026-11-22); the client families the
+table names as still to be shown are shown by that package's end-to-end cases (R-STOR-074's last criterion), and a family that takes altered
+bytes turns its route's declaration back. *Changed on 2026-11-22 by package 2: the npm leg's case showed Yarn 4 installing a tarball whose
+object was altered, so `npm.tarball.get` declares nothing
+([Q-STOR-354](#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)).*
 
 - **The contract's addition** ([ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it);
   [Q-STOR-286](#q-stor-286--the-declaration-is-a-field-of-the-route)). `formats.Route` gains `ClientDigest`; the Go block of
@@ -1536,10 +1567,10 @@ What each format declares (the clients' behaviour read on 2026-11-22 in their so
 
 | Format | Route | Declares | Against | Evidence | What is still to be shown with the real client |
 |---|---|---|---|---|---|
-| OCI | `oci.blob.get` | checks | the digest in the path | containerd checks on commit ("unexpected commit digest", `plugins/content/local/writer.go`, `(*writer).Commit`); the distribution specification asks clients to check (SHOULD) | Podman and CRI-O (the containers image library: no check seen in `getBlob`), the Docker Engine's older pull path: the case with the leg's Docker and Podman |
+| OCI | `oci.blob.get` | checks | the digest in the path | containerd checks on commit ("unexpected commit digest", `plugins/content/local/writer.go`, `(*writer).Commit`); the distribution specification asks clients to check (SHOULD) | CRI-O and the Docker Engine's older pull path; the leg's Docker Engine and Podman refused an altered layer in the case of 2026-11-22 |
 | OCI | `oci.manifest.get.digest` | does not check | | the store's answer carries no `Docker-Content-Digest`, no public registry redirects a manifest, and what a client does with such an answer was not read | |
-| npm | `npm.tarball.get` | checks | `dist.integrity` of the version in the package document (`dist.shasum` where it has none) | pacote's remote fetcher checks `integrity` (`lib/remote.js`) | pnpm and Yarn: the case with the leg's pnpm and Yarn |
-| Ansible Galaxy | `ansible.artifact.get` | checks | `artifact.sha256` of the collection version | `ansible-galaxy` compares the SHA-256 ("Mismatch artifact hash with downloaded file", `concrete_artifact_manager.py`, `_download_file`) and never sends its credential after a redirect | none beyond `ansible-galaxy`: the case with the leg's client |
+| npm | `npm.tarball.get` | does not check | | npm 12, pnpm 12 and Yarn 1 refused a tarball whose object was altered in the bucket; Yarn 4.18.1 installed it: its npm fetcher (`NpmSemverFetcher.fetchFromNetwork`) compares nothing with `dist.integrity`, and its lockfile's checksum is the one a first resolve wrote from the bytes it got (the case of 2026-11-22, [Q-STOR-354](#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)) | |
+| Ansible Galaxy | `ansible.artifact.get` | checks | `artifact.sha256` of the collection version | `ansible-galaxy` compares the SHA-256 ("Mismatch artifact hash with downloaded file", `concrete_artifact_manager.py`, `_download_file`) and never sends its credential after a redirect | none: ansible-core 2.17 and 2.21 refused an altered archive in the case of 2026-11-22 |
 | Ansible Galaxy | `ansible.role.archive` | does not check | | not read: a role carries no digest the client could hold | |
 | NuGet | `nuget.flatcontainer.nupkg`, `nuget.flatcontainer.nuspec`, `nuget.flatcontainer.embedded`, `nuget.symbols` | does not check | | no check found; the client's own handling beyond .NET's `HttpClientHandler` was not read | the NuGet client |
 | Debian | `deb.pool.get`, `deb.members.get`, `deb.flat.file`, `deb.dists.by_hash` | does not check | | apt checks a file against the signed index, but its hash path was not read | apt: a builder may add the case to the leg `apt` and then declare it |
@@ -1552,7 +1583,7 @@ Acceptance criteria:
   evidence (`TestR_STOR_071_RegisterRefusesADeclarationItCannotHold`); each defect fails check 20 and no other check, with the exemption
   another check grants its route (Q-STOR-296); OCI, npm, NuGet, Debian, Ansible Galaxy, the ClamAV definitions and generic pass it, in
   each format's `TestR_ARCH_010_Conformance` (`TestR_STOR_071_KitCheck20`).
-- Unit (`internal/formats/all`): the table names `oci.blob.get`, `npm.tarball.get` and `ansible.artifact.get` and no other route
+- Unit (`internal/formats/all`): the table names `oci.blob.get` and `ansible.artifact.get` and no other route
   (`TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck`).
 - End-to-end, one case in each leg of a format that declares `Checks`, constant in size (R-STOR-070's client case, below).
 
@@ -1562,7 +1593,10 @@ Priority: **P1** · Covers: STOR-032
 - **Signed** with the query parameters of AWS Signature Version 4 for `GET` of the object's key on the connection R-STOR-074 chose, by
   that connection's runtime credential (R-STOR-031), against its public address. `ObjectStore.Presign` takes what it signs as options
   (the life, the three overrides below, the address) and answers the link with its expiry
-  ([Q-STOR-293](#q-stor-293--a-link-is-signed-by-the-connections-runtime-credential)).
+  ([Q-STOR-293](#q-stor-293--a-link-is-signed-by-the-connections-runtime-credential)). As built: `blob.PresignOptions` and `blob.Link`
+  ([objects.go](../../internal/blob/objects.go)); the S3 adapter retrieves the credential once and signs with it, so the expiry and the
+  signature agree ([client.go](../../internal/blob/s3/client.go)); the in-memory store signs with a key of its own and answers its links
+  as a store does ([presign.go](../../internal/blob/blobtest/presign.go)).
 - **The headers of the store's answer** ([Q-STOR-287](#q-stor-287--a-links-answer-carries-the-content-type-the-file-name-and-no-store-and-the-redirect-carries-the-four-content-headers)).
   The signed query asks the store for three of the answer's headers, the only kind of header a link can ask for:
   `response-content-type` (the content type Quader's own answer would carry: the item's), `response-content-disposition`
@@ -1610,6 +1644,8 @@ Acceptance criteria:
   (`TestR_STOR_072_TheLinksHost`).
 - Unit (`internal/api/edge`): the `307` carries `Location`, `Cache-Control: no-store`, `Content-Length: 0` and the four content headers,
   and no `ETag` (`TestR_STOR_072_TheRedirect`).
+- Unit (`internal/blob`): a link lives its life in whole seconds, the earlier of it and the credential's expiry, and a credential that ends
+  within 5 s signs none, in the S3 adapter and in the in-memory store alike (`blob.LinkLife`, `TestR_STOR_072_TheLinksLife`).
 - Conformance (`checkPresign`, the job `s3-conformance` against Silo, milliseconds): the link's answer carries the overridden
   `Content-Type`, `Content-Disposition` and `Cache-Control`.
 
@@ -1632,8 +1668,8 @@ was fetched, nor how many bytes arrived.
   `delivery` with `link` (`null` for every other request), `bytes_cached` the item's size, `response_bytes` `0`.
 - **Metrics** (closed labels, R-OPS-007): `quader_storage_download_links_total{format}` (links issued),
   `quader_storage_download_link_bytes_total{format}` (their sizes), `quader_storage_download_links_declined_total{reason}` for a `GET` of
-  a declaring route that was streamed while the switch was on (`bastion`, `opt_out`, `gate`, `range`, `size`, `pace`, `connection`,
-  `credential`, `signing`), and the gauge `quader_storage_download_links_usable{connection}`, 1 while a connection can serve links on
+  a declaring route that was streamed while the switch was on (`bastion`, `opt_out`, `gate`, `range`, `size`, `connection`,
+  `credential`, `signing`; no figure of the limits is a reason, Q-LIM-99), and the gauge `quader_storage_download_links_usable{connection}`, 1 while a connection can serve links on
   the replica (R-STOR-074). `quader_storage_s3_requests_total` counts no request for a link: signing is local.
 - **The object store's own log**, where its operator turned one on, holds the request of the link with the object key, the time, the
   address the store saw and the signer: the connection's credential, never Quader's caller. Signing makes no request, so the store records
@@ -1642,8 +1678,10 @@ was fetched, nor how many bytes arrived.
 Acceptance criteria:
 
 - Unit (`internal/formathost`): one link adds one download to the statistics buffer, the item's size to the charge's cached bytes, one
-  `artifact.downloaded` with `delivery: "link"` when downloads are audited, and one to `quader_storage_download_links_total{format="npm"}`;
-  a streamed `GET` declined for its range adds one to `..._declined_total{reason="range"}` (`TestR_STOR_073_WhatALinkCounts`).
+  `artifact.downloaded` with `delivery: "link"` when downloads are audited, and one to `quader_storage_download_links_total` of the format;
+  a streamed `GET` declined for its range adds one to `..._declined_total{reason="range"}` (`TestR_STOR_073_WhatALinkCounts`). As built:
+  the counting is `ServeOptions.Linked` ([download_links.go](../../internal/formathost/download_links.go)), the metrics
+  [metrics.go](../../internal/downloadlinks/metrics.go), the request log's field `RequestInfo.SetDelivery`.
 
 ### R-STOR-074 · The connection that serves a link, its public address, its link check and the test link
 Priority: **P1** · Covers: STOR-032
@@ -1688,6 +1726,16 @@ which is not encrypted ([R-STOR-048](#r-stor-048--client-side-encryption-of-stor
 - **The store's own limits** apply to the transfers of links as well and are not Quader's to enforce: a provider limits requests,
   concurrent requests and bandwidth per account or project (H-1283).
 
+**As built** (2026-11-22, package 2): several connections are built, and the choice reads the copies of the item lookup
+(`blob.Connections.ServableOf`, [copies.go](../../internal/blob/copies.go)), so a link costs no statement. The link check is `blob.CheckLink`
+([linkcheck.go](../../internal/blob/linkcheck.go)), its two parts `blob.LinkCheck.Works` and `Overrides`, recorded on the connection; it
+runs on every replica with a client listener, in the background of its start, again when the switch turns on and at the snapshot's safety
+period while it has not answered ([Q-STOR-351](#q-stor-351--the-link-check-runs-on-every-replica-with-a-client-listener-in-the-background-and-again-until-it-answers)).
+Each connection's state, `Usable` with its reasons and `HandoverUsable` with its own, is `downloadlinks.ConnectionState`
+([links.go](../../internal/downloadlinks/links.go)); the host rule is `downloadlinks.HostRule` ([hosts.go](../../internal/downloadlinks/hosts.go)).
+A connection that cannot serve links is logged while the switch is on
+([Q-STOR-352](#q-stor-352--a-connection-that-cannot-serve-links-is-logged-while-the-switch-is-on)). The test link is package 3's.
+
 Acceptance criteria:
 
 - Unit (`internal/api/v1`): the settings' answer names `quader_host` for an address below `server.base_url`, `not_https` for an `http`
@@ -1696,10 +1744,16 @@ Acceptance criteria:
   circuit is open (`TestR_STOR_074_TheConnectionAndItsAddress`).
 - Unit (`internal/blob`): the link check fails against an in-memory store that ignores `response-content-disposition`, and the
   connection serves no link while the others' downloads go on (`TestR_STOR_074_TheLinkCheck`).
-- End-to-end, in the leg of each format that declares `Checks` (`oci`, `npm`, `ansible`), one case with bytes to kilobytes: with
-  `{"enabled": true, "minSize": 0}` the leg's clients fetch a fresh one-file artifact through a `307` (Docker and Podman; npm, pnpm and
-  Yarn; `ansible-galaxy`), and after its object was overwritten in the bucket with other bytes of the same length every one of them
-  refuses it (`TestR_STOR_071_<Format>ClientsCheckALink`).
+- Unit (`internal/downloadlinks`): the reasons per connection (`encrypted` for a fake of stage 2, `not_https`, `quader_host` with the host,
+  `link_check_failed` with what the store answered) and the handover's own; the link from the first copy on a connection that can serve
+  links, against its public address, with the three overrides; an encrypted connection, a copy marked damaged and an open circuit pass to
+  the next copy or stream (`TestR_STOR_074_WhichConnectionsCanServeLinks`, `TestR_STOR_074_TheConnectionOfALink`).
+- End-to-end, in the leg of each format that declares `Checks` (`oci`, `ansible`), one case with bytes to kilobytes: with
+  `{"enabled": true, "minSize": 0}` the leg's clients fetch a fresh one-file artifact through a `307` (Docker and Podman;
+  `ansible-galaxy`), and after its object was overwritten in the bucket with other bytes of the same length (a gzip stream's header time
+  flipped, so the files are the same and only a digest tells the bytes apart) every one of them refuses it
+  (`TestOCI_R_STOR_071_ClientsCheckALink`, `TestAnsible_R_STOR_071_ClientsCheckALink`, named after the prefixes their legs select by,
+  Q-STOR-353). The npm leg's case turned npm's declaration back and was removed with it (Q-STOR-354).
 
 ### R-STOR-095 · The handover to a Bastion at the serve point
 Priority: **P1** · Covers: quader-only
@@ -1805,7 +1859,8 @@ Acceptance criteria:
   written before the answer with its details and without the key, and a failing insert streams the download
   (`TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`).
 - Unit (`internal/blob`): a store fake that ignores `response-content-disposition` passes the first part of the link check and fails the
-  second, so its connection can serve a handover and no link (`TestR_STOR_096_TheLinkCheckHasTwoParts`).
+  second, so its connection can serve a handover and no link (`TestR_STOR_096_TheLinkCheckHasTwoParts`). Built with the links' package 2,
+  which records the two parts and decides `HandoverUsable` with its reasons; the handover itself is not built.
 - Unit (`internal/archtest`): a call of `CopyDataKey` from a package other than `internal/blob` and `internal/downloadlinks` fails
   (`TestR_STOR_096_CopyDataKeyHasTwoCallers`).
 
@@ -9890,6 +9945,97 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) Everything in package 6 | With the documentation | — | Package 6 owns no code of the keys |
 
 **Choice:** (a). **Applied in the spec:** [stored-content-encryption.md](../developer/stored-content-encryption.md).
+
+### Q-STOR-350 · A gate passed on a decided state at its first decision; a download that waited streams
+
+Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: Q-STOR-284 hands a download to a link only when every gate that applies passed on a decided state. The gates decide together
+before one wait (R-SIG-069); a pending blob under a strict malware gate, or a pending signature, waits, and the wait can end with the
+verdict that lets the download through. A writer of the repository reads an unsigned artifact through the signature gate by his right
+(Q-SIG-211), a decided answer of the gate that the owner kept with a trace of each such read (`signature.download_by_writer`, Q-SIG-240);
+a vulnerability block in the mode `report` is recorded and served (R-VULN-015).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Decided is what the checks found at their first decision: the scanning off or the blob clean or released, no block (also none in `report`), the signature gate off or passed, by a verified signature or for a writer; a download that waited and a block in `report` stream (chosen) | `sgate.Serve.RunDecided` reports it from what the decision finds anyway, and records a writer's read there, once, whether the download then streams or goes by link | No second read of a verdict; a writer's read leaves the same trace by link as streamed | A download that waited for its verdict streams once more; it is the first after the upload, and the next one goes by link |
+| (b) Read the verdicts again after a wait | | The download after the wait goes by link | A second statement on the path of a download (R-ARCH-027) for a case of seconds |
+| (c) A writer's pass streams as well | | A link only for a verified signature | The writer's read the owner kept would differ by delivery for no gain: its trace is the same either way |
+
+**Choice:** (a). The development agent first chose to stream a writer's pass and turned to (a) on the same day, when the trace of a
+writer's read landed (Q-SIG-240): the trace is written by the decision, before the serve point streams or hands the download to a link.
+**Applied in the spec:** R-STOR-070 (as built).
+
+### Q-STOR-351 · The link check runs on every replica with a client listener, in the background, and again until it answers
+
+Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-074 lets "every replica serving downloads" run the link check at its start and when the switch is turned on, and the
+settings' answer names per connection whether it can serve links on the replica that answers, which is an `api` replica. The check writes
+one probe, signs one link and fetches it per connection; a store that is unreachable at that moment gives no answer.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every role with a client listener (`api`, `packages`, `web`, `all`) runs it, in the background of its start, again when its snapshot sees the switch turned on, and at the snapshot's safety period (a minute) while a connection's check has not answered; the worker none (chosen) | The area `download_links` of those roles | The answer of an `api` replica names its own check; a slow store never holds a start or a readiness; a store that was down at the start is asked again | One probe per connection and start on `api` replicas too |
+| (b) Only the replicas that serve downloads | The specification's words | Fewer probes | An `api` replica would answer `link_check_failed` for a connection that serves links |
+| (c) Before the first readiness | | No link before the check | A store that answers slowly holds every start |
+
+**Choice:** (a). A check that cannot write its probe keeps what the connection answered before, so a short outage of the store does not
+take a connection out of links. **Applied in the spec:** R-STOR-074 (as built), [architecture.md](architecture.md) R-ARCH-001's table.
+
+### Q-STOR-352 · A connection that cannot serve links is logged while the switch is on
+
+Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-074 has a replica log a connection it finds unable once per change, with the reason and the host. Most installations do not
+use links, and an encrypted connection, or a store reached over `http` inside the cluster, is unable for links by design.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Logged at `warn` once per change of the reasons, while the switch is on and once the connection's link check answered (chosen) | Switching on logs every unable connection once | The log speaks when an administrator wants links and a connection cannot give them | An installation with the switch off does not learn it from the log; the settings' answer and the gauge say it |
+| (b) Always, once per change | | Seen before switching on | A warning at every start of every installation that has an encrypted connection or an `http` endpoint |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-074 (as built).
+
+### Q-STOR-353 · The cases of package 2 write the switch through the store, and the end-to-end cases are named after their legs' sets
+
+Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: the integration case of R-STOR-014 and the end-to-end cases of R-STOR-074 switch the delivery on through `PATCH
+/api/v1/download-links/settings`, which package 3 builds after package 2. The end-to-end sets select their tests by name prefix
+(`^TestNPM(...)`, `^TestOCI`, `^TestAnsible`, [e2e.sh](../../deploy/dev/e2e.sh)); the names `TestR_STOR_071_<Format>ClientsCheckALink` match none.
+The dev profile's malware scanning may have no verdict for a fresh blob within a test's minutes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The integration case writes through `downloadlinks.Store` (what the operations will call) with its change area, and the end-to-end cases through the driver pod's `driver links on\|off` and `driver overwrite`, as the driver writes what M0 had no API for; the blob is marked `clean` by a statement; the cases are named `Test<Set>_R_STOR_071_ClientsCheckALink` (chosen) | Package 3 adds the operations' answers to the integration case | The cases run now and show the store, the snapshot and the clients; the requirement stays in the name | A statement stands in for the scanner in the end-to-end cases |
+| (b) Wait for package 3 | | One path | The serve point would land without its clients' evidence, which R-STOR-071 asks for before it lands |
+| (c) Keep the names and widen each set's pattern | | The specification's names | Three set patterns grow an exception each |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-014's and R-STOR-074's criteria.
+
+### Q-STOR-354 · Yarn 4 installs a tarball whose object was altered, so npm's tarball route declares nothing
+
+Status: **Decided by the development agent** (package 2 of the signed links) by R-STOR-071's rule of evidence, which turns a route's
+declaration back when a supported client family takes altered bytes; the finding goes to the owner, who may choose (b).
+
+Context: the npm leg's case of R-STOR-074 ran on 2026-11-22 on a kind cluster of the package's own, with the leg's client image (npm 12.2.1,
+pnpm 12.16.1, Yarn 4.18.1, Yarn 1.22.22). Every family installed a fresh one-file package through a `307` to a link. After the tarball's
+object was overwritten in the bucket with the same gzip stream whose header time was flipped (the same files, other bytes, another
+SHA-512), npm 12, pnpm 12 and Yarn 1 refused it on the integrity, and Yarn 4 installed it. Its npm fetcher (`NpmSemverFetcher.fetchFromNetwork`
+in `@yarnpkg/cli-dist` 4.18.1) converts the tarball to its zip archive without comparing it with `dist.integrity`; its checksum check
+(`checksumBehavior`) compares with the checksum its lockfile holds, which a first resolve writes from the bytes it got. A project whose
+lockfile was written from the stored bytes refuses on the checksum; a new project, a new dependency or an update installs what the link
+serves. Streamed, Quader's own check (R-STOR-013) aborts such a download.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `npm.tarball.get` declares nothing, so every npm download streams through Quader's check (chosen) | The declaration and the table test change; the npm leg's case is removed, the integration and query-budget cases of the links use an OCI blob | The rule as written: no link where a supported client takes altered bytes | npm's tarballs offload nothing |
+| (b) The serve point declines a link to a request whose `User-Agent` names Yarn 2 or later, and npm's route declares again | A step of R-STOR-070 that reads the client's header; the declaration becomes "every client but the ones recognized" | npm, pnpm and Yarn 1 get links | The header is the client's to set: a Yarn behind a wrapper or a proxy that rewrites it gets a link; a contract change (a declaration per client family); the owner's decision |
+| (c) Keep the declaration and record the gap | | The offload | Against the rule: a Yarn 4 user installs what a tampered bucket holds |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-071's table, its as-built note and criteria, R-STOR-014's and R-STOR-074's criteria; code:
+[routes.go](../../internal/formats/npm/routes.go), the table test in [all_test.go](../../internal/formats/all/all_test.go).
 
 ## What this does not cover
 

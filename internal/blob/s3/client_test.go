@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -518,18 +519,78 @@ func TestConfiguration(t *testing.T) {
 			t.Fatalf("got %v", err)
 		}
 	})
-	// The presign primitive that R-STOR-014 will use; the redirect itself is not built (P2), so the test does not name
-	// the requirement and does not count as its evidence.
-	t.Run("a presigned URL names the connection's endpoint, the bucket, the key and the validity", func(t *testing.T) {
+}
+
+// TestR_STOR_072_TheLink: a link is signed for GET with the query parameters of Signature Version 4, carries its life, the three
+// overrides in the signed query and the public address's host, and a temporary credential bounds its life (Q-STOR-290,
+// Q-STOR-293).
+func TestR_STOR_072_TheLink(t *testing.T) {
+	opts := blob.PresignOptions{
+		Life: 60 * time.Second, ContentType: "application/gzip", ContentDisposition: "attachment; filename*=UTF-8''a.tgz",
+		CacheControl: "private, no-store", Address: "https://objects.example.com",
+	}
+	t.Run("R-STOR-072 a link of 60 s carries X-Amz-Expires=60, the three overrides in its signed query and the public address's host", func(t *testing.T) {
 		e := newEnv(t, nil)
-		u, err := e.client.Presign(context.Background(), "quader/sha256/aa/bb/x", 60*time.Second)
+		link, err := e.client.Presign(context.Background(), "quader/sha256/aa/bb/x", opts)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, want := range []string{e.srv.URL + "/b/quader/sha256/aa/bb/x", "X-Amz-Expires=60", "X-Amz-Signature="} {
-			if !strings.Contains(u, want) {
-				t.Errorf("missing %q in %s", want, u)
+		u, err := url.Parse(link.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		q := u.Query()
+		if u.Scheme != "https" || u.Host != "objects.example.com" || u.Path != "/b/quader/sha256/aa/bb/x" {
+			t.Errorf("the link names %s://%s%s", u.Scheme, u.Host, u.Path)
+		}
+		if q.Get("X-Amz-Expires") != "60" || q.Get("X-Amz-Signature") == "" {
+			t.Errorf("expires %q, signature %q", q.Get("X-Amz-Expires"), q.Get("X-Amz-Signature"))
+		}
+		for param, want := range map[string]string{
+			"response-content-type": opts.ContentType, "response-content-disposition": opts.ContentDisposition, "response-cache-control": opts.CacheControl,
+		} {
+			if q.Get(param) != want {
+				t.Errorf("%s = %q, want %q", param, q.Get(param), want)
 			}
+		}
+		if d := time.Until(link.ExpiresAt); d < 55*time.Second || d > 61*time.Second {
+			t.Errorf("the link expires in %s", d)
+		}
+	})
+	t.Run("R-STOR-072 with a credential that expires in 30 s the link expires at most 30 s away, and one that ends within 5 s signs none", func(t *testing.T) {
+		var expires atomic.Value
+		expires.Store(time.Now().Add(30 * time.Second))
+		sts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/xml")
+			_, _ = w.Write([]byte(`<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleWithWebIdentityResult><Credentials>` +
+				`<AccessKeyId>AKIDSTS</AccessKeyId><SecretAccessKey>sts-secret</SecretAccessKey><SessionToken>sts-token</SessionToken>` +
+				`<Expiration>` + expires.Load().(time.Time).UTC().Format(time.RFC3339) + `</Expiration></Credentials></AssumeRoleWithWebIdentityResult></AssumeRoleWithWebIdentityResponse>`))
+		}))
+		t.Cleanup(sts.Close)
+		token := filepath.Join(t.TempDir(), "token")
+		if err := os.WriteFile(token, []byte("projected-jwt"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		mk := func() *s3.Client {
+			return newEnv(t, func(c *config.StorageS3) {
+				c.Credentials = config.StorageS3Credentials{
+					Source: "webIdentity", RoleARN: "arn:aws:iam::123456789012:role/quader", WebIdentityTokenFile: token, STSEndpoint: sts.URL,
+				}
+			}).client
+		}
+		link, err := mk().Presign(context.Background(), "k", opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if d := time.Until(link.ExpiresAt); d > 30*time.Second || d < 20*time.Second {
+			t.Errorf("the link expires in %s, want at most 30 s", d)
+		}
+		if q, _ := url.ParseQuery(link.URL[strings.IndexByte(link.URL, '?')+1:]); q.Get("X-Amz-Security-Token") != "sts-token" {
+			t.Errorf("the session token is not in the link's query")
+		}
+		expires.Store(time.Now().Add(3 * time.Second))
+		if _, err := mk().Presign(context.Background(), "k", opts); !errors.Is(err, blob.ErrCredentialExpiring) {
+			t.Fatalf("a credential that ends in 3 s signed: %v", err)
 		}
 	})
 }

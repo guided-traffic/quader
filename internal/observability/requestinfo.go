@@ -36,6 +36,9 @@ type requestFacts struct {
 	certSerial, certIssuer string
 	// limits are the download limits' fields of a request on a protocol path (SetLimits); nil off them.
 	limits *LimitsFields
+	// delivery is how a download left Quader other than as its bytes: link for a signed link of the object store (storage.md
+	// R-STOR-073); empty for every other request.
+	delivery string
 	// extra are the fields a protocol layer adds to the record (SetField), in the
 	// order they were set.
 	extra []extraField
@@ -131,6 +134,10 @@ func (ri *RequestInfo) SetDenyReason(r string) { ri.set(func(v *requestFacts) { 
 func (ri *RequestInfo) SetLimit(limiter, mode string) {
 	ri.set(func(v *requestFacts) { v.limiter, v.limitMode = limiter, mode })
 }
+
+// SetDelivery records how a download was delivered when it was not streamed: link for a signed link of the object store
+// (R-OPS-010, storage.md R-STOR-073). The record's field delivery is null for every other request.
+func (ri *RequestInfo) SetDelivery(d string) { ri.set(func(v *requestFacts) { v.delivery = d }) }
 
 // SetRemoteAddr records the client address after the trusted-proxy rule.
 func (ri *RequestInfo) SetRemoteAddr(a string) { ri.set(func(v *requestFacts) { v.remoteAddr = a }) }

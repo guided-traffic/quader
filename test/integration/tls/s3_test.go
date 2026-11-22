@@ -76,11 +76,11 @@ func TestObjectStoreTLS(t *testing.T) {
 			t.Fatal(err)
 		}
 		// The presigned URL verifies the same way through the client's own HTTP client.
-		u, err := c.Presign(context.Background(), key, time.Minute)
+		link, err := c.Presign(context.Background(), key, blob.PresignOptions{Life: time.Minute})
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := c.HTTPClient().Get(u)
+		resp, err := c.HTTPClient().Get(link.URL)
 		if err != nil {
 			t.Fatal(err)
 		}

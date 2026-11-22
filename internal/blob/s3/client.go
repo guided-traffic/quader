@@ -450,15 +450,51 @@ func (c *Client) ListMultipart(ctx context.Context, prefix string) ([]blob.Multi
 	}
 }
 
-// Presign implements blob.ObjectStore.
-func (c *Client) Presign(ctx context.Context, key string, ttl time.Duration) (string, error) {
-	r, err := c.presign.PresignGetObject(ctx, &awss3.GetObjectInput{Bucket: &c.bucket, Key: &key}, func(o *awss3.PresignOptions) {
-		o.Expires = ttl
+// Presign implements blob.ObjectStore (R-STOR-072): the query parameters of Signature Version 4 for GET of the key, signed by
+// the connection's runtime credential, with the overrides of o in the signed query, against o.Address when it is set and the
+// connection's endpoint otherwise. The credential is retrieved once and signs with the expiry it was read with, so the link's
+// expiry and its signature agree; a temporary credential bounds the life (blob.LinkLife).
+func (c *Client) Presign(ctx context.Context, key string, o blob.PresignOptions) (blob.Link, error) {
+	provider := c.api.Options().Credentials
+	if provider == nil {
+		return blob.Link{}, &blob.StoreError{Op: "PresignGetObject", Key: key, Kind: blob.KindConfig, Err: errors.New("the connection has no credential to sign with")}
+	}
+	creds, err := provider.Retrieve(ctx)
+	if err != nil {
+		return blob.Link{}, mapError(ctx, "PresignGetObject", key, err)
+	}
+	now := time.Now()
+	var expires time.Time
+	if creds.CanExpire {
+		expires = creds.Expires
+	}
+	life, err := blob.LinkLife(now, o.Life, expires)
+	if err != nil {
+		return blob.Link{}, err
+	}
+	in := &awss3.GetObjectInput{Bucket: &c.bucket, Key: &key}
+	if o.ContentType != "" {
+		in.ResponseContentType = aws.String(o.ContentType)
+	}
+	if o.ContentDisposition != "" {
+		in.ResponseContentDisposition = aws.String(o.ContentDisposition)
+	}
+	if o.CacheControl != "" {
+		in.ResponseCacheControl = aws.String(o.CacheControl)
+	}
+	r, err := c.presign.PresignGetObject(ctx, in, func(po *awss3.PresignOptions) {
+		po.Expires = life
+		po.ClientOptions = append(po.ClientOptions, func(so *awss3.Options) {
+			so.Credentials = aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) { return creds, nil })
+			if o.Address != "" {
+				so.BaseEndpoint = aws.String(o.Address)
+			}
+		})
 	})
 	if err != nil {
-		return "", mapError(ctx, "PresignGetObject", key, err)
+		return blob.Link{}, mapError(ctx, "PresignGetObject", key, err)
 	}
-	return r.URL, nil
+	return blob.Link{URL: r.URL, ExpiresAt: now.Add(life)}, nil
 }
 
 // lowerKeys is the metadata of an answer with lower-case keys, nil when it has none (R-STOR-062): HTTP headers are not case

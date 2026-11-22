@@ -59,8 +59,9 @@ func (s hostSignatures) Refuse(ctx context.Context, rq *formats.Request, repo fo
 
 // serveChecks applies the three checks of a stored item about to be served (R-SIG-069): after the format's own serve-time check, so that
 // a version the caller may not read stays the format's 404, for GET, HEAD, conditional and Range requests alike. A refusal or a pending
-// answer ends the request and, in a virtual repository, the resolution (R-MAL-018, R-SIG-065).
-func (h *Host) serveChecks(ctx context.Context, rq *formats.Request, repo formats.RepoRef, row items.Item) error {
+// answer ends the request and, in a virtual repository, the resolution (R-MAL-018, R-SIG-065). decided reports whether every check
+// that applies passed at its first decision on a decided state, the condition of a signed link (storage.md R-STOR-070 step 6).
+func (h *Host) serveChecks(ctx context.Context, rq *formats.Request, repo formats.RepoRef, row items.Item) (decided bool, err error) {
 	srv := sgate.Serve{}
 	if h.o.Enforce != nil && row.Kind == items.KindFile {
 		srv.Enforce = h.o.Enforce
@@ -74,7 +75,7 @@ func (h *Host) serveChecks(ctx context.Context, rq *formats.Request, repo format
 	if g := h.o.Malware; g.Enabled() && row.Kind == items.KindFile && gatesDownload(rq) {
 		strict, err := h.malwareStrict(ctx, rq.Addressed(), repo.Name)
 		if err != nil {
-			return err
+			return false, err
 		}
 		srv.Malware = g
 		srv.MalwareOf = gate.Download{
@@ -87,13 +88,13 @@ func (h *Host) serveChecks(ctx context.Context, rq *formats.Request, repo format
 	if h.o.SignatureGate.Enabled() && row.Kind == items.KindFile {
 		d, ok, err := h.gateDownload(ctx, rq, repo, row.Path, row.Digest, row.Generated)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if ok {
 			srv.Signatures, srv.SignaturesOf = h.o.SignatureGate, d
 		}
 	}
-	return srv.Run(ctx)
+	return srv.RunDecided(ctx)
 }
 
 // gateDownload builds the signature gate's view of a download: the addressed repository and the holder from the replica's snapshot, and

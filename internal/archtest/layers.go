@@ -204,6 +204,9 @@ func layerTable() []layerRule {
 		// The download limits (usage-and-limits.md): the figures, rules, resolution, counters, decisions and buffers, the usage
 		// store and the store of the settings. The remote engine (internal/proxy) charges through them.
 		{"internal/limits", layerDomain},
+		// The delivery by signed links of the object store (storage.md R-STOR-014, R-STOR-070 to R-STOR-074): the switch's store and
+		// snapshot, each connection's state and link check, the signing. The format host asks it at the serve point.
+		{"internal/downloadlinks", layerDomain},
 		// The malware scanning (malware-scanning.md): the verdicts, releases, the switch and the gate's decision at the root, the
 		// store of the malware_* tables below it. The item store carries a verdict and the format host decides on it.
 		{"internal/malware", layerDomain},

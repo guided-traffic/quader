@@ -130,7 +130,7 @@ func TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo(t *testing.T) {
 func TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck(t *testing.T) {
 	want := map[formats.ID][]string{
 		"oci":     {"oci.blob.get"},         // the digest in the path; the manifest by digest declares nothing
-		"npm":     {"npm.tarball.get"},      // dist.integrity of the version
+		"npm":     nil,                      // Yarn 4 installs a tarball whose object was altered (Q-STOR-354)
 		"ansible": {"ansible.artifact.get"}, // artifact.sha256 of the collection version; a role archive declares nothing
 		"nuget":   nil,                      // no client's check was read
 		"deb":     nil,                      // apt's hash path was not read

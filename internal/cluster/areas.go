@@ -334,3 +334,17 @@ const AreaSigningIdentities = "signing_identities"
 const AreaStorageKeys = "storage_keys"
 
 // <<< storage keys
+
+// >>> download links
+
+// AreaDownloadLinkSettings carries a change of the installation's switch of the delivery by signed links of the object store and
+// of its details (storage.md R-STOR-014): every replica reloads its snapshot of download_link_settings, which the serve point
+// reads instead of the database, and decides again which connections can serve links. The payload is
+// {"version": <the row's version>}. Its cluster_epoch row is seeded by 00108_download_links.
+const AreaDownloadLinkSettings = "download_link_settings"
+
+func init() {
+	RegisterArea(Area{Name: AreaDownloadLinkSettings, Owner: "R-STOR-014", Class: ChangeArea, PayloadVersion: 1})
+}
+
+// <<< download links

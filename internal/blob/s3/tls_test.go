@@ -66,11 +66,11 @@ func TestCAFile(t *testing.T) {
 	})
 
 	t.Run("R-STOR-030 a presigned URL fetched with the client's HTTP client verifies against the same ca_file", func(t *testing.T) {
-		u, err := c.Presign(context.Background(), "k", time.Minute)
+		link, err := c.Presign(context.Background(), "k", blob.PresignOptions{Life: time.Minute})
 		if err != nil {
 			t.Fatal(err)
 		}
-		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
+		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, link.URL, nil)
 		resp, err := c.HTTPClient().Do(req)
 		if err != nil {
 			t.Fatal(err)

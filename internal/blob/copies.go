@@ -137,18 +137,25 @@ func (s *Store) Servable(ctx context.Context, d Digest) ([]Copy, error) {
 	if err != nil {
 		return nil, err
 	}
+	return s.conns.ServableOf(copies), nil
+}
+
+// ServableOf is the copies a read would try now of copies a caller read already, in the read's order (R-STOR-055): present, on a
+// connection of the set, whose circuit is closed on this replica, a draining connection's last. The decision of a signed link takes
+// its connection from it and costs no statement of its own (R-ARCH-027, R-STOR-074).
+func (cs *Connections) ServableOf(copies []Copy) []Copy {
 	var out []Copy
-	for _, cp := range s.conns.readOrder(copies) {
+	for _, cp := range cs.readOrder(copies) {
 		if cp.State != CopyPresent {
 			continue
 		}
-		c, _ := s.conns.Get(cp.Connection)
+		c, _ := cs.Get(cp.Connection)
 		if _, rejecting := c.Rejecting(); rejecting {
 			continue
 		}
 		out = append(out, cp)
 	}
-	return out, nil
+	return out
 }
 
 // damage is a change of a blob's content state that a mark caused, reported after its transaction committed.

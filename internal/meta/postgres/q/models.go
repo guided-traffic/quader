@@ -639,6 +639,17 @@ type DebTombstone struct {
 	DeletedBy  pgtype.UUID
 }
 
+type DownloadLinkSetting struct {
+	ID              bool
+	Enabled         bool
+	MinSize         int64
+	LinkLifeSeconds int32
+	PublicAddresses json.RawMessage
+	Version         int64
+	UpdatedAt       pgtype.Timestamptz
+	UpdatedBy       pgtype.UUID
+}
+
 type EndpointExposureRule struct {
 	ID          pgtype.UUID
 	Endpoint    string

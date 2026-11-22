@@ -34,48 +34,72 @@ type Serve struct {
 // check above it in the order refuses already. The answers, events and metrics of each check stay its own. A download the signature gate
 // passed only for a writer is recorded once it is served, when no other check refused it (Q-SIG-240).
 func (s Serve) Run(ctx context.Context) error {
-	sv, err := s.run(ctx)
-	if err == nil && sv != nil && sv.Writer {
-		s.Signatures.WriterRead(ctx, sv)
-	}
+	_, err := s.RunDecided(ctx)
 	return err
 }
 
-// run is Run's decision and wait; it returns the signature gate's verdict, nil where the gate was not asked.
-func (s Serve) run(ctx context.Context) (*Verdict, error) {
+// RunDecided is Run that also reports whether every check that applies passed at its first decision on a decided state
+// (storage.md R-STOR-070 step 6, Q-STOR-284, Q-STOR-350): the malware scanning off or the blob clean or released, neither a block nor a
+// wait of the vulnerability data, and the signature gate off or passed, by a verified signature or for a writer (Q-SIG-211). A download
+// that waited, or that a gate let through on a state not decided yet (a blob without a verdict where the malware gate is not strict, a
+// block in the mode report), is not: only a decided download may be handed to a signed link of the object store, which cannot be taken
+// back during its life. A writer's read is recorded here, once the checks served it (Q-SIG-240), whether the serve point then streams it
+// or hands it to a link.
+func (s Serve) RunDecided(ctx context.Context) (bool, error) {
+	sv, decided, err := s.run(ctx)
+	if err == nil && sv != nil && sv.Writer {
+		s.Signatures.WriterRead(ctx, sv)
+	}
+	return decided, err
+}
+
+// run is Run's decision and wait; it returns the signature gate's verdict, nil where the gate was not asked, and whether every check
+// passed on a decided state.
+func (s Serve) run(ctx context.Context) (*Verdict, bool, error) {
 	mdec := s.malwareDecision()
 	block := s.VulnOf.Block
 	if mdec == malware.RefuseFound {
-		return nil, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
+		return nil, false, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
 	}
 	if block.Refused() && block.Code() == errs.CodeVulnerabilityBlocked {
-		return nil, s.Enforce.Refuse(ctx, s.VulnOf)
+		return nil, false, s.Enforce.Refuse(ctx, s.VulnOf)
 	}
 	var sv *Verdict
 	if s.Signatures != nil && s.Signatures.Applies(s.SignaturesOf.Addressed, s.SignaturesOf.Holder) {
 		v, err := s.Signatures.Decide(ctx, s.SignaturesOf)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		sv = v
 	}
 	if sv != nil && sv.Outcome == Refused {
-		return sv, s.Signatures.Refuse(ctx, sv)
+		return sv, false, s.Signatures.Refuse(ctx, sv)
 	}
 	if mdec == malware.RefuseNotChecked {
-		return sv, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
+		return sv, false, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
 	}
 	if block.Active() {
 		// vulnerability_data_missing refuses here; a block in the mode report is recorded and serves.
 		if err := s.Enforce.Refuse(ctx, s.VulnOf); err != nil {
-			return sv, err
+			return sv, false, err
 		}
 	}
 	mPending, sPending := mdec == malware.Wait, sv != nil && sv.Outcome == Pending
 	if !mPending && !sPending {
-		return sv, nil
+		return sv, s.malwareDecided() && !block.Active() && (sv == nil || sv.Outcome == Pass), nil
 	}
-	return sv, s.wait(ctx, mPending, sv)
+	return sv, false, s.wait(ctx, mPending, sv)
+}
+
+// malwareDecided reports whether the malware gate passed the blob on a decided state: the scanning off or not applying (a system
+// repository's content, R-MAL-001), or the blob clean or released (R-STOR-070 step 6). A blob without a verdict, unscannable or
+// failed without a release is not, also where the gate is not strict and serves it.
+func (s Serve) malwareDecided() bool {
+	if s.Malware == nil || !s.Malware.Enabled() || s.MalwareOf.System {
+		return true
+	}
+	v := s.MalwareOf.Verdict
+	return v.Released() || v.Effective() == malware.StateClean
 }
 
 func (s Serve) malwareDecision() malware.Decision {

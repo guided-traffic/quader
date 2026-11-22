@@ -85,7 +85,8 @@ test/e2e/                   the Go tests, build tag `e2e`, package e2e
   monitor_test.go           /healthz and /readyz of every replica, once a second
   k6/load.js                the load: 100 requests/s on /system/ping and /system/replicas; an open loop (arrivals on a clock) by default, a closed loop of 100 clients with LOOP=closed (Q-HA-288)
   k6/transfer.js            the transfer loop of E1.13: PUT, GET and SHA-256 of 256 KiB bodies on generic-local, a closed loop of RATE clients (Q-HA-230)
-  cmd/driver/               the driver (main.go: connections, probe and job commands; load.go: the load loop)
+  cmd/driver/               the driver (main.go: connections, probe and job commands; load.go: the load loop; links.go: the switch of the
+                            signed links and an object overwritten in the bucket)
   Dockerfile                the driver image: a static binary on the release image's base
   npm_clients_test.go       the smoke test of the npm client pods (R-NPM-045), and npmClientExec, the helper the matrix builds on
   npm_env_test.go           the npm harness: fixture (repositories, publisher, token), the control API of the test upstream,
@@ -453,6 +454,8 @@ and `…e2e-probe-…` with role `web`: it claims no job and holds no lease.
 | `driver probe -steps n -interval-ms m` | enqueues one long `system.probe` job and prints its id |
 | `driver job <id>` | prints the job row: state, attempt, checkpoint, result |
 | `driver info` | prints `cluster.epoch_poll_interval`, `jobs.poll_interval` and `database.retry.max_elapsed` |
+| `driver links on\|off` | writes the switch of the delivery by signed links of the object store through the store the management API's operations will write through ([internal/downloadlinks](../../internal/downloadlinks/store.go)): on with `minSize` 0, or off; the change area reaches every replica within 2 s ([storage.md](../spec/storage.md) Q-STOR-353) |
+| `driver overwrite <sha256>` | writes other bytes of the same length over the blob's object on the first connection, as a principal who can write the bucket could ([the signed links' cases](#the-signed-links-cases)) |
 
 ### The `system.probe` job kind
 
@@ -4371,6 +4374,25 @@ make ansible-clients-image         # only build the two images into the local Do
 make e2e SET=ansible          # every TestAnsible... and TestAnsibleClients
 make e2e SET=ansible-closing  # TestAnsibleClosing: Valkey stopped (needs the closing run)
 ```
+
+## The signed links' cases
+
+One case in the leg of each format whose route declares that its clients check a digest ([storage.md](../spec/storage.md) R-STOR-071,
+R-STOR-074; [download-links.md](download-links.md)): `TestOCI_R_STOR_071_ClientsCheckALink` in `oci` (Docker and Podman) and
+`TestAnsible_R_STOR_071_ClientsCheckALink` in `ansible` (both ansible-core images). npm has none: its case showed Yarn 4 installing an
+altered tarball, and npm's tarball route declares nothing since
+([Q-STOR-354](../spec/storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)). Each publishes a fresh one-file artifact of kilobytes, marks its blob `clean` with a statement (the
+case is about the clients' check, not the scanner), switches the delivery on with `driver links on` (off again when the test ends), waits
+for a `307` with the e2e administrator's token, installs with every client, and after `driver overwrite` installs again and requires
+every client to refuse. `driver overwrite` flips the header time of a gzip stream (an image layer, a collection), which lies outside the
+stream's CRC: the altered bytes unpack to the same files, so only a check of the digest refuses them, never the unpacking. Each attempt must raise
+`quader_storage_download_links_total` of the format over the serving replicas, so a refusal is the client's and never Quader's stream,
+which would abort on the digest as well. The harness is [links_env_test.go](../../test/e2e/links_env_test.go). The clients reach the dev
+profile's store at its endpoint `https://quader-s3.quader.svc:9000`, whose certificate is issued by the dev CA they trust.
+
+Run once on 2026-11-22 on a kind cluster of their own: the OCI case 36 s (Docker and Podman pulled through links and refused the altered
+layer), the Ansible case 54 s (both images installed through a link and refused the altered archive on its hash). To run one case alone,
+name it: `QUADER_E2E_RUN='^TestOCI_R_STOR_071_ClientsCheckALink$' make e2e SET=oci`.
 
 ## Extension checklist
 

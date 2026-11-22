@@ -134,4 +134,6 @@ func TestR_ARCH_027_ADownloadCostsOneStatement(t *testing.T) {
 			}
 		})
 	}
+	// A download handed to a signed link of the object store costs what a streamed one does (link_test.go).
+	t.Run("an OCI blob of a local repository handed to a signed link", func(t *testing.T) { linkBudget(t, e) })
 }

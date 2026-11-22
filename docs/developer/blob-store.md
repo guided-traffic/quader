@@ -16,9 +16,9 @@ the verifying reader or a range.
 | File | Responsibility |
 |---|---|
 | [key.go](../../internal/blob/key.go) | `Digest`, `Key(prefix, digest)`, `ParseKey`, `Digests` (the four digests and the size) |
-| [objects.go](../../internal/blob/objects.go) | `ObjectStore` interface (with `Metadata` on `Put`, `CreateMultipart`, `Copy`, `Head`, `Get`), `BucketCopier` (a copy from another bucket of one endpoint), `StoreError` and its kinds, `ErrNotFound`, `ErrCircuitOpen` |
-| [connections.go](../../internal/blob/connections.go) | `Connection` (one element: its client, prefix, naming function `ObjectKey`, `Drain`, `Encrypted`, `Capabilities`, `Verifies`, `Read`, guarded `Presign`, `LinkCheck`), `Connections` (the ordered set: `List`, `Get`, `First`, `Targets`, `Writable`, the read order) |
-| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `ParseCopies` (the copies of an item lookup), `Store.Servable`, the marks of a copy (`markCopy`, `copyBack`), the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
+| [objects.go](../../internal/blob/objects.go) | `ObjectStore` interface (with `Metadata` on `Put`, `CreateMultipart`, `Copy`, `Head`, `Get`; `Presign` with `PresignOptions`, answering a `Link` with its expiry), `LinkLife` (a link's life bounded by its credential, R-STOR-072), `BucketCopier` (a copy from another bucket of one endpoint), `StoreError` and its kinds, `ErrNotFound`, `ErrCircuitOpen`, `ErrCredentialExpiring` |
+| [connections.go](../../internal/blob/connections.go) | `Connection` (one element: its client, prefix, naming function `ObjectKey`, `Drain`, `Encrypted`, `Capabilities`, `Verifies`, `Read`, guarded `Presign`, `HTTPClient`, `LinkCheck` with its two parts), `Connections` (the ordered set: `List`, `Get`, `First`, `Targets`, `Writable`, the read order) |
+| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `ParseCopies` (the copies of an item lookup), `Store.Servable` and `Connections.ServableOf` (the same over copies read already, which the signed links choose from without a statement), the marks of a copy (`markCopy`, `copyBack`), the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
 | [record.go](../../internal/blob/record.go) | `Store.RecordConnections` (first sight, fixed properties, retired ids, the bind of the migration's row), `RecordCapabilities`, `HoldsCopies`, `ForgetConnection`, `Refusal` |
 | [startcheck.go](../../internal/blob/startcheck.go) | `CheckConnection` (the start check of one connection with the marker and the capabilities), `AwaitConnections` (the first readiness of R-STOR-060), `MarkerKey` |
 | [spool.go](../../internal/blob/spool.go) | `Spool`: admission, the budget, spool files, the single hashing pass, cleanup |
@@ -32,6 +32,7 @@ the verifying reader or a range.
 | [gc.go](../../internal/blob/gc.go), [gcjob.go](../../internal/blob/gcjob.go) | `Collector` (per-blob protocol, step (4) per copy with the release, hand-over, pause, hold, fault hook) and the job adapters `RunJob` and `RunSweepJob` |
 | [usagefold.go](../../internal/blob/usagefold.go) | `UsageFolder`: the fold loop of the usage counters (R-STOR-003) and its `Fold` iteration |
 | [conformance.go](../../internal/blob/conformance.go) | startup check, conformance checks (with the capability checks), `AwaitStartupCheck` |
+| [linkcheck.go](../../internal/blob/linkcheck.go) | `CheckLink`, the link check of a connection (R-STOR-074): a probe below `_probe/`, a link to it with the three overrides fetched with the store's own HTTP client; `LinkCheck` records the link working apart from the overrides honoured (Q-STOR-346) |
 | [sql.go](../../internal/blob/sql.go), [tables.go](../../internal/blob/tables.go), [metrics.go](../../internal/blob/metrics.go), [errors.go](../../internal/blob/errors.go) | the `DB` interface, the `Rows` seam (`WithRows`) and its sqlc implementation, export-class registration, metric families, `errs` mapping |
 | [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `quader admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify` over the connections (`Conn`, or the one `Options.Connection` names), lists the versions of each missing copy's key on its connection (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version; `Report.Lost` decides the exit |
 | [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `quader admin storage verify` ([below](#storage-verify-r-stor-058-q-stor-200)): `Run` over a `Source` (the pages of live blobs with their copy rows, and the items) and the connections (`Conn`: an id and an `Objects` with `Head`), `PGSource` (`VerifyCopyPage`) |
@@ -40,6 +41,7 @@ the verifying reader or a range.
 | [s3/client.go](../../internal/blob/s3/client.go), [s3/copy.go](../../internal/blob/s3/copy.go) | `s3.Client` (the `ObjectStore` and the `BucketCopier`: `Location`, `CopyFrom`), `NewFromFactory` |
 | [reconcile/](../../internal/blob/reconcile/), [reconcile_seams.go](../../internal/blob/reconcile_seams.go) | the reconciliation between the connections ([below](#the-reconciliation-r-stor-056)); the seams it needs of the store: `Store.MarkCopyDamaged` and `Store.SetGapSignal` |
 | [blobtest/endpoint.go](../../internal/blob/blobtest/endpoint.go) | `blobtest.NewEndpoint`: in-memory stores of the buckets of one endpoint, which copy from each other (`CopyFrom`) |
+| [blobtest/presign.go](../../internal/blob/blobtest/presign.go) | the in-memory store's signed links and its `RoundTrip`, which answers them as a store does; `IgnoreOverride` (a store that ignores an override), `SetCredentialExpiry` (a temporary credential), `HTTPClient` |
 | [s3/credentials.go](../../internal/blob/s3/credentials.go) | credential sources of R-STOR-031, SDK configuration |
 | [s3/errors.go](../../internal/blob/s3/errors.go), [s3/idle.go](../../internal/blob/s3/idle.go) | SDK error classification; stall detection |
 
@@ -162,13 +164,15 @@ another's. Metrics, each with the label `connection`: `quader_storage_s3_request
 `quader_storage_s3_circuit_open{connection}` (0 from the guard's construction); the reads add `quader_storage_copies_damaged_total{connection,status}`
 and `quader_storage_reads_fallen_over_total{connection,reason}` (`not_found`, `unavailable`, `size`,
 [Q-STOR-254](../spec/storage.md#q-stor-254--the-names-the-start-check-and-the-reads-give-their-findings)). The guard's `Presign` refuses while
-the circuit is open (R-STOR-062), and `CopyFrom` passes the breaker. The composition root builds `blob.NewMetrics(m)` once and passes it to
+the circuit is open (R-STOR-062), and `CopyFrom` passes the breaker. The guard forwards its store's `HTTPClient`, which the link check
+fetches with. The composition root builds `blob.NewMetrics(m)` once and passes it to
 the spool, the guards and the collector.
 
 Endpoint: a connection's `endpoint` without a scheme is a host and means `https://` (Q-STOR-15). `config.NormalizeEndpoint` does it once at
 load (`Config.Finalize`, the source of `storage.connections` becomes `derived`) and again in `s3.New`, so a client built from a hand-made
 config agrees. Plaintext is always spelled `http://` with `allow_insecure_endpoint`; the flag never changes a scheme-less host. A link is
-signed against the connection's own endpoint; the public address a link names is stage 3's (R-STOR-074).
+signed against `PresignOptions.Address` when the caller gives one (the public address of R-STOR-074, [download-links.md](download-links.md)),
+and against the connection's own endpoint otherwise.
 
 TLS: an `https://` endpoint verifies against the factory's trust store (system roots plus
 `proxy.outbound.tls.ca_files`), or, with the connection's `ca_file` set, against that bundle only: `NewFromFactory` builds a
@@ -522,7 +526,7 @@ and delete visibility to the next read and list (A1), concurrent writes of ident
 multipart object invisible until completion and complete after, an aborted upload leaving neither object nor listed
 upload (A2), a completion that assembles the part it names and refuses an ETag the store never issued (a part number sent twice, A2), a server-side copy that replaces its destination and reports a missing source as not found (the object write of
 a session's finalize, R-STOR-011), `DeleteObjects` (optional: its failure names the connection's `batch_delete`), a presigned
-URL, and the capability checks (`Capability`: a wrong payload checksum refused, metadata kept by a write, metadata replaced by a copy onto itself
+URL with the three overrides of R-STOR-072 (optional, the body of the link check, `linkcheck.go`), and the capability checks (`Capability`: a wrong payload checksum refused, metadata kept by a write, metadata replaced by a copy onto itself
 that keeps the object's bytes, a server-side copy from each other connection on the endpoint, `ConformanceOptions.Peers`). The visibility of an overwrite and a delete is
 reported as `strong` or `eventual (tolerated, A1)` in `CheckResult.Note`, never as a failure (Q-STOR-249). Everything it writes lies below
 `<prefix>/_probe/` and is removed. Conditional writes are not checked: Quader uses none.

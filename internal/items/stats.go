@@ -167,6 +167,10 @@ type ServedEvent struct {
 	// CountStats is false for a request that asked not to be counted
 	// (`?stats=false`).
 	CountStats bool
+	// Delivery is "link" for a download handed to a signed link of the object store, counted when the link was issued (storage.md
+	// R-STOR-073, Q-STOR-292); empty for a download whose bytes Quader wrote. LinkExpiresAt is the link's expiry.
+	Delivery      string
+	LinkExpiresAt time.Time
 }
 
 // Served records a download that was answered with its content: 200 with the
@@ -180,7 +184,11 @@ func (s *Store) Served(ctx context.Context, e ServedEvent) {
 		s.stats.Add(e.Item.ID, actorID(e.Actor))
 	}
 	if s.download {
-		raw, _ := json.Marshal(map[string]any{"path": e.Item.Path, "sha256": e.Item.Digest.Hex()})
+		details := map[string]any{"path": e.Item.Path, "sha256": e.Item.Digest.Hex()}
+		if e.Delivery != "" {
+			details["delivery"], details["linkExpiresAt"] = e.Delivery, e.LinkExpiresAt.UTC().Format(time.RFC3339)
+		}
+		raw, _ := json.Marshal(details)
 		s.rec.Record(ctx, audit.Event{
 			Type: audit.EventArtifactDownloaded, Actor: e.Actor, Outcome: audit.Success, Source: e.Source, Endpoint: e.Endpoint,
 			Subject: audit.Subject{Kind: "repository", Name: e.Item.Repository.String()}, Repository: e.Item.Repository.String(), Project: e.Item.Repository.Project,

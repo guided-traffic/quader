@@ -4987,9 +4987,9 @@ default, the minimum size, the link's life and the public host behind a disclosu
   2. The checkbox **Deliver large downloads by signed links of the object store**, with the note "A client then fetches the file from the
      object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the
      client checks them, and the clients must be able to reach the object store." and a link **What a link costs** to the manual's page.
-  3. A notice while a built-in profile or a rule sets a speed limit ([Q-UI-953](#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit)):
-     "Links go only to callers without a speed limit. <n> profiles in use have one: <names>." with a link **Download limits** to
-     `/admin/limits/profiles` for the holder of `limits:read`.
+  3. *(Removed on 2026-11-22 with [Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue): a speed limit keeps no caller from links, so the page names no
+     profile and shows no notice about speed limits; [Q-UI-953](#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit) is
+     superseded.)*
   4. A closed disclosure **Details** (R-UI-087's closed section form), its fields with their values filled in, never empty with a hint
      ([Q-UI-951](#q-ui-951--the-details-are-fields-with-their-values-sized-to-them)):
      **Minimum size** (a number in MiB, value `1`, 0 to 1,048,576, about 9 characters wide), "Smaller files are always delivered by
@@ -5026,7 +5026,6 @@ default, the minimum size, the link's life and the public host behind a disclosu
   | On, but no link is issued: | An, aber es wird kein Link ausgegeben: |
   | A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store. | Ein Client holt die Datei dann mit einem kurz gültigen Link aus dem Objektspeicher. Quader entscheidet weiter, wer herunterladen darf, sieht die Bytes aber nicht mehr: Der Client prüft sie, und die Clients müssen den Objektspeicher erreichen können. |
   | What a link costs | Was ein Link kostet |
-  | Links go only to callers without a speed limit. <n> profiles in use have one: <names>. | Links gehen nur an Aufrufer ohne Tempolimit. <n> verwendete Profile haben eines: <names>. |
   | Details | Details |
   | Minimum size | Mindestgröße |
   | Smaller files are always delivered by Quader. | Kleinere Dateien liefert immer Quader aus. |
@@ -5044,12 +5043,12 @@ default, the minimum size, the link's life and the public host behind a disclosu
 - **Read-only** for the holder of `settings:read` without `settings:write`: the state as text ("**Deliver large downloads by signed links
   of the object store** is off."), the details as values, no button.
 - The page is rendered and looked at before it lands (rule 11 of the plan): light and dark, wide and narrow, with the switch off, on, on
-  with a reason (`quader_host`, `link_check_failed`), with the notice of the speed limits, with a test link shown, and read-only.
+  with a reason (`quader_host`, `link_check_failed`), with a test link shown, and read-only.
 
 Acceptance criteria:
 
 - Web unit (Vitest, under a second): the fields show `1`, `60` and the connection's endpoint as values when nothing is saved; a save sends
-  only the changed members with `If-Match`; the notice of the speed limits lists the profiles the API names; a connection with
+  only the changed members with `If-Match`; a connection with
   `quader_host` shows its sentence under its field and in the notice; **Test link** shows the link and the command; an auditor sees text and
   no button (`TestR_UI_200`, `download-links-settings.spec.ts`).
 
@@ -6463,7 +6462,8 @@ Priority: **P1** · Covers: STOR-032
 - **Where** ([Q-UI-955](#q-ui-955--the-repositorys-opt-out-is-a-closed-section-shown-only-where-a-link-can-happen)): a closed section
   **Download links** of the repository's settings page (R-UI-087), after **Signatures**; never part of a creation form, not even of its
   advanced settings. Shown only for a repository whose format has a route whose clients check a digest (`formats` of
-  `GET /api/v1/download-links/switch`, R-STOR-014): today OCI, npm and Ansible Galaxy, every class.
+  `GET /api/v1/download-links/switch`, R-STOR-014): today OCI and Ansible Galaxy, every class (*changed on 2026-11-22: npm no longer,
+  [Q-STOR-354](storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)*).
 - **What it holds:** the checkbox **Downloads of this repository may go by signed links of the object store**, checked by default
   (`storage.downloadLinks`), with one line on the installation's state: "The installation delivers large downloads by link." or "The
   installation's switch is off: Quader delivers every download itself.", and for a virtual repository "A member that does not allow it
@@ -21211,7 +21211,8 @@ R-UI-200.
 
 ### Q-UI-953 · The page says who gets no link because of a speed limit
 
-Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+Status: **Superseded on 2026-11-22 by [Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)**: a speed limit no longer keeps a caller from links, so there is
+nothing to name. It was decided by the planner in the owner's absence; the text below is kept as it was decided.
 
 Context: a caller with a pace figure gets no link (usage-and-limits.md Q-LIM-97), and every built-in profile but Unlimited has one, so
 an administrator who switches links on may see almost no link.

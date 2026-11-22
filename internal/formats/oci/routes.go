@@ -142,15 +142,14 @@ func matchReferrers(escaped string) (formats.Params, bool) {
 
 // blobClientDigest declares that every client of the registry checks a blob it pulls against the digest in its path, so that the
 // blob route may hand a download to a signed link of the object store (storage.md R-STOR-071, the format's row there). The manifest by
-// digest declares nothing: what a client does with a manifest answered without Docker-Content-Digest was not read. Podman and CRI-O
-// (the containers image library) and the Docker Engine's older pull path are still to be shown with the real client, by the case of
-// R-STOR-070 in the format's own end-to-end leg, before the serve point reads the declaration; a family that takes altered bytes turns
-// it back.
+// digest declares nothing: what a client does with a manifest answered without Docker-Content-Digest was not read. The Docker Engine
+// and Podman of the format's end-to-end leg refused a layer whose object was altered in the bucket (TestOCI_R_STOR_071_ClientsCheckALink,
+// 2026-11-22); CRI-O and the Docker Engine's older pull path were not run, and a family that takes altered bytes turns it back.
 var blobClientDigest = formats.ClientDigest{
 	Checks:  true,
 	Against: "the digest in the path",
 	Evidence: `containerd checks on commit ("unexpected commit digest", plugins/content/local/writer.go, (*writer).Commit); ` +
-		"the distribution specification asks clients to check (SHOULD)",
+		"the distribution specification asks clients to check (SHOULD); Docker and Podman refuse an altered layer (TestOCI_R_STOR_071_ClientsCheckALink)",
 }
 
 // buildRoutes is the whole endpoint map of R-OCI-009 to R-OCI-018, written once with the name of every handler, so that a work

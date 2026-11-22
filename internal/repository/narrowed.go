@@ -38,6 +38,9 @@ const (
 	partClientsOff = "clientsOff"
 	// partSignatures is the gate of signatures narrowed: switched on, or fewer trust anchors accepted (R-SIG-061).
 	partSignatures = "signatures"
+	// partDownloadLinks is storage.downloadLinks set to false: the repository's downloads are no longer handed to signed links of the
+	// object store (R-STOR-014, Q-STOR-282).
+	partDownloadLinks = "downloadLinks"
 )
 
 // repoRef names a repository of an entry: its ID as decimal text, which the replay acts on, and its qualified name, for
@@ -101,6 +104,8 @@ type narrowedEntry struct {
 	ClientsOff bool `json:"clientsOff,omitempty"`
 	// Signatures is the gate of signatures before and after a write that narrowed it.
 	Signatures *signaturesChange `json:"signatures,omitempty"`
+	// DownloadLinksOff is true for the write that set storage.downloadLinks to false; the replay sets it false again.
+	DownloadLinksOff bool `json:"downloadLinksOff,omitempty"`
 }
 
 // parts lists the parts the entry carries, in the order of the table of R-REPO-061.
@@ -122,6 +127,7 @@ func (e narrowedEntry) parts() []string {
 	add(len(e.DebUpstreamKeysRemoved) > 0, partDebUpstreamKeysRemoved)
 	add(e.ClientsOff, partClientsOff)
 	add(e.Signatures != nil, partSignatures)
+	add(e.DownloadLinksOff, partDownloadLinks)
 	return out
 }
 
@@ -168,6 +174,8 @@ func (s *Service) narrowing(r Repository, cur, nd *Document, curRel, rel *virtua
 	if b, a := signatureGateOf(cur.Signatures), signatureGateOf(nd.Signatures); gateset.Order(b, a) == gateset.Narrows {
 		e.Signatures = &signaturesChange{Before: gateMember(b), After: gateMember(a)}
 	}
+	// Setting storage.downloadLinks to false keeps the repository's downloads in Quader (R-STOR-014, R-REPO-061).
+	e.DownloadLinksOff = downloadLinksOf(cur.Storage) && !downloadLinksOf(nd.Storage)
 	return e
 }
 

@@ -415,7 +415,8 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 	// check, decided together before one wait (R-SIG-069): an infected blob, a blocked version and an artifact without a verified
 	// signature where one is required are refused, and what is not checked yet where a check is required waits. The system read above
 	// asks no gate.
-	if err := s.h.serveChecks(ctx, rq, it.Ref.Repo, row); err != nil {
+	decided, err := s.h.serveChecks(ctx, rq, it.Ref.Repo, row)
+	if err != nil {
 		bastionmain.NoteUnknown(ctx) // a refusal is never a negative entry (R-BAS-013)
 		return err
 	}
@@ -430,18 +431,20 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 	// An object that cannot be opened is returned unwritten: the format's dispatcher answers it, and the remote engine
 	// first fills the item of a remote repository again when its object is missing (R-STOR-027). Through a Bastion the
 	// status line of an answer this serve counts carries Quader-Bastion-Counted (R-BAS-059, Q-BAS-186).
+	o := edge.ServeOptions{
+		Admit:  admit,
+		Buffer: s.h.o.DownloadBuffer,
+		Served: func() {
+			s.h.o.Items.Served(ctx, items.ServedEvent{
+				Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
+				Endpoint: rq.Subject.Endpoint, CountStats: true,
+			})
+		},
+	}
+	// A download whose conditions hold may be answered with a signed link of the object store instead (R-STOR-070).
+	s.linkOptions(ctx, rq, it, row, decided, &o)
 	return edge.ServeItem(bastionmain.CountingWriter(rq.Request, w), rq.Request, row,
-		func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) },
-		edge.ServeOptions{
-			Admit:  admit,
-			Buffer: s.h.o.DownloadBuffer,
-			Served: func() {
-				s.h.o.Items.Served(ctx, items.ServedEvent{
-					Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
-					Endpoint: rq.Subject.Endpoint, CountStats: true,
-				})
-			},
-		})
+		func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) }, o)
 }
 
 // RecordDownload implements [formats.ItemStore]: the download statistics, the repository's activity and the audit event of a

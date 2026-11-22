@@ -27464,6 +27464,15 @@
         <target>Signaturidentität gewechselt</target>
       </segment>
     </unit>
+    <unit id="audit.action.storage.download_links.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:345</note>
+      </notes>
+      <segment>
+        <source>Download link setting changed</source>
+        <target>Einstellung der Download-Links geändert</target>
+      </segment>
+    </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:315</note>

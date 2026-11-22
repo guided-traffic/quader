@@ -55,7 +55,7 @@ func TestRequestLog(t *testing.T) {
 			"time", "trace_id", "listener", "remote_addr", "peer_addr", "method", "path", "handler", "status",
 			"request_bytes", "response_bytes", "duration_ms", "user_agent", "principal", "principal_type", "principal_id", "token_id",
 			"auth_method", "project", "repo", "format", "cache", "deny_reason", "limiter", "limit_mode", "limits_subject", "limits_place",
-			"limits_rule", "limits_outcome", "bytes_cached", "bytes_uncached", "log", "level", "replica", "role",
+			"limits_rule", "limits_outcome", "bytes_cached", "bytes_uncached", "delivery", "log", "level", "replica", "role",
 		}
 		for _, k := range want {
 			if _, ok := rec[k]; !ok {
@@ -69,6 +69,7 @@ func TestRequestLog(t *testing.T) {
 			"project": "web", "repo": "web/npm-all", "format": "npm", "cache": "hit", "peer_addr": "10.1.2.3", "remote_addr": "10.1.2.3",
 			"deny_reason": nil, "limiter": nil, "limit_mode": nil, "limits_subject": "user:u-1", "limits_place": "instance",
 			"limits_rule": "builtin:user", "limits_outcome": "admitted", "bytes_cached": float64(5), "bytes_uncached": float64(0),
+			"delivery": nil,
 		}
 		for k, v := range check {
 			if rec[k] != v {

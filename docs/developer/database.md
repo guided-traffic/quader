@@ -601,6 +601,12 @@ both by the item's blob, so a download reads its verdict in its one statement (R
 statements are [malware.sql](../../internal/meta/postgres/queries/malware.sql), and the contracts the four packages share are in
 [malware.md](malware.md).
 
+**00108_download_links** ([storage.md](../spec/storage.md) R-STOR-014): `download_link_settings`, the one row of the switch of the
+delivery by signed links of the object store and its details (`enabled`, `min_size`, `link_life_seconds`, `public_addresses` as a JSON
+object of connection id to origin, `version` the `If-Match` revision, registered in [tables_download_links.go](../../internal/meta/postgres/tables_download_links.go)),
+export class `data`, and the `cluster_epoch` row of the change area `download_link_settings`. [internal/downloadlinks](../../internal/downloadlinks/store.go)
+is the one door to it.
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image

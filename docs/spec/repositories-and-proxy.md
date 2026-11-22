@@ -888,10 +888,11 @@ transaction that writes them (the comparison that fills `changes`):
 | `vulnerabilities` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-002) | a member moves towards more blocking, in the order of Q-VULN-69: `enabled` to true, `matchPublicAdvisories` to a higher rank, `blockMalicious` to true, `onMissingData` to `block` | `vulnerabilities`: the member before and after, an absent member as its defaults |
 | `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020) | `onlyChecked` goes from false to true | `malware: {"onlyChecked": true}`; replay sets it on |
 | `signatures` ([signatures.md](signatures.md) R-SIG-061) | `onlyVerified` goes from false to true, `anchors` from empty (any anchor) to a list, or a reference leaves a list that stays non-empty | `signatures`: the member before and after; replay sets `onlyVerified` on and `anchors` to the narrower of the restored and the journaled value, and disables the repository when two lists share no reference |
+| `storage.downloadLinks` ([storage.md](storage.md) R-STOR-014) | its effective value (an absent member is `true`) goes from true to false | `downloadLinksOff: true`; replay sets the member `false` and keeps the rest of `storage` |
 
 The other members are not journaled ([Q-REPO-246](#q-repo-246--patterns-auto-claims-virtual-members-pin-rules-and-the-vulnerabilities-member-are-journaled-upstream-storage-and-format-settings-are-not)):
 `description`, `adminNotes`, `priorityMember`, `virtual.deployTarget`, `virtual.mergedMetadataTtlSeconds`, the `remote` section
-apart from `cacheFillAction`, `storage`, `local.caps`, `local.ownershipDomain` and the format members. A restore reverts them; the
+apart from `cacheFillAction`, `storage` apart from `downloadLinks`, `local.caps`, `local.ownershipDomain` and the format members. A restore reverts them; the
 security-relevant ones are [H-569](../security/backup-and-restore.md#h-569--upstream-storage-and-format-settings-of-a-repository-come-back-with-a-restore).
 `disabled`, `visibility`, `hideExistence`, `local.packageOwnership` and `remote.cacheFillAction` keep the events of
 R-AUTHZ-031. A widening part of an update that also narrows (a pattern added to an include list, a member added) is not part of

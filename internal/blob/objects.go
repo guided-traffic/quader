@@ -225,8 +225,53 @@ type ObjectStore interface {
 	List(ctx context.Context, prefix string, opts ListOptions) (ListPage, error)
 	// ListMultipart lists unfinished multipart uploads below prefix.
 	ListMultipart(ctx context.Context, prefix string) ([]MultipartUpload, error)
-	// Presign returns a URL that serves GET of the key for ttl.
-	Presign(ctx context.Context, key string, ttl time.Duration) (string, error)
+	// Presign signs a GET of the key as o says, with the store's runtime credential, and returns the link with its expiry
+	// (R-STOR-072). It sends no request. A credential that ends within MinCredentialLife signs nothing (ErrCredentialExpiring).
+	Presign(ctx context.Context, key string, o PresignOptions) (Link, error)
+}
+
+// PresignOptions is what a signed link is signed for (R-STOR-072, Q-STOR-293): its life, the three headers of the store's
+// answer a link can ask for, and the origin it names.
+type PresignOptions struct {
+	// Life is how long the link is valid, at least a second; the signing credential's own expiry bounds it (LinkLife).
+	Life time.Duration
+	// ContentType, ContentDisposition and CacheControl are asked of the store's answer as response-content-type,
+	// response-content-disposition and response-cache-control; empty asks for none.
+	ContentType, ContentDisposition, CacheControl string
+	// Address is the origin the link names, https://host[:port] (the public address of R-STOR-074); empty names the store's own
+	// endpoint.
+	Address string
+}
+
+// Link is a signed link and the instant it expires.
+type Link struct {
+	URL       string
+	ExpiresAt time.Time
+}
+
+// MinCredentialLife is how much longer the signing credential has to live for a link to be signed (R-STOR-072, R-STOR-070
+// step 13): a link that would end within it is not worth a round trip of the client.
+const MinCredentialLife = 5 * time.Second
+
+// ErrCredentialExpiring is the refusal of a link whose signing credential ends within MinCredentialLife.
+var ErrCredentialExpiring = errors.New("the credential that signs the link expires within 5 seconds")
+
+// LinkLife is the life of a link signed now for life by a credential that expires at expires (the zero time for a credential
+// without an expiry, such as a static key): the earlier of the two, in whole seconds, since the signature's X-Amz-Expires is
+// an integer (R-STOR-072, Q-STOR-290). A credential that ends within MinCredentialLife is ErrCredentialExpiring; a life below
+// one second is an error of the caller.
+func LinkLife(now time.Time, life time.Duration, expires time.Time) (time.Duration, error) {
+	if life < time.Second {
+		return 0, fmt.Errorf("a link lives at least a second, not %s", life)
+	}
+	if !expires.IsZero() {
+		left := expires.Sub(now)
+		if left < MinCredentialLife {
+			return 0, ErrCredentialExpiring
+		}
+		life = min(life, left)
+	}
+	return life.Truncate(time.Second), nil
 }
 
 // BucketCopier is implemented by an [ObjectStore] that copies an object of another bucket on its own endpoint into its own

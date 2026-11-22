@@ -424,10 +424,10 @@ func TestR_STOR_062_TheSeamsOfTheEncryptionAndTheSignedLinks(t *testing.T) {
 			t.Fatalf("a connection with an open circuit is listed: %+v", list)
 		}
 		c, _ := x.store.Connections().Get("secondary")
-		if _, err := c.Presign(context.Background(), key(d), time.Minute); !errors.Is(err, blob.ErrCircuitOpen) {
+		if _, err := c.Presign(context.Background(), key(d), blob.PresignOptions{Life: time.Minute}); !errors.Is(err, blob.ErrCircuitOpen) {
 			t.Fatalf("a connection with an open circuit signed a link: %v", err)
 		}
-		if c.Encrypted() || c.LinkCheck() {
+		if c.Encrypted() || c.LinkCheck().Ran {
 			t.Fatal("a connection of stage 1 is encrypted or passed a link check")
 		}
 	})

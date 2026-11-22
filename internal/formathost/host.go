@@ -21,6 +21,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/downloadlinks"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/items"
@@ -123,6 +124,9 @@ type Options struct {
 	// kind Download passes it after the format's serve-time check and before the vulnerability block. nil refuses nothing (a
 	// replica that has not wired the scanning). Repos gives it the repositories' settings (R-MAL-020).
 	Malware *gate.Gate
+	// Links is the delivery by signed links of the object store (storage.md R-STOR-070): a download of a route whose clients check a
+	// digest may be answered with a link to the stored object (download_links.go). nil streams every download.
+	Links *downloadlinks.Links
 	// Downloads is the queue of the background downloads a probe starts (R-REPO-065); nil starts none. ProbeMetrics counts the
 	// decisions; nil counts nothing.
 	Downloads    BackgroundDownloads

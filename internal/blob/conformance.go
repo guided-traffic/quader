@@ -221,7 +221,7 @@ func ConformanceChecks() []ConformanceCheck {
 		{Name: "a multipart completion assembles the part it names and refuses an ETag it never issued", Assumption: "A2", Run: checkPartIdentity},
 		{Name: "an aborted multipart upload leaves no object and no upload", Assumption: "A2", Run: checkAbort},
 		{Name: "DeleteObjects removes several keys with one request", Optional: true, Run: checkDeleteMany},
-		{Name: "a presigned URL serves the object", Run: checkPresign},
+		{Name: "a presigned URL serves the object with the three overridden headers", Optional: true, Run: checkPresign},
 		{Name: "a write with a wrong payload checksum is refused", Optional: true, Capability: true, Run: checkChecksumEnforced},
 		{Name: "an object's metadata survives its write", Optional: true, Capability: true, Run: checkMetadata},
 		{Name: "a copy onto itself replaces the metadata and keeps the object's bytes", Optional: true, Capability: true, Run: checkCopyReplacesMetadata},
@@ -649,36 +649,16 @@ func checkDeleteMany(ctx context.Context, e *ConformanceEnv) error {
 	return nil
 }
 
+// checkPresign is the link check of R-STOR-074 as a conformance check: a link signed with the three overrides of R-STOR-072 is
+// answered 200 with the object's bytes and the three overridden headers. It is optional: a store that fails it serves no link,
+// and nothing else of Quader depends on it (Q-STOR-294).
 func checkPresign(ctx context.Context, e *ConformanceEnv) error {
-	if e.Opts.HTTP == nil {
-		return errors.New("no HTTP client was given to fetch the presigned URL")
+	var f Fetcher
+	if e.Opts.HTTP != nil {
+		f = e.Opts.HTTP
 	}
-	key := e.Key("presigned")
-	data := payload(2048)
-	if err := putBytes(ctx, e.Store, key, data); err != nil {
-		return err
-	}
-	u, err := e.Store.Presign(ctx, key, time.Minute)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := e.Opts.HTTP.Do(req)
-	if err != nil {
-		return fmt.Errorf("fetch the presigned URL: %w", err)
-	}
-	defer resp.Body.Close()
-	got, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK || !bytes.Equal(got, data) {
-		return fmt.Errorf("the presigned URL answered %d with %d bytes", resp.StatusCode, len(got))
-	}
-	return nil
+	_, err := linkCheck(ctx, e, f)
+	return err
 }
 
 // StartupCheck is the check a replica passes before its first readiness

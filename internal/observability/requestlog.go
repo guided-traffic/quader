@@ -201,6 +201,7 @@ func RequestLog(log *slog.Logger, m *Metrics, opts ...RequestOption) func(http.H
 				nullable("deny_reason", facts.denyReason),
 				nullable("limiter", facts.limiter),
 				nullable("limit_mode", facts.limitMode),
+				nullable("delivery", facts.delivery),
 			}
 			attrs = append(attrs, limitsAttrs(facts.limits)...)
 			for _, f := range facts.extra {

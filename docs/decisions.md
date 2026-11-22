@@ -2171,7 +2171,9 @@ R-BAK-030, Q-BAK-62 to Q-BAK-64; [api-and-ui.md](spec/api-and-ui.md) R-UI-196, R
 
 **Status:** Accepted (owner decision of 2026-11-22, decision 11 (a) of his working paper on the stored content); the mechanisms decided by
 the planner in the owner's absence — put to the owner. Supersedes [ADR-045](#adr-045--presigned-download-redirects-as-a-per-repository-opt-in-p2).
-Stage 3 of the owner's topic; stages 1 (several connections) and 2 (encryption) are specified apart.
+Stage 3 of the owner's topic; stages 1 (several connections) and 2 (encryption) are specified apart. Built behind the API on 2026-11-22
+(the serve point, the store and the limits; the development agent's decisions Q-STOR-350 to Q-STOR-354); the operations and the screens
+are not built.
 
 **Context.** The owner: "Wir brauchen ein Setting um durch den Admin bestimmen zu lassen ob wir unsere Artefakte direkt oder durch
 signierte s3 Links ausliefern lassen" and, for an encrypting connection, "dann müssen wir natürlich die Daten ausliefern". The store can
@@ -2188,8 +2190,9 @@ in Go keep their credential for a subdomain of the registry's host, and a store 
   closed object and the old member is refused (Q-STOR-282, Q-STOR-283).
 - A download is a link only after every condition at the one serve point, in order: a route whose clients check a digest, `GET`, no
   Bastion, no system read, the switch, every gate on a decided passing state, conditionals and ranges answered by Quader, the minimum
-  size, no pace figure for the caller, the limits' `Admit`, a connection that is not encrypted, holds a sound copy, is not failing and
-  passed its link check (R-STOR-070, R-STOR-074, Q-STOR-284, Q-STOR-285, Q-STOR-291, Q-STOR-294).
+  size, no pace figure for the caller (no longer a condition since [Q-LIM-99](spec/usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue), 2026-11-22), the limits' `Admit`,
+  a connection that is not encrypted, holds a sound copy, is not failing and passed its link check (R-STOR-070, R-STOR-074, Q-STOR-284,
+  Q-STOR-285, Q-STOR-291, Q-STOR-294).
 - The link: Signature Version 4 for `GET`, the content type, `attachment` with the file name and `private, no-store` asked of the store;
   `https` only; a host that is no host of Quader nor below one; a `307` with `no-store` and the four content headers (R-STOR-072,
   Q-STOR-287 to Q-STOR-289, Q-STOR-293).
@@ -2198,7 +2201,9 @@ in Go keep their credential for a subdomain of the registry's host, and a store 
   Q-LIM-97, Q-LIM-98).
 
 **Consequences.** Large downloads of OCI layers, npm tarballs and Ansible collections leave the `packages` pods for callers without a pace
-figure; on a new installation that is administrators only, because every other built-in profile sets one (put to the owner). A link is a
+figure; on a new installation that is administrators only, because every other built-in profile sets one (put to the owner). *Changed by
+Q-LIM-99 on 2026-11-22: a pace figure no longer keeps a caller from links, so they reach every caller the other conditions allow, and a
+caller slowed through Quader is not slowed by a link (H-1352).* A link is a
 bearer for its life (H-12), outlives a change of the decisions (H-1275), is invisible to the parallel limit (H-1276), is checked by the
 client alone (H-1277), and spends the store's own limits (H-1283), on [security/download-links.md](security/download-links.md). Each
 connection proves at start that its store honours a link with the overrides.
@@ -2220,7 +2225,9 @@ R-UI-200, R-UI-201, Q-API-400, Q-UI-950 to Q-UI-955; [operations-and-observabili
 **Status:** Decided by the planner in the owner's absence — put to the owner. An addition to the format contract frozen by
 [ADR-141](#adr-141--the-format-contract-is-frozen-at-version-1); the contract's version does not change. Built on 2026-11-22:
 `formats.Route.ClientDigest`, the refusals of `Register`, kit check 20 with its two defects, the three declarations and the table test
-(the builder's decisions Q-STOR-295 and Q-STOR-296). The serve point that reads the declaration is not built.
+(the builder's decisions Q-STOR-295 and Q-STOR-296). The serve point reads the declaration since 2026-11-22 (ADR-242's build), which adds
+the derived `catalog.Entry.ClientDigest` (the format has a route that declares `Checks`, set by `Register` like `Mirror`) to the contract's
+surface file under this ADR: the repository model reads it to answer `storage.downloadLinks` with `not_applicable` (R-STOR-014).
 
 **Context.** A link replaces Quader's check of the bytes with the client's, which is no loss only where every client of the format checks.
 Which clients check is each format's knowledge, and the owner's standing rule is that a decision taken at one format holds for every format
@@ -2233,8 +2240,9 @@ declaration on a route that is not a `GET` of the kind `Download`, or without wh
 declaring routes. A route declares only on the evidence of every client family the format supports; a family not read is "does not
 check" until a builder shows it with the real client ([storage.md](spec/storage.md) R-STOR-071, Q-STOR-286).
 
-**Consequences.** OCI's blob route, npm's tarball route and Ansible Galaxy's collection route declare; NuGet, Debian, generic and the ClamAV
-definitions do not. A format added later streams until its author declares with evidence. One field more in
+**Consequences.** OCI's blob route and Ansible Galaxy's collection route declare; npm, NuGet, Debian, generic and the ClamAV
+definitions do not. npm's tarball route declared until the npm leg's case of 2026-11-22 showed Yarn 4 installing a tarball whose object
+was altered in the bucket ([Q-STOR-354](spec/storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)). A format added later streams until its author declares with evidence. One field more in
 `internal/formats/testdata/contract.txt`; check 20 costs milliseconds per format.
 
 **Alternatives considered.** A list of route names in `catalog.Facts`; a method of the format per request.
@@ -2364,7 +2372,8 @@ new data key after a compromise.
 
 **Revisit condition:** layers above the Bastion's `max_object_bytes` that matter (then a verified pass-through); a project that must keep its
 keys out of the DMZ (then an opt-out of its own on every format); many Bastions per installation (then a switch of the installation beside the
-registrations'); the owner's answer on the speed figures (Q-LIM-97, Q-STOR-343).
+registrations'); the owner's answer on the speed figures (Q-LIM-97, Q-STOR-343; for the links decided by the development agent in
+Q-LIM-99 on 2026-11-22, the same way as Q-STOR-343).
 
 **Spec:** [bastion.md](spec/bastion.md) R-BAS-070 to R-BAS-079, Q-BAS-230 to Q-BAS-239, Q-BAS-10; [storage.md](spec/storage.md) R-STOR-095,
 R-STOR-096, Q-STOR-340 to Q-STOR-347, and the edits of R-STOR-014, R-STOR-070, R-STOR-074, R-STOR-083, R-STOR-085, R-STOR-088;
@@ -10292,8 +10301,9 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-LIM-63](spec/usage-and-limits.md#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository) | Does a team see its traffic through a central member? | (a) `via_repository_id`; the Owner sees those rows | — |
 | [Q-LIM-66](spec/usage-and-limits.md#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing) | How is the scanner's pull charged? | (a) the subject `system`, recorded, limited by nothing; the credential renamed by Q-HA-373 | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-LIM-80](spec/usage-and-limits.md#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names) | Where are the malware scanner's reads recorded? | (a) `system`, under the token's repository; the credential renamed by Q-HA-373 | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
-| [Q-LIM-97](spec/usage-and-limits.md#q-lim-97--a-pace-figure-keeps-a-download-in-quader-in-both-modes) | Does a pace figure stop a link? Decided by the planner on the owner's condition; its effect on the built-in profiles is put to the owner | (a) yes, in `enforce` and `audit` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-LIM-97](spec/usage-and-limits.md#q-lim-97--a-pace-figure-keeps-a-download-in-quader-in-both-modes) | Does a pace figure stop a link? Superseded by Q-LIM-99. Decided by the planner on the owner's condition; its effect on the built-in profiles is put to the owner | (a) yes, in `enforce` and `audit` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-LIM-98](spec/usage-and-limits.md#q-lim-98--a-link-is-charged-its-size-when-it-is-issued-and-its-parallel-lease-ends-with-the-redirect) | How is a link charged? Decided by the planner | (a) `Admit` before it, its size at issuance, the lease ends with the `307` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-LIM-99](spec/usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue) | Does a speed limit stop a link? Decided by the development agent after the owner left the open questions to it; changes the condition of his decision 11, named to him | (c) no: the transfer by a link is not paced, the hour and day budgets are charged at the issue, in `enforce` and in `audit` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-API-1](spec/api-and-ui.md#q-api-1--openapi-generation-approach) | How is the OpenAPI document produced? | (a) spec-first: oapi-codegen models and `net/http` server interface, openapi-typescript types, thin hand-written Angular clients | [ADR-083](#adr-083--the-openapi-31-document-is-the-api-contract) |
 | [Q-API-2](spec/api-and-ui.md#q-api-2--is-if-match-mandatory-on-writes) | Is `If-Match` mandatory on writes? | (b) required on PUT and PATCH of revisioned resources; `If-Match: *` is the explicit blind write | [ADR-084](#adr-084--uniform-api-conventions-problem-details-cursors-merge-patch-etags-idempotency-keys) |
 | [Q-API-3](spec/api-and-ui.md#q-api-3--cluster-wide-rate-limiting) | Cluster-wide rate limiting? | (e) cluster-wide sliding-window counters in Valkey (R-ARCH-034) with a per-replica fallback; revisited 2026-10-28; H-43 narrowed; same choice as Q-ARCH-17 | [ADR-102](#adr-102--cluster-wide-rate-limits-in-valkey-with-a-per-replica-fallback) |
@@ -10536,7 +10546,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-UI-950](spec/api-and-ui.md#q-ui-950--the-switch-is-the-first-section-of-the-storage-settings-page) | Where is the switch of signed links? Decided by the planner | (a) `/admin/settings/storage`, built with the section **Download links** first | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-UI-951](spec/api-and-ui.md#q-ui-951--the-details-are-fields-with-their-values-sized-to-them) | How are the details shown? Decided by the planner | (a) MiB and seconds with their values, each address filled with the connection's endpoint | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-UI-952](spec/api-and-ui.md#q-ui-952--the-test-is-a-link-the-administrator-opens-from-a-client-of-his-network) | How is the public address tested? Decided by the planner | (a) a test link and its `curl` command for a client of the administrator's network | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
-| [Q-UI-953](spec/api-and-ui.md#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit) | Does the page say who gets no link? Decided by the planner | (a) a notice naming the profiles in use with a speed limit | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-UI-953](spec/api-and-ui.md#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit) | Does the page say who gets no link? Superseded by Q-LIM-99. Decided by the planner | (a) a notice naming the profiles in use with a speed limit | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-UI-954](spec/api-and-ui.md#q-ui-954--when-no-connection-can-serve-a-link-the-page-says-why-and-the-switch-stays-usable) | What does the page show when no link can be issued? Decided by the planner | (a) a notice with each connection's reason, the switch usable | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-UI-955](spec/api-and-ui.md#q-ui-955--the-repositorys-opt-out-is-a-closed-section-shown-only-where-a-link-can-happen) | Where is the repository's opt-out? Decided by the planner | (a) a closed section **Download links**, only for a format with a declaring route | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-EP-1](spec/endpoints.md#q-ep-1--how-the-endpoint-of-a-request-is-identified) | How is the endpoint of a request identified? | (a) by the listener the connection arrived on; `Host` only selects among the endpoint's own hosts, a foreign host answers `421` | [ADR-128](#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling) |
@@ -11104,6 +11114,11 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-BAK-76](spec/backup-and-restore.md#q-bak-76--a-backup-reads-a-draining-connections-copy-after-every-other-copy) | A backup reads a draining connection's copy after every other copy. Decided by the development agent | (a) after every copy on a connection that does not drain; still the fallback | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
 | [Q-HA-416](spec/ha-and-helm.md#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore) | A destruction of storage keys is journaled and replayed after a restore. Decided by the development agent | (a) `system.storage.keys_destroyed` with the journal flag; the replay destroys again per identifier | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
 | [Q-HA-417](spec/ha-and-helm.md#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name) | The replay destroys the keys only of a connection the restoring configuration does not name. Decided by the development agent | (a) an entry for a configured connection is `skipped` with its reason as a warning; the restore goes on | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
+| [Q-STOR-350](spec/storage.md#q-stor-350--a-gate-passed-on-a-decided-state-at-its-first-decision-a-download-that-waited-streams) | A gate passed on a decided state at its first decision; a download that waited streams. Decided by the development agent | (a) what the checks found at their first decision, a writer's pass included (its trace written by the decision); a block in `report` is not decided | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-STOR-351](spec/storage.md#q-stor-351--the-link-check-runs-on-every-replica-with-a-client-listener-in-the-background-and-again-until-it-answers) | The link check runs on every replica with a client listener, in the background, and again until it answers. Decided by the development agent | (a) `api`, `packages`, `web`, `all`; at start, when the switch turns on, at the safety period while unanswered | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-STOR-352](spec/storage.md#q-stor-352--a-connection-that-cannot-serve-links-is-logged-while-the-switch-is-on) | A connection that cannot serve links is logged while the switch is on. Decided by the development agent | (a) `warn` once per change, while the switch is on | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-STOR-353](spec/storage.md#q-stor-353--the-cases-of-package-2-write-the-switch-through-the-store-and-the-end-to-end-cases-are-named-after-their-legs-sets) | The cases of package 2 write the switch through the store, and the end-to-end cases are named after their legs' sets. Decided by the development agent | (a) the store and the driver; `Test<Set>_R_STOR_071_ClientsCheckALink` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
+| [Q-STOR-354](spec/storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing) | Yarn 4 installs a tarball whose object was altered; does npm's tarball route still declare? Decided by the development agent by R-STOR-071's rule of evidence, put to the owner | (a) `npm.tarball.get` declares nothing, every npm download streams | [ADR-243](#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it) |
 | [Q-ROAD-1](coverage/roadmap.md#q-road-1--generic-local-repositories-in-m1) | Generic local repositories in M1? | (a) the local class of the generic format is built in M1 as MVP, from a new spec page `formats/generic.md`; remote and virtual generic stay P1 | — |
 | [Q-ROAD-2](coverage/roadmap.md#q-road-2--backup-and-restore-in-the-beta) | Backup and restore in the beta? | (e) Quader's own backup create and restore, the platform layer (R-HA-023, R-HA-025) and the revocation journal (R-HA-054, R-AUTHZ-031) are MVP and gate in M5; their work runs in its own lane from M1 on, and M0 gives every table its export class. Revisited 2026-10-28: was (a), both kept at P1 and the journal after 1.0 | [ADR-094](#adr-094--a-configurable-backup-job-writes-consistent-backups-to-s3), [ADR-078](#adr-078--restores-keep-metadata-and-blobs-consistent-by-ordering-not-by-coordination) |
 | [Q-ROAD-3](coverage/roadmap.md#q-road-3--ecosystems-the-owners-teams-use-after-npm-and-nuget) | Which ecosystems after npm and NuGet? | (a) the P1 format order of the roadmap stands; revisited 2026-10-29: Ansible Galaxy (owner demand) is F0 and P1, ahead of F1 | — |

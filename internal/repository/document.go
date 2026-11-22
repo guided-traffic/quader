@@ -53,8 +53,8 @@ type Settings struct {
 	// virtual.go).
 	Remote  json.RawMessage  `json:"remote,omitempty"`
 	Virtual *VirtualSettings `json:"virtual,omitempty"`
-	// Storage is the member owned by storage.md (upload size, quota, presigned
-	// downloads, checksum policy). The model keeps it as an opaque JSON object.
+	// Storage is the member owned by storage.md: a closed object of maxUploadSize (R-STOR-004) and downloadLinks, the
+	// repository's opt-out of the signed links of the object store (R-STOR-014, storage.go). The model keeps it as JSON.
 	Storage json.RawMessage `json:"storage,omitempty"`
 	// NPM is the settings member of the npm format, named after the format
 	// (R-REPO-004). It is validated against the format's settings schema

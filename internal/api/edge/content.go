@@ -26,6 +26,12 @@ type ServeOptions struct {
 	// that writes a body (200 or 206), after the conditionals and the range were evaluated and before open and the status
 	// line. A refusal is returned like the error of open: nothing was written and the caller renders it. Nil admits.
 	Admit func() error
+	// Link is the last steps of the delivery by signed links of the object store (storage.md R-STOR-070 steps 12 and 13): it runs
+	// after Admit, only for a GET that would carry the whole file with 200, and answers a link, or false to stream the file as
+	// without it. The caller sets it only where the earlier conditions held. Nil streams.
+	Link func() (blob.Link, bool)
+	// Linked runs after the redirect to a link was written (R-STOR-073): the caller counts the download and charges its size there.
+	Linked func(blob.Link)
 }
 
 // CacheControl is `private, no-cache` for an authenticated request and `no-cache`
@@ -105,6 +111,15 @@ func ServeItem(w http.ResponseWriter, r *http.Request, it items.Item, open func(
 			return err
 		}
 	}
+	if o.Link != nil && status == http.StatusOK {
+		if link, ok := o.Link(); ok {
+			writeRedirect(w, r, it, link)
+			if o.Linked != nil {
+				o.Linked(link)
+			}
+			return nil
+		}
+	}
 	body, err := open(rng)
 	if err != nil { // before the status line: the caller's to answer
 		return err
@@ -125,6 +140,19 @@ func ServeItem(w http.ResponseWriter, r *http.Request, it items.Item, open func(
 		o.Served()
 	}
 	return nil
+}
+
+// writeRedirect answers a download with a link to the stored object (storage.md R-STOR-072, Q-STOR-289): 307 with Location,
+// Cache-Control: no-store and Content-Length: 0, through the content writer, which sets the content headers of R-ARCH-007 on every
+// answer of a content route; none of ETag, Last-Modified, Accept-Ranges and Repr-Digest, which describe a body the redirect does
+// not have. The link is a bearer for its life: it goes into this header and nowhere else.
+func writeRedirect(w http.ResponseWriter, r *http.Request, it items.Item, link blob.Link) {
+	cw := httpserver.ContentWriterFor(w, r, httpserver.ContentFile, fileName(it.Path))
+	h := cw.Header()
+	h.Set("Location", link.URL)
+	h.Set("Cache-Control", "no-store")
+	h.Set("Content-Length", "0")
+	cw.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 // copyBody streams the body: the verifying reader writes from its own buffer

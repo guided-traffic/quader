@@ -356,10 +356,11 @@ built; the serve point that reads it is not yet ([download-links.md](download-li
 | Every `GET` answer `200` of a declaring route is served through `rq.Host.Items().Serve` and is the stored blob under its content address; a route only the remote or the virtual class serves cannot show it in the kit and does not declare | kit check 20 ([checks_links.go](../../internal/formats/formattest/checks_links.go)); `NoContent` and `NoBastion` do not exempt from it ([Q-STOR-295](../spec/storage.md#q-stor-295--kit-check-20-judges-every-200-a-declaring-route-answers-to-a-get-against-the-stored-blob-and-a-skip-while-a-route-declares-is-refused)) |
 | Every format has its row of declaring routes | `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` ([all_test.go](../../internal/formats/all/all_test.go)) |
 
-Declaring today: `oci.blob.get` (the digest in the path), `npm.tarball.get` (`dist.integrity` of the version) and `ansible.artifact.get`
-(`artifact.sha256` of the collection version); each declaration sits beside its route with the evidence and the client families still to
-be shown with the real client (Podman, CRI-O and the Docker Engine's older pull path; pnpm and Yarn), which the end-to-end cases of the
-serve point's package show before it lands. NuGet, Debian, generic and the ClamAV definitions declare nothing. It follows the pattern of
+Declaring today: `oci.blob.get` (the digest in the path) and `ansible.artifact.get` (`artifact.sha256` of the collection version); each
+declaration sits beside its route with the evidence, and the end-to-end case in the format's own leg shows that every client family refuses
+a link whose object was altered in the bucket. `npm.tarball.get` declared until that case showed Yarn 4 installing such a tarball: its npm
+fetcher compares nothing with `dist.integrity` ([Q-STOR-354](../spec/storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)).
+npm, NuGet, Debian, generic and the ClamAV definitions declare nothing. It follows the pattern of
 the Bastion's facts above (a declared fact, held by the kit), with the difference that it is a field of the route, read only at the main
 installation's serve point.
 

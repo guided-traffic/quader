@@ -18,7 +18,7 @@ func roleTable() map[string][]Area {
 		AreaKeyRing, AreaFormatPorts, AreaExposure, AreaRepository, AreaVirtual, AreaInvalidation, AreaProxy,
 		AreaIdentity, AreaAuthz, AreaOwnership, AreaCI, AreaVuln, AreaMalware, AreaSignatures, AreaSigning, AreaMirror, AreaFormats, AreaFiles, AreaDownloadLimits,
 	}
-	listener := []Area{AreaLimits, AreaVirtualEngine, AreaAuth, AreaEndpoints, AreaAPI}
+	listener := []Area{AreaLimits, AreaDownloadLinks, AreaVirtualEngine, AreaAuth, AreaEndpoints, AreaAPI}
 	filling := []Area{AreaProxyEngine, AreaFormatHost}
 	// The shared asset store of the UI is where the UI is served (R-HA-020, Q-HA-120): api, web and all.
 	management := []Area{AreaPackagesAPI, AreaVulnAPI, AreaSessions, AreaLogin, AreaUIAssets, AreaCIExchange}

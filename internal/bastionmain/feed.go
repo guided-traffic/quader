@@ -89,6 +89,8 @@ func noFeedEntry() map[string]string {
 		// documents that carry the identity's signatures, reaches a Bastion as those documents' new revisions, not as an entry of its own.
 		audit.EventSigningRemoved: "stops the signing identity; the keys document and the npm documents it changes reach a Bastion as their new revisions (R-SIG-048)",
 		audit.EventSigningRetired: "withdraws a signing identity; the keys document and the npm documents it changes reach a Bastion as their new revisions (R-SIG-048)",
+		// The signed links of the object store (storage.md R-STOR-014): a Bastion's request never gets one (R-STOR-070 step 2).
+		audit.EventStorageDownloadLinksChanged: "switches how the main installation hands its clients a download, never what it serves: a Bastion's forward is never answered with a link (R-STOR-070 step 2)",
 	}
 }
 

@@ -319,6 +319,10 @@ type Entry struct {
 	// interface, repositories-and-proxy.md R-REPO-050, ADR-152). formats.Register derives it; the repository model reads
 	// it to refuse remote.mode mirror where it is false.
 	Mirror bool
+	// ClientDigest is true for a format with at least one route whose clients check a digest themselves (Route.ClientDigest.Checks,
+	// storage.md R-STOR-071): the only formats whose downloads a signed link of the object store can serve. formats.Register
+	// derives it; the repository model reads it to refuse storage.downloadLinks where it is false (R-STOR-014).
+	ClientDigest bool
 
 	// settings is the compiled SettingsSchema, filled by Register.
 	settings *settingsSchema

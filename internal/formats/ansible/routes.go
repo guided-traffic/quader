@@ -30,7 +30,8 @@ var artifactClientDigest = formats.ClientDigest{
 	Checks:  true,
 	Against: "artifact.sha256 of the collection version",
 	Evidence: `ansible-galaxy compares the SHA-256 ("Mismatch artifact hash with downloaded file", concrete_artifact_manager.py, ` +
-		"_download_file) and never sends its credential after a redirect",
+		"_download_file) and never sends its credential after a redirect; ansible-core 2.17 and 2.21 refuse an altered archive " +
+		"(TestAnsible_R_STOR_071_ClientsCheckALink)",
 }
 
 // buildRoutes is the whole endpoint map of the format, written once with the name of every handler. A route serves the classes its

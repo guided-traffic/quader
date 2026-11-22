@@ -810,6 +810,7 @@ catalog.BastionFacts: method RateLimited() int
 catalog.Class: method Valid() bool
 catalog.Class: type string
 catalog.Entry: embedded Facts
+catalog.Entry: field ClientDigest bool
 catalog.Entry: field DocumentPath func(string) (string, bool)
 catalog.Entry: field Ecosystem string
 catalog.Entry: field Exposure Exposure

@@ -240,7 +240,7 @@ func TestGenericSettings(t *testing.T) {
 	}
 	t.Run("R-GENERIC-008 the shared members apply", func(t *testing.T) {
 		_, _, err := decodeValidate(t, `{"key":"x1","class":"local","format":"generic","description":"d","adminNotes":"n",
-			"disabled":true,"hideExistence":"false","storage":{"maxUploadBytes":10},
+			"disabled":true,"hideExistence":"false","storage":{"maxUploadSize":10},
 			"includePatterns":["a/**"],"excludePatterns":["b/**"]}`, true)
 		if err != nil {
 			t.Fatal(err)

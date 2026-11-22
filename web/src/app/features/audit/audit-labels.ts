@@ -341,6 +341,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.signing.identity.retired:Signing identity retired`;
     case 'signing.identity.switched':
       return $localize`:@@audit.action.signing.identity.switched:Signing identity switched`;
+    case 'storage.download_links.changed':
+      return $localize`:@@audit.action.storage.download_links.changed:Download link setting changed`;
     case 'system.backup.completed':
       return $localize`:@@audit.action.system.backup.completed:Backup completed`;
     case 'system.backup.deleted':

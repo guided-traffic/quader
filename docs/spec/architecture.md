@@ -152,6 +152,7 @@ routes read them. The areas of the client listener are split by route family:
 | Area (step) | What it builds | `api` | `packages` | `worker` | `web`, `all` |
 |---|---|---|---|---|---|
 | `limits` | the cluster limiter set of the client listeners (R-ARCH-034) with the failure, flow-start, CI and Bastion-download limiters | yes | yes | no | yes |
+| `download_links` | the delivery by signed links of the object store ([storage.md](storage.md) R-STOR-014, R-STOR-074): the store of the switch, the replica's snapshot of it, each connection's state with its link check, the signing of a link | yes | yes | no | yes |
 | `proxy-engine` | the remote engine: fills, flights, the negative cache (R-REPO-025) | **no** | yes | no | yes |
 | `virtual-engine` | the virtual engine (R-REPO-019) | the explanation only, over a read-only view of the remote members (Q-ARCH-294) | yes | no | yes |
 | `formathost` | the format host and the protocol dispatcher of `/api/<format>/` | **no** | yes | no | yes |
@@ -430,6 +431,7 @@ flowchart LR
 | sysstate | `internal/sysstate` | The banner and the read-only maintenance mode in `system_state` (R-OPS-024, R-OPS-025) | R-OPS-024 in [operations-and-observability.md](operations-and-observability.md) |
 | journal | `internal/journal` | The revocation journal: object, ports, replay handlers and the update rule | R-HA-054 in [ha-and-helm.md](ha-and-helm.md) |
 | limits | `internal/limits` (domain), `internal/limits/store`, `internal/limits/usage`, `internal/limits/httplimit` (edge) | The download limits: figures, rules, resolution, counters, decisions, pacing, the charge buffer; the store of the settings; the usage store; the stage's caller, writer and log fields | [usage-and-limits.md](usage-and-limits.md), [Q-ARCH-513](#q-arch-513--the-download-limits-are-an-area-of-every-role-and-a-domain-package-with-an-edge-part) |
+| downloadlinks | `internal/downloadlinks` (domain) | The delivery by signed links of the object store: the store and the replica's snapshot of the switch, the host rule, each connection's state and link check, the signing of one link; the format host asks it at the serve point | [storage.md](storage.md) R-STOR-014, R-STOR-070 to R-STOR-074 |
 | observability | `internal/observability` | Logs, metrics, traces, health checks | [operations-and-observability.md](operations-and-observability.md) |
 | outbound | `internal/outbound` | Every outbound HTTP client | R-ARCH-022; settings in [repositories-and-proxy.md](repositories-and-proxy.md) |
 | secrets | `internal/secrets` | Stored-secret encryption, sealed-column registry, key-ring status | R-ARCH-021 |

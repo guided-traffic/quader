@@ -1,15 +1,16 @@
 # Delivery by signed links of the object store
 
-Status: specified on 2026-11-22 and not built ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
+Status: specified on 2026-11-22; built behind the API on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
 [usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040;
 [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing),
-[ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it)). What is built today: the
-object store's client can sign a link for `GET` ([client.go](../../internal/blob/s3/client.go) lines 460 to 469), its only caller is the
-conformance check ([conformance.go](../../internal/blob/conformance.go) from line 564), and every download is streamed through Quader
-([content.go](../../internal/api/edge/content.go) lines 56 to 128). Built on 2026-11-22: the format's declaration that its clients check
-a digest (`formats.Route.ClientDigest`, R-STOR-071) with kit check 20, declared by `oci.blob.get`, `npm.tarball.get` and
-`ansible.artifact.get`; nothing reads it yet. Every gap below is therefore dormant until the design is built and an administrator
-switches it on; the sections describe that design.
+[ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it)). Built: the format's
+declaration that its clients check a digest (`formats.Route.ClientDigest`, R-STOR-071) with kit check 20, declared by `oci.blob.get` and
+`ansible.artifact.get`; the serve point that reads it ([download_links.go](../../internal/formathost/download_links.go),
+`edge.ServeItem`'s `307`), the row of the switch with its store, audit event and snapshot, the host rule, each connection's link check and
+state, and the signing ([internal/downloadlinks](../../internal/downloadlinks/)). Not built: the operations of the management API that
+switch it on, the settings page and the repository's section (package 3). A new installation keeps the switch off, and nothing of the
+product switches it on before package 3 lands, so every gap below is dormant until an administrator switches it on; the sections describe
+what then holds.
 
 The perspective of this page is what changes for the security of a download when Quader answers it with a link to the object store
 instead of the bytes: who can use the link, what Quader no longer sees or checks, and what the object store learns and records.
@@ -55,8 +56,9 @@ transfer (H-1277).
 
 Quader counts at issuance: the request, the item's size as cached bytes, one download in the statistics, the audit event
 `artifact.downloaded` with `delivery: "link"` under `audit.record_downloads`, the request log's `delivery`, and the metrics of R-STOR-073.
-It does not learn whether the link was fetched. The pace figure keeps a download in Quader altogether (R-LIM-040); the parallel lease ends
-with the `307` (H-1276). The object store's own log, where its operator turned one on, records the fetch with the signer, not the caller
+It does not learn whether the link was fetched. No figure of the download limits keeps a caller from a link: a speed limit paces only what
+Quader writes, and the hour and day budgets are charged in full at the issue (R-LIM-040, Q-LIM-99, H-1352); the parallel lease ends with
+the `307` (H-1276). The object store's own log, where its operator turned one on, records the fetch with the signer, not the caller
 (H-1278).
 
 ## What this does not cover
@@ -77,22 +79,25 @@ client received a link, and a long link life.
 
 ### H-1276 · The limit of parallel downloads does not see a link's transfer, and the byte windows count its size at issuance
 
-Component: the download limits ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040). Subject: every budget key without a pace
-figure. Dormant: live once the switch is on. The parallel lease ends with the `307`, so `parallelDownloads` bounds how many links a caller
+Component: the download limits ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040). Subject: every budget key, a speed limit
+or none (Q-LIM-99). Dormant: live once the switch is on. The parallel lease ends with the `307`, so `parallelDownloads` bounds how many links a caller
 receives at once, not how many transfers run; a caller can start many transfers from the store within the links' lives. The hour and day
 windows count the item's size once at issuance: a link fetched several times within its life is charged once, a link never fetched is
-charged in full. What makes it real: a caller that requests links faster than it fetches them, or fetches one link many times, under a
-profile without a pace figure.
+charged in full. What makes it real: a caller that requests links faster than it fetches them, or fetches one link many times.
 
 ### H-1277 · A link's bytes are checked by the client alone
 
 Component: the declaration of R-STOR-071 and the clients. Subject: every client of a route that declares `Checks`. Dormant: live once the
 switch is on. Quader does not hold back the last bytes, does not compare the digest, does not mark a changed object `corrupt`
 (R-STOR-013), so a damaged or replaced object is delivered whole and is refused, if at all, by the client. The declarations rest on the
-source of the reference clients read on 2026-11-22 (containerd, npm's pacote, `ansible-galaxy`); Podman and CRI-O, the Docker Engine's
-older pull path, pnpm and Yarn were not read. The declarations are in the format contract since 2026-11-22 and read by nothing; those
-families are shown by the end-to-end case of R-STOR-070 before the serve point that reads them lands, and a family that takes altered bytes
-turns its route's declaration back then (R-STOR-071). A client that a
+source of the reference clients read on 2026-11-22 (containerd, `ansible-galaxy`) and on the end-to-end cases of R-STOR-074
+(`Test<Set>_R_STOR_071_ClientsCheckALink`), which overwrite a link's object in the bucket with bytes that unpack to the same files and
+require every client of the leg to refuse it. Run once on 2026-11-22 on a kind cluster: the Docker Engine and Podman refused the altered
+layer, `ansible-galaxy` of ansible-core 2.17 and 2.21 the altered collection. The npm leg's case showed Yarn 4.18.1 installing an altered
+tarball while npm 12, pnpm 12 and Yarn 1 refused it, so npm's tarball route declares nothing and every npm download streams through
+Quader's check
+([Q-STOR-354](../spec/storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)).
+CRI-O and the Docker Engine's older pull path were not run. A client that a
 user configured to skip its check (an option of the client, an old version) gets unchecked bytes. What makes it real: a principal who can
 write the bucket (H-11), or a store that damages an object, together with a client that does not check.
 
@@ -151,3 +156,40 @@ Quader's own reads and writes do, and Quader neither sees nor bounds it: many cl
 refuse or slow Quader's own uploads and reads. What makes it real: a burst of pulls by link, such as a fleet of nodes pulling one image,
 against a store whose limits are shared with the installation's own traffic. The ways out are the repository's opt-out, a higher minimum
 size, or the switch; nothing in Quader enforces the provider's limit.
+
+### H-1350 · A store that stops honouring an override after the link check serves links without it until the next check
+
+Component: the link check of R-STOR-074 ([linkcheck.go](../../internal/blob/linkcheck.go)) and each replica's state of a connection. Subject:
+a browser that opens a link of a connection whose store changed. Dormant: live once the switch is on. The check runs at a replica's start,
+when the switch is turned on, and at the snapshot's safety period only while a connection's check has not answered
+([Q-STOR-351](../spec/storage.md#q-stor-351--the-link-check-runs-on-every-replica-with-a-client-listener-in-the-background-and-again-until-it-answers));
+a store that passed it and then stops honouring `response-content-disposition` or `response-content-type` (a new version of its software,
+a proxy put in front of the public address that strips the query) keeps getting links on that replica, and their answers lack
+`attachment` or carry the stored type. What is left is H-1279's case without its two mitigations: the object is still stored as
+`application/octet-stream`, which no browser renders. What makes it real: a change of the store or of the path to its public address while
+links are on and no replica restarts; the way out is to switch the delivery off and on, which runs the check again on every replica.
+
+### H-1351 · A link may name a copy that a mark made damaged after the item's lookup
+
+Component: the connection choice of R-STOR-074 over the copies the item lookup read ([links.go](../../internal/downloadlinks/links.go)).
+Subject: a client of a blob whose copy is marked damaged between its lookup and its link. Dormant: live once the switch is on. The choice
+reads the copies of the request's own lookup and costs no statement (R-ARCH-027); a concurrent read or scrub that marks one of them `missing`
+or `corrupt` after that lookup is not seen, so the link may name the object that was just found damaged, and the client refuses its bytes
+(H-1277) or gets the store's `404`. A streamed download in the same window meets the copy and falls over to the next before its first byte
+(R-STOR-055). What makes it real: a damaged copy on the first connection of the read order beside a sound one on another, and a link issued
+in the milliseconds after the mark; the client's retry asks Quader again and gets the next copy.
+
+### H-1352 · A caller that is slowed through Quader is not slowed by a link
+
+Component: the download limits' speed limit (`cachedBytesPerSecond`, [usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-023) and the
+links of R-STOR-070. Subject: every budget key whose profile or rule sets a speed limit, which on a new installation is every caller but an
+administrator (R-LIM-010). Dormant: live once the switch is on. The development agent's decision
+[Q-LIM-99](../spec/usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue) makes a speed
+limit no condition of a link: the transfer by a link runs between the client and the object store at the store's speed, and only the hour
+and day budgets, charged in full at the issue, and the parallel lease of the issue bound it (H-1276). An administrator who set a speed limit
+to make a caller fetch slowly gets that only for the downloads Quader streams (below the minimum size, a range, `/files/`, a format whose
+clients do not check). In `audit` nothing about the pace of a link is recorded, as `enforce` paces none. What makes it real: a caller whose
+speed limit was meant to spread its load over time, a CI fleet pulling large layers, against a store whose bandwidth is shared with the
+installation's own traffic (H-1283). The ways out are a smaller hour or day budget for that caller, a higher minimum size, a repository's
+opt-out, or the switch.
+

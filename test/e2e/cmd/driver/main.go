@@ -15,6 +15,8 @@
 //	driver probe [-steps 90] [-interval-ms 1000]   enqueue one long system.probe job and print its id
 //	driver stop                              end a running load after its current tick
 //	driver job <id>                          print the job row as JSON
+//	driver links on|off                      the switch of the signed links of the object store (links.go)
+//	driver overwrite <sha256 hex>            other bytes over a blob's object in the bucket (links.go)
 package main
 
 import (
@@ -61,7 +63,7 @@ func main() {
 
 func run(ctx context.Context, args []string, out io.Writer) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: driver idle|info|load|probe|job")
+		return fmt.Errorf("usage: driver idle|info|load|probe|job|links|overwrite")
 	}
 	cmd, args := args[0], args[1:]
 	if cmd == "idle" {
@@ -100,6 +102,10 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return probeCmd(ctx, cfg, args, out)
 	case "job":
 		return jobCmd(ctx, cfg, args, out)
+	case "links":
+		return linksCmd(ctx, cfg, args, out)
+	case "overwrite":
+		return overwriteCmd(ctx, cfg, args, out)
 	}
 	return fmt.Errorf("unknown command %q", cmd)
 }

@@ -14,7 +14,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -55,6 +54,9 @@ type Store struct {
 	fault   func(op, key string) error
 	getBody func(io.ReadCloser) io.ReadCloser
 	counts  map[string]int
+
+	// links is the signing of the store's links (presign.go).
+	links linkSigner
 
 	// endpoint and bucket place the store among the buckets of one endpoint (NewEndpoint); nil for a store of its own.
 	endpoint *Endpoint
@@ -446,30 +448,4 @@ func (s *Store) ListMultipartPage(ctx context.Context, prefix string, after blob
 		out = append(out, u)
 	}
 	return out, blob.MultipartMarker{}, nil
-}
-
-// PresignHost is the host of the URLs Presign returns. The store is also an
-// http.RoundTripper that answers GET requests for them, so a test can give a
-// client this transport.
-const PresignHost = "mem.invalid"
-
-// Presign implements blob.ObjectStore.
-func (s *Store) Presign(_ context.Context, key string, _ time.Duration) (string, error) {
-	return "http://" + PresignHost + "/" + key, nil
-}
-
-// RoundTrip serves a presigned URL from memory.
-func (s *Store) RoundTrip(req *http.Request) (*http.Response, error) {
-	key := strings.TrimPrefix(req.URL.Path, "/")
-	s.mu.Lock()
-	o, ok := s.objects[key]
-	s.mu.Unlock()
-	rec := &http.Response{Proto: "HTTP/1.1", ProtoMajor: 1, ProtoMinor: 1, Header: http.Header{}, Request: req}
-	if !ok {
-		rec.StatusCode, rec.Status, rec.Body = 404, "404 Not Found", io.NopCloser(strings.NewReader(""))
-		return rec, nil
-	}
-	rec.StatusCode, rec.Status, rec.Body = 200, "200 OK", io.NopCloser(bytes.NewReader(bytes.Clone(o.data)))
-	rec.ContentLength = int64(len(o.data))
-	return rec, nil
 }

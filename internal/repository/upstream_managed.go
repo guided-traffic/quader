@@ -72,6 +72,10 @@ func managedPointers(kind wellknown.Kind, cur, nd *Document) ([]errs.FieldError,
 		case patchableTop(k) && (kind != wellknown.KindSystem || !systemFixedTop(k)):
 		case k == "remote":
 			out = append(out, managedRemote(before[k], after[k])...)
+		case k == "storage" && kind != wellknown.KindSystem:
+			// storage.downloadLinks narrows what the repository serves and is an administrator's (R-STOR-014); the rest of
+			// storage is the product's.
+			out = append(out, managedObject("/storage", orObject(before[k]), orObject(after[k]), storageDownloadLinks)...)
 		case HasFormatMember(k):
 			out = append(out, managedObject("/"+k, before[k], after[k], "")...)
 		case !sameJSON(before[k], after[k]):
@@ -136,6 +140,14 @@ func documentMembers(d *Document) (map[string]json.RawMessage, error) {
 }
 
 // objectMembers reads an object's members; nil for none, null or no object.
+// orObject is an absent member as the empty object, so that a member added to it compares member by member.
+func orObject(raw json.RawMessage) json.RawMessage {
+	if len(bytes.TrimSpace(raw)) == 0 {
+		return json.RawMessage(`{}`)
+	}
+	return raw
+}
+
 func objectMembers(raw json.RawMessage) map[string]json.RawMessage {
 	t := bytes.TrimSpace(raw)
 	if len(t) == 0 || t[0] != '{' {

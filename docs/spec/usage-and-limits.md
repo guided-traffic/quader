@@ -1079,36 +1079,38 @@ Priority: **P1** · Covers: BEYOND-030
 
 The owner's decision of 2026-11-22 ([storage.md](storage.md) R-STOR-014, decision 11 (a) of his working paper on the stored content):
 a download is handed to a signed link only where "für den Aufrufer gilt kein Tempolimit", and "gezählt wird bei der Ausgabe, nicht beim
-Transfer". A link moves the transfer away from Quader: no counting writer sees its bytes, and no lease can last as long as it does.
-What each figure does with a link ([Q-LIM-97](#q-lim-97--a-pace-figure-keeps-a-download-in-quader-in-both-modes),
+Transfer". *Changed on 2026-11-22 by [Q-LIM-99](#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue), decided by the development agent after the owner left the open
+questions to it: a speed limit no longer keeps a caller from a link.* A link moves the transfer away from Quader: no counting writer sees
+its bytes, and no lease can last as long as it does. What each figure does with a link ([Q-LIM-99](#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue),
 [Q-LIM-98](#q-lim-98--a-link-is-charged-its-size-when-it-is-issued-and-its-parallel-lease-ends-with-the-redirect)):
 
 | Figure | With a link |
 |---|---|
 | `requestsPerSecond`, `requestsBurst`, `requestsPerHour`, the block | unchanged: the `307` is a request at stage 7 like every other |
-| `cachedBytesPerSecond` | **makes a link impossible**: a budget key that has it set gets every download streamed and paced (R-LIM-023), in `enforce` and in `audit` alike, so that `audit` records what `enforce` would do |
-| `cachedBytesPerHour`, `bytesPerDay` | checked before the link as before a stream (R-LIM-021, `Admit`); the item's size is charged as cached bytes when the link is issued, and reaches the windows at the next flush |
+| `cachedBytesPerSecond` | **no condition**: a budget key that has it set gets links as every other, in `enforce` and in `audit` alike; the transfer by a link is not paced, since Quader writes none of its bytes, and a streamed download of the same caller is paced as before (R-LIM-023) ([security/download-links.md](../security/download-links.md) H-1352) |
+| `cachedBytesPerHour`, `bytesPerDay` | checked before the link as before a stream (R-LIM-021, `Admit`); the item's size is charged in full as cached bytes when the link is issued, and reaches the windows at the next flush |
 | `parallelDownloads` | checked before the link (`Admit` takes the lease and may wait); the lease ends with the `307`, so the figure bounds issuances, not transfers ([security/download-links.md](../security/download-links.md) H-1276) |
 | `uncachedBytesPerSecond`, `uncachedBytesPerHour`, `upstreamRequestsPerHour`, the ceilings | unchanged: a link is only ever a stored item's (a remote's miss is streamed by the leader, R-REPO-041) |
 
-- **The check** reads the budget key's figures from the request's charge (`limits.Charge.Figures`,
-  [charge.go](../../internal/limits/charge.go) lines 121 to 127): no round trip. The built-in profiles Standard, Technical, Restricted
-  and Anonymous set `cachedBytesPerSecond` (R-LIM-010), so on a new installation only administrators (Unlimited) and callers under a
-  profile or rule without it get links; the settings page of R-UI-200 says so.
+- **No figure is a condition of a link**; the built-in profiles' `cachedBytesPerSecond` (R-LIM-010) keeps no caller from links, so on a new
+  installation every caller the other conditions of R-STOR-070 allow gets them.
 - **The charge at issuance** adds the item's size to the charge's cached bytes (`AddCached`, [charge.go](../../internal/limits/charge.go)
   lines 179 to 187): the windows, the usage store (cached bytes of the repository that served) and `bytes_cached` of the request log carry
   it as if the body had been written. A link fetched twice counts once, a link never fetched counts.
-- **In `audit`** a link is issued wherever the conditions hold; nothing about it is refused, and `Admit`'s would-limits are recorded as
-  for a stream.
+- **In `audit`** a link is issued wherever the conditions hold; nothing about it is refused, `Admit`'s would-limits are recorded as for a
+  stream, and no would-limit of a pace is recorded, since `enforce` paces no link either.
 - **A system read** (R-LIM-001) is never a link ([storage.md](storage.md) R-STOR-070).
+- **As built** (2026-11-22, the links' package 2): the charge is `limits.Charge.ChargeLink` ([links.go](../../internal/limits/links.go)),
+  called when the redirect is written ([download_links.go](../../internal/formathost/download_links.go)); the serve point reads no figure
+  for its decision.
 
 Acceptance criteria:
 
-- Unit (`internal/limits`, `internal/formathost`): a caller under the profile Standard gets the tarball streamed with the switch on; under
-  Unlimited, `307`; a rule that empties `cachedBytesPerSecond` of Standard for one technical token gives that token `307`; after one link of
-  a 5 MB tarball the charge holds 5 MB of cached bytes, and the next flush adds them to the hour window; with `cachedBytesPerHour` used up
-  the answer is `429 download_limit_reached` and no link; in `audit` a caller with `cachedBytesPerSecond` is streamed
-  (`TestR_LIM_040_ALinkAndTheFigures`).
+- Unit (`internal/limits`): under the profile Standard, which sets `cachedBytesPerSecond`, a link of a 5 MB tarball is charged at issuance
+  in `enforce` and in `audit`, the next flush adds it to the hour window, and with `cachedBytesPerHour` used up the next download is
+  `429 download_limit_reached` in `enforce` and recorded as `would_limit:cachedBytesPerHour` in `audit` (`TestR_LIM_040_ALinkAndTheFigures`).
+- Unit (`internal/formathost`): a caller with `cachedBytesPerSecond` gets `307` in `enforce` and in `audit`, and the charge holds the
+  item's size; a used-up `cachedBytesPerHour` answers `429` and no link (`TestR_STOR_070_TheConditionsOfALink`).
 
 ### R-LIM-025 · The block after refused requests
 Priority: **MVP** · Covers: BEYOND-030
@@ -2948,8 +2950,9 @@ subject's serials are in the store and not on that page.
 
 ### Q-LIM-97 · A pace figure keeps a download in Quader, in both modes
 
-Status: **Decided by the planner in the owner's absence** on the owner's condition of 2026-11-22 ("für den Aufrufer gilt kein
-Tempolimit"); what it means for the built-in profiles is put to the owner.
+Status: **Superseded on 2026-11-22 by [Q-LIM-99](#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)** (a speed limit does not stop a link). It was decided by the planner
+in the owner's absence on the owner's condition of 2026-11-22 ("für den Aufrufer gilt kein Tempolimit"), with what it meant for the
+built-in profiles put to the owner; the text below is kept as it was decided.
 
 Context: pacing (R-LIM-023) acts on the bytes Quader writes; a link writes none. Every built-in profile but Unlimited sets
 `cachedBytesPerSecond` (R-LIM-010). In `audit` nothing is paced, and a would-limit is recorded once per download that would have waited.
@@ -2979,6 +2982,29 @@ lines 125 to 159), and a lease is given up when its request ends ([engine.go](..
 | (c) Nothing charged at issuance | | | The byte windows would never fill: a link would be a way around the hour and day budgets |
 
 **Choice:** (a). **Applied in the spec:** R-LIM-040, [storage.md](storage.md) R-STOR-073.
+
+### Q-LIM-99 · A speed limit does not stop a link; the budgets are charged at the issue
+
+Status: **Decided by the development agent on 2026-11-22, after the owner left the open questions to it** ("ich gehe davon aus, dass du
+selbstständig die richtige entscheidung triffst … Ändern tun wir es erst wenn mir etwas negativ auffällt"); it changes the condition of
+his decision 11 ("für den Aufrufer gilt kein Tempolimit"), which is named to him. Supersedes Q-LIM-97.
+
+Context: the condition of decision 11 kept every caller whose budget key sets `cachedBytesPerSecond` away from links (Q-LIM-97 (a)), and
+every built-in profile but Unlimited sets it (R-LIM-010). Pacing (R-LIM-023) protects the replicas: it slows the bytes Quader writes, and a
+link's transfer runs between the client and the object store. The hour and day budgets are charged at issuance either way (Q-LIM-98).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A set `cachedBytesPerSecond` makes every download of the budget key a stream, in `enforce` and in `audit` (Q-LIM-97's choice) | The owner's condition, read per budget key | The limit the administrator set holds for every byte | On a new installation only administrators get links: the installation's switch does next to nothing |
+| (b) Only in `enforce` | | More links in `audit` | `audit` would record decisions `enforce` does not make |
+| (c) The figure does not stop a link; the transfer by a link is not paced; the hour and day budgets are charged in full at issuance; in `enforce` and in `audit` alike (chosen) | No figure is a condition of a link | The switch reaches every caller the other conditions allow; pacing protects Quader's pods, which a link's transfer does not pass; the budgets still bound the volume, and `audit` shows what `enforce` does | A caller that is slowed through Quader is not slowed by a link ([security/download-links.md](../security/download-links.md) H-1352) |
+
+**Choice:** (c). **Rationale:** with the condition, the owner's switch would reach almost no caller, and what the condition protects, the
+replicas' bandwidth, a link does not use; the volume a caller may fetch stays bounded by its hour and day budgets. The development agent
+would revisit it when a link's transfer turns out to hurt the object store's own limits (H-1283). **Applied in the spec:** R-LIM-040,
+[storage.md](storage.md) R-STOR-014 and R-STOR-070 step 10, [api-and-ui.md](api-and-ui.md) R-UI-200. The handover to a Bastion takes the
+same rule (storage.md Q-STOR-343). Code: no figure is read by the decision ([download_links.go](../../internal/formathost/download_links.go));
+the charge is `limits.Charge.ChargeLink` ([links.go](../../internal/limits/links.go)).
 
 ## What this does not cover
 

@@ -73,4 +73,24 @@ func init() {
 		Schema: `{"type":"object","properties":{"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
 			`"status":{"enum":["missing","corrupt"]}},"required":["sha256","status"],"additionalProperties":false}`,
 	})
+	registerDownloadLinks()
 }
+
+// >>> download links
+
+// EventStorageDownloadLinksChanged: the installation's switch of the delivery by signed links of the object store or its details
+// changed (storage.md R-STOR-014): before and after hold enabled, minSize, linkLifeSeconds and publicAddresses. Journaled when the
+// write switched the delivery off, so that a restore to an earlier point keeps links off; switching on and the details widen and
+// are not journaled (an optional entry, as malware.settings.changed).
+const EventStorageDownloadLinksChanged = "storage.download_links.changed"
+
+func registerDownloadLinks() {
+	state := `{"type":"object","properties":{"enabled":{"type":"boolean"},"minSize":{"type":"integer"},"linkLifeSeconds":{"type":"integer"},` +
+		`"publicAddresses":{"type":"object"}},"required":["enabled","minSize","linkLifeSeconds","publicAddresses"],"additionalProperties":false}`
+	Register(EventType{
+		Name: EventStorageDownloadLinksChanged, Category: CategoryConfig, Mode: Transactional, Journal: JournalRevocation, Entry: EntryOptional,
+		Schema: `{"type":"object","properties":{"before":` + state + `,"after":` + state + `},"required":["before","after"],"additionalProperties":false}`,
+	})
+}
+
+// <<< download links

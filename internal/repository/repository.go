@@ -97,7 +97,14 @@ type Repository struct {
 	malwareOnlyChecked bool
 	// signatureGate is the member signatures.onlyVerified and signatures.anchors (R-SIG-061).
 	signatureGate gateset.Setting
+	// downloadLinksOff is the member storage.downloadLinks set to false (R-STOR-014).
+	downloadLinksOff bool
 }
+
+// DownloadLinks reports whether the repository lets a download be handed to a signed link of the object store: true unless its
+// member storage.downloadLinks says false (R-STOR-014, Q-STOR-282). It reads the replica's snapshot, so the serve point costs no
+// query for it; a change is in force on every replica within the propagation bound of the repo_config area.
+func (r Repository) DownloadLinks() bool { return !r.downloadLinksOff }
 
 // MalwareOnlyChecked reports the repository's member malware.onlyChecked (R-MAL-020): only checked artifacts are served from it,
 // whatever the installation's switch says. It reads the replica's snapshot, so the download gate costs no query for it; a change is

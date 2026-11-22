@@ -44,10 +44,12 @@ func init() {
 	Register(EventType{
 		Name: EventArtifactDownloaded, Category: CategoryContent, Mode: Async,
 		// origin, bastion and replica are set for a download a Bastion served from its cache and reported
-		// through the interface (R-BAS-016); a download the main installation served has none of them.
+		// through the interface (R-BAS-016); a download the main installation served has none of them. delivery and linkExpiresAt
+		// are set for a download handed to a signed link of the object store (storage.md R-STOR-073, Q-STOR-292).
 		Schema: `{"type":"object","properties":{` +
 			`"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
-			`"origin":{"type":"string","enum":["bastion"]},"bastion":{"type":"string"},"replica":{"type":"string"}},` +
+			`"origin":{"type":"string","enum":["bastion"]},"bastion":{"type":"string"},"replica":{"type":"string"},` +
+			`"delivery":{"type":"string","enum":["link"]},"linkExpiresAt":{"type":"string"}},` +
 			`"required":["path","sha256"],"additionalProperties":false}`,
 	})
 }

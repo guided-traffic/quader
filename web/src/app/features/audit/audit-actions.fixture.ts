@@ -169,6 +169,7 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'signing.identity.removed',
   'signing.identity.retired',
   'signing.identity.switched',
+  'storage.download_links.changed',
   'system.backup.completed',
   'system.backup.deleted',
   'system.backup.failed',

@@ -297,6 +297,7 @@ func (r *replayer) narrowed() (journal.Result, error) {
 	}
 	r.malware(e.Malware)
 	r.signatures(e.Signatures)
+	r.downloadLinksOff(e.DownloadLinksOff)
 	if err := r.debUpstreamKeysRemoved(e.DebUpstreamKeysRemoved); err != nil {
 		return journal.Result{}, err
 	}
@@ -606,6 +607,18 @@ func (r *replayer) malware(m *MalwareSettings) {
 	r.set.Malware = &next
 	r.setMember("malware", next)
 	r.applied(partMalware)
+}
+
+// downloadLinksOff replays the part downloadLinks (R-STOR-014): storage.downloadLinks is set to false again, every other member of
+// storage kept; a member that says false already leaves the part in effect.
+func (r *replayer) downloadLinksOff(off bool) {
+	if !off || !downloadLinksOf(r.set.Storage) {
+		return
+	}
+	r.set.Storage = withDownloadLinksOff(r.set.Storage)
+	r.doc["storage"] = r.set.Storage
+	r.touched = true
+	r.applied(partDownloadLinks)
 }
 
 // signatures replays the part signatures (R-SIG-061): the gate on, and of the restored anchors and the journaled ones the narrower (a

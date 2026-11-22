@@ -419,6 +419,7 @@ func CatalogEntry(f Format) catalog.Entry {
 		e.ImageEcosystem = i.ImageEcosystem()
 	}
 	e.Mirror = caps.Remote.Mirror != nil
+	e.ClientDigest = slices.ContainsFunc(f.Routes(), func(r Route) bool { return r.ClientDigest.Checks })
 	if x := f.Exposure(); x != nil {
 		dim := x.Dimensions()
 		e.Exposure = catalog.Exposure{Exposable: true, Packages: dim.Packages, Versions: dim.Versions, Tags: dim.Tags}

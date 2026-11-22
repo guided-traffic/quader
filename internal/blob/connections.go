@@ -22,7 +22,7 @@ type Connection struct {
 
 	mu   sync.RWMutex
 	caps Capabilities
-	link bool
+	link LinkCheck
 }
 
 // NewConnection builds the connection of one element. cfg should be resolved (config.ResolveConnections); its defaults are
@@ -117,26 +117,29 @@ func (c *Connection) Verifies() bool {
 	return c.cfg.PayloadChecksum != "none" && c.Capabilities().PayloadChecksumEnforced
 }
 
-// LinkCheck reports whether the connection passed the check of a signed link on this replica (stage 3, R-STOR-074); false
-// until stage 3 runs one.
-func (c *Connection) LinkCheck() bool {
+// LinkCheck is the result of the connection's link check on this replica (R-STOR-074); the zero value before one ran.
+func (c *Connection) LinkCheck() LinkCheck {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.link
 }
 
-// SetLinkCheck records the result of stage 3's link check.
-func (c *Connection) SetLinkCheck(ok bool) {
+// SetLinkCheck records the result of a link check.
+func (c *Connection) SetLinkCheck(r LinkCheck) {
 	c.mu.Lock()
-	c.link = ok
+	c.link = r
 	c.mu.Unlock()
 }
 
-// Presign signs a GET of key for ttl with the connection's runtime credential, through its guard: a connection whose circuit
-// is open signs nothing (R-STOR-062). The address a link names is stage 3's.
-func (c *Connection) Presign(ctx context.Context, key string, ttl time.Duration) (string, error) {
-	return c.objects.Presign(ctx, key, ttl)
+// Presign signs a GET of key as o says with the connection's runtime credential, through its guard: a connection whose circuit
+// is open signs nothing (R-STOR-062, R-STOR-072).
+func (c *Connection) Presign(ctx context.Context, key string, o PresignOptions) (Link, error) {
+	return c.objects.Presign(ctx, key, o)
 }
+
+// Fetcher is what fetches the connection's links, the HTTP client its store is reached with; nil when it has none. The link check
+// fetches with it (R-STOR-074).
+func (c *Connection) Fetcher() Fetcher { return FetcherOf(c.objects) }
 
 // Read returns the bytes of the blob that a copy on this connection holds, as one function per connection (R-STOR-062):
 // the stored bytes as they are in stage 1, the decrypted and authenticated ones in stage 2. A full read (rng nil) is not
