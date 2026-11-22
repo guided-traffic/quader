@@ -4757,7 +4757,9 @@ to Q-BAS-254 with Q-BAS-167 superseded in place, the gaps H-1380 to H-1384 and t
 retitled, ADR-254, the build plan's page `docs/developer/bastion-package-shapes.md`, and the handover's interface
 version moved from 5 to 6. Q-BAS-244 names the change of Q-BAS-18 and Q-BAS-18 points to it. Moved onto `main`
 in the landing worktree at 22:00, links and evidence checked again; **it is pushed when the trace's run has
-ended,** since its count test is code and a push would cancel the run. **In work since 22:00, on the
+ended,** since its count test is code and a push would cancel the run. **Landed at 22:18,** after that run
+had ended (one failed job, the query budget's harness, section 8); no release follows a commit of documents,
+and its run is followed for the shard that failed. The writer's worktree and branch are removed. **In work since 22:00, on the
 specification's commit: packages P1 and P2 of it,** side by side: the wire (the interface's fifth version,
 the two headers of the marking, the check's members, the unverified reader of a registry token's grant; after
 it both sides speak the new version and nothing behaves differently) and the decision point with the kit's
