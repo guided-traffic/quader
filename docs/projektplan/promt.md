@@ -1988,6 +1988,49 @@ runs are in `git log`; this section holds the current state.
   run. Their release needs the owner's values rewritten in the file of his repository that now carries his
   uncommitted Bastion changes, and nothing is committed there until he says so; pushing them before would
   leave his installation's release refused by the chart. They are pushed when he has settled his repository.
+  **The hold ended at 19:20:** he committed his repository at 18:48 and its checkout is clean; all ten
+  integration areas on the landing stack exit 0, the last at 19:00 (the budget, the overload area, the
+  store, the limits, the signatures, the vulnerability gate, the endpoints, the registry, the Bastion's
+  shared area, publishing). The stack is moved onto `main` and pushed next; his values are rewritten under
+  `apps/quader` by the development agent when the chart is published, by the standing rule on his
+  installation (section 0), and the rewrite is rendered against the new chart before.
+- **Package B of the several connections reported at 19:03 and lands after the scrub, before the rest of
+  package E** (one commit of the type `feat` on the landing stack's former top; its builder worked from
+  16:44 to 19:03; no migration; every gate exits 0, eight integration areas each run once; the linter met
+  its limit of ten minutes under load and passes with a longer one after three repairs of formatting).
+  **Built:** a session records its connection at its start without asking the store, every request reads
+  it from the session's row and answers 503 with the circuit's `Retry-After` while that connection is not
+  configured or its circuit is open, and a session that has written nothing moves to the first writable
+  connection before its first write. The collection marks a blob's copy rows and deletes each copy on its
+  own connection, releases a copy whose connection is not configured or cannot be asked while another
+  connection is writable (counted per connection), and records a blob as deleted only when no copy row is
+  left. The orphan sweep is a task of its own (`orphan-sweep`): per connection in 256 prefixes with a
+  checkpoint after each; it leaves a connection alone whose marker names another connection or
+  installation, adopts a live blob's object that has no copy row, marks a copy of a wrong size only after
+  a second look at the object, and deletes an object without a blob row that is older than the minimum age
+  through the collection's own steps. The staging pass left the full collection and runs in the sweep, per
+  connection. Decisions Q-STOR-260 to 264 (a copy on an open circuit is released only while another
+  connection is writable; under the deletion pause the sweep walks, adopts and marks and deletes nothing;
+  the sweep acts on more than one listing; the staging pass moves into the sweep and supersedes Q-STOR-172;
+  a session's start touches no store). Gaps: H-1259 closed; H-1265 opened (with two or more connections at
+  a store that applies deletes late, the sweep can adopt an object about to vanish; the copy heals through
+  a read or the scrub with the reconciliation; dormant with one connection); H-1260, H-1254, H-1255 and
+  H-593 updated. **A correction of its brief:** H-1260 is the race of two installations that start on one
+  empty location, which this package cannot close; the gap it closes is H-1259. **For the owner's
+  installation with one connection:** the collection behaves as before; the first orphan sweep (Saturdays
+  05:00 UTC, or by hand) deletes every object without a blob row older than 24 hours and aborts every
+  multipart upload older than 24 hours below the prefix. **Its cost:** the unit job gains under a second;
+  the blob area gains about 21 s and the uploads area falls from about 80 s to 22 s, because two tests that
+  slept went with the cursor, so the integration shard loses about 40 s; nothing grows per format. **Not
+  verified:** any real provider; the sweep on a bucket with many objects; H-1265 against a store that
+  applies deletes late; the refusal 422 of a trigger's arguments over HTTP. **For the packages after it:**
+  the reconciliation's query for interrupted drain claims must filter on live blobs, the scrub should pass
+  over copies in deletion, the rest of package E moves over one line of a shared test file, and the
+  surface's package finds the results of the jobs in a changed shape and one line of the API's description
+  still to write.
+- **The timer's check at 19:20:** the ten integration areas of the landing stack have all passed; the keys
+  of the encryption are at work (the unit run of its touched packages in that minute); the load is about 6
+  on 20 cores. Builders with a test load: the keys.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -4302,6 +4345,33 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     file at once, with a marked placeholder for what only he can supply; a choice he made between options
     stands until he reverses it in so many words, and a short instruction is read as the smallest literal
     action, never as leave for a way he declined, least of all one with a credential.
+    **He filled the placeholder, encrypted it and committed everything at 18:48** ("So alles angelegt und
+    commitet, sorg dafür dass es auch hoch kommt"). **The Bastion runs on his installation since 19:02,**
+    after two corrections under `apps/quader`, each committed and pushed by the development agent on that
+    word. (1) The pods stayed pending: the chart's default cache volume is a volume claim per pod, and his
+    cluster has no default storage class, which the development agent had not read before; the cache is an
+    `emptyDir` since 18:53. (2) He wanted the Bastion in the installation's namespace `quader`, not in one
+    of its own, which the development agent had decided without asking; moved at 18:56, and the Flux
+    Kustomization failed for about three minutes on the removed namespace, until the parent Kustomization
+    had applied the changed one. **Verified from 19:02 to 19:17:** the HelmRelease is ready, two pods run,
+    the log shows the token loaded and the main installation reachable, and from outside the registry's
+    base path under the public name answers 401 with the token realm under the same name (read without
+    verifying the certificate). **Not working: the public certificate.** The HTTP challenge failed three
+    times (18:52, 19:02, 19:11) at the certificate authority's secondary validation with 403: the external
+    ingress controller of his cluster refuses every request that does not come from Europe or North
+    America, by a rule in his cluster's base repository, which is not the development agent's to change.
+    His cluster's DNS issuer was tried at 19:03 and taken back at 19:10, since the DNS provider refuses that
+    issuer's credentials with 403. **Left by that attempt:** one challenge object in the namespace `quader`
+    that hangs in its deletion, because its cleanup fails at the same provider; removing it is a change of
+    the cluster by hand, which is his. **Told to him at 19:17,** with the line that exempts the challenge's
+    path from the rule and the question whether to prepare it there uncommitted; **open with him.** His
+    other public certificates renew from 2026-12-21 over the same way; whether they fail at the same rule
+    then is not known, and why they passed in October and November is not known either. **His rule for his
+    deployment repositories stands in his global rules for agents since 18:46, at his word** ("Das kommt
+    nach …"): every file at once; a Secret he fills as a placeholder `s-<name>.unenc.yml` with the one
+    command that encrypts it; no secret value fetched or issued by an agent, the cluster read only and
+    changed through git; a choice he made stands until he reverses it; commit only on his word; a compact
+    report.
 18. **A speed limit keeps nearly every caller away from signed links (Q-LIM-97),** from the planner of the storage
     topic's third stage on 2026-11-22. His decision 11 took the condition "no pace limit applies to the caller" as
     the working paper put it, and every built-in profile but Unlimited sets a speed limit, so on a new
