@@ -4679,6 +4679,26 @@ its ingress and certificate anyway, so the binding in the chart is one place, no
 timestamp authority is the better form only where one runs, and none does. **In work since 21:11, two planners**
 (they do not count against the four): the read shapes per package for a Bastion, and the destruction of a
 storage key; each returns a design that the development agent turns into the specification, and builders follow.
+**The design of the key's destruction came back at 21:26** (its planner worked from 21:11; kept in the session's
+scratchpad as `design-storage-key-destroy.md`, the essentials here). `quader admin storage keys destroy` works on
+a whole retired connection and destroys every generation of its storage key and its name key; the rows stay with
+the state `destroyed` and no sealed value, so an identifier met later answers "destroyed" and the connection's
+identifier is retired for good, across a restore too. It is a dry run unless it gets a confirmation that only the
+dry run prints, bound to the installation and the set of keys. It is refused while a live replica configures the
+connection, while a copy, a queued copy or an upload session names it, and while a kept backup's pool names one
+of its keys; it reports and does not refuse what it cannot remove: exports made before, kept backups whose
+database holds the keys sealed, and the database's own older copies. The replicas forget the keys with the
+change; a read that meets a destroyed key answers a reason of its own and marks the copy; the destruction is
+journaled and replayed after a restore to a time before it. **Its price, which the question's short form hid:**
+a backup's pool keeps an encrypted object for as long as its blob lives, so without a change the command would
+be refused for ever; the design therefore names an encrypted pool object by digest and key, copies such objects
+again from a live connection once their connection drains or goes, and records per kept backup which keys its
+pool and its database hold. That is work in the encryption's package 4 and a package 7 of its own (after 3; it
+may land before 4, since the backups' check refuses what it cannot read). **It changes the development agent's
+own answer 24** in its letter: a plain pool object keeps its digest name, an encrypted one gains its key's
+identifier. A retired generation of a live connection is not destroyed (nothing wraps objects again). Told to
+the owner in three lines at 21:27. **The specification is written when the stack of four is on `main`,** since
+the rest of package E changes the same paragraphs of the backup's page.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
