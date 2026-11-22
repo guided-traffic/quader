@@ -70,8 +70,10 @@ Whoever can read the break-glass Secret is an administrator of Quader. Restrict 
 | `secrets.valkeySentinel` | `password` (and a user if you name `usernameKey`) | optional; without it Quader warns that the Sentinels are unauthenticated | `api`, `packages`, `worker` |
 | `secrets.valkeyCA` | `ca.crt` | when Valkey's certificate is not signed by a public CA | `api`, `packages`, `worker` |
 | `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | when Valkey requires client certificates | `api`, `packages`, `worker` |
-| `secrets.s3` | `access-key-id`, `secret-access-key`; optionally the keys named by `bucketKey`, `regionKey`, `endpointKey` | with `config.storage.s3.credentials.source: static` | `api`, `packages`, `worker` |
-| `secrets.s3CA` | `ca.crt` | when the object store's certificate is not signed by a public CA | `api`, `packages`, `worker` |
+| `secrets.storageConnections[]`: `connectionId`, `existingSecret` | `access-key-id`, `secret-access-key` (`accessKeyIdKey`, `secretAccessKeyKey`), a session token with `sessionTokenKey`; optionally the keys named by `bucketKey`, `regionKey`, `endpointKey` | one entry per element of `config.storage.connections` (by its id; `default` for the element without one) that has `credentials_source: static` or takes its bucket, region or endpoint from an S3 provisioner's Secret | the keys: `api`, `packages`, `worker` and the restore Jobs; bucket, region and endpoint also the backup pods |
+| its field `ca` | `ca.crt` | when that connection's certificate is not signed by a public CA | `api`, `packages`, `worker`, the restore Jobs and the backup pods |
+| its field `backupSource` | `access-key-id`, `secret-access-key` | with `backup.enabled` for a connection with `credentials_source: static`: a login that may only read its bucket | the backup pods |
+| its field `journalReader` | `access-key-id`, `secret-access-key` | with `journalCredentials.source: static` of `restore` or `postRestore`: a login that lists the object versions | the restore and post-restore Jobs |
 | `secrets.encryption` | the files listed in `secrets.encryption.keys`, first one active | always | `api`, `packages`, `worker`, never the Job |
 | `secrets.breakGlass` | `password` | optional; without it the break-glass account is switched off | `api` pods only, `api` pools included; never `packages` |
 | `secrets.oidc[]` | `client-secret`, one entry per provider | one per OIDC provider that uses a client secret | `api` pods only, `api` pools included; never `packages` |
@@ -80,7 +82,7 @@ Whoever can read the break-glass Secret is an administrator of Quader. Restrict 
 | `tls.clientCA.secretName` | `ca.crt` | optional: mutual TLS from the edge | `api` and `packages` |
 | `ingress.backendTLS.caSecret` | `ca.crt` | optional: by default the controller reads the `ca.crt` of the Secret of the pair the backend serves | read by the ingress controller |
 
-Secrets are mounted as read-only files, never as environment variables, so a rotated Secret reaches the running pods. The settings of an S3 provisioner's Secret (bucket, region, endpoint) are the one exception: they are passed as environment variables because they are not credentials.
+Secrets are mounted as read-only files, never as environment variables, so a rotated Secret reaches the running pods. The bucket, region and endpoint of an S3 provisioner's Secret are files as well (`/var/run/secrets/quader/s3-<id>-location/`, the connection's `bucket_file`, `region_file` and `endpoint_file`); Quader reads them when a pod starts.
 
 </details>
 
@@ -103,13 +105,12 @@ config:
         - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379   # example
       primary_name: quader                        # example: the name in the Sentinels' monitor line
   storage:
-    s3:
-      bucket: quader-blobs                        # example
-      region: eu-central-1                       # example
-      endpoint: https://s3.example.com           # example; empty uses AWS endpoint resolution
-      force_path_style: false                    # default; true for SeaweedFS, MinIO and Ceph RGW
-      credentials:
-        source: static                           # example: the key files of secrets.s3
+    connections:                                 # one element per object store; the element without id is the connection default
+      - bucket: quader-blobs                      # example
+        region: eu-central-1                     # example
+        endpoint: https://s3.example.com         # example; empty uses AWS endpoint resolution
+        force_path_style: false                  # default; true for SeaweedFS, MinIO and Ceph RGW
+        credentials_source: static               # example: the key files of its entry in secrets.storageConnections
   auth:
     oidc:
       providers:
@@ -138,8 +139,9 @@ secrets:
     existingSecret: quader-valkey                 # example
   valkeyCA:
     existingSecret: quader-valkey-ca              # example
-  s3:
-    existingSecret: quader-s3                     # example
+  storageConnections:
+    - connectionId: default                      # the id of the element in config.storage.connections
+      existingSecret: quader-s3                   # example; keys access-key-id and secret-access-key
   encryption:
     existingSecret: quader-encryption-keys        # example
     keys: [2026-10.key]                          # example; ordered, the first is the active key
@@ -165,7 +167,7 @@ config:
       bucket: quader-backups        # example: a bucket of its own, not the blob bucket
 ```
 
-By default the backup pods reach the target with the default credential chain of their pod, such as a workload identity on their ServiceAccount (`backup.serviceAccount.annotations`); for static keys, set `config.backup.target.credentials.source: static` and name the Secret in `secrets.backupTarget.existingSecret`. When the blob store uses static keys, the backup pods also need `secrets.backupSource.existingSecret`, a login that may only read the blob bucket. [Backups](operations.md#backups) shows the runs.
+By default the backup pods reach the target with the default credential chain of their pod, such as a workload identity on their ServiceAccount (`backup.serviceAccount.annotations`); for static keys, set `config.backup.target.credentials.source: static` and name the Secret in `secrets.backupTarget.existingSecret`. When a connection uses static keys (`credentials_source: static`), the backup pods also need the `backupSource` of its entry in `secrets.storageConnections`, a login that may only read its bucket. [Backups](operations.md#backups) shows the runs.
 
 ## Install
 

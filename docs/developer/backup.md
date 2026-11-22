@@ -104,7 +104,7 @@ handlers that the domains registered. `quader backup restore` and `quader admin 
 `s3.NewTarget(ctx, cfg config.Backup, f *outbound.Factory, opts ...s3.TargetOption) (*s3.Target, error)` is how `cmd/quader` turns the
 configuration into a `target.Store`; `NewTargetWithClient` takes an HTTP client from `internal/outbound` instead of a factory. The
 `Target` builds its own client from `backup.target` only (endpoint, region, `ca_file`, credential chain, encryption): it never
-reads `storage.s3`, so the runtime blob-store credential cannot reach it (R-BAK-015, Q-STOR-165). `Endpoint()` and `Bucket()` give
+reads an element of `storage.connections`, so the runtime credential of a blob-store connection cannot reach it (R-BAK-015, Q-STOR-165). `Endpoint()` and `Bucket()` give
 the same-bucket check of R-BAK-002 what it compares against the source.
 
 - **Keys** are full object keys; the caller joins `backup.target.prefix` (`format.Layout`). The adapter adds nothing.

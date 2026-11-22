@@ -13,7 +13,7 @@ Every connection Quader accepts or makes can be encrypted. The listeners serve p
 | `worker` to the scanner (`:8080` of the role `scanner`) and the scanner to the scan listener of `packages` (`:8082`) | `server.tls`, `server.internal_tls.ca_file`, `vulnerabilities.images.scanner`, `vulnerabilities.images.registry` | mutual TLS with the listener's pair on both sides; the chart sets it | for the next handshake |
 | `api`, `packages` and `worker` to PostgreSQL | `database.ssl_mode` and the `ssl_*` files | `verify-full` | on each new connection |
 | `api`, `packages` and `worker` to Valkey and the Sentinels | `valkey.tls`, `valkey.sentinel.tls` | `verify-full`, system roots without a CA file | on each handshake |
-| `api`, `packages` and `worker` to the object store | `storage.s3.endpoint`, `storage.s3.ca_file` | `https`, the outbound trust store | on use, at most every 10 s |
+| `api`, `packages` and `worker` to each object-store connection | `endpoint` and `ca_file` of the connection's element in `storage.connections` | `https`, the outbound trust store | on use, at most every 10 s |
 | Remote repositories to their upstreams | `proxy.outbound.tls` | system roots, TLS 1.2 or later | on use, at most every 10 s |
 | Span export (tracing) | `tracing.ca_file` | off | once, at start |
 
@@ -193,7 +193,7 @@ Each kind's Secret rotates on its own and reaches its pods without a restart: th
 | `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/database-client/` | client certificate to PostgreSQL |
 | `secrets.valkeyCA` | `ca.crt` | `/var/run/secrets/quader/valkey-ca/ca.crt` | `valkey.tls.ca_file` |
 | `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/valkey-client/` | client certificate to Valkey |
-| `secrets.s3CA` | `ca.crt` | `/var/run/secrets/quader/s3-ca/ca.crt` | `storage.s3.ca_file` |
+| `secrets.storageConnections[].ca` (one per connection, by `connectionId`) | `ca.crt` | `/var/run/secrets/quader/s3-<id>-ca/ca.crt` | the `ca_file` of that connection's element in `storage.connections` |
 
 The chart sets these file paths in the configuration itself; setting the same keys under `config` fails the render. The complete list of values is in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference).
 
@@ -233,7 +233,7 @@ A client certificate is optional (`secrets.databaseClientCert`).
 
 ### Object store
 
-An endpoint without a scheme is reached over `https`; an `http://` endpoint needs `storage.s3.allow_insecure_endpoint: true`. `secrets.s3CA` renders `storage.s3.ca_file`, which then becomes the whole trust store of the object-store client: the system roots and `proxy.outbound.tls.ca_files` no longer apply to it. Without it, the object store is verified like the upstreams of remote repositories (system roots plus `proxy.outbound.tls.ca_files`).
+Each connection of `storage.connections` has its own endpoint and trust. An endpoint without a scheme is reached over `https`; an `http://` endpoint needs `allow_insecure_endpoint: true` in that connection's element. The `ca` of the connection's entry in `secrets.storageConnections` renders its `ca_file`, which then becomes the whole trust store of that connection's client: the system roots and `proxy.outbound.tls.ca_files` no longer apply to it. Without it, the connection is verified like the upstreams of remote repositories (system roots plus `proxy.outbound.tls.ca_files`). `trustedCA.useForObjectStore: true` sets the `ca_file` of every connection without a `ca` of its own to the one file of `trustedCA.keys`.
 
 ## Rotating certificates without a restart
 
@@ -247,7 +247,7 @@ Quader reads every certificate, key and CA file again and compares the content, 
 - A file that does not load (half-written, key and certificate not matching, expired, garbage) leaves the previous material in service, adds one to `quader_tls_reload_errors_total` and logs an error that names the file. A pair whose validity starts in the future waits and is checked again on every pass.
 - `tracing.ca_file` is the exception: it is read once at start, so a new collector CA needs a restart.
 
-At start the behaviour is stricter: a listener pair that does not load keeps the replica unready until it loads, and a PostgreSQL, Valkey or `storage.s3.ca_file` file that does not load ends the process.
+At start the behaviour is stricter: a listener pair that does not load keeps the replica unready until it loads, and a PostgreSQL, Valkey or object-store `ca_file` that does not load ends the process.
 
 ### Rotate a listener certificate
 
@@ -297,7 +297,7 @@ of its own, `<fullname>-ep-<name>.<namespace>.svc` for the ingress controller.
 | The process ends at start naming a database, Valkey or object-store file | A configured CA or client certificate file is missing or unreadable | Check the Secret named in `secrets.*` |
 | The configuration is refused: `verify-ca` without a root file, or plaintext without the insecure switch | The validation rules above | Add the CA file, or set the explicit switch if plaintext is intended |
 | Connections to PostgreSQL or Valkey fail with a certificate error | `verify-full` against the system roots for a server with a private CA, or a host name the certificate does not hold | Set `secrets.databaseCA` or `secrets.valkeyCA`; connect by a name in the certificate |
-| The object store fails after `secrets.s3CA` was set | That file replaces every other trusted root for the object store | Put the full CA chain of the object store into it |
+| A connection of the object store fails after the `ca` of its entry in `secrets.storageConnections` was set | That file replaces every other trusted root for that connection | Put the full CA chain of that store into it |
 | The render fails with `tls.clientCA` and HAProxy Ingress | The controller needs a certificate to present | Set `ingress.backendTLS.clientCertSecret` |
 | The scanner pods stay unready and image scans show `scanner_unavailable` | A named Secret of `worker` or `vuln-scanner-trivy` lacks `client auth`, or its pair does not list its kind's name, which the other side checks | Issue it with the usages and the name of [the example above](#without-cert-manager); the scanner logs the names it found |
 | The `worker`, `packages`, `vuln-scanner-trivy` or `malware-scanner-clamav` pods hang in `ContainerCreating` with a mount error naming `ca.crt` | The Secret of that kind has no `ca.crt` | Let the issuer write `ca.crt` into the Secret, or add it |

@@ -42,14 +42,14 @@ config:
       remote_caches: false         # default; true leaves out blobs only remote-repository caches reference
 ```
 
-The target must not be the blob bucket on the same endpoint: the orphan sweep deletes every object under `storage.s3.prefix` that no row references, backups included. The chart and every backup command refuse that, except with `config.backup.target.allow_same_bucket: true` for an evaluation setup, and then the two prefixes must not contain each other. Prefer a bucket in another account or project. S3 Versioning with an Object Lock retention of at least `keep_last` times `expected_interval` keeps a compromised backup role from destroying backups within that time; with it, set `config.backup.copy.check_existing: always`. Neither is enforced by Quader.
+The target must not be the bucket of an object-store connection on the same endpoint: the orphan sweep deletes every object under a connection's `prefix` that no row references, backups included. The chart and every backup command refuse that for each element of `storage.connections`, except with `config.backup.target.allow_same_bucket: true` for an evaluation setup, and then the target's prefix and the connection's must not contain each other. Prefer a bucket in another account or project. S3 Versioning with an Object Lock retention of at least `keep_last` times `expected_interval` keeps a compromised backup role from destroying backups within that time; with it, set `config.backup.copy.check_existing: always`. Neither is enforced by Quader.
 
 **Credentials.**
 
 | What the pod reaches | How |
 |---|---|
 | The target | `config.backup.target.credentials.source`: `default` (the workload identity on the ServiceAccount, `backup.serviceAccount.annotations`, the default) or `static` with `secrets.backupTarget.existingSecret` |
-| The blob bucket, when `config.storage.s3.credentials.source` is `static` | `secrets.backupSource.existingSecret`, a login that may only read the bucket (`s3:GetObject`, `s3:ListBucket`); the chart requires it, so a compromised backup pod cannot write blobs or the journal |
+| The blob bucket of a connection whose element in `config.storage.connections` has `credentials_source: static` | the `backupSource` of the connection's entry in `secrets.storageConnections`, a login that may only read its bucket (`s3:GetObject`, `s3:ListBucket`); the chart requires it, so a compromised backup pod cannot write blobs or the journal. The backup reads the blobs from the first element of `config.storage.connections` |
 | PostgreSQL | `secrets.databaseBackup.existingSecret`, the login of `config.database.backup_role`; without one the pod uses `secrets.database` and logs a warning |
 
 The backup pod holds no key ring and no Valkey credential. The CronJob's `concurrencyPolicy` is `Forbid`, and the database lets only one run write to a target at a time. A run missed by more than `backup.startingDeadlineSeconds` (3600 by default) is skipped, not started late. A drain never waits for a backup; the run ends itself as **Interrupted** within the grace period and the Job starts it again.
@@ -93,9 +93,9 @@ A restore goes into a new, empty installation: an empty database schema and an e
 2. The image embeds every migration step of the backup with the same SHA-256. Before the first stable release a migration file can change between builds, so restore with the version shown in `quader backup list`; the message names that version.
 3. The key ring holds every key ID of the backup and opens every canary row: `secrets.encryption` must hold the keys the backup was sealed with, not only today's.
 4. The schema `database.schema` (`quader` by default) exists and holds no relation. The restore does not create it: create it first, for example `CREATE SCHEMA quader AUTHORIZATION quader` in a new database.
-5. The blob prefix `storage.s3.prefix` is empty, apart from `_probe/`.
+5. The `prefix` of the first element of `storage.connections` is empty in its bucket, apart from `_probe/`. A connection marker `_connection` that a replica wrote there at its start fails this check too.
 6. PostgreSQL is a supported version and the login owns the schema: `secrets.databaseMigration` when set, otherwise `secrets.database`.
-7. The target and the blob store are reachable with the configured credentials; the restore writes one probe object to the blob store and nothing to the target.
+7. The target and the first element of `storage.connections` are reachable with the configured credentials; the restore writes one probe object to that connection and nothing to the target. It writes every blob into that connection and records the blobs as copies of the connection `default`, which the first replica that configures `default` binds to its bucket and prefix: restore into a configuration whose first element is the connection `default` (the element without id). The other connections receive their copies only once the reconciliation is built.
 8. The revocation journal in the source's blob bucket can be listed, or `restore.skipRevocationJournal: true` is set. See [What a restore does to access removed after the restore point](#what-a-restore-does-to-access-removed-after-the-restore-point).
 
 `restore.extraArgs: [--check]` runs these checks without changing anything: `kubectl -n quader logs job/quader-restore` shows the result. Delete the Job afterwards, because a Job's pod template cannot be changed by a later upgrade: `kubectl -n quader delete job quader-restore`.
@@ -269,7 +269,7 @@ Every command takes `--config <file>` (the chart mounts it at `/etc/quader/quade
 | `quader admin maintenance resume-deletions [--json]` | Clears the deletion pause |
 | `quader admin npm reinstate`, `oci reinstate`, `deb reinstate` | Put back a version, manifest or package file a replay withheld |
 
-`--credentials-file` names a YAML file with the keys of `storage.s3.credentials`: `source` (`default`, `webIdentity` or `static`), `access_key_id_file`, `secret_access_key_file`.
+`--credentials-file` names a YAML file with the keys `source` (`default`, `webIdentity` or `static`; `default` when left out), `access_key_id_file`, `secret_access_key_file`, `session_token_file`, `role_arn`, `web_identity_token_file` and `sts_endpoint`; an unknown key is refused. `storage verify` and `storage restore-versions` work on the first element of `storage.connections`.
 
 Exit codes of the backup commands:
 

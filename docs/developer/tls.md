@@ -52,7 +52,7 @@ load (they serve their previous content). `Generation()` lets a consumer cache d
 | listener pairs and client CA | `httpserver.ListenerTLS` | `Run` polls every `reload_interval` (default `10s`) while the listener accepts | new handshakes within `reload_interval` (E0.15 measures `reload_interval + 1 s`) |
 | `database.ssl_root_cert_file`, `ssl_cert_file`/`ssl_key_file` | `postgres` `dbTLS`, in pgx `BeforeConnect` | every new connection | the next connection |
 | `valkey.tls.ca_file`, `cert_file`/`key_file` | `cluster` `valkeyTLS`, in the dial function | every new handshake (data nodes and Sentinels) | the next handshake |
-| `proxy.outbound.tls.ca_files`, `storage.s3.ca_file` | `outbound` `trustedTransport` | on a request, at most every `outbound.DefaultTrustCheckEvery` (10 s) | the next connection after the check; within the 60 s of R-REPO-035 |
+| `proxy.outbound.tls.ca_files`, the `ca_file` of each element of `storage.connections` | `outbound` `trustedTransport` | on a request, at most every `outbound.DefaultTrustCheckEvery` (10 s) | the next connection after the check; within the 60 s of R-REPO-035 |
 
 Why polling and not a file watcher: Q-ARCH-31. A Kubernetes Secret volume replaces files by swapping a symlink; a
 content hash on a timer sees that on every volume type and cannot miss an event.
@@ -130,7 +130,7 @@ request to an HTTPS server") and never reaches a handler.
 | unit | [internal/httpserver](../../internal/httpserver/tls_test.go) | real handshakes: h2 and http/1.1 over ALPN, plaintext refused, rotation with an open connection keeping its certificate, missing pair at start, SNI, `client_auth` `require` and `verify_if_given`, client CA rotation, `min_version` 1.3, AEAD-only TLS 1.2 |
 | unit | [internal/app](../../internal/app/tls_test.go) | both listeners over TLS by inheritance, the `tls` readiness check holding the first readiness and clearing without a restart, a broken rotation keeping the replica ready, the families on `/metrics` |
 | unit | [internal/meta/postgres](../../internal/meta/postgres/tls_test.go), [internal/cluster](../../internal/cluster/valkey_tls_test.go), [internal/outbound](../../internal/outbound/trust_test.go), [internal/blob/s3](../../internal/blob/s3/tls_test.go) | per-connection (PostgreSQL: a fake server that answers the SSLRequest), per-handshake (Valkey) and per-check (outbound, S3) reload of CA and client certificates |
-| integration | [test/integration/tls](../../test/integration/tls) | the built binary with TLS on both listeners, rotation under load (E0.15 at process level: no failed request, new serial within `reload_interval + 1 s`, same process); PostgreSQL verify-full and an in-place CA rewrite; Valkey and Sentinels likewise per handshake; SeaweedFS over https with `storage.s3.ca_file` |
+| integration | [test/integration/tls](../../test/integration/tls) | the built binary with TLS on both listeners, rotation under load (E0.15 at process level: no failed request, new serial within `reload_interval + 1 s`, same process); PostgreSQL verify-full and an in-place CA rewrite; Valkey and Sentinels likewise per handshake; SeaweedFS over https with the `ca_file` of a connection |
 
 Run the integration suite with the stack up:
 `set -a; . .dev/integration/env; set +a; go test -tags integration -race ./test/integration/tls/...`. Each test

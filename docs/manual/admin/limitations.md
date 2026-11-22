@@ -69,6 +69,7 @@ This page lists what this version of Quader does not do, and the known weak spot
 
 ## Storage
 
+- **A second object-store connection is not filled yet.** `storage.connections` takes up to eight connections, but the reconciliation that copies a blob to the connections that lack it, the scrub, the collection of every copy and the orphan sweep per connection are not built. An upload is written to the first `storage.replication.min_copies` connections that answer and to no other later; what a connection lacks stays missing there, collection deletes on the first connection without `drain: true` only, and `drain: true` takes a connection out of the uploads without moving its copies. One connection is the plain case and works as before.
 - **No quotas.** A repository has no size limit; an upload is bounded only by `storage.upload.max_size`, the repository's own upload size limit and the spool space of the replica. Grant deploy only to the accounts that publish.
 
 ## Sign-in and recovery
@@ -82,7 +83,7 @@ This page lists what this version of Quader does not do, and the known weak spot
 - **Single-role database mode is the chart default.** Without `secrets.databaseMigration`, Quader's runtime login owns the schema and may change its structure. Configure a separate migration login to remove that right.
 - **Valkey without its own user.** Without a configured Valkey user name (`secrets.valkey.usernameKey` empty), Quader connects as the `default` user, which usually holds every right on the instance. Give Quader an ACL user of its own where your Valkey setup can create one; besides the key, counter, sorted-set and Pub/Sub commands it needs `EVALSHA` and `EVAL`, for the one script that decides and counts a request's rate limits.
 - **Sentinel trust is a warning only.** Sentinels without a password and Valkey certificates verified against the system roots are logged at start, not refused. Set `secrets.valkeySentinel` and `secrets.valkeyCA`.
-- **Object-store credentials.** With `storage.s3.credentials.source: default`, the cloud SDK's credential chain can reach the node's metadata service. Use `static` or `webIdentity`.
+- **Object-store credentials.** With `credentials_source: default` in an element of `storage.connections` (the default), the cloud SDK's credential chain can reach the node's metadata service. Use `static` or `webIdentity`.
 
 ## TLS and network
 

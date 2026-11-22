@@ -5,7 +5,7 @@ Q-BAS-239; [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096, Q-STOR-340 t
 [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward);
 security perspective [security/bastion-handover.md](../security/bastion-handover.md)). This page is the build plan: the five packages, what
 each owns, the order against the packages of the signed links ([download-links.md](download-links.md)), of several connections
-([blob-store.md](blob-store.md#several-connections-the-build-plan-specified-not-built)) and of the encryption
+([blob-store.md](blob-store.md#several-connections-the-build-plan)) and of the encryption
 ([stored-content-encryption.md](stored-content-encryption.md)), the tests and what they cost.
 
 ## What has to be in your head first

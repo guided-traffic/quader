@@ -176,7 +176,7 @@ Built (M5, the backup lane; [spec](docs/spec/backup-and-restore.md), [contracts]
 - 💾 **Consistent backups into a target of their own.** `quader backup create` exports every table from one PostgreSQL snapshot as zstd-compressed `COPY` files and copies the blobs that snapshot references into a content-addressed pool that every backup of the target shares, so the next backup copies only new content; a garbage-collection hold keeps a blob from being collected before the run has copied it, and a target marker refuses a target that another installation writes (exit `4`). See [R-BAK-002](docs/spec/backup-and-restore.md#r-bak-002--target-layout-backup-id-and-target-marker).
 - 🗂️ **List, verify and retention.** `quader backup list` reads the target, `verify` checks the files and pool objects of a backup (`--deep` downloads and hashes each one), and `prune` and every `create` keep the newest `retention.keep_last` backups (and those younger than `keep_within`) and sweep the pool objects no remaining backup lists.
 - ⏪ **Restore into an empty installation.** `quader backup restore <id>` checks eight preconditions before it writes (the key ring must open the backup's canary rows, the database and the blob prefix must be empty), copies the blobs, loads the tables in one transaction, rebuilds derived state, gives the installation a new incarnation and Valkey keyspace, and resumes where it stopped after an eviction. The chart's restore Job runs it with every role at zero.
-- 📜 **Revocation journal.** Every change that removes access (a revoked token, a disabled user, a removed binding or policy entry, a withdrawn package version) is written to an outbox in its own transaction, shipped by a job to `<storage.s3.prefix>/_journal/revocations/`, and replayed after a restore, so a restore does not bring back what was revoked after its snapshot; a replay never grants access and never deletes content. See [the revocation journal](docs/security/backup-and-restore.md#the-revocation-journal).
+- 📜 **Revocation journal.** Every change that removes access (a revoked token, a disabled user, a removed binding or policy entry, a withdrawn package version) is written to an outbox in its own transaction, shipped by a job to `<prefix>/_journal/revocations/` of the first object-store connection without `drain: true`, and replayed after a restore, so a restore does not bring back what was revoked after its snapshot; a replay never grants access and never deletes content. See [the revocation journal](docs/security/backup-and-restore.md#the-revocation-journal).
 - 🩹 **Platform restores.** After a point-in-time restore of PostgreSQL by the platform, `quader admin post-restore --restored-to <t>` (the chart's `postRestore` hook Job) puts running jobs back in the queue, gives the installation a new keyspace and replays the journal from `t`; `quader admin backup check` and the daily task `backup-check` verify the platform protection that `backup.recovery_window` and `backup.object_versioning` declare.
 - 📈 **Run visibility.** The Backups screen under System status, `GET /api/v1/system/backups` with the summary and its overdue mark, the `quader_backup_*` and `quader_revocation_journal_*` metric families and the backup alerts of the chart's PrometheusRule. See [Backups](docs/manual/admin/operations.md#backups).
 
@@ -288,7 +288,7 @@ What a container client, a token and the storage see of an OCI repository ([name
 | Token realm and service | realm `<response base URL>/v2/_token`, service the host of that base URL with its port | yes |
 | Scope of a token request | `repository:<projectKey>/<repoKey>/<name>:<actions>` with the actions `pull`, `push`, `delete` or `*`, and `registry:catalog:*`; on a bound host `repository:<name>:…`; at most 16 entries | yes |
 | Login user name | any; recorded and ignored, the snippets use `quader` | yes |
-| Upload session | `Location: /v2/<projectKey>/<repoKey>/<name>/blobs/uploads/<uuid>`, `Docker-Upload-UUID: <uuid>`; staged at `<storage.s3.prefix>/_uploads/<session id>/data` | yes |
+| Upload session | `Location: /v2/<projectKey>/<repoKey>/<name>/blobs/uploads/<uuid>`, `Docker-Upload-UUID: <uuid>`; staged at `<prefix>/_uploads/<session id>/data` on the first connection of `storage.connections` without `drain: true` (`<prefix>` its `prefix`) | yes |
 | Client IDs and setup snippets | `docker` (Docker CLI with Buildx), `podman`; snippets `docker.shell.configure`, `docker.kubernetes.configure` (the image pull secret `quader-registry`), `podman.shell.configure`, `docker.install`, `podman.install`, `docker.publish`, `docker.buildx.publish`, `podman.publish` | yes |
 | Repository document member | `oci.mirror` (remote repositories only; below) | yes |
 | Configuration keys | `oci.token_lifetime`, `oci.unreferenced_blob_grace` ([configuration](#configuration-keys)) | yes |
@@ -422,6 +422,7 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 | Pool name | `QUADER_POOL_NAME`, set by the chart on every pool Deployment (the pool's name, `ep-<name>` for an endpoint pool; unset on the main Deployments) | yes (`deploy/helm/quader/templates/_deployment.tpl`) |
 | Job of a backup run | `QUADER_JOB_NAME`, set by the chart on the backup CronJob's pods from the label `job-name` and recorded in `backup_run`: the retry pod of the same Job waits for its predecessor's lease instead of exiting `3` ([R-BAK-010](docs/spec/backup-and-restore.md#r-bak-010--one-target-writing-operation-at-a-time)). Empty outside a Job | yes (`_backup.tpl`, `cmd/quader/backup_create.go`) |
 | Scratch of the backup, restore and post-restore pods | `TMPDIR=/tmp`, an `emptyDir` of `backup.tmpSizeLimit` (the commands use at most 64 MiB of it) | yes (`_backup.tpl`) |
+| Object-store connections | `QUADER_STORAGE_CONNECTIONS='[{"bucket":"quader-blobs"}]'`: the whole list `storage.connections` as one JSON value, each element decoded as written (`storage.md` R-STOR-050) | yes (`internal/config/storage.go`) |
 | Worker queues | `QUADER_JOBS_QUEUES='["vuln"]'` on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES='["index","vuln"]'` on the main worker beside pools (JSON lists) | yes (`_deployment.tpl`) |
 | Scan listener | `QUADER_SERVER_SCAN_LISTEN=:8082`, set by the chart on the main `packages` Deployment while the image scanning or the malware scanning is on | yes (`_vuln.tpl`) |
 | Kind of scanner | `QUADER_PROCESS_SCANNER_KIND=clamav`, set by the chart on `<fullname>-malware-scanner-clamav`, `freshclam` on `<fullname>-malware-updater-freshclam`, and `trivy-db` on the container `database` of `<fullname>-vuln-scanner-trivy`, whose container `quader` runs the default, `trivy` | yes (`malware-scanner-clamav.yaml`, `malware-updater-freshclam.yaml`, `vuln-scanner-trivy.yaml`) |
@@ -478,13 +479,17 @@ What an `ansible-galaxy` client, a token and the storage see of an Ansible Galax
 
 ### Object storage
 
+`<prefix>` is the `prefix` of a connection's element of `storage.connections` (default `quader`); every connection has its own bucket and prefix.
+
 | Name | Pattern | Built |
 |---|---|---|
-| Blob object | `<prefix>/sha256/<h0h1>/<h2h3>/<64 hex>`; `<prefix>` defaults to `quader` (`storage.s3.prefix`) | yes (`internal/blob/key.go`); npm publish, the generic `/files/` writes and the pull-through cache store their content here |
-| Readiness probe | `<prefix>/_probe/health`, a `HEAD` | yes (`internal/app/wire_blob.go`) |
-| Revocation journal | `<prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<entry id>.json`, one object per entry, the date the UTC date of the change; written by the job `revocation-journal-ship`, listed and read by a restore and by `quader admin post-restore` | yes ([internal/journal/object.go](internal/journal/object.go), R-HA-054) |
-| Restore probe | `<prefix>/_probe/<pod>`, written and deleted by a restore's check 7 | yes (`internal/backup/restore/ports.go`, `checks.go`) |
-| Upload staging | `<prefix>/_uploads/…` | planned ([R-STOR-001](docs/spec/storage.md)) |
+| Blob object | `<prefix>/sha256/<h0h1>/<h2h3>/<64 hex>` on each connection that holds a copy; the name of every copy is its row in `blob_copies` (`object_key`) | yes (`internal/blob/key.go`, `connections.go`); npm publish, the generic `/files/` writes and the pull-through cache store their content here |
+| Connection marker | `<prefix>/_connection`, JSON `{"installationId", "connectionId", "createdAt"}`; written by the start check when it is absent and never deleted by Quader; a marker that names another installation or connection id stops the start ([R-STOR-051](docs/spec/storage.md)) | yes (`internal/blob/startcheck.go`) |
+| Readiness probe | `<prefix>/_probe/health`, a `HEAD` on every connection | yes (`internal/app/wire_blob.go`) |
+| Start-check probes | `<prefix>/_probe/<replica>` and `<prefix>/_probe/<replica>.<check>.<12 hex>`, written and deleted by the start check of each connection | yes (`internal/blob/conformance.go`, `startcheck.go`) |
+| Revocation journal | `<prefix>/_journal/revocations/<yyyy>/<mm>/<dd>/<entry id>.json`, one object per entry, the date the UTC date of the change; written by the job `revocation-journal-ship` on the first connection without `drain: true`, listed and read by a restore and by `quader admin post-restore` on the first element of `storage.connections` | yes ([internal/journal/object.go](internal/journal/object.go), R-HA-054) |
+| Restore probe | `<prefix>/_probe/<pod>` on the first element of `storage.connections`, written and deleted by a restore's check 7 | yes (`internal/backup/restore/ports.go`, `checks.go`) |
+| Upload staging | `<prefix>/_uploads/<session id>/data` on the first connection without `drain: true` | yes (`internal/blob/staged.go`, `internal/uploads`) |
 
 ### Backup target
 
@@ -558,7 +563,9 @@ Built families, all with the `quader_` prefix:
 | `quader_cache_flushes_total` | `cache`, `reason` |
 | `quader_valkey_pubsub_subscribed` | gauge |
 | `quader_outbound_requests_total`, `quader_outbound_request_duration_seconds`, `quader_outbound_egress_denied_total` | `kind` (the purpose of the outbound client; `vuln_source` for the advisory sources, [sync/service.go](internal/vuln/sync/service.go)) |
-| `quader_storage_s3_requests_total`, `quader_storage_s3_request_duration_seconds` | `operation`, `outcome` |
+| `quader_storage_s3_requests_total`, `quader_storage_s3_request_duration_seconds` | `connection` (the id of the object-store connection), `operation`, and `outcome` on the counter |
+| `quader_storage_s3_bytes_total`, `quader_storage_s3_circuit_open` | `connection`, and `direction` (`up`, `down`) on the counter; the gauge is 1 while that connection's breaker is open on the replica |
+| `quader_storage_copies_damaged_total`, `quader_storage_reads_fallen_over_total` | `connection`, and `status` (`missing`, `corrupt`) or `reason` (`not_found`, `unavailable`, `size`): copies marked damaged, and reads that left a copy for the next before their first byte ([internal/blob/metrics.go](internal/blob/metrics.go)) |
 | `quader_metrics_label_overflow_total` | `family`, `label` |
 | `quader_tracing_spans_dropped_total` | none |
 | `quader_auth_attempts_total`, `quader_auth_ratelimited_total`, `quader_auth_throttle_exempt_total`, `quader_auth_cache_bypassed_total`, `quader_auth_cache_invalidations_total`, `quader_auth_group_claim_missing_total`, `quader_auth_lastused_flush_failures_total` | the labels of `internal/auth/principal/gate.go` | yes |
@@ -851,7 +858,7 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | `idempotency-cleanup` | `internal/api/v1/cleanup.go` | task, `13 * * * *` |
 | `secrets-reencrypt` | `internal/app/wire_api.go` | manual only (`POST /api/v1/system/tasks/{name}/run`); walks the repository secrets and the private keys of the Debian signing keys |
 | `backup-check` | `internal/app/wire_backup_check.go` | task (`maintenance` queue, exclusive, 3 attempts), `40 5 * * *`: checks the platform protection that `backup.recovery_window` and `backup.object_versioning` declare (`archive_mode`, bucket versioning, the expiry of noncurrent versions, the garbage-collection grace period) and stores the report in `system_state` `backup_check`, which every replica exports as `quader_backup_check_ok`; a failed check is a result, not a failed job |
-| `revocation-journal-ship` | `internal/jobs/journal.go`, `internal/app/wire_journal.go` | not a task: a replica with job loops enqueues it every `backup.revocation_journal.ship_interval` while the outbox holds a row; queue `maintenance`, coalesce, 3 attempts, 5 minutes; writes the outbox rows to `<storage.s3.prefix>/_journal/revocations/` and deletes them |
+| `revocation-journal-ship` | `internal/jobs/journal.go`, `internal/app/wire_journal.go` | not a task: a replica with job loops enqueues it every `backup.revocation_journal.ship_interval` while the outbox holds a row; queue `maintenance`, coalesce, 3 attempts, 5 minutes; writes the outbox rows to `<prefix>/_journal/revocations/` of the first connection of `storage.connections` without `drain: true` and deletes them |
 | `cluster-change-prune`, `replica-registry-prune` | `internal/jobs/builtin.go` | tasks, `*/10 * * * *` |
 | `system.probe` | `internal/jobs/probe.go` | probe kind |
 
@@ -1218,8 +1225,10 @@ the chart's `backup`, `restore`, `postRestore` and backup Secret values. The con
 | `quader backup prune` | none | Applies `backup.retention` and sweeps the pool ([R-BAK-017](docs/spec/backup-and-restore.md#r-bak-017--pool-sweep)); prints the backups, incomplete directories and pool objects deleted. |
 | `quader backup restore <id>` | `--check` (run the preconditions only, exit `0` or `6`), `--skip-revocation-journal` (only when the source's bucket is gone), `--journal-credentials-file <path>` (a credential that lists the source's journal when the blob-store credential cannot), `--identity-file <path>` (refused with exit `2`: client-side encrypted backups are not built, R-BAK-027) | Restores a backup into an empty installation ([R-BAK-020](docs/spec/backup-and-restore.md#r-bak-020--restore-preconditions), [R-BAK-021](docs/spec/backup-and-restore.md#r-bak-021--restore-procedure)): eight checks, then the schema up to the backup's step, the blobs, the load, the remaining migrations, the fix-ups and the journal replay; a second run of the same backup resumes, a finished one answers "already restored". Needs the owner database login and the key ring. |
 | `quader admin post-restore` | `--restored-to <RFC 3339 time>` (required), `--credentials-file <path>` (a credential that may list object versions, so a delete marker cannot hide a journal entry), `--skip-revocation-journal`, `--json` | The clean-up after a point-in-time restore of PostgreSQL by the platform ([R-HA-025](docs/spec/ha-and-helm.md)): jobs back to the queue, a new keyspace and incarnation, the deletion pause, `restored_at`, the journal replay from the restore point; prints one line per step and the quarantined outbox rows. A repeat for the same point runs no step again. Source: [cmd/quader/admin_postrestore.go](cmd/quader/admin_postrestore.go). |
-| `quader admin storage verify` | `--since <RFC 3339 time>` (default: every `live` blob row; limits the run to rows created or changed at or after the time), `--concurrency N` (`16`, simultaneous existence checks), `--max-items N` (`20`, items listed per damaged blob), `--json` | Asks the object store for the object of every `live` blob row and prints one line per item that references a blob without its object or with an object of another size (`item <project>/<repository>:<path>`, `(trashed)` marked), then the totals ([R-STOR-027](docs/spec/storage.md#r-stor-027--integrity-scrub), [R-HA-025](docs/spec/ha-and-helm.md)). Read-only: it runs with the replicas' own database role and object-store credential, writes no status and no audit event, and reads the table in pages, so its memory does not grow with it. Exit `5` with a finding, `75` when the store did not answer for some blob and nothing is damaged. Source: [cmd/quader/admin_storage.go](cmd/quader/admin_storage.go). |
-| `quader admin storage restore-versions` | `--before <RFC 3339 time>` (required, the time *t* the platform restore went to), `--credentials-file <path>` (example: `/etc/quader/post-restore/credentials.yaml`; a credential with `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, which the runtime credential lacks; default: the blob store's credential), `--dry-run` (`false`), `--concurrency N` (`16`), `--json` | Step 5 of the [restore procedure](docs/spec/ha-and-helm.md) (R-HA-025): runs the check of `storage verify` over every live blob, and for each blob without an object removes the delete markers younger than *t* from its key, so that the version before the marker is current again (`restored`; `no_delete_marker` and `no_version` are left and reported). It deletes delete markers only, never an object version, and writes `system.storage.versions_restored` when it removed any. Exit `5` while a blob is still without an object, `75` when the store did not answer, `2` for a usage or credential error (a store that refuses the version listing included). Source: [cmd/quader/admin_restoreversions.go](cmd/quader/admin_restoreversions.go). |
+| `quader admin storage verify` | `--since <RFC 3339 time>` (default: every `live` blob row; limits the run to rows created or changed at or after the time), `--concurrency N` (`16`, simultaneous existence checks), `--max-items N` (`20`, items listed per damaged blob), `--json` | Asks the first element of `storage.connections` for the object of every `live` blob row and prints one line per item that references a blob without its object or with an object of another size (`item <project>/<repository>:<path>`, `(trashed)` marked), then the totals ([R-STOR-027](docs/spec/storage.md#r-stor-027--integrity-scrub), [R-HA-025](docs/spec/ha-and-helm.md)). Read-only: it runs with the replicas' own database role and object-store credential, writes no status and no audit event, and reads the table in pages, so its memory does not grow with it. Exit `5` with a finding, `75` when the store did not answer for some blob and nothing is damaged. Source: [cmd/quader/admin_storage.go](cmd/quader/admin_storage.go). |
+| `quader admin storage restore-versions` | `--before <RFC 3339 time>` (required, the time *t* the platform restore went to), `--credentials-file <path>` (example: `/etc/quader/post-restore/credentials.yaml`; a credential with `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, which the runtime credential lacks; default: the credential of the first element of `storage.connections`, the connection it works on), `--dry-run` (`false`), `--concurrency N` (`16`), `--json` | Step 5 of the [restore procedure](docs/spec/ha-and-helm.md) (R-HA-025): runs the check of `storage verify` over every live blob, and for each blob without an object removes the delete markers younger than *t* from its key, so that the version before the marker is current again (`restored`; `no_delete_marker` and `no_version` are left and reported). It deletes delete markers only, never an object version, and writes `system.storage.versions_restored` when it removed any. Exit `5` while a blob is still without an object, `75` when the store did not answer, `2` for a usage or credential error (a store that refuses the version listing included). Source: [cmd/quader/admin_restoreversions.go](cmd/quader/admin_restoreversions.go). |
+| `quader admin storage check` | `--connection <id>` (default: every element of `storage.connections`), `--json` | The conformance check of each connection with its own client ([R-STOR-035](docs/spec/storage.md)): the start check (probe, listing, part identity), the marker `<prefix>/_connection` (read, never written), the assumptions of the store and the capabilities (a wrong payload checksum refused, `DeleteObjects`, metadata kept, a copy onto itself that replaces the metadata and keeps the bytes, a server-side copy from each other connection on the same endpoint). Overwrite and delete visibility are reported as strong or eventual; a missing capability is reported as absent, not as a failure. Opens no database and writes nothing outside `<prefix>/_probe/`. Exit `5` when a check that is not optional failed, `2` for a usage or configuration error. Source: [cmd/quader/storage_connections.go](cmd/quader/storage_connections.go). |
+| `quader admin storage forget-connection <id>` | `--json` | Gives up a connection that is gone for good ([R-STOR-051](docs/spec/storage.md)): deletes its copy and queue rows, lets the content state of every blob it held follow from the copies that remain, retires the id for good and writes `system.storage.connection_forgotten`. Deletes no object. Refused with exit `2` while the command's own `storage.connections` or a live replica has the id. Source: [cmd/quader/storage_connections.go](cmd/quader/storage_connections.go). |
 | `quader admin maintenance pause-deletions` | `--reason <text>` (required), `--json` | Sets the deletion pause in `system_state`: garbage collection, the orphan sweep, retention and cap enforcement delete nothing until it is cleared; for a planned restore drill. A pause that is already set keeps its time and reason. Writes `system.deletions_paused`. Source: [cmd/quader/admin_maintenance.go](cmd/quader/admin_maintenance.go). |
 | `quader admin maintenance resume-deletions` | `--json` | Step 7 of the restore procedure: clears the deletion pause that a post-restore or `pause-deletions` set, prints when and why it had been set, and writes `system.deletions_resumed`; a repeat changes nothing and exits `0`. Run it after the restored installation is verified. Source: [cmd/quader/admin_maintenance.go](cmd/quader/admin_maintenance.go). |
 | `quader admin backup check` | `--json` | Runs the checks of the declared platform protection (`backup.recovery_window`, `backup.object_versioning`) and prints one line per check; changes and stores nothing (the task `backup-check` stores its report). Exit `5` when a declared protection does not hold. Source: [cmd/quader/admin_backupcheck.go](cmd/quader/admin_backupcheck.go). |
@@ -1462,34 +1471,43 @@ valkey:
 
 ```yaml
 storage:
-  s3:
-    endpoint: ""                        # default: empty = AWS endpoint resolution for the region; a host without scheme means https://
-    region: ""                          # default; required when no region is in the environment
-    bucket: ""                          # default; required to serve; example: quader-blobs
-    prefix: quader                       # default: letters, digits and !_.*'()/- ; no leading or trailing /
-    force_path_style: false             # default; true for SeaweedFS, MinIO and Ceph RGW
-    allow_insecure_endpoint: false      # default; needed for an http:// endpoint
-    ca_file: ""                         # default: empty = the outbound trust store (system roots plus proxy.outbound.tls.ca_files); set = the whole trust store of the object-store client. The chart sets a connection's ca_file through the ca of its entry of secrets.storageConnections
-    storage_class: ""                   # default
-    payload_checksum: sha256            # default: sha256 | md5 | none
-    startup_check: true                 # default: object-store conformance check before the first readiness
-    checksums:
-      request_calculation: when_supported   # default: when_supported | when_required
-      response_validation: when_supported   # default: when_supported | when_required
-    credentials:
-      source: default                   # default: default | webIdentity | static
+  connections:                          # default: [] = none; serve needs one to eight; the list order is the write and the read order. An element is
+                                        # decoded as written: a key left out takes the default named here. As a variable the whole list is one JSON
+                                        # value: QUADER_STORAGE_CONNECTIONS='[{"bucket":"quader-blobs"}]' (storage.md R-STOR-050)
+    - id: default                       # default: default for the one element that leaves it out; ^[a-z][a-z0-9-]{0,30}[a-z0-9]$; never changes, never reused
+      bucket: ""                        # required unless bucket_file; example: quader-blobs
+      bucket_file: ""                   # default; a file whose trimmed content is the bucket, read when the clients are built; excludes bucket
+      prefix: quader                    # default: letters, digits and !_.*'()/- ; no leading or trailing /, no //, at most 256 characters; fixed once the connection holds a copy
+      region: ""                        # default; required when no region is in the environment
+      region_file: ""                   # default; excludes region
+      endpoint: ""                      # default: empty = AWS endpoint resolution for the region; a host without scheme means https://
+      endpoint_file: ""                 # default; excludes endpoint
+      force_path_style: false           # default; true for SeaweedFS, MinIO and Ceph RGW
+      allow_insecure_endpoint: false    # default; needed for an http:// endpoint
+      ca_file: ""                       # default: empty = the outbound trust store (system roots plus proxy.outbound.tls.ca_files); set = the whole trust store of this connection's client. The chart sets it through the ca of the connection's entry of secrets.storageConnections
+      storage_class: ""                 # default
+      payload_checksum: sha256          # default: sha256 | md5 | none
+      request_checksum_calculation: when_supported   # default: when_supported | when_required
+      response_checksum_validation: when_supported   # default: when_supported | when_required
+      batch_delete: true                # default; false for a store without DeleteObjects
+      credentials_source: default       # default: default | webIdentity | static
       role_arn: ""                      # default
-      web_identity_token_file: ""       # default; file only; required with source webIdentity
+      web_identity_token_file: ""       # default; file only; required with webIdentity
       sts_endpoint: ""                  # default
-      access_key_id_file: ""            # default; file only; required with source static
-      secret_access_key_file: ""        # default; file only; required with source static
+      access_key_id_file: ""            # default; file only; required with static
+      secret_access_key_file: ""        # default; file only; required with static
       session_token_file: ""            # default; file only
-    sse:
-      mode: none                        # default: none | s3 | kms
-      kms_key_id: ""                    # default; required with mode kms
-      bucket_key: true                  # default
+      sse_mode: none                    # default: none | s3 | kms
+      sse_kms_key_id: ""                # default; required with sse_mode kms
+      sse_bucket_key: true              # default
+      scrub_period: 720h                # default; at least 24h; read, but no scrub is built yet (R-STOR-027)
+      scrub_bytes_per_second: 50MiB     # default; at least 1MiB; read, but no scrub is built yet
+      drain: false                      # default; true: no upload goes to this connection; at least one element must stay without it. Moving its copies to the others comes with the reconciliation, which is not built yet
+      encrypted: false                  # default; true is refused: the encryption of stored content is not built
+  object_store:                         # the client settings every connection shares
+    startup_check: true                 # default: the start check of every connection before the first readiness, with its capabilities (R-STOR-035)
     http:
-      max_connections: 256              # default; at least 1
+      max_connections: 256              # default; at least 1; per connection and replica
       dial_timeout: 5s                  # default; at least 100ms
       tls_handshake_timeout: 5s         # default; at least 100ms
       response_header_timeout: 30s      # default; at least 1s
@@ -1502,18 +1520,23 @@ storage:
     retry:
       max_attempts: 5                   # default
       max_backoff: 20s                  # default; at least 100ms
-    circuit_breaker:
+    circuit_breaker:                    # one breaker per connection and replica
       failure_threshold: 5              # default
       open_duration: 10s                # default; at least 100ms
     multipart:
       threshold: 100MiB                 # default; at least 5MiB
       part_size: 16MiB                  # default; at least 5MiB; not above threshold
       concurrency: 4                    # default: parallel parts per upload
-      max_concurrent_parts: 64          # default: per replica
-    presign:
-      endpoint: ""                      # default: empty = storage.s3.endpoint
-      ttl: 60s                          # default; at least 1s
-      min_size: 1MiB                    # default
+      max_concurrent_parts: 64          # default: per replica, over all connections
+  replication:
+    min_copies: 1                       # default; 1 to the number of connections without drain: true: the connections an upload is written to before it is answered
+  reconcile:                            # the reconciliation between the connections (R-STOR-056); read, but not built yet: nothing copies a blob to a connection that lacks it
+    concurrency: 4                      # default; at least 1
+    bytes_per_second: 100MiB            # default; at least 1MiB
+    server_side: auto                   # default: auto | never
+    queue_limit: 10000                  # default; at least 1
+    retry_max_backoff: 1h               # default; at least 1s
+    run_duration: 10m                   # default; at least 1m
   spool:
     dir: /var/lib/quader/spool           # default
     max_bytes: 50GiB                    # default; at least 1MiB; the budget shared by the uploads of a replica
@@ -1553,16 +1576,13 @@ storage:
     grace_period: 24h                   # default
     delete_settle: 30s                  # default; at least 1s; also bounds the insertion of a blob row (half of it)
     handover_delay: 10m                 # default; above jobs.lease_duration plus twice delete_settle
-    batch_size: 1000                    # default
-    batch_delete: true                  # default; false for stores without DeleteObjects
+    batch_size: 1000                    # default; DeleteObjects or not is the batch_delete of the connection
     delete_concurrency: 8               # default
   orphans:
     min_age: 24h                        # default
     multipart_max_age: 24h              # default
   scrub:
-    check_interval: 168h                # default; at least 1h
-    deep_interval: 2160h                # default; at least 1h
-    deep_bytes_per_second: 50MiB        # default
+    run_duration: 50m                   # default; at least 1m; read, but no scrub is built yet (R-STOR-027); its period and pace are scrub_period and scrub_bytes_per_second of each connection
 ```
 
 </details>
@@ -1680,7 +1700,8 @@ maintenance:
     gc:               {enabled: true, schedule: "*/30 * * * *"}
     gc-full:          {enabled: true, schedule: "0 2 * * 0"}
     orphan-sweep:     {enabled: true, schedule: "0 5 * * 6"}
-    scrub:            {enabled: true, schedule: "0 4 * * *"}
+    scrub:            {enabled: true, schedule: "7 * * * *"}      # read, but no scrub is built yet: no job kind takes the task
+    storage-reconcile: {enabled: true, schedule: "* * * * *"}     # read, but the reconciliation is not built yet: no job kind takes the task
     storage-summary:  {enabled: true, schedule: "17 * * * *"}
     remote-cache-cleanup: {enabled: true, schedule: "0 3 * * *"}
     backup-check:         {enabled: true, schedule: "40 5 * * *"}     # the declared platform protection (backup.recovery_window, backup.object_versioning)
@@ -1713,11 +1734,11 @@ the target is used by the backup and restore pods alone, and its credential file
 
 ```yaml
 backup:
-  target:                               # the S3 location of the backups; a client and a credential of its own, never storage.s3's
+  target:                               # the S3 location of the backups; a client and a credential of its own, never a storage connection's
     endpoint: ""                        # default: empty = AWS endpoint resolution for the region; a host without a scheme means https://
     region: ""                          # default; example: eu-central-1
     bucket: ""                          # default: empty; required by every quader backup command; example: quader-backups
-    prefix: quader                       # default; in the blob store's bucket it must neither contain storage.s3.prefix nor lie inside it
+    prefix: quader                       # default; in the bucket of a storage connection on the same endpoint (allow_same_bucket) it must neither contain that connection's prefix nor lie inside it
     force_path_style: false             # default; true for SeaweedFS, MinIO and Ceph RGW
     allow_insecure_endpoint: false      # default: an http:// endpoint is refused
     ca_file: ""                         # default: empty = the system trust store; else the whole trust store of the target client; the chart sets it from secrets.backupTargetCA
@@ -1732,7 +1753,7 @@ backup:
       secret_access_key_file: ""        # default; file only; required with static
       session_token_file: ""            # default; file only
     sse:
-      mode: s3                          # default: s3 | kms | none (unlike storage.s3.sse, whose default is none)
+      mode: s3                          # default: s3 | kms | none (unlike a connection's sse_mode, whose default is none)
       kms_key_id: ""                    # default; required with kms
       bucket_key: true                  # default
   source:                               # the credential the backup reads the blob bucket with; it never writes or deletes there
@@ -1785,7 +1806,7 @@ and has no key.
 
 These keys are required by the command that uses them, and have no default in the struct tags:
 `process.role` (by `serve`), `database.host`, `database.name`, `valkey.sentinel.addresses` and `primary_name` (in sentinel mode),
-`valkey.address` (in standalone mode), `storage.s3.bucket` (to serve), `secrets.encryption_key_files` and `active_key_id` (to
+`valkey.address` (in standalone mode), `storage.connections` with a `bucket` or `bucket_file` in every element (to serve), `secrets.encryption_key_files` and `active_key_id` (to
 serve and to restore), `backup.target.bucket` (by every `quader backup` command). The chart sets the secret-file paths and `storage.spool.dir` of the pods; those keys must not be set under `config`
 (the comment of [values.yaml](deploy/helm/quader/values.yaml) says so, R-HA-029).
 
@@ -2457,8 +2478,8 @@ an identity whose key is believed taken (`POST /api/v1/signing/identities/{id}/r
 | Helm `trivy.image` | `docker.io/aquasec/trivy:0.76.2@sha256:8f6b…68fb` (`TRIVY_IMAGE`) | The analyser every scanner pod runs, copied by the init container `trivy` into a volume the scanner mounts read-only. The digest fixes the bytes whatever the registry serves; a node without the image pulls it from Docker Hub when a scanner pod starts there, outside every egress rule of the chart, so a registry outage or a pull limit keeps the scanner in its init phase. A mirror keeps the digest. | [H-1182](docs/security/image-scanning.md#h-1182--a-node-pulls-the-analysers-image-from-a-third-partys-registry-when-a-scanner-pod-starts), [H-1003](docs/security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day) |
 | `system.bootstrap_anonymous_read` | `false` | `true` lets anonymous callers read the installation facts and the replica list on the client port. Startup refuses it with an `https` base URL that is not localhost. | [H-63](docs/security/roles-and-trust-boundaries.md), [Q-API-14](docs/spec/api-and-ui.md) |
 | `metrics.auth` | `none` | With `none`, whoever reaches port 8081 reads the metrics; the chart's NetworkPolicy limits that. `static` requires a bearer token file. | [H-41](docs/spec/operations-and-observability.md), [R-OPS-006](docs/spec/operations-and-observability.md) |
-| `storage.s3.allow_insecure_endpoint`, `storage.s3.ca_file` | `false`, empty | An `http://` object-store endpoint is refused without the first; the second replaces the system roots for the object-store client. | [transport encryption](docs/security/transport-encryption.md), [Q-STOR-14](docs/spec/storage.md) |
-| `storage.s3.credentials.source` | `default` | `default` uses the SDK's chain, which can reach node metadata; `static` and `webIdentity` read files. | [H-74](docs/security/privilege-footprint.md) |
+| `allow_insecure_endpoint`, `ca_file` of each element of `storage.connections` | `false`, empty | An `http://` endpoint of the connection is refused without the first; the second replaces the outbound trust store (system roots plus `proxy.outbound.tls.ca_files`) for that connection's client. | [transport encryption](docs/security/transport-encryption.md), [Q-STOR-14](docs/spec/storage.md) |
+| `credentials_source` of each element of `storage.connections` | `default` | `default` uses the SDK's chain, which can reach node metadata; `static` and `webIdentity` read files. | [H-74](docs/security/privilege-footprint.md) |
 | `proxy.outbound.address_policy` | loopback, link-local, metadata, multicast denied; private ranges allowed | Upstream clients refuse denied addresses after DNS resolution; zoned IPv6 always; the object store and span export are not checked. | [egress](docs/security/egress.md), [H-6](docs/spec/repositories-and-proxy.md) |
 | `secrets.encryption_key_files` | empty (required) | Keys are read once at start-up; a rotated key file takes effect after a restart. | [H-55](docs/spec/architecture.md), [data and secret flow](docs/security/data-and-secret-flow.md) |
 | `auth.break_glass.enabled`, `auth.break_glass.password_file` | `true`, empty | Without a password file the account is unusable, not open. With `secrets.breakGlass` it is the local administrator that holds system administration without a role binding. The password is a file, never inline. | [login](docs/developer/login.md), [Q-AUTH-33](docs/spec/identity-and-authentication.md#q-auth-33--an-enabled-break-glass-account-without-a-password-file) |

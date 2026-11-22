@@ -51,7 +51,7 @@ The chart mounts each Secret into the pods that need it and nowhere else ([_secr
   ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment), [R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-updater-deployment-malware-updater-freshclam));
 - in the `worker` pods while the image scanning is on, the worker's pair as the identity they present to the scanner, and the internal
   CA; in the main `packages` pods, the internal CA for the scan listener ([R-HA-066](../spec/ha-and-helm.md#r-ha-066--the-links-of-the-image-scanning-inside-the-chart));
-- the object-store credentials only with `credentials.source: static`;
+- the object-store credentials only with `credentials_source: static`, per connection;
 - the metrics token only with `metrics.auth: static`;
 - the break-glass password and the OIDC client secrets only in the pods of the role `api` (the main Deployment, its path pools and its
   endpoint pools), which serve the login; `packages`, `worker` and the Jobs never get them. The Secret that holds the break-glass password is an administrator credential: whoever can

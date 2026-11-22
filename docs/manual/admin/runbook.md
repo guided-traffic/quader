@@ -53,14 +53,14 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 ## The object store unavailable
 
-**What you see.** `QuaderObjectStoreUnreachable` (every replica) or `QuaderObjectStoreUnreachableSingleReplica` (some of them). Clients get `503 object_store_unavailable` on new uploads and on downloads of stored content, with `Retry-After`. Metadata, listings, the UI, sign-in, deletes and deduplicated uploads keep working, and replicas stay ready unless `health.require_object_store` is `true`.
+**What you see.** `QuaderObjectStoreUnreachable` (every connection of `storage.connections`, on every replica), `QuaderObjectStoreConnectionUnreachable` (one connection on every replica, while another answers) or `QuaderObjectStoreUnreachableSingleReplica` (one connection on some replicas); the label `connection` names it. While another connection answers, uploads go to it and downloads read their copy there; only a blob that the failing connection alone holds answers `503 object_store_unavailable`, and uploads do so when fewer connections than `storage.replication.min_copies` answer. With every connection down, clients get `503 object_store_unavailable` on new uploads and on downloads of stored content, with `Retry-After`. Metadata, listings, the UI, sign-in, deletes and deduplicated uploads keep working, and replicas stay ready unless `health.require_object_store` is `true`.
 
-**What it means.** Each replica has a circuit breaker: after `storage.s3.circuit_breaker.failure_threshold` (5) failures, blob requests fail fast with `503` and a `Retry-After` of the breaker's open duration, at least 5 seconds. Expired or revoked credentials count as failures. The circuit closes by itself when the store answers. Garbage collection and the orphan sweep pause their object-store phase while it is open, so an outage never turns into lost blobs, and no blob is marked missing because of errors. A pod that starts during the outage stays not ready until its start-up check passes.
+**What it means.** Each replica has a circuit breaker per connection: after `storage.object_store.circuit_breaker.failure_threshold` (5) failures, that connection's requests fail fast and Quader takes the next one; when none is left, blob requests fail with `503` and a `Retry-After` of the breaker that probes first, at least 5 seconds. Expired or revoked credentials count as failures. The circuit closes by itself when the store answers. Garbage collection and the orphan sweep pause their object-store phase while it is open, so an outage never turns into lost blobs, and no blob or copy is marked missing because of errors. A pod that starts during the outage stays not ready until the start check has passed on one connection without `drain: true` and every such connection has been tried once.
 
 **What to do.**
 
-1. Check the endpoint, its certificate and the credential in the Secret. A warning line `the object store rejects the credential` names the credential source and the store's code.
-2. For the single-replica alert, the cause is on the path of those pods: compare them on `quader_storage_s3_circuit_open`. Delete the pod if the path does not heal.
+1. Check the endpoint, its certificate and the credential in the Secret of the connection the alert names. A warning line `the object store rejects the credential` names the credential source and the store's code.
+2. For the single-replica alert, the cause is on the path of those pods: compare them on `quader_storage_s3_circuit_open` with that connection. Delete the pod if the path does not heal.
 3. When the store is back, check that `quader_storage_s3_circuit_open` is `0`; uploads and downloads resume within the open duration plus a few seconds.
 4. Objects that are really gone are a different entry: `QuaderBlobMissing` and [When the object store loses objects](operations.md#when-a-dependency-is-unavailable).
 
@@ -284,9 +284,12 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderDatabaseUnreachable` | critical | Replicas retry PostgreSQL and answer `503` | [PostgreSQL](#postgresql-unavailable-or-failing-over) |
 | `QuaderDatabasePoolSaturated` | warning | A replica waits over 100 ms for a request connection | Database CPU; raise `database.pool.max_conns` within the connection budget |
 | `QuaderControlConnectionWaits` | warning | A replica waits over a second for its control connection | The pooler endpoint of that connection and the database latency |
-| `QuaderObjectStoreUnreachable` | critical | Every replica has the object-store circuit open | [The object store](#the-object-store-unavailable) |
-| `QuaderObjectStoreUnreachableSingleReplica` | warning | Some replicas have the circuit open | The path of those pods, on `quader_storage_s3_circuit_open` |
-| `QuaderBlobMissing` | critical | A read found a blob's object missing within the last hour | The log line with the digest; the bucket, its lifecycle rules and anything in front of it ([Loses objects](operations.md#when-a-dependency-is-unavailable)) |
+| `QuaderObjectStoreUnreachable` | critical | Every replica has the circuit of every object-store connection open | [The object store](#the-object-store-unavailable) |
+| `QuaderObjectStoreConnectionUnreachable` | warning | Every replica has the circuit of one connection open, another connection answers | [The object store](#the-object-store-unavailable), for the connection in the label |
+| `QuaderObjectStoreUnreachableSingleReplica` | warning | Some replicas have the circuit of a connection open | The path of those pods, on `quader_storage_s3_circuit_open` |
+| `QuaderStorageReplicationBacklog`, `QuaderStorageCopyDamaged`, `QuaderStorageScrubBehind`, `QuaderStorageConnectionDetached` | warning | A copy waits, is damaged, is not read within its period, or a connection is configured nowhere | Never fire yet: Quader does not export the series they read until the reconciliation, the scrub and the connections' counts are built |
+| `QuaderBlobMissing` | critical | A read found a blob's object missing on every connection that held it within the last hour | The log line with the digest; the bucket, its lifecycle rules and anything in front of it ([Loses objects](operations.md#when-a-dependency-is-unavailable)) |
+| `QuaderBlobCorrupt` | critical | A read found no connection that holds a blob whole within the last hour | The log line with the digest; who else writes to the buckets |
 | `QuaderJobsStuck` | warning | A queued job has waited over 15 minutes | Worker pods; the queue named by the label `kind`; the Jobs screen |
 | `QuaderLeaseLost` | warning | A singleton task lost its lease more than three times in 15 minutes | A transaction-mode pooler on the session endpoint, idle timeouts, resets between the worker and the database |
 | `QuaderMixedVersions` | warning | Two Quader versions have run side by side for two hours | The image of each Deployment; a stuck rollout |

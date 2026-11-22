@@ -59,8 +59,8 @@ Quader reads the configuration file and the environment once, at start. A change
 | Listener certificates (`server.tls`, `server.ops_tls`, endpoint certificates) | Live: polled every `reload_interval` (10 s by default) once the kubelet has updated the mounted Secret |
 | PostgreSQL credentials and TLS files | Live: read again for every new connection |
 | Valkey and Sentinel credentials, Valkey TLS files | Live: credentials on every connection attempt, TLS files on every handshake; connections are renewed every `valkey.max_conn_lifetime` (30 min) |
-| Object-store credential files (`credentials.source: static`) | Live: read again at most once per second |
-| Object-store CA (`storage.s3.ca_file`) and outbound CA files (`proxy.outbound.tls.ca_files`) | Live: used for the next connection |
+| Object-store credential files (`credentials_source: static` of a connection) | Live: read again at most once per second |
+| Object-store CA (`ca_file` of a connection) and outbound CA files (`proxy.outbound.tls.ca_files`) | Live: used for the next connection |
 | OIDC client secret file | Live: read again when the file changes |
 | Break-glass password file | Live: checked every `auth.break_glass.check_interval` (10 s); a rotation refuses the local sign-in for `auth.break_glass.rotation_hold` (2 min) and ends the break-glass sessions |
 | Metrics bearer token file (`metrics.bearer_token_file`) | Live: read on each scrape |
@@ -144,16 +144,21 @@ The tables below list the keys an installation most often sets. Every key with i
 
 | Key | Default | Meaning |
 |---|---|---|
-| `storage.s3.bucket` | empty, required to serve | Bucket of the blobs; with the chart it may come from an S3 provisioner's Secret (`secrets.s3.bucketKey`) |
-| `storage.s3.region` | empty | Region; required when the environment names none |
-| `storage.s3.endpoint` | empty | Endpoint of an S3-compatible store; empty uses AWS endpoint resolution, a host without a scheme means `https://` |
-| `storage.s3.prefix` | `quader` | Key prefix inside the bucket |
-| `storage.s3.force_path_style` | `false` | `true` for SeaweedFS, MinIO and Ceph RGW |
-| `storage.s3.credentials.source` | `default` | `default` (the SDK's chain, which can reach the node's metadata service), `static` (key files) or `webIdentity` |
-| `storage.s3.sse.mode` | `none` | Server-side encryption: `none`, `s3` or `kms` |
-| `storage.s3.startup_check` | `true` | Check the store before the first readiness |
+| `storage.connections` | `[]`; serving needs one element | The object-store connections, one to eight, each a bucket and prefix of its own. Every connection without `drain: true` gets every blob; the list order is the order of writes and reads. One store is one element. As an environment variable the whole list is one JSON value, `QUADER_STORAGE_CONNECTIONS='[{"bucket":"quader-blobs"}]'` |
+| `storage.connections[].id` | `default` for the one element that leaves it out | Names the connection for its whole life: never change it, never use it again for another store. A second element needs an id of its own |
+| `storage.connections[].bucket` | empty, required | Bucket of the connection; with the chart it may come from an S3 provisioner's Secret (`bucketKey` of the connection's entry in `secrets.storageConnections`) |
+| `storage.connections[].region` | empty | Region; required when the environment names none |
+| `storage.connections[].endpoint` | empty | Endpoint of an S3-compatible store; empty uses AWS endpoint resolution, a host without a scheme means `https://` |
+| `storage.connections[].prefix` | `quader` | Key prefix inside the bucket; fixed, like the bucket, once the connection holds a copy |
+| `storage.connections[].force_path_style` | `false` | `true` for SeaweedFS, MinIO and Ceph RGW |
+| `storage.connections[].credentials_source` | `default` | `default` (the SDK's chain, which can reach the node's metadata service), `static` (key files; with the chart the `existingSecret` of the connection's entry in `secrets.storageConnections`) or `webIdentity` |
+| `storage.connections[].sse_mode` | `none` | Server-side encryption: `none`, `s3` or `kms` |
+| `storage.replication.min_copies` | `1` | How many connections an upload is written to before it is answered; at most the number of connections without `drain: true` |
+| `storage.object_store.startup_check` | `true` | Check every connection before the first readiness |
 | `storage.upload.max_size` | `10GiB` | Largest single upload; must fit the spool of a `packages` pod (the UI's uploads, bounded by `ui.deploy.max_upload_bytes`, use the spool of an `api` pod) |
-| `health.require_object_store` | `false` | `true` makes readiness depend on the object store at all times, not only at start |
+| `health.require_object_store` | `false` | `true` makes readiness depend at all times on at least one connection without `drain: true` answering, not only at start |
+
+Every further key of a connection (the file variants of bucket, region and endpoint, the CA, checksums, `batch_delete`, `drain`, the scrub's period) and the client settings all connections share (`storage.object_store`: HTTP, retries, circuit breaker, multipart) are in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference).
 
 </details>
 

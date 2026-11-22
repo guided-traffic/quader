@@ -252,7 +252,7 @@ address is not refused by Quader. Whether the metadata request itself goes throu
 Subject: the node's identity, which may carry rights beyond the bucket.
 
 What makes it real: a node role with rights beyond the bucket, and no workload identity bound to the pod. Setting
-`credentials.source: static` or `webIdentity` removes the chain from the path.
+`credentials_source: static` or `webIdentity` in each element of `storage.connections` removes the chain from the path.
 
 ### H-75 · The audit-object grants are not checked at start
 

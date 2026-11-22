@@ -69,7 +69,7 @@ names the closest valid one.
 Two shapes:
 
 - **File-only.** A string field `…_file` tagged `secret:"file"`: `database.password_file`,
-  `valkey.password_file`, `storage.s3.credentials.secret_access_key_file`, `metrics.bearer_token_file`,
+  `valkey.password_file`, `secret_access_key_file` of an element of `storage.connections`, `metrics.bearer_token_file`,
   TLS private keys (`database.ssl_key_file`, `valkey.tls.key_file`, `key_file` of each `server.tls.certificates`
   entry, which the JSON Schema marks `x-quader-secret: file-only`). The consumer reads the file on every use, so a rotated Secret applies without a
   restart. The effective view shows the path, which is not a secret.
@@ -147,7 +147,7 @@ release (the fixed list `npm`, `NuGet`, spelled as OSV spells them), `mode: repo
 ## Backup keys
 
 The `backup` section ([backup.go](../../internal/config/backup.go), [backup.md](backup.md)): `target.*` (endpoint, region, bucket, prefix, `force_path_style`, `allow_insecure_endpoint`,
-`ca_file`, `storage_class`, `allow_same_bucket`, `credentials.*` with the keys of `storage.s3.credentials`, `sse.*` with the default `s3`), `database.*` (`parallel`, `lock_timeout`,
+`ca_file`, `storage_class`, `allow_same_bucket`, `credentials.*` (`source`, `role_arn`, `web_identity_token_file`, `sts_endpoint`, `access_key_id_file`, `secret_access_key_file`, `session_token_file`, the type `StorageS3Credentials`), `sse.*` with the default `s3`), `database.*` (`parallel`, `lock_timeout`,
 `migration_wait`, `part_size`), `copy.*` (`concurrency`, `server_side`, `part_size`, `check_existing`, `bytes_per_second`), `compression_level`, `exclude.remote_caches`, `retention.*`
 (`keep_last`, `keep_within`, `sweep_interval`), `expected_interval`, `manual_run.*`, `lease_duration`, `heartbeat_interval`, `stall_timeout`, `finalize_timeout`, `verify_sample`, `run_history` and
 `revocation_journal.*` (`enabled`, `ship_interval`, `replay_margin`), each with the default of R-BAK-011 and R-HA-054. `Backup.Validate` refuses the combinations R-BAK-011 names (the lease
@@ -243,7 +243,7 @@ storage:
   download:
     buffer_size: 256KiB               # default; with hold_back, the buffer one download holds
     hold_back: 64KiB                  # default
-  s3:
+  object_store:
     http:
       receive_window: 256KiB          # default; 16KiB to 1GiB; the HTTP/2 window per object, Go's default is 4 MiB
 ```
