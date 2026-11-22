@@ -76,7 +76,7 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 		return blobArea{}, err
 	}
 	store, err := blob.New(cfg, conns, db, blob.WithLogger(log), blob.WithMetrics(bm), blob.WithMemory(httpserver.SettleMemory),
-		blob.WithConnectionAdded(connectionAdded(au.rec)), blob.WithStorageKeys(skeys))
+		blob.WithConnectionAdded(connectionAdded(au.rec)), blob.WithStorageKeys(skeys), blob.WithDamageHook(blobDamaged(au.rec)))
 	if err != nil {
 		return blobArea{}, err
 	}

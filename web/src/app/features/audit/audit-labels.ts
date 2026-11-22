@@ -363,6 +363,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.system.restore.journal_replayed:Revocation journal replayed after a restore`;
     case 'system.restored':
       return $localize`:@@audit.action.system.restored:Installation restored`;
+    case 'system.storage.blob_damaged':
+      return $localize`:@@audit.action.system.storage.blob_damaged:Stored content found damaged`;
     case 'system.storage.connection_added':
       return $localize`:@@audit.action.system.storage.connection_added:Object-store connection seen for the first time`;
     case 'system.storage.connection_drained':

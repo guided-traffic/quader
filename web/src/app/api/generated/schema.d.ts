@@ -473,6 +473,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/storage/damaged-blobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the damaged blobs
+         * @description The blobs whose stored content is damaged (storage.md R-STOR-027, Q-API-386), by digest. `scope=blobs` (the default)
+         *     lists the blobs no connection holds whole (`contentStatus` other than `ok`): the list an administrator acts on, whose
+         *     content a later upload of the same file, a remote repository's refetch or the object's return repairs. `scope=copies`
+         *     lists the blobs with at least one `missing` or `corrupt` copy, which the scrub and the reconciliation replace from
+         *     another connection: the self-healing view. `connection` narrows the list to the blobs with a copy on that connection
+         *     (with `scope=copies`: a damaged copy there), `status` to a content state (with `scope=copies`: a copy state). Each
+         *     entry carries every copy of the blob and the first 20 items that reference it with their number. Cursor pagination
+         *     (R-API-010) over the digest. The permission called `storage.read` in operations-and-observability.md is the capability
+         *     `settings:read` (storage.md Q-STOR-267).
+         */
+        get: operations["listDamagedBlobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storage/damaged-blobs/{sha256}/recheck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read every copy of a blob whole now
+         * @description Reads every copy of the blob on the connections of the answering replica to its end at once, unthrottled, and sets the
+         *     states by what it finds (storage.md R-STOR-027, Q-STOR-267): a present copy that matches the digest is verified, one that
+         *     does not is marked `missing` or `corrupt` and queued for repair; a copy marked `missing` or `corrupt` that now reads
+         *     whole is `present` again, one that still does not keeps its mark. A copy on a connection the replica does not configure,
+         *     whose circuit is open, that collection claims, or whose store does not answer is left as it is. It writes no object:
+         *     the scrub and the reconciliation repair. The answer is the blob's copies after the reads. A per-resource action, not a
+         *     task (R-API-020).
+         */
+        post: operations["recheckDamagedBlob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/encryption": {
         parameters: {
             query?: never;
@@ -7772,7 +7826,7 @@ export interface components {
         /** @enum {string} */
         JobState: "queued" | "running" | "succeeded" | "failed" | "cancelling" | "cancelled";
         TaskName: string;
-        /** @description The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`). */
+        /** @description The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`). */
         TaskRunRequest: {
             [key: string]: unknown;
         };
@@ -7842,6 +7896,59 @@ export interface components {
         };
         JobReferenceEnvelope: {
             job: components["schemas"]["JobReference"];
+        };
+        /** @description One copy of a blob on one connection (storage.md R-STOR-052). */
+        DamagedBlobCopy: {
+            connection: string;
+            /** @enum {string} */
+            state: "present" | "missing" | "corrupt" | "deleting";
+            /**
+             * Format: date-time
+             * @description When the whole stored object was last shown to be the blob; `null` when never.
+             */
+            verifiedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the store last answered for it; `null` when never.
+             */
+            checkedAt: string | null;
+            /** Format: date-time */
+            stateChangedAt: string;
+        };
+        DamagedBlobItem: {
+            project: string;
+            repository: string;
+            path: string;
+            trashed: boolean;
+        };
+        DamagedBlob: {
+            sha256: string;
+            /** Format: int64 */
+            size: number;
+            /**
+             * @description `ok` while one copy is present; with `scope=copies` the blob of a damaged copy is often `ok`.
+             * @enum {string}
+             */
+            contentStatus: "ok" | "missing" | "corrupt";
+            copies: components["schemas"]["DamagedBlobCopy"][];
+            /** @description The first 20 items that reference the blob, by project, repository and path. */
+            items: components["schemas"]["DamagedBlobItem"][];
+            /** Format: int64 */
+            itemCount: number;
+        };
+        DamagedBlobList: {
+            items: components["schemas"]["DamagedBlob"][];
+            /** @description Opaque; `null` on the last page. */
+            nextCursor: string | null;
+        };
+        DamagedBlobRecheck: {
+            sha256: string;
+            /**
+             * @description The content state the copies give after the reads (storage.md R-STOR-052).
+             * @enum {string}
+             */
+            contentStatus: "ok" | "missing" | "corrupt";
+            copies: components["schemas"]["DamagedBlobCopy"][];
         };
         TaskLastRun: {
             /** Format: uuid */
@@ -15816,6 +15923,117 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listDamagedBlobs: {
+        parameters: {
+            query?: {
+                scope?: "blobs" | "copies";
+                /** @description The id of a connection (storage.md R-STOR-050). */
+                connection?: string;
+                status?: "missing" | "corrupt";
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of damaged blobs. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "sha256": "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b",
+                     *           "size": 18432,
+                     *           "contentStatus": "missing",
+                     *           "copies": [
+                     *             {
+                     *               "connection": "default",
+                     *               "state": "missing",
+                     *               "verifiedAt": "2026-11-02T03:07:41Z",
+                     *               "checkedAt": "2026-11-22T10:07:12Z",
+                     *               "stateChangedAt": "2026-11-22T10:07:12Z"
+                     *             }
+                     *           ],
+                     *           "items": [
+                     *             {
+                     *               "project": "platform",
+                     *               "repository": "npm-local",
+                     *               "path": "left-pad/-/left-pad-1.3.0.tgz",
+                     *               "trashed": false
+                     *             }
+                     *           ],
+                     *           "itemCount": 1
+                     *         }
+                     *       ],
+                     *       "nextCursor": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DamagedBlobList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    recheckDamagedBlob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blob's SHA-256 in lower-case hex. */
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The copies after the reads. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "sha256": "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b",
+                     *       "contentStatus": "ok",
+                     *       "copies": [
+                     *         {
+                     *           "connection": "default",
+                     *           "state": "present",
+                     *           "verifiedAt": "2026-11-22T10:21:03Z",
+                     *           "checkedAt": "2026-11-22T10:21:03Z",
+                     *           "stateChangedAt": "2026-11-22T10:21:03Z"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DamagedBlobRecheck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

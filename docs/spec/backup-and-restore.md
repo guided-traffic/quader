@@ -1728,7 +1728,8 @@ connection with a sentence that says whose it is ([checks.go](../../internal/bac
   and removes what the restored database does not reference (storage.md R-STOR-026).
 - **`restore-versions` and the protection reads** work per connection ([ha-and-helm.md](ha-and-helm.md) R-HA-023, R-HA-025): the check
   of versioning and lifecycle reports each connection, and `restore-versions --connection <id>` (default: every connection) removes the
-  delete markers younger than *t* from the keys of the copies missing there, with that connection's entry of `--credentials-file`.
+  delete markers younger than *t* from the keys of the copies missing there, with the one credential of `--credentials-file` on every
+  connection of the run, so connections with different versioning logins get a run each (storage.md Q-STOR-268; built).
 
 Acceptance criteria:
 

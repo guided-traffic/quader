@@ -26,6 +26,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup/tables"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/scrub"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
@@ -192,6 +193,8 @@ type App struct {
 	signatureFetch late[jobs.Handler]
 	shipper        late[journal.Shipper]
 	checkBucket    late[platform.Bucket]
+	// scrub is the scrub's runner and the recheck of the damaged-blobs list (R-STOR-027, wire_storage_scrub.go).
+	scrub late[*scrub.Scrubber]
 	// registryMetrics are the counters of the registry token service, shared by every endpoint (wire_registry.go).
 	registryMetrics *registrytoken.Metrics
 	// scannerSrv is the scanner's listener of the role scanner (wire_scanner.go); nil elsewhere and in the loader of the kind trivy-db.
@@ -608,6 +611,8 @@ func (a *App) startClient() error {
 			SystemState: part[infra](a.parts).sys,
 			// The download limits and the usage overview (wire_limits.go).
 			Limits: a.limitsAPI(),
+			// The list of damaged blobs and the recheck of one blob (wire_storage_scrub.go).
+			Storage: a.storageAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).
 			Malware: a.malwareAPI(),
 			// The signatures' operations and the member signatures of a file and a version (wire_signatures.go).

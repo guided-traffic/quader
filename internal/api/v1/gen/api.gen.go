@@ -919,6 +919,72 @@ func (e ClientSnippetTab) Valid() bool {
 	}
 }
 
+// Defines values for DamagedBlobContentStatus.
+const (
+	DamagedBlobContentStatusCorrupt DamagedBlobContentStatus = "corrupt"
+	DamagedBlobContentStatusMissing DamagedBlobContentStatus = "missing"
+	DamagedBlobContentStatusOk      DamagedBlobContentStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the DamagedBlobContentStatus enum.
+func (e DamagedBlobContentStatus) Valid() bool {
+	switch e {
+	case DamagedBlobContentStatusCorrupt:
+		return true
+	case DamagedBlobContentStatusMissing:
+		return true
+	case DamagedBlobContentStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DamagedBlobCopyState.
+const (
+	DamagedBlobCopyStateCorrupt  DamagedBlobCopyState = "corrupt"
+	DamagedBlobCopyStateDeleting DamagedBlobCopyState = "deleting"
+	DamagedBlobCopyStateMissing  DamagedBlobCopyState = "missing"
+	DamagedBlobCopyStatePresent  DamagedBlobCopyState = "present"
+)
+
+// Valid indicates whether the value is a known member of the DamagedBlobCopyState enum.
+func (e DamagedBlobCopyState) Valid() bool {
+	switch e {
+	case DamagedBlobCopyStateCorrupt:
+		return true
+	case DamagedBlobCopyStateDeleting:
+		return true
+	case DamagedBlobCopyStateMissing:
+		return true
+	case DamagedBlobCopyStatePresent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DamagedBlobRecheckContentStatus.
+const (
+	DamagedBlobRecheckContentStatusCorrupt DamagedBlobRecheckContentStatus = "corrupt"
+	DamagedBlobRecheckContentStatusMissing DamagedBlobRecheckContentStatus = "missing"
+	DamagedBlobRecheckContentStatusOk      DamagedBlobRecheckContentStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the DamagedBlobRecheckContentStatus enum.
+func (e DamagedBlobRecheckContentStatus) Valid() bool {
+	switch e {
+	case DamagedBlobRecheckContentStatusCorrupt:
+		return true
+	case DamagedBlobRecheckContentStatusMissing:
+		return true
+	case DamagedBlobRecheckContentStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DebIndexStateSuitesState.
 const (
 	DebIndexStateSuitesStateCurrent DebIndexStateSuitesState = "current"
@@ -6514,6 +6580,42 @@ func (e ListServiceAccountsParamsSort) Valid() bool {
 	}
 }
 
+// Defines values for ListDamagedBlobsParamsScope.
+const (
+	Blobs  ListDamagedBlobsParamsScope = "blobs"
+	Copies ListDamagedBlobsParamsScope = "copies"
+)
+
+// Valid indicates whether the value is a known member of the ListDamagedBlobsParamsScope enum.
+func (e ListDamagedBlobsParamsScope) Valid() bool {
+	switch e {
+	case Blobs:
+		return true
+	case Copies:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListDamagedBlobsParamsStatus.
+const (
+	ListDamagedBlobsParamsStatusCorrupt ListDamagedBlobsParamsStatus = "corrupt"
+	ListDamagedBlobsParamsStatusMissing ListDamagedBlobsParamsStatus = "missing"
+)
+
+// Valid indicates whether the value is a known member of the ListDamagedBlobsParamsStatus enum.
+func (e ListDamagedBlobsParamsStatus) Valid() bool {
+	switch e {
+	case ListDamagedBlobsParamsStatusCorrupt:
+		return true
+	case ListDamagedBlobsParamsStatusMissing:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListJobsParamsSort.
 const (
 	EnqueuedAt      ListJobsParamsSort = "enqueuedAt"
@@ -8448,6 +8550,64 @@ type CreateTokenRequest struct {
 	// TtlSeconds The lifetime. `0` asks for a non-expiring service-account token. Exclusive with `expiresAt`.
 	TtlSeconds *int `json:"ttlSeconds,omitempty"`
 }
+
+// DamagedBlob defines model for DamagedBlob.
+type DamagedBlob struct {
+	// ContentStatus `ok` while one copy is present; with `scope=copies` the blob of a damaged copy is often `ok`.
+	ContentStatus DamagedBlobContentStatus `json:"contentStatus"`
+	Copies        []DamagedBlobCopy        `json:"copies"`
+	ItemCount     int64                    `json:"itemCount"`
+
+	// Items The first 20 items that reference the blob, by project, repository and path.
+	Items  []DamagedBlobItem `json:"items"`
+	Sha256 string            `json:"sha256"`
+	Size   int64             `json:"size"`
+}
+
+// DamagedBlobContentStatus `ok` while one copy is present; with `scope=copies` the blob of a damaged copy is often `ok`.
+type DamagedBlobContentStatus string
+
+// DamagedBlobCopy One copy of a blob on one connection (storage.md R-STOR-052).
+type DamagedBlobCopy struct {
+	// CheckedAt When the store last answered for it; `null` when never.
+	CheckedAt      *time.Time           `json:"checkedAt"`
+	Connection     string               `json:"connection"`
+	State          DamagedBlobCopyState `json:"state"`
+	StateChangedAt time.Time            `json:"stateChangedAt"`
+
+	// VerifiedAt When the whole stored object was last shown to be the blob; `null` when never.
+	VerifiedAt *time.Time `json:"verifiedAt"`
+}
+
+// DamagedBlobCopyState defines model for DamagedBlobCopy.State.
+type DamagedBlobCopyState string
+
+// DamagedBlobItem defines model for DamagedBlobItem.
+type DamagedBlobItem struct {
+	Path       string `json:"path"`
+	Project    string `json:"project"`
+	Repository string `json:"repository"`
+	Trashed    bool   `json:"trashed"`
+}
+
+// DamagedBlobList defines model for DamagedBlobList.
+type DamagedBlobList struct {
+	Items []DamagedBlob `json:"items"`
+
+	// NextCursor Opaque; `null` on the last page.
+	NextCursor *string `json:"nextCursor"`
+}
+
+// DamagedBlobRecheck defines model for DamagedBlobRecheck.
+type DamagedBlobRecheck struct {
+	// ContentStatus The content state the copies give after the reads (storage.md R-STOR-052).
+	ContentStatus DamagedBlobRecheckContentStatus `json:"contentStatus"`
+	Copies        []DamagedBlobCopy               `json:"copies"`
+	Sha256        string                          `json:"sha256"`
+}
+
+// DamagedBlobRecheckContentStatus The content state the copies give after the reads (storage.md R-STOR-052).
+type DamagedBlobRecheckContentStatus string
 
 // DatabaseFacts defines model for DatabaseFacts.
 type DatabaseFacts struct {
@@ -13831,7 +13991,7 @@ type TaskList struct {
 // TaskName defines model for TaskName.
 type TaskName = string
 
-// TaskRunRequest The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`).
+// TaskRunRequest The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`).
 type TaskRunRequest map[string]interface{}
 
 // TechnicalToken A technical token (R-AUTH-045): a named line of `qdr_sat_` secrets of a service account with a stable ID, the subject of its
@@ -17114,6 +17274,27 @@ type UpdateSignatureSettingsParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// ListDamagedBlobsParams defines parameters for ListDamagedBlobs.
+type ListDamagedBlobsParams struct {
+	Scope *ListDamagedBlobsParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// Connection The id of a connection (storage.md R-STOR-050).
+	Connection *string                       `form:"connection,omitempty" json:"connection,omitempty"`
+	Status     *ListDamagedBlobsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListDamagedBlobsParamsScope defines parameters for ListDamagedBlobs.
+type ListDamagedBlobsParamsScope string
+
+// ListDamagedBlobsParamsStatus defines parameters for ListDamagedBlobs.
+type ListDamagedBlobsParamsStatus string
+
 // ListBackupRunsParams defines parameters for ListBackupRuns.
 type ListBackupRunsParams struct {
 	// Operation `create`, `delete` or `verify`.
@@ -19512,6 +19693,12 @@ type ServerInterface interface {
 	// GetSigningTrustedRoot The trusted root of Quader's signatures
 	// (GET /api/v1/signing/trusted-root.json)
 	GetSigningTrustedRoot(w http.ResponseWriter, r *http.Request)
+	// ListDamagedBlobs List the damaged blobs
+	// (GET /api/v1/storage/damaged-blobs)
+	ListDamagedBlobs(w http.ResponseWriter, r *http.Request, params ListDamagedBlobsParams)
+	// RecheckDamagedBlob Read every copy of a blob whole now
+	// (POST /api/v1/storage/damaged-blobs/{sha256}/recheck)
+	RecheckDamagedBlob(w http.ResponseWriter, r *http.Request, sha256 string)
 	// ListBackupRuns List backup runs
 	// (GET /api/v1/system/backups)
 	ListBackupRuns(w http.ResponseWriter, r *http.Request, params ListBackupRunsParams)
@@ -33225,6 +33412,117 @@ func (siw *ServerInterfaceWrapper) GetSigningTrustedRoot(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListDamagedBlobs operation middleware
+func (siw *ServerInterfaceWrapper) ListDamagedBlobs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDamagedBlobsParams
+
+	// ------------- Optional query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "connection" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "connection", r.URL.Query(), &params.Connection, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "connection"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "connection", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDamagedBlobs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecheckDamagedBlob operation middleware
+func (siw *ServerInterfaceWrapper) RecheckDamagedBlob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sha256" -------------
+	var sha256 string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sha256", r.PathValue("sha256"), &sha256, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecheckDamagedBlob(w, r, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBackupRuns operation middleware
 func (siw *ServerInterfaceWrapper) ListBackupRuns(w http.ResponseWriter, r *http.Request) {
 
@@ -36712,6 +37010,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/system/jobs/{id}/cancel", wrapper.CancelJob)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/tasks", wrapper.ListTasks)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/system/tasks/{name}/run", wrapper.RunTask)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/damaged-blobs", wrapper.ListDamagedBlobs)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/storage/damaged-blobs/{sha256}/recheck", wrapper.RecheckDamagedBlob)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/encryption", wrapper.GetEncryptionStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users", wrapper.ListUsers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/users", wrapper.CreateUser)

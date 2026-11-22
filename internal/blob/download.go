@@ -152,18 +152,18 @@ func verifyBuffer(bufferSize, hold int, size int64) int {
 // A repair may have written the object again between the read and the mark; the mark, which changes only a present copy,
 // would then undo it. So the object is looked for once more on the same connection after a mark, and a copy whose object is
 // there again with its stored size is present (Q-STOR-151). Whichever order the repair and the mark take, the copy ends
-// present when the object is there: a repair after the look sets it present itself.
-func (s *Store) copyGone(ctx context.Context, d Digest, c *Connection, cp Copy) {
+// present when the object is there: a repair after the look sets it present itself. It reports whether the copy stands marked.
+func (s *Store) copyGone(ctx context.Context, d Digest, c *Connection, cp Copy) bool {
 	if !s.markCopy(ctx, d, c.ID(), CopyMissing) {
-		return
+		return false
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 	info, err := c.Objects().Head(ctx, cp.ObjectKey)
 	if err != nil || (info.Size >= 0 && info.Size != cp.StoredSize) {
-		return // gone, of another size, or the store cannot say: the mark stays
+		return true // gone, of another size, or the store cannot say: the mark stays
 	}
-	s.copyBack(ctx, d, c.ID())
+	return !s.copyBack(ctx, d, c.ID())
 }
 
 // MissingRecheckInterval is how long a blob marked missing is answered from PostgreSQL alone before a read asks the object

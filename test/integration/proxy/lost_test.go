@@ -63,7 +63,7 @@ func lostAnswer(t *testing.T, what string, s served) {
 	}
 }
 
-func TestR_STOR_027_ALostArtifactWhoseUpstreamServesOtherBytesIsFetchedOncePerReplicaAndBackoff(t *testing.T) {
+func TestR_REPO_025_ALostArtifactWhoseUpstreamServesOtherBytesIsFetchedOncePerReplicaAndBackoff(t *testing.T) {
 	e := newEnv(t)
 	const path = "pkg/-/pkg-1.0.0.tgz"
 	recorded, other := bytes.Repeat([]byte("a"), 8192), bytes.Repeat([]byte("b"), 8192)
@@ -111,7 +111,7 @@ func TestR_STOR_027_ALostArtifactWhoseUpstreamServesOtherBytesIsFetchedOncePerRe
 	}
 }
 
-func TestR_STOR_027_APassThatJoinsAClientsRefillThatLeftTheItemLostIsNotPresent(t *testing.T) {
+func TestR_REPO_025_APassThatJoinsAClientsRefillThatLeftTheItemLostIsNotPresent(t *testing.T) {
 	e := newEnv(t)
 	const path = "pkg/-/pkg-2.0.0.tgz"
 	up := e.upstream()
@@ -140,7 +140,7 @@ func TestR_STOR_027_APassThatJoinsAClientsRefillThatLeftTheItemLostIsNotPresent(
 	}
 }
 
-func TestR_STOR_027_ADocumentTheFormatKeepsLostIsFetchedOncePerBackoff(t *testing.T) {
+func TestR_REPO_025_ADocumentTheFormatKeepsLostIsFetchedOncePerBackoff(t *testing.T) {
 	e := newEnv(t)
 	const path = "pkg/keep"
 	up := e.upstream()
@@ -171,7 +171,7 @@ func TestR_STOR_027_ADocumentTheFormatKeepsLostIsFetchedOncePerBackoff(t *testin
 	}
 }
 
-func TestR_STOR_027_ALostDocumentBesideANegativeEntryIs503NotTheNegative404(t *testing.T) {
+func TestR_REPO_025_ALostDocumentBesideANegativeEntryIs503NotTheNegative404(t *testing.T) {
 	e := newEnv(t)
 	const path = "pkg/negative"
 	up := e.upstream()

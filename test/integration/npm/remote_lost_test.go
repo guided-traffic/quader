@@ -51,7 +51,7 @@ func lostAnswer(t *testing.T, what string, a testenv.Answer) {
 	}
 }
 
-func TestR_STOR_027_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstream(t *testing.T) {
+func TestR_REPO_025_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstream(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{})
 	reps := r.start(2)
 	p := upstreamPackage(t, 2)
@@ -65,7 +65,7 @@ func TestR_STOR_027_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstre
 	}
 	tarballs := func() int { return r.stub.Counts().Tarball(p.Name, file) }
 
-	t.Run("R-STOR-027 R-HA-024 the tarball is fetched again with its bytes, the object is written again and the next request is a hit", func(t *testing.T) {
+	t.Run("R-REPO-025 R-HA-024 the tarball is fetched again with its bytes, the object is written again and the next request is a hit", func(t *testing.T) {
 		d := r.entryBlob(rRemote, "artifact", p.Name+"/-/"+file)
 		r.st.DeleteObject(t, d)
 		before := tarballs()
@@ -87,7 +87,7 @@ func TestR_STOR_027_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstre
 		}
 	})
 
-	t.Run("R-STOR-027 Q-REPO-204 through the virtual repository the member's cache misses and its fetch tier fills it again", func(t *testing.T) {
+	t.Run("R-REPO-025 Q-REPO-204 through the virtual repository the member's cache misses and its fetch tier fills it again", func(t *testing.T) {
 		d := r.entryBlob(rRemote, "artifact", p.Name+"/-/"+file)
 		r.st.DeleteObject(t, d)
 		before := tarballs()
@@ -103,7 +103,7 @@ func TestR_STOR_027_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstre
 		}
 	})
 
-	t.Run("R-STOR-027 Q-REPO-203 the package document is fetched again whole, on a replica that does not hold its bytes, and served", func(t *testing.T) {
+	t.Run("R-REPO-025 Q-REPO-203 the package document is fetched again whole, on a replica that does not hold its bytes, and served", func(t *testing.T) {
 		d := r.entryBlob(rRemote, "metadata", p.Name)
 		r.st.DeleteObject(t, d)
 		docs, conditional := r.upstreamDocs(p.Name), r.stub.Counts().ConditionalDocuments(p.Name)
@@ -133,7 +133,7 @@ func TestR_STOR_027_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstre
 	})
 }
 
-func TestR_STOR_027_ConcurrentRequestsForALostTarballOverTwoReplicasFillItOnce(t *testing.T) {
+func TestR_REPO_025_ConcurrentRequestsForALostTarballOverTwoReplicasFillItOnce(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{Valkey: true})
 	reps := r.start(2)
 	p := upstreamPackage(t, 2)
@@ -170,7 +170,7 @@ func TestR_STOR_027_ConcurrentRequestsForALostTarballOverTwoReplicasFillItOnce(t
 	}
 }
 
-func TestR_STOR_027_ACachedNPMItemWhoseObjectIsMissingIs503WhileTheUpstreamCannotServeIt(t *testing.T) {
+func TestR_REPO_025_ACachedNPMItemWhoseObjectIsMissingIs503WhileTheUpstreamCannotServeIt(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{})
 	rep := r.start(1)[0]
 	p := upstreamPackage(t, 2)
@@ -250,7 +250,7 @@ func (r *renv) ageCheck(d []byte) {
 	r.st.Exec(`UPDATE blobs SET checked_at = checked_at - make_interval(secs => $2) WHERE sha256 = $1`, d, blob.MissingRecheckInterval.Seconds()+1)
 }
 
-func TestR_STOR_027_AVirtualAnswers503ForALostCachedTarballOfAMemberTheCallerMayNotFill(t *testing.T) {
+func TestR_REPO_025_AVirtualAnswers503ForALostCachedTarballOfAMemberTheCallerMayNotFill(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{})
 	rep := r.start(1)[0]
 	p := upstreamPackage(t, 3)

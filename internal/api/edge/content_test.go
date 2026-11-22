@@ -211,7 +211,7 @@ func TestServeItem(t *testing.T) {
 		}
 	})
 
-	t.Run("R-STOR-027 the error of open is returned with nothing written, so that a remote repository can fill the item again first", func(t *testing.T) {
+	t.Run("R-REPO-025 the error of open is returned with nothing written, so that a remote repository can fill the item again first", func(t *testing.T) {
 		it, _ := stored()
 		missing := errs.E(errs.Unavailable, errs.CodeContentUnavailable, "missing")
 		rec := httptest.NewRecorder()

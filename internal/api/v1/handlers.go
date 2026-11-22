@@ -189,6 +189,9 @@ type Options struct {
 	// with 503, shows the mode `normal` and refuses nothing.
 	SystemState *sysstate.Store
 
+	// Storage holds the list of damaged blobs and the recheck of one blob (storage_damaged_api.go, storage.md R-STOR-027).
+	Storage StorageServices
+
 	// >>> M1 files
 	// Files is the files service behind the items operations (items_api.go); nil
 	// disables them with 503.

@@ -66,13 +66,17 @@ func run(t *testing.T, s *testenv.Stack, args ...string) (int, string, string) {
 	return code, o.String(), e.String()
 }
 
-// seedBlob stores an object and the blob and item rows that reference it, and returns the digest.
+// seedBlob stores an object and the blob, copy and item rows that reference it (the copy on the connection default, as a commit
+// leaves it, storage.md R-STOR-052), and returns the digest.
 func seedBlob(t *testing.T, s *testenv.Stack, repo, path string, data []byte) []byte {
 	t.Helper()
 	sum := sha256.Sum256(data)
 	s.PutObject(t, sum[:], data)
 	s.Exec(`INSERT INTO blobs (sha256, sha1, md5, sha512, size) VALUES ($1, decode(repeat('00', 20), 'hex'), decode(repeat('00', 16), 'hex'), decode(repeat('00', 64), 'hex'), $2) ON CONFLICT DO NOTHING`,
 		sum[:], len(data))
+	s.Exec(`INSERT INTO storage_connections (id, bucket, prefix) VALUES ('default', 'bucket', $1) ON CONFLICT DO NOTHING`, s.ObjectPrefix())
+	s.Exec(`INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state) VALUES ($1, 'default', $2, $3, 'present')`,
+		sum[:], blob.Key(s.ObjectPrefix(), blob.Digest(sum)), len(data))
 	s.Exec(`INSERT INTO items (repo_id, path, parent_path, kind, blob_sha256, size)
 		SELECT r.id, $2::text, '', 'file', $3, $4 FROM repositories r WHERE r.key = $1`, repo, path, sum[:], len(data))
 	return sum[:]
@@ -114,9 +118,9 @@ func TestR_HA_025_RestoreVersionsBringsBackTheObjectsDeletedAfterT(t *testing.T)
 		t.Fatalf("exit %d, want 5 for the blob that was deleted before t\n%s\n%s", code, out, errOut)
 	}
 	for _, want := range []string{
-		fmt.Sprintf("blob %x: restored, 1 delete markers removed", late1),
-		fmt.Sprintf("blob %x: restored, 1 delete markers removed", late2),
-		fmt.Sprintf("blob %x: no delete marker younger than t", early),
+		fmt.Sprintf("copy default %x: restored, 1 delete markers removed", late1),
+		fmt.Sprintf("copy default %x: restored, 1 delete markers removed", late2),
+		fmt.Sprintf("copy default %x: no delete marker younger than t", early),
 		"3 without object, 2 restored, 2 delete markers removed, 1 still without object",
 	} {
 		if !strings.Contains(out, want) {

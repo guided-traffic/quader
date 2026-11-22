@@ -1,10 +1,11 @@
-// Package restoreversions is the logic of `quader admin storage restore-versions --before <t>` (R-HA-025 step 5): after a
-// point-in-time restore of the database, the objects that the old installation's collector deleted after t exist in the
-// versioned blob bucket under a delete marker. The package finds the blobs whose object is missing (the check of
-// `quader admin storage verify`, over every live blob row) and removes the delete markers younger than t from exactly those
-// keys, so that the object of the version before it is current again.
+// Package restoreversions is the logic of `quader admin storage restore-versions --before <t> [--connection <id>]` (R-HA-025
+// step 5, backup-and-restore.md R-BAK-030): after a point-in-time restore of the database, the objects that the old
+// installation's collector deleted after t exist in a versioned bucket under a delete marker. The package finds the copies whose
+// object is missing (the check of `quader admin storage verify` over every present copy, storage.md R-STOR-058) and removes the
+// delete markers younger than t from exactly those keys, each on its connection, so that the object of the version before it is
+// current again.
 //
-// It removes nothing else: a delete marker of a key that no blob row references stays (the orphan sweep or the grace period
+// It removes nothing else: a delete marker of a key that no copy row references stays (the orphan sweep or the grace period
 // of the collector deals with those objects after the deletions resume), a delete marker older than t stays (the object was
 // already gone at t), and no object version is ever deleted.
 package restoreversions
@@ -21,7 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/blob/verify"
 )
 
-// Outcomes of one blob.
+// Outcomes of one copy.
 const (
 	// OutcomeRestored: the delete markers younger than t are removed and the object is there again.
 	OutcomeRestored = "restored"
@@ -36,20 +37,28 @@ const (
 	OutcomeStillMissing = "still_missing"
 )
 
-// Store is the object store side of a run: the existence check of the verification, the listing of the versions of a key and
-// the removal of one version. *s3.Client satisfies it; the credential must be one that may list and delete object versions.
+// Store is the object store side of a run on one connection: the existence check of the verification, the listing of the
+// versions of a key and the removal of one version. *s3.Client satisfies it; the credential must be one that may list and
+// delete object versions.
 type Store interface {
 	verify.Objects
 	ListVersions(ctx context.Context, key string) ([]s3.ObjectVersion, error)
 	DeleteVersion(ctx context.Context, key, versionID string) error
 }
 
+// Conn is one connection of the configuration with the client a run uses on it.
+type Conn struct {
+	ID    string
+	Store Store
+}
+
 // Options configure a run.
 type Options struct {
-	DB    verify.Source
-	Store Store
-	// Prefix is storage.s3.prefix.
-	Prefix string
+	DB verify.Source
+	// Connections are the connections of the configuration; Connection limits the run to one of them (--connection), empty
+	// runs on every one (backup-and-restore.md R-BAK-030).
+	Connections []Conn
+	Connection  string
 	// Before is t: delete markers created after it are removed.
 	Before time.Time
 	// DryRun lists what a run would do and removes nothing.
@@ -59,14 +68,15 @@ type Options struct {
 	Log                   *slog.Logger
 }
 
-// Entry is the result for one blob whose object was missing.
+// Entry is the result for one copy whose object was missing.
 type Entry struct {
-	SHA256  string `json:"sha256"`
-	Key     string `json:"key"`
-	Outcome string `json:"outcome"`
+	Connection string `json:"connection"`
+	SHA256     string `json:"sha256"`
+	Key        string `json:"key"`
+	Outcome    string `json:"outcome"`
 	// MarkersRemoved is the number of delete markers this run removed (with DryRun: would remove) from the key.
 	MarkersRemoved int `json:"markersRemoved"`
-	// ItemCount is the number of items that reference the blob.
+	// ItemCount is the number of items that reference the blob, when no other copy of it was there.
 	ItemCount int64 `json:"itemCount"`
 }
 
@@ -74,33 +84,37 @@ type Entry struct {
 type Report struct {
 	Before time.Time `json:"before"`
 	DryRun bool      `json:"dryRun,omitempty"`
-	// Checked is the number of blobs whose object was asked for; Missing those without an object when the run started.
+	// Checked is the number of blobs read; Missing the number of copies without an object when the run started.
 	Checked int64 `json:"checked"`
 	Missing int64 `json:"missing"`
-	// Restored is the number of blobs whose object is current again (with DryRun: would be); MarkersRemoved the number of
+	// Restored is the number of copies whose object is current again (with DryRun: would be); MarkersRemoved the number of
 	// delete markers removed.
 	Restored       int64   `json:"restored"`
 	MarkersRemoved int64   `json:"markersRemoved"`
 	Entries        []Entry `json:"entries"`
-	// Remaining is the number of blobs that are still without an object after the run; SizeMismatch those of another size, which
-	// this command does not repair.
+	// Remaining is the number of copies that are still without an object after the run; SizeMismatch those of another size,
+	// which this command does not repair.
 	Remaining    int64 `json:"remaining"`
 	SizeMismatch int64 `json:"sizeMismatch"`
-	// Unchecked is the number of blobs the store did not answer for.
+	// Lost is the number of findings that keep the exit status at 5 after the run (R-STOR-058): a blob none of whose checked
+	// copies has its object, and, with Connection set, a copy on that connection that is still missing or of another size.
+	Lost int64 `json:"lost"`
+	// Unchecked is the number of copies the store did not answer for.
 	Unchecked int `json:"unchecked"`
-	// ItemsAffected is the number of items that reference a blob that is damaged after the run.
+	// ItemsAffected is the number of items that reference a blob that is lost after the run.
 	ItemsAffected int64 `json:"itemsAffected"`
 }
 
-// OK reports whether no blob is damaged after the run and the store answered for every blob.
-func (r *Report) OK() bool { return r.Remaining == 0 && r.SizeMismatch == 0 && r.Unchecked == 0 }
+// OK reports whether nothing is lost after the run and the store answered for every copy.
+func (r *Report) OK() bool { return r.Lost == 0 && r.Unchecked == 0 }
 
-// Run finds the blobs without an object and removes the delete markers younger than o.Before from their keys. It returns the
-// report so far with the error when it ends early; a permission error of the store (AccessDenied on the listing of versions or
-// on the removal) ends it at once, because every further call would fail the same way.
+// Run finds the copies without an object (the check of `quader admin storage verify`, R-STOR-058) and removes the delete
+// markers younger than o.Before from their keys, each on its connection. It returns the report so far with the error when it
+// ends early; a permission error of a store (AccessDenied on the listing of versions or on the removal) ends it at once,
+// because every further call would fail the same way.
 func Run(ctx context.Context, o Options) (*Report, error) {
-	if o.Store == nil || o.DB == nil {
-		return nil, errors.New("restore-versions: a database source and an object store are required")
+	if len(o.Connections) == 0 || o.DB == nil {
+		return nil, errors.New("restore-versions: a database source and a connection are required")
 	}
 	if o.Before.IsZero() {
 		return nil, errors.New("restore-versions: the time before which the versions are restored is required")
@@ -108,26 +122,42 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 	if o.Log == nil {
 		o.Log = slog.New(slog.DiscardHandler)
 	}
-	// One item per blob keeps the memory of the verification small; the report counts the items instead of listing them.
+	stores := map[string]Store{}
+	conns := make([]verify.Conn, 0, len(o.Connections))
+	for _, c := range o.Connections {
+		stores[c.ID] = c.Store
+		conns = append(conns, verify.Conn{ID: c.ID, Objects: c.Store})
+	}
+	// One item per lost blob keeps the memory of the verification small; the report counts the items instead of listing them.
 	vr, err := verify.Run(ctx, verify.Options{
-		DB: o.DB, Objects: o.Store, Prefix: o.Prefix, Concurrency: o.Concurrency, PageSize: o.PageSize, MaxItems: 1, Log: o.Log,
+		DB: o.DB, Connections: conns, Connection: o.Connection, Concurrency: o.Concurrency, PageSize: o.PageSize, MaxItems: 1, Log: o.Log,
 	})
 	if vr == nil {
 		return nil, err
 	}
-	rep := &Report{
-		Before: o.Before, DryRun: o.DryRun, Checked: vr.Checked, Missing: vr.Missing, Entries: []Entry{},
-		SizeMismatch: vr.SizeMismatch, Unchecked: len(vr.Unchecked),
-	}
+	rep := &Report{Before: o.Before, DryRun: o.DryRun, Checked: vr.Checked, Entries: []Entry{}, Unchecked: len(vr.Unchecked)}
 	if err != nil {
 		return rep, err
 	}
+	lost := map[string]verify.Finding{}
 	for _, f := range vr.Findings {
-		if f.Kind != verify.KindMissing {
-			rep.ItemsAffected += f.ItemCount
+		lost[f.SHA256] = f
+	}
+	for _, cf := range vr.Copies {
+		if cf.Kind == verify.KindMissing {
+			rep.Missing++
+		}
+	}
+	restored := map[string]bool{}
+	var named []string // the copies that stay findings: still missing, or of another size
+	for _, cf := range vr.Copies {
+		if cf.Kind != verify.KindMissing {
+			rep.SizeMismatch++
+			named = append(named, cf.SHA256)
 			continue
 		}
-		e, err := repair(ctx, o, f)
+		e, err := repair(ctx, o, stores[cf.Connection], cf)
+		e.ItemCount = lost[cf.SHA256].ItemCount
 		if !o.DryRun {
 			rep.MarkersRemoved += int64(e.MarkersRemoved)
 		}
@@ -135,23 +165,38 @@ func Run(ctx context.Context, o Options) (*Report, error) {
 			if e.Outcome != "" {
 				rep.Entries = append(rep.Entries, e)
 			}
-			return rep, fmt.Errorf("blob %s: %w", f.SHA256, err)
+			return rep, fmt.Errorf("copy %s of blob %s: %w", cf.Connection, cf.SHA256, err)
 		}
 		rep.Entries = append(rep.Entries, e)
 		if e.Outcome == OutcomeRestored || e.Outcome == OutcomeWouldRestore {
 			rep.Restored++
-		} else {
-			rep.Remaining++
+			restored[cf.SHA256] = true
+			continue
+		}
+		rep.Remaining++
+		named = append(named, cf.SHA256)
+	}
+	for sha, f := range lost {
+		if !restored[sha] {
+			rep.Lost++
 			rep.ItemsAffected += f.ItemCount
+		}
+	}
+	if o.Connection != "" {
+		// a copy on the named connection that is still missing or of another size is a finding of that connection
+		for _, sha := range named {
+			if _, counted := lost[sha]; !counted {
+				rep.Lost++
+			}
 		}
 	}
 	return rep, nil
 }
 
-// repair removes the delete markers of one key that are younger than t.
-func repair(ctx context.Context, o Options, f verify.Finding) (Entry, error) {
-	e := Entry{SHA256: f.SHA256, Key: f.Key, ItemCount: f.ItemCount}
-	versions, err := o.Store.ListVersions(ctx, f.Key)
+// repair removes the delete markers of one copy's key that are younger than t.
+func repair(ctx context.Context, o Options, store Store, f verify.CopyFinding) (Entry, error) {
+	e := Entry{Connection: f.Connection, SHA256: f.SHA256, Key: f.Key}
+	versions, err := store.ListVersions(ctx, f.Key)
 	if err != nil {
 		return e, fmt.Errorf("listing the versions of %s: %w", f.Key, err)
 	}
@@ -177,13 +222,13 @@ func repair(ctx context.Context, o Options, f verify.Finding) (Entry, error) {
 		return e, nil
 	}
 	for _, m := range markers {
-		if err := o.Store.DeleteVersion(ctx, f.Key, m.ID); err != nil {
+		if err := store.DeleteVersion(ctx, f.Key, m.ID); err != nil {
 			return e, fmt.Errorf("removing the delete marker %s of %s: %w", m.ID, f.Key, err)
 		}
 		e.MarkersRemoved++
-		o.Log.Info("delete marker removed", "key", f.Key, "versionId", m.ID, "modified", m.Modified.UTC().Format(time.RFC3339))
+		o.Log.Info("delete marker removed", "connection", f.Connection, "key", f.Key, "versionId", m.ID, "modified", m.Modified.UTC().Format(time.RFC3339))
 	}
-	if _, err := o.Store.Head(ctx, f.Key); err != nil {
+	if _, err := store.Head(ctx, f.Key); err != nil {
 		if errors.Is(err, blob.ErrNotFound) {
 			e.Outcome = OutcomeStillMissing
 			return e, nil

@@ -190,7 +190,7 @@ Let *t* be the restore point, as an RFC 3339 time such as `2026-10-28T09:15:00Z`
    ```
 
    If the new cluster has its own credentials or CA, change `secrets.database` and `secrets.databaseCA` with it. The encryption key Secret stays the same. The Helm hook Job `<fullname>-post-restore-<hash>` runs `quader admin post-restore --restored-to <t>`; Helm waits for it and fails the upgrade if it fails. It deletes the replica rows, returns running jobs to the queue, sets the deletion pause, ends every UI session, gives the installation a new keyspace and incarnation, raises the revision counters, verifies every live blob, replays the revocation journal entries newer than *t*, and writes `system.restored`. The replicas stay not ready until the Job has finished. A repeat with the same *t* changes nothing; a repeat after a failed run resumes at the replay; a different *t* is refused while one is unfinished.
-4. **Repair missing blobs**, if step 3 reported any and the bucket is versioned. `quader admin storage restore-versions --before <t>` removes the delete markers younger than *t* from the keys of the blobs without an object, so that the version below the marker is current again. It needs a login that may read the blob bucket and holds `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, passed only to this command: the runtime credential deliberately lacks both. The chart renders no Job for it; the simplest way is to give the post-restore Job such a login (`postRestore.journalCredentials.source: static` and `secrets.journalReader.existingSecret`), then run the command as a one-off Job from that Job's pod template, which mounts the credentials file:
+4. **Repair missing blobs**, if step 3 reported any and the bucket is versioned. `quader admin storage restore-versions --before <t>` removes the delete markers younger than *t* from the keys of the copies without an object, on every connection or the one `--connection <id>` names, so that the version below the marker is current again. It needs a login that may read the blob bucket and holds `s3:ListBucketVersions` and `s3:DeleteObjectVersion`, passed only to this command: the runtime credential deliberately lacks both. The chart renders no Job for it; the simplest way is to give the post-restore Job such a login (`postRestore.journalCredentials.source: static` and `secrets.journalReader.existingSecret`), then run the command as a one-off Job from that Job's pod template, which mounts the credentials file:
 
    ```shell
    kubectl -n quader get jobs -l app.kubernetes.io/component=post-restore -o json \
@@ -204,7 +204,7 @@ Let *t* be the restore point, as an RFC 3339 time such as `2026-10-28T09:15:00Z`
    kubectl -n quader logs job/quader-restore-versions
    ```
 
-   Add `--dry-run` to see what it would do. It prints one line per blob and a totals line, exits `5` while a blob is still without an object (no delete marker younger than *t*, or no version below its markers), and writes `system.storage.versions_restored` when it removed markers. Run `quader admin storage verify` the same way before you continue.
+   Add `--dry-run` to see what it would do. It prints one line per copy and a totals line, exits `5` while a blob has no copy with its object left (no delete marker younger than *t*, or no version below its markers), and writes `system.storage.versions_restored` when it removed markers. The credentials file is used on every connection of the run: when the connections need different logins, run the command once per connection with `--connection`. Run `quader admin storage verify` the same way before you continue.
 5. **Start.** Run `helm upgrade` with the normal values, which ends the hold and resumes the backup CronJob. Your values must now name the new database; keep `config.database.host` as you set it in step 3. The migration Job brings an older restored schema forward.
 6. **Verify, then resume deletions.** Check that what you expect is there. Garbage collection and the orphan sweep have been held back since step 3; resume them only after verifying:
 
@@ -263,13 +263,13 @@ Every command takes `--config <file>` (the chart mounts it at `/etc/quader/quade
 | `quader backup restore <id> [--check] [--skip-revocation-journal] [--journal-credentials-file <path>]` | Restores into an empty installation |
 | `quader admin post-restore --restored-to <t> [--credentials-file <path>] [--skip-revocation-journal] [--json]` | The clean-up after a point-in-time restore |
 | `quader admin backup check [--json]` | Reports the declared platform protection; exits `5` when one does not hold |
-| `quader admin storage verify [--since <t>] [--concurrency N] [--max-items N] [--json]` | Checks that the object of every live blob exists and has the right size; exits `5` when not |
-| `quader admin storage restore-versions --before <t> [--credentials-file <path>] [--dry-run] [--concurrency N] [--json]` | Removes delete markers younger than *t* from blobs without an object |
+| `quader admin storage verify [--connection <id>] [--since <t>] [--concurrency N] [--max-items N] [--json]` | Checks that every copy of every live blob has its object with the right size, on each connection; lists the missing copies and exits `5` when a blob has no copy left (with `--connection`: when a copy there is missing) |
+| `quader admin storage restore-versions --before <t> [--connection <id>] [--credentials-file <path>] [--dry-run] [--concurrency N] [--json]` | Removes delete markers younger than *t* from the copies without an object |
 | `quader admin maintenance pause-deletions --reason <text> [--json]` | Sets the deletion pause |
 | `quader admin maintenance resume-deletions [--json]` | Clears the deletion pause |
 | `quader admin npm reinstate`, `oci reinstate`, `deb reinstate` | Put back a version, manifest or package file a replay withheld |
 
-`--credentials-file` names a YAML file with the keys `source` (`default`, `webIdentity` or `static`; `default` when left out), `access_key_id_file`, `secret_access_key_file`, `session_token_file`, `role_arn`, `web_identity_token_file` and `sts_endpoint`; an unknown key is refused. `storage verify` and `storage restore-versions` work on the first element of `storage.connections`.
+`--credentials-file` names a YAML file with the keys `source` (`default`, `webIdentity` or `static`; `default` when left out), `access_key_id_file`, `secret_access_key_file`, `session_token_file`, `role_arn`, `web_identity_token_file` and `sts_endpoint`; an unknown key is refused. `storage verify` and `storage restore-versions` work on every element of `storage.connections`, or on the one `--connection` names.
 
 Exit codes of the backup commands:
 

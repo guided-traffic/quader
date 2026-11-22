@@ -82,7 +82,7 @@ Covers: features from [operations-and-monitoring.md](../features/operations-and-
 | system administrator | Every operation on this page |
 | `system.read`: the capability `settings:read` of [authorization.md](authorization.md) R-AUTHZ-010 | Read replicas, system information, tasks, jobs, locks, effective configuration, log levels, backup runs ([backup-and-restore.md](backup-and-restore.md) R-BAK-014), the migration report ([ha-and-helm.md](ha-and-helm.md) R-HA-018) |
 | `audit.read` | Query and export audit events (the auditor role, IAM-006) |
-| `storage.read` | Read the storage summary (`GET /api/v1/storage/summary`) and the damaged-blob list (`GET /api/v1/storage/damaged-blobs`); both read paths are owned by [storage.md](storage.md) (R-STOR-027, R-STOR-028) |
+| `storage.read`: the capability `settings:read` ([storage.md](storage.md) Q-STOR-267) | Read the storage summary (`GET /api/v1/storage/summary`) and the damaged-blob list (`GET /api/v1/storage/damaged-blobs`); both read paths are owned by [storage.md](storage.md) (R-STOR-027, R-STOR-028) |
 | `config.read` | Run configuration diff and export |
 | `webhooks.read`, `webhooks.manage` | Webhook subscriptions and delivery log (R-OPS-039) |
 | repository action `manage` (INV-9) | Cache invalidation and reindex of that repository |
@@ -1136,8 +1136,9 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_storage_reconcile_copied_total`, `quader_storage_reconcile_copied_bytes_total` | counter | `connection`, `mode` (`server`, `stream`) | Copies the reconciliation made (R-STOR-056) |
 | `quader_storage_reconcile_failures_total` | counter | `connection`, `reason` | Failed copies (R-STOR-056) |
 | `quader_storage_scrub_copies_total` | counter | `connection`, `result` (`ok`, `corrupt`, `missing`, `error`) | Copies the scrub read (R-STOR-027) |
-| `quader_storage_scrub_read_bytes_total` | counter | `connection` | Bytes the scrub read |
-| `quader_storage_scrub_overdue_copies` | gauge | `connection` | Copies not read within their connection's period, from PostgreSQL (R-STOR-027) |
+| `quader_storage_scrub_read_bytes_total` | counter | `connection` | Bytes the scrub read, its repairs' reads included |
+| `quader_storage_scrub_repairs_total` | counter | `connection`, `outcome` (`repaired`, `failed`, `no_source`) | Damaged copies the scrub tried to replace from another connection ([storage.md](storage.md) R-STOR-027, Q-STOR-265) |
+| `quader_storage_scrub_overdue_copies` | gauge | `connection` | Present copies whose last verification, or their write when never verified, lies more than their connection's `scrub_period` and one day back, from PostgreSQL on every replica that has the connection (R-STOR-027, Q-STOR-266) |
 | `quader_storage_connection_detached` | gauge | `connection` | 1 while the connection is `detached` (R-STOR-051) |
 | `quader_gc_copies_released_total` | counter | `connection` | Copies collection left to the orphan sweep of their connection (R-STOR-057) |
 | `quader_blobstore_dedup_hits_total` | counter | — | Uploads whose content address already existed (INV-4) |
@@ -2086,6 +2087,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.storage.connection_added` | T | — | A replica saw a connection id for the first time ([storage.md](storage.md) R-STOR-051); actor `system:replica` | `connection`, `bucket`, `prefix` |
 | `system.storage.connection_drained` | T | — | A draining connection holds no copy any more (R-STOR-056); actor `system:worker` | `connection`, `copiesDeleted` |
 | `system.storage.connection_forgotten` | T | — | `quader admin storage forget-connection` gave a connection up (R-STOR-051); actor `system:admin` | `connection`, `copiesForgotten`, `blobsMissing` |
+| `system.storage.blob_damaged` | A | — | A read, the scrub, its recheck or the reconciliation's source found that no connection holds a blob whole any more: its content state left `ok` ([storage.md](storage.md) R-STOR-027, R-STOR-052); actor `system:replica`, outcome `warning`, reason `content_missing` or `content_corrupt`; asynchronous, written after the mark's transaction | `sha256`, `status` |
 | `system.storage.keys_exported` | T | — | `quader admin storage keys export` printed the rows of `storage_keys`, sealed ([storage.md](storage.md) R-STOR-085); written in the transaction that read them, before the document leaves; actor `system:admin` | `connection` (empty for every connection), `keys`, `rootKeyIds` |
 | `system.storage.keys_imported` | T | — | `quader admin storage keys import` added the missing rows of an export and kept the equal ones (R-STOR-085); actor `system:admin` | `connections`, `inserted`, `kept`, `sourceInstallation`, `otherInstallation` |
 | `system.storage.key_generation_added` | T | — | `quader admin storage keys new-generation` made generation n + 1 of a connection's storage key active and retired generation n (R-STOR-083); actor `system:admin` | `connection`, `keyId`, `generation`, `retiredKeyId` |

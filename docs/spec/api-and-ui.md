@@ -3021,8 +3021,8 @@ of R-OPS-019 (one path per function, Q-API-9 and R-API-020):
 | GET | `/api/v1/storage/summary` | Blob and repository usage (P1, R-STOR-028) | `storage.read` or `admin` |
 | POST | `/api/v1/system/tasks/storage-summary/run` | Recompute; 202 with the job (P1) | `admin` |
 | POST | `/api/v1/system/tasks/orphan-sweep/run`, `/api/v1/system/tasks/scrub/run` | Start an orphan sweep or an integrity scrub (P1, R-STOR-026, R-STOR-027) | `admin` |
-| GET | `/api/v1/storage/damaged-blobs` | Damaged blobs and copies (`scope=blobs`, `scope=copies`), each with its copies and referencing items (P1, R-STOR-027, Q-API-386) | `storage.read` or `admin` |
-| POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Read every copy of one blob whole now; a per-resource action, not a task (P1, R-STOR-027) | `admin` |
+| GET | `/api/v1/storage/damaged-blobs` | Damaged blobs and copies (`scope=blobs`, `scope=copies`), each with its copies and referencing items (P1, R-STOR-027, Q-API-386; built) | `settings:read`, the `storage.read` of [operations-and-observability.md](operations-and-observability.md) ([storage.md](storage.md) Q-STOR-267) |
+| POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Read every copy of one blob whole now; a per-resource action, not a task (P1, R-STOR-027; built) | `settings:write` (`admin`) |
 | GET | `/api/v1/system/storage-connections`, `/api/v1/system/storage-connections/{id}` | The object-store connections with state, fill, backlog and capabilities (P1, R-STOR-061, Q-API-385) | `settings:read` |
 | POST | `/api/v1/system/tasks/storage-reconcile/run` | Start a reconciliation run (P1, R-STOR-056); 202 with the job, 409 with the active one | `admin` |
 

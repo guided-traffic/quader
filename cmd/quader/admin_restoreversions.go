@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -11,24 +12,27 @@ import (
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/restoreversions"
-	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/blob/verify"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/journal/replay"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/outbound"
 )
 
-// storageRestoreVersionsCmd is quader admin storage restore-versions (R-HA-025 step 5): after a point-in-time restore of the
-// database it finds the blobs whose object is missing and removes the delete markers younger than t from their keys, so that the
-// version before the marker is current again. It needs a credential that may list and delete object versions
-// (s3:ListBucketVersions, s3:DeleteObjectVersion), which the runtime credential deliberately lacks (R-HA-023): the operator
-// passes it with --credentials-file, to this command only. It exits 5 when a blob still has no object afterwards, 75 when the
-// database or the store could not be reached or a check was not answered.
+// storageRestoreVersionsCmd is quader admin storage restore-versions (R-HA-025 step 5, backup-and-restore.md R-BAK-030): after a
+// point-in-time restore of the database it finds the copies whose object is missing, on each connection or the one --connection
+// names, and removes the delete markers younger than t from their keys, so that the version before the marker is current
+// again. It needs a credential that may list and delete object versions (s3:ListBucketVersions, s3:DeleteObjectVersion), which
+// the runtime credential deliberately lacks (R-HA-023): the operator passes it with --credentials-file, to this command only,
+// and it is used on every connection of the run; connections whose versioning credentials differ get a run each with
+// --connection (Q-STOR-268). It exits 5 when a blob still has no copy with its object afterwards (with --connection: a copy on
+// that connection), 75 when the database or a store could not be reached or a check was not answered.
 func storageRestoreVersionsCmd(args []string, s streams) error {
 	c, asJSON := newBackupFlags("admin storage restore-versions", s)
 	before := c.fs.String("before", "", "t, the time the platform restore went to (RFC 3339): delete markers created after it are removed")
-	creds := c.fs.String("credentials-file", "", "a credential that may list and delete object versions; empty = the blob store's credential")
+	creds := c.fs.String("credentials-file", "", "a credential that may list and delete object versions, used on every connection of the run; empty = each connection's credential")
+	conn := c.fs.String("connection", "", "restore only the copies on this connection; every connection without it")
 	dry := c.fs.Bool("dry-run", false, "list the blobs that would be restored and remove nothing")
 	conc := c.fs.Int("concurrency", verify.DefaultConcurrency, "simultaneous existence checks")
 	_, flags, names, err := parseBackup(c, args, 0)
@@ -55,22 +59,28 @@ func storageRestoreVersionsCmd(args []string, s streams) error {
 		return backupExit(err)
 	}
 	defer db.Close()
-	s3cfg, err := cfg.Storage.FirstClient()
-	if err != nil {
-		return backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
-	}
+	var override *config.StorageS3Credentials
 	if *creds != "" {
-		if s3cfg.Credentials, err = replay.LoadCredentials(*creds); err != nil {
+		loaded, err := replay.LoadCredentials(*creds)
+		if err != nil {
 			return backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
 		}
+		override = &loaded
 	}
-	client, err := s3.NewFromFactory(ctx, s3cfg, outbound.New(cfg.Proxy.Outbound))
+	clients, err := connectionClients(ctx, cfg.Storage, outbound.New(cfg.Proxy.Outbound), override)
 	if err != nil {
 		return backupExit(err)
 	}
+	conns := make([]restoreversions.Conn, 0, len(clients))
+	for _, cl := range clients {
+		conns = append(conns, restoreversions.Conn{ID: cl.id, Store: cl.client})
+	}
 	rep, err := restoreversions.Run(ctx, restoreversions.Options{
-		DB: verify.PGSource{DB: db}, Store: client, Prefix: s3cfg.Prefix, Before: t, DryRun: *dry, Concurrency: *conc, Log: env.log,
+		DB: verify.PGSource{DB: db}, Connections: conns, Connection: *conn, Before: t, DryRun: *dry, Concurrency: *conc, Log: env.log,
 	})
+	if errors.Is(err, verify.ErrUnknownConnection) {
+		return backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+	}
 	if rep != nil {
 		if env.json {
 			if jerr := env.printJSON(rep); jerr != nil {
@@ -92,11 +102,11 @@ func storageRestoreVersionsCmd(args []string, s streams) error {
 		return backupExit(err)
 	}
 	switch {
-	case rep.Remaining > 0 || rep.SizeMismatch > 0:
+	case rep.Lost > 0:
 		return backup.Fail(backup.ExitFindings, backup.CodeFindings,
-			fmt.Errorf("%d blobs still have no object and %d another size; %d items are affected", rep.Remaining, rep.SizeMismatch, rep.ItemsAffected))
+			fmt.Errorf("%d findings remain: %d copies still have no object and %d another size; %d items are affected", rep.Lost, rep.Remaining, rep.SizeMismatch, rep.ItemsAffected))
 	case rep.Unchecked > 0:
-		return backup.Fail(backup.ExitTemporary, backup.CodeTemporary, fmt.Errorf("%d blobs could not be checked: the object store did not answer", rep.Unchecked))
+		return backup.Fail(backup.ExitTemporary, backup.CodeTemporary, fmt.Errorf("%d copies could not be checked: the object store did not answer", rep.Unchecked))
 	}
 	return nil
 }
@@ -120,7 +130,8 @@ func recordVersionsRestored(ctx context.Context, env *backupEnv, db *postgres.DB
 	})
 }
 
-// writeRestoreVersionsReport prints one line per blob that had no object, and the totals last.
+// writeRestoreVersionsReport prints one line per copy that had no object, and the totals last (the line the end-to-end tests
+// read).
 func writeRestoreVersionsReport(w io.Writer, rep *restoreversions.Report) error {
 	for _, e := range rep.Entries {
 		var detail string
@@ -136,7 +147,11 @@ func writeRestoreVersionsReport(w io.Writer, rep *restoreversions.Report) error 
 		default:
 			detail = "still without object after removing its delete markers"
 		}
-		if _, err := fmt.Fprintf(w, "blob %s: %s (%d items)\n", e.SHA256, detail, e.ItemCount); err != nil {
+		items := ""
+		if e.ItemCount > 0 {
+			items = fmt.Sprintf(" (%d items)", e.ItemCount)
+		}
+		if _, err := fmt.Fprintf(w, "copy %s %s: %s%s\n", e.Connection, e.SHA256, detail, items); err != nil {
 			return err
 		}
 	}

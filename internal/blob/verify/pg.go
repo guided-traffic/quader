@@ -11,13 +11,13 @@ import (
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// PGSource reads the blob and item rows from PostgreSQL. Every call is one short read on a pooled connection, so the run
+// PGSource reads the blob, copy and item rows from PostgreSQL. Every call is one short read on a pooled connection, so the run
 // holds no transaction open over the slow existence checks.
 type PGSource struct{ DB *postgres.DB }
 
-// Page implements [Source].
+// Page implements [Source]: one query reads the page of blobs with their copy rows.
 func (s PGSource) Page(ctx context.Context, after blob.Digest, first bool, since time.Time, limit int) ([]Row, error) {
-	arg := q.VerifyBlobPageParams{After: []byte{}, PageSize: clamp32(limit)}
+	arg := q.VerifyCopyPageParams{After: []byte{}, PageSize: clamp32(limit)}
 	if !first {
 		arg.After = after.Bytes()
 	}
@@ -27,7 +27,7 @@ func (s PGSource) Page(ctx context.Context, after blob.Digest, first bool, since
 	var rows []Row
 	err := s.DB.Read(ctx, func(c q.DBTX) error {
 		rows = rows[:0]
-		got, err := q.New(c).VerifyBlobPage(ctx, arg)
+		got, err := q.New(c).VerifyCopyPage(ctx, arg)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,14 @@ func (s PGSource) Page(ctx context.Context, after blob.Digest, first bool, since
 			if len(r.Sha256) != len(blob.Digest{}) {
 				return fmt.Errorf("a blob row has a digest of %d bytes", len(r.Sha256))
 			}
-			rows = append(rows, Row{Digest: blob.Digest(r.Sha256), Size: r.Size})
+			d := blob.Digest(r.Sha256)
+			if len(rows) == 0 || rows[len(rows)-1].Digest != d {
+				rows = append(rows, Row{Digest: d, Size: r.Size, Copies: []Copy{}})
+			}
+			if r.ConnectionID != "" {
+				last := &rows[len(rows)-1]
+				last.Copies = append(last.Copies, Copy{Connection: r.ConnectionID, Key: r.ObjectKey, StoredSize: r.StoredSize, State: r.State})
+			}
 		}
 		return nil
 	})

@@ -1,7 +1,7 @@
 package audit
 
-// The event types of the object-store connections (storage.md R-STOR-051), all transactional and none a webhook hook. No
-// detail holds a credential, an endpoint or a bucket's address.
+// The event types of the object-store connections (storage.md R-STOR-051) and of the stored content (R-STOR-027), none a webhook
+// hook. No detail holds a credential, an endpoint or a bucket's address.
 //
 //   - system.storage.connection_added: a replica saw a connection for the first time (actor system:replica); the data name
 //     the connection.
@@ -10,6 +10,10 @@ package audit
 //     elsewhere.
 //   - system.storage.connection_drained: the reconciliation found a draining connection without a copy (R-STOR-056; actor
 //     system:worker); the data name it and count the copies the drain deleted.
+//   - system.storage.blob_damaged: a read, the scrub, its recheck or the reconciliation found that no connection holds a blob
+//     whole any more, and the blob's content state left ok (R-STOR-027, R-STOR-052; actor system:replica, outcome warning);
+//     the data name the digest and the state. Asynchronous: the store's damage hook runs after the mark's transaction
+//     committed. A copy's damage that leaves the blob ok is a metric and a log line, not an event.
 //
 // The events of the storage keys (R-STOR-083, R-STOR-085), actor system:admin, written by `quader admin storage keys` in the
 // transaction that reads or writes the rows; their data name identifiers and counts, never a key or a sealed value:
@@ -26,6 +30,7 @@ const (
 	EventStorageKeysImported        = "system.storage.keys_imported"
 	EventStorageKeyGenerationAdded  = "system.storage.key_generation_added"
 	EventStorageConnectionDrained   = "system.storage.connection_drained"
+	EventStorageBlobDamaged         = "system.storage.blob_damaged"
 )
 
 func init() {
@@ -62,5 +67,10 @@ func init() {
 		Name: EventStorageConnectionDrained, Category: CategorySystem, Mode: Transactional,
 		Schema: `{"type":"object","properties":{"connection":{"type":"string","maxLength":32},"copiesDeleted":{"type":"integer"}},` +
 			`"required":["connection","copiesDeleted"],"additionalProperties":false}`,
+	})
+	Register(EventType{
+		Name: EventStorageBlobDamaged, Category: CategorySystem, Mode: Async,
+		Schema: `{"type":"object","properties":{"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
+			`"status":{"enum":["missing","corrupt"]}},"required":["sha256","status"],"additionalProperties":false}`,
 	})
 }

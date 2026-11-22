@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/scrub"
 	"github.com/guided-traffic/quader/internal/cluster"
 	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -178,6 +179,8 @@ func (a *App) apiServices() v1.Services {
 		TaskArgs: map[string]func() any{
 			"gc":      func() any { return &blob.GCJobArgs{} },
 			"gc-full": func() any { return &blob.GCJobArgs{} },
+			// The scrub takes {"connection": "<id>"} (R-STOR-027).
+			TaskScrub: func() any { return &scrub.Args{} },
 			// The manual run of the OSV sync takes {"acceptShrink": true} (R-VULN-004).
 			vuln.TaskSyncOSV:     func() any { return &vuln.SyncArgs{} },
 			vuln.TaskSyncOSVFull: func() any { return &vuln.SyncArgs{} },

@@ -125,7 +125,7 @@ func TestDownloadVerification(t *testing.T) {
 			t.Fatalf("status %s damaged hook %d", f.db.rows[sp.SHA256].status, damaged.Load())
 		}
 	})
-	t.Run("R-HA-024 R-STOR-027 an object that is gone is ErrNotFound and marks its blob missing once; a commit of the same content writes it again", func(t *testing.T) {
+	t.Run("R-HA-024 R-STOR-055 an object that is gone is ErrNotFound and marks its blob missing once; a commit of the same content writes it again", func(t *testing.T) {
 		f, sp, damaged := setup(t, nil)
 		if err := f.mem.Delete(context.Background(), f.key(sp.SHA256)); err != nil {
 			t.Fatal(err)

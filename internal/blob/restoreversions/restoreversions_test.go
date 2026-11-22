@@ -105,8 +105,8 @@ func newFixture(t *testing.T) *fixture {
 	f := &fixture{db: &fakeDB{}, store: &fakeStore{versions: map[string][]s3.ObjectVersion{}, sizes: map[string]int64{}}, t0: time.Date(2026, 11, 9, 10, 0, 0, 0, time.UTC), keys: map[string]string{}}
 	add := func(name string) string {
 		d := blob.Digest(sha256.Sum256([]byte(name)))
-		f.db.rows = append(f.db.rows, verify.Row{Digest: d, Size: 3})
 		key := blob.Key("quader", d)
+		f.db.rows = append(f.db.rows, verify.Row{Digest: d, Size: 3, Copies: []verify.Copy{{Connection: "default", Key: key, StoredSize: 3, State: blob.CopyPresent}}})
 		f.keys[name] = key
 		return key
 	}
@@ -123,6 +123,8 @@ func newFixture(t *testing.T) *fixture {
 	return f
 }
 
+func (f *fixture) conns() []Conn { return []Conn{{ID: "default", Store: f.store}} }
+
 func (f *fixture) entry(rep *Report, name string) Entry {
 	for _, e := range rep.Entries {
 		if e.Key == f.keys[name] {
@@ -137,11 +139,11 @@ func (f *fixture) entry(rep *Report, name string) Entry {
 // without any version and the intact blob are left alone, and no object version is deleted.
 func TestR_HA_025_RestoreVersionsRemovesTheDeleteMarkersYoungerThanTOfMissingBlobsOnly(t *testing.T) {
 	f := newFixture(t)
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0, PageSize: 2, Concurrency: 2})
+	rep, err := Run(context.Background(), Options{DB: f.db, Connections: f.conns(), Before: f.t0, PageSize: 2, Concurrency: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rep.Checked != 4 || rep.Missing != 3 || rep.Restored != 1 || rep.MarkersRemoved != 2 || rep.Remaining != 2 || rep.OK() {
+	if rep.Checked != 4 || rep.Missing != 3 || rep.Restored != 1 || rep.MarkersRemoved != 2 || rep.Remaining != 2 || rep.Lost != 2 || rep.OK() {
 		t.Fatalf("report = %+v", rep)
 	}
 	if e := f.entry(rep, "restorable"); e.Outcome != OutcomeRestored || e.MarkersRemoved != 2 {
@@ -167,7 +169,7 @@ func TestR_HA_025_RestoreVersionsRemovesTheDeleteMarkersYoungerThanTOfMissingBlo
 // TestR_HA_025_RestoreVersionsDryRunRemovesNothing: a dry run reports what a run would restore and leaves the bucket as it is.
 func TestR_HA_025_RestoreVersionsDryRunRemovesNothing(t *testing.T) {
 	f := newFixture(t)
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0, DryRun: true})
+	rep, err := Run(context.Background(), Options{DB: f.db, Connections: f.conns(), Before: f.t0, DryRun: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +190,7 @@ func TestR_HA_025_RestoreVersionsKeepsAMarkerWhenNoVersionIsBelow(t *testing.T) 
 	f := newFixture(t)
 	k := f.keys["never"]
 	f.store.mark(k, f.t0.Add(time.Minute))
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0})
+	rep, err := Run(context.Background(), Options{DB: f.db, Connections: f.conns(), Before: f.t0})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +204,7 @@ func TestR_HA_025_RestoreVersionsKeepsAMarkerWhenNoVersionIsBelow(t *testing.T) 
 func TestR_HA_025_RestoreVersionsStopsAtAPermissionError(t *testing.T) {
 	f := newFixture(t)
 	f.store.denyList = &blob.StoreError{Op: "ListObjectVersions", Status: 403, Code: "AccessDenied", Kind: blob.KindConfig, Err: errors.New("denied")}
-	rep, err := Run(context.Background(), Options{DB: f.db, Store: f.store, Prefix: "quader", Before: f.t0})
+	rep, err := Run(context.Background(), Options{DB: f.db, Connections: f.conns(), Before: f.t0})
 	if err == nil || !blob.IsConfig(err) {
 		t.Fatalf("err = %v, want a configuration error", err)
 	}
@@ -214,7 +216,40 @@ func TestR_HA_025_RestoreVersionsStopsAtAPermissionError(t *testing.T) {
 // TestR_HA_025_RestoreVersionsNeedsATime: without t the run is refused before it asks the store anything.
 func TestR_HA_025_RestoreVersionsNeedsATime(t *testing.T) {
 	f := newFixture(t)
-	if _, err := Run(context.Background(), Options{DB: f.db, Store: f.store}); err == nil {
+	if _, err := Run(context.Background(), Options{DB: f.db, Connections: f.conns()}); err == nil {
 		t.Fatal("a run without a time was accepted")
+	}
+}
+
+// TestR_STOR_058_RestoreVersionsWorksOnEachConnection: a copy whose object a delete marker younger than t hides on the first
+// connection is current again there while the second still holds the blob, which was never lost; a run named for the second
+// connection asks nothing of the first.
+func TestR_STOR_058_RestoreVersionsWorksOnEachConnection(t *testing.T) {
+	f := newFixture(t)
+	second := &fakeStore{versions: map[string][]s3.ObjectVersion{}, sizes: map[string]int64{}}
+	k := f.keys["restorable"]
+	second.put(k, 3, f.t0.Add(-2*time.Hour))
+	for i, r := range f.db.rows {
+		if r.Copies[0].Key == k {
+			f.db.rows[i].Copies = append(f.db.rows[i].Copies, verify.Copy{Connection: "secondary", Key: k, StoredSize: 3, State: blob.CopyPresent})
+		}
+	}
+	both := append(f.conns(), Conn{ID: "secondary", Store: second})
+	rep, err := Run(context.Background(), Options{DB: f.db, Connections: both, Before: f.t0, Connection: "secondary"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Missing != 0 || len(f.store.deleted) != 0 || rep.Lost != 0 {
+		t.Fatalf("a run named for secondary: %+v, deleted on default %v", rep, f.store.deleted)
+	}
+	rep, err = Run(context.Background(), Options{DB: f.db, Connections: both, Before: f.t0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := f.entry(rep, "restorable"); e.Connection != "default" || e.Outcome != OutcomeRestored || e.ItemCount != 0 {
+		t.Errorf("restorable = %+v, want restored on default with no item count: the blob was never lost", e)
+	}
+	if rep.Lost != 2 || rep.Restored != 1 {
+		t.Errorf("rep = %+v", rep)
 	}
 }

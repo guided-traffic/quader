@@ -46,7 +46,7 @@ func (e *renv) loseEverything(repo string) map[string][]byte {
 	return blobs
 }
 
-func TestR_STOR_027_ARemoteWhoseObjectsAreAllMissingFillsItsNuGetItemsAgain(t *testing.T) {
+func TestR_REPO_025_ARemoteWhoseObjectsAreAllMissingFillsItsNuGetItemsAgain(t *testing.T) {
 	e := newRemoteEnv(t, remoteOptions{})
 	rep := e.start(1)[0]
 	pkg, _ := nugetstub.Default().Get(nugetstub.NewtonsoftID)
@@ -97,7 +97,7 @@ func TestR_STOR_027_ARemoteWhoseObjectsAreAllMissingFillsItsNuGetItemsAgain(t *t
 	}
 }
 
-func TestR_STOR_027_ACachedNuGetPackageWhoseObjectIsMissingIs503WhileTheUpstreamIsDown(t *testing.T) {
+func TestR_REPO_025_ACachedNuGetPackageWhoseObjectIsMissingIs503WhileTheUpstreamIsDown(t *testing.T) {
 	e := newRemoteEnv(t, remoteOptions{})
 	rep := e.start(1)[0]
 	pkg, _ := nugetstub.Default().Get(nugetstub.NewtonsoftID)

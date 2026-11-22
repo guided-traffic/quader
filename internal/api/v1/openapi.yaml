@@ -64,6 +64,11 @@ tags:
     description: Background jobs and the maintenance tasks that start them.
   # <<< M1 api
   #
+  # >>> D storage
+  - name: storage
+    description: The stored content itself (storage.md R-STOR-027) - the blobs whose copies are damaged, and a check of one blob now.
+  # <<< D storage
+  #
   # >>> M1 identity
   - name: users
     description: Users, their groups, disabling, deletion and the break-glass unlock (R-AUTH-016).
@@ -1165,6 +1170,136 @@ paths:
           $ref: "#/components/responses/UnsupportedMediaType"
         "422":
           $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/storage/damaged-blobs:
+    get:
+      operationId: listDamagedBlobs
+      tags: [storage]
+      summary: List the damaged blobs
+      description: |
+        The blobs whose stored content is damaged (storage.md R-STOR-027, Q-API-386), by digest. `scope=blobs` (the default)
+        lists the blobs no connection holds whole (`contentStatus` other than `ok`): the list an administrator acts on, whose
+        content a later upload of the same file, a remote repository's refetch or the object's return repairs. `scope=copies`
+        lists the blobs with at least one `missing` or `corrupt` copy, which the scrub and the reconciliation replace from
+        another connection: the self-healing view. `connection` narrows the list to the blobs with a copy on that connection
+        (with `scope=copies`: a damaged copy there), `status` to a content state (with `scope=copies`: a copy state). Each
+        entry carries every copy of the blob and the first 20 items that reference it with their number. Cursor pagination
+        (R-API-010) over the digest. The permission called `storage.read` in operations-and-observability.md is the capability
+        `settings:read` (storage.md Q-STOR-267).
+      x-quader-permission:
+        permission: settings:read
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [blobs, copies]
+            default: blobs
+        - name: connection
+          in: query
+          description: The id of a connection (storage.md R-STOR-050).
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9-]{0,30}[a-z0-9]$"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [missing, corrupt]
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of damaged blobs.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DamagedBlobList"
+              example:
+                items:
+                  - sha256: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b
+                    size: 18432
+                    contentStatus: missing
+                    copies:
+                      - connection: default
+                        state: missing
+                        verifiedAt: "2026-11-02T03:07:41Z"
+                        checkedAt: "2026-11-22T10:07:12Z"
+                        stateChangedAt: "2026-11-22T10:07:12Z"
+                    items:
+                      - project: platform
+                        repository: npm-local
+                        path: left-pad/-/left-pad-1.3.0.tgz
+                        trashed: false
+                    itemCount: 1
+                nextCursor: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/storage/damaged-blobs/{sha256}/recheck:
+    post:
+      operationId: recheckDamagedBlob
+      tags: [storage]
+      summary: Read every copy of a blob whole now
+      description: |
+        Reads every copy of the blob on the connections of the answering replica to its end at once, unthrottled, and sets the
+        states by what it finds (storage.md R-STOR-027, Q-STOR-267): a present copy that matches the digest is verified, one that
+        does not is marked `missing` or `corrupt` and queued for repair; a copy marked `missing` or `corrupt` that now reads
+        whole is `present` again, one that still does not keeps its mark. A copy on a connection the replica does not configure,
+        whose circuit is open, that collection claims, or whose store does not answer is left as it is. It writes no object:
+        the scrub and the reconciliation repair. The answer is the blob's copies after the reads. A per-resource action, not a
+        task (R-API-020).
+      x-quader-permission:
+        permission: settings:write
+      parameters:
+        - name: sha256
+          in: path
+          required: true
+          description: The blob's SHA-256 in lower-case hex.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{64}$"
+      responses:
+        "200":
+          description: The copies after the reads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DamagedBlobRecheck"
+              example:
+                sha256: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b
+                contentStatus: ok
+                copies:
+                  - connection: default
+                    state: present
+                    verifiedAt: "2026-11-22T10:21:03Z"
+                    checkedAt: "2026-11-22T10:21:03Z"
+                    stateChangedAt: "2026-11-22T10:21:03Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -20080,7 +20215,7 @@ components:
       pattern: "^[a-z][a-z0-9_.:-]{0,62}$"
     TaskRunRequest:
       type: object
-      description: The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`).
+      description: The parameters of the task; each task defines its own (garbage collection takes `dryRun`, the OSV sync tasks `vuln-sync-osv` and `vuln-sync-osv-full` take `acceptShrink`, the scrub takes `connection`).
       additionalProperties: true
     JobProgress:
       type: object
@@ -20200,6 +20335,91 @@ components:
       properties:
         job:
           $ref: "#/components/schemas/JobReference"
+    DamagedBlobCopy:
+      type: object
+      description: One copy of a blob on one connection (storage.md R-STOR-052).
+      required: [connection, state, verifiedAt, checkedAt, stateChangedAt]
+      properties:
+        connection:
+          type: string
+        state:
+          type: string
+          enum: [present, missing, corrupt, deleting]
+        verifiedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the whole stored object was last shown to be the blob; `null` when never.
+        checkedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the store last answered for it; `null` when never.
+        stateChangedAt:
+          type: string
+          format: date-time
+    DamagedBlobItem:
+      type: object
+      required: [project, repository, path, trashed]
+      properties:
+        project:
+          type: string
+        repository:
+          type: string
+        path:
+          type: string
+        trashed:
+          type: boolean
+    DamagedBlob:
+      type: object
+      required: [sha256, size, contentStatus, copies, items, itemCount]
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        size:
+          type: integer
+          format: int64
+        contentStatus:
+          type: string
+          enum: [ok, missing, corrupt]
+          description: "`ok` while one copy is present; with `scope=copies` the blob of a damaged copy is often `ok`."
+        copies:
+          type: array
+          items:
+            $ref: "#/components/schemas/DamagedBlobCopy"
+        items:
+          type: array
+          description: The first 20 items that reference the blob, by project, repository and path.
+          items:
+            $ref: "#/components/schemas/DamagedBlobItem"
+        itemCount:
+          type: integer
+          format: int64
+    DamagedBlobList:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DamagedBlob"
+        nextCursor:
+          type: [string, "null"]
+          description: Opaque; `null` on the last page.
+    DamagedBlobRecheck:
+      type: object
+      required: [sha256, contentStatus, copies]
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        contentStatus:
+          type: string
+          enum: [ok, missing, corrupt]
+          description: The content state the copies give after the reads (storage.md R-STOR-052).
+        copies:
+          type: array
+          items:
+            $ref: "#/components/schemas/DamagedBlobCopy"
     TaskLastRun:
       type: object
       required: [jobId, startedAt, finishedAt, outcome, replica]

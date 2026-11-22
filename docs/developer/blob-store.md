@@ -3,8 +3,8 @@
 Content-addressed storage on one to eight S3-compatible object-store connections: [internal/blob](../../internal/blob/) (everything that
 does not depend on an S3 client), [internal/blob/s3](../../internal/blob/s3/) (the AWS SDK adapter, the only package that imports
 the SDK), [internal/blob/blobtest](../../internal/blob/blobtest/) (an in-memory store with fault injection for tests).
-Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024, R-STOR-025, R-STOR-030 to R-STOR-035, R-STOR-046, R-STOR-050 to
-R-STOR-053, R-STOR-055, R-STOR-056, R-STOR-060, R-STOR-062.
+Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024, R-STOR-025, R-STOR-027, R-STOR-030 to R-STOR-035, R-STOR-046,
+R-STOR-050 to R-STOR-053, R-STOR-055, R-STOR-056, R-STOR-058, R-STOR-060, R-STOR-062.
 The row is the authority on whether a blob exists; a row per copy (`blob_copies`) says on which connection its object lies, under which
 name and size, and what is known about it; the object is the content. Nothing in this tree uses Valkey or a
 session-level advisory lock (R-STOR-046, enforced by [internal/archtest](../../internal/archtest/)). The first caller of `Ingest`,
@@ -32,8 +32,10 @@ the verifying reader or a range.
 | [usagefold.go](../../internal/blob/usagefold.go) | `UsageFolder`: the fold loop of the usage counters (R-STOR-003) and its `Fold` iteration |
 | [conformance.go](../../internal/blob/conformance.go) | startup check, conformance checks (with the capability checks), `AwaitStartupCheck` |
 | [sql.go](../../internal/blob/sql.go), [tables.go](../../internal/blob/tables.go), [metrics.go](../../internal/blob/metrics.go), [errors.go](../../internal/blob/errors.go) | the `DB` interface, the `Rows` seam (`WithRows`) and its sqlc implementation, export-class registration, metric families, `errs` mapping |
-| [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `quader admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify`, lists the versions of each key without an object (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version |
-| [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `quader admin storage verify` ([below](#storage-verify-r-stor-027-q-stor-200)): `Run` over a `Source` (the pages and the items) and an `Objects` (`Head`), `PGSource` |
+| [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `quader admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify` over the connections (`Conn`, or the one `Options.Connection` names), lists the versions of each missing copy's key on its connection (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version; `Report.Lost` decides the exit |
+| [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `quader admin storage verify` ([below](#storage-verify-r-stor-058-q-stor-200)): `Run` over a `Source` (the pages of live blobs with their copy rows, and the items) and the connections (`Conn`: an id and an `Objects` with `Head`), `PGSource` (`VerifyCopyPage`) |
+| [scrub/scrub.go](../../internal/blob/scrub/scrub.go), [scrub/read.go](../../internal/blob/scrub/read.go), [scrub/repair.go](../../internal/blob/scrub/repair.go), [scrub/recheck.go](../../internal/blob/scrub/recheck.go) | The scrub ([below](#the-scrub-r-stor-027)): `Scrubber.Run` (one reader per connection), `readWhole` and the throttle, the repair from another connection, the recheck of one blob |
+| [scrub/ledger.go](../../internal/blob/scrub/ledger.go), [scrub/damaged.go](../../internal/blob/scrub/damaged.go), [scrub/metrics.go](../../internal/blob/scrub/metrics.go), [scrub/job.go](../../internal/blob/scrub/job.go) | The scrub's `Ledger` and `PGLedger` (the due copies, the copies marked missing whose look is due, the stamps, the marks through `Store.MarkCopyDamaged`, the record of a whole copy), `ListDamaged` (the API's list), the counters and `OverdueGauge`, `Args` and `RunJob` |
 | [s3/client.go](../../internal/blob/s3/client.go), [s3/copy.go](../../internal/blob/s3/copy.go) | `s3.Client` (the `ObjectStore` and the `BucketCopier`: `Location`, `CopyFrom`), `NewFromFactory` |
 | [reconcile/](../../internal/blob/reconcile/), [reconcile_seams.go](../../internal/blob/reconcile_seams.go) | the reconciliation between the connections ([below](#the-reconciliation-r-stor-056)); the seams it needs of the store: `Store.MarkCopyDamaged` and `Store.SetGapSignal` |
 | [blobtest/endpoint.go](../../internal/blob/blobtest/endpoint.go) | `blobtest.NewEndpoint`: in-memory stores of the buckets of one endpoint, which copy from each other (`CopyFrom`) |
@@ -130,8 +132,9 @@ validates what the configuration says (R-STOR-050), `config.ResolveConnections` 
 (`bucket_file`, `region_file`, `endpoint_file`) and checks the location rule again where the clients are built
 ([Q-STOR-251](../spec/storage.md#q-stor-251--the-files-of-a-connections-location-are-read-when-the-clients-are-built-not-when-the-configuration-is-loaded)),
 and `config.ClientConfig(position, element, objectStore)` is the `config.StorageS3` of one connection's client, the type the backup target and the
-Bastion's bucket use as well. The operator commands and the backup reach the first connection (`Storage.FirstClient`) until packages D and
-E teach them the others. An error that names a setting of a connection has the form of the validation,
+Bastion's bucket use as well. The backup reaches the first connection (`Storage.FirstClient`) until package E teaches it the others;
+`quader admin storage verify`, `restore-versions` and the post-restore's check build a client for every connection (`connectionClients` in
+[admin_storage.go](../../cmd/quader/admin_storage.go)). An error that names a setting of a connection has the form of the validation,
 `storage.connections[<n>] (<id>): <key>` (`StorageS3.Names`, filled by `ClientConfig`, and `Connection.Element` in the blob store);
 the backup target's errors name `backup.target.<key>` and the Bastion's `bastion.cache.bucket.<key>`.
 
@@ -199,8 +202,10 @@ Q-UI-143): SHA-256 is computed while reading and the last `hold_back` bytes are 
 matched. On a mismatch the reader returns `ErrCorrupt` instead of the held bytes (the HTTP layer aborts the response) and marks that copy
 `corrupt`. A match stamps the copy's `verified_at` at most once a day (`VerifiedStampInterval`, Q-STOR-233). Only evidence about an object
 marks its copy; the blob's content state follows from its copies, so a copy's damage changes the blob only when no other copy is present.
-A transport error aborts the read but changes no state. `WithDamageHook` is where the audit event hangs; the composition root binds none
-yet, so no detection writes one. A range is returned as stored (H-11).
+A transport error aborts the read but changes no state. `WithDamageHook` is where the audit event hangs: the composition root binds
+`blobDamaged` ([wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go)), which writes the asynchronous `system.storage.blob_damaged`
+when a mark (a read, the scrub, its recheck, the reconciliation's source) turns a blob away from `ok` (R-STOR-027). A range is returned as
+stored (H-11).
 
 A connection that answers "no such object" (`ErrNotFound`), for a full or a ranged read, marks that copy `missing` and queues its repair
 (`copyGone`, `markCopy`, R-HA-024, [Q-STOR-151](../spec/storage.md#q-stor-151--a-read-that-finds-no-object-marks-the-blob-missing-and-looks-once-more-after-the-mark)):
@@ -302,8 +307,8 @@ points, `claim:before|locked|checked|committed`, `delete:before|after`, `record:
 a non-nil error ends the run at once as a process kill would, with `errors.Is(err, blob.ErrFault)`).
 
 Not in this package yet: the trash purge that R-STOR-025 puts at the start of a run (its package does not exist; the job handler calls
-it before `Run` and puts the count in `trashPurged`), the orphan sweep of `sha256/` (R-STOR-026; its pass over `_uploads/` is the
-session step) and the scrub (R-STOR-027).
+it before `Run` and puts the count in `trashPurged`) and the orphan sweep of `sha256/` (R-STOR-026; its pass over `_uploads/` is the
+session step). The scrub (R-STOR-027) is the package [internal/blob/scrub](../../internal/blob/scrub/) ([below](#the-scrub-r-stor-027)).
 
 ### Job registration
 
@@ -351,26 +356,84 @@ It counts untrashed rows; when the trash can is built, the trashed bytes need a 
 [storage_test.go](../../test/integration/projects/storage_test.go): it seeds blobs and items, folds with `blob.UsageFolder` and reads
 the figure over HTTP.
 
-## Storage verify (R-STOR-027, Q-STOR-200)
+## The scrub (R-STOR-027)
 
-`quader admin storage verify` ([cmd/quader/admin_storage.go](../../cmd/quader/admin_storage.go)) checks that the object of every `live` blob row is in the store.
-It is a command of the binary like `admin backup check`: it loads the configuration without a role, opens the database in the `web` role and the S3 client
-of the first connection (the runtime credential, so it needs no permission the replicas lack), and never opens Valkey, so it runs in any pod of the installation
-(`kubectl exec deploy/quader-worker -- quader admin storage verify`) and, with the replicas held not ready, in a one-off pod of the release's configuration.
+The job `scrub` reads every `present` copy on every connection of the worker's configuration to its end once per that connection's
+`scrub_period`, judges it by its bytes, marks what is damaged and replaces it from another connection
+([internal/blob/scrub](../../internal/blob/scrub/), [Q-STOR-265](../spec/storage.md#q-stor-265--the-scrub-replaces-a-copy-it-found-damaged-in-the-same-run-and-reads-back-what-it-wrote-before-the-copy-counts)).
+The package is infrastructure: the kind and the task are registered in [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go)
+(`registerStorageScrub`: queue `maintenance`, exclusive, mutating, schedule `7 * * * *` unless `maintenance.tasks.scrub` says otherwise), with
+`Scrubber.RunJob` as the handler's body; `wireStorageScrub` builds the scrubber on every role (`a.scrub`), because an `api` replica answers the
+recheck, and adds the overdue gauge.
+
+```text
+Run ─▶ one reader per connection (or the one Args.Connection names), in parallel
+         └─ Ledger.Due (pages of 200: never verified by digest, then verified_at older than scrub_period, oldest first)
+              └─ readWhole: Connection.Read, SHA-256 and length of at most stored_size+1 bytes, throttled
+                   ├─ ok        ─▶ Ledger.Verified (verified_at, checked_at; not if the row's created_at changed)
+                   ├─ corrupt   ─▶ Ledger.Damaged (Store.MarkCopyDamaged: copy marked, queue row, blob state, counters, hook)
+                   ├─ missing   ─▶ the same with missing      ─┬▶ repair (not on a draining connection)
+                   └─ error     ─▶ counted, stays due; ErrCircuitOpen ends the reader
+```
 
 | Part | Responsibility |
 |---|---|
-| `verify.Run` | Pages through `blobs` by digest (`VerifyBlobPage`, 1,000 rows, keyset on `sha256`), so memory is one page and the findings; runs up to `--concurrency` `Head` calls per page; one `Head` per row, three attempts with a 1 s and 2 s back-off for an error that is not "no such object"; a `KindConfig` error (`AccessDenied`) ends the run |
-| `verify.PGSource` | The two readers of the run (`db.Read`, one short read each, no transaction held over the slow checks): the page and the items of a damaged blob (`VerifyBlobItems`, `VerifyBlobItemCount`, [blob.sql](../../internal/meta/postgres/queries/blob.sql)) |
-| `verify.Report` | `Checked`, `Missing`, `SizeMismatch`, `Findings` (with up to `--max-items` items each, trashed ones marked), `Unchecked`, `ItemsAffected`; `--json` prints it whole |
-| `writeVerifyReport` | The text: one line per item of a damaged blob, a line for a damaged blob without an item, one per blob that was not checked, the totals last (the line the e2e tests read) |
+| `Scrubber.Run` | Starts a reader per connection; a reader ends when no copy is due (`done`), after `storage.scrub.run_duration` (`duration`), when the replica drains (`draining`), when its connection's circuit is open (`circuit_open`), when the job is cancelled, or when the database does not answer (`error`, the run's error). The result per connection is the job's result (`ConnectionResult`) |
+| `throttle` | After each chunk of 64 KiB, sleeps until the bytes so far would have taken that long at the connection's `scrub_bytes_per_second`; the clock is replaceable (`Options.Clock`), so the unit test measures on a fake one. The repair's reads count against the reader's throttle |
+| `readWhole` | The judgement: the bytes' number against `stored_size` and their SHA-256 against the digest; "no such object" is `missing`; a transport error, a `5xx`, throttling or a cut transfer is no evidence |
+| `repair` | The copy's row and its sources from `Ledger.Copies`: `present` copies on configured connections whose circuit is closed, verified first, then by list order. `write` reads the source into one buffer of at most a part (`blob.PartSize` of `storage.object_store.multipart.part_size`) and checks it against the digest: one `PutObject` up to a part with the target's payload checksum, a multipart upload of ranged reads above, aborted on any failure. A source found damaged is marked (`errSource`) and the next one tried. The written object is read back whole; only a match calls `Ledger.Whole` |
+| `PGLedger.Whole` | One transaction: the blob's lock of a mark (`LockBlobForMark`, it must be live), `ScrubRecordWhole` (present, verified, the stored size, only while state and `state_changed_at` are the ones found damaged), the queue row deleted, the blob's state derived again (`DeriveContentStatus`, `SetBlobContentStatus`) |
+| `Recheck` | Every copy of one blob on this replica's connections at once, unthrottled: a present copy is stamped or marked, a marked copy that reads whole is recorded whole, one that does not keeps its mark; no object is written ([Q-STOR-267](../spec/storage.md#q-stor-267--the-damaged-blobs-list-is-read-with-settingsread-and-the-recheck-writes-no-object)) |
+| `ListDamaged` | The page of `GET /api/v1/storage/damaged-blobs`: `DamagedBlobsByBlob` (index `blobs_damaged`) or `DamagedBlobsByCopy` (index `blob_copies_damaged`), then the copies, the first 20 items (a lateral query) and the item counts of the page |
+| `OverdueGauge` | The source of `quader_storage_scrub_overdue_copies{connection}` for the background gauges of every replica (`DBGauges`): `ScrubOverdue` per connection counts the present copies whose `verified_at`, or `created_at` when never verified, is older than `scrub_period + OverdueGrace` (one day, [Q-STOR-266](../spec/storage.md#q-stor-266--a-copy-is-overdue-one-day-after-its-period-and-every-replica-counts-the-overdue-copies-from-postgresql)) |
 
-It writes nothing: no `content_status`, no audit event. Exit codes follow [R-BAK-013](../spec/backup-and-restore.md#r-bak-013--exit-codes-interruption-and-resumption):
-`5` for a finding, `75` when only unchecked blobs remain, `2` for usage and configuration, `1` otherwise. A caller in Go (the post-restore step of R-HA-025,
-which prints a count from) calls `verify.Run` and reads `Report.Missing` and `Report.SizeMismatch`. Tests: the unit tests in
-[verify_test.go](../../internal/blob/verify/verify_test.go) (pages, findings, retries, the cut-off) and [test/integration/storageverify](../../test/integration/storageverify/verify_test.go)
-(real PostgreSQL and S3: objects deleted behind the installation's back, a trashed item, `--since`); the end-to-end use is `TestColdCrash` and `TestNPMHACrash`
-([e2e.md](e2e.md#a-replica-killed-during-a-cold-install)).
+The statements are [queries/blob_scrub.sql](../../internal/meta/postgres/queries/blob_scrub.sql). A time a later statement compares (a copy's
+`created_at`, `state_changed_at`, the cursor's `verified_at`) travels as whole microseconds since the epoch, so no driver type enters the tree
+(R-ARCH-002) and an identity compares exactly. Metrics: `quader_storage_scrub_copies_total{connection,result}` (`ok`, `corrupt`, `missing`,
+`error`), `quader_storage_scrub_read_bytes_total{connection}`, `quader_storage_scrub_repairs_total{connection,outcome}` (`repaired`, `failed`,
+`no_source`), the overdue gauge, and the marks' `quader_storage_copies_damaged_total` and `quader_storage_blobs_damaged_total` of the store.
+
+The API ([storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go)): `ListDamagedBlobs` (`settings:read`, cursor over the
+digest, `scope`, `connection` and `status` checked by the handler, because the generated wrapper does not check enums) and
+`RecheckDamagedBlob` (`settings:write`, `404` for a digest without a live blob), through `v1.StorageServices`, which `storageAPI` fills.
+
+Before the walk, each reader reads the copies of its connection marked `missing` whose store last answered for them more than
+`MissingLookInterval` (one day) ago (`Ledger.Missing`, `ScrubMissingDue`): an object that reads whole again is recorded with `Ledger.Whole`,
+one still gone has its `checked_at` moved (`Ledger.Looked`); the job's result counts `missingLooked` and `missingFound`. A marked copy is not
+due for the walk, so without this look a store's wrong "no such object" would leave a blob `missing` on a connection without another whole
+copy. The mark itself is the store's one mark of every reader, `Store.MarkCopyDamaged` ([reconcile_seams.go](../../internal/blob/reconcile_seams.go)),
+which looks for a missing object once more with `HeadObject` and reports whether the copy stands marked; only then does the scrub repair.
+A repair that fails leaves the mark's queue row, which the reconciliation takes ([above](#the-reconciliation-r-stor-056)), and the
+scrub's stamp of `verified_at` is the one the drain's survivor needs.
+
+Gap: a read-back on a store with late overwrites can see the new bytes while another node still serves the old
+([H-1269](../security/object-store-connections.md#h-1269--a-copy-that-read-back-whole-may-still-be-served-stale-by-a-store-that-applies-overwrites-late)).
+
+## Storage verify (R-STOR-058, Q-STOR-200)
+
+`quader admin storage verify [--connection <id>]` ([cmd/quader/admin_storage.go](../../cmd/quader/admin_storage.go)) asks the store of each
+connection, or of the one named, for the object of every `present` copy of a `live` blob. It is a command of the binary like `admin backup
+check`: it loads the configuration without a role, opens the database in the `web` role and a client per connection
+(`connectionClients`, each connection's runtime credential, so it needs no permission the replicas lack), and never opens Valkey, so it runs
+in any pod of the installation (`kubectl exec deploy/quader-worker -- quader admin storage verify`) and, with the replicas held not ready, in
+a one-off pod of the release's configuration.
+
+| Part | Responsibility |
+|---|---|
+| `verify.Run` | Pages through the live blobs by digest (`VerifyCopyPage`, 1,000 blobs with their copy rows, keyset on `sha256`), so memory is one page and the findings; runs up to `--concurrency` `Head` calls per page, one per present copy on a checked connection, with the copy's `object_key` and against its `stored_size`; three attempts with a 1 s and 2 s back-off for an error that is not "no such object"; a `KindConfig` error (`AccessDenied`) ends that connection's checks, its remaining copies count as not checked, and `Run` returns that error with the whole report |
+| lost | A blob none of whose asked copies answered with its object of its size and none of whose present copies was left unasked or unanswered ([Q-STOR-269](../spec/storage.md#q-stor-269--the-operator-check-calls-a-blob-lost-when-no-copy-it-could-ask-is-there-and-no-present-copy-was-left-unasked)); a blob without a present copy is lost without a question |
+| `verify.PGSource` | The two readers of the run (`db.Read`, one short read each, no transaction held over the slow checks): the page and the items of a lost blob (`VerifyBlobItems`, `VerifyBlobItemCount`, [blob.sql](../../internal/meta/postgres/queries/blob.sql)) |
+| `verify.Report` | `Checked` (blobs), `Lost`, `Missing` and `SizeMismatch` (lost blobs by kind), `Copies` (every missing copy), `Findings` (lost blobs with up to `--max-items` items each, trashed ones marked), `Unchecked` (copies), `Connections` (the totals per connection), `ItemsAffected`; `--json` prints it whole |
+| `writeVerifyReport`, `verifyExit` | The text: one line per missing copy, one per item of a lost blob, a line for a lost blob without an item, one per copy not checked, the totals per connection, the totals last (the line the e2e tests read, unchanged in shape); the exit status |
+
+It writes nothing: no state, no audit event. Exit codes follow [R-BAK-013](../spec/backup-and-restore.md#r-bak-013--exit-codes-interruption-and-resumption):
+`5` for a lost blob or, with `--connection`, a missing copy there, `2` for usage and configuration (a store that refused a connection's checks
+included), `75` when nothing is lost but a check was not answered, `1` otherwise. A caller in Go (the post-restore step of R-HA-025, which
+prints a count from it) calls `verify.Run` with every connection and reads `Report.Missing` and `Report.SizeMismatch`. Tests: the unit tests in
+[verify_test.go](../../internal/blob/verify/verify_test.go) (pages, findings per connection, lost, retries, the refused connection, the
+cut-off) and [test/integration/storageverify](../../test/integration/storageverify/verify_test.go) (real PostgreSQL and S3: objects deleted
+behind the installation's back, a trashed item, `--since`, two connections on two prefixes of the stack's bucket); the end-to-end use is
+`TestColdCrash` and `TestNPMHACrash` ([e2e.md](e2e.md#a-replica-killed-during-a-cold-install)).
 
 ## Conformance check (R-STOR-035)
 
@@ -505,8 +568,9 @@ the uploads of that replica as well.
 copies only of a blob it claimed. The drain does not take the backup hold of R-STOR-024 step 2b: the backup reads one copy per blob and must
 read another when its first is gone (package E); until then the backup reads the first connection only
 ([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads)).
-The scrub (package D) is what verifies a server-side copy; until it is built only a verified download does
-([H-1261](../security/object-store-connections.md#h-1261--until-the-scrub-is-built-a-server-side-copy-is-verified-only-by-a-download)).
+The scrub (package D) is what verifies a server-side copy: it reads never-verified copies first and stamps `verified_at`, the stamp
+`verifiedSurvivor` reads, so a drain beside such copies waits up to about two hours (the next hourly scrub run, then the drain's next
+walk, Q-STOR-259).
 
 ## Tests
 
@@ -517,7 +581,8 @@ The scrub (package D) is what verifies a server-side copy; until it is built onl
 | unit | [internal/blob/reconcile](../../internal/blob/reconcile/) | the streamed copy in one request and in parts, its digest and size checks, the source's and the target's failures; the server-side copy, its fall-back to streaming for the run and without the start check's word; the throttle; the journal pass with an object above an entry's bound; the gauges' series; the signal folding commits into one enqueue (about 0.3 s, objects of up to 2.5 KiB) |
 | integration | [reconcile_test.go](../../test/integration/blob/reconcile_test.go) | PostgreSQL of the stack with in-memory stores: the catch-up after an open circuit without spent attempts, the fill of a connection added to twenty blobs, the drain with a blob only the first holds, an unverified survivor, the deletion pause, the event, the retirement, and the insert bound (about 3.7 s, four databases, at most twenty objects of 1 KiB) |
 | integration | [connections_s3_test.go](../../test/integration/blob/connections_s3_test.go) | two real buckets of the stack's SeaweedFS: the routing, a server-side and a streamed copy between them, the metadata a cross-bucket copy keeps, a read that falls over and the reconciliation's repair (about 1.1 s, one database, three objects of 1 KiB) |
-| integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object; the records of the connections against PostgreSQL with in-memory stores ([connections_test.go](../../test/integration/blob/connections_test.go): fixed properties, detached, forget, the bind of the migration's row, the copy and queue rows of a commit and their drop, R-STOR-051, R-STOR-052) |
+| unit | [internal/blob/scrub](../../internal/blob/scrub/scrub_test.go), [internal/api/v1](../../internal/api/v1/storage_damaged_api_test.go), [internal/app](../../internal/app/wire_storage_scrub_test.go) | the scrub with two or three in-memory stores, a fake ledger and a fake clock: a replaced copy marked and repaired, a deleted one with nothing to repair from, a store answering 503 that changes nothing, the throttle (4 KiB at 1 KiB/s take four seconds of the clock), the run's duration, a drain and an open circuit, a run named for one connection, the multipart repair, a read-back that does not match, a damaged source, a draining connection; a copy marked missing read again (whole again, still gone); the recheck; the list and the recheck over HTTP against the document; the audit event of a detection (R-STOR-027) |
+| integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object; the records of the connections against PostgreSQL with in-memory stores ([connections_test.go](../../test/integration/blob/connections_test.go): fixed properties, detached, forget, the bind of the migration's row, the copy and queue rows of a commit and their drop, R-STOR-051, R-STOR-052); the scrub against PostgreSQL with in-memory stores ([scrub_test.go](../../test/integration/blob/scrub_test.go): the repair and its record, a missing blob listed and healed by an upload, the order of the due copies, the overdue gauge, a copy marked missing a day ago read again, the recheck and a stale identity, R-STOR-027) |
 
 `make test` runs the unit tier, `make test-integration` the integration tier (`QUADER_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
 unit fake (`fakedb_test.go`) simulates only the table operations the commit protocol and the download path use; the real locking
@@ -540,15 +605,15 @@ The sections above describe what is built: packages A and C. The build comes in 
 directories (or, inside `internal/app` and `internal/api/v1`, the files) of packages that run at the same time are disjoint, and at most
 four run at once. Package A left the hooks of B, C and D in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go),
 [wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go) and [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go):
-`register<X>(r *jobs.Registry)`, called by `jobRegistry`, and `wire<X>(ctx, blobArea) error`, called at the end of `wireBlob`; package C
-filled those of the reconciliation, the others do nothing yet.
+`register<X>(r *jobs.Registry)`, called by `jobRegistry`, and `wire<X>(ctx, blobArea) error`, called at the end of `wireBlob`; packages C
+and D filled those of the reconciliation and the scrub, B's do nothing yet.
 
 | Package | After | What it builds | Owns |
 |---|---|---|---|
 | **A · Connections and copies** | — | The configuration (`storage.connections`, `storage.object_store`, `storage.replication`, `storage.reconcile`, `storage.scrub`; `storage.s3` removed) and its validation (R-STOR-050); one client and one guard per connection, the ordered set with its naming function and `Servable` (R-STOR-062); object metadata on the interface, the S3 adapter and `blobtest`; the migrations (`storage_connections`, `blob_copies`, `blob_copy_queue`, `revocation_outbox_shipped`, `upload_sessions.connection_id`; `deep_checked_at` and `blobs_check` dropped); the commit writing copy rows and queue rows (R-STOR-053); reads over the copies (R-STOR-055); the fixed properties, the marker and `forget-connection` (R-STOR-051); the start check and the conformance check per connection with the capabilities (R-STOR-035); the breaker, the metrics with `connection`, readiness and the replica registry's object-store view (R-STOR-060); every size check on `stored_size`; empty registration files for B, C and D in `internal/app` | `internal/config`, `internal/blob` (all files but `gc*.go` and the new packages of B to D), `internal/blob/s3`, `internal/blob/blobtest`, `internal/meta/postgres/migrations` and `queries`, `internal/app/wire_blob.go`, `internal/app/wire_jobs.go`, `internal/cluster/replica_registry.go`, `cmd/quader/admin_storage.go` (`check`) |
 | **B · Sessions, collection, orphan sweep** | A | Sessions on their connection (R-STOR-054); collection per copy with the release (R-STOR-057); the orphan sweep per connection with the adoption (R-STOR-026) | `internal/uploads`, `internal/blob/gc.go`, `gc_uploads.go`, `gcjob.go`, `internal/blob/sweep.go` (new), `internal/app/wire_storage_sweep.go`, `test/integration/blob/gc_*`, `sweep_test.go` |
 | **C · Reconciliation** (built) | A | The job with queue, pass, server-side and streamed copies, insert bound, drain, retire, journal pass and its metrics (R-STOR-056); the integration case against two real buckets (R-STOR-063) | `internal/blob/reconcile/` (new), `internal/app/wire_storage_reconcile.go`, `test/integration/blob/reconcile_test.go`, `connections_s3_test.go` |
-| **D · Scrub, damaged blobs, operator commands** | A | The scrub per copy with repair (R-STOR-027); the damaged-blobs API with its two scopes; `admin storage verify` and `restore-versions` per connection (R-STOR-058); the renames that make R-STOR-027's evidence true (Q-STOR-240) | `internal/blob/scrub/` (new), `internal/blob/verify`, `internal/blob/restoreversions`, `internal/app/wire_storage_scrub.go`, `internal/api/v1` (the damaged-blobs files and their paths in `openapi.yaml`), `cmd/quader/admin_storage*.go` (but `check`), `cmd/quader/admin_restoreversions.go`, the five test files that name R-STOR-027, `docs/coverage/implemented.txt`, `test/integration/storageverify` |
+| **D · Scrub, damaged blobs, operator commands** (built, [above](#the-scrub-r-stor-027)) | A | The scrub per copy with repair (R-STOR-027); the damaged-blobs API with its two scopes; `admin storage verify` and `restore-versions` per connection (R-STOR-058); the renames that make R-STOR-027's evidence true (Q-STOR-240) | `internal/blob/scrub/` (new), `internal/blob/verify`, `internal/blob/restoreversions`, `internal/app/wire_storage_scrub.go`, `internal/api/v1` (the damaged-blobs files and their paths in `openapi.yaml`), `cmd/quader/admin_storage*.go` (but `check`), `cmd/quader/admin_restoreversions.go`, the five test files that name R-STOR-027, `docs/coverage/implemented.txt`, `test/integration/storageverify` |
 | **E · Chart, backup and restore, journal** | A | The chart's list and Secrets with the refusals and the alerts (R-HA-072, R-HA-045); the backup reading one copy per blob and the restore into the first connection with its fix-up (R-BAK-030); the journal shipped per connection through the guards and replayed from every connection (R-STOR-059); the development profile and the integration stack's `QUADER_STORAGE_CONNECTIONS` | `deploy/helm/quader`, `test/chart`, `deploy/dev`, `test/integration/testenv`, `internal/backup`, `internal/journal`, `internal/app/wire_journal.go`, `internal/app/wire_backup_check.go`, `cmd/quader/backup_*.go`, `admin_postrestore.go`, `admin_backupcheck.go`, `test/integration/backup` |
 | **F · The surface and the manual** | C, D | The connections' API and the system information (R-STOR-061); the storage summary per connection (R-STOR-028); the tab **Storage** and the dashboard's lines (R-UI-196, R-UI-197), rendered under rule 11; the operator manual, the README and the developer pages that describe a running installation (configuration, installation, backup and restore, TLS, the runbook, the chart, the local profile, observability, and this page's sections above) | `internal/api/v1` (the connections' files and paths), the storage summary's task, `web/src/app/features/system`, `docs/manual`, `README.md`, `docs/developer` |
 

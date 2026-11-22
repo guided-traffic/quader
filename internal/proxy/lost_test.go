@@ -49,7 +49,7 @@ func (r *recheckItems) Usable(_ context.Context, it items.Item) (items.Item, err
 	return it, nil
 }
 
-func TestR_STOR_027_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
+func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 	t.Run("Q-REPO-202 an entry or an item whose blob is not ok is damaged; an unread status is ok", func(t *testing.T) {
 		for status, want := range map[string]bool{"": false, "ok": false, "missing": true, "corrupt": true} {
 			if got := (entry{ContentStatus: status}).Damaged(); got != want {

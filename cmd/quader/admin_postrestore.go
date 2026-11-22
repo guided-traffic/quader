@@ -9,7 +9,6 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/postrestore"
-	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/blob/verify"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
@@ -111,11 +110,11 @@ func (r postRestoreRunner) PostRestore(ctx context.Context, opts backup.PostRest
 	pr := postrestore.New(postrestore.Options{
 		DB: db, Recorder: rec, Margin: cfg.Backup.RevocationJournal.ReplayMargin, Log: r.env.log,
 		VerifyStorage: func(ctx context.Context) (postrestore.StorageCheck, error) {
-			client, err := s3.NewFromFactory(ctx, s3cfg, out)
+			clients, err := connectionClients(ctx, cfg.Storage, out, nil)
 			if err != nil {
 				return postrestore.StorageCheck{}, err
 			}
-			rep, err := verify.Run(ctx, verify.Options{DB: verify.PGSource{DB: db}, Objects: client, Prefix: s3cfg.Prefix, Log: r.env.log})
+			rep, err := verify.Run(ctx, verify.Options{DB: verify.PGSource{DB: db}, Connections: verifyConnections(clients), Log: r.env.log})
 			if rep == nil {
 				return postrestore.StorageCheck{}, err
 			}

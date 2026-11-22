@@ -63,7 +63,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		}
 	})
 
-	t.Run("R-STOR-027 Q-REPO-204 a cached copy whose object is lost is a miss of the cache tier: the member's fetch tier fills it again", func(t *testing.T) {
+	t.Run("R-REPO-025 Q-REPO-204 a cached copy whose object is lost is a miss of the cache tier: the member's fetch tier fills it again", func(t *testing.T) {
 		w := newWorld(t)
 		vt.Put(w.arts.CachedItems, "npm-remote", tgz, "cached-bytes")
 		vt.Put(w.arts.UpstreamItems, "npm-remote", tgz, "upstream-bytes")

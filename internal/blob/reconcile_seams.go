@@ -3,20 +3,23 @@ package blob
 import "context"
 
 // The two seams of the reconciliation between the connections (storage.md R-STOR-056, package internal/blob/reconcile): the
-// mark of a copy that the source of a streamed copy showed to be damaged, and the signal after a commit that queued a gap.
+// mark of a copy that a reader outside the download path showed to be damaged (also the scrub's, R-STOR-027), and the signal
+// after a commit that queued a gap.
 
 // MarkCopyDamaged records evidence that a reader outside the download path found about one copy (the source of the
-// reconciliation's streamed copy, R-STOR-056): CopyMissing when its connection answered "no such object", which marks the copy
-// and looks for its object once more, as a read does (Q-STOR-151); CopyCorrupt when its size or, read to its end, its digest
-// was another. The connection's repair is queued and the blob's content state follows from its copies (R-STOR-052, R-STOR-055).
-func (s *Store) MarkCopyDamaged(ctx context.Context, d Digest, cp Copy, status string) {
+// reconciliation's streamed copy, R-STOR-056; the scrub and its recheck, R-STOR-027): CopyMissing when its connection answered
+// "no such object", which marks the copy and looks for its object once more, as a read does (Q-STOR-151); CopyCorrupt when its
+// size or, read to its end, its digest was another. The connection's repair is queued and the blob's content state follows
+// from its copies (R-STOR-052, R-STOR-055). It reports whether the copy stands marked: false when it was not a live blob's
+// present copy, when the second look found the object again, or on a connection this replica does not configure.
+func (s *Store) MarkCopyDamaged(ctx context.Context, d Digest, cp Copy, status string) bool {
 	if status != CopyMissing {
-		s.markCopy(ctx, d, cp.Connection, status)
-		return
+		return s.markCopy(ctx, d, cp.Connection, status)
 	}
 	if c, ok := s.conns.Get(cp.Connection); ok {
-		s.copyGone(ctx, d, c, cp)
+		return s.copyGone(ctx, d, c, cp)
 	}
+	return false
 }
 
 // SetGapSignal sets the function a commit calls after its transaction committed when it queued a gap of another connection:

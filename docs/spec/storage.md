@@ -2764,23 +2764,41 @@ Acceptance criteria (integration, PostgreSQL with two in-memory stores, a fake c
 Priority: **P1** · Covers: quader-only
 
 The owner's decision 10 of 2026-11-22: a worker job reads every copy once within a period, throttled, checks it whole, marks damage and
-replaces a damaged copy from another connection. Not built until stage 1; what exists today is the detection by downloads
-(R-STOR-013), the mark of a missing object and its 30 s recheck (R-STOR-012, Q-STOR-151, Q-STOR-153), and the operator check, which moved
-to R-STOR-058.
+replaces a damaged copy from another connection. **Built** (package D of the build plan,
+[docs/developer/blob-store.md](../developer/blob-store.md#the-scrub-r-stor-027)): the job with its repair, the gauge of the overdue copies,
+the audit event of a detection, the list of damaged blobs and the recheck. Not built: the gauges of the storage summary named below (`quader_storage_blobs_damaged{status}`, `quader_storage_copies{connection,state}`), which are package F's. Beside the scrub, the
+downloads detect (R-STOR-013), a missing object is marked and rechecked after 30 s (R-STOR-012, Q-STOR-151, Q-STOR-153), and the operator
+check moved to R-STOR-058.
 
 - **Per copy, whole.** Every `present` copy on a connection in the worker's configuration is read to its end through the connection's
   reader (R-STOR-062) at least once per that connection's `scrub_period` (default `720h`), and its SHA-256 and length are compared with the
   blob's digest and the copy's `stored_size`. Due copies are those whose `verified_at` is `NULL` or older than the period, oldest first:
   copies never verified (a server-side copy, an adoption, a write without an enforced payload checksum) come first
   ([Q-STOR-239](#q-stor-239--the-scrub-reads-every-copy-whole-once-per-period-per-connection-and-has-no-separate-existence-check)).
-- **Outcome.** A match stamps `verified_at` and `checked_at`. A digest or length mismatch marks the copy `corrupt`, "no such object" marks
-  it `missing`, each with the counter `quader_storage_copies_damaged_total{connection,status}` and a queued repair (R-STOR-056); the blob's
-  state follows by R-STOR-052. A timeout, a `5xx`, throttling or an open circuit changes nothing; the copy stays due and is counted in
-  `quader_storage_scrub_copies_total{connection,result="error"}`.
-- **Repair from another connection.** The reconciliation replaces a damaged copy from a verified `present` copy on another connection
-  (overwriting a `corrupt` object, writing a `missing` one). With one connection, or when no copy is whole, the blob is `missing` or
-  `corrupt` and is listed by the API below; it is repaired as before: a later upload of identical content rewrites the object
-  (R-STOR-005), a remote repository treats the item as a cache miss and refetches it
+- **Outcome.** A copy is judged by its bytes alone: their number against `stored_size` and their SHA-256 against the digest, at most
+  `stored_size + 1` bytes read; nothing the store says about the object (a `Content-Length`, an ETag, a checksum header) counts, because a
+  store may have no upload checksum of its own. A match stamps `verified_at` and `checked_at`, unless the row was written again since the
+  read began (another `created_at`). A digest or length mismatch marks the copy `corrupt`, "no such object" marks it `missing`, each with
+  the counter `quader_storage_copies_damaged_total{connection,status}` and a queued repair (R-STOR-056); the blob's state follows by
+  R-STOR-052. A timeout, a `5xx`, throttling or a cut transfer changes nothing; the copy stays due and is counted in
+  `quader_storage_scrub_copies_total{connection,result="error"}` (the other results `ok`, `corrupt`, `missing`); an open circuit ends that
+  connection's reader for the run. `quader_storage_scrub_read_bytes_total{connection}` counts the bytes. A mark is the store's one mark of
+  every reader (`MarkCopyDamaged`): a "no such object" is looked for once more with `HeadObject` before it stands.
+- **A copy marked missing is read again.** Before its walk, each run reads the copies of its connection marked `missing` whose store last
+  answered for them more than a day ago (`checked_at`): one whose object reads whole again is `present` and verified and the blob follows,
+  one still gone or damaged waits another day, so a store's wrong "no such object" heals without a read of the blob
+  ([Q-STOR-265](#q-stor-265--the-scrub-replaces-a-copy-it-found-damaged-in-the-same-run-and-reads-back-what-it-wrote-before-the-copy-counts)).
+- **Repair from another connection** ([Q-STOR-265](#q-stor-265--the-scrub-replaces-a-copy-it-found-damaged-in-the-same-run-and-reads-back-what-it-wrote-before-the-copy-counts)).
+  The scrub replaces a copy it marked in the same run, on a connection without `drain: true`, from a `present` copy on another reachable
+  connection (verified before not verified, then by list order): the source is read to its end through the worker and checked against
+  the digest while it is written (one `PutObject` up to a part, a multipart upload of ranged reads above, one part held in memory), a
+  source found damaged is marked and the next one tried, and the written object is read back whole before anything is recorded. The copy
+  row becomes `present` and verified, and its queue row goes, only while it is still the row that was found damaged (the same state and
+  the same time of that change), so no insert bound is needed. A failed write, a read-back that does not match (a store that applies an
+  overwrite late) or no source leaves the copy marked and queued for the reconciliation (R-STOR-056);
+  `quader_storage_scrub_repairs_total{connection,outcome}` counts `repaired`, `failed` and `no_source`. With one connection, or when no copy
+  is whole, the blob is `missing` or `corrupt` and is listed by the API below; it is repaired as before: a later upload of identical
+  content rewrites the object (R-STOR-005), a remote repository treats the item as a cache miss and refetches it
   ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-025 "Lost content", Q-REPO-202), and a `missing` mark heals by itself when
   the object comes back (R-STOR-055).
 - **The job.** Task and kind `scrub` in the queue `maintenance`, `exclusive`, scheduled hourly. A run reads every connection at once, one
@@ -2793,28 +2811,41 @@ to R-STOR-058.
   is free now redirects; a research of 2026-11-22, not verified). The reads count against the provider's request and bandwidth limits that
   serving shares (documented there as 2,500 requests per second, 500 concurrent requests and 500 MB/s per project, same research). A
   connection whose present bytes exceed `scrub_period × scrub_bytes_per_second × run_duration / 1h` cannot keep up:
-  `quader_storage_scrub_overdue_copies{connection}` grows and `QuaderStorageScrubBehind` fires.
+  `quader_storage_scrub_overdue_copies{connection}` grows and `QuaderStorageScrubBehind` fires. A copy is overdue when its last
+  verification, or its write when it was never verified, lies more than its connection's `scrub_period` and one day back; every replica
+  that has the connection counts them from PostgreSQL
+  ([Q-STOR-266](#q-stor-266--a-copy-is-overdue-one-day-after-its-period-and-every-replica-counts-the-overdue-copies-from-postgresql)).
 - **Detection writes an audit event per blob** whose state changes (here, in R-STOR-013, and a read that the store answers "no such
-  object", [ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151), and increments `quader_storage_blobs_damaged_total{status}`; a copy's
-  damage that leaves the blob `ok` is a metric and a log line, not an audit event. The gauge `quader_storage_blobs_damaged{status}`
+  object", [ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151, and the reconciliation's source, R-STOR-056):
+  `system.storage.blob_damaged` with the digest and the state, actor `system:replica`, outcome `warning`, asynchronous because the store's
+  damage hook runs after the mark's transaction committed; and increments `quader_storage_blobs_damaged_total{status}`. A copy's damage
+  that leaves the blob `ok` is a metric and a log line, not an audit event. The gauge `quader_storage_blobs_damaged{status}`
   reports the current number of damaged blobs, and `quader_storage_copies{connection,state}` the copies per state, from the latest storage
   summary (R-STOR-028).
 - **The list of damaged blobs.** `GET /api/v1/storage/damaged-blobs?scope=blobs|copies&connection=&status=&cursor=&limit=` (permission
-  `storage.read` or system administrator): `scope=blobs` (default) lists the blobs no connection holds whole (`content_status` other than
+  `storage.read`, which is the capability `settings:read`,
+  [Q-STOR-267](#q-stor-267--the-damaged-blobs-list-is-read-with-settingsread-and-the-recheck-writes-no-object)): `scope=blobs` (default) lists the blobs no connection holds whole (`content_status` other than
   `ok`); `scope=copies` lists the blobs with at least one `missing` or `corrupt` copy, the self-healing view. Each entry carries `sha256`,
   `size`, `contentStatus`, `copies[]` (`connection`, `state`, `verifiedAt`, `checkedAt`, `stateChangedAt`), the first 20 referencing items
   (`project`, `repository`, `path`, `trashed`) and `itemCount`
   ([Q-API-386](api-and-ui.md#q-api-386--the-damaged-blobs-list-has-two-scopes-and-shows-each-copy)).
-  `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` reads every copy of that blob whole at once, unthrottled, sets the states by what it
-  finds, queues the repairs, and answers with the copies (permission: system administrator).
-- **Trigger.** `POST /api/v1/system/tasks/scrub/run` with `{"connection": ""}` (optional; empty: every connection) runs the due reads.
-  Observation and stop through the job API. Permission: system administrator.
-- **How the evidence becomes true.** R-STOR-027 is listed as implemented today ([implemented.txt](../coverage/implemented.txt)) because
-  tests of other parts name it: the lost content of a remote repository (`internal/proxy/lost_test.go`,
-  `test/integration/proxy/lost_test.go`, `test/integration/npm/remote_lost_test.go`, `test/integration/nuget/remote_lost_test.go`) and
-  the operator check (`internal/blob/verify/verify_test.go`). The build renames the first group to R-REPO-025, whose "Lost content" they
-  test, and the second to R-STOR-058, and removes R-STOR-027 from `implemented.txt` in the same change, so the requirement is claimed again
-  only by the scrub's own tests (Q-STOR-240).
+  `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` reads every copy of that blob on the answering replica's connections whole at once,
+  unthrottled, sets the states by what it finds, queues the repairs, and answers with the copies and the content state they give
+  (permission `settings:write`, the system administrator's): a present copy that matches is stamped, one that does not is marked; a
+  `missing` or `corrupt` copy that now reads whole is `present` again, one that still does not keeps its mark; it writes no object
+  (Q-STOR-267).
+- **Trigger.** `POST /api/v1/system/tasks/scrub/run` with `{"connection": ""}` (optional; empty: every connection) runs the due reads; a
+  connection the worker does not configure fails the job at once. Observation and stop through the job API; the job's result carries, per
+  connection, `read`, `verified`, `corrupt`, `missing`, `errors`, `bytes`, `repaired`, `repairsFailed` and why its reader `ended`
+  (`done`, `duration`, `draining`, `circuit_open`, `cancelled`, `error`). Permission: system administrator (`settings:write`).
+- **How the evidence becomes true** (Q-STOR-240). The tests of other parts that named R-STOR-027 are renamed to what they test: the lost
+  content of a remote repository (`internal/proxy/lost_test.go`, `test/integration/proxy/lost_test.go`,
+  `test/integration/npm/remote_lost_test.go`, `test/integration/nuget/remote_lost_test.go`, and the subtests of
+  `internal/virtual/artifact_test.go` and `internal/api/edge/content_test.go`) to R-REPO-025, the operator check
+  (`internal/blob/verify/verify_test.go`) to R-STOR-058, and the mark of a download (`internal/blob/download_test.go`) to R-STOR-055. The
+  requirement is claimed only by the scrub's own tests (`internal/blob/scrub/scrub_test.go`, `internal/api/v1/storage_damaged_api_test.go`,
+  `internal/app/wire_storage_scrub_test.go`, `test/integration/blob/scrub_test.go`), so its line in `implemented.txt` stays true and the
+  record, which the pipeline writes, needs no edit by hand.
 
 Configuration:
 
@@ -2832,13 +2863,14 @@ maintenance:
 
 Acceptance criteria:
 
-- A copy whose bytes were replaced behind Quader's back (same length) is marked `corrupt` by a scrub run, the blob stays `ok`, the
-  reconciliation rewrites the copy from the other connection, and the next run verifies it (integration, PostgreSQL with two in-memory
-  stores).
+- A copy whose bytes were replaced behind Quader's back (same length) is marked `corrupt` by a scrub run, the blob stays `ok`, the scrub's
+  repair rewrites the copy from the other connection and records it verified, and the next run finds nothing due (integration, PostgreSQL
+  with two in-memory stores).
 - With one connection and its object deleted, a scrub run marks the copy `missing` and the blob `missing`; the damaged-blobs API lists the
   items referencing it; re-uploading the same file with `curl -T` sets both `present` and `ok`.
 - A store answering `503` to every read during a run leaves every state unchanged (unit, `internal/blob/scrub`).
-- With a throttle of 1 MiB/s and 4 MiB due, a run's reads take at least four seconds of the fake clock (unit).
+- With a throttle of 1 KiB/s and 4 KiB due, a run's reads take at least four seconds of the fake clock (unit; the configuration's minimum
+  of 1 MiB/s is the loader's rule, the throttle's arithmetic is the same at a thousandth of the data).
 
 ## Capacity
 
@@ -3363,15 +3395,14 @@ Built (package A): the configuration and its validation (R-STOR-050); the record
 (R-STOR-053); the reads over the copies (R-STOR-055); the start check and the conformance check per connection with the capabilities
 (R-STOR-035); the breaker, the metrics with `connection`, the readiness and the registry's object-store view (R-STOR-060); the seams of
 R-STOR-062. Built (package C): the reconciliation with its queue, its pass, the server-side and the streamed copies, the drain, the
-retirement, the journal pass and its metrics (R-STOR-056). Built (the chart's part of package E): the chart's list (R-HA-072). Not built:
-sessions on their connection, collection per copy and the orphan sweep (package B: R-STOR-054, R-STOR-057, R-STOR-026), the scrub and the
-operator check per connection (package D: R-STOR-027, R-STOR-058), the backup and restore per connection and the journal per connection
-(package E: R-BAK-030, R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built, collection deletes on the first
-connection only
-([H-1259](../security/object-store-connections.md#h-1259--until-collection-works-per-copy-it-deletes-on-the-first-connection-only)), a
-server-side copy is verified by nothing but a download
-([H-1261](../security/object-store-connections.md#h-1261--until-the-scrub-is-built-a-server-side-copy-is-verified-only-by-a-download)),
-and the backup and the operator commands read the first connection only
+retirement, the journal pass and its metrics (R-STOR-056). Built (package D): the scrub with its repair, the gauge of the overdue copies,
+the audit event of a detection, the list of damaged blobs and the recheck (R-STOR-027), the operator check and `restore-versions` per
+connection (R-STOR-058). Built (the chart's part of package E): the chart's list (R-HA-072). Not built: sessions on their connection,
+collection per copy and the orphan sweep (package B: R-STOR-054, R-STOR-057, R-STOR-026), the backup and restore per connection and the
+journal per connection (package E: R-BAK-030, R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built,
+collection deletes on the first connection only
+([H-1259](../security/object-store-connections.md#h-1259--until-collection-works-per-copy-it-deletes-on-the-first-connection-only)), and
+the backup reads the first connection only
 ([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads));
 one connection behaves as before this section.
 
@@ -3872,9 +3903,9 @@ storage summary's three gauges are package F's (R-STOR-028); the gauges of the r
 `quader_storage_connection_detached` of R-STOR-060. The acceptance criteria below are
 [reconcile_test.go](../../test/integration/blob/reconcile_test.go) and, against two real buckets,
 [connections_s3_test.go](../../test/integration/blob/connections_s3_test.go); the copies themselves, the throttle, the journal pass and
-the signal are unit tests in [internal/blob/reconcile](../../internal/blob/reconcile/). Until the scrub of package D is built, only a
-download verifies a server-side copy, so a drain beside one waits
-([H-1261](../security/object-store-connections.md#h-1261--until-the-scrub-is-built-a-server-side-copy-is-verified-only-by-a-download)).
+the signal are unit tests in [internal/blob/reconcile](../../internal/blob/reconcile/). The scrub (R-STOR-027) reads a server-side copy
+within the hour after it was made (never-verified copies first) and stamps its `verified_at`, which is the stamp the drain reads, so a drain
+beside such copies waits up to about two hours (the next hourly scrub run, then the drain's next walk, Q-STOR-259).
 
 Acceptance criteria (integration, PostgreSQL of the stack with two in-memory stores, unless named):
 
@@ -3925,7 +3956,9 @@ Acceptance criteria (integration, PostgreSQL with two in-memory stores):
 Priority: **P1** · Covers: quader-only
 
 The operator check moved here from R-STOR-027, whose scrub it is not
-([Q-STOR-240](#q-stor-240--the-scrubs-evidence-becomes-true-by-moving-the-tests-that-name-it-for-another-part)).
+([Q-STOR-240](#q-stor-240--the-scrubs-evidence-becomes-true-by-moving-the-tests-that-name-it-for-another-part)). **Built** (package D,
+[blob-store.md](../developer/blob-store.md#storage-verify-r-stor-058-q-stor-200)), with `restore-versions` per connection
+([Q-STOR-268](#q-stor-268--restore-versions-takes-one-credential-per-run-and-several-connections-with-different-logins-take-a-run-each)).
 
 - `quader admin storage verify [--connection <id>] [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json]` asks the store
   of each configured connection (or of the one named) for the object of every `present` copy of a `live` blob, with `HeadObject`, using
@@ -3936,14 +3969,20 @@ The operator check moved here from R-STOR-027, whose scrub it is not
   a blob is **lost** when none of its copies is there with its size. The command prints one line per missing copy (`copy <connection>
   <sha256>`) and, for a lost blob, one line per item that references it (`item <project>/<repository>:<path>`, `(trashed)` for a trashed
   one, at most `--max-items` per blob, default 20, with the number of the rest) and a line for a lost blob that no item references (one
-  that only a cache metadata entry, a UI asset or an avatar references prints so), then the totals per connection and in all.
+  that only a cache metadata entry, a UI asset or an avatar references prints so), then the totals per connection and in all. The last
+  line keeps the shape the recovery drills read: `storage verify: <n> blobs checked, <m> without object, <s> of another size, <u> not
+  checked, <i> items affected`, where *m* and *s* count the lost blobs.
+- **Lost** ([Q-STOR-269](#q-stor-269--the-operator-check-calls-a-blob-lost-when-no-copy-it-could-ask-is-there-and-no-present-copy-was-left-unasked)):
+  a blob none of whose copies that the run asked answered with its object of its stored size, and none of whose `present` copies was left
+  unasked (on a connection the configuration lacks, outside `--connection`, or not answered). A blob without a `present` copy is lost
+  without a question to a store.
 - An answer other than "no such object" (a timeout, `5xx`, throttling) is retried twice and then counted as *not checked*, never as
   missing; `AccessDenied` ends the run for that connection (a store answers it for a missing object when the credential may not list the
-  bucket). `--since` limits the run to blobs created or changed at or after the time (Q-STOR-200); `--json` prints the report as one
+  bucket), whose remaining copies count as not checked, and the run goes on with the others. `--since` limits the run to blobs created or changed at or after the time (Q-STOR-200); `--json` prints the report as one
   document.
-- **Exit status:** `0` when no blob is lost (missing copies are listed, the reconciliation repairs them); `5` when at least one blob is
-  lost, or, with `--connection`, when a copy on that connection is missing or of another size; `75` when nothing is lost but a check was
-  not answered; `2` a usage or configuration error; `1` another failure ([backup-and-restore.md](backup-and-restore.md) R-BAK-013 holds
+- **Exit status:** `0` when no blob is lost (missing copies are listed, the scrub and the reconciliation repair them); `5` when at least
+  one blob is lost, or, with `--connection`, when a copy on that connection is missing or of another size; `2` a usage or configuration
+  error, a store that refused a connection's checks included; `75` when nothing is lost but a check was not answered; `1` another failure ([backup-and-restore.md](backup-and-restore.md) R-BAK-013 holds
   the codes).
 - The recovery procedure runs it after a point-in-time restore ([ha-and-helm.md](ha-and-helm.md) R-HA-024, R-HA-025), whose
   post-restore step reads `Report.Lost` and the missing copies per connection; the pod-crash scenario of R-HA-052 and the cold-install
@@ -8417,6 +8456,122 @@ cannot finish is worse than one that waits. A copy claimed for deletion whose bl
 only of a blob it claimed (R-STOR-057).
 
 **Applied in the spec:** R-STOR-051 (the states' columns), R-STOR-056 (draining); code: [drain.go](../../internal/blob/reconcile/drain.go).
+### Q-STOR-265 · The scrub replaces a copy it found damaged in the same run and reads back what it wrote before the copy counts
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it. It changes a sentence of R-STOR-027,
+which gave the repair to the reconciliation, and adds `quader_storage_scrub_repairs_total`.
+
+Context: the owner's decision 10 says the scrub "replaces a damaged copy from another connection". One store of the owner's research has no
+upload checksum of its own and one applies overwrites and deletes with a delay (Q-STOR-249); no guarantee may rest on a conditional write.
+The reconciliation (package C) is built beside the scrub and may be behind or not yet landed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scrub repairs a copy it marked in the same run from a present copy on another connection, streamed through the worker and checked against the digest on the way, reads the written object back whole, and records it `present` and verified only while the row is still the one found damaged (same state, same `state_changed_at`); a failure leaves the copy marked and queued for the reconciliation (chosen) | One repair path in the run that found the damage | A damaged copy is replaced within the hour that found it, also while the reconciliation is behind; the read-back judges the store's result by its bytes, which a store without an upload checksum and one with late overwrites need; the identity check needs no insert bound, because a row that collection dropped and a commit wrote again has another identity | Two writers can repair one copy (the scrub and the reconciliation): harmless, both write the blob's bytes under its content address and only one record matches the identity; the repair's bytes pass the worker, within the connection's throttle |
+| (b) The scrub marks and queues; only the reconciliation repairs (R-STOR-027 before) | One writer | No second write path | A damage found by the scrub waits for another job; without that job nothing repairs; the reconciliation's stream has no read-back of what the store kept |
+| (c) The scrub repairs and the reconciliation leaves marked copies alone | One writer per cause | Clear ownership | A copy marked by a download or the orphan sweep is repaired only when the scrub reaches it again, which it never does: a marked copy is not present, so never due |
+
+**Choice:** (a). **Rationale:** what is damaged should be whole again as soon as Quader knows it, and a write that is not read back proves
+nothing on the stores Quader must support. The read-back of a store with late overwrites may still see the damaged bytes; the copy then
+stays marked, which is the safe direction. The development agent would revisit it when the reconciliation reads back its streamed copies
+too, which would let the scrub hand the write to it.
+
+**Applied in the spec:** R-STOR-027; code: [internal/blob/scrub/repair.go](../../internal/blob/scrub/repair.go), `ScrubRecordWhole`
+([blob_scrub.sql](../../internal/meta/postgres/queries/blob_scrub.sql)); gaps
+[H-1269](../security/object-store-connections.md#h-1269--a-copy-that-read-back-whole-may-still-be-served-stale-by-a-store-that-applies-overwrites-late).
+
+**Added at the landing on the reconciliation (package C).** *One mark.* The scrub marks a damaged copy, a source found damaged and a copy
+its recheck finds damaged with the store's `MarkCopyDamaged`, the mark of the download and of the reconciliation's source; it reports
+whether the copy stands marked, and only then does the scrub repair. A "no such object" is looked for once more with `HeadObject` before it
+stands, so a store that answered one request wrongly leaves no mark. *A failed repair.* The mark queues a row of `blob_copy_queue`; the
+reconciliation takes it (a target row `missing` or `corrupt` is copied over, a row without a present copy anywhere is deleted, Q-STOR-258),
+so a repair the scrub could not finish is retried there with its back-off. *A copy marked missing is read again.* A marked copy is no longer
+present, so it is never due for the walk, and with one connection, or no whole copy elsewhere, nothing else would ever look at it; a store
+that answered "no such object" wrongly for longer than the second look (a gateway rolled out or misrouted) would leave its blob `missing`
+until a read's recheck (R-STOR-055) or the recheck of the API. So each run first reads the copies of its connection marked `missing` whose
+store last answered for them more than `MissingLookInterval` (one day) ago: an object that reads whole again makes the copy `present` and
+verified and the blob follows; one still gone or damaged has its `checked_at` moved and waits another day.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each run reads the copies marked missing whose look is a day old, records one that reads whole and moves the look of the others (chosen) | One request per missing copy and day | A wrong "no such object" heals within a day of the store answering right again, also for a blob nobody reads; a copy whose object is really gone costs one cheap request a day | A real loss is asked for every day |
+| (b) Never again; leave it to reads, the recheck and the reconciliation | No requests | Cheapest | With one connection an unread blob stays `missing` after a store's mistake until an operator rechecks it |
+| (c) Every run | Hourly | Heals within the hour | Twenty-four requests a day per lost copy, and a bucket that was emptied costs a request per copy every hour |
+
+### Q-STOR-266 · A copy is overdue one day after its period, and every replica counts the overdue copies from PostgreSQL
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-027 names `quader_storage_scrub_overdue_copies{connection}` and the alert `QuaderStorageScrubBehind` (`> 0` for 6 hours,
+R-HA-045) without saying when a copy is overdue or who exports the gauge. In a steady state about a 720th of a connection's copies becomes due
+every hour and is read by the next hourly run, so the copies merely past their period are never zero for long on a large connection.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Overdue: a present copy whose `verified_at`, or `created_at` when never verified, lies more than its connection's `scrub_period` and one day back; read from PostgreSQL in the background by every replica that has the connection, for its connections (chosen) | A grace of one day | Quiet in the steady state and through a skipped run or a rollout; a connection that cannot keep up crosses the line within a day and the alert fires six hours later; `max by (connection)` over replicas is exact | Behind by less than a day is not shown |
+| (b) Past the period, no grace | Strict | Shows the first hour behind | 400,000 copies make about nine new due copies a minute: the gauge is above zero almost always and the alert fires on a healthy connection |
+| (c) The run sets the gauge at its end on the worker that ran it | No query | Cheap | A worker that ran an earlier run keeps its old value; the alert's `max` reads a stale series |
+
+**Choice:** (a). **Rationale:** the alert is about a connection whose period cannot be kept; one day is far below the 30-day period and far
+above a run's hour. The count uses the index `blob_copies_scrub` (two range counts per connection). The development agent would revisit the
+grace if an installation's period is set near its 24-hour minimum, where a day of grace doubles it.
+
+**Applied in the spec:** R-STOR-027; code: `scrub.OverdueGauge`, `scrub.OverdueGrace` ([metrics.go](../../internal/blob/scrub/metrics.go)),
+`ScrubOverdue`.
+
+### Q-STOR-267 · The damaged-blobs list is read with settings:read, and the recheck writes no object
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-027 names the permission `storage.read`, which [operations-and-observability.md](operations-and-observability.md) lists as a
+proposed name; the capability catalog of [authorization.md](authorization.md) R-AUTHZ-010 has no such capability, and `system.read` there is
+the capability `settings:read`. The recheck "sets the states by what it finds" without saying what a copy already marked becomes, and it runs
+on an `api` replica inside a request.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list with `settings:read`, the recheck with `settings:write` (as the task trigger); the recheck reads every copy unthrottled, stamps or marks a present copy, sets a marked copy that now reads whole present again, leaves a marked copy that still does not as it is, and writes no object (chosen) | Existing capabilities | The holders of the system status tab (R-UI-196) read the list; no new capability, scope item or role binding; the recheck is bounded by one read per copy and never waits for a write | A reader of the storage list also reads every other system page |
+| (b) A new capability `storage:read` | Narrower | Least privilege | A catalog entry, scope items, role bindings and tests for one list, before any role would hold it alone |
+| (c) The recheck repairs too | One click heals | Faster | A request that writes up to a blob's size to a store, under the request's deadline |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-027, [api-and-ui.md](api-and-ui.md) R-API-040; code:
+[storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go), [recheck.go](../../internal/blob/scrub/recheck.go).
+
+### Q-STOR-268 · restore-versions takes one credential per run, and several connections with different logins take a run each
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it. It changes a sentence of
+[backup-and-restore.md](backup-and-restore.md) R-BAK-030, which spoke of "that connection's entry of `--credentials-file`".
+
+Context: the file of `--credentials-file` holds one credential (`replay.LoadCredentials`, the file of `post-restore`); a format with one
+entry per connection is package E's to define for the journal reader, and it does not exist on this package's base.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The one credential of `--credentials-file` is used on every connection of the run; connections whose versioning logins differ get a run each with `--connection` (chosen) | One file format | Works with the file the chart already renders; a run per connection is the natural unit of a provider's login; no second format beside package E's | An installation with two providers and two logins runs the command twice |
+| (b) A file of entries by connection id | One run | One command | A second credentials format beside the journal reader's, before that one is defined |
+
+**Choice:** (a). **Rationale:** the step is a rare, manual one after a point-in-time restore; a run per connection is explicit. The
+development agent would revisit it when package E's per-connection file exists, to read the same file.
+
+**Applied in the spec:** R-STOR-058, [backup-and-restore.md](backup-and-restore.md) R-BAK-030; code:
+[admin_restoreversions.go](../../cmd/quader/admin_restoreversions.go).
+
+### Q-STOR-269 · The operator check calls a blob lost when no copy it could ask is there and no present copy was left unasked
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-058 calls a blob lost "when none of its copies is there with its size", but a run asks only the present copies on the
+connections of its configuration (or the one named), and a check may go unanswered. Its exit codes say nothing of a store that refuses one
+connection's checks.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Lost: no asked copy answered with its object of its stored size, and no present copy was left unasked or unanswered; a blob without a present copy is lost without a question; a store that answers `AccessDenied` ends that connection's checks, its copies count as not checked, and the run exits `2` unless a blob is lost (chosen) | Lost only on evidence | A blob that may still be whole on a connection the run could not ask is never called lost; a blob the database already holds damaged on every copy is called lost, as an operator after a restore needs; a refused connection is a configuration error, not a temporary one | A run with `--connection` cannot call a blob with copies elsewhere lost: the named connection's findings carry its exit `5` instead |
+| (b) Lost when every asked copy is missing | Simpler | — | A blob whose only other copy lies on a connection that refused or did not answer would be called lost |
+| (c) A refused connection ends the whole run | As before for one store | Simple | The other connections' findings go unreported |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-058; code: [internal/blob/verify/verify.go](../../internal/blob/verify/verify.go),
+`verifyExit` ([admin_storage.go](../../cmd/quader/admin_storage.go)).
 ### Q-STOR-275 · A download takes its blob's copies from its item lookup
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
