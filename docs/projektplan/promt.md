@@ -4350,6 +4350,8 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
    that stays (H-1194). The statuses of the decision blocks he confirms in this walk are changed in one commit of
    the specification after it.
 3. **A gate at the upload as well for npm and NuGet (Q-SIG-79).** Built: (a) no, one behaviour for every format.
+   **Answered by him on 2026-11-22 at 20:42: (a), as built** ("a"). Not measured, and told to him: how long a
+   correctly signed npm or NuGet package is held back between its publish and the worker's verdict.
 4. **Debian and the gate (Q-SIG-80).** Built: (a) the setting is not offered.
 5. **Where an image's receipt stands (Q-SIG-66).** Built: (b) as a referrer only where it hides no older signature of a
    publisher, otherwise through the API.
