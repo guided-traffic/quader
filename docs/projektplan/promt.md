@@ -583,6 +583,22 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **The several connections between their first package and the ones that follow** (found on 2026-11-22 by the
+  builder of package A while it corrected the documentation against the code; none of them touches an
+  installation with one connection whose identifier is `default`, which is what the owner's is; the manual's
+  page of the limitations says each): (1) **four alerts of the chart read series nobody exports yet** (the
+  backlog, a damaged copy, the scrub behind, a detached connection), and the alert of a damaged copy points
+  to an API that does not exist yet; silent until the reconciliation, the scrub and the surface are built,
+  each of which takes its lines out of the chart tests' list. (2) **The journal is shipped to the first
+  connection that is not draining, while the restore, the step after a restore and the backup read the first
+  element even when it drains;** with `drain: true` on the first element the two differ, so a backup can lack
+  new blobs and a restore can miss the journal. Repaired by the rest of package E (the backup reading one copy
+  per blob, the journal per connection). (3) **The restore's stand-in records the restored copies on the
+  connection `default`,** so a restore into a configuration whose first element has another identifier leaves
+  the blobs on a detached connection, unreadable. The rest of package E. (4) **The tasks `scrub` and
+  `storage-reconcile` are in the default maintenance plan without a job kind,** so nothing runs: between
+  package A and the scrub's package no job reads the stored content for damage (the old deep check went with
+  A). The reconciliation (in work) and the scrub's package.
 - **Two commits of 2026-11-22 added a line each to the evidence record by hand** (`docs/coverage/implemented.txt`: the
   kit's check for the Bastion and the declaration for signed links), against the developer page of the evidence,
   which says the pipeline writes that record from the test reports and nobody else does; found by the builder of
@@ -1734,7 +1750,23 @@ runs are in `git log`; this section holds the current state.
   what a page says of a removed key is wrong the moment the change lands (rule "document immediately"). The
   builder of package A corrects them as one commit of the type `docs` on top of the two, every key read from
   the configuration's code and the chart; the three land in one push once that commit and the development
-  agent's integration run (20 areas passed at 14:36, the others run) are done.
+  agent's integration run (20 areas passed at 14:36, the others run) are done. **Corrected by 15:02** (one commit
+  of the type `docs` on top of the chart's, 16 files; every key, default, path, metric, command and refusal
+  read from the configuration's code, the chart's templates and the commands; the manual's table of the
+  store's keys names what one connection needs in the plain case and links the full reference; its gates,
+  the tests that read the manual, the web rule check of the manual's pages, the chart tests, the evidence with
+  links and check, exit 0). **Reading the code for it, its builder found six places where the code does not do
+  what the specification or a page says.** Two are repaired before the landing, as one commit of the type
+  `fix` on top, in work since 15:03: **the object store's error messages still name the removed keys** (an
+  operator with a wrong connection would read a key that no longer exists), and **the restore's check of the
+  empty prefix refuses the marker** that every start now writes, where R-BAK-030 accepts the marker of the
+  backup's own installation, so a restore into a prefix a replica has started on would fail. The other four
+  are in "Open findings" (Product) with the package that repairs each: the alerts' series, the journal and
+  the backup on the first element against the shipper's first connection without drain, the restore's
+  stand-in on `default`, and the two tasks without a job kind. **At 15:02** 29 integration areas on A's commit
+  have passed and none failed; the kind cluster of the development profile's proof exists; **the pipeline
+  run of the encryption's format (pushed 13:59) ended green, whole,** and the run of the Bastion's package D
+  is in progress.
 - **In work since 2026-11-22, 14:22: the planner of the handover per blob to a Bastion** (the owner's decision
   12, option b: a short-lived link of the object store and, on an encrypted connection, the data key of that
   one blob, so a Bastion reads large content from the store itself; no account and no key above the blob's own
