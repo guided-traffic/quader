@@ -256,9 +256,8 @@ Selected from [beyond-baseline.md](../features/beyond-baseline.md):
 - ⚪ Kubernetes service-account token trust
 - ⚪ Cache pre-warming from lockfiles and SBOMs
 - ⚪ SBOM attachment store
-- ⚪ Signature and provenance gates (Sigstore, Notary Project, SLSA): a gate per repository on a verified signature is
+- 🟡 Signature and provenance gates (Sigstore, Notary Project, SLSA): a gate per repository on a verified signature is
   decided by the owner (2026-11-21) as the third stage of signatures on artifacts and specified since that day; its
-  first two packages, the gate at the download and its releases, previews and API, are built (the same day), the
-  screens are not
+  three packages (the gate at the download, its releases, previews and API, its screens) are built (2026-11-22)
   ([promt.md](promt.md), [signatures.md](../spec/signatures.md)); provenance levels stay parked
 - ⚪ JSR through its npm compatibility layer

@@ -1568,13 +1568,56 @@ runs are in `git log`; this section holds the current state.
   landed, each exit 0:** build, the full unit run, generate-check, the evidence regenerated without a
   difference, links and check, the complexity check, the lint, the check of the workflow files; the diff
   holds no name the white-label rule forbids and no private key; no change of the UI or the chart. The
-  owner's UI backend started with it before the push. **Its release was cut at 00:56**; the unit job took 9.7 minutes. **Not verified:** the real clients against
+  owner's UI backend started with it before the push. **Its release was cut at 00:56**; the unit job took 9.7 minutes. Image and chart were published at 01:06, and
+  **the owner's installation runs it since 01:08** (read on the cluster at 01:08: every Deployment ready, no
+  restart, no error line of `api`, `packages` or the workers). Its run was stopped at its long jobs by the
+  push of the gate's screens. **Not verified:** the real clients against
   the repairs (dotnet against a gated repository, `ansible-galaxy`, Docker); nuget.org's countersignature
   under the shipped anchors. Its worktree and branch are removed.
+- **Landed on 2026-11-22 at 00:57: the screens of the gate (stage 3, package 3), and with them the third stage
+  is whole on `main`** (R-SIG-074; decisions Q-SIG-223 to Q-SIG-232, gaps H-1237 to H-1240; its builder worked
+  from 23:46 to 00:47; no change of Go, of the API or of the schema). **The repository's section
+  Signatures** (a detail of every repository but a system one, never in a creation flow): the setting with
+  its sentence, the warning of Q-SIG-76 where any anchor counts, the anchors that count with kind, source
+  and fingerprint, the preview read whenever the section opens ("n of m artifacts pass, k are refused"),
+  the question before a narrowing with the numbers per reason and up to twenty examples, an Owner's view
+  with the narrowings alone as controls, the sentence for a Debian repository and for an installation whose
+  checks are off. **A refused artifact:** a banner at the version in the gate's words, "Refused here" with
+  the reason in place of the download at the file, the release for who holds the triage right, and for a
+  released one who released it, when and why, with the withdrawal; an image that passes on its index says so
+  for each platform. **The security dashboard's view:** the refused downloads with filters, the release and
+  the withdrawal, and a repository's releases. **The impact** is asked before an anchor is removed or
+  switched off, the project anchors' switch is turned off or a signer is blocked, when it is above nothing.
+  The client setup of a gated repository says so and names the anchors. Both languages (114 units).
+  **Decided by its builder,** among its ten blocks: the section learns from the preview's refusal that the
+  checks are off, because an Owner may not read the installation's settings (Q-SIG-223); a writer who may
+  not loosen gets exactly the narrowings as controls (Q-SIG-224); a refused index names no platform's
+  decision, because the API judges the tag alone (Q-SIG-226, gap H-1238); the releases are listed one
+  repository at a time, as the API lists them (Q-SIG-227, gap H-1239). **Its gates, each exit 0:** the UI's
+  install, tests, lint, the layout checks' own tests, the build in both languages, the evidence; the renders
+  of every page it changed at 1,440, 1,024 and 390 px, light and dark (its first run over 153 screens had one
+  failure, an older walk that opened the new list's filter, corrected; two findings of the layout checks at
+  the refused downloads' list, corrected). **Looked at by the development agent** (rule 11): the section with
+  chosen anchors, a removed one in red and the preview's sentence as an Owner (wide, light); a refused npm
+  version with its banner and "Refused here" (wide, light); the dashboard's refused downloads and releases
+  (1,024 px, dark); the question before a narrowing with its twenty examples (narrow, dark); an image that
+  passes through its index (wide, dark). They read as the pages around them do. Seen and left: a refused
+  version's install box still offers its command beside the banner that says downloads are refused; the
+  dashboard's rows show the storage path under the artifact's name, as the file view does. **Done at the
+  landing by the development agent:** the specification's decision blocks of both sides kept (the repair's
+  and the screens'); on the commit as it landed, each exit 0: the UI's install, the API's types regenerated
+  and the translation source extracted without a difference, the UI tests (1,929), lint, layout tests and
+  build, the evidence and its count test; the diff holds no name the white-label rule forbids. Pushed
+  after the release of the repair before it, whose run it stopped at its long jobs. **Its release was cut at 01:10.** **Its tests
+  cost** about 0.4 s of UI tests and about 90 s of the layout job (31 states, 186 pictures; the job stood at
+  42 of its 75 minutes). **Not verified:** a real save of the setting, a real release and the real refusal
+  of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
+  answer changed in the browser, because the render profile gates no repository); the German texts in a
+  browser; a virtual repository's sentence. Its worktree and branch are removed.
 - **In work: the receipt attestations (since 21:40; reported at 23:43, since 23:44 brought onto `main`, and
-  since 00:44 onto the repair above, which changes the statement both touch) and the screens of the gate
-  (since 23:46).** The repair of the first stage's defects, whose report follows here, landed at 00:44 (the
-  entry above).
+  since 00:44 onto the repair above, which changes the statement both touch).** The repair of the first
+  stage's defects, whose report follows here, landed at 00:44, and the screens of the gate at 00:57 (the
+  entries above).
   **The attestations' report** (stage 2, package 3; one commit on the base of 21:47): an in-toto statement
   with a predicate of Quader's own in a bundle with the leaf certificate, made by a kind of the job `signing`
   for every stored file of a format that attests something, after the checks' first verdicts or the bound,
@@ -3353,8 +3396,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
   CPU, storage and duration, which are estimates.
   **The third stage, the gate per repository, is specified on `main` since 2026-11-21, 14:02** (R-SIG-061 to
   R-SIG-078, Q-SIG-75 to Q-SIG-95, ADR-231, H-1194 to H-1200; **package 1, the gate at the download, is landed
-  since 21:47 the same day and package 2, the releases, the previews and the API, since 23:44 (run record); the
-  screens are not built, so the setting is reachable through the API alone**). **The setting:** a
+  since 21:47 the same day, package 2, the releases, the previews and the API, since 23:44, and package 3, the
+  screens, since 2026-11-22, 00:57 (run record): the third stage is whole. Measured with real clients and
+  repaired where they found a fault; not verified from the screens against a real gated repository**).
+  **The setting:** a
   repository's detail section **Signatures** gets "only artifacts with a verified signature" (off by default)
   and optionally the anchors that count; never in a creation flow; narrowing it is any settings writer's,
   weakening it needs the right that weakening the malware gate needs. **What passes:** an artifact with one
