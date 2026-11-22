@@ -1617,6 +1617,14 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
+- **In work since 2026-11-22, 08:30: four researches for the topic the owner opened at 08:25,** the encryption
+  and integrity of the stored content, the delivery by signed links, several object stores, a Bastion that
+  reads the bucket, and a hierarchy of keys ("With the owner" holds his words, what the specification says
+  already and what each research reads). No builder runs; nothing of the product changes until he has
+  answered the working paper that follows them. **The walk through the open questions is moved to the evening
+  by his word of 08:25;** they are listed in their order at the top of "With the owner", the first of them
+  (Q-SIG-211) with a finding of that morning: a writer's read through the signature gate is recorded
+  nowhere.
 - **State on 2026-11-22 at 03:40: everything the owner named before he left on 2026-11-21 is built, released
   and running on his installation, and nothing is in work.** The ClamAV change with the client certificates
   of its endpoint; the registries' presets; the image analyser's move into the scanner unit, with the
@@ -3397,7 +3405,88 @@ runs are in `git log`; this section holds the current state.
 
 Everything that waits for the owner, one line each, with where the detail is. Put to him one at a time (standing rules).
 
-**A topic he opened on 2026-11-21, answered in its working paper the same morning; its first stage is being specified**
+**The open questions, to be put to him one at a time on the evening of 2026-11-22**
+
+He asked on 2026-11-22 at 08:00, away from his desk, to go through the open questions one by one; the first was put
+to him, and at 08:25 he moved the walk to the evening: "Das machen wir doch besser wenn ich heute Abend wieder am
+Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The questions, in the order they are put
+(by weight; each is built with the choice named, and its options and detail are in the entries below):
+
+1. **Who reads through the signature gate of a gated OCI repository to sign an image (Q-SIG-211).** Built: (a) who may
+   write to the repository. Put to him on 2026-11-22 in the answer to his message of 08:00, with a finding from
+   reading the code again: a writer's read through the gate leaves no audit event and no metric (`Verdict.Writer` is
+   set in `internal/signatures/gate/gate.go` and read nowhere outside the tests), where every refusal leaves an event,
+   a metric and a row of the refused downloads. So the question "who pulled an unsigned image out of a gated
+   repository" has no answer today. **The recommendation is now (a) with that trace** (an audit event and a metric for
+   each such read; a small package, tested at the unit tier); (c), nothing passes and an image is signed elsewhere
+   and promoted, stays the strict form for a later promotion flow. Not verified: `notation sign` after the repair;
+   whether `cosign copy` into a gated repository works (the way (c) would need). Unanswered.
+2. **How strong the gate is without chosen anchors (Q-SIG-76).** Built: (a) whatever shows as verified passes, with a
+   warning at the setting.
+3. **A gate at the upload as well for npm and NuGet (Q-SIG-79).** Built: (a) no, one behaviour for every format.
+4. **Debian and the gate (Q-SIG-80).** Built: (a) the setting is not offered.
+5. **Where an image's receipt stands (Q-SIG-66).** Built: (b) as a referrer only where it hides no older signature of a
+   publisher, otherwise through the API.
+6. **What proves the time of a receipt (Q-SIG-63).** Built: (a) nothing for now.
+7. **Whether his company's CA issues ECDSA P-256 code-signing certificates (Q-SIG-53),** a fact only he has, and with it
+   what his installation gets as its signing identity (nothing is signed there until it has one).
+8. **A registry signature for Ansible Galaxy (Q-SIG-68).** Built: (a) none.
+9. **What "betrieben" covers** in his note "Alle 3 Wege sollen von dir gebaut und betrieben werden": the signing
+   services on his cluster and in his CI, or the tests alone. Asked on 2026-11-21, unanswered.
+10. **A scanner pod whose process is taken over answers false detections (H-1181).** Built: (a) accepted and taken into
+    the security pass before BETA.
+11. **The binding of a host to a repository of `upstream` at its root** (below, "Questions he has not answered").
+12. **The next lever of the test suite** (below; the fourth integration shard is cut since 2026-11-21, 23:44, by the
+    development agent; what is left to decide is whether the formats' repeated integration tests move into the format
+    contract's kit, and the other candidates of the measurement).
+13. **What frees a release once the full gate returns** (below; a question for later).
+
+Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
+Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
+with a signing identity. **Beside the questions, his when he is back** (run record, the state of 03:40): the walkthrough
+of the new screens; what his installation needs before anything is signed or gated there and before a ClamAV client
+updates with a client certificate; the two things on the development machine; the three orphaned Secrets on his
+cluster.
+
+**A topic he opened on 2026-11-22: encryption and integrity of the stored content, several object stores, a Bastion
+that reads the bucket**
+
+- **His words** (08:25): "Lass uns nun über die Verschlüsselung und Integrität der s3 Daten sprechen. Schau dir dazu den
+  s3-encryption-proxy v5 an. - Wir brauchen ein Setting um durch den Admin bestimmen zu lassen ob wir unsere Artefakte
+  direkt oder durch signierte s3 Links ausliefern lassen - Es gibt ein Flag um die Daten im s3 verschlüsselt
+  abzulegen, dann müssen wir natürlich die Daten ausliefern und können das nicht mehr durch s3 links machen - Wir
+  wollen mehrere s3-Verbindungen gleichzeitig bieten um gegenüber Ausfällen einzelner Anbieter resilient zu werden. Ob
+  verschlüsselt wird, kann pro Verbindung entschieden werden. - Ein Bastion kann auch einen Read-Only Account auf ein
+  s3 Bucket bekommen und damit die Hauptinstanz weiter entlasten - Der Instanz KEK muss rotiert werden können - damit
+  ein Bastion ggf. Nur Teile der Artefakte aus dem s3 lesen kann, gibt es neben dem Instanz KEK auch noch Projekt-KEK
+  und Repository-KEK. Ein Bastion bekommt dann ggf. nur die Schlüssel die er tatsächlich braucht. Ich bin mir nicht
+  sicher ob wir den s3 encryption Proxy importieren sollen oder die Funktionalitäten einfach bei uns aufbauen. Alles
+  das ist erstmal nur eine grobe Wunschliste. Du sollst evaluieren was davon erfüllbar ist und wie genau wir das
+  umsetzen sollten um uns maximal resilient und sicher zu machen." **Nothing of it is decided or specified beyond what
+  the specification holds already** (read on 2026-11-22): the client-side encryption of stored content in the format
+  of the encryption proxy, imported as a module, decided by him on 2026-11-06 and not built
+  ([R-STOR-048](../spec/storage.md#r-stor-048--client-side-encryption-of-stored-content), with eleven points open
+  before it is built, among them the seam to Quader's own multipart uploads, the server-side copies, the object names
+  that confirm a known file, the scope against the deduplication across repositories, and key custody and rotation);
+  the presigned download redirect as a switch per repository, specified and of the second priority
+  ([R-STOR-014](../spec/storage.md#r-stor-014--presigned-download-redirect-per-repository)); the object store's own
+  encryption (R-STOR-032). **What his list adds or reopens:** import or build (he doubts his decision of 2026-11-06);
+  the delivery by signed links as an administrator's setting; several connections with encryption per connection; a
+  Bastion with a read-only account of the bucket; a rotation of the installation's key; a key per project and per
+  repository. **In work since 08:30: four researches,** each read-only and each with its findings in a file: the
+  encryption proxy's fifth version (its stored format and what it withstands, its keys and their rotation, its Go
+  packages and what an import brings into Quader, its quality, and the facts for import, rebuild or a format of
+  Quader's own); Quader's store as it is (object names, the deduplication and who references a blob, the one
+  connection the code assumes, the write and read paths, integrity today, what of the redirect is built, backup and
+  restore, the tests' cost); the download path of every format with what a redirect would skip, the Bastion (what it
+  serves, how content reaches it, what a direct read would need and bypass) and the keys Quader manages already; and
+  the state of the art (clients and redirects for every format and the formats to come, formats of client-side
+  encryption and their attacks, key hierarchies and rotation, several object stores, integrity). **Next:** the
+  evaluation as a working paper he answers in, as for the malware scan and the signatures (standing rules): his
+  wishes as read, what is satisfiable and at which price, and the decisions with options and a recommendation each.
+
+**A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
+open questions are in the list above**
 
 - **Signatures on artifacts of every format** (his words): "Quader muss in Zukunft auch das feststellen, auslesen und
   verifizieren von Signaturen auf (wenn möglich) allen Artefaktarten unterstützen. Dabei muss es zwischen öffentlich
