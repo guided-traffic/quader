@@ -4340,7 +4340,11 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
    repository" has no answer today. **The recommendation is now (a) with that trace** (an audit event and a metric for
    each such read; a small package, tested at the unit tier); (c), nothing passes and an image is signed elsewhere
    and promoted, stays the strict form for a later promotion flow. Not verified: `notation sign` after the repair;
-   whether `cosign copy` into a gated repository works (the way (c) would need). Unanswered.
+   whether `cosign copy` into a gated repository works (the way (c) would need). **Answered by him on 2026-11-22
+   at 20:35: (a) with the trace** ("a mit spur"). The trace is a package of its own, in work since 20:36: an
+   audit event and a metric for every read that passes the gate only because the caller may write, shaped as
+   the gate's refusals are, with the decision block's status, R-SIG-064 and H-1229 changed in the same commit;
+   unit tier. Builders with a test load: the stacking, the links, this one, and the landing's gates of the keys.
 2. **How strong the gate is without chosen anchors (Q-SIG-76).** Built: (a) whatever shows as verified passes, with a
    warning at the setting.
 3. **A gate at the upload as well for npm and NuGet (Q-SIG-79).** Built: (a) no, one behaviour for every format.
