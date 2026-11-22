@@ -3617,10 +3617,11 @@ that reads the bucket**
   on, a provider changed and a damaged copy replaced; signed links as one switch of the installation, only where
   the format's client verifies a digest itself and no pace limit applies; no account and no key for the Bastion,
   and if it shall relieve the main installation, a link and the data key per released blob. **The favourites,
-  so that a later reading can tell where he deviated,** each option (a) but decision 12, which is (b) since 09:53: (1) a format of Quader's own with test
+  so that a later reading can tell where he deviated,** each option (a) but decision 12, which is (b) since 09:53, and decision 2, which is (e) since 10:07 (below); the
+  fifteenth decision, added at 10:07, is (a): (1) a format of Quader's own with test
   vectors, fuzzing and an offline tool, against importing the proxy's package, its codec alone, or extending the
-  proxy first; (2) the wrapped data key in the database and in the object's metadata, bound to the digest, under
-  the connection's storage key; (3) no level of keys per project or repository, with room for one later, against
+  proxy first; (2) at first the wrapped data key in the database and in the object's metadata, since 10:07 once, at the
+  object alone (e); (3) no level of keys per project or repository, with room for one later, against
   wraps per referencing repository or objects per project; (4) the existing key ring as the root and its existing
   rotation; (5) on an encrypted connection an object's name is a keyed MAC of the digest; (6) a new connection is
   not encrypted unless told; (7) a connection's properties are fixed once it holds data, and changing them is a
@@ -3652,6 +3653,30 @@ that reads the bucket**
   authoritative wrap, the copy at the object can become a capability of a connection later. **The paper was
   published again at 09:53** with decision 12's new favourite, a fourth option of decision 2 (the copy at the
   object in an annotation) and the facts about annotations.
+  **His objection to decision 2, at 10:03, and the correction it caused:** "Ich verstehe nicht wieso du dafür bist,
+  einen Schlüssel zweimal abzulegen. Zweimal ablegen heißt doch es könnte auseinander laufen ..." **He is right, and
+  the first favourite was wrongly argued.** Checked again: of the three gains the paper gave the copy in the
+  database, none holds. That a rotation of the root touches no object comes from the storage key between the
+  root and the data key, not from a second place; no request is saved, because the object store sends an
+  object's metadata with every answer, also of a range; and whoever can only write to the bucket can slip in no
+  wrap anyway, having no storage key to make one and a foreign one failing at its binding to the digest. And the
+  two places do drift, with two functions Quader has (read in the code): after the database is restored to an
+  earlier point in time, its wrap does not fit a blob that was deleted and uploaded again since (the restore
+  accepts an object by its size), and `restore-versions` can cause the same; the blob would be whole and
+  unreadable. The option that answers him was missing from the paper, because "at the object" had been taken as
+  "directly under the root". **The favourite of decision 2 is now a new option (e):** the wrapped data key lies
+  once, in the object's metadata, written in the same request as the bytes, bound to the digest, under the
+  connection's storage key; the database holds no key of a blob, only state, size and the storage key's
+  identifier. Its prices: the store's interface gains metadata; a handover to a Bastion costs the main
+  installation one small request for the wrap; that his provider accepts new metadata on a copy is not verified.
+  **A fifteenth decision follows from it,** where the few storage keys lie: (a) once, in the database, a sealed row
+  per connection and generation, re-sealed by the existing rotation task, with a command that prints them sealed
+  for safekeeping beside the key ring (the favourite: what changes its sealing at every rotation lies once and
+  where the rotation is built; the price is that the bucket and the key ring alone no longer read a blob, the
+  sealed storage keys of any backup of the database are needed too); (b) also as a small object in the
+  connection's bucket; (c) only there. **The rule behind both:** what comes into being with every upload lies with
+  the bytes and only there; the few keys whose sealing changes lie where the rotation lives. **Published again
+  at 10:07.**
 
 **A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
 open questions are in the list above**
