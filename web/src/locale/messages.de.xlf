@@ -27311,6 +27311,15 @@
         <target>Vertrauensanker geändert</target>
       </segment>
     </unit>
+    <unit id="audit.action.signature.download_by_writer">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+      </notes>
+      <segment>
+        <source>Download by a writer: no verified signature</source>
+        <target>Download mit Schreibrecht: keine verifizierte Signatur</target>
+      </segment>
+    </unit>
     <unit id="audit.action.signature.download_refused">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:307</note>

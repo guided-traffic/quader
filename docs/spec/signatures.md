@@ -2962,7 +2962,11 @@ Priority: **P1** · Covers: BEYOND-019
   through the repository's signature gate. The right is asked only where the gate would refuse or hold the download, never on the pass path,
   and only for a request that addresses the repository holding the item. The malware gate and the vulnerability block still decide. A token
   with the write right therefore pulls an unsigned image of a gated repository
-  ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
+  ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)),
+  and each such read leaves a trace: a served download that passed only for the writer is counted in
+  `quader_signatures_downloads_by_writer_total` and written as `signature.download_by_writer` (R-SIG-075), which names the repository, the
+  artifact in its client's words, the caller and the reason a reader is refused for, at most once a minute per repository, path, caller and
+  client address on each replica ([Q-SIG-240](#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event)).
 - **Not asked:** while no gate that applies to the request is on (R-SIG-065), which the replica reads from its snapshot of the repositories'
   settings without a statement, so the download is unchanged; for the reads of system subjects (the image scanner's pull, the malware
   scanner's read, the worker's reads); for an item of a system repository of `upstream`
@@ -2983,7 +2987,9 @@ Measured on 2026-11-21 (R-SIG-078): while the gate is on, `cosign sign` (`GET`) 
 before they sign it and are refused, so an image pushed into a gated repository cannot be signed there. Repaired the same day (Q-SIG-211):
 the format declares it (`SignatureDeclaration.ReadToSign`, OCI alone), the format host gives the gate the caller's write right as a question
 (`Download.MayWrite`, decided as the listing form of the decision without an audit event), and the gate asks it only after a decision that
-is no pass (`Gate.writerRead`); `Verdict.Writer` says so. Measured again with the real cosign 3.1.4 (2026-11-22, `e2e (oci)`): the pusher's
+is no pass (`Gate.writerRead`); `Verdict.Writer` says so. The trace (owner, 2026-11-22): `Serve.Run`, once the download is served and no
+other check refused it, and `Check` call `Gate.WriterRead`, which counts the metric and queues the asynchronous event; a verified pass and a
+refusal never reach it, and it adds no statement to the request. Measured again with the real cosign 3.1.4 (2026-11-22, `e2e (oci)`): the pusher's
 `cosign sign --key` by digest without a log exits 0 in a gated repository, and a reader's `docker pull` is refused before the signature and
 served once Quader checked it; `notation sign` is not measured again.
 
@@ -2995,6 +3001,11 @@ Acceptance criteria:
   download's statements are as many as without stage 3.
 - Unit (`internal/signatures/gate`, milliseconds): a writer's read passes a refused download and is asked only then; a reader's is refused
   (`TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient`).
+- Unit (`internal/signatures/gate`, milliseconds, no payload): a writer's served read through `Serve.Run` and through `Check` leaves one
+  `signature.download_by_writer` (outcome `warning`, the caller as actor, `repository`, `path`, `artifact` in the client's words, `sha256`,
+  `reason`, `pending` included) and counts `quader_signatures_downloads_by_writer_total{reason}`; its `HEAD` and `GET` within the minute are
+  one event and two counts, another caller is an event of its own; a verified pass, a reader's refusal and a writer's pass that the malware
+  gate then refuses write none, and the verified pass reads one statement of rows (`TestR_SIG_064_AWritersReadIsAuditedAndCounted`).
 - Integration (area `signatures`, in `TestR_SIG_070_…`, under a second): an image pushed into a gated OCI repository is read by the pusher
   by digest with `HEAD` and `GET` (200) and refused to a reader with the text that names `app:1.0`.
 - End to end (the set `e2e (oci)`, `TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen`, an image of a few hundred
@@ -3514,6 +3525,7 @@ Priority: **P1** · Covers: quader-only
 | Event | Mode | Journal | Recorded when | Key fields in `details` |
 |---|---|---|---|---|
 | `signature.download_refused` | A | — | a gate refused a download, at most once a minute per repository, path and client address on each replica | `repository`, `path`, `sha256`, `reason` |
+| `signature.download_by_writer` | A | — | a gate served a download without an accepted signature only because the caller may write to the repository (R-SIG-064, Q-SIG-211); outcome `warning`, at most once a minute per repository, path, caller and client address on each replica (Q-SIG-240) | `repository`, `path`, `artifact`, `sha256`, `reason` |
 | `signature.release.granted` | T | — | R-SIG-070 | `repository`, `sha256`, `refusedReason`, `reason` |
 | `signature.release.withdrawn` | T | yes | R-SIG-070 | `repository`, `sha256`, `reason` |
 
@@ -3525,6 +3537,7 @@ The setting is recorded as every repository setting: `repository.updated`, with 
 | Metric | Type | Labels |
 |---|---|---|
 | `quader_signatures_downloads_refused_total` | counter | `reason` (R-SIG-068) |
+| `quader_signatures_downloads_by_writer_total` | counter | `reason` (R-SIG-068, and `pending`): what a reader would have been answered; each served download that passed only for the writer |
 | `quader_signatures_download_wait_seconds` | histogram | `outcome`: `served`, `refused`, `pending` |
 
 **Alerts** (rendered with the chart's rules, [ha-and-helm.md](ha-and-helm.md) R-HA-045), the one the gate needs beside stage 1's
@@ -3551,10 +3564,12 @@ in the grant's transaction, `signature.release.withdrawn` with its journal entry
 `signature.settings.changed` that switched project anchors off are `content` of every repository whose member `signatures.onlyVerified` is
 true when the feed is read (`BastionGatedRepositories`), and of the virtual repositories above them; with no gated repository the entry is
 dropped. The feed reads the audit event, whose details say whether an update narrowed; details that do not read are read as a narrowing.
+Built (the owner's trace of 2026-11-22, Q-SIG-211): `signature.download_by_writer` and `quader_signatures_downloads_by_writer_total`, written
+by `Gate.WriterRead` ([gate.go](../../internal/signatures/gate/gate.go)) through the same asynchronous buffer as the refusal's event.
 
 Acceptance criteria:
 
-- Unit (`internal/audit`, under a second): the three events are in the registry with their schemas and journal flags; the Bastion's
+- Unit (`internal/audit`, under a second): the four events are in the registry with their schemas and journal flags; the Bastion's
   classification test (`TestR_BAS_015_EveryJournaledEventIsClassified`) classifies the journaled ones; the feed's mapping of each
   (`TestR_SIG_075_TheGatesNarrowingsAreContentEntries`, `internal/bastionmain`, milliseconds).
 - Chart test (`test/chart`, about 0.1 s within `TestR_HA_045_PrometheusRule`): the alert renders and `promtool` checks it.
@@ -3664,6 +3679,10 @@ Measured for package 3 (2026-11-22, on the shared development machine): the gate
 gains anything. The renders of R-SIG-074 add 31 states, 186 pictures, to the job `ui-layout`: about 270 s of a browser, about 90 s at its three
 workers.
 
+Measured for the trace of a writer's read (Q-SIG-211, Q-SIG-240; 2026-11-22, in the unit job's mode with the race detector and atomic
+coverage): `TestR_SIG_064_AWritersReadIsAuditedAndCounted` reports 0.00 s for its three subtests, fakes and no payload, and the registry's row in
+`internal/audit` nothing measurable; no other tier gains anything.
+
 What only a real client shows and is not tested: `docker pull` of a multi-platform image signed at its index through a gated repository, a
 refused image's `denied:` line in Docker and Kubernetes, and `cosign verify` of a refused image, whose signatures stay fetchable.
 **Measured once on 2026-11-21**, after package 1 landed, with Docker 29.9.3, a kind node v1.37.0, npm 11.20.0, the .NET SDK 10.0.403,
@@ -3692,7 +3711,9 @@ The owner decided Q-SIG-1 to Q-SIG-16 on 2026-11-21 in his working paper, from t
 keep those options as they were put, translated from the paper's German. Q-SIG-20 onward are the development agent's: each question below
 was decided by the development agent from the listed options, and the owner reviews the choices at the walkthrough. Q-SIG-75 to Q-SIG-95
 are stage 3's; Q-SIG-131 to Q-SIG-144 were decided when its first package (the gate) was built, Q-SIG-223 to Q-SIG-232 when its third
-(the screens) was. Q-SIG-233 to Q-SIG-239 were decided when the second half of stage 2's screens was built.
+(the screens) was. Q-SIG-233 to Q-SIG-239 were decided when the second half of stage 2's screens was built, Q-SIG-240 when the owner's
+trace of Q-SIG-211 was. The owner confirmed Q-SIG-76, Q-SIG-79 and Q-SIG-80 on 2026-11-22, and decided Q-SIG-211 that day: (a), with a
+trace of every such read.
 
 ### Q-SIG-1 · What the icon stands for
 
@@ -4635,8 +4656,7 @@ the spec:** R-SIG-061, R-SIG-077.
 
 ### Q-SIG-76 · "Verified" is the badge's verified states, and any anchor includes the shipped public ones
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Put to the owner as a
-question, because it decides how strong the gate is without chosen anchors.
+Status: Decided by the development agent; **confirmed by the owner on 2026-11-22**.
 
 Context: the shipped anchor `sigstore-public` trusts every identity of the public Sigstore (R-SIG-017), where anyone with an e-mail address or
 a CI job of a public forge can sign; npm's provenance is verified against it. The owner's words: "only artifacts with a verified signature,
@@ -4683,7 +4703,7 @@ anchor: Quader signs everything it receives (R-SIG-044), so its statement would 
 
 ### Q-SIG-79 · The gate acts at download for every format, not at upload
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: Decided by the development agent; **confirmed by the owner on 2026-11-22**.
 
 Context, per format: OCI's signatures are pushed after the image (cosign and Notation name the pushed digest); a generic file's signature is a
 file of its own and an Ansible version's arrives through the management API (R-SIG-031); only npm's provenance (in the publish) and NuGet's
@@ -4699,8 +4719,7 @@ signature (inside the package) come with the upload, and the integrity check run
 
 ### Q-SIG-80 · Debian: the gate is not offered
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Put to the owner as a
-question, because a protocol's limit decides it (his rule of 2026-11-19).
+Status: Decided by the development agent; **confirmed by the owner on 2026-11-22**.
 
 Context: apt checks the signature of the index, which names each package's SHA-256, and no signature of a package (R-SIG-030); a `.deb`
 carries no badge (R-SIG-009), and a Debian remote stores only releases its upstream keys signed (R-DEB-020).
@@ -6125,8 +6144,11 @@ Status: **Decided by the development agent** — selected from the options below
 
 ### Q-SIG-211 · A writer of the repository reads through the gate where the format's signing tools read the artifact
 
-Status: **Decided by the development agent** in the owner's absence, after the measurement with real clients of 2026-11-21 (defect 2 of
-[signatures.md](../developer/signatures.md#defects-found)); put to the owner afterwards.
+Status: **Decided by the owner on 2026-11-22: (a), with a trace of every such read** ("a mit spur"); first decided by the development
+agent in his absence, after the measurement with real clients of 2026-11-21 (defect 2 of
+[signatures.md](../developer/signatures.md#defects-found)). Each served download that passes only for the writer is written as
+`signature.download_by_writer` and counted in `quader_signatures_downloads_by_writer_total` (R-SIG-075,
+[Q-SIG-240](#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event)).
 
 Context: R-SIG-064 says OCI's signatures arrive after the push; `cosign sign` `GET`s and `notation sign` `HEAD`s the manifest before they
 sign, the gate refused that read, and an image pushed while the gate is on could never be signed in its repository.
@@ -6477,6 +6499,27 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Hide a retired identity's entries | | Shorter | The window until the job signs again is invisible; the API lists them |
 
 **Choice:** (a). **Applied in the spec:** R-SIG-056. Code: [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) `issuedSentence`.
+
+### Q-SIG-240 · A writer's HEAD and GET of one manifest within a minute are one event
+
+Status: **Decided by the development agent** when the owner's trace of Q-SIG-211 was built (2026-11-22); the owner reviews it at the
+walkthrough.
+
+Context: the owner kept the writer's read of R-SIG-064 with a trace: an audit event and a metric for each such read. `notation sign` `HEAD`s
+and `cosign sign` `GET`s the manifest, and a tool often does both within seconds, so one signing is two or more served downloads. The refusal's
+event `signature.download_refused` is written at most once a minute per repository, path and client address on each replica, and its counter
+counts every refusal. The auditor's question is who took an artifact without an accepted signature out of a gated repository, which one, and
+when.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One event a minute per repository, path, caller and client address on each replica; the metric counts every download (chosen) | The refusal's window with the caller added to its key | One signing is one entry; the caller, the artifact and the time are all there; the counter keeps the number of reads; the bound of the refusal's dedup holds | A second read by the same caller within the minute is in the metric only |
+| (b) One event per request | | Every read is a row | One signing is two or more rows; a pipeline that polls a manifest fills the log |
+| (c) The refusal's key alone (repository, path, client address) | One window for both events | One rule | Two callers behind one address within a minute are one entry: the caller, which the event exists for, is lost |
+
+**Choice:** (a). The path is the stored path, so a read by tag and one by digest are two events, each naming the artifact as its client
+named it (Q-SIG-213). The outcome is `warning`: the download was served, and it is the one served download of a gated repository an auditor
+looks at. **Applied in the spec:** R-SIG-064, R-SIG-075. Code: [gate.go](../../internal/signatures/gate/gate.go) `WriterRead`.
 
 ## What this does not cover
 

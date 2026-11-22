@@ -31,41 +31,51 @@ type Serve struct {
 // malware_found, vulnerability_blocked, signature_not_verified, malware_not_checked, vulnerability_data_missing, and nothing waits; when
 // none refuses and some are pending, the request waits once for all of them until each has decided or the earliest bound is reached,
 // decides again, and a check still pending answers its 503, the malware gate's first. The signature gate reads its rows only when no
-// check above it in the order refuses already. The answers, events and metrics of each check stay its own.
+// check above it in the order refuses already. The answers, events and metrics of each check stay its own. A download the signature gate
+// passed only for a writer is recorded once it is served, when no other check refused it (Q-SIG-240).
 func (s Serve) Run(ctx context.Context) error {
+	sv, err := s.run(ctx)
+	if err == nil && sv != nil && sv.Writer {
+		s.Signatures.WriterRead(ctx, sv)
+	}
+	return err
+}
+
+// run is Run's decision and wait; it returns the signature gate's verdict, nil where the gate was not asked.
+func (s Serve) run(ctx context.Context) (*Verdict, error) {
 	mdec := s.malwareDecision()
 	block := s.VulnOf.Block
 	if mdec == malware.RefuseFound {
-		return s.Malware.Refuse(ctx, s.MalwareOf, mdec)
+		return nil, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
 	}
 	if block.Refused() && block.Code() == errs.CodeVulnerabilityBlocked {
-		return s.Enforce.Refuse(ctx, s.VulnOf)
+		return nil, s.Enforce.Refuse(ctx, s.VulnOf)
 	}
 	var sv *Verdict
 	if s.Signatures != nil && s.Signatures.Applies(s.SignaturesOf.Addressed, s.SignaturesOf.Holder) {
 		v, err := s.Signatures.Decide(ctx, s.SignaturesOf)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		sv = v
 	}
 	if sv != nil && sv.Outcome == Refused {
-		return s.Signatures.Refuse(ctx, sv)
+		return sv, s.Signatures.Refuse(ctx, sv)
 	}
 	if mdec == malware.RefuseNotChecked {
-		return s.Malware.Refuse(ctx, s.MalwareOf, mdec)
+		return sv, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
 	}
 	if block.Active() {
 		// vulnerability_data_missing refuses here; a block in the mode report is recorded and serves.
 		if err := s.Enforce.Refuse(ctx, s.VulnOf); err != nil {
-			return err
+			return sv, err
 		}
 	}
 	mPending, sPending := mdec == malware.Wait, sv != nil && sv.Outcome == Pending
 	if !mPending && !sPending {
-		return nil
+		return sv, nil
 	}
-	return s.wait(ctx, mPending, sv)
+	return sv, s.wait(ctx, mPending, sv)
 }
 
 func (s Serve) malwareDecision() malware.Decision {

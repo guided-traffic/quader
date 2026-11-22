@@ -263,12 +263,15 @@ type Verdict struct {
 	Reason    Reason
 	Released  bool
 	Signature int64
-	// Writer says the download passed because the caller may write to the repository and reads to sign (Q-SIG-211).
-	Writer  bool
-	d       Download
-	digests [][32]byte
-	views   []view
-	fetches []Fetch
+	// Writer says the download passed because the caller may write to the repository and reads to sign (Q-SIG-211); the serve point
+	// records it with [Gate.WriterRead] once the download is served (Q-SIG-240).
+	Writer bool
+	// withheld is what the gate would have answered a reader in place of the writer's pass: a reason of R-SIG-068, or pending.
+	withheld Reason
+	d        Download
+	digests  [][32]byte
+	views    []view
+	fetches  []Fetch
 }
 
 // Decide decides a download (R-SIG-062 to R-SIG-066): nil Verdict.Outcome Pass serves it. It classifies the item by its format, passes
@@ -302,8 +305,40 @@ func (g *Gate) writerRead(ctx context.Context, v *Verdict) error {
 	if err != nil || !ok {
 		return err
 	}
+	v.withheld = v.Reason
+	if v.Outcome == Pending {
+		v.withheld = reasonPending
+	}
 	v.Outcome, v.Reason, v.Writer = Pass, "", true
 	return nil
+}
+
+// reasonPending is the reason of a pending answer in the events and the metrics (Q-SIG-137).
+const reasonPending Reason = "pending"
+
+// WriterRead records a served download that passed the gate only because the caller may write to the repository (Q-SIG-211, Q-SIG-240):
+// the metric for each such download, and the event signature.download_by_writer at most once a minute per repository, path, caller and
+// client address on each replica, so that a client's HEAD and GET of one manifest are one event. A verdict without the writer's pass
+// records nothing. The event is asynchronous, as the refusal's: no statement within the request.
+func (g *Gate) WriterRead(ctx context.Context, v *Verdict) {
+	if g == nil || v == nil || !v.Writer {
+		return
+	}
+	d := v.d
+	g.o.Metrics.writerRead(string(v.withheld))
+	caller := d.Actor.Kind + ":" + d.Actor.ID
+	if !g.first("writer\x00" + d.Addressed.Name.String() + "\x00" + d.Path + "\x00" + caller + "\x00" + d.Source.ClientAddr) {
+		return
+	}
+	body, _ := json.Marshal(map[string]string{ // strings always marshal
+		"repository": d.Addressed.Name.String(), "path": d.Path, "artifact": nameOf(d), "sha256": hex.EncodeToString(d.Blob[:]),
+		"reason": string(v.withheld),
+	})
+	g.o.Audit.Record(ctx, audit.Event{
+		Type: audit.EventSignatureDownloadByWriter, Actor: d.Actor, Outcome: audit.Warning, Reason: string(v.withheld), Source: d.Source,
+		Subject:    audit.Subject{Kind: "repository", Name: d.Addressed.Name.String()},
+		Repository: d.Addressed.Name.String(), Project: d.Addressed.Name.Project, Path: d.Path, Endpoint: d.Endpoint, Details: body,
+	})
 }
 
 // subject classifies the item: judge is false for an item the gate passes as it is.
@@ -428,6 +463,7 @@ func (g *Gate) Check(ctx context.Context, d Download) error {
 	}
 	switch v.Outcome {
 	case Pass:
+		g.WriterRead(ctx, v)
 		return nil
 	case Refused:
 		return g.Refuse(ctx, v)

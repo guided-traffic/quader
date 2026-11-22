@@ -177,7 +177,7 @@ signature of any identity of the public Sigstore
 ([H-1195](#h-1195--under-any-anchor-a-project-owners-own-anchor-passes-the-gate-of-its-projects-repositories)); an image's blob fetched by
 its digest ([H-1196](#h-1196--an-images-gate-guards-its-manifests-a-blob-fetched-by-its-digest-passes)); a file that reads as a signature
 ([H-1197](#h-1197--a-file-read-as-a-signature-passes-the-gate-as-an-attachment)); a pull of an image by a holder of the repository's write
-right, which reads unsigned images so that it can sign them
+right, which reads unsigned images so that it can sign them, audited and counted for each read but not stopped
 ([H-1229](#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
 
 **Who can open or close it:**
@@ -443,8 +443,13 @@ Subject: gated OCI repositories and every credential with `deploy` on them, a CI
 that `cosign sign` and `notation sign` can read an image pushed while the gate is on, a principal that may write to the repository reads its
 manifests through the signature gate, by tag and by digest; the same credential therefore pulls and runs an unsigned image, where a
 consumer with the read right alone is refused. The malware gate and the vulnerability block still decide; other formats are not affected,
-because their signatures are made before the upload. What makes it real: a deploy token used also to pull into a cluster, or a CI job
-that pushes and runs images with one credential.
+because their signatures are made before the upload. The owner kept the read on 2026-11-22 with a trace: each such read is audited as
+`signature.download_by_writer` (outcome `warning`, the caller, the repository, the artifact in its client's words and the reason a reader is
+refused for, once a minute per repository, path, caller and client address on each replica,
+[Q-SIG-240](../spec/signatures.md#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event)) and counted in
+`quader_signatures_downloads_by_writer_total`. What remains open is the read itself: the trace tells who pulled an unverified image, it does
+not stop the pull, and an event the full buffer drops is in the log stream only (R-OPS-015). What makes it real: a deploy token used also to
+pull into a cluster, or a CI job that pushes and runs images with one credential.
 
 ### H-1201 · An npm version's fetch state outlives its tarball
 

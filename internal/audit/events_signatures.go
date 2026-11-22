@@ -29,6 +29,10 @@ const (
 	// EventSignatureDownloadRefused: a repository's gate refused a download (stage 3, R-SIG-075), or answered it pending after the wait,
 	// at most once a minute per repository, path and client address on each replica.
 	EventSignatureDownloadRefused = "signature.download_refused"
+	// EventSignatureDownloadByWriter: a repository's gate served a download without an accepted signature only because the caller may
+	// write to the repository and reads to sign (Q-SIG-211, Q-SIG-240), at most once a minute per repository, path, caller and client
+	// address on each replica; outcome warning, with the reason a reader would have been refused for.
+	EventSignatureDownloadByWriter = "signature.download_by_writer"
 	// EventSignatureReleaseGranted: a holder of the triage right released an artifact for one repository's gate (stage 3, R-SIG-070). It
 	// widens and is not journaled: a release granted after a restore point is lost.
 	EventSignatureReleaseGranted = "signature.release.granted"
@@ -100,6 +104,12 @@ func init() {
 			`"required":["repository","path","sha256","reason"],"additionalProperties":false}`,
 	})
 	gateReason := `{"type":"string","enum":["missing","untrusted","not_chosen","invalid","blocked","not_checked","pending"]}`
+	Register(EventType{
+		Name: EventSignatureDownloadByWriter, Category: CategoryContent, Mode: Async,
+		Schema: `{"type":"object","properties":{"repository":{"type":"string"},"path":{"type":"string"},"artifact":{"type":"string"},` +
+			`"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"reason":` + gateReason + `},` +
+			`"required":["repository","path","artifact","sha256","reason"],"additionalProperties":false}`,
+	})
 	Register(EventType{
 		Name: EventSignatureReleaseGranted, Category: CategoryContent, Mode: Transactional,
 		Schema: `{"type":"object","properties":{"repository":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +

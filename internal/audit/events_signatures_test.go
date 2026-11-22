@@ -36,8 +36,8 @@ func TestR_SIG_039_TheEventsAreRegisteredWithTheirSchemasAndJournalFlags(t *test
 	}
 }
 
-// TestR_SIG_075_TheGatesEventsAreRegistered: signature.download_refused of the gate per repository is asynchronous and not journaled; a
-// release granted is transactional and not journaled (it widens), a release withdrawn transactional and journaled (R-SIG-075).
+// TestR_SIG_075_TheGatesEventsAreRegistered: signature.download_refused and signature.download_by_writer (Q-SIG-240) of the gate per
+// repository are asynchronous and not journaled; a release granted is transactional and not journaled (it widens), a release withdrawn transactional and journaled (R-SIG-075).
 func TestR_SIG_075_TheGatesEventsAreRegistered(t *testing.T) {
 	for _, c := range []struct {
 		name    string
@@ -45,6 +45,7 @@ func TestR_SIG_075_TheGatesEventsAreRegistered(t *testing.T) {
 		journal Journal
 	}{
 		{EventSignatureDownloadRefused, Async, NoJournal},
+		{EventSignatureDownloadByWriter, Async, NoJournal},
 		{EventSignatureReleaseGranted, Transactional, NoJournal},
 		{EventSignatureReleaseWithdrawn, Transactional, JournalRevocation},
 	} {

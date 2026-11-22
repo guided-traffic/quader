@@ -144,7 +144,7 @@ notation sign quader.example.com/web/docker-local/app@sha256:<hex>
 
 Both tools read the image's manifest before they sign it, and push the signature as a referrer of the image. In a repository that serves
 only artifacts with a verified signature, an unsigned image is refused to every client until it is signed, with one exception: whoever may
-push to the repository can read it, so that the tools can sign it there. Sign it with a token that has the deploy permission on the
+push to the repository can read it, so that the tools can sign it there; each such read is recorded in the audit log. Sign it with a token that has the deploy permission on the
 repository; a token that may only read gets `403` with the reason. Once the signature is pushed and checked, everybody who reads the
 repository can pull the image.
 
