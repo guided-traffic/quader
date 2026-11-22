@@ -1617,6 +1617,30 @@ runs are in `git log`; this section holds the current state.
   of a weakening from the screens (every refused, released, preview and impact state of the pictures is an
   answer changed in the browser, because the render profile gates no repository); the German texts in a
   browser; a virtual repository's sentence. Its worktree and branch are removed.
+- **State on 2026-11-22 at 03:40: everything the owner named before he left on 2026-11-21 is built, released
+  and running on his installation, and nothing is in work.** The ClamAV change with the client certificates
+  of its endpoint; the registries' presets; the image analyser's move into the scanner unit, with the
+  analyser out of the release image; signatures on artifacts in their three stages (detect, verify and
+  show; Quader signs, with the signing identity, npm's registry signatures and the receipts; the gate per
+  repository with its releases, previews and screens). No builder runs, no worktree of this run is left,
+  the last pipeline run (44973617548, the repair of the usage counting) ended at 03:40 green on every job
+  (the four shards in 34.1, 32.4, 33.5 and 34.2 minutes, shard b green with the repair; the layout job in
+  44.0 minutes), and his installation runs that release since 03:15 with every Deployment ready. **What is
+  his when he returns** (each is in "With the owner" or section 8, with what was built meanwhile): the
+  walkthrough of the new screens (the signatures' settings with the signing identity, the gate in a
+  repository's settings, a refused artifact and its release, the security dashboard's signature view, the
+  step Verify of the client setup); the open questions of the signatures' second and third stage, among
+  them who may read through the gate to sign an image (Q-SIG-211) and whether his CA issues the
+  certificate a signing identity needs; what his installation needs before anything is signed or gated
+  there (a signing identity; a repository with the gate switched on) and before a ClamAV client updates
+  with a client certificate; two things on the development machine (the default kubeconfig's context, a
+  Homebrew `trivy` older than the pin). **Not verified anywhere and named in the entries below:** the German
+  screens in a browser; the gate's and the identity's screens against real state (their pictures are
+  answers changed in the browser, the last package excepted, which its builder saw with a real identity);
+  keyless signing; a rotation of the signing identity on a cluster; a real cert-manager and a real company
+  CA. **Findings left for a batch** are in section 8 (among them: the linter's missing time limit in the
+  make target, the script that picks the end-to-end legs, the restore drill's values, two fuzz jobs' names,
+  the UI tests that wait a fixed time for the person search).
 - **Landed on 2026-11-22 at 02:54: the cause of two red runs of `integration (shard b)` was a defect of the
   product, in the usage counting since 2026-11-19, and it is repaired** (a commit of the type `fix`; its
   agent worked from 02:28 to 02:50). In two of the three runs that ended since the fourth shard was cut,
@@ -4194,7 +4218,8 @@ the walk items and the run record); what the code holds beyond the plan has not 
   record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push. **Its first
   run** (00:02 to 00:44 of 2026-11-22): 33.1, 32.7, 30.0 and 32.8 minutes (a, b, c, d), so each shard has about twelve
   minutes of room again. The run of 00:57 to 01:42 with the gate's screens: 33.0, 31.8, 31.2 and 32.9 minutes; the
-  layout job, with the 186 pictures of those screens, 43.3 of its 75 minutes, the push's longest job.
+  layout job, with the 186 pictures of those screens, 43.3 of its 75 minutes, the push's longest job. The run of 02:54
+  to 03:40 with the whole of the signatures: 34.1, 32.4, 33.5 and 34.2 minutes, the layout job 44.0.
 - **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
   revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
