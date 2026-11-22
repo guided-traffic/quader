@@ -3481,7 +3481,27 @@ that reads the bucket**
   restore, the tests' cost); the download path of every format with what a redirect would skip, the Bastion (what it
   serves, how content reaches it, what a direct read would need and bypass) and the keys Quader manages already; and
   the state of the art (clients and redirects for every format and the formats to come, formats of client-side
-  encryption and their attacks, key hierarchies and rotation, several object stores, integrity). **Next:** the
+  encryption and their attacks, key hierarchies and rotation, several object stores, integrity). **The third
+  ended at 08:42** (read in the code and the specification, nothing run). *The download path:* no download is
+  redirected today; the store can presign and the configuration has the keys, with no caller, and a repository's
+  `storage.presignedDownloads` is accepted and has no effect. A redirect would leave the pacing and the limit of
+  parallel downloads without a transfer to act on, fill the byte windows only if the size is charged when the
+  link is issued, skip the verification of the bytes, outlive a revocation or a malware finding by the link's
+  life, and through a Bastion hand the caller the main store's address. An installation-wide switch has a
+  precedent (the malware scan's "only checked artifacts": one row, an API, a settings page, at every replica
+  within a second), a repository's setting too. *The Bastion:* **his wish of a read-only account reverses a
+  decision of the specification** (Q-BAS-10, "never the main installation's object store", rejected then because
+  it gives an instance in the DMZ read access to every blob; R-BAS-001 forbids a Bastion pod any request to the
+  main bucket), and keys per project and repository are what would answer that decision's reason. **A Bastion
+  has no scope today:** it serves whatever the caller's own token may read, and the main installation does not
+  know which repositories a Bastion serves, so "only the keys it needs" needs a scope per registration, a new
+  concept. It has no database, learns a blob's digest from an answer's entity tag, and keeps its cache in the
+  clear with signed entries. *The keys:* the key ring of stored secrets (AES-256-GCM, each value bound to its
+  table, column and row) seals three columns, is held by `api`, `packages`, `worker` and the restore job, and is
+  not read again without a restart: a rotation is two rollouts, the re-encrypt task and the old key's removal.
+  It can derive a key family per purpose. A key per project kept as a sealed column would fit it unchanged (the
+  research's inference); a hierarchy, a reload and a way to hand keys to a Bastion do not exist. The backup's
+  own encryption covers the database files alone and is not built. **Next:** the
   evaluation as a working paper he answers in, as for the malware scan and the signatures (standing rules): his
   wishes as read, what is satisfiable and at which price, and the decisions with options and a recommendation each.
 
