@@ -293,7 +293,10 @@ Rules while building:
   **a specification is landed like code** (the chart tests and the full unit run beside the evidence's checks and
   the count test, because the specification's blocks are inputs of tests: two landings of 2026-11-22 without
   them left the chart gate red for two and a half hours); the evidence record is written by the pipeline and
-  never by hand;
+  never by hand; **the development agent's own gates and integration runs use a worktree of their own, never a
+  builder's,** because a builder that is resumed edits its worktree (on 2026-11-22 fourteen integration areas
+  of such a run failed to build in the minute a resumed builder changed a signature, and three before them
+  ran on a tree in the middle of an edit);
   and **a reader of a third party's format is proven with a fixture the real tool made, before it lands**
   (the measurement of the signatures with real clients found three defects that every test made in process
   had passed).
@@ -1820,9 +1823,53 @@ runs are in `git log`; this section holds the current state.
   14:16 what has been finished since Friday afternoon** and got the overview in the chat (35 releases since
   Friday noon, by topic, with what is on `main` without effect yet, what is built and not landed, and what is
   not verified); no decision in it.
-- **In work since 2026-11-22, 14:00: package 5 of the encryption, the Bastion's cache** (everything the cache
-  writes to its store sealed in the format under one key file of its chart, off by default; it needs the
-  format alone).
+- **Package 5 of the encryption, the Bastion's cache, reported at 15:09 and is on the landing stack** (one commit
+  of the type `feat`, 36 files; its builder worked from 14:00 to 15:09; rebased onto `main` by the development
+  agent without a conflict, with the row of the manual for the new Secret added from its builder's sentence).
+  **Built:** the chart's `secrets.cacheKey`, empty unless set, mounted into the pods; the cache reads the file
+  once, derives the storage key, its identifier and the name key, and clears the file's bytes; a file that
+  cannot be read stops the start. Only the cache's backend knows of the encryption, the engine and the
+  download buffer see plain bytes and the same errors, and every sealed byte goes through the format's
+  package. With a key the content, the documents, the entries, the access markers, the audit spool and the
+  readiness probe lie under a tree named by the key's identifier, each under a keyed name; sizes, counts and
+  times stay visible, since the eviction lists them. Without the key every test that existed passes unchanged.
+  **Its decisions, Q-BAS-212 to Q-BAS-215,** among them one that replaces the planner's: the entries and the
+  spool's files are objects of the format bound to their names and not sealed under one key of their own,
+  because entries are rewritten at every revalidation, so random nonces under one key would near their bound,
+  and the seal would be a second construction no vector checks. With a key the volume backend spools its fills
+  on the pod's temporary volume, so that the cache volume holds ciphertext alone. Gaps H-1325 to H-1327
+  (download events spooled under an old key are lost when the key changes during an outage of the main
+  installation; the old tree stays readable to a holder of the old key until it is swept; a pod that is taken
+  over holds the key). **Its gates** exit 0: build, the full unit run, generate-check, the evidence, the
+  complexity check, chart lint and tests, the lint, the Bastion's two integration areas. **With a key given to
+  every Bastion replica of the integration suite, one test fails by design** (it tampers with the plain
+  layout directly; the same behaviour with a key is shown by the package's unit and bucket tests), and the
+  rest passes. Its builder took each of the cache's ten defences out once; two survived at first and the tests
+  were tightened until each was caught, and two real defects showed and are repaired (a moved entry counted as
+  a backend error, and the key parser failed on a key of 43 characters). Tests added: nine unit tests of 0.2
+  s together, one integration case of 0.18 s, one chart test of 0.37 s, nothing end to end. **Not verified:**
+  a deployment of the chart with a real Secret; objects above 70 KiB and the throughput; two keys on one shared
+  bucket during a rollout (reasoned through, not run).
+- **The landing stack since 15:10, in a worktree of the development agent's own:** on `main` the encryption's
+  package 5, the handover's specification (its three conflicts with package 5 in the documents resolved by
+  hand: both groups of decision blocks kept, the two status sentences of the Bastion's cache merged; the four
+  missing rows of the index of architecture decisions and the missing row of the gaps of the signed links
+  added; its own gates on its own commit exit 0), then package A of the several connections, the chart's
+  package and the documentation's correction (one link to a renamed heading repaired), and last the repair
+  that package A's builder is writing. On the five commits the build, the evidence regenerated without a
+  difference, the links, the check and the count test exit 0; generate-check, chart lint, the chart tests and
+  the web gates run since 15:12. **They are pushed as one push** once the repair is on top, the full gates and
+  the integration areas are through on the final commit, the proof of the development profile has reported,
+  and the end-to-end legs of the Bastion's package D have ended.
+- **The development agent's integration run on package A ended at 15:08: 33 areas passed, and the last
+  fourteen did not run** (the second Bastion pair, npm, NuGet, the endpoints, the importer, publishing, the
+  mirror API, overload, the query budget, the registry, the virtual repositories, Valkey, the CI area): they
+  failed to build, because the run used package A's worktree and its builder, resumed at 15:03 for the
+  repair, was changing a function's signature in that minute. A mistake of the development agent's, not a
+  finding of the product; three areas of the Bastion before them ran on a tree in the middle of that edit and
+  count as not run. From 14:38 the tree was package A with the chart's commit on top, whose code is the same.
+  **All seventeen run again on the final commit of the landing stack,** with the areas the repair touches. The
+  rule from it is in section 3.
 - **Landed on 2026-11-22 at 13:59: package 1 of the encryption, the format and its tools** (a commit of the type
   `refactor`, no release; R-STOR-076 to R-STOR-079; decisions Q-STOR-321 to Q-STOR-323; its builder worked from
   13:02 to 13:53). A package of its own that uses the standard library alone, held by a test: the stored size
