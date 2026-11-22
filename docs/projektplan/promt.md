@@ -3740,7 +3740,24 @@ that reads the bucket**
   entry of the same bucket under another prefix that the reconciliation fills (decision 7). **No measurement against his
   provider today** (his word at 11:00: "Stackit kann ich dir im Moment nicht bieten für einen test. Das wird heute
   nichts. Machen wir ggf. später."); the research reads the provider's documentation, and what needs a real
-  bucket of that provider stays "not verified" in every package until he offers one. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
+  bucket of that provider stays "not verified" in every package until he offers one. **The research of his provider's
+  object storage ended at 11:10** (its documentation and, marked apart, the documentation of the software behind
+  it, which the provider's own API description names; the version it runs is not stated; nothing was called).
+  *Documented by the provider:* two regions; copies and copies of parts; tagging; signed links for `GET`; static
+  keys without an expiry unless one is set, valid for every bucket of a project unless a bucket's policy narrows
+  them; versioning; object lock, to be chosen when a bucket is made; encryption at rest; read-after-write for new
+  objects, while overwrites and deletes are eventually consistent; limits per project of 2,500 requests a second,
+  500 at once and 500 MB/s. *Silent in its documentation:* every checksum header, conditional writes, a copy with
+  new metadata, ranges and the response headers of a signed link, a link's longest life, the size of metadata.
+  *By the software's documentation, not confirmed for the provider:* a copy with new metadata and metadata up to
+  24 KiB are supported, the response headers of a signed link too; **conditional writes are not** (refused or
+  accepted and ignored, the latest write wins), and the checksum trailer of the newer client library defaults is
+  rejected. *Incidents:* an outage of its object storage of about 17.5 hours in July 2026, the longest of the
+  whole research, and five more incidents since 2023. **What follows for the design:** no guarantee of the
+  commit, the reconciliation or the garbage collection may rest on a conditional write; the start check of a
+  connection establishes what it supports; and the wrap at the object (decision 2) is right for a second reason,
+  since under an eventually consistent overwrite the object a read gets always carries its own wrap. Both
+  planners at work were told at 11:10, with the findings' file. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
   the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
