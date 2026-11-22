@@ -607,6 +607,13 @@ records the recorder that tells such a stall apart).
   the requests' starts. Not run again by itself: the push of the Bastion's specification, whose code is the
   same but for a count test, runs the shard again. **That run ended at 23:03 with every job green,** the
   shard among them; seen once so far.
+- **Seen by the builder of the links' second package on 2026-11-22 and 23 and left for the batch:** the
+  development profile's script loads the image it is given while the chart keeps the tag `:dev`, so the
+  pods cannot pull; the end-to-end driver's and the stub's images carry fixed tags, so two worktrees that
+  run a leg at once overwrite each other's images; the overload area's burst beside empty caches sheds
+  requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
+  on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
+  and 141 s to refuse an altered tarball, by their retries.
 - **A timing check of the Bastion's engine failed once under load (2026-11-22, about 23:35, in a
   specification writer's full unit run at a load of about 37):** `TestR_BAS_054_LargeArtifacts` in
   `internal/bastion/engine`; it passed in the next full run. Seen once; for the batch.
@@ -2145,6 +2152,39 @@ runs are in `git log`; this section holds the current state.
   from Q-STOR-350, gaps from H-1350. The three end-to-end cases are written and the npm leg's is run once
   on a cluster of its own. Its brief asks it to take each defence out once and to say which test caught
   it. Builders with a test load: the keys, the stacking, the links.
+- **Package 2 of the signed links reported on 2026-11-23 at 00:47** (one commit of the type `feat` on the top
+  of `main`; its builder worked from 19:27, through four moves of `main` and the change of the speed limit;
+  every gate exit 0 on the final content; of the integration areas `blob`, `files` and `postgres` at once,
+  the overload area and the query budget each on a second run after a failure under a load of about 41 and
+  after the harness's known weakness; `limits`, `api`, `upstream`, `signatures` and `backup` last on an
+  earlier base, so the landing's gates run them). **A finding with a real client changed what the feature
+  reaches: npm tarballs get no links.** On a cluster of its own all four npm clients installed through a
+  link; with the tarball's object altered in the bucket (the same files, other bytes) npm 12, pnpm 12 and
+  Yarn 1 refused it on the integrity, and **Yarn 4 installed it**, since it never compares what it fetched
+  with the registry's integrity and writes its lockfile's checksum from the bytes that arrived. By the rule
+  of evidence of R-STOR-071 the route of npm's tarball declares nothing again and streams through Quader's
+  own check (Q-STOR-354, option (a); the other, to refuse a link by the client's `User-Agent`, rests on a
+  header the client sets and is not taken). **Links reach OCI blobs and Ansible collections today:** Docker
+  and Podman pulled through links and refused an altered layer, ansible-core 2.17 and 2.21 installed through
+  a link and refused on the hash, each once on that cluster, which is removed. Built: the fourteen steps of
+  the decision, the link signed for a `GET` with its three overrides and a life that is the shorter of the
+  setting and what the credential has left, the host rule, the connection's choice from the copies the
+  lookup read (a linked download costs one statement), the link check in two parts on every replica with a
+  client listener, the switch's row with its audit event, journal entry and change area (migration 00108),
+  the repository's opt-out, the budgets of the hour and the day charged in full at the issue. **A speed
+  limit does not stop a link** (Q-LIM-99, the development agent's answer to question 18, with Q-LIM-97
+  superseded in place and the screen's notice about profiles taken out of the specification). A writer's
+  read through the signature gate that is answered by a link leaves the same event and count as a streamed
+  one, shown by a case of its own. Decisions Q-STOR-350 to 354 and Q-LIM-99; gaps H-1350 (a store that
+  stops honouring an override after the check), H-1351 (a copy marked damaged after the lookup), H-1352 (a
+  caller slowed through Quader is not slowed by a link). Each of seven defences was taken out once and a
+  named test caught it. Its cost: the unit job about 3 s, the shard with `blob` about 4 s, the shard with
+  the query budget about 8 s, the end-to-end set of OCI about 36 s and of Ansible about 54 s, npm's nothing.
+  **Not verified:** CRI-O and the Docker Engine's older pull path; the end-to-end cases in the pipeline; any
+  real provider. It lands with the Bastion's P3 in one push, after gates on the two together. **In work
+  since 00:48, on its commit: package 3 of the links,** the API, the settings page and the repository's
+  section, rendered on a stack of its own, with the manual. Builders with a test load: package F, the
+  encryption's package 3, the Bastion's P4, the links' package 3, and the landing's gates.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
