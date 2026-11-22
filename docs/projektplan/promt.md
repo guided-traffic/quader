@@ -1656,7 +1656,10 @@ runs are in `git log`; this section holds the current state.
   first, then the three lines that fetch the trusted root and the receipt and verify it offline, the values
   to replace marked, long lines wrapped inside their window. The diff holds no name the white-label rule
   forbids; no change of the chart or of a dependency, and **the owner's values** render as before (39
-  objects). The owner's UI backend started with it before the push (the schema step applied). **The run before it (44964287638, the gate's screens) ended at 01:42, green on every job:** the layout job with the gate's 186 pictures in 43.3 minutes of its 75, the four shards in 33.0, 31.8, 31.2 and 32.9 minutes (shard b green: the test of section 12 B passed this time). **Its release was cut at 01:54**; the unit job took 9.9 minutes.
+  objects). The owner's UI backend started with it before the push (the schema step applied). **The run before it (44964287638, the gate's screens) ended at 01:42, green on every job:** the layout job with the gate's 186 pictures in 43.3 minutes of its 75, the four shards in 33.0, 31.8, 31.2 and 32.9 minutes (shard b green: the test of section 12 B passed this time). **Its release was cut at 01:54**; the unit job took 9.9 minutes. Image and chart were
+  published at 02:01, and **the owner's installation runs it since 02:02** (read on the cluster at 02:02:
+  every Deployment ready, no restart, the migration job applied the schema step, no error line of `api`,
+  `packages` or the workers). No signing identity is configured there, so no receipt is made.
   **Its tests cost** about 4 s of the unit job (three new packages' starts), about 9 s in shard d, the two
   cases in the leg `oci`. **Not verified:** an admission controller with a certificate chain;
   `cosign verify-blob-attestation` of a file's receipt with the real tool (the verifier library alone); an
@@ -4110,7 +4113,8 @@ the walk items and the run record); what the code holds beyond the plan has not 
   attestations and the gate's releases it passes the mark. **The fourth shard is cut since 2026-11-21, 23:44** (run
   record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push. **Its first
   run** (00:02 to 00:44 of 2026-11-22): 33.1, 32.7, 30.0 and 32.8 minutes (a, b, c, d), so each shard has about twelve
-  minutes of room again.
+  minutes of room again. The run of 00:57 to 01:42 with the gate's screens: 33.0, 31.8, 31.2 and 32.9 minutes; the
+  layout job, with the 186 pictures of those screens, 43.3 of its 75 minutes, the push's longest job.
 - **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
   revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
