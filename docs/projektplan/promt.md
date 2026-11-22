@@ -2031,6 +2031,37 @@ runs are in `git log`; this section holds the current state.
 - **The timer's check at 19:20:** the ten integration areas of the landing stack have all passed; the keys
   of the encryption are at work (the unit run of its touched packages in that minute); the load is about 6
   on 20 cores. Builders with a test load: the keys.
+- **Landed on 2026-11-22 at 19:24: the first packages of the several connections** (five commits in one
+  push: package A and the chart's package of the type `feat`, the documents, and two repairs of the type
+  `fix`, the error messages with the restore's marker and the statement budget; moved onto `main` by the
+  development agent without a conflict, then the build, the links and the evidence's check again, exit 0;
+  the fourteen gates and the ten integration areas had run on the same tree but for the plan). The object
+  store is a list of one to eight connections in the configuration and in the chart, each with its
+  Secrets, and the chart and the binary refuse the former keys. Released at 19:37, its image and chart published at 19:43; his installation's upgrade was refused by
+  the chart until then, with the message that names the new list, and his values were committed and pushed
+  under `apps/quader` at 19:43 (the rewrite, and the bucket claim's comment that named the former key). **The owner's installation needs
+  its values rewritten for it** (his one connection `default` and its Secret as the first elements of the
+  two lists): rendered against the landed chart with his present values before the push, exit 0. A
+  location that holds objects and no marker gets its marker at the first start, with a warning. His UI's
+  backend runs on this state since 19:26. The worktrees and branches of package A's builder and of the
+  chart's builder are removed; the landing worktree stays for the next landing's gates.
+- **In work since 19:26: the stacking of the four built packages onto `main`** (the reconciliation, the
+  scrub, package B and the rest of package E, in this order, as four commits; one builder in a worktree of
+  its own, because the four meet in about thirty files and in two points of behaviour that package B's
+  builder named: the reconciliation's query for interrupted claims acts on copies of live blobs only, and
+  the scrub passes over copies in deletion). It also writes the line of the API's description that package
+  B left and corrects the two sentences of the manual that the rest of package E left. The whole of the
+  gates on the top, with the integration areas the four builders ran, the query budget and the overload
+  area among them.
+- **In work since 19:27: package 2 of the signed links** (the serve point, the store and the limits: the
+  decision of R-STOR-070 after the gates and the admission, the row of the settings with its audit event
+  and the replica's snapshot, the host rule, the connection's choice from the copies the item lookup
+  returns already, so that a download by a link costs one statement too, the pace check of R-LIM-040 as
+  it is specified today and in one place, because the owner's question 18 is open, and the link check at
+  a connection's start with its two parts recorded apart for the handover). Migration 00108; decisions
+  from Q-STOR-350, gaps from H-1350. The three end-to-end cases are written and the npm leg's is run once
+  on a cluster of its own. Its brief asks it to take each defence out once and to say which test caught
+  it. Builders with a test load: the keys, the stacking, the links.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
