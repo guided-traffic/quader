@@ -84,7 +84,10 @@ Quader calls these S3 operations and no others ([internal/blob/s3](../../interna
 
 The client also implements `ListMultipartUploads` and a presigned `GetObject`. `ListMultipartUploads` is called by the staging sweep of the
 collection run (a `worker`, in a full sweep, R-STOR-011 Expiry) and by the object-store conformance check of R-STOR-035
-([conformance.go](../../internal/blob/conformance.go)); the presigned `GetObject` only by the check in the integration tier. Every replica's
+([conformance.go](../../internal/blob/conformance.go)); the presigned `GetObject` only by the check in the integration tier. Specified and
+not built ([download-links.md](download-links.md), [storage.md](../spec/storage.md) R-STOR-072, R-STOR-074): with the delivery by signed
+links switched on, a replica that serves downloads signs a `GetObject` of one key for a client, which that client then sends with the
+runtime credential's authority until the link expires, and its start writes, signs and fetches one probe per connection. Every replica's
 startup check sends a part number twice in a multipart upload and completes it, naming one ETag, then deletes the object
 (`CreateMultipartUpload`, `UploadPart`, `CompleteMultipartUpload`, `DeleteObject` below `<prefix>/_probe/`); `AbortMultipartUpload` is called only when
 the store refuses the completion or the check is cleaned up, and the sweep deletes the staging objects and aborts the leftover probe objects and

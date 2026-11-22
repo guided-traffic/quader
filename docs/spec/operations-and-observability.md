@@ -1472,7 +1472,7 @@ The field set is fixed. A field that does not apply is `null`, and an unknown le
 consumers can rely on every key being present.
 
 <details>
-<summary>Fields of the request log record (33)</summary>
+<summary>Fields of the request log record (34)</summary>
 
 | Field | Content |
 |---|---|
@@ -1509,6 +1509,7 @@ consumers can rely on every key being present.
 | `limits_outcome` | `admitted`, `limited:<figure>`, `would_limit:<figure>` (mode `audit`), `paced`, `blocked`; else `null` |
 | `bytes_cached` | Cached bytes of the request (R-LIM-006), `0` when none; `null` off the protocol paths |
 | `bytes_uncached` | Uncached bytes charged to the request as a leader (R-LIM-006), `0` when none; `null` off the protocol paths |
+| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; specified, not built); `null` for every other request |
 
 </details>
 

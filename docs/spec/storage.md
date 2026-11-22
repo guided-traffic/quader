@@ -1269,46 +1269,395 @@ Acceptance criteria:
   makes `curl` report a partial transfer, and the blob keeps `content_status = 'ok'`; the next
   download succeeds.
 
-### R-STOR-014 · Presigned download redirect per repository
-Priority: **P2** · Covers: STOR-032, STOR-033
+<a id="r-stor-014--presigned-download-redirect-per-repository"></a>
 
-Specified now because the download path must leave room for it; implementation is P2.
+### R-STOR-014 · Delivery by signed links of the object store: the installation's switch
+Priority: **P1** · Covers: STOR-032, STOR-033
 
-- A local or remote repository MAY set `config.storage.presignedDownloads: true` (default
-  `false`). A remote repository qualifies only if it stores fetched content (the store-locally
-  setting of [repositories-and-proxy.md](repositories-and-proxy.md)); enabling it on a
-  pass-through remote repository is rejected with `422`.
-- An eligible `GET` (repository switch on, item size at least `storage.s3.presign.min_size`,
-  blob `content_status = 'ok'`, object store circuit closed, not a sidecar, not `HEAD`) is answered
-  `302 Found` with `Location` set to an S3 presigned `GetObject` URL valid for
-  `storage.s3.presign.ttl`, carrying `response-content-disposition` (the file name, as in
-  R-STOR-012) and `response-content-type`, and `Cache-Control: no-store`.
-- A virtual repository redirects only when the member that serves the item has the switch on.
-- Authorization happens before the URL is issued; download statistics are counted at issuance.
-- An installation that encrypts its stored content on the client side ([R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content))
-  cannot redirect: the object store holds only ciphertext, so every download is decrypted and streamed by Quader, and
-  `presignedDownloads: true` is refused there.
-- URLs are signed against `storage.s3.presign.endpoint` when set (a public host name in front
-  of an in-cluster object store), otherwise against the configured endpoint. With temporary
-  credentials (R-STOR-031) a URL stops working when the signing credentials expire, whichever
-  comes first ([presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html)).
+Decided by the owner on 2026-11-22 (decision 11 of his working paper on the stored content, option (a);
+[ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing)):
+"Wir brauchen ein Setting um durch den Admin bestimmen zu lassen ob wir unsere Artefakte direkt oder durch signierte s3 Links
+ausliefern lassen" and "Es gibt ein Flag um die Daten im s3 verschlüsselt abzulegen, dann müssen wir natürlich die Daten ausliefern
+und können das nicht mehr durch s3 links machen". In his option: one switch of the installation in the admin area, off by default; it
+applies only where a link costs nothing (the connection is not encrypted, the format's client checks a digest itself, no pace limit
+applies to the caller, no Bastion is between, only `GET`); the minimum size, the link's life and the public host are details behind a
+disclosure; a repository can opt out. This block replaces the switch per repository it specified before
+([ADR-045](../decisions.md#adr-045--presigned-download-redirects-as-a-per-repository-opt-in-p2), superseded). Specified, not built.
 
-Configuration:
+**What exists today** (read on 2026-11-22): the store can sign a link (`ObjectStore.Presign`,
+[objects.go](../../internal/blob/objects.go) lines 196 to 197; `PresignGetObject` against `storage.s3.presign.endpoint` when it is set,
+[client.go](../../internal/blob/s3/client.go) lines 460 to 469), and its only caller is the conformance check `checkPresign`
+([conformance.go](../../internal/blob/conformance.go) line 173 and from line 564). No download is redirected: `edge.ServeItem` always
+streams ([content.go](../../internal/api/edge/content.go) lines 56 to 128). A repository's `storage.presignedDownloads` is stored and read
+by nothing: the member `storage` is opaque JSON ([document.go](../../internal/repository/document.go) lines 56 to 58), and its validation
+checks only that it is an object and `maxUploadSize` ([validate.go](../../internal/repository/validate.go) lines 141 to 148). The keys
+`storage.s3.presign.endpoint`, `ttl` and `min_size` exist ([storage.go](../../internal/config/storage.go) lines 110 to 115) and the last
+two are read by nothing.
+
+**What the switch does.** A download that meets every condition of R-STOR-070 is answered `307 Temporary Redirect` to a link to the
+stored object, signed for `GET` (R-STOR-072); the client fetches the bytes from the object store. Everything else is answered by Quader
+as before (R-STOR-012, R-STOR-013): every document and index, `HEAD`, a conditional request, a range, a file below the minimum size,
+every file of `/files/`, and every route whose format's clients do not check a digest themselves (R-STOR-071).
+
+**The settings** ([Q-STOR-280](#q-stor-280--the-switch-is-one-row-of-its-own-with-its-own-operations-as-the-malware-scans)):
+
+| Setting (API) | Value of a new installation | Allowed | On the screen (R-UI-200) |
+|---|---|---|---|
+| `enabled` | `false` | | the switch |
+| `minSize` | `1048576` (1 MiB) | 0 to 1,099,511,627,776 bytes (1 TiB) | **Details**, closed |
+| `linkLifeSeconds` | `60` | 10 to 3,600 | **Details** |
+| `publicAddresses` | none: each connection's link goes to the connection's own endpoint | per connection an `https` origin (R-STOR-074) | **Details**, one field per connection that can serve links, its endpoint shown as the value ([Q-STOR-281](#q-stor-281--the-public-address-for-links-is-a-setting-of-the-admin-area-per-connection)) |
+
+- **Stored** in one row, as the malware scan's switch is (R-MAL-019, [00088_malware.sql](../../internal/meta/postgres/migrations/00088_malware.sql)
+  lines 64 to 71):
+
+  ```sql
+  CREATE TABLE download_link_settings (
+      id                 boolean     PRIMARY KEY DEFAULT true CHECK (id),
+      enabled            boolean     NOT NULL DEFAULT false,
+      min_size           bigint      NOT NULL DEFAULT 1048576 CHECK (min_size BETWEEN 0 AND 1099511627776),
+      link_life_seconds  integer     NOT NULL DEFAULT 60 CHECK (link_life_seconds BETWEEN 10 AND 3600),
+      public_addresses   jsonb       NOT NULL DEFAULT '{}',   -- connection name -> https origin; absent: the connection's endpoint
+      version            bigint      NOT NULL DEFAULT 1,
+      updated_at         timestamptz NOT NULL DEFAULT now(),
+      updated_by         uuid        NULL REFERENCES principal (id) ON DELETE SET NULL
+  );
+  INSERT INTO download_link_settings (id) VALUES (true);
+  ```
+
+  Every replica reads it from a snapshot that a change area of its own, `download_link_settings`, refreshes within the bound of
+  [architecture.md](architecture.md) R-ARCH-018 (2 s), so a download costs no query for it. The row is part of the database and of its
+  backup like every settings row.
+- **Read and changed** through the operations below (tag `download-links`,
+  [Q-API-400](api-and-ui.md#q-api-400--the-signed-links-have-operations-of-their-own-under-apiv1download-links)). A change needs
+  `If-Match` (`428` without, `412` stale) and records `storage.download_links.changed` with `before` and `after`. A change that switches
+  the delivery off carries the journal flag ([authorization.md](authorization.md) R-AUTHZ-031), so a restore to an earlier point keeps
+  links off; switching on and the details are not journaled.
+
+  | Method | Path | What | Permission |
+  |---|---|---|---|
+  | GET | `/api/v1/download-links/settings` | `{"enabled", "minSize", "linkLifeSeconds", "connections": [{"name", "encrypted", "endpoint", "publicAddress", "usable", "reasons": [{"code", "detail"}]}], "routes": [{"format", "route"}], "version", "updatedAt", "updatedBy"}`: every connection with whether it can serve links now and why not (R-STOR-074), and the routes whose clients check a digest (R-STOR-071) | `settings:read` |
+  | PATCH | `/api/v1/download-links/settings` | a merge patch of `enabled`, `minSize`, `linkLifeSeconds` and `publicAddresses` (a connection's `null` returns it to its endpoint), `If-Match` | `settings:write` |
+  | POST | `/api/v1/download-links/test` | `{"connection", "publicAddress"}` as entered, saved or not: a test link (R-STOR-074) | `settings:write` |
+  | GET | `/api/v1/download-links/switch` | `{"enabled", "formats"}`: whether the switch is on and the formats with a route whose clients check a digest, for the repository's settings page (R-UI-201) | every signed-in caller |
+
+- **Validation** of a write: `minSize` and `linkLifeSeconds` in their ranges; each public address as R-STOR-074 says (an `https` origin,
+  not a host of Quader nor below one); a connection name the installation does not have is `422 invalid_value`.
+- **The configuration** carries no key of links. `storage.s3.presign.endpoint`, `ttl` and `min_size` are removed; whatever the
+  configuration of several connections becomes (stage 1 of the owner's topic, specified in parallel), it gains none. The chart's values
+  never listed them ([values.yaml](../../deploy/helm/quader/values.yaml) lines 428 to 437).
+
+**The repository's opt-out** ([Q-STOR-282](#q-stor-282--a-repository-opts-out-with-one-member-and-the-addressed-and-the-holding-repository-must-both-allow)):
 
 ```yaml
 storage:
-  s3:
-    presign:
-      endpoint: ""            # default (proposed): empty = storage.s3.endpoint
-      ttl: 60s                # default (proposed)
-      min_size: 1MiB          # default (proposed)
+  downloadLinks: true    # default; false: no download of this repository is handed to a link, whatever the installation's switch says
 ```
+
+- Accepted on every class (local, remote, virtual) of a format with at least one route whose clients check a digest (R-STOR-071), and
+  answered `422 not_applicable` on any other repository, so that no accepted setting is ignored. An absent member is the default.
+- It only takes away: with the installation's switch off it changes nothing.
+- **Who:** every writer of the repository's settings ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061), an Owner of
+  the project included, in both directions. `false` records `repository.narrowed` with the member, journaled; `true` records
+  `repository.updated`. A well-known repository of `upstream` is set by an administrator, as its other narrowing settings
+  (R-REPO-069); a system repository keeps the default, and none of its routes declares a client's check.
+- **`storage` becomes a closed object** with the members `maxUploadSize` and `downloadLinks`; any other member is
+  `422 invalid_value` at its pointer, `storage.presignedDownloads` included, whose detail names this block
+  ([Q-STOR-283](#q-stor-283--the-member-storagepresigneddownloads-is-refused-and-storage-is-a-closed-object)). Nothing rewrites a
+  stored document: neither the OpenAPI document nor the UI ever knew the old member.
+- **The screen** is a closed section of the repository's settings page, never part of a creation form (R-UI-201).
+
+**How the two combine.** A download is handed to a link only when the switch is on, and neither the repository the client addressed nor
+the repository that holds the item says `downloadLinks: false`:
+
+- **A virtual repository**: the addressed virtual repository and the member that serves the item must both allow it. A team that wants
+  every download through Quader sets it on the virtual repository it uses; a member that opted out stays out through every virtual
+  repository.
+- **A remote repository**: a hit of a stored item is a download like a local one; a miss is streamed from the upstream by the leader's
+  stream ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-041) and is never a link; a remote with
+  `cache.storeArtifacts: false` stores nothing and never serves one.
+- **An encrypted connection** serves no link (R-STOR-070 step 12, R-STOR-074). This is what [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content)
+  asks of the encryption; its sentences about `presignedDownloads: true` refer to the member this block removed.
 
 Acceptance criteria:
 
-- With the switch on, `curl -sI …/files/web/docker-local/<layer>` answers `302`;
-  `curl -L -o layer.bin …` downloads a file whose SHA-256 matches; the URL fails after `ttl`.
-- Files below `min_size` are streamed (`200`).
+- Integration (area `blob`, about 3 s, against the stack's object store): `PATCH /api/v1/download-links/settings` with
+  `{"enabled": true, "minSize": 0}` by an administrator answers `200`, by an auditor `403`, without `If-Match` `428`; a `GET` of an npm
+  tarball through another replica answers `307` within 2 s, with Valkey stopped as well, and the `Location` fetched by a plain HTTP client
+  returns the tarball's bytes; `{"enabled": false}` makes the next `GET` there `200` with the bytes within 2 s, and its audit event carries
+  the journal flag (`TestR_STOR_014_TheSwitchReachesEveryReplica`).
+- Unit (`internal/repository`): `{"storage": {"downloadLinks": false}}` on `npm-local` by its Owner is stored and records
+  `repository.narrowed`; `{"storage": {"presignedDownloads": true}}` answers `422` at `/storage/presignedDownloads`; `downloadLinks` on a
+  NuGet repository answers `422 not_applicable` (`TestR_STOR_014_TheRepositorysOptOut`).
+
+### R-STOR-070 · The conditions of one download, in the order of the serve point
+Priority: **P1** · Covers: STOR-032, STOR-033
+
+The decision is made at the one serve point every stored item a format serves passes: `itemStore.Serve`
+([ingest.go](../../internal/formathost/ingest.go) lines 387 to 444) and `edge.ServeItem` ([content.go](../../internal/api/edge/content.go)
+lines 56 to 128), for a format's routes, a remote repository's hit and every tier of a virtual repository alike (the layering:
+[architecture.md](architecture.md) Q-ARCH-570). **`/files/` is never a
+link**, whatever the format of the repository ([handler.go](../../internal/api/rawfiles/handler.go) lines 264 to 296): its clients are
+plain download tools and browsers, which check no digest (curl, R-STOR-071).
+
+The steps, in this order. A step that does not hold leaves the download to Quader, which streams it as today; the steps that answer by
+themselves say so.
+
+1. **The route.** The matched route declares that its clients check a digest (`Route.ClientDigest.Checks`, R-STOR-071), and the method
+   is `GET`. A `HEAD` is answered from PostgreSQL as always (R-STOR-012): a link signed for `GET` fails on `HEAD`, and the public
+   registries answer `HEAD` themselves.
+2. **Not through a Bastion.** The request carries no recognized Bastion token (`bastionmain.RecognitionFrom`,
+   [recognition.go](../../internal/bastionmain/recognition.go) lines 46 to 47, set by the recognition stage before authentication). A
+   Bastion does not follow a redirect ([client.go](../../internal/bastion/mainclient/client.go) lines 82 to 84), caches what it serves,
+   and would hand its caller in the DMZ the main installation's object store.
+3. **Not a system read.** The scanners' reads (`systemRead`, [system_read.go](../../internal/formathost/system_read.go) lines 13 to 15)
+   are streamed.
+4. **The switch and the opt-out.** The installation's switch is on, and neither the addressed repository nor the repository that holds
+   the item says `downloadLinks: false` (R-STOR-014).
+5. **The content.** The blob's content state is `ok` and the format's serve-time check passed: the two steps `Serve` runs first today
+   (`Usable`, `ServeCheck`), whose refusals answer as they do.
+6. **Every gate decided and passed** ([Q-STOR-284](#q-stor-284--a-download-whose-gates-are-not-all-decided-and-passed-is-never-a-link)).
+   The three gates are decided together before one wait as today (`serveChecks`, [signature_gate.go](../../internal/formathost/signature_gate.go)
+   lines 63 to 97; R-SIG-069); a refusal and a wait that ends without a verdict answer as they do. A download that passes is handed to a
+   link only when every gate that applies passed on a decided state:
+   - malware ([malware-scanning.md](malware-scanning.md) R-MAL-013): the scanning is off, or the blob's verdict is `clean`, or the blob is
+     released; never while it has no verdict yet, also where the gate is not strict and streams such a blob, and never for `unscannable`
+     or `failed` without a release;
+   - vulnerability block ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015): not blocked, and no wait for the data;
+   - signature gate ([signatures.md](signatures.md) R-SIG-064): off for the repository, or passed.
+7. **Conditionals** are evaluated from the item row: `304` and `412` are Quader's answers.
+8. **No range.** A request with a `Range` header, with or without `If-Range`, is answered by Quader: `206`, `200` or `416` as R-STOR-012
+   says ([Q-STOR-285](#q-stor-285--quader-answers-every-request-with-a-range-itself)).
+9. **The size** of the item is at least `minSize`.
+10. **No pace figure.** The caller's budget key has no `cachedBytesPerSecond`, in `enforce` and in `audit` alike
+    ([usage-and-limits.md](usage-and-limits.md) R-LIM-040).
+11. **Admit.** The check before a download starts runs as for every download ([usage-and-limits.md](usage-and-limits.md) R-LIM-021):
+    the hour and day windows and the parallel lease. A refusal is the `429` it is today, before any link.
+12. **A connection** that is not encrypted, holds the blob, is not failing and can serve links (R-STOR-074). The decision asks the
+    connection's breaker itself: signing is local work and bypasses it today ([guard.go](../../internal/blob/guard.go) lines 259 to 263).
+13. **The credential and the signature.** The credential that signs lives at least 5 seconds longer (R-STOR-072), and signing succeeds; a
+    signing error is counted (R-STOR-073) and the download streams.
+14. **Issue**: the answer of R-STOR-072, counted and recorded as R-STOR-073 says.
+
+Steps 1 to 10 read the request, the item row, the request's charge and the replica's snapshots: no statement and no round trip. Step 11
+is the round trip a streamed download takes as well, and steps 12 and 13 are local. A download handed to a link takes no request slot of
+the replica beyond its own answer, no copy buffer and no memory charge of the transfer.
+
+Acceptance criteria:
+
+- Unit (`internal/formathost`, the in-memory object store with its signing and its `RoundTrip`, one table, under a second): with every
+  condition met a tarball `GET` answers `307`; each condition taken away alone answers `200` with the bytes: a route without the
+  declaration, a recognized Bastion request, the switch off, the holding member of a virtual repository opted out, a blob without a
+  malware verdict under a gate that is not strict, a `Range`, a size below `minSize`, a `cachedBytesPerSecond` in `audit`, an open
+  circuit, an encrypted connection (a fake of stage 1), a credential that expires in 3 s; `HEAD` answers `200` without a store request;
+  `If-None-Match` with the content address answers `304`; a used-up `cachedBytesPerHour` answers `429` and no link
+  (`TestR_STOR_070_TheConditionsOfALink`).
+- Unit (`internal/api/rawfiles`): with the switch on, every file of `/files/` is streamed (`TestR_STOR_070_FilesIsNeverALink`).
+
+### R-STOR-071 · The format declares whether its clients check a digest
+Priority: **P1** · Covers: quader-only
+
+A link replaces Quader's check of the bytes (R-STOR-013) with the client's. That is no loss only where every client of the format
+checks, so the format says it per route, in the format contract, and a format to come is covered without a decision of its own: the
+owner's standing rule is that a decision taken at one format holds for every format. This sits beside the facts a format declares for a
+Bastion ([bastion.md](bastion.md) R-BAS-058): those are format-wide and reach the Bastion in its handshake, this one is a fact of one
+route and is read only at the main installation's serve point.
+
+- **The contract's addition** ([ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it);
+  [Q-STOR-286](#q-stor-286--the-declaration-is-a-field-of-the-route)). `formats.Route` gains `ClientDigest`; the Go block of
+  [architecture.md](architecture.md) R-ARCH-008 takes it when it is built, as the contract test holds that block to the code:
+
+  ```go
+  // ClientDigest says whether every client of the format compares the whole body of the route's answer with a
+  // digest it knew before the request and refuses the bytes when they differ (R-STOR-071). Only such a route
+  // hands a download to a signed link of the object store (R-STOR-070); the zero value is "does not check".
+  type ClientDigest struct {
+  	Checks   bool   // shown by the clients' source or by a test with the real client
+  	Against  string // where the clients' expected digest comes from, e.g. "the digest in the path"
+  	Evidence string // the source read or the test that shows it
+  }
+  ```
+
+- **`Register`** (and so kit check 1) refuses a route that declares `Checks` and is not of the kind `Download` with the method `GET`, or
+  whose `Against` or `Evidence` is empty.
+- **Kit check 20** (`checks_links.go` of the conformance kit, beside kit check 19 of the Bastion's facts in `checks_bastion.go`, whose
+  pattern it follows: a declared fact of the format, held by the kit over the format's own content cases): every route that declares `Checks` has a content case it serves with `200`
+  and a body, through `Items().Serve` (a handler that writes the bytes itself never reaches the decision of R-STOR-070), and the answer's
+  `ETag` is the content address of the body (`"<hex>"` or `"sha256:<hex>"`), so the bytes a client checks are the stored blob's. A
+  defect of the test format each: `DeclaresUnservedBody`, `DeclaresUnaddressedBody`. It runs in every format's
+  `TestR_ARCH_010_Conformance` without PostgreSQL. Unlike check 19 it has no fixture field for exemptions: a route whose answer cannot
+  meet it does not declare.
+- **The table test** `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` in [all_test.go](../../internal/formats/all/all_test.go)
+  lists every registered format with the routes that declare `Checks`; a format added later, or a declaration changed, fails it until
+  its row says so. A declaration is therefore a reviewed act with its evidence, never a default.
+- **The rule of evidence.** A route declares `Checks` only when every client family the format supports checks: shown in the client's
+  source, or by the case of R-STOR-070's end-to-end test with the real client in the format's own leg (a link whose object was altered
+  in the bucket, which the client must refuse). A family that was not read declares "does not check" until a builder has shown it with
+  the real client; a family that does not refuse the altered bytes turns the route's declaration back to "does not check" before it
+  lands, and the finding goes to the owner.
+
+What each format declares (the clients' behaviour read on 2026-11-22 in their source, by the research of the owner's topic):
+
+| Format | Route | Declares | Against | Evidence | What is still to be shown with the real client |
+|---|---|---|---|---|---|
+| OCI | `oci.blob.get` | checks | the digest in the path | containerd checks on commit ("unexpected commit digest", `plugins/content/local/writer.go`, `(*writer).Commit`); the distribution specification asks clients to check (SHOULD) | Podman and CRI-O (the containers image library: no check seen in `getBlob`), the Docker Engine's older pull path: the case with the leg's Docker and Podman |
+| OCI | `oci.manifest.get.digest` | does not check | | the store's answer carries no `Docker-Content-Digest`, no public registry redirects a manifest, and what a client does with such an answer was not read | |
+| npm | `npm.tarball.get` | checks | `dist.integrity` of the version in the package document (`dist.shasum` where it has none) | pacote's remote fetcher checks `integrity` (`lib/remote.js`) | pnpm and Yarn: the case with the leg's pnpm and Yarn |
+| Ansible Galaxy | `ansible.artifact.get` | checks | `artifact.sha256` of the collection version | `ansible-galaxy` compares the SHA-256 ("Mismatch artifact hash with downloaded file", `concrete_artifact_manager.py`, `_download_file`) and never sends its credential after a redirect | none beyond `ansible-galaxy`: the case with the leg's client |
+| Ansible Galaxy | `ansible.role.archive` | does not check | | not read: a role carries no digest the client could hold | |
+| NuGet | `nuget.flatcontainer.nupkg`, `nuget.flatcontainer.nuspec`, `nuget.flatcontainer.embedded`, `nuget.symbols` | does not check | | no check found; the client's own handling beyond .NET's `HttpClientHandler` was not read | the NuGet client |
+| Debian | `deb.pool.get`, `deb.members.get`, `deb.flat.file`, `deb.dists.by_hash` | does not check | | apt checks a file against the signed index, but its hash path was not read | apt: a builder may add the case to the leg `apt` and then declare it |
+| generic | (no routes; `/files/`) | never | | `curl` checks nothing; `/files/` is never a link (R-STOR-070) | |
+| ClamAV definitions | `clamav.container.get`, `clamav.signature.get` | cannot declare: the routes are `Metadata` | | `freshclam` was not researched | |
+
+Acceptance criteria:
+
+- Unit (`internal/formats`, `internal/formats/formattest`): `Register` refuses a declaring `Metadata` route and a declaration without
+  evidence; each defect fails check 20 and no other check; OCI, npm, NuGet, Debian, Ansible Galaxy, the ClamAV definitions and generic
+  pass it (`TestR_STOR_071_KitCheck20`).
+- Unit (`internal/formats/all`): the table names `oci.blob.get`, `npm.tarball.get` and `ansible.artifact.get` and no other route.
+- End-to-end, one case in each leg of a format that declares `Checks`, constant in size (R-STOR-070's client case, below).
+
+### R-STOR-072 · The link: signed for GET, its headers, its host and its life
+Priority: **P1** · Covers: STOR-032
+
+- **Signed** with the query parameters of AWS Signature Version 4 for `GET` of the object's key on the connection R-STOR-074 chose, by
+  that connection's runtime credential (R-STOR-031), against its public address. `ObjectStore.Presign` takes what it signs as options
+  (the life, the three overrides below, the address) and answers the link with its expiry
+  ([Q-STOR-293](#q-stor-293--a-link-is-signed-by-the-connections-runtime-credential)).
+- **The headers of the store's answer** ([Q-STOR-287](#q-stor-287--a-links-answer-carries-the-content-type-the-file-name-and-no-store-and-the-redirect-carries-the-four-content-headers)).
+  The signed query asks the store for three of the answer's headers, the only kind of header a link can ask for:
+  `response-content-type` (the content type Quader's own answer would carry: the item's), `response-content-disposition`
+  (`attachment; filename*=UTF-8''<percent-encoded file name>`, as R-STOR-012) and `response-cache-control` (`private, no-store`).
+  `X-Content-Type-Options`, the sandbox `Content-Security-Policy` and `Cross-Origin-Resource-Policy` of R-STOR-012 cannot be asked for;
+  they guard Quader's origin, and the store's answer comes from a host that is no host of Quader (below). The object is stored as
+  `application/octet-stream` (R-STOR-001), which no browser renders, also where a store ignores the overrides, and a connection whose
+  link check fails serves no link (R-STOR-074). R-STOR-012's rule that every response carrying stored content has the four headers holds
+  for every answer Quader writes; the redirect carries no content and carries them all the same.
+- **`https` only.** The link's scheme is `https`; a connection whose public address is not `https` serves no link (R-STOR-074). Several
+  clients follow a redirect from `https` to `http` (curl, npm, the clients written in Go), which would hand the signed query to the
+  network.
+- **The links' host** ([Q-STOR-288](#q-stor-288--the-links-host-is-no-host-of-quader-and-lies-below-none)). The host of the link as it is
+  signed (with virtual-hosted addressing the bucket's name before the address's host) must not be a host Quader answers on, nor a
+  subdomain of one. The clients written in Go keep their `Authorization` on a redirect to the same host or a subdomain of it
+  (containerd and Podman do not strip it), and an object store refuses a signed link that arrives with a credential (`400`), so such a
+  host would break every image pull by link. The hosts are those of `server.base_url`, `server.additional_base_urls`,
+  `server.content_base_url`, every endpoint's `base_url`, `hosts` and the host names of its `host_roots`; a host that matches an
+  endpoint's `wildcard_host`, or lies below its suffix, is refused too. Checked where the address is saved and at the start of every
+  replica (R-STOR-074).
+- **The life** ([Q-STOR-290](#q-stor-290--a-link-lives-60-seconds-unless-the-administrator-says-otherwise-at-most-an-hour)) is
+  `linkLifeSeconds`, bounded by the credential that signs it: a link expires at the earlier of now plus the life and the
+  credential's own expiry, where the credential carries one (temporary credentials, R-STOR-031); one that ends within 5 seconds signs no
+  link, and the download streams. A static key that its provider lets expire on a date Quader is not told about can end a link early;
+  the client then gets the store's `403` and asks Quader again.
+- **The redirect** ([Q-STOR-289](#q-stor-289--the-redirect-is-a-307)): `307 Temporary Redirect`, `Location: <link>`,
+  `Cache-Control: no-store`, `Content-Length: 0`, the content headers of R-ARCH-007, which the content wrapper sets on every answer of a
+  content route, and none of `ETag`, `Last-Modified`, `Accept-Ranges` and `Repr-Digest`, which describe a body the redirect does not
+  have.
+- **The `Location` is a bearer** for the link's life (H-12): it is never logged (the request log keeps no header, and its path redaction
+  covers `X-Amz-Signature`, `X-Amz-Credential` and `X-Amz-Security-Token`, R-OPS-010, R-OPS-013), never part of an error, never cached by
+  Quader, and issued for one request only.
+- **What the client then sees** is the store's answer: the bytes, the store's own `ETag` (no content address), `Content-Length`. A link
+  fetched after its expiry is the store's `403`; a client that retries asks Quader's address again (a redirect is followed from the
+  original request) and gets a new link or the stream. A download that is running when the link expires goes on: the store checks the
+  expiry when the request arrives.
+
+Acceptance criteria:
+
+- Unit (`internal/blob/s3`): a link signed with a life of 60 s carries `X-Amz-Expires=60`, the three overrides in its signed query and
+  the public address's host; with credentials that expire in 30 s, its expiry is at most 30 s away (`TestR_STOR_072_TheLink`).
+- Unit (the package of the host rule): `objects.example.com` is accepted beside `quader.example.com`; `quader.example.com`,
+  `s3.quader.example.com`, `blobs.packages.example.com` beside a `wildcard_host` `*.packages.example.com`, and the bucket host
+  `quader.quader.example.com` of virtual-hosted addressing against an address `quader.example.com` are refused
+  (`TestR_STOR_072_TheLinksHost`).
+- Unit (`internal/api/edge`): the `307` carries `Location`, `Cache-Control: no-store`, `Content-Length: 0` and the four content headers,
+  and no `ETag` (`TestR_STOR_072_TheRedirect`).
+- Conformance (`checkPresign`, the job `s3-conformance` against Silo, milliseconds): the link's answer carries the overridden
+  `Content-Type`, `Content-Disposition` and `Cache-Control`.
+
+### R-STOR-073 · What a link counts and records
+Priority: **P1** · Covers: quader-only
+
+Everything is counted when the link is issued, not when the client fetches it. Quader does not learn whether, when or how often the link
+was fetched, nor how many bytes arrived.
+
+- **Usage** ([usage-and-limits.md](usage-and-limits.md) R-LIM-040): the request, as every request at stage 7, and the item's size as
+  cached bytes of the budget key at issuance: in the hour and day windows at the next flush and in the usage store under the repository
+  that served.
+- **Download statistics** (R-STOR-015): one download of the item, `last_download_at` and `last_downloader`, as R-STOR-015 counts "a
+  presigned redirect". A link fetched twice in its life counts once; a link never fetched counts.
+- **The repository's activity** is touched as for every download.
+- **Audit** ([Q-STOR-292](#q-stor-292--a-link-is-recorded-as-the-download-it-stands-for)): `artifact.downloaded`, under
+  `audit.record_downloads` as every download ([operations-and-observability.md](operations-and-observability.md) R-OPS-016), with
+  `delivery: "link"` and `linkExpiresAt` in `details` beside `path` and `sha256`. No event of its own.
+- **Request log** ([operations-and-observability.md](operations-and-observability.md) R-OPS-010): status `307`, the new field
+  `delivery` with `link` (`null` for every other request), `bytes_cached` the item's size, `response_bytes` `0`.
+- **Metrics** (closed labels, R-OPS-007): `quader_storage_download_links_total{format}` (links issued),
+  `quader_storage_download_link_bytes_total{format}` (their sizes), `quader_storage_download_links_declined_total{reason}` for a `GET` of
+  a declaring route that was streamed while the switch was on (`bastion`, `opt_out`, `gate`, `range`, `size`, `pace`, `connection`,
+  `credential`, `signing`), and the gauge `quader_storage_download_links_usable{connection}`, 1 while a connection can serve links on
+  the replica (R-STOR-074). `quader_storage_s3_requests_total` counts no request for a link: signing is local.
+- **The object store's own log**, where its operator turned one on, holds the request of the link with the object key, the time, the
+  address the store saw and the signer: the connection's credential, never Quader's caller. Signing makes no request, so the store records
+  no issuance (H-1278). An entry of that log joins Quader's audit event by the object key (the digest) and the link's life.
+
+Acceptance criteria:
+
+- Unit (`internal/formathost`): one link adds one download to the statistics buffer, the item's size to the charge's cached bytes, one
+  `artifact.downloaded` with `delivery: "link"` when downloads are audited, and one to `quader_storage_download_links_total{format="npm"}`;
+  a streamed `GET` declined for its range adds one to `..._declined_total{reason="range"}` (`TestR_STOR_073_WhatALinkCounts`).
+
+### R-STOR-074 · The connection that serves a link, its public address, its link check and the test link
+Priority: **P1** · Covers: STOR-032
+
+Several connections are stage 1 of the owner's topic, specified in parallel: a connection has the property `encrypted` and a state, and a
+blob has a copy per connection. This block is written against those terms. Until stage 1 is built there is the one connection of today,
+which is not encrypted ([R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) is not built) and which the answers name
+`default`.
+
+- **Which connection** ([Q-STOR-291](#q-stor-291--any-connection-that-is-not-encrypted-and-holds-a-sound-copy-serves-the-link)): the first
+  connection in the read order of stage 1 that is not encrypted, holds a copy of the blob that is not marked damaged, is not failing (its
+  circuit closed) and can serve links (below). None: the download streams, read as stage 1 reads.
+- **The public address** of a connection is what a client reaches: an `https://host[:port]` origin without path, query or user
+  information, set per connection in the admin area (`publicAddresses`, R-STOR-014); without one it is the connection's endpoint. The
+  store has to accept a request signed for that host (its own name, or a proxy in front of it that keeps the `Host` header); that is the
+  operator's network work, which the test link shows.
+- **Can serve links** when the connection is not encrypted, its public address is `https`, the host of a link signed against it is no host
+  of Quader nor below one (R-STOR-072), and its link check passed on the replica. Each replica decides it from its own configuration at
+  start and at every refresh of the settings' snapshot; a replica that finds a connection unable logs it once per change (`warn`, the
+  reason and the host it collides with) and sets the gauge of R-STOR-073 to 0. The settings' answer names the reasons per connection:
+  `encrypted`, `not_https`, `quader_host` (with the host), `link_check_failed` (with what the store answered).
+- **The link check** ([Q-STOR-294](#q-stor-294--each-connection-proves-at-start-that-a-link-with-the-overrides-works)): a check of the
+  store's conformance (R-STOR-035) that every replica serving downloads runs for each connection at its start, whether or not the rest of
+  the start-up check runs, and again when the switch is turned on: it writes a probe object of R-STOR-001's family `_probe/`, signs a
+  link with the three overrides against the connection's endpoint, fetches it, and passes when the answer is `200` with the probe's bytes
+  and the three overridden headers; then it deletes the probe. A store that refuses or ignores an override fails it. A failed link check
+  takes the connection out of links on that replica and stops nothing else: the downloads stream. It is the extended `checkPresign` of
+  [conformance.go](../../internal/blob/conformance.go), marked optional so that its failure fails no start.
+- **The test link** ([Q-UI-952](api-and-ui.md#q-ui-952--the-test-is-a-link-the-administrator-opens-from-a-client-of-his-network)),
+  `POST /api/v1/download-links/test` with a connection and an address as entered, saved or not: the API checks the address as a save
+  would (`422`), answers `409 connection_unavailable` for a connection that is failing or encrypted, writes the probe
+  `_probe/link-test-<random>` with the 44 bytes `Quader download link test: this link works.\n` on that connection, and answers
+  `{"url", "expiresAt", "command"}`: a link to it, signed against the entered address with a life of 60 s and the file name
+  `quader-link-test.txt`, and the `curl -fsS '<url>'` that fetches it. The administrator opens it in his browser or runs the command on a
+  client machine within the minute: what the store answers there is what his network gets. Quader sends no request to the address. The
+  replica deletes the probe when the link's life is over; a probe that a stopped replica left is deleted by the next test, which removes
+  every `_probe/link-test-` object older than an hour.
+- **The store's own limits** apply to the transfers of links as well and are not Quader's to enforce: a provider limits requests,
+  concurrent requests and bandwidth per account or project (H-1283).
+
+Acceptance criteria:
+
+- Unit (`internal/api/v1`): the settings' answer names `quader_host` for an address below `server.base_url`, `not_https` for an `http`
+  endpoint without an address, and `link_check_failed` for a store fake that drops `Content-Disposition`; a `PATCH` with such an address
+  answers `422` at `/publicAddresses/default`; the test link answers a link signed against the entered address, and `409` while the
+  circuit is open (`TestR_STOR_074_TheConnectionAndItsAddress`).
+- Unit (`internal/blob`): the link check fails against an in-memory store that ignores `response-content-disposition`, and the
+  connection serves no link while the others' downloads go on (`TestR_STOR_074_TheLinkCheck`).
+- End-to-end, in the leg of each format that declares `Checks` (`oci`, `npm`, `ansible`), one case with bytes to kilobytes: with
+  `{"enabled": true, "minSize": 0}` the leg's clients fetch a fresh one-file artifact through a `307` (Docker and Podman; npm, pnpm and
+  Yarn; `ansible-galaxy`), and after its object was overwritten in the bucket with other bytes of the same length every one of them
+  refuses it (`TestR_STOR_071_<Format>ClientsCheckALink`).
 
 ### R-STOR-048 · Client-side encryption of stored content
 Priority: **P2** · Covers: quader-only
@@ -3920,6 +4269,258 @@ outcomes of a failed check: the response is always aborted, but only a wrong S3
 `Content-Length` or a complete read with the wrong SHA-256 marks the blob `corrupt`; transport
 errors leave the status unchanged, with an acceptance criterion using a fault proxy.
 
+### Q-STOR-280 · The switch is one row of its own with its own operations, as the malware scan's
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the owner decided one switch of the installation in the admin area (R-STOR-014). The installation has two places for such a
+setting: the configuration, which a rollout changes, and a row in the database with an API, which the malware scan's "Only checked
+artifacts can be downloaded" uses (R-MAL-019) and every replica reads within 2 s. A document of storage settings (`trash`, `quota`,
+`PUT /api/v1/settings/storage`, R-STOR-022) is specified and not built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One row `download_link_settings`, operations under `/api/v1/download-links/`, a change area of its own (chosen) | The precedent of R-MAL-019 | An administrator's operational switch changes without a rollout and reaches every replica within the bound; the pieces exist once already (snapshot, change area, `If-Match`, audit with journal flag) | A table and four operations more |
+| (b) A member `links` of the storage settings document | One document for storage | One page, one revision | The document is not built; `PUT` replaces the whole document, so the links' package would build the trash can's and the quota's machinery with it |
+| (c) Configuration keys, as `storage.s3.presign.*` are today | The chart decides | Nothing to build at runtime | Not the admin area the owner chose; every change is a rollout |
+
+**Choice:** (a). **Rationale:** it is what the owner asked for and what the installation already does for the one comparable switch. The
+planner would revisit it when the storage settings document is built and a second runtime setting of the delivery appears.
+**Applied in the spec:** R-STOR-014, R-UI-200, [Q-API-400](api-and-ui.md#q-api-400--the-signed-links-have-operations-of-their-own-under-apiv1download-links).
+
+### Q-STOR-281 · The public address for links is a setting of the admin area per connection
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the owner listed "öffentlicher Host" among the details of the switch in the admin area. Connections are kept in the chart and
+shown, not changed, in the admin area (decision 9 of the same paper). Today the address is the configuration key
+`storage.s3.presign.endpoint` ([storage.go](../../internal/config/storage.go) lines 110 to 115). A link must name a host the client
+reaches, which for a store inside the cluster is a name in front of it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A field per connection in the switch's details, its value the connection's endpoint until changed (chosen) | Stored in `public_addresses` of the row, keyed by the connection's name | The owner's wording; an address the administrator can test before he saves it (R-STOR-074); no rollout | A value about a connection that lives outside the chart; each replica checks it against its own configuration |
+| (b) A property of each connection in the chart, shown read-only | As today's key | The connection's facts in one place | Not what the owner chose; a rollout per change |
+| (c) Both, the admin area overriding the chart | | Either way works | Two places for one value, which drift |
+
+**Choice:** (a). **Rationale:** the address is the delivery's, not the connection's: the connection itself is reached by its endpoint,
+and only links use the address. The planner would revisit it if stage 1 makes the connections changeable in the admin area.
+**Applied in the spec:** R-STOR-014, R-STOR-074, R-UI-200.
+
+### Q-STOR-282 · A repository opts out with one member, and the addressed and the holding repository must both allow
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: "Je Repository abschaltbar" (decision 11 (a)). A download through a virtual repository involves the addressed repository and
+the member that holds the item; the old R-STOR-014 asked only the member, the malware scan asks either (Q-MAL-32). The malware scan
+treats switching its member off as a weakening an Owner may not make (R-MAL-020).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `storage.downloadLinks`, default `true`; both the addressed and the holding repository must allow; every writer of the settings both ways (chosen) | An opt-out that only takes away | A team's virtual repository and a member's own choice both hold; the Owner who allows links again returns to the administrator's decision and cannot go beyond it | One member more |
+| (b) Only the holding member decides | As the old block | The repository that stores the bytes decides | A team cannot keep its virtual repository's downloads in Quader |
+| (c) Switching links back on needs `repositories:write-config` | As the malware scan's weakening | An administrator controls every repository that delivers by link | The installation's switch is that control already; the conditions of R-STOR-070 hold whatever the repository says |
+
+**Choice:** (a). **Rationale:** the opt-out narrows a delivery the administrator has already allowed under conditions that keep the
+content checked; the repository cannot widen it. The planner would revisit (c) if a link of one repository turns out to carry a risk the
+installation's conditions do not cover. **Applied in the spec:** R-STOR-014, R-STOR-070 step 4, R-UI-201.
+
+### Q-STOR-283 · The member storage.presignedDownloads is refused, and storage is a closed object
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: `storage.presignedDownloads` is accepted and ignored today (R-STOR-014's earlier form; [validate.go](../../internal/repository/validate.go)
+lines 141 to 148). The project is pre-alpha with no installation to keep working (the repository's working rules). Neither the OpenAPI
+document nor the UI knows the member.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `storage` holds `maxUploadSize` and `downloadLinks`; any other member is `422 invalid_value` (chosen) | A write that names the old member is refused with a detail that names R-STOR-014 | No accepted setting is ignored; a typo is found at once | A stored document with the old member is refused when it is sent back whole |
+| (b) Drop unknown members on write | The canonical form | Nothing is refused | The writer is not told that his member means nothing |
+| (c) Map `presignedDownloads: true` to the new member | | | A compatibility path the rules forbid, and the meaning is the opposite (opt-in against opt-out) |
+
+**Choice:** (a). **Rationale:** the rules of the pre-alpha stage and the principle that a setting is either honoured or refused. No
+stored document is rewritten; one sent back whole with the old member is refused at its pointer, and its writer removes it.
+**Applied in the spec:** R-STOR-014.
+
+### Q-STOR-284 · A download whose gates are not all decided and passed is never a link
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a link cannot be taken back during its life. Where the malware gate is not strict, a blob without a verdict yet is served
+(R-MAL-013); its verdict usually follows within minutes of the upload. Streamed, a request after an `infected` verdict is refused; a link
+issued before it still delivers the bytes until it expires.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A link only on decided passing states: malware `clean` or released or off, no block or wait of the vulnerability data, the signature gate passed or off (chosen) | A pending, `unscannable` or `failed` blob streams | A link never hands out bytes whose verdict is still open; fresh content, the most likely to be found infected, stays behind Quader | Fresh large artifacts stream until their scan |
+| (b) A link wherever the gates let the download through | Non-strict pending blobs go by link | More downloads by link | A finding minutes after the upload does not reach links issued before it |
+| (c) No link while the malware scanning is on at all | | | The owner's switch would mean nothing on an installation that scans |
+
+**Choice:** (a). **Rationale:** it bounds what H-1275 can deliver to content whose verdicts were in when the link was issued. The planner
+would revisit it if most large downloads turn out to be of blobs younger than their scan. **Applied in the spec:** R-STOR-070 step 6.
+
+### Q-STOR-285 · Quader answers every request with a range itself
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a link signed for `GET` can carry a client's `Range` to the store (the clients copy it on a redirect). Quader's own answer to
+`If-Range` compares the content address (R-STOR-012); the store's `ETag` is not the content address, so an `If-Range` sent there never
+matches and the store answers the whole object. A client's digest covers the whole object only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Any `Range` is answered by Quader (chosen) | `206`, `200`, `416` as R-STOR-012 | Resume on any replica stays exact; the first transfer of a large file, the one that matters, goes by link | A resumed transfer goes through Quader |
+| (b) A link for a range without `If-Range` | | More bytes by link | Two rules for one request kind; a store's support of ranges on a link is not documented at every provider |
+| (c) A link for every range | | Most bytes by link | `If-Range` turns every resume into a full transfer |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-070 step 8.
+
+### Q-STOR-286 · The declaration is a field of the route
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: whether a client checks a digest is a fact of one route (an OCI blob is checked against the digest in its path, a manifest by
+tag is not). The contract keeps facts of a route on `formats.Route` (`APIKey`, `TokenScheme`, `Wiki`, [route.go](../../internal/formats/route.go)
+lines 99 to 140) and format-wide facts in `catalog.Facts` (the Bastion's facts, ADR-238), and the serve point knows the matched route
+(`rq.Route`, [ingest.go](../../internal/formathost/ingest.go) lines 427 to 429).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Route.ClientDigest` with the evidence beside it (chosen) | One field per route | The fact stands next to the route it describes; the serve point reads it from `rq.Route`; the zero value streams | One more field every route carries |
+| (b) A list of route names in `catalog.Facts` | Format-wide facts | The catalog is a leaf every layer reads | A name list that can drift from the routes; the catalog has no notion of routes |
+| (c) A method of the format that answers per request | | Can look at a request | Code where a fact suffices, and the kit cannot list what a format declares |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-071, [ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it).
+
+### Q-STOR-287 · A link's answer carries the content type, the file name and no-store, and the redirect carries the four content headers
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-012 requires four headers on every response that carries stored content; the earlier R-STOR-014 named two for the link
+(`response-content-disposition`, `response-content-type`). A signed link can ask the store only for the `response-*` headers;
+`X-Content-Type-Options`, `Content-Security-Policy` and `Cross-Origin-Resource-Policy` cannot be set on it. Their purpose is that user
+content is never rendered as part of Quader's origin.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The link asks for content type, `attachment` with the file name and `private, no-store`; the `307` carries all four (chosen) | R-STOR-012 holds for every answer Quader writes | The store's answer comes from a host that is never Quader's or below it (Q-STOR-288), so there is no origin of Quader to protect there; the stored type `application/octet-stream` is not rendered | Three headers are missing on the store's answer (H-1279) |
+| (b) No link unless all four can be set | | R-STOR-012 holds word for word | No store can set them: the switch would mean nothing |
+| (c) Only the two of the earlier block | | Less to sign | A shared cache could keep a bearer link's bytes |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-072, R-STOR-074 (the link check proves the store honours the three).
+
+### Q-STOR-288 · The links' host is no host of Quader and lies below none
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: read in the clients' source on 2026-11-22: Go's HTTP client keeps `Authorization` on a redirect to the same host or a subdomain
+of it, and containerd and Podman do not strip it; an object store refuses a signed link that arrives with a credential (`400`). Quader
+answers on the hosts of its base URLs, its endpoints' host sets, their wildcard hosts and the host names its endpoints bind
+(`server.base_url`, `additional_base_urls`, `content_base_url`, `endpoints.*`, [server.go](../../internal/config/server.go) lines 28 to 38,
+[endpoints.go](../../internal/config/endpoints.go) lines 62 to 65).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Refuse a link host that is, or lies below, a host of Quader or below a wildcard's suffix, at save and at every start (chosen) | The host as signed, the bucket's name included where the addressing puts it there | Closes the case that breaks every image pull by link | A host Quader is reached by and its configuration does not list is not seen (H-1282) |
+| (b) Refuse only equal hosts | | Simpler | The subdomain case, the one the Go clients meet, stays open |
+| (c) No rule, a note in the manual | | | A misconfiguration that fails every pull with an error from the store |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-072, R-STOR-074.
+
+### Q-STOR-289 · The redirect is a 307
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the earlier block said `302`. The reference registry and Docker Hub and ghcr.io answer `307`, quay.io `302`; every client read
+follows both for a `GET` (apt, npm, Go, curl, .NET, Python's `urllib`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `307 Temporary Redirect` (chosen) | The method and body stay | What the reference registry sends; its meaning is exact for every method | None found for `GET` |
+| (b) `302 Found` | | The earlier text | A method change for other methods is allowed by its definition |
+| (c) `303 See Other` | | | Says the target is another resource, which it is not |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-072; [formats/oci.md](formats/oci.md) R-OCI-010 already names `307`.
+
+### Q-STOR-290 · A link lives 60 seconds unless the administrator says otherwise, at most an hour
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a link is a bearer for its life (H-12). Clients follow a redirect at once; a link that expires during a transfer lets it finish
+(the store checks the expiry on arrival); a retry asks Quader again. Signature Version 4 allows up to 7 days; temporary credentials end
+earlier (STS one hour by default; at the owner's provider, 48 hours on its own servers).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 60 s in the field, 10 s to 3,600 s, bounded by the credential (chosen) | Today's configuration default | Short exposure; nothing a client needs is lost | A client that queues a redirect for more than a minute fetches a new link |
+| (b) 20 minutes, as the reference registry | | Fewer new links on slow starts | Twenty minutes of a bearer |
+| (c) Up to 7 days | | | A link becomes something to pass around |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-014, R-STOR-072.
+
+### Q-STOR-291 · Any connection that is not encrypted and holds a sound copy serves the link
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: with several connections (stage 1) a blob has a copy on each; Quader reads in an order and falls over. The owner: an encrypted
+connection's data is delivered by Quader. A plain copy of the same bytes may exist on another connection (the owner's datacenter store in
+the clear beside an encrypted provider, the paper's example).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first connection in the read order that is not encrypted, holds a copy not marked damaged and is not failing (chosen) | A link from the plain copy where there is one | The plain copy is in the clear anyway; the encrypted provider's bytes never leave by link | A link can come from another connection than Quader would read from |
+| (b) Only the connection Quader would read from, and only if it is not encrypted | | One connection per blob in every path | An installation whose first connection is encrypted would never use links |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-074.
+
+### Q-STOR-292 · A link is recorded as the download it stands for
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the object store's log names the signer and records no issuance; the store vendor recommends the application's own record of
+each issuance. Quader audits downloads only with `audit.record_downloads`, because of their volume; the request log records every
+request.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `artifact.downloaded` with `delivery` and `linkExpiresAt` under `audit.record_downloads`; the request log's `delivery` for every link (chosen) | A link is a download | One rule for downloads; every issuance is in the request log with the caller, the path and the time | An installation that audits no download has the request log only |
+| (b) An event `artifact.link_issued` always | | Every bearer handed out is in the audit trail | Every layer of every pull in the audit trail, the volume `record_downloads` exists to avoid |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-073.
+
+### Q-STOR-293 · A link is signed by the connection's runtime credential
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: a signed link allows exactly the signed `GET`, whatever else its credential may do; it stops working when its credential is
+revoked. At the owner's provider credentials are scoped to a project, not a bucket, and can be held to reading by a bucket policy.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The runtime credential of the connection (chosen) | Nothing to configure | The plain path; what the store signs today | Revoking every link at once means revoking Quader's credential |
+| (b) A read-only credential per connection for signing only | A second login per connection | A lever that ends every outstanding link without stopping Quader; a bucket policy can narrow the signer alone | One more secret per connection in the chart, for a lever needed rarely |
+
+**Choice:** (a). **Rationale:** a link lives a minute by default; the lever matters only for longer lives. The planner would revisit it
+when an administrator needs links of more than a few minutes. **Applied in the spec:** R-STOR-072, H-12.
+
+### Q-STOR-294 · Each connection proves at start that a link with the overrides works
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the owner's provider documents signed links for `GET`, and says nothing about their longest life, about ranges and about the
+`response-*` overrides; the software behind it documents the overrides as supported (read on 2026-11-22, not confirmed for the provider,
+and nothing can be run against his bucket today). A store that ignores the overrides would serve a link without `attachment` and with the
+stored type.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An optional check at every start of each connection, and when the switch is turned on; a failure takes the connection out of links (chosen) | The conformance check `checkPresign`, extended | Every provider is found out on the installation that uses it, without a measurement in the pipeline | One probe write and one `GET` per connection and start |
+| (b) The conformance job in the pipeline only | | Nothing at runtime | The pipeline runs against Silo, never against the owner's provider |
+| (c) Trust the documentation | | | Not documented for the provider that matters |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-074.
+
 ### Q-STOR-7 · Status code for an exceeded quota
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -5342,10 +5943,14 @@ versioning to make replacement detectable and reversible.
 
 ### H-12 · Presigned download URLs are bearer capabilities
 
-A redirect URL (R-STOR-014, P2, dormant until implemented) grants the object to anyone holding it
-until it expires (`presign.ttl`, default 60 s) or the signing credentials expire. It cannot be
-revoked, is not bound to the client, and may be logged by proxies, browsers or CI logs. Revoking
-the requester's token does not invalidate URLs already issued.
+A signed link (R-STOR-014, R-STOR-072) grants the object to anyone holding it until it expires (`linkLifeSeconds`, 60 s unless the
+administrator sets up to an hour) or the credential that signed it expires or is revoked. It cannot be revoked alone, is not bound to
+the client, can be fetched several times and passed on, and may be logged by proxies, browsers or CI logs. Revoking the requester's
+token does not invalidate links already issued. Dormant: not built, and off by default once built; live on an installation whose
+administrator switched it on, for every download R-STOR-070 hands to a link, whoever the caller (an anonymous caller of a public
+repository included). What makes it real is a link that leaves the client: a CI log that prints redirects, a proxy that logs query
+strings. The lever that ends every outstanding link at once is the revocation of the connection's credential, which stops Quader's own
+access too (Q-STOR-293).
 
 ### H-13 · Deduplication reveals the existence of known content through upload timing
 

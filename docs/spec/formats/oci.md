@@ -497,9 +497,11 @@ Priority: **P1** · Covers: PKG-DOCKER-017, PKG-OCI-006
 - `GET` and `HEAD /v2/<p>/<r>/<name>/blobs/<digest>` read `<name>/_blobs/<digest>`: a blob is readable through a name only
   when an item of that name holds it (pushed, mounted or fetched for it), never because another name or repository holds the
   same bytes.
-- `Range` requests are answered with 206 (R-STOR-012); a repository with presigned downloads (R-STOR-014) answers `307` to the
-  object store for a `GET` of a blob, which every supported client follows without forwarding `Authorization` (the redirect is the
-  core's P2 and is not built, H-601: a blob is streamed).
+- `Range` requests are answered with 206 (R-STOR-012). With the installation's delivery by signed links on
+  ([storage.md](../storage.md) R-STOR-014), a `GET` of a blob that meets the conditions of R-STOR-070 is answered `307` to a link of
+  the object store: the route `oci.blob.get` declares that the clients check the digest in its path (R-STOR-071), and the links' host is
+  no host of Quader nor below one, so the image clients written in Go do not carry their `Authorization` to it (R-STOR-072). A `HEAD`
+  and a manifest are always answered by Quader. Specified, not built (H-601: a blob is streamed).
 - Download integrity (R-STOR-013) applies: a blob whose stored bytes do not match their SHA-256 ends the response.
 
 Acceptance criteria:
@@ -3931,9 +3933,10 @@ index with a foreign child and an unusual push order. A child pushed before the 
 
 ### H-601 · Blob downloads are streamed and never redirected to the object store
 
-R-OCI-010 says that a repository with presigned downloads answers `307` for a blob `GET`. The presigned redirect of R-STOR-014 is P2 and
-the download path of the core does not issue it yet, so every blob goes through the replica. Live today; real for large layers, which
-occupy a replica's connection and bandwidth for the whole transfer.
+R-OCI-010 says that a blob `GET` is answered `307` to a signed link of the object store while the installation's switch is on
+([storage.md](../storage.md) R-STOR-014, R-STOR-070). The delivery by signed links is specified and not built, so every blob goes through
+the replica. Live today; real for large layers, which occupy a replica's connection and bandwidth for the whole transfer. Once it is
+built, a caller with a pace figure, a request through a Bastion, a range and a blob below the minimum size are still streamed by design.
 
 ### H-602 · The first push of a name by digest can claim the name for a caller that never pushes a tag
 

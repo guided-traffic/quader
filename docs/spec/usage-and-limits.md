@@ -1074,6 +1074,42 @@ Acceptance criteria:
 - The capacity test of R-ARCH-027 (`TestNPMPerf`, twenty technical tokens of the profile Technical in `enforce`, without a rule of
   their own) answers every request with 200 or the replica's own 503 `server_busy`.
 
+### R-LIM-040 · A download handed to a signed link of the object store
+Priority: **P1** · Covers: BEYOND-030
+
+The owner's decision of 2026-11-22 ([storage.md](storage.md) R-STOR-014, decision 11 (a) of his working paper on the stored content):
+a download is handed to a signed link only where "für den Aufrufer gilt kein Tempolimit", and "gezählt wird bei der Ausgabe, nicht beim
+Transfer". A link moves the transfer away from Quader: no counting writer sees its bytes, and no lease can last as long as it does.
+What each figure does with a link ([Q-LIM-97](#q-lim-97--a-pace-figure-keeps-a-download-in-quader-in-both-modes),
+[Q-LIM-98](#q-lim-98--a-link-is-charged-its-size-when-it-is-issued-and-its-parallel-lease-ends-with-the-redirect)):
+
+| Figure | With a link |
+|---|---|
+| `requestsPerSecond`, `requestsBurst`, `requestsPerHour`, the block | unchanged: the `307` is a request at stage 7 like every other |
+| `cachedBytesPerSecond` | **makes a link impossible**: a budget key that has it set gets every download streamed and paced (R-LIM-023), in `enforce` and in `audit` alike, so that `audit` records what `enforce` would do |
+| `cachedBytesPerHour`, `bytesPerDay` | checked before the link as before a stream (R-LIM-021, `Admit`); the item's size is charged as cached bytes when the link is issued, and reaches the windows at the next flush |
+| `parallelDownloads` | checked before the link (`Admit` takes the lease and may wait); the lease ends with the `307`, so the figure bounds issuances, not transfers ([security/download-links.md](../security/download-links.md) H-1276) |
+| `uncachedBytesPerSecond`, `uncachedBytesPerHour`, `upstreamRequestsPerHour`, the ceilings | unchanged: a link is only ever a stored item's (a remote's miss is streamed by the leader, R-REPO-041) |
+
+- **The check** reads the budget key's figures from the request's charge (`limits.Charge.Figures`,
+  [charge.go](../../internal/limits/charge.go) lines 121 to 127): no round trip. The built-in profiles Standard, Technical, Restricted
+  and Anonymous set `cachedBytesPerSecond` (R-LIM-010), so on a new installation only administrators (Unlimited) and callers under a
+  profile or rule without it get links; the settings page of R-UI-200 says so.
+- **The charge at issuance** adds the item's size to the charge's cached bytes (`AddCached`, [charge.go](../../internal/limits/charge.go)
+  lines 179 to 187): the windows, the usage store (cached bytes of the repository that served) and `bytes_cached` of the request log carry
+  it as if the body had been written. A link fetched twice counts once, a link never fetched counts.
+- **In `audit`** a link is issued wherever the conditions hold; nothing about it is refused, and `Admit`'s would-limits are recorded as
+  for a stream.
+- **A system read** (R-LIM-001) is never a link ([storage.md](storage.md) R-STOR-070).
+
+Acceptance criteria:
+
+- Unit (`internal/limits`, `internal/formathost`): a caller under the profile Standard gets the tarball streamed with the switch on; under
+  Unlimited, `307`; a rule that empties `cachedBytesPerSecond` of Standard for one technical token gives that token `307`; after one link of
+  a 5 MB tarball the charge holds 5 MB of cached bytes, and the next flush adds them to the hour window; with `cachedBytesPerHour` used up
+  the answer is `429 download_limit_reached` and no link; in `audit` a caller with `cachedBytesPerSecond` is streamed
+  (`TestR_LIM_040_ALinkAndTheFigures`).
+
 ### R-LIM-025 · The block after refused requests
 Priority: **MVP** · Covers: BEYOND-030
 
@@ -2909,6 +2945,40 @@ spec:** R-LIM-001. Code: `everyOf` in [model.go](../../internal/limits/model.go)
 ([buffer.go](../../internal/limits/usage/buffer.go)); `UsageSubjectCertificate` in [openapi.yaml](../../api/openapi.yaml);
 [callers.ts](../../web/src/app/features/limits/callers.ts). The detail page of a caller lists the credentials of a user only; a certificate
 subject's serials are in the store and not on that page.
+
+### Q-LIM-97 · A pace figure keeps a download in Quader, in both modes
+
+Status: **Decided by the planner in the owner's absence** on the owner's condition of 2026-11-22 ("für den Aufrufer gilt kein
+Tempolimit"); what it means for the built-in profiles is put to the owner.
+
+Context: pacing (R-LIM-023) acts on the bytes Quader writes; a link writes none. Every built-in profile but Unlimited sets
+`cachedBytesPerSecond` (R-LIM-010). In `audit` nothing is paced, and a would-limit is recorded once per download that would have waited.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A set `cachedBytesPerSecond` makes every download of the budget key a stream, in `enforce` and in `audit` (chosen) | The owner's condition, read per budget key | The limit the administrator set holds for every byte; `audit` shows what `enforce` would do | On a new installation only administrators and callers without the figure get links |
+| (b) Only in `enforce` | | More links in `audit` | `audit` would record no pacing for downloads that `enforce` would pace |
+| (c) The figure does not stop a link; a link's transfer is simply not paced | | Links for everyone | Against the owner's condition; a slowed caller becomes fast by link |
+
+**Choice:** (a). **Rationale:** the owner's words, and the mode's promise that `audit` observes the decisions of `enforce`. That the
+built-in profiles exclude almost every caller from links is the consequence the owner decides on; until then the settings page names it.
+**Applied in the spec:** R-LIM-040, [storage.md](storage.md) R-STOR-070 step 10, [api-and-ui.md](api-and-ui.md) R-UI-200.
+
+### Q-LIM-98 · A link is charged its size when it is issued, and its parallel lease ends with the redirect
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the owner accepted that "das Limit paralleler Downloads sieht den Transfer nicht" and that a link is counted when it is issued
+(decision 11 (a), its stated costs). The byte windows are filled by the counting writer only ([httplimit.go](../../internal/limits/httplimit/httplimit.go)
+lines 125 to 159), and a lease is given up when its request ends ([engine.go](../../internal/limits/engine.go) lines 894 to 902).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Admit` before the link as before a stream; the item's size charged at issuance; the lease ends with the `307` (chosen) | A link is a download of its size, decided like one | The hour and day budgets hold for links; nothing waits for a transfer Quader cannot see | `parallelDownloads` bounds issuances, not transfers |
+| (b) The lease lasts the link's life | A link holds a parallel slot until it expires | Some bound on parallel transfers | A one-second layer holds a slot for a minute: a pull of several layers at a low figure waits and fails where a stream would pass |
+| (c) Nothing charged at issuance | | | The byte windows would never fill: a link would be a way around the hour and day budgets |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-040, [storage.md](storage.md) R-STOR-073.
 
 ## What this does not cover
 

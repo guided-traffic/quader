@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 656 of 1,160 spec requirements are implemented: a passing test names them and no
+**Status.** 656 of 1,168 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 795 specified (506 of them implemented), 1,444 open.
-1,160 spec requirements: 740 cover catalog features, 420 cover none (`quader-only`, [listed at the
+1,168 spec requirements: 746 cover catalog features, 422 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -805,8 +805,8 @@ Catalog page: [storage-and-blobs.md](../features/storage-and-blobs.md) · specif
 | STOR-029 | Compatibility with S3-compatible object stores | MVP | implemented | [R-STOR-030](../spec/storage.md) (implemented), [R-STOR-035](../spec/storage.md) (implemented) |
 | STOR-030 | Google Cloud Storage | P2 | open | – |
 | STOR-031 | Azure Blob Storage | P2 | open | – |
-| STOR-032 | Download redirect to signed object-storage URLs | P2 | specified | [R-STOR-014](../spec/storage.md) |
-| STOR-033 | Minimum size for redirected downloads | P2 | specified | [R-STOR-014](../spec/storage.md) |
+| STOR-032 | Download redirect to signed object-storage URLs | P2 | specified | [R-UI-200](../spec/api-and-ui.md), [R-UI-201](../spec/api-and-ui.md), [R-STOR-014](../spec/storage.md), [R-STOR-070](../spec/storage.md), [R-STOR-072](../spec/storage.md), [R-STOR-074](../spec/storage.md) |
+| STOR-033 | Minimum size for redirected downloads | P2 | specified | [R-UI-200](../spec/api-and-ui.md), [R-STOR-014](../spec/storage.md), [R-STOR-070](../spec/storage.md) |
 | STOR-034 | CDN-signed download URLs | P2 | open | – |
 | STOR-035 | Client choice of the redirect target | P2 | open | – |
 | STOR-036 | Garbage collection of unreferenced binaries | MVP | implemented | [R-STOR-024](../spec/storage.md) (implemented) |
@@ -2956,7 +2956,7 @@ Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified 
 | BEYOND-027 | Minimum release age for remote repositories | P1 | open | – |
 | BEYOND-028 | Namespace claims against dependency confusion | P1 | implemented | [R-REPO-023](../spec/repositories-and-proxy.md) (implemented), [R-REPO-048](../spec/repositories-and-proxy.md) (implemented) |
 | BEYOND-029 | Cache pre-warming from lockfiles and SBOMs | P2 | open | – |
-| BEYOND-030 | Per-tenant quotas and rate limits | MVP | specified | [R-API-016](../spec/api-and-ui.md) (implemented), [R-API-082](../spec/api-and-ui.md), [R-UI-177](../spec/api-and-ui.md), [R-UI-178](../spec/api-and-ui.md), [R-UI-179](../spec/api-and-ui.md), [R-UI-180](../spec/api-and-ui.md), [R-UI-181](../spec/api-and-ui.md), [R-UI-182](../spec/api-and-ui.md), [R-UI-183](../spec/api-and-ui.md), [R-UI-184](../spec/api-and-ui.md), [R-UI-185](../spec/api-and-ui.md), [R-UI-186](../spec/api-and-ui.md), [R-AUTHZ-039](../spec/authorization.md), [R-AUTHZ-040](../spec/authorization.md), [R-EP-015](../spec/endpoints.md) (implemented), [R-AUTH-046](../spec/identity-and-authentication.md), [R-AUTH-045](../spec/identity-and-authentication.md), [R-LIM-001](../spec/usage-and-limits.md), [R-LIM-002](../spec/usage-and-limits.md), [R-LIM-003](../spec/usage-and-limits.md), [R-LIM-004](../spec/usage-and-limits.md), [R-LIM-005](../spec/usage-and-limits.md), [R-LIM-006](../spec/usage-and-limits.md), [R-LIM-007](../spec/usage-and-limits.md), [R-LIM-008](../spec/usage-and-limits.md), [R-LIM-009](../spec/usage-and-limits.md), [R-LIM-010](../spec/usage-and-limits.md), [R-LIM-011](../spec/usage-and-limits.md), [R-LIM-012](../spec/usage-and-limits.md), [R-LIM-013](../spec/usage-and-limits.md), [R-LIM-014](../spec/usage-and-limits.md), [R-LIM-015](../spec/usage-and-limits.md), [R-LIM-016](../spec/usage-and-limits.md), [R-LIM-017](../spec/usage-and-limits.md), [R-LIM-018](../spec/usage-and-limits.md), [R-LIM-019](../spec/usage-and-limits.md), [R-LIM-020](../spec/usage-and-limits.md), [R-LIM-021](../spec/usage-and-limits.md), [R-LIM-022](../spec/usage-and-limits.md), [R-LIM-023](../spec/usage-and-limits.md), [R-LIM-024](../spec/usage-and-limits.md), [R-LIM-025](../spec/usage-and-limits.md), [R-LIM-026](../spec/usage-and-limits.md), [R-LIM-027](../spec/usage-and-limits.md), [R-LIM-028](../spec/usage-and-limits.md), [R-LIM-029](../spec/usage-and-limits.md), [R-LIM-030](../spec/usage-and-limits.md), [R-LIM-031](../spec/usage-and-limits.md), [R-LIM-032](../spec/usage-and-limits.md), [R-LIM-033](../spec/usage-and-limits.md), [R-LIM-034](../spec/usage-and-limits.md), [R-LIM-035](../spec/usage-and-limits.md), [R-LIM-036](../spec/usage-and-limits.md), [R-LIM-037](../spec/usage-and-limits.md), [R-LIM-038](../spec/usage-and-limits.md), [R-LIM-039](../spec/usage-and-limits.md) |
+| BEYOND-030 | Per-tenant quotas and rate limits | MVP | specified | [R-API-016](../spec/api-and-ui.md) (implemented), [R-API-082](../spec/api-and-ui.md), [R-UI-177](../spec/api-and-ui.md), [R-UI-178](../spec/api-and-ui.md), [R-UI-179](../spec/api-and-ui.md), [R-UI-180](../spec/api-and-ui.md), [R-UI-181](../spec/api-and-ui.md), [R-UI-182](../spec/api-and-ui.md), [R-UI-183](../spec/api-and-ui.md), [R-UI-184](../spec/api-and-ui.md), [R-UI-185](../spec/api-and-ui.md), [R-UI-186](../spec/api-and-ui.md), [R-AUTHZ-039](../spec/authorization.md), [R-AUTHZ-040](../spec/authorization.md), [R-EP-015](../spec/endpoints.md) (implemented), [R-AUTH-046](../spec/identity-and-authentication.md), [R-AUTH-045](../spec/identity-and-authentication.md), [R-LIM-001](../spec/usage-and-limits.md), [R-LIM-002](../spec/usage-and-limits.md), [R-LIM-003](../spec/usage-and-limits.md), [R-LIM-004](../spec/usage-and-limits.md), [R-LIM-005](../spec/usage-and-limits.md), [R-LIM-006](../spec/usage-and-limits.md), [R-LIM-007](../spec/usage-and-limits.md), [R-LIM-008](../spec/usage-and-limits.md), [R-LIM-009](../spec/usage-and-limits.md), [R-LIM-010](../spec/usage-and-limits.md), [R-LIM-011](../spec/usage-and-limits.md), [R-LIM-012](../spec/usage-and-limits.md), [R-LIM-013](../spec/usage-and-limits.md), [R-LIM-014](../spec/usage-and-limits.md), [R-LIM-015](../spec/usage-and-limits.md), [R-LIM-016](../spec/usage-and-limits.md), [R-LIM-017](../spec/usage-and-limits.md), [R-LIM-018](../spec/usage-and-limits.md), [R-LIM-019](../spec/usage-and-limits.md), [R-LIM-020](../spec/usage-and-limits.md), [R-LIM-021](../spec/usage-and-limits.md), [R-LIM-022](../spec/usage-and-limits.md), [R-LIM-023](../spec/usage-and-limits.md), [R-LIM-024](../spec/usage-and-limits.md), [R-LIM-040](../spec/usage-and-limits.md), [R-LIM-025](../spec/usage-and-limits.md), [R-LIM-026](../spec/usage-and-limits.md), [R-LIM-027](../spec/usage-and-limits.md), [R-LIM-028](../spec/usage-and-limits.md), [R-LIM-029](../spec/usage-and-limits.md), [R-LIM-030](../spec/usage-and-limits.md), [R-LIM-031](../spec/usage-and-limits.md), [R-LIM-032](../spec/usage-and-limits.md), [R-LIM-033](../spec/usage-and-limits.md), [R-LIM-034](../spec/usage-and-limits.md), [R-LIM-035](../spec/usage-and-limits.md), [R-LIM-036](../spec/usage-and-limits.md), [R-LIM-037](../spec/usage-and-limits.md), [R-LIM-038](../spec/usage-and-limits.md), [R-LIM-039](../spec/usage-and-limits.md) |
 | BEYOND-031 | Provider presets for further CI systems | P1 | open | – |
 | BEYOND-032 | Kubernetes service-account token trust | P2 | open | – |
 | BEYOND-033 | SPIFFE JWT-SVID trust | P2 | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>420 requirements</summary>
+<summary>422 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3371,6 +3371,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-SIG-078 | The tests of stage 3 and what they cost | P1 | [signatures.md](../spec/signatures.md) |
 | R-STOR-011 (implemented) | Multi-request upload sessions | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-013 (implemented) | Download integrity verification | MVP | [storage.md](../spec/storage.md) |
+| R-STOR-071 | The format declares whether its clients check a digest | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-073 | What a link counts and records | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-048 | Client-side encryption of stored content | P2 | [storage.md](../spec/storage.md) |
 | R-STOR-027 (implemented) | Integrity scrub | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-049 (implemented) | The storage of a project | MVP | [storage.md](../spec/storage.md) |

@@ -6692,6 +6692,23 @@ place where all layers are visible, which is where the registration belongs.
 the diagram has no arrow from `formats` to `blob`. The archtest rule for format packages is an
 allowlist that does not admit `internal/blob` (R-ARCH-008).
 
+### Q-ARCH-570 · The decision of a signed link lives in a domain package, and the serve point takes the link as an option
+
+Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Context: the delivery by signed links ([storage.md](storage.md) R-STOR-014, R-STOR-070 to R-STOR-074) needs, at the serve point, the
+installation's settings, the connections that hold a blob, the host rule against the server's configuration and the signing; the API and
+every replica's start need the same settings, the host rule and the link check. `edge.ServeItem` ([content.go](../../internal/api/edge/content.go))
+takes its other hooks as functions (`ServeOptions.Admit`, `Served`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A domain package `internal/downloadlinks` (the row's store, the snapshot, the host rule, "can serve links", the connection's choice and the signing call); the format host asks it, and `edge.ServeItem` gets `ServeOptions.Link` (chosen) | One owner of the decision; the edge function imports nothing new | The API, the start check and the serve point share one implementation; the serve point's tests run with an in-memory store | A package more in the layer map |
+| (b) In `internal/blob` | The store decides | Next to `Presign` | The blob layer would learn repositories, limits and the server's hosts |
+| (c) In `internal/formathost` alone | | Next to the gates | The API and the start check would need the format host |
+
+**Choice:** (a). **Applied in the spec:** storage.md R-STOR-070, R-STOR-074; [developer/download-links.md](../developer/download-links.md).
+
 ### Q-ARCH-29 · What the scheduler enqueues on each tick
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
