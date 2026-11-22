@@ -2086,7 +2086,27 @@ runs are in `git log`; this section holds the current state.
   the scrub passes over copies in deletion). It also writes the line of the API's description that package
   B left and corrects the two sentences of the manual that the rest of package E left. The whole of the
   gates on the top, with the integration areas the four builders ran, the query budget and the overload
-  area among them.
+  area among them. **It reported at 22:26** (its builder worked from 19:26; the stack was moved three times,
+  onto the keys, onto the gate's trace and onto the Bastion's specification): four commits of the type `feat`
+  on the top of `main`, every gate exit 0, on the top or on the base below it with the same code; twenty
+  integration areas, each on the newest base that touches it. **Where the four met:** a real conflict in the
+  command that restores versions, where the scrub's package took one credential for every connection and the
+  rest of package E changed the file to an element per connection; resolved as the journal's reader does it,
+  each connection takes its element and one the file leaves out keeps its own, with Q-STOR-268 rewritten to
+  that option. The two points package B's builder had named were true already in the statements of the
+  reconciliation and the scrub; one case of the collection's integration test now shows both, and fails with
+  either filter removed. **A third point, found by the query budget's area:** a new installation's scheduler
+  enqueues the latest slot of every task at its first tick, so the weekly orphan sweep runs at once; its
+  rhythm of a pause check, a finish and a checkpoint per prefix passed the harness's rule as statements of
+  every download (sixteen for a Debian download). Repaired in the test alone, which waits for that first
+  run; a download costs one statement on every route. Gaps H-1258, H-1259 and H-1262 are closed with it.
+  **For the owner's installation:** the sweep's first run comes right after the upgrade and deletes every
+  object of his bucket's prefix that no row of the database knows and that is older than a day, and aborts
+  multipart uploads older than a day; named to him at the landing. **Not verified:** any real provider; the
+  recovery drill on a cluster, whose fifth step hands the per-connection file to the command; the labels on
+  the screen. Five index rows of package B's decisions were missing and are added by the development agent
+  into its commit. **The landing's gates were started at 22:27 and stopped in the same minute:** the load
+  was 64 on 20 cores, two builders' lint runs at once; they start when it has fallen below 16.
 - **In work since 19:27: package 2 of the signed links** (the serve point, the store and the limits: the
   decision of R-STOR-070 after the gates and the admission, the row of the settings with its audit event
   and the replica's snapshot, the host rule, the connection's choice from the copies the item lookup
