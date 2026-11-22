@@ -4346,7 +4346,9 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
    the gate's refusals are, with the decision block's status, R-SIG-064 and H-1229 changed in the same commit;
    unit tier. Builders with a test load: the stacking, the links, this one, and the landing's gates of the keys.
 2. **How strong the gate is without chosen anchors (Q-SIG-76).** Built: (a) whatever shows as verified passes, with a
-   warning at the setting.
+   warning at the setting. **Answered by him on 2026-11-22 at 20:39: (a), as built** ("a"), told with the weakness
+   that stays (H-1194). The statuses of the decision blocks he confirms in this walk are changed in one commit of
+   the specification after it.
 3. **A gate at the upload as well for npm and NuGet (Q-SIG-79).** Built: (a) no, one behaviour for every format.
 4. **Debian and the gate (Q-SIG-80).** Built: (a) the setting is not offered.
 5. **Where an image's receipt stands (Q-SIG-66).** Built: (b) as a referrer only where it hides no older signature of a
