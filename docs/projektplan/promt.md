@@ -4471,7 +4471,19 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
     base path answers as before. The certificate stands at two failed attempts, the last at 19:11, so
     cert-manager's next attempt by itself is due about two hours after that (its doubling wait, from
     memory of its documentation); at once it is a renewal by hand, which is his. A waiter of the
-    development agent reads the certificate every minute. **His rule for his
+    development agent reads the certificate every minute. **He handed the renewal to the development agent
+    at 20:22** ("bitte umsetzen", to the one command named to him). Done at 20:23:10 directly on his
+    cluster, at his word and nothing beyond it: the certificate's status condition that starts an issuance,
+    set as the renewal command of cert-manager's tool sets it (the tool is not installed on the machine).
+    **The certificate was issued at 20:23:45, on the first attempt after the exemption,** which confirms the
+    cause. Verified from outside at 20:23:53 with the certificate checked: both of his addresses answer the
+    registry's base path with 401 and the token realm under the public name; the certificate is the public
+    authority's for that name, valid until 2027-02-20. An anonymous request for a token answers 401 at the
+    Bastion and 200 at the main installation, which is the specified answer of a Bastion whose main
+    installation serves no anonymous read (not read on his installation whether a repository is public).
+    **Not verified:** a pull by a client with a token through the Bastion from outside. **Still left:** the
+    challenge object of the DNS attempt, which hangs in its deletion, and the registration `artifacts`
+    with its token from the development agent's mistake; both are his to remove or to hand over. **His rule for his
     deployment repositories stands in his global rules for agents since 18:46, at his word** ("Das kommt
     nach …"): every file at once; a Secret he fills as a placeholder `s-<name>.unenc.yml` with the one
     command that encrypts it; no secret value fetched or issued by an agent, the cluster read only and
