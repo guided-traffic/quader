@@ -127,6 +127,7 @@ func (s *Store) CommitAll(ctx context.Context, sps []*Spooled, link LinkFunc) ([
 				m.res.Inserted = m.ins
 				m.res.Deduplicated = !m.ins && !m.res.Wrote
 			}
+			s.signalGaps(ms)
 			return results(), nil
 		}
 		for _, m := range ms {
@@ -215,6 +216,7 @@ func (s *Store) repair(ctx context.Context, d Digest, writes []copyWrite) error 
 	})
 	if err == nil {
 		s.report(ctx, d, dm)
+		s.signalGap(len(writes))
 	}
 	return err
 }

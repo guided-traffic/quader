@@ -3362,14 +3362,18 @@ Built (package A): the configuration and its validation (R-STOR-050); the record
 (R-STOR-051); the copies and the derived content state (R-STOR-052); the commit over the connections with its copy and queue rows
 (R-STOR-053); the reads over the copies (R-STOR-055); the start check and the conformance check per connection with the capabilities
 (R-STOR-035); the breaker, the metrics with `connection`, the readiness and the registry's object-store view (R-STOR-060); the seams of
-R-STOR-062. Not built: sessions on their connection, collection per copy and the orphan sweep (package B: R-STOR-054, R-STOR-057,
-R-STOR-026), the reconciliation (package C: R-STOR-056), the scrub and the operator check per connection (package D: R-STOR-027,
-R-STOR-058), the chart's list, the backup and restore per connection and the journal per connection (package E: R-HA-072, R-BAK-030,
-R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built, an installation with two connections queues every gap
-and nothing copies it ([H-1258](../security/object-store-connections.md#h-1258--until-the-reconciliation-is-built-a-gap-is-queued-and-nothing-fills-it)),
-and collection deletes on the first connection only
-([H-1259](../security/object-store-connections.md#h-1259--until-collection-works-per-copy-it-deletes-on-the-first-connection-only)); one
-connection behaves as before this section.
+R-STOR-062. Built (package C): the reconciliation with its queue, its pass, the server-side and the streamed copies, the drain, the
+retirement, the journal pass and its metrics (R-STOR-056). Built (the chart's part of package E): the chart's list (R-HA-072). Not built:
+sessions on their connection, collection per copy and the orphan sweep (package B: R-STOR-054, R-STOR-057, R-STOR-026), the scrub and the
+operator check per connection (package D: R-STOR-027, R-STOR-058), the backup and restore per connection and the journal per connection
+(package E: R-BAK-030, R-STOR-059), the API and the screens (package F: R-STOR-061). Until they are built, collection deletes on the first
+connection only
+([H-1259](../security/object-store-connections.md#h-1259--until-collection-works-per-copy-it-deletes-on-the-first-connection-only)), a
+server-side copy is verified by nothing but a download
+([H-1261](../security/object-store-connections.md#h-1261--until-the-scrub-is-built-a-server-side-copy-is-verified-only-by-a-download)),
+and the backup and the operator commands read the first connection only
+([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads));
+one connection behaves as before this section.
 
 **What "several connections" is not.** Every connection that is not draining holds every blob (a mirror kept by Quader), unlike the
 sharded stores of the catalog that spread blobs over sub-stores for capacity (STOR-013, STOR-026, and the parked "sharding over several
@@ -3784,36 +3788,48 @@ empties a draining one, and replaces damaged copies.
 
 - **The job.** Task and kind `storage-reconcile` in the queue `maintenance`, `exclusive` under its name, scheduled every minute and
   signalled after a commit that queued a gap ([architecture.md](architecture.md) R-ARCH-016, R-ARCH-018). A run ends when the queue holds
-  no due row and the pass is done or waiting, or after `storage.reconcile.run_duration`; its checkpoint carries the pass's and the drain's
-  positions, so a drain moves it to another worker without loss
-  ([Q-STOR-235](#q-stor-235--the-reconciliation-is-one-exclusive-job-per-installation)).
+  no due row and the pass is done or waiting, or after `storage.reconcile.run_duration`; the pass's and the drains' positions are a row of
+  `system_state` written after every batch, so a drain of the worker moves the run to another without loss and the next scheduled run goes
+  on where the last ended ([Q-STOR-235](#q-stor-235--the-reconciliation-is-one-exclusive-job-per-installation),
+  [Q-STOR-257](#q-stor-257--the-pass-queues-a-gap-only-where-another-connection-holds-the-blob-starts-hourly-or-at-once-while-a-connection-fills-and-keeps-its-position-in-a-row-of-its-own)).
 - **What it works from** ([Q-STOR-228](#q-stor-228--a-queue-for-what-happens-and-a-pass-for-what-was-missed)):
   1. the **queue** `blob_copy_queue`, filled by the commit (R-STOR-053), by a copy marked `missing` or `corrupt` (R-STOR-055,
      R-STOR-027) and by the pass; rows are taken by `next_attempt_at`, oldest first, for connections in the worker's configuration whose
      circuit is closed;
   2. the **pass**, a walk over the live blobs by digest in batches of 1,000 with one lookup of their copies per batch, which queues the
-     gaps of every connection with `drain: false` in the worker's configuration (`ON CONFLICT DO NOTHING`), and waits at its position while
-     a connection's queue holds `storage.reconcile.queue_limit` rows. The pass finds what no queue row stands for: a connection that is
-     new, a blob committed by a replica whose configuration lacked the connection during a rollout, a gap left by a lost queue row. A
-     full pass records `last_full_pass_at`; the first one that ends with no gap and an empty queue for a `filling` connection sets its
-     `filled_at` (R-STOR-051).
+     gaps of every connection with `drain: false` in the worker's configuration (`ON CONFLICT DO NOTHING`): a live blob without a present
+     copy on the connection while another connection holds a present copy. It waits at its position while a connection's queue holds
+     `storage.reconcile.queue_limit` rows. The pass finds what no queue row stands for: a connection that is new, a blob committed by a
+     replica whose configuration lacked the connection during a rollout, a gap left by a lost queue row. A full pass records
+     `last_full_pass_at`; the first one that ends with no gap and an empty queue for a `filling` connection sets its `filled_at` (R-STOR-051).
+     A new full pass starts when a connection with `drain: false` has never ended one, is `filling` with an empty queue, or the last ended
+     an hour ago (Q-STOR-257).
 - **One copy.** For a queue row (connection C, blob B): a row whose blob is not `live`, whose C is not a target any more (`drain: true`, not
-  configured) or already holds a `present` copy is deleted. Otherwise the source is a `present` copy on another reachable connection,
-  verified before not verified, then by list order:
+  configured) or already holds a `present` copy is deleted, and so is a row whose blob has no `present` copy on any connection: the commit's
+  repair or the recheck gives it one, and the next pass queues the gap again
+  ([Q-STOR-258](#q-stor-258--five-reasons-of-a-failure-a-queue-row-without-a-source-anywhere-is-deleted-and-a-target-whose-circuit-opened-during-the-run-spends-no-attempt)).
+  Otherwise the source is a `present` copy on another reachable connection, verified before not verified, then by list order:
   - **within one endpoint, a server-side copy** (`storage.reconcile.server_side: auto`, where C and the source share a normalised
     endpoint): `CopyObject` across buckets up to 5 GiB, `UploadPartCopy` above, signed with C's credential, which needs read access to the
     source (the start check establishes it per pair of connections, R-STOR-035); an `AccessDenied` or `NotImplemented` falls back to
     streaming for that pair for the rest of the run. The copy is confirmed by `HeadObject` (`stored_size`) and is `present`, not verified;
-  - **across providers, a stream through the worker**: a `GetObject` of the source (ranged parts above the multipart threshold) piped into
-    `PutObject` or C's multipart upload with C's payload checksums, hashed while it passes; a SHA-256 other than the digest aborts the
-    upload, marks the source copy `corrupt` (a read to the end is evidence) and tries the next source. The copy is `present` and verified
-    (when C enforces payload checksums).
-  - **Recording.** One transaction: `SELECT … FROM blobs WHERE sha256 = $1 FOR SHARE` must find `live`, then the copy row of C is set
-    `present` (inserted, or a `missing` or `corrupt` row overwritten) and the queue row deleted. A blob found `deleting` leaves the object
-    to C's orphan sweep. The row is recorded within the insert bound of R-STOR-005 after the write ended, or the object is written again,
-    so a collection delete that may still be in flight never meets a copy recorded after it (R-STOR-024 rule 3).
+  - **across providers, a stream through the worker**: a `GetObject` of the source piped into `PutObject` up to
+    `storage.object_store.multipart.part_size`, and above it ranged parts of the source into C's multipart upload, one part held in memory at
+    a time ([Q-STOR-255](#q-stor-255--a-streamed-copy-holds-one-part-in-memory-one-request-up-to-a-part-ranged-reads-into-a-multipart-upload-above-it)),
+    with C's payload checksums, hashed while it passes; a SHA-256 other than the digest aborts the upload before its completion, marks the
+    source copy `corrupt` (a read to the end is evidence) and tries the next source, and a source the store reports missing is marked
+    `missing`. The copy is `present` and verified (when C enforces payload checksums).
+  - **Recording.** One transaction: the blob's lock as a mark takes it (`FOR NO KEY UPDATE`) must find `live`, then the copy row of C is set
+    `present` (inserted, or a `missing` or `corrupt` row overwritten; a row claimed by a drain is left), the queue row deleted, the source
+    of a streamed copy stamped verified, and the blob's content state follows
+    ([Q-STOR-256](#q-stor-256--a-copy-is-recorded-under-the-lock-of-a-mark-the-source-of-a-streamed-copy-is-stamped-verified-and-the-blobs-content-state-follows)).
+    A blob found `deleting` leaves the object to C's orphan sweep. The row is recorded within the insert bound of R-STOR-005 after the write
+    ended, or the object is written again, so a collection delete that may still be in flight never meets a copy recorded after it
+    (R-STOR-024 rule 3).
   - **A failure** counts `attempts`, sets `next_attempt_at` to `now() + min(2^attempts minutes, storage.reconcile.retry_max_backoff)` and
-    `last_error`, and counts `quader_storage_reconcile_failures_total{connection,reason}`.
+    `last_error`, and counts `quader_storage_reconcile_failures_total{connection,reason}`; the reasons are `no_source`, `unavailable`,
+    `source_damaged`, `refused` and `claimed` (Q-STOR-258). A write that C's circuit breaker refused because the circuit opened during the
+    run is no failure: its row waits like every row of a connection whose circuit is open.
 - **Verification before a copy counts.** A copy counts for redundancy once `present`; it counts for a drain's deletion only when it is
   verified within its connection's `scrub_period` (below), and a server-side copy is the scrub's first work
   ([Q-STOR-234](#q-stor-234--a-server-side-copy-counts-as-present-and-is-the-scrubs-first-work-a-drain-needs-a-verified-one)).
@@ -3824,13 +3840,16 @@ empties a draining one, and replaces damaged copies.
   of 2026-11-22, not verified here): at 5 new blobs per second *(example)* that is about 315,000 queue rows, a few tens of megabytes of
   PostgreSQL, and at 10 GiB of new content per hour *(example)* 175 GiB, which `bytes_per_second: 100MiB` copies in about half an hour.
 - **Draining** ([Q-STOR-236](#q-stor-236--a-drain-deletes-a-copy-once-every-other-connection-holds-the-blob-and-one-copy-is-verified)).
-  For a connection D with `drain: true`, the run walks D's `present` copies; a blob that lacks a copy on a connection with `drain: false`
-  is queued there; a copy on D whose blob has a `present` copy on every connection with `drain: false` in the worker's configuration, one of
-  them verified within its `scrub_period`, is deleted: the verified copy is confirmed with `HeadObject` (its `stored_size`) right before,
-  then in one transaction the blob is locked `FOR SHARE` (it must be `live`) and D's row set `deleting`, then the object is deleted under the
-  hand-over deadline of R-STOR-024, then the row. The deletion pause of [ha-and-helm.md](ha-and-helm.md) R-HA-025 stops it. The last
-  copy of a blob is never deleted. When D holds no copy, `drained_at` is set and `system.storage.connection_drained` written. D's `_journal/`
-  objects and its marker stay: Quader never deletes journal objects (R-HA-054).
+  For a connection D with `drain: true`, the run walks D's copies that are not claimed for deletion, by object name; a blob that lacks a
+  present copy on a connection with `drain: false` is queued there; a copy on D whose blob has a `present` copy on every connection with
+  `drain: false` in the worker's configuration, one of them verified within its `scrub_period`, is deleted: the verified copy is confirmed
+  with `HeadObject` (its `stored_size`) right before, then in one transaction the blob is locked as a mark locks it (it must be `live`), the
+  survivors are read again and D's row set `deleting`, then the object is deleted under the hand-over deadline of R-STOR-024, then the row.
+  A claim that a run left unfinished is taken over after `handover_delay` and finished by the next run
+  ([Q-STOR-259](#q-stor-259--the-drain-walks-every-copy-it-has-not-claimed-reads-the-survivors-again-under-the-blobs-lock-finishes-its-own-claims-and-a-draining-connection-is-no-longer-filled)).
+  The deletion pause of [ha-and-helm.md](ha-and-helm.md) R-HA-025 stops it. The last copy of a blob is never deleted. When D holds no copy,
+  `drained_at` is set and `system.storage.connection_drained` written. D's `_journal/` objects and its marker stay: Quader never deletes
+  journal objects (R-HA-054).
 - **Retiring.** A `drained` connection that no live replica has in its configuration gets `retired_at`.
 - **The journal pass.** At the end of a full pass the run lists `_journal/revocations/` on every connection with `drain: false` and copies
   each object one has and another lacks (R-STOR-059).
@@ -3843,7 +3862,19 @@ empties a draining one, and replaces damaged copies.
   `quader_storage_reconcile_copied_bytes_total{connection,mode}` (`mode` `server`, `stream`). `QuaderStorageReplicationBacklog` fires when
   the oldest queue row of a connection that is not `filling` is older than one hour for 30 minutes ([ha-and-helm.md](ha-and-helm.md)
   R-HA-045).
-- **One connection.** The queue stays empty and the pass finds nothing; the run costs one batch query per thousand blobs per full pass.
+- **One connection.** The queue stays empty and the pass finds nothing; the run costs one batch query per thousand blobs per full pass,
+  one full pass an hour (Q-STOR-257).
+
+**Status.** Built (package C of [docs/developer/blob-store.md](../developer/blob-store.md#the-reconciliation-r-stor-056)):
+[internal/blob/reconcile](../../internal/blob/reconcile/), the hooks in [wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go)
+and the signal after a commit ([reconcile_seams.go](../../internal/blob/reconcile_seams.go)); the decisions Q-STOR-255 to Q-STOR-259. The
+storage summary's three gauges are package F's (R-STOR-028); the gauges of the reconciliation also export
+`quader_storage_connection_detached` of R-STOR-060. The acceptance criteria below are
+[reconcile_test.go](../../test/integration/blob/reconcile_test.go) and, against two real buckets,
+[connections_s3_test.go](../../test/integration/blob/connections_s3_test.go); the copies themselves, the throttle, the journal pass and
+the signal are unit tests in [internal/blob/reconcile](../../internal/blob/reconcile/). Until the scrub of package D is built, only a
+download verifies a server-side copy, so a drain beside one waits
+([H-1261](../security/object-store-connections.md#h-1261--until-the-scrub-is-built-a-server-side-copy-is-verified-only-by-a-download)).
 
 Acceptance criteria (integration, PostgreSQL of the stack with two in-memory stores, unless named):
 
@@ -8284,6 +8315,108 @@ check` report results without an exit code.
 **Choice:** (a). **Applied in the spec:** R-STOR-035, R-STOR-055, R-STOR-061; code: `blob.Capabilities`, `blob/metrics.go`,
 [storage_connections.go](../../cmd/quader/storage_connections.go).
 
+### Q-STOR-255 · A streamed copy holds one part in memory: one request up to a part, ranged reads into a multipart upload above it
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-056 pipes "a `GetObject` of the source (ranged parts above the multipart threshold)" into `PutObject` or the target's
+multipart upload. The store's interface takes a seekable body for a single request, because a retry sends it again, and the payload
+checksum of a request before its bytes (R-STOR-006, [objects.go](../../internal/blob/objects.go)). The multipart threshold is 100 MiB by
+default; the worker's spool is 5 GiB in the chart, shared with the image scanning's database, while an upload may be 10 GiB.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One `PutObject` up to `storage.object_store.multipart.part_size` (16 MiB); above it a multipart upload whose every part is one ranged `GetObject` read into one buffer of a part, hashed in order; the SHA-256 is compared with the digest before `CompleteMultipartUpload`, and a mismatch aborts the upload (chosen) | At most `storage.reconcile.concurrency` × `part_size` of memory per run, 64 MiB by default | Bounded memory whatever the blob's size; nothing on disk; a wrong digest never completes an object; each part's payload checksum is known before it is sent | A blob between 16 MiB and 100 MiB is a multipart object on the target where a commit writes one request |
+| (b) The commit's threshold, the whole body in memory below it | As a commit writes | The same shape of object as a commit's | Up to 100 MiB per copy and 400 MiB per run in memory |
+| (c) Through the worker's spool and the commit's transfer | Reuses the transfer | Retries a part from disk | The spool's budget beside the scanner's database is about 3 GiB: a blob of 10 GiB cannot be copied |
+| (d) An unseekable stream into one `PutObject` with the digest as its checksum | No buffer | No memory | The interface and the SDK need a seekable body for a retry |
+
+**Choice:** (a). **Rationale:** the stream is a catch-up path, not the serving path; its memory must not grow with the largest blob, and
+the target's payload checksum must cover every byte it accepts. The builder would revisit it if a provider bills requests heavily enough
+that the multipart shape of blobs between one part and the threshold matters.
+
+**Applied in the spec:** R-STOR-056 (the streamed copy); code: [copy.go](../../internal/blob/reconcile/copy.go) `copier.stream`.
+
+### Q-STOR-256 · A copy is recorded under the lock of a mark, the source of a streamed copy is stamped verified, and the blob's content state follows
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-056 records a copy under `SELECT … FOR SHARE`, as the commit locks a blob. R-STOR-052 says that the statement that changes a
+copy recomputes the blob's content state in the same transaction, which needs the lock the marks take (`FOR NO KEY UPDATE`, Q-STOR-226): a
+copy whose source was marked between the read and the record would otherwise leave a blob `corrupt` beside a present copy. R-STOR-052 counts
+"the source of a streamed copy" as verification, which R-STOR-056 does not record.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The record locks the blob as a mark does, finds it live, refuses a record later than the insert bound after the write, leaves a copy row claimed for deletion, writes the copy `present` (`PutBlobCopy`, Q-STOR-253), deletes the queue row, stamps the source of a streamed copy verified and sets the blob `ok` (chosen) | One transaction of six statements | The derivation holds after every record; the stream's read of its source is not lost evidence | The lock waits for a commit's `FOR SHARE` of the same blob for those statements |
+| (b) `FOR SHARE` as written, no derivation | The commit's lock | Never waits for a commit | A blob marked meanwhile stays damaged beside a present copy until its next mark |
+| (c) `FOR SHARE`, and the scrub derives again | Leave it to package D | — | Ties a statement's correctness to another job's period |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-056 (recording); code: [queue.go](../../internal/blob/reconcile/queue.go) `run.record`.
+
+### Q-STOR-257 · The pass queues a gap only where another connection holds the blob, starts hourly or at once while a connection fills, and keeps its position in a row of its own
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-052 calls a connection without a row for a blob a gap; a row in state `missing` or `corrupt` is the same lack, and a blob
+that no connection holds present has no source, so queuing it would fail at every back-off. R-STOR-056 does not say when a new full pass
+starts. Its checkpoint "carries the pass's and the drain's positions", but a run ends after `run_duration` and the next scheduled run is a
+job of its own, which starts without the checkpoint of the last; a pass over a large installation that waits at `queue_limit` lasts many
+runs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A gap is a live blob without a present copy on a connection with `drain: false` while another connection holds a present copy; a full pass starts when a target has never ended one, is filling with an empty queue (the last pass's gaps are copied), or the last ended an hour ago; the positions of the pass and of the drains are the row `storage_reconcile_state` of `system_state`, written after every batch (chosen) | A pass per hour, back to back while a connection fills | One connection costs one batch query per 1,000 blobs an hour; a fill ends with the pass that finds nothing; a gap a rollout left on an active connection is queued within the hour; a pass longer than a run goes on in the next, and a run released at a replica's drain loses nothing | A gap no queue row stands for waits up to an hour |
+| (b) A full pass in every run | Continuous | A missed gap is found within minutes | One connection scans every blob every minute |
+| (c) A pass only while a connection fills | Cheapest | — | The gaps of a rollout or a lost row on an active connection are never found |
+| (d) The positions in the job's checkpoint only | As written | No row of its own | Every run starts the pass again: a pass longer than `run_duration` never ends |
+
+**Choice:** (a). **Rationale:** the queue carries what happens (Q-STOR-228); the pass is the net, and an hour matches the threshold of
+`QuaderStorageReplicationBacklog`. A blob without a present copy anywhere is the commit's repair and the recheck's (R-STOR-053, R-STOR-055);
+once one of them gives it a copy, the next pass queues its other connections. The builder would revisit the interval if a measured gap
+of an active connection mattered within the hour.
+
+**Applied in the spec:** R-STOR-056 (the pass); code: [pass.go](../../internal/blob/reconcile/pass.go), [state.go](../../internal/blob/reconcile/state.go),
+`ReconcilePassDue` ([reconcile.sql](../../internal/meta/postgres/queries/reconcile.sql)).
+
+### Q-STOR-258 · Five reasons of a failure, a queue row without a source anywhere is deleted, and a target whose circuit opened during the run spends no attempt
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-056 counts `quader_storage_reconcile_failures_total{connection,reason}` without naming the reasons; it deletes a queue row
+whose blob is not live, whose target is no target or holds a present copy, and is silent on a row whose blob no connection holds present
+(a copy marked missing on the one connection there is, R-STOR-055) and on a target whose circuit opens while its copies of a batch run
+("its queue rows wait without spending attempts").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reasons `no_source` (no other connection the worker reaches holds a present copy), `unavailable` (a transient error or an open circuit at the target or at every source, or the insert bound after every write), `source_damaged` (every source that answered was marked missing or corrupt), `refused` (the target's answer that retrying soon does not fix) and `claimed` (the target's row is claimed by an unfinished drain); a row whose blob has no present copy anywhere is deleted; a write that the target's breaker refused leaves its row as it is (chosen) | Five label values fixed in code | Bounded labels the alerts and dashboards can read; with one connection the queue stays empty, as R-STOR-056 says, because a mark's row has no source and goes; a probe that is out does not cost the other copies of the batch two minutes | — |
+| (b) One reason per store error code | — | Detail | Unbounded label values |
+| (c) Keep a row without a source with its back-off | — | Nothing deleted | With one connection every lost blob keeps a row, and `QuaderStorageReplicationBacklog` fires beside `QuaderBlobMissing` |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-056 (a failure, the metrics); code: [queue.go](../../internal/blob/reconcile/queue.go),
+[metrics.go](../../internal/blob/reconcile/metrics.go).
+
+### Q-STOR-259 · The drain walks every copy it has not claimed, reads the survivors again under the blob's lock, finishes its own claims, and a draining connection is no longer filled
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-056 walks D's present copies, confirms the verified survivor with `HeadObject`, locks the blob `FOR SHARE`, sets D's row
+`deleting`, deletes under the hand-over deadline, then the row. It is silent on D's `missing` and `corrupt` copies (D holds no copy only once
+they go too), on a mark of a survivor between the walk and the claim, on a claim whose run ended before its delete, on how often a walk starts
+again while copies wait for the scrub, and on `filled_at` of a connection that drains or stops draining.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The walk takes every copy of D that is not `deleting`, by object name; the claim locks the blob as a mark does and checks again that every target holds a present copy and one is verified within its period; a claim on a live blob older than `handover_delay` is taken over by a compare-and-set of its time at the next run's start and finished; a walk that deleted or queued nothing is followed by the next after the pass interval; `drain: true` clears `filled_at`, a pass clears `drained_at` of its targets; the drained check runs at the end of each walk and at a run's start (chosen) | Each case has one rule | A draining connection with a damaged copy still drains; a survivor marked between the walk and the claim is seen; nothing a run left half done stays; a drain that waits for the scrub costs one walk an hour | A survivor verified by the scrub waits up to an hour for the deletion beside it |
+| (b) Present copies only, `FOR SHARE` without a second look | As written | Fewer statements | A connection with one missing copy never drains; a survivor marked corrupt meanwhile can leave the last good copy deleted |
+| (c) Leave an unfinished claim to collection | — | No code | Collection claims the copies of a blob it collects; a drain's claim of a live blob stays for ever |
+
+**Choice:** (a). **Rationale:** a drain deletes data, so it reads the survivors once more where a mark cannot come between, and a drain that
+cannot finish is worse than one that waits. A copy claimed for deletion whose blob is live is the drain's alone: collection claims copies
+only of a blob it claimed (R-STOR-057).
+
+**Applied in the spec:** R-STOR-051 (the states' columns), R-STOR-056 (draining); code: [drain.go](../../internal/blob/reconcile/drain.go).
 ### Q-STOR-275 · A download takes its blob's copies from its item lookup
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.

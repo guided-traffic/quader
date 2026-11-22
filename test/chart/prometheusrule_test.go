@@ -283,11 +283,8 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 // renders their alerts already; an alert on a series that does not exist stays silent. The package that registers a metric removes
 // its line here.
 var metricsOfLaterPackages = map[string]string{
-	"quader_storage_reconcile_queue_oldest_seconds": "C, the reconciliation",
-	"quader_storage_connection_filling":             "C, the reconciliation (Q-HA-393)",
-	"quader_storage_scrub_overdue_copies":           "D, the scrub",
-	"quader_storage_copies":                         "F, the storage summary per connection",
-	"quader_storage_connection_detached":            "the detached state of R-STOR-051, which package A does not export",
+	"quader_storage_scrub_overdue_copies": "D, the scrub",
+	"quader_storage_copies":               "F, the storage summary per connection",
 }
 
 // metricNames returns the identifiers of an expression that look like a metric: they start with quader_ or kube_.

@@ -181,6 +181,7 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'system.restore.journal_replayed',
   'system.restored',
   'system.storage.connection_added',
+  'system.storage.connection_drained',
   'system.storage.connection_forgotten',
   'system.storage.key_generation_added',
   'system.storage.keys_exported',

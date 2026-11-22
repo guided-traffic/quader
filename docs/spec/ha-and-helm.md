@@ -6087,9 +6087,11 @@ connection ([storage.md](storage.md) R-STOR-060, R-HA-072): `QuaderObjectStoreUn
 `QuaderBlobCorrupt` beside `QuaderBlobMissing`, each with a rule test that fires and one that stays silent. The ServiceMonitor is rendered
 ([servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml), render test `TestServiceMonitor`). The rule scopes its selectors by
 `namespace`, which every scrape through the Prometheus operator carries. The binary exports every metric these rows read under the name of their
-expression (Q-HA-135), except the metrics of the alerts of several connections whose package of the build plan has not landed: the queue's
-age and the filling gauge (package C), the scrub's overdue copies (D), the copies per state (F); until then such an alert reads no series
-and stays silent, and the chart test's list `metricsOfLaterPackages` names each with its package.
+expression (Q-HA-135), except the metrics of the alerts of several connections whose package of the build plan has not landed: the scrub's
+overdue copies (D) and the copies per state (F); until then such an alert reads no series and stays silent, and the chart test's list
+`metricsOfLaterPackages` names each with its package. The queue's age and the filling gauge of `QuaderStorageReplicationBacklog` and the
+gauge of `QuaderStorageConnectionDetached` are exported by the reconciliation (package C,
+[internal/blob/reconcile/metrics.go](../../internal/blob/reconcile/metrics.go)), from the query `ReconcileGauges`.
 
 Every alert of the table is rendered and tested (phase 7): `QuaderBackupCheckFailed` (R-HA-023, the stored report of the task `backup-check`), `QuaderRevocationJournalBacklog` (R-HA-054) and the six alerts of the backup runs, `QuaderBackupStale`, `QuaderBackupFailed`,
 `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage` and `QuaderBackupVerifyFindings`
@@ -12725,7 +12727,8 @@ Context: R-HA-045's row of `QuaderStorageReplicationBacklog` fires "for a connec
 
 **Choice:** (a). **Applied in the spec:** R-HA-045; [storage.md](storage.md) R-STOR-056 (the gauges of the reconciliation);
 [operations-and-observability.md](operations-and-observability.md) R-OPS-008's table. Code: [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl),
-the rule tests; the chart test's list `metricsOfLaterPackages` holds the name until package C registers it.
+the rule tests; the gauge itself: [internal/blob/reconcile/metrics.go](../../internal/blob/reconcile/metrics.go) and the query
+`ReconcileGauges` ([reconcile.sql](../../internal/meta/postgres/queries/reconcile.sql)), registered by package C.
 
 ### Q-HA-394 · An element without id is default in the chart, as in the binary
 

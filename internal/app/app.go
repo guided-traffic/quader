@@ -170,6 +170,8 @@ type App struct {
 	// built, and frozen, before the area that owns the service is wired.
 	auditStore late[*audit.Store]
 	gc         late[*blob.Collector]
+	// storageReconcile is the handler of the job storage-reconcile (wire_storage_reconcile.go).
+	storageReconcile late[jobs.Handler]
 	// objectStores is the replica's ordered set of object-store connections, for the registry's object-store view (R-STOR-060).
 	objectStores late[*blob.Connections]
 	repoSvc      late[*repository.Service]

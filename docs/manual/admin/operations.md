@@ -265,7 +265,7 @@ With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with 
 | `QuaderValkeyFailoverFlapping` | the Valkey primary changed more than twice within an hour | at once | warning |
 | `QuaderValkeyPrimaryDisagreement` | replicas name different Valkey primaries | 5m | critical |
 
-The four `QuaderStorage…` alerts read series that Quader does not export yet (the reconciliation, the scrub and the connections' counts are not built): until then they never fire.
+`QuaderStorageReplicationBacklog` and `QuaderStorageConnectionDetached` read the reconciliation's gauges. `QuaderStorageCopyDamaged` and `QuaderStorageScrubBehind` read series that Quader does not export yet (the scrub and the connections' counts are not built): until then they never fire.
 
 The rule also holds the alerts of the backup runs (`QuaderBackupStale` for a backup that is overdue or never succeeded, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), but only while `backup.enabled` is true: with the backup off no run succeeds, and `QuaderBackupStale` would fire one `config.backup.expected_interval` (a day by default) after the install. `QuaderBackupCheckFailed` (a platform protection you declared in `backup.recovery_window` or `backup.object_versioning` is missing) and the revocation journal's `QuaderRevocationJournalBacklog` and `QuaderRevocationJournalQuarantined` are in the rule either way.
 

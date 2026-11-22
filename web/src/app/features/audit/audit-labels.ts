@@ -365,6 +365,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.system.restored:Installation restored`;
     case 'system.storage.connection_added':
       return $localize`:@@audit.action.system.storage.connection_added:Object-store connection seen for the first time`;
+    case 'system.storage.connection_drained':
+      return $localize`:@@audit.action.system.storage.connection_drained:Object-store connection drained`;
     case 'system.storage.connection_forgotten':
       return $localize`:@@audit.action.system.storage.connection_forgotten:Object-store connection forgotten`;
     case 'system.storage.key_generation_added':

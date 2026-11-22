@@ -29032,6 +29032,15 @@
         <target>Objektspeicher-Verbindung zum ersten Mal gesehen</target>
       </segment>
     </unit>
+    <unit id="audit.action.system.storage.connection_drained">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
+      </notes>
+      <segment>
+        <source>Object-store connection drained</source>
+        <target>Objektspeicher-Verbindung geleert</target>
+      </segment>
+    </unit>
     <unit id="audit.action.system.storage.connection_forgotten">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:367</note>

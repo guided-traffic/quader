@@ -4,7 +4,7 @@ Content-addressed storage on one to eight S3-compatible object-store connections
 does not depend on an S3 client), [internal/blob/s3](../../internal/blob/s3/) (the AWS SDK adapter, the only package that imports
 the SDK), [internal/blob/blobtest](../../internal/blob/blobtest/) (an in-memory store with fault injection for tests).
 Requirements: R-STOR-001 to R-STOR-006, R-STOR-013, R-STOR-024, R-STOR-025, R-STOR-030 to R-STOR-035, R-STOR-046, R-STOR-050 to
-R-STOR-053, R-STOR-055, R-STOR-060, R-STOR-062.
+R-STOR-053, R-STOR-055, R-STOR-056, R-STOR-060, R-STOR-062.
 The row is the authority on whether a blob exists; a row per copy (`blob_copies`) says on which connection its object lies, under which
 name and size, and what is known about it; the object is the content. Nothing in this tree uses Valkey or a
 session-level advisory lock (R-STOR-046, enforced by [internal/archtest](../../internal/archtest/)). The first caller of `Ingest`,
@@ -35,6 +35,7 @@ the verifying reader or a range.
 | [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `quader admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify`, lists the versions of each key without an object (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version |
 | [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `quader admin storage verify` ([below](#storage-verify-r-stor-027-q-stor-200)): `Run` over a `Source` (the pages and the items) and an `Objects` (`Head`), `PGSource` |
 | [s3/client.go](../../internal/blob/s3/client.go), [s3/copy.go](../../internal/blob/s3/copy.go) | `s3.Client` (the `ObjectStore` and the `BucketCopier`: `Location`, `CopyFrom`), `NewFromFactory` |
+| [reconcile/](../../internal/blob/reconcile/), [reconcile_seams.go](../../internal/blob/reconcile_seams.go) | the reconciliation between the connections ([below](#the-reconciliation-r-stor-056)); the seams it needs of the store: `Store.MarkCopyDamaged` and `Store.SetGapSignal` |
 | [blobtest/endpoint.go](../../internal/blob/blobtest/endpoint.go) | `blobtest.NewEndpoint`: in-memory stores of the buckets of one endpoint, which copy from each other (`CopyFrom`) |
 | [s3/credentials.go](../../internal/blob/s3/credentials.go) | credential sources of R-STOR-031, SDK configuration |
 | [s3/errors.go](../../internal/blob/s3/errors.go), [s3/idle.go](../../internal/blob/s3/idle.go) | SDK error classification; stall detection |
@@ -429,12 +430,93 @@ Store-specific settings (all optional): `QUADER_TEST_S3_PAYLOAD_CHECKSUM` (`sha2
 the connection's `ca_file`; the presigned fetch must use `Client.HTTPClient()` (or a client with `WithRootCAs`) to trust it. SeaweedFS creates a missing bucket on the first write, so a wrong bucket name is
 not an error there; the credential test uses a wrong secret key instead.
 
+## The reconciliation (R-STOR-056)
+
+[internal/blob/reconcile](../../internal/blob/reconcile/) is the worker job `storage-reconcile` that brings every blob onto every
+connection without `drain: true`. It is infrastructure and imports no domain package; [wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go)
+registers the kind (queue `maintenance`, exclusive) and the task (`* * * * *`, `maintenance.tasks.storage-reconcile`, not scheduled in
+read-only maintenance mode) and binds `Reconciler.RunJob` as the handler on worker and all. Its statements are
+[reconcile.sql](../../internal/meta/postgres/queries/reconcile.sql) beside `LockBlobForMark`, `BlobCopies`, `PutBlobCopy` and
+`StampBlobCopyVerified` of [blob_copies.sql](../../internal/meta/postgres/queries/blob_copies.sql).
+
+| File | Responsibility |
+|---|---|
+| [reconcile.go](../../internal/blob/reconcile/reconcile.go) | `Options`, `Reconciler`, `Run` (the loop of a run), `RunJob`, `Result`, the insert bound |
+| [queue.go](../../internal/blob/reconcile/queue.go) | the queue step: `copyBatch` (due rows of reachable connections, `concurrency` at a time), `copyRow`, the sources in order, `copyAndRecord`, `record`, `fail` |
+| [copy.go](../../internal/blob/reconcile/copy.go) | the copies themselves, object stores only: `copier.server` (`BucketCopier.CopyFrom` and `HeadObject`), `copier.stream` (one request up to a part, ranged reads into a multipart upload above), the classification of a failure as the source's (with its evidence) or the target's |
+| [pass.go](../../internal/blob/reconcile/pass.go) | the pass: `passDue`, a batch of 1,000 live blobs with their present copies, the gaps queued, the wait at `queue_limit`, the end of a full pass (`last_full_pass_at`, `filled_at`) |
+| [drain.go](../../internal/blob/reconcile/drain.go) | the drain's walk, the survivors, the confirmation with `HeadObject`, the claim, the deletes under the hand-over deadline, the unfinished claims, `drained_at` with the event, `retired_at` |
+| [journal.go](../../internal/blob/reconcile/journal.go) | the journal pass: the listings of `<prefix>/_journal/revocations/` walked side by side, a page each, and the objects one lacks copied |
+| [state.go](../../internal/blob/reconcile/state.go) | the positions of the pass and the drains in `system_state` (`storage_reconcile_state`) |
+| [limiter.go](../../internal/blob/reconcile/limiter.go), [signal.go](../../internal/blob/reconcile/signal.go), [metrics.go](../../internal/blob/reconcile/metrics.go) | the throttle of the streamed bytes, the signal after a commit, the counters and the gauges |
+
+**A run** loads its positions, clears `filled_at` of every connection with `drain: true`, finishes the drain's claims older than
+`gc.handover_delay`, and then repeats one round until nothing moves, `storage.reconcile.run_duration` has passed or the replica drains:
+
+1. **Queue.** Up to `8 × concurrency` due rows of the connections the worker configures with a closed circuit (`ReconcileDueCopies`). A row is
+   deleted when its blob is not live, its connection has `drain: true`, already holds a present copy, or the blob has no present copy on any
+   connection (Q-STOR-258). Otherwise the sources are the present copies on the other reachable connections, verified first, then in list
+   order. A source copy is tried server-side when `server_side` is `auto`, both connections lie on one endpoint and the target's start check
+   recorded `serverSideCopyFrom[source]` (Q-STOR-254); a refusal sends the pair to streaming for the rest of the run. A streamed copy holds
+   one part (Q-STOR-255) and is checked against the digest before the target sees a completed object; a source found missing, of another
+   size or with another digest is marked (`Store.MarkCopyDamaged`, which queues its repair) and the next source is tried. The record
+   (Q-STOR-256) runs under `LockBlobForMark`, refuses a record later than `min(upload.commit_deadline, gc.delete_settle / 2)` after the write
+   (the object is written again, at most three times), writes the copy `present` with `PutBlobCopy`, deletes the queue row, stamps a
+   streamed copy's source verified and sets the blob `ok`. A failure counts `attempts` with the back-off of R-STOR-056 and one of five
+   reasons; a write the target's breaker refused leaves the row as it is.
+2. **Pass** (Q-STOR-257). A new pass starts when `ReconcilePassDue` says so (a target never ended one, is filling with an empty queue, or
+   the last ended `reconcile.PassInterval`, an hour, ago). A batch queues, for each target, the live blobs it lacks while another connection
+   holds them; the pass waits while a target's queue holds `queue_limit` rows. A pass that reaches the end records `last_full_pass_at` for the
+   targets it had from its start, sets `filled_at` of those it found no gap on and whose queue is empty, and runs the journal pass when the
+   worker reaches two targets or more.
+3. **Drains** (Q-STOR-259). For each connection with `drain: true` and a closed circuit, unless the deletion pause is set, one batch of 500
+   of its copies by object name: a blob a target lacks is queued there; a blob whose targets all hold it, one verified within its
+   connection's `scrub_period`, has that copy confirmed with `HeadObject`, is claimed (under `LockBlobForMark`, its survivors read again) and
+   its object deleted on the draining connection, `DeleteObjects` when its `batch_delete` is true, until `handover_delay − delete_settle`
+   after the claims; the rows of the deletes that worked go. A walk that deleted or queued nothing is followed by the next after the pass
+   interval. A draining connection without a copy is drained (`ReconcileMarkDrained`, the event `system.storage.connection_drained` with the
+   copies deleted in the same transaction).
+
+At its end a run retires every drained connection that no live replica configures (`ReconcileRetire`, with its queue rows) and saves its
+positions; the result is stored with the job (`copied`, `serverSide`, `streamed`, `bytes`, `failed`, `dropped`, `queued`, `passBlobs`,
+`passEnded`, `filled`, `drained`, `retired`, `copiesDeleted`, `journalCopied`, `ended`).
+
+**The signal.** With two or more connections without drain, `wireStorageReconcile` starts a `reconcile.Signal` and gives its `Notify` to
+`Store.SetGapSignal`; `CommitAll` calls it after a commit whose link round queued a gap (`signalGaps` in
+[reconcile_seams.go](../../internal/blob/reconcile_seams.go)), and the repair case after it recorded its copies. The signal enqueues the kind
+at most once a second per replica; the exclusive key folds the enqueue into the run that is queued or running. With one connection no commit
+queues a gap and no signal is built.
+
+**Metrics.** The run counts `quader_storage_reconcile_copied_total{connection,mode}`, `quader_storage_reconcile_copied_bytes_total{connection,mode}`
+(the blob's size for both modes) and `quader_storage_reconcile_failures_total{connection,reason}`. Every replica with the main pool adds a
+source of the database gauges (`ReconcileGauges`, evaluated in the background like the job gauges): `quader_storage_reconcile_queue`,
+`quader_storage_reconcile_queue_oldest_seconds`, `quader_storage_connection_filling` and `quader_storage_connection_detached` per
+connection that is not retired, four series each, so an empty queue shows 0. Filling is a connection without `filled_at` that a live
+replica of the registry configures without drain (Q-HA-393); the alert `QuaderStorageReplicationBacklog` leaves it out. Detached is a
+connection that holds a copy and that no live replica configures (R-STOR-051), which `QuaderStorageConnectionDetached` reads; the live
+replicas are the registry's rows whose heartbeat is younger than `system.heartbeat_stale_after`. The storage summary's backlog and fill ratio are package F's.
+
+**What a run holds.** At most `concurrency` copies at a time, each at most one part of `object_store.multipart.part_size` in memory
+(64 MiB with the defaults); the streamed bytes of a run pass one throttle of `bytes_per_second`; a server-side copy moves no byte through the
+worker. The copies of a run share the replica's object-store clients and their breakers, so a run's failures open a connection's circuit for
+the uploads of that replica as well.
+
+**Contracts with the other packages.** A copy row in state `deleting` whose blob is live is the drain's claim: collection (package B) claims
+copies only of a blob it claimed. The drain does not take the backup hold of R-STOR-024 step 2b: the backup reads one copy per blob and must
+read another when its first is gone (package E); until then the backup reads the first connection only
+([H-1262](../security/object-store-connections.md#h-1262--until-the-backup-reads-every-connection-a-drain-of-the-first-connection-empties-what-it-reads)).
+The scrub (package D) is what verifies a server-side copy; until it is built only a verified download does
+([H-1261](../security/object-store-connections.md#h-1261--until-the-scrub-is-built-a-server-side-copy-is-verified-only-by-a-download)).
+
 ## Tests
 
 | Tier | Where | What it proves |
 |---|---|---|
 | unit | [internal/blob](../../internal/blob/), [s3](../../internal/blob/s3/), [blobtest](../../internal/blob/blobtest/) | key layout, spool admission and cleanup on every error path, single pass digests, the commit protocol and its branches against a fake database, multipart (threshold, parts, concurrency, abort, checksums), the breaker, verification, the mark of a missing object, its repair and its recheck once per interval (`TestDownloadVerification`, Q-STOR-151, Q-STOR-153), conformance logic, the SDK adapter against a fake endpoint (retries, error mapping, stall, credentials, metadata `TestR_STOR_062_TheAdapterCarriesObjectMetadata`); with two in-memory stores, the fault hook and the fake database ([connections_test.go](../../internal/blob/connections_test.go)): the derivation (R-STOR-052), the commit's routing, fall-over and `min_copies` (R-STOR-053), the reads, their fall-over, marks, recheck and daily stamp (R-STOR-055), `Servable` and the metadata of `blobtest` (R-STOR-062), the start check with the marker and the capabilities and `AwaitConnections` (R-STOR-035, R-STOR-060) |
 | unit | [internal/config](../../internal/config/storage_connections_test.go), [internal/app](../../internal/app/wire_blob_test.go) | the configuration table of R-STOR-050 and the files of a provisioner's Secret; the readiness of R-STOR-060 and the registry's object-store view |
+| unit | [internal/blob/reconcile](../../internal/blob/reconcile/) | the streamed copy in one request and in parts, its digest and size checks, the source's and the target's failures; the server-side copy, its fall-back to streaming for the run and without the start check's word; the throttle; the journal pass with an object above an entry's bound; the gauges' series; the signal folding commits into one enqueue (about 0.3 s, objects of up to 2.5 KiB) |
+| integration | [reconcile_test.go](../../test/integration/blob/reconcile_test.go) | PostgreSQL of the stack with in-memory stores: the catch-up after an open circuit without spent attempts, the fill of a connection added to twenty blobs, the drain with a blob only the first holds, an unverified survivor, the deletion pause, the event, the retirement, and the insert bound (about 3.7 s, four databases, at most twenty objects of 1 KiB) |
+| integration | [connections_s3_test.go](../../test/integration/blob/connections_s3_test.go) | two real buckets of the stack's SeaweedFS: the routing, a server-side and a streamed copy between them, the metadata a cross-bucket copy keeps, a read that falls over and the reconciliation's repair (about 1.1 s, one database, three objects of 1 KiB) |
 | integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object; the records of the connections against PostgreSQL with in-memory stores ([connections_test.go](../../test/integration/blob/connections_test.go): fixed properties, detached, forget, the bind of the migration's row, the copy and queue rows of a commit and their drop, R-STOR-051, R-STOR-052) |
 
 `make test` runs the unit tier, `make test-integration` the integration tier (`QUADER_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
@@ -454,18 +536,18 @@ Stage 1 of the owner's topic on the stored content ([storage.md](../spec/storage
 R-STOR-063, R-STOR-026, R-STOR-027; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-restore.md](../spec/backup-and-restore.md)
 R-BAK-030; [api-and-ui.md](../spec/api-and-ui.md) R-UI-196, R-UI-197;
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)).
-The sections above describe what is built: package A. The build comes in six packages; each is a whole feature for one builder, the
+The sections above describe what is built: packages A and C. The build comes in six packages; each is a whole feature for one builder, the
 directories (or, inside `internal/app` and `internal/api/v1`, the files) of packages that run at the same time are disjoint, and at most
 four run at once. Package A left the hooks of B, C and D in [wire_storage_sweep.go](../../internal/app/wire_storage_sweep.go),
 [wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go) and [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go):
-`register<X>(r *jobs.Registry)`, called by `jobRegistry`, and `wire<X>(ctx, blobArea) error`, called at the end of `wireBlob`; both do
-nothing yet.
+`register<X>(r *jobs.Registry)`, called by `jobRegistry`, and `wire<X>(ctx, blobArea) error`, called at the end of `wireBlob`; package C
+filled those of the reconciliation, the others do nothing yet.
 
 | Package | After | What it builds | Owns |
 |---|---|---|---|
 | **A · Connections and copies** | — | The configuration (`storage.connections`, `storage.object_store`, `storage.replication`, `storage.reconcile`, `storage.scrub`; `storage.s3` removed) and its validation (R-STOR-050); one client and one guard per connection, the ordered set with its naming function and `Servable` (R-STOR-062); object metadata on the interface, the S3 adapter and `blobtest`; the migrations (`storage_connections`, `blob_copies`, `blob_copy_queue`, `revocation_outbox_shipped`, `upload_sessions.connection_id`; `deep_checked_at` and `blobs_check` dropped); the commit writing copy rows and queue rows (R-STOR-053); reads over the copies (R-STOR-055); the fixed properties, the marker and `forget-connection` (R-STOR-051); the start check and the conformance check per connection with the capabilities (R-STOR-035); the breaker, the metrics with `connection`, readiness and the replica registry's object-store view (R-STOR-060); every size check on `stored_size`; empty registration files for B, C and D in `internal/app` | `internal/config`, `internal/blob` (all files but `gc*.go` and the new packages of B to D), `internal/blob/s3`, `internal/blob/blobtest`, `internal/meta/postgres/migrations` and `queries`, `internal/app/wire_blob.go`, `internal/app/wire_jobs.go`, `internal/cluster/replica_registry.go`, `cmd/quader/admin_storage.go` (`check`) |
 | **B · Sessions, collection, orphan sweep** | A | Sessions on their connection (R-STOR-054); collection per copy with the release (R-STOR-057); the orphan sweep per connection with the adoption (R-STOR-026) | `internal/uploads`, `internal/blob/gc.go`, `gc_uploads.go`, `gcjob.go`, `internal/blob/sweep.go` (new), `internal/app/wire_storage_sweep.go`, `test/integration/blob/gc_*`, `sweep_test.go` |
-| **C · Reconciliation** | A | The job with queue, pass, server-side and streamed copies, insert bound, drain, retire, journal pass and its metrics (R-STOR-056); the integration case against two real buckets (R-STOR-063) | `internal/blob/reconcile/` (new), `internal/app/wire_storage_reconcile.go`, `test/integration/blob/reconcile_test.go`, `connections_s3_test.go` |
+| **C · Reconciliation** (built) | A | The job with queue, pass, server-side and streamed copies, insert bound, drain, retire, journal pass and its metrics (R-STOR-056); the integration case against two real buckets (R-STOR-063) | `internal/blob/reconcile/` (new), `internal/app/wire_storage_reconcile.go`, `test/integration/blob/reconcile_test.go`, `connections_s3_test.go` |
 | **D · Scrub, damaged blobs, operator commands** | A | The scrub per copy with repair (R-STOR-027); the damaged-blobs API with its two scopes; `admin storage verify` and `restore-versions` per connection (R-STOR-058); the renames that make R-STOR-027's evidence true (Q-STOR-240) | `internal/blob/scrub/` (new), `internal/blob/verify`, `internal/blob/restoreversions`, `internal/app/wire_storage_scrub.go`, `internal/api/v1` (the damaged-blobs files and their paths in `openapi.yaml`), `cmd/quader/admin_storage*.go` (but `check`), `cmd/quader/admin_restoreversions.go`, the five test files that name R-STOR-027, `docs/coverage/implemented.txt`, `test/integration/storageverify` |
 | **E · Chart, backup and restore, journal** | A | The chart's list and Secrets with the refusals and the alerts (R-HA-072, R-HA-045); the backup reading one copy per blob and the restore into the first connection with its fix-up (R-BAK-030); the journal shipped per connection through the guards and replayed from every connection (R-STOR-059); the development profile and the integration stack's `QUADER_STORAGE_CONNECTIONS` | `deploy/helm/quader`, `test/chart`, `deploy/dev`, `test/integration/testenv`, `internal/backup`, `internal/journal`, `internal/app/wire_journal.go`, `internal/app/wire_backup_check.go`, `cmd/quader/backup_*.go`, `admin_postrestore.go`, `admin_backupcheck.go`, `test/integration/backup` |
 | **F · The surface and the manual** | C, D | The connections' API and the system information (R-STOR-061); the storage summary per connection (R-STOR-028); the tab **Storage** and the dashboard's lines (R-UI-196, R-UI-197), rendered under rule 11; the operator manual, the README and the developer pages that describe a running installation (configuration, installation, backup and restore, TLS, the runbook, the chart, the local profile, observability, and this page's sections above) | `internal/api/v1` (the connections' files and paths), the storage summary's task, `web/src/app/features/system`, `docs/manual`, `README.md`, `docs/developer` |

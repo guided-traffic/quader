@@ -1510,7 +1510,7 @@ storage:
       sse_bucket_key: true              # default
       scrub_period: 720h                # default; at least 24h; read, but no scrub is built yet (R-STOR-027)
       scrub_bytes_per_second: 50MiB     # default; at least 1MiB; read, but no scrub is built yet
-      drain: false                      # default; true: no upload goes to this connection; at least one element must stay without it. Moving its copies to the others comes with the reconciliation, which is not built yet
+      drain: false                      # default; true: no upload goes to this connection; at least one element must stay without it. The reconciliation moves what only it holds to the others and then deletes its copies
       encrypted: false                  # default; true is refused: the encryption of stored content is not built
   object_store:                         # the client settings every connection shares
     startup_check: true                 # default: the start check of every connection before the first readiness, with its capabilities (R-STOR-035)
@@ -1538,7 +1538,7 @@ storage:
       max_concurrent_parts: 64          # default: per replica, over all connections
   replication:
     min_copies: 1                       # default; 1 to the number of connections without drain: true: the connections an upload is written to before it is answered
-  reconcile:                            # the reconciliation between the connections (R-STOR-056); read, but not built yet: nothing copies a blob to a connection that lacks it
+  reconcile:                            # the reconciliation that copies every blob to every connection without drain: true (R-STOR-056)
     concurrency: 4                      # default; at least 1
     bytes_per_second: 100MiB            # default; at least 1MiB
     server_side: auto                   # default: auto | never
@@ -1709,7 +1709,7 @@ maintenance:
     gc-full:          {enabled: true, schedule: "0 2 * * 0"}
     orphan-sweep:     {enabled: true, schedule: "0 5 * * 6"}
     scrub:            {enabled: true, schedule: "7 * * * *"}      # read, but no scrub is built yet: no job kind takes the task
-    storage-reconcile: {enabled: true, schedule: "* * * * *"}     # read, but the reconciliation is not built yet: no job kind takes the task
+    storage-reconcile: {enabled: true, schedule: "* * * * *"}     # the reconciliation between the connections
     storage-summary:  {enabled: true, schedule: "17 * * * *"}
     remote-cache-cleanup: {enabled: true, schedule: "0 3 * * *"}
     backup-check:         {enabled: true, schedule: "40 5 * * *"}     # the declared platform protection (backup.recovery_window, backup.object_versioning)

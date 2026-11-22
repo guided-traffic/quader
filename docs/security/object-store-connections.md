@@ -3,9 +3,10 @@
 Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-050 to R-STOR-063, R-STOR-026, R-STOR-027,
 R-STOR-035; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-030;
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)),
-partly built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection
-([storage.md](../spec/storage.md#several-object-store-connections), the status there). The reconciliation, collection per copy, the orphan
-sweep, the scrub, the backup per connection and the journal per connection are not built; H-1258 and H-1259 below are what that costs an
+partly built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection, and the
+reconciliation that copies every blob to every connection, fills a new one and drains an old one
+([storage.md](../spec/storage.md#several-object-store-connections), the status there). Collection per copy, the orphan sweep, the scrub,
+the backup per connection and the journal per connection are not built; H-1259, H-1261 and H-1262 below are what that costs an
 installation with two connections today. What [privilege-footprint.md](privilege-footprint.md) and
 [transport-encryption.md](transport-encryption.md) say of the object store holds for each connection.
 
@@ -76,7 +77,9 @@ or takeover costs the others. Encryption of the stored content is stage 2 and de
 - [H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks): object-store principals
   bypass Quader's authorization and integrity checks; with several connections, at every connection's provider.
 - [H-553](../spec/backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential): a journal object can be
-  overwritten with the runtime credential; with several connections, with any connection's.
+  overwritten with the runtime credential; with several connections, with any connection's. A journal object written under a key that
+  the other connections lack is copied to them by the journal pass of the reconciliation (R-STOR-056), which reads no digest of it; the
+  replay reads every connection anyway, so the copy shows the replay nothing it would not have read.
 - [H-591](upload-sessions.md#h-591--the-staging-object-is-copied-without-being-read-back): the staging object is copied without being
   read back; the scrub reads the copy within its first run (R-STOR-054).
 
@@ -138,16 +141,6 @@ deletes the only good copy, and the blob is `corrupt` when it is next read. Live
 surviving bucket by another party or a silent corruption of the same length there. Reading the survivor whole before each deletion would
 close it at the price of reading every blob once more per drain.
 
-### H-1258 · Until the reconciliation is built, a gap is queued and nothing fills it
-
-Component: the commit (R-STOR-053), which queues a gap in `blob_copy_queue` for every connection it did not write, and the reconciliation
-(R-STOR-056), which is not built. Subject: every blob uploaded to an installation with two or more connections and the default
-`storage.replication.min_copies: 1`. Such a blob lies on the first writable connection only, and nothing copies it to the others: H-1251's
-window lasts until the reconciliation exists, not seconds to minutes, and a blob written to the second connection during an outage of the
-first never reaches the first. Live in an installation that configures two connections before package C of the build plan lands; dormant
-with one connection, the case of every installation today. `min_copies` equal to the number of connections closes it at the price that
-an outage of any connection refuses uploads.
-
 ### H-1259 · Until collection works per copy, it deletes on the first connection only
 
 Component: collection (R-STOR-024), which deletes a claimed blob's object on the connection the commits write first, and drops the blob
@@ -175,3 +168,28 @@ replace the marker with one that names another installation; every replica that 
 configuration error, and with the connection not draining it stops (R-STOR-060). Running replicas keep serving. Live for every holder of a
 runtime credential of a connection; it adds nothing to what such a holder can do to the content itself, which is all of it. Repair: delete
 the forged marker; the next start writes it again.
+
+### H-1261 · Until the scrub is built, a server-side copy is verified only by a download
+
+Component: the reconciliation's server-side copy within one endpoint (R-STOR-056), which records a copy `present` and not verified, and
+the scrub (R-STOR-027, package D of the build plan), which is not built. Subject: the copies H-1252 names, and every drain beside them.
+H-1252's window is "until the next scrub run reads it"; without the scrub it lasts until a verified download of the blob stamps the copy
+(R-STOR-055, at most once a day per copy), so a copy of a blob nobody downloads stays unverified, and a ranged read serves whatever bytes
+the store's copy produced. A drain deletes a copy only beside a survivor verified within its period (Q-STOR-236), so a drain whose blobs
+reached the other connections only server-side waits for those downloads or for the scrub; nothing is deleted on the word of an unread copy.
+Live wherever two connections share an endpoint and `storage.reconcile.server_side` is `auto` (the default), until package D lands; a
+streamed copy is verified at once where its target enforces payload checksums. `server_side: never` closes it for new copies at the price
+that every copy passes the worker.
+
+### H-1262 · Until the backup reads every connection, a drain of the first connection empties what it reads
+
+Component: the backup and the operator commands, which read the first connection of the list only (`config.Storage.FirstClient`, until
+package E and package D teach them the others, R-BAK-030, R-STOR-058), and the drain (R-STOR-056), which deletes every copy of a draining
+connection once the other connections hold the blob. Subject: the backups and `quader admin storage verify`. With `drain: true` on the first
+element of `storage.connections`, the drain empties the bucket the backup and the check read: a backup run finds the drained blobs missing
+in its source, records them as damaged and leaves them out (the backup's source damage, R-BAK-014,
+[internal/backup/create/copy.go](../../internal/backup/create/copy.go)), and the check reports them missing, while every blob is whole on
+the other connections. The installation loses nothing; a restore from such a backup lacks those blobs. Live in an installation that drains its first
+connection before packages D and E land; dormant with one connection, which cannot drain. Mitigation until then: move the connection to
+drain down the list in the same rollout that sets `drain: true`, so that the first element is one that keeps every blob (the reads put a
+draining connection last anyway, R-STOR-055).

@@ -8,8 +8,8 @@ package audit
 //   - system.storage.connection_forgotten: `quader admin storage forget-connection` gave a connection up (actor
 //     system:admin); the data name it and count the copy and queue rows it deleted and the blobs that had no present copy
 //     elsewhere.
-//
-// system.storage.connection_drained is the reconciliation's (R-STOR-056) and is registered with it.
+//   - system.storage.connection_drained: the reconciliation found a draining connection without a copy (R-STOR-056; actor
+//     system:worker); the data name it and count the copies the drain deleted.
 //
 // The events of the storage keys (R-STOR-083, R-STOR-085), actor system:admin, written by `quader admin storage keys` in the
 // transaction that reads or writes the rows; their data name identifiers and counts, never a key or a sealed value:
@@ -25,6 +25,7 @@ const (
 	EventStorageKeysExported        = "system.storage.keys_exported"
 	EventStorageKeysImported        = "system.storage.keys_imported"
 	EventStorageKeyGenerationAdded  = "system.storage.key_generation_added"
+	EventStorageConnectionDrained   = "system.storage.connection_drained"
 )
 
 func init() {
@@ -56,5 +57,10 @@ func init() {
 		Schema: `{"type":"object","properties":{"connection":{"type":"string","maxLength":32},"keyId":{"type":"string","maxLength":64},` +
 			`"generation":{"type":"integer"},"retiredKeyId":{"type":"string","maxLength":64}},` +
 			`"required":["connection","keyId","generation","retiredKeyId"],"additionalProperties":false}`,
+	})
+	Register(EventType{
+		Name: EventStorageConnectionDrained, Category: CategorySystem, Mode: Transactional,
+		Schema: `{"type":"object","properties":{"connection":{"type":"string","maxLength":32},"copiesDeleted":{"type":"integer"}},` +
+			`"required":["connection","copiesDeleted"],"additionalProperties":false}`,
 	})
 }
