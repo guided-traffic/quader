@@ -3726,9 +3726,13 @@ that reads the bucket**
   connection, on by default and fixed once the connection holds data, as every property of a connection is
   (decision 7); it costs next to nothing, because the plain name exists for the connections that are not
   encrypted anyway, and on a connection that is not encrypted it is not offered, since the content there is
-  readable in any case. **Not answered:** the eight readings and the question which stores his own installation
-  shall get; every reading is covered by a decision he took, and the question is needed only when a provider is
-  measured. **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
+  readable in any case. **Not answered:** the eight readings; every reading is covered by a decision he took. **The question which stores
+  his own installation shall get, answered in the chat at 10:58: (c),** one connection for now and the second
+  later. What follows: his own provider is the first to be measured against, and it was the one not researched,
+  so a research of its object storage reads its documentation since 10:58 (what it supports of copies with new
+  metadata, checksums, conditional writes, versioning and object lock, signed links; nothing is called at the
+  provider). The first stage stays first also for one connection: switching encryption on later is a second
+  entry of the same bucket under another prefix that the reconciliation fills (decision 7). **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
   the scrub, with the contracts the other stages build on) and stage 3 (signed links), each with a block of
   identifiers of its own. **Queued:** the planner of stage 2 (encryption, the keys, their rotation, the offline
   tool, the Bastion's cache), once stage 1's specification is on `main`; the handover to a Bastion after stage 2
