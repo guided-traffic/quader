@@ -4797,7 +4797,19 @@ it both sides speak the new version and nothing behaves differently) and the dec
 twenty-first check (the read shape per package beside the repository's, held against the decision point over
 the whole fixture; the check for every format, with the repair of any format that fails it). The main
 installation's side must not land before the second. Builders with a test load: the stacking, the links,
-and these two.
+and these two. **P1, the wire, reported at 22:51 and lands after the stack of four** (one commit on the
+specification's commit; its builder worked from 22:00 to 22:51; every gate exit 0 but the lint, which under
+another builder's lint it finished for the whole repository once with one finding, repaired, and then for
+the touched packages alone; the integration areas `bastion`, `bastionshared`, `bastioniface` and `api`).
+Both sides speak the interface's fifth version and nothing behaves differently for a caller: the two headers
+of the marking with one spelling per name (an encoded form of a byte that needs none is refused), the
+check's `packages` always present and validated, the unverified readers of a registry token's grant and
+expiry, held against tokens of the real encoder; a token of a system subject yields no grant. Decision
+Q-BAS-255: a pair that breaks a rule answers 422 with the field's error, not 400 as the requirement said,
+since every field error of the API does. Each refusal was taken out once and a named test caught it; one
+survived at first and got its case. The unit job gains about 0.07 s. **Left for the landing:** the web's
+client of the API generated again, the full unit run and the lint of the whole repository on the final
+tree. Nothing writes or reads the new members yet.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
