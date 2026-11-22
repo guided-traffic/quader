@@ -3700,6 +3700,13 @@ that reads the bucket**
   connection's bucket; (c) only there. **The rule behind both:** what comes into being with every upload lies with
   the bytes and only there; the few keys whose sealing changes lie where the rotation lives. **Published again
   at 10:07.**
+  **His question at 10:36, which keys there shall be:** answered with the three of the favoured design in his terms
+  (the root is his instance KEK and the existing key ring; a storage key is a KEK per encrypted connection, drawn
+  by Quader, sealed under the root in one row, never handled by an operator; a data key per stored object, wrapped
+  under the storage key at the object) and the name key of decision 5, and with why the level between cuts by
+  connection and not by project: an object belongs to exactly one connection and, by the deduplication, to any
+  number of projects. The paper has the table of the keys since 10:37; the wording of decision 4 no longer
+  speaks of a derived key family, which a sealed row does not need.
 
 **A topic he opened on 2026-11-21, answered in its working paper the same morning; its three stages are built, and its
 open questions are in the list above**
