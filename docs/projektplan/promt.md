@@ -1885,6 +1885,37 @@ runs are in `git log`; this section holds the current state.
   (the seventeen that had not validly run, and the store, the Bastion's cache, TLS and the operator's
   verify, which the repair or the Bastion's cache touch), each with the test tool's limit raised to 30
   minutes as the Makefile has it. The scrub's and the reconciliation's builders know of the changed signature.
+  **The gates ended at 15:52, all fourteen with exit 0** (build, the full unit run of 203 packages run anew,
+  generate-check, the evidence regenerated without a difference, links, check, the count test, the complexity
+  check, chart lint, the chart tests, the API types and the translation source without a difference, the vet
+  of the end-to-end sources, the lint; the wording scan clean, no line of the evidence record by hand).
+  **The integration areas found what the gates cannot: package A breaks a requirement, and the several
+  connections are not pushed until it holds.** Of the 21 areas 16 passed by 16:36 and two failed. *The query
+  budget (a regression, certain):* a download now runs two database statements where R-ARCH-027 allows one,
+  and three where it allows two, because the read over the copies fetches the copies' rows in a statement of
+  its own; this is the cost its builder had named as not measured, and neither it nor the planner had set it
+  against the budget. *The overload area (cause open):* in the burst beside empty caches many downloads
+  answered 503; the run stood beside other load, so the extra statement under a burst or the machine can
+  be the cause. **In repair since 16:46 by package A's builder,** as one more commit: a download costs what
+  the requirement allows with the two tests of the budget unchanged (the copies arriving with the statement
+  a download already runs is the candidate; a cache in the process only if it can say when it is wrong), on
+  every path that serves stored bytes; the overload test alone on a quiet machine and, if it still fails, on
+  the code of `main` to tell the two apart. **What the development agent takes from it:** the areas a builder
+  did not run are run before its package is called ready, not beside the landing; here they ran, and the
+  finding came before the push.
+- **The landing stack is split at 16:46.** The encryption of the Bastion's cache and the handover's
+  specification do not depend on the several connections; they stand in a worktree of their own on `main`,
+  their gates run, and they are pushed as soon as those are through (the Bastion's integration areas passed
+  on the whole stack at 15:39 to 15:54). The four commits of the several connections wait for the repair.
+- **In work since 16:44: package B of the several connections** (sessions on their connection, the collection
+  per copy with its release, the orphan sweep per connection with the adoption; Q-STOR-260 to 264, H-1265 to
+  1268; it closes the gaps package A left, that the collection deletes on the first connection alone) **and
+  the rest of package E** (the backup reading one copy per blob, the restore into the first connection with
+  its real fix-up, the journal shipped to and replayed from every connection, the list of the backup's
+  sources in the binary with the chart moved from its interim form; Q-BAK-70 to 74, Q-STOR-270 to 274,
+  Q-HA-399 to 402, H-1284 to 1289; it repairs three of the open findings of the several connections). Both
+  on the top of the landing stack. Builders with a test load: the scrub, package B, the rest of package E,
+  and the repair on package A.
 - **The development agent's integration run on package A ended at 15:08: 33 areas passed, and the last
   fourteen did not run** (the second Bastion pair, npm, NuGet, the endpoints, the importer, publishing, the
   mirror API, overload, the query budget, the registry, the virtual repositories, Valkey, the CI area): they
