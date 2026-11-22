@@ -1870,6 +1870,17 @@ runs are in `git log`; this section holds the current state.
   count as not run. From 14:38 the tree was package A with the chart's commit on top, whose code is the same.
   **All seventeen run again on the final commit of the landing stack,** with the areas the repair touches. The
   rule from it is in section 3.
+- **In work since 15:15: package D of the several connections, the scrub** (the scrub per copy with its repair
+  from another connection, the damaged blobs' API with its two scopes, `admin storage verify` and
+  `restore-versions` per connection, the renames that make the scrub's evidence true, and the metrics two of
+  the chart's alerts wait for). It goes before package B because since package A no job reads the stored
+  content for damage. Its builder works on the top of the landing stack; identifiers Q-STOR-265 to 269 and
+  H-1269 to 1272 (260 to 264 and H-1265 to 1268 are kept for package B). **The timer's check at 15:14:** the
+  pipeline run of the Bastion's package D has its gating jobs, the release step (no release, by the commit's
+  type) and the legs `ci` and `push` green; the legs of the Bastion, the registry, npm, the vulnerabilities and
+  the long access set, the four integration shards and the layout checks run. Builders with a test load: the
+  reconciliation, the scrub, the proof of the development profile, and the repair on package A; the handover's
+  planner and the encryption's package 5 have ended.
 - **Landed on 2026-11-22 at 13:59: package 1 of the encryption, the format and its tools** (a commit of the type
   `refactor`, no release; R-STOR-076 to R-STOR-079; decisions Q-STOR-321 to Q-STOR-323; its builder worked from
   13:02 to 13:53). A package of its own that uses the standard library alone, held by a test: the stored size
