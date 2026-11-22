@@ -602,6 +602,11 @@ records the recorder that tells such a stall apart).
   `storage-reconcile` are in the default maintenance plan without a job kind,** so nothing runs: between
   package A and the scrub's package no job reads the stored content for damage (the old deep check went with
   A). The reconciliation (in work) and the scrub's package.
+- **Comments and two test names still say `storage.s3`** after the several connections' first package (found by
+  its builder on 2026-11-22 and left, because the files belong to packages that are being built: the journal,
+  the backup, the operator's verify and restore of versions, a subtest of the TLS area, one npm test and one
+  end-to-end test). No message a user sees. Each package corrects its own files; what is left goes into the
+  batch.
 - **Two commits of 2026-11-22 added a line each to the evidence record by hand** (`docs/coverage/implemented.txt`: the
   kit's check for the Bastion and the declaration for signed links), against the developer page of the evidence,
   which says the pipeline writes that record from the test reports and nobody else does; found by the builder of
@@ -1860,7 +1865,26 @@ runs are in `git log`; this section holds the current state.
   difference, the links, the check and the count test exit 0; generate-check, chart lint, the chart tests and
   the web gates run since 15:12. **They are pushed as one push** once the repair is on top, the full gates and
   the integration areas are through on the final commit, the proof of the development profile has reported,
-  and the end-to-end legs of the Bastion's package D have ended.
+  and the end-to-end legs of the Bastion's package D have ended. **The repair reported at 15:36 and is the
+  sixth commit of the stack** (type `fix`, 36 files; its builder's gates exit 0, the backup's integration area
+  on the second run, the first having met the test tool's own limit of ten minutes beside a lint and another
+  run, without a failed test). *The error messages:* an object-store error names the connection and the key an
+  operator sets, in the one form the list's validation uses (`storage.connections[<n>] (<id>): <key>`), also
+  in the start check and in the refusals of a connection; the backup's target and the Bastion's cache bucket
+  are named by their own keys. *The restore:* the check of the empty prefix reads the marker; the marker of the
+  backup's own installation is accepted, one of another installation fails with both installations named, any
+  other object at the prefix root still fails, and, beyond R-BAK-030 and written into it, a marker of the
+  same installation for another connection fails as well, since a replica would refuse it anyway. Tests: four
+  cases of the check and two of the messages at the unit tier, one case of the sink at the integration tier,
+  bytes of data. **Not verified:** a real restore stopped by a marker a replica wrote (the check's decision is
+  shown at the unit tier, the sink's reading at the integration tier). **Before it, at 15:16,** the chart tests,
+  generate-check, chart lint and the web gates exit 0 on the stack of five, and one gate did not: the
+  translation source was stale by the line numbers of the audit labels; extracted again by the development
+  agent and folded into package A's commit, after which a second extraction changes nothing. **On the final
+  commit since 15:37:** the whole of the gates in one run and, beside it, 21 integration areas under the lock
+  (the seventeen that had not validly run, and the store, the Bastion's cache, TLS and the operator's
+  verify, which the repair or the Bastion's cache touch), each with the test tool's limit raised to 30
+  minutes as the Makefile has it. The scrub's and the reconciliation's builders know of the changed signature.
 - **The development agent's integration run on package A ended at 15:08: 33 areas passed, and the last
   fourteen did not run** (the second Bastion pair, npm, NuGet, the endpoints, the importer, publishing, the
   mirror API, overload, the query budget, the registry, the virtual repositories, Valkey, the CI area): they
