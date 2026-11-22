@@ -2125,7 +2125,14 @@ runs are in `git log`; this section holds the current state.
   to every connection. The points (2), (3) and (4) of the open finding in section 8 are closed by it. The
   worktrees and branches of the stacking and of the four packages' builders are removed. His UI's backend
   runs on this state since 23:09 (ready at 23:10). Released at 23:20; the plan's commits of the minutes
-  between waited for it.
+  between waited for it. **His installation runs the release since 23:26** (read at 23:31 to 23:34: both
+  releases ready, every pod on the new image without a restart, the Bastion answers from outside with its
+  certificate checked). **The new jobs' first runs there, read from the workers' logs:** the
+  reconciliation's full pass ended at 23:26 over 12,136 blobs without a gap and names the connection
+  `default` as holding every live blob; the orphan sweep and the scrub were scheduled at the first tick;
+  one worker sent 264 reads and no delete to the object store outside the probes (the sweep's walk: it
+  found nothing to remove), the other 12,131 reads, each answered 200 (the scrub reading every copy, all
+  of them due at its first run). Not read: the jobs' result rows through the API.
 - **In work since 19:27: package 2 of the signed links** (the serve point, the store and the limits: the
   decision of R-STOR-070 after the gates and the admission, the row of the settings with its audit event
   and the replica's snapshot, the host rule, the connection's choice from the copies the item lookup
@@ -4854,7 +4861,8 @@ package partial. **The two packages are one stack in the landing worktree since 
 in documents, both sides kept; the web's client of the API generated into the wire's commit), **and their
 landing's gates run since 23:08,** the full set with the unit run and the lint and the areas `bastion`,
 `bastioniface`, `bastionshared`, `authz`, `api` and the query budget. They are pushed after the stack of
-four's run has finished its integration shards.
+four's run has finished its integration shards. **The gates ended at 23:29, twenty-three of them, each
+exit 0.**
 **In work since 23:09 to 23:11, four more, all on the state after the stack of four:** package F of the
 several connections, the surface and the manual (the connections' API and system information, the storage
 summary per connection, the tab **Storage** rendered on a stack of its own, and every document that
