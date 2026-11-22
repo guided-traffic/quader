@@ -3699,15 +3699,15 @@ Rechner bin. Schreibe die Fragen bitte auf damit wir sie nicht vergessen." The q
 23. **A copy between two encrypted connections (Q-STOR-308):** (a) always a new data key, so a leak at one
     connection never reaches another, at the price of the server-side copy between two encrypted connections of
     one provider (specified); (b) the data key is carried and wrapped under the other storage key; (c) a setting.
+24. **Object names in a backup's pool (Q-BAK-65):** (a) the pool keeps digest names, so a reader of the backup's
+    target can confirm known files, which adds nothing while the database files beside them are plain
+    (specified); (b) keyed names in the pool, together with the backup's own encryption; (c) a plain pool.
 25. **The object gateway of his cluster and signed links:** his cluster runs the 19.2.3 release of its object store,
     and the line's release notes name a security defect of signed links for uploads that is repaired in 19.2.6
     and whole in 19.2.7 (read by a research on 2026-11-22, not checked on his cluster). Quader signs links for
     downloads alone; still, (a) he brings the gateway to 19.2.7 or newer before the switch for signed links is
     turned on there (the development agent's advice); (b) he leaves it. Whatever he chooses for Quader, the
     defect concerns every other use of signed upload links on that gateway.
-24. **Object names in a backup's pool (Q-BAK-65):** (a) the pool keeps digest names, so a reader of the backup's
-    target can confirm known files, which adds nothing while the database files beside them are plain
-    (specified); (b) keyed names in the pool, together with the backup's own encryption; (c) a plain pool.
 
 Not a decision any more, to be told to him in a sentence: what a virtual npm repository's keys endpoint serves before
 Quader signs local packages (Q-SIG-34, built as (a)); the second stage signs the local packages of an installation
@@ -4001,7 +4001,7 @@ that reads the bucket**
   its signer may read; repaired in 19.2.6, whose repair broke such links with a content type until 19.2.7).
   Quader signs links for downloads alone, and whether a download link was open to the same is not stated in
   what was read; **the development agent's advice for his list: the gateway of his cluster is at 19.2.7 or newer
-  before signed links are switched on there** (number 25 above). *The provisioner:* the Secret of a claimed
+  before signed links are switched on there** (number 25 of the list above). *The provisioner:* the Secret of a claimed
   bucket holds the two keys, its user is limited to that bucket, and a read-only user needs a user of its own
   with a policy. *Nothing about annotations.* The builder of the first stage's package A was told what bears on
   the start check (no additional checksum to rely on, no conditional write, the copy's limits). **In work since 10:51: two planners in parallel,** stage 1 (several connections, the reconciliation,
