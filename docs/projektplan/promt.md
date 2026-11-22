@@ -605,7 +605,8 @@ records the recorder that tells such a stall apart).
   the spread short. The same area passed on the same commit in the landing's gates and in the run before.
   Not caused by the trace, which adds no statement. For the batch: measure the spread against the span of
   the requests' starts. Not run again by itself: the push of the Bastion's specification, whose code is the
-  same but for a count test, runs the shard again.
+  same but for a count test, runs the shard again. **That run ended at 23:03 with every job green,** the
+  shard among them; seen once so far.
 - **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
   `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
@@ -620,7 +621,9 @@ records the recorder that tells such a stall apart).
   page of the limitations says each): (1) **four alerts of the chart read series nobody exports yet** (the
   backlog, a damaged copy, the scrub behind, a detached connection), and the alert of a damaged copy points
   to an API that does not exist yet; silent until the reconciliation, the scrub and the surface are built,
-  each of which takes its lines out of the chart tests' list. (2) **The journal is shipped to the first
+  each of which takes its lines out of the chart tests' list. **Points (2), (3) and (4) are closed since
+  2026-11-22, 23:08, by the landing of the reconciliation, the scrub and the rest of package E; point (1)
+  stays for the surface's package, in work.** (2) **The journal is shipped to the first
   connection that is not draining, while the restore, the step after a restore and the backup read the first
   element even when it drains;** with `drain: true` on the first element the two differ, so a backup can lack
   new blobs and a restore can miss the journal. Repaired by the rest of package E (the backup reading one copy
@@ -2112,7 +2115,17 @@ runs are in `git log`; this section holds the current state.
   five index rows); the landing worktree runs the build, the vet, the generated code, the evidence's four
   steps, the complexity, the chart's lint and tests, the API's client and the translation source, the web's
   lint and tests, the vet of the end-to-end code, and eight integration areas under the lock (the query
-  budget, overload, `blob`, `uploads`, `backup`, `postgres`, `files`, `restoreversions`).
+  budget, overload, `blob`, `uploads`, `backup`, `postgres`, `files`, `restoreversions`). **Landed on
+  2026-11-22 at 23:08:** twenty-three gates, each exit 0, from 22:40 to 23:07; four commits of the type
+  `feat` in one push. With them the first stage of the storage topic is built but for its surface: every
+  blob is copied to every connection, a new connection is filled and a draining one emptied; every copy is
+  read back once a month and a damaged one replaced from another connection; the collection deletes each
+  copy on its own connection, an upload stays on its connection, and the orphan sweep cleans every
+  connection weekly; the backup reads any copy, the restore fills the first connection, the journal goes
+  to every connection. The points (2), (3) and (4) of the open finding in section 8 are closed by it. The
+  worktrees and branches of the stacking and of the four packages' builders are removed. His UI's backend
+  runs on this state since 23:09 (ready at 23:10). Released at 23:20; the plan's commits of the minutes
+  between waited for it.
 - **In work since 19:27: package 2 of the signed links** (the serve point, the store and the limits: the
   decision of R-STOR-070 after the gates and the admission, the row of the settings with its audit event
   and the replica's snapshot, the host rule, the connection's choice from the copies the item lookup
@@ -2208,6 +2221,11 @@ runs are in `git log`; this section holds the current state.
   stands on a clean commit and its builder was active two minutes ago; the two builders of the Bastion's
   packages are in their work, active. The run of the specification's push has no failed job so far. The
   load is 11. His installation and its Bastion run the newest release, ready.
+- **The timer's check at 23:14:** the stack of four is landed and its release not cut yet, no failed job;
+  the landing's gates of the Bastion's first two packages exit 0 up to the vet of the end-to-end code,
+  the lint and six integration areas are left; the links' builder moves its commit onto the new top; the
+  three builders started at 23:09 to 23:11 and the writer of the key destruction's specification are all
+  active within the minute. The load is 28.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -4809,7 +4827,45 @@ Q-BAS-255: a pair that breaks a rule answers 422 with the field's error, not 400
 since every field error of the API does. Each refusal was taken out once and a named test caught it; one
 survived at first and got its case. The unit job gains about 0.07 s. **Left for the landing:** the web's
 client of the API generated again, the full unit run and the lint of the whole repository on the final
-tree. Nothing writes or reads the new members yet.
+tree. Nothing writes or reads the new members yet. **P2, the decision point and the contract, reported at
+23:06** (one commit of the type `fix`; its builder worked from 22:00 to 23:06; every gate exit 0, the lint
+of the whole repository among them, and the integration areas `authz` and `bastioniface`). **It found and
+closed two holes in the read shape of a repository that a Bastion trusts today (R-BAS-012):** the wiki and
+a frozen mirror's fill were asked on a coordinate without a package, which every grant or scope narrowed by
+package matches, so three kinds of caller read `full` on a repository while another package's wiki or fill
+was refused to them (an external user with a grant on some packages of a repository with public artifacts
+and an internal wiki; an internal user's token scoped to some packages there; a reader whose right to fill a
+frozen mirror is narrowed by package). A Bastion would have served such a caller cached content of the
+other packages without asking. The agreement test over the fixture now asks the wiki too and holds it. No
+installation is in use, so it is closed where it was found and named to the owner in a sentence. Built:
+`Engine.PackageReachOn` with the five conditions and the rule for a virtual repository, each taken out once
+and caught by the agreement test and a named case (the fixture grew to 26 subjects and 16 repositories);
+the kit's twenty-first check with the host's record of every decision and of the status line, and two
+defects of the test format that fail it alone. **Every format passed the check as it was** (npm, NuGet,
+OCI, Debian, Ansible Galaxy, the ClamAV definitions; the generic format skips it with its reason), so no
+format was repaired. Decisions Q-BAS-260 (the fill of a package is decided without a path) and Q-BAS-261
+(the check's reader of one package has no path pattern, as no reader that is full on a package has one);
+gap H-1390 (the check runs over the local class only). Its cost: the check takes 0.7 to 1.0 s for the
+seven formats and about 3 s with 25, where the design had said 1 s; the agreement test of the repository's
+shape fell from 6.7 s to 2.7 s, so the unit job gets about 2 s faster. **What takes the gain away, for the
+main installation's side to know:** any path pattern in a caller's token scope, a path-pattern grant on the
+repository, an endpoint with exposure rules, a session cookie or a remote that does not fill make every
+package partial. **The two packages are one stack in the landing worktree since 23:07** (three conflicts
+in documents, both sides kept; the web's client of the API generated into the wire's commit), **and their
+landing's gates run since 23:08,** the full set with the unit run and the lint and the areas `bastion`,
+`bastioniface`, `bastionshared`, `authz`, `api` and the query budget. They are pushed after the stack of
+four's run has finished its integration shards.
+**In work since 23:09 to 23:11, four more, all on the state after the stack of four:** package F of the
+several connections, the surface and the manual (the connections' API and system information, the storage
+summary per connection, the tab **Storage** rendered on a stack of its own, and every document that
+describes a running installation checked against the code; it takes point (1) of the open finding);
+package 3 of the encryption, the store and the sessions, which makes `encrypted: true` accepted, with the
+sentence about the lost key ring in the same change, told that a download costs one statement with an
+encrypted copy too and to say what each job of the first stage does with an encrypted connection until
+package 4; P3 of the Bastion's read shapes, the main installation's side, on the two packages' stack;
+and the writer of the specification of a storage key's destruction (documents only), told that the
+backup's pages changed under the design. Builders with a test load: the links, package F, the
+encryption's package 3, the Bastion's P3, and the landing's gates.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
