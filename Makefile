@@ -797,3 +797,19 @@ apt-clients-image: ## Build the four APT clients images (the pinned Debian and U
 ansible-clients-image: ## Build the two Ansible client images (ansible-core 2.17 and 2.21 on their pinned Python images with the forwarder) into the local Docker; ANSIBLE_CLIENTS_IMAGE_PREFIX, default quader-e2e-ansibleclients-
 	test/e2e/ansibleclients/build.sh $(or $(ANSIBLE_CLIENTS_IMAGE_PREFIX),quader-e2e-ansibleclients-)
 # <<< B4 ansible-clients-image
+
+# >>> fuzz-stored-format
+# The fuzz targets of the readers of the stored format of an encrypted connection (storage.md R-STOR-079, R-STOR-091,
+# docs/developer/stored-content-encryption.md): the inverse of the stored size, the record, a whole object, a range and a staging
+# tail. Their seeds run in every go test; the nightly job fuzz-stored-format of performance.yml runs each for five minutes, one
+# after the other. Edit only between the markers.
+STORED_FORMAT_FUZZ_TARGETS ?= FuzzPlainSize FuzzOpenRecord FuzzReadObject FuzzReadRange FuzzOpenTail
+STORED_FORMAT_FUZZTIME ?= 5m
+
+.PHONY: fuzz-stored-format
+fuzz-stored-format: ## Fuzz every reader of the stored format (STORED_FORMAT_FUZZ_TARGETS) for STORED_FORMAT_FUZZTIME each (default 5m); a failing input stays in internal/blob/blobcrypt/testdata/fuzz
+	@set -e; for fz in $(STORED_FORMAT_FUZZ_TARGETS); do \
+	  echo "fuzz $$fz for $(STORED_FORMAT_FUZZTIME)"; \
+	  go test ./internal/blob/blobcrypt -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(STORED_FORMAT_FUZZTIME); \
+	done
+# <<< fuzz-stored-format

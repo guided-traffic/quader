@@ -1,9 +1,12 @@
 # The stored format of an encrypted connection: what it authenticates and what it withstands
 
-Status: specified on 2026-11-22, not built ([storage.md](../spec/storage.md) R-STOR-048, R-STOR-075 to R-STOR-091;
-[ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring)).
-Until it is built no connection is encrypted, and [object-store-connections.md](object-store-connections.md) describes what a reader of a
-bucket can do: read every blob, and replace one that only a full read then finds.
+Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-048, R-STOR-075 to R-STOR-091;
+[ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring));
+the format itself is built ([internal/blob/blobcrypt](../../internal/blob/blobcrypt/doc.go), its vectors checked by an independent
+implementation, [stored-content-encryption.md](../developer/stored-content-encryption.md#the-vectors-and-their-independent-check)), and
+nothing calls it yet. Until the store writes and reads through it no connection is encrypted, and
+[object-store-connections.md](object-store-connections.md) describes what a reader of a bucket can do: read every blob, and replace one that
+only a full read then finds.
 
 The perspective of this page is one stored object on an encrypted connection: what each of its parts authenticates, what a reader checks
 before and while it hands out bytes, and which changes to the object are refused and where. Who holds the keys is
@@ -48,7 +51,11 @@ the plaintext; the tags are not optional.
 
 ## What it withstands
 
-Each row is a unit test of the format ([storage.md](../spec/storage.md) R-STOR-078); the attacker can write the bucket and holds no storage key.
+Each row is a unit test of the format ([storage.md](../spec/storage.md) R-STOR-078; [attacks_test.go](../../internal/blob/blobcrypt/attacks_test.go),
+whole and ranged, with a reader that counts what left before the refusal) and a negative case of the vector file; the attacker can write the
+bucket and holds no storage key. A record whose `quader-key` is missing or no identifier is `record`, not `unknown_key`
+([Q-STOR-322](../spec/storage.md#q-stor-322--a-missing-or-malformed-quader-key-is-record-not-unknown_key)): no import can bring such a key
+back, so the copy is repaired.
 
 | Change to the object | Refused by | Where |
 |---|---|---|

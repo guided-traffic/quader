@@ -1,6 +1,7 @@
 # Encryption of stored content: the build plan
 
-Status: specified on 2026-11-22, not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
+Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built)), nothing
+calls it yet; packages 2 to 6 not built ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
 R-STOR-091; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072;
 [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring),
@@ -47,13 +48,60 @@ The order: 1 first (now); 2 as soon as stage 1's package A is on `main`; 5 besid
 and the manual's pages of R-STOR-090 in the same change if package 6 has not yet landed, so that no release accepts the key without the
 sentence about the lost key ring.
 
+## Package 1: the format as built
+
+[internal/blob/blobcrypt](../../internal/blob/blobcrypt/doc.go) is the format `quader-blob-v1`, a leaf of the standard library (AES-256-GCM,
+HKDF-SHA-256, HMAC-SHA-256, SHA-256), which `TestThePackageImportsTheStandardLibraryOnly` holds. It knows no connection, database or store.
+
+| File | Responsibility |
+|---|---|
+| [format.go](../../internal/blob/blobcrypt/format.go) | the constants of R-STOR-076, the derivations (`K_seg`, `C`, `K_tail`, `K_w`), the additional data of a segment, a tail segment and a wrap, the nonces of R-STOR-080 and [Q-STOR-321](../spec/storage.md#q-stor-321--a-staging-tails-nonces-take-its-session-offset-and-a-tail-holds-at-least-one-byte) |
+| [keys.go](../../internal/blob/blobcrypt/keys.go) | `Key` (32 secret bytes the package owns; copies share them, `Destroy` clears them for all, a destroyed key refuses every use), `StorageKey`, `DataKey` (a key with the digest, size and storage key its record binds; `Commitment`), `NewSeed`, `ValidKeyID`; `String`, `GoString` and `LogValue` render no key |
+| [size.go](../../internal/blob/blobcrypt/size.go) | `StoredSize` (`S(L)`), `PlainSize` (its inverse, refusing with `size`), `TailStoredSize`, `PlanRange` and `Range` (the segments and stored bytes of a window, R-STOR-082) |
+| [seal.go](../../internal/blob/blobcrypt/seal.go) | the writer: `NewSection` (an object's data segments with or without the final segment, an `io.ReadSeeker` that seals as it is read, one segment in memory) and `NewTailSection` (a staging tail) |
+| [record.go](../../internal/blob/blobcrypt/record.go) | `Record` and `Metadata`, `Wrap`, and `Open`: steps 1 to 6 of R-STOR-077 in their order against a `Want` (the copy row's digest, size and stored size, or none for a reader without a database, and the size the store answered) through a `KeyLookup` |
+| [read.go](../../internal/blob/blobcrypt/read.go) | step 7: `NewReader` (whole), `NewRangeReader` (a window) and `NewTailReader`, one `Reader` that releases a segment's bytes only after its tag and holds the window's bytes of the last segment until the final segment (its length and digest) and, where it hashes, the SHA-256 have passed |
+| [name.go](../../internal/blob/blobcrypt/name.go) | `KeyedName` and `KeyedPrefix` (R-STOR-086) |
+| [errors.go](../../internal/blob/blobcrypt/errors.go) | `Reason` (the label `reason` of R-STOR-082), `Error`, the sentinels `ErrFormat` to `ErrDigest`, `ReasonOf`, `Reason.MarksCorrupt` (all but `unknown_key`) |
+
+What packages 2 to 6 build on: package 2 opens a sealed row into `NewStorageKey(id, raw)` and draws keys with `NewKey(crypto/rand.Reader)`;
+`CopyDataKey` returns the `DataKey` that `Open` yields. Package 3 writes a part or a whole object with `NewSection` over a section of the
+spool (the payload checksum is a first pass over the same `Section`, the SDK's retry a `Seek` to 0), makes the record with `Wrap` and
+`Metadata`, checks a `HeadObject` with `Open`, reads with `Open` and `NewReader` or `PlanRange`, `Open` (the total as `ObjectSize`) and
+`NewRangeReader`, counts a failure by `ReasonOf` and marks by `MarksCorrupt`; a session seals its data key's `Key.Bytes()` into its row,
+writes tails with `NewTailSection` and reads them with `NewTailReader`, and names objects with `KeyedName`. Package 4's orphan sweep and
+operator check run `Open` with `Want{Known: false}` and compare `KeyedName` of the unwrapped digest. Package 5 seals its cache with the same
+writer and readers. Package 6's offline tool reads a record file (the object's metadata as JSON, the form of the vectors' `.record.json`).
+
+A failure of the body is an `*Error` with its reason; a body that ends early is a transport error with `io.ErrUnexpectedEOF` in its chain and
+no reason, which marks nothing; a body longer than the object is `size`. A failed key lookup passes through as it is.
+
 ## The vectors and their independent check
 
 The known answers of [storage.md](../spec/storage.md) R-STOR-076, R-STOR-077 and R-STOR-086 were computed for the specification on 2026-11-22
 by a throwaway implementation written from the specification's text in Python 3.12 with the `cryptography` package 38.0.4, independent of any
 code of this repository. Package 1 writes the vector files from its Go implementation, checks that they contain those answers unchanged,
 checks every case once with `tools/blobvectors/check.py` (Python's `cryptography`, by hand, not in CI), and records here the date and the
-outcome. *(Not done yet.)*
+outcome.
+
+**Checked on 2026-11-22, every case agrees.** In this order:
+
+1. The Go implementation, written from the specification, reproduced every known answer of R-STOR-076, R-STOR-077 and R-STOR-086 on its first
+   run (`TestR_STOR_076_TheKnownAnswersOfTheStoredFormatReproduce`, `TestR_STOR_077_TheKnownAnswersOfTheRecordReproduce`,
+   `TestKeyedNameKnownAnswer`), before anything else was compared.
+2. [tools/blobvectors](../../tools/blobvectors/main.go) wrote [testdata/vectors.json](../../internal/blob/blobcrypt/testdata/vectors.json) and
+   the files below `testdata/objects/` (35 cases, 651,536 bytes): the sizes of R-STOR-079 by the rule, the known answers (the object `a` among
+   them, beside the rule's `l1`), an older genuine object (the last row of R-STOR-078), the staging tail at 131,072, the keyed name, and 25
+   negative cases, one or more per row of R-STOR-078 (4 `size`, 4 `segment`, 4 `final`, 5 `record`, 2 `format`, 3 `unknown_key`,
+   2 `commitment`, 1 `digest`). `TestTheCommittedVectorsAreWhatTheWriterWrites` holds the files to what the command writes.
+3. [check.py](../../tools/blobvectors/check.py) (Python 3.12.13, `cryptography` 38.0.4) rebuilt every positive case from its inputs byte for
+   byte, derived every listed nonce from its seed, read every case through steps 1 to 7 and refused every negative case with its reason, and
+   compared the specification's known answers and its size table: 35 of 35 agree.
+4. Only then was the planner's reference of the specification's examples read and run against the vector files (its functions unchanged,
+   through a harness that loads the files and applies the step order of R-STOR-077): 34 of 34 cases agree. It does not cover the tail case,
+   since it implements no tail; the tail and its nonce rule (Q-STOR-321) rest on `check.py` and the Go tests alone.
+
+`python3 -I tools/blobvectors/check.py internal/blob/blobcrypt/testdata` repeats step 3; it exits 0 when every case agrees.
 
 ## Tests and their cost
 
@@ -64,12 +112,42 @@ With 25 formats the cost is the same: no format sees a connection or a key.
 | Fuzz target | Package | What it holds |
 |---|---|---|
 | `FuzzPlainSize` | `internal/blob/blobcrypt` | the inverse of `S` never panics and agrees with `S` |
-| `FuzzOpenRecord` | `internal/blob/blobcrypt` | any metadata map yields a data key or one of the named errors |
+| `FuzzOpenRecord` | `internal/blob/blobcrypt` | any metadata map yields a data key or one of the named errors, and a key only from a genuine record |
 | `FuzzReadObject` | `internal/blob/blobcrypt` | any body under a valid record yields the plaintext or a named error, and no byte of a segment that failed |
 | `FuzzReadRange` | `internal/blob/blobcrypt` | any range over a vector object yields exactly its window or an error, and no byte that was not authenticated |
 | `FuzzOpenTail` | `internal/blob/blobcrypt` | a staging tail object yields its plaintext or a named error |
 
-Locally: `make fuzz-stored-format FUZZTIME=1m`; a failing input stays in `internal/blob/blobcrypt/testdata/fuzz`.
+Locally: `make fuzz-stored-format STORED_FORMAT_FUZZTIME=1m`; a failing input stays in `internal/blob/blobcrypt/testdata/fuzz`. Each target ran
+30 s on 2026-11-22 on the development machine without a finding (FuzzPlainSize 3.8 million inputs, FuzzOpenRecord 2.2 million,
+FuzzReadObject 2.4 million, FuzzReadRange 1.4 million, FuzzOpenTail 69,000: its inputs are a tail of 64 KiB each).
+
+**The nightly job** `fuzz-stored-format` of [performance.yml](../../.github/workflows/performance.yml) ("fuzz the stored format's readers")
+runs `make fuzz-stored-format STORED_FORMAT_FUZZTIME=5m` on a self-hosted runner beside the lanes, with select-leg in front like every job of
+the workflow (`-f sets=fuzz-stored-format` dispatches it alone), and uploads `testdata/fuzz` as the artifact `fuzz-stored-format` when it
+fails. Its cost: 25 minutes of fuzzing and about 2 minutes of checkout, Go and modules, about 27 runner minutes a night (estimated; it has
+not run on GitHub yet). The closing run does not start it
+([Q-STOR-323](../spec/storage.md#q-stor-323--the-closing-run-does-not-start-the-fuzz-job-of-the-stored-format)).
+
+**Package 1's unit tests, measured** on 2026-11-22 in the unit job's mode (`go test -race -covermode=atomic -coverpkg=./...`, the development
+machine), all at the unit tier and in parallel:
+
+| Tests | Data | Time |
+|---|---|---|
+| `TestR_STOR_078_EveryAttackOfTheTableIsRefusedWithItsReason` (every row, whole and ranged, with the counting reader), `TestR_STOR_078_NoByteLeavesBeforeItsSegmentAuthenticated`, `TestABodyOfAnotherLengthThanItsSizeIsCaught`, `TestR_STOR_077_AnObjectWithoutRecordIsRefusedAsFormat` | objects of 40 bytes to 196,609 bytes, made in memory | 0.10 s |
+| `TestR_STOR_079_*` (every case of the vector file, the known answers in it, below 1 MB), `TestR_STOR_076_*` and `TestR_STOR_077_*` known answers, `TestKeyedNameKnownAnswer` | the vector files, 651,536 bytes | 0.06 s |
+| `TestR_STOR_076_StoredSizeAndItsInverseAgree` (the table, windows of ±100 around the first four boundaries and the last three before 4 TiB, sampled boundaries up to the limit), `TestRangePlansTheSegmentsOfTheWindow` | none: arithmetic | 0.01 s |
+| `TestR_STOR_077_ARecordRoundTripsAndStaysSmall`, `…TheStepsRunInTheirOrder`, `TestKeysRenderNothingOfThemselves`, `TestADestroyedKeyRefusesEveryUse`, `TestKeyedNamesDifferPerNameKey`, `TestSectionsAreDeterministicAndCompose`, `TestSectionsRefuseRunsThatBreakTheLayout`, `TestTailSegments`, `TestThePackageImportsTheStandardLibraryOnly` | up to 196,685 bytes | 0.04 s |
+| the seed corpora of the five fuzz targets | the vectors | 0.08 s |
+| `TestTheCommittedVectorsAreWhatTheWriterWrites` (`tools/blobvectors`) | writes the 651,536 bytes to a temporary directory | 0.06 s |
+
+That is 0.35 s of tests, against the 0.4 s R-STOR-091 estimates; each of the two packages costs about 1.2 s of process time in the unit job,
+almost all of it the start of a binary built with the race detector and the module's coverage, which every package pays. No other job gains
+anything: no integration, end-to-end or chart test is added.
+
+Every defence of the format was taken out once, one at a time, and at least one of these tests failed each time: the size check of step 5,
+the index and the mark in a segment's additional data, steps 1, 4 and 6, the final segment's length and digest, the plaintext's SHA-256,
+the hold-back of the last segment, the identifier in the wrap's additional data, `unknown_key` told apart from `record`, the offset and the
+last mark of a tail segment, the segment key's own label, and the refusal of a body longer than the object.
 
 ## Not verified
 
@@ -77,4 +155,9 @@ Locally: `make fuzz-stored-format FUZZTIME=1m`; a failing input stays in `intern
   2026-11-22) keeps user metadata on a write and replaces it on a copy is what the start check establishes there once the release runs; its
   documentation was not read. The provider he has in mind documents a copy with new metadata only through the documentation of the software
   behind it (research of 2026-11-22), not for itself.
-- The throughput of encryption on Quader's hardware; the proxy's measurement (about 4.5 GB/s per core) is from an Apple M5 Pro.
+- The throughput of encryption on Quader's hardware; the proxy's measurement (about 4.5 GB/s per core) is from an Apple M5 Pro. Package 1 did
+  not measure `blobcrypt`'s throughput either.
+- The nightly job `fuzz-stored-format` has not run on GitHub yet: its 27 minutes are the sum of its fuzz times and an estimate of its setup,
+  and whether the self-hosted runner's eight workers reach the local numbers above is not known.
+- That `cipher.AEAD` from `crypto/cipher` may be used by several goroutines at once was not relied on: every `Section` and `Reader` builds its
+  own cipher from the key.

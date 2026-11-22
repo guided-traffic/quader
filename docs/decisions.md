@@ -2271,7 +2271,8 @@ encrypted connections (a leak at one reaches the other); a nonce derived from th
 **Revisit condition:** a key per project or per repository (decision 3 left the room: each wrap names its key); the handover of a data key to a
 Bastion (decision 12 (b), H-1302); a measurement that the segment size costs ranged reads too much.
 
-**Spec:** [storage.md](spec/storage.md) R-STOR-048, R-STOR-075 to R-STOR-091, Q-STOR-300 to Q-STOR-320, and the edits of R-STOR-001,
+**Spec:** [storage.md](spec/storage.md) R-STOR-048, R-STOR-075 to R-STOR-091, Q-STOR-300 to Q-STOR-320 (and the builder's Q-STOR-321 to
+Q-STOR-323 of the format's package), and the edits of R-STOR-001,
 R-STOR-026, R-STOR-032, R-STOR-035, R-STOR-050, R-STOR-062; [backup-and-restore.md](spec/backup-and-restore.md) R-BAK-031, Q-BAK-65,
 Q-BAK-66; [architecture.md](spec/architecture.md) R-ARCH-021; [ha-and-helm.md](spec/ha-and-helm.md) R-HA-072, Q-HA-415;
 [api-and-ui.md](spec/api-and-ui.md) Q-API-405; [security/stored-content-format.md](security/stored-content-format.md),

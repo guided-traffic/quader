@@ -695,13 +695,13 @@ that a branch run starts beside a run on main.
 
 The input `sets` of a dispatch is a comma-separated list of set names or job keys, without spaces: `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release,ha-suite`
 runs the leg `upgrade-release` and the leg `ha-suite` and no other. A job key selects every leg of its job (`-f sets=e2e-npm` runs `npm-ha` and `ha-suite`), and the perf jobs are
-selected by their keys `latency` and `vuln-perf`. An empty list runs everything, as the schedule does, except the leg `upgrade-release`, which runs only when the
+selected by their keys `latency` and `vuln-perf`, the fuzz job by `fuzz-stored-format`. An empty list runs everything, as the schedule does, except the leg `upgrade-release`, which runs only when the
 list names it or its job `e2e-upgrade` until the first stable release (the input `nightly` of select-leg, [the switches](#switched-off-until-the-first-stable-release)); the perf jobs, which need the job, run all the same,
 because their condition starts with `!cancelled()`. A matrix leg that the list does not name shows as green with its
 steps skipped, and its job summary says so; a job without a matrix that the list does not name is skipped. A list with a space fails every matrix leg with an error.
 The composite action [select-leg](../../.github/actions/select-leg/action.yml) decides for every leg, in its script
 [select-leg.sh](../../.github/actions/select-leg/select-leg.sh) ([Q-ARCH-324](../spec/architecture.md#q-arch-324--how-is-one-leg-of-the-nightly-run-dispatched));
-the jobs without a matrix (`npm-ha-soak`, `latency`, `vuln-perf`) call it too, for the check [below](#a-scheduled-run-after-a-full-run).
+the jobs without a matrix (`npm-ha-soak`, `latency`, `vuln-perf`, `fuzz-stored-format`) call it too, for the check [below](#a-scheduled-run-after-a-full-run).
 The input exists on `main` once the change is merged, because `gh` runs the workflow file of the ref.
 The run name says what a run is: `HA and Performance (all legs)` for the schedule and a dispatch without `sets`,
 `HA and Performance (sets: upgrade,vuln-long)` for a dispatch of a part. It is what the list of runs shows (`gh run list --workflow "HA and Performance (nightly)"`).
@@ -838,6 +838,14 @@ criteria, through the chart's Ingress and through its HTTPRoute on Envoy Gateway
 ([e2e.md](e2e.md#the-edge-and-alert-tests)). Job `e2e-alerts` runs the set `alerts` (edge port 8105, cluster `quader-alerts-<run id>`, artifacts `e2e-alerts-report` and `e2e-alerts-artifacts`, on a GitHub-hosted
 runner with the disk space freed, outside the lanes): the alerts of R-HA-045 in their R-HA-052 scenarios against a Prometheus, and "Maintenance stays quiet" (E5.5). By hand: `make dev-up && make e2e SET=alerts`.
 A dispatch names them by set or by job key (`-f sets=edge,alerts`).
+
+Job `fuzz-stored-format` ("fuzz the stored format's readers") runs `make fuzz-stored-format STORED_FORMAT_FUZZTIME=5m`: the five fuzz targets
+of the readers of the stored format of an encrypted connection, five minutes each, one after the other, on a self-hosted runner beside the
+lanes, since it starts no cluster ([storage.md](../spec/storage.md) R-STOR-091, Q-STOR-319). It is the first fuzz job of the nightly: the fuzz
+legs of npm and NuGet run in the closing run of Test and Release only, and the closing run does not start this one
+([Q-STOR-323](../spec/storage.md#q-stor-323--the-closing-run-does-not-start-the-fuzz-job-of-the-stored-format)). About 27 runner minutes a
+night (estimated); a crash fails the job and uploads its input as `fuzz-stored-format` (14 days). Its seeds, the vector files, run in every unit
+job ([stored-content-encryption.md](stored-content-encryption.md#tests-and-their-cost)). By hand: `make fuzz-stored-format STORED_FORMAT_FUZZTIME=1m`.
 
 The remote full mirror has no job of its own ([Q-REPO-306](../spec/repositories-and-proxy.md#q-repo-306--the-mirror-tests-are-part-of-the-formats-and-of-the-nightly-ha-sets-the-worker-pool-is-added-by-the-tests)). Its nightly part is in the legs of the format and of the failure suite: `npm-ha-soak` enforces the install-time ratio of R-REPO-055 (`QUADER_PERF_GATE=1`, on `large` since
 Q-REPO-211: on the 4 vCPUs of a GitHub-hosted runner the pass's own work took the installs' CPU), `npm-ha` runs R-REPO-058's drain (`kubectl drain` of the node of the process of the

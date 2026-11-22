@@ -19,7 +19,8 @@
 # with the poolers of R-HA-058, on large); job e2e-oci runs oci-long (R-OCI-011: a push cut by the drain of the receiving pod; R-REPO-058: the drain of the node of an OCI mirror's pass); job e2e-backup runs the set backup (R-BAK-029: the restore
 # drill, the drain and the kill -9 of a backup and a restore, the revocation journal across a restore); job e2e-edge runs the set edge (R-HA-039's large and
 # long transfers and R-HA-038 through the Ingress and through an HTTPRoute, E5.5); job e2e-alerts runs the set alerts (the alerts of R-HA-045 in their
-# R-HA-052 scenarios and "Maintenance stays quiet", E5.5; GitHub-hosted).
+# R-HA-052 scenarios and "Maintenance stays quiet", E5.5; GitHub-hosted). Job fuzz-stored-format fuzzes the readers of the stored
+# format of an encrypted connection, five targets for five minutes each (storage.md R-STOR-091), on a self-hosted runner beside the lanes.
 # The perf jobs start after every kind leg of this workflow has finished, so they measure on the large VM without this workflow's
 # clusters beside them (Q-ARCH-325; a Test and Release run that starts meanwhile can still share the VM): job latency enforces the p99 bounds of P-13 (change propagation) and P-14 (job pick-up) with Valkey available, against
 # the integration stack (R-ARCH-027, Q-ARCH-220), and job vuln-perf, after latency, runs the performance run of the vulnerability scanning
@@ -268,6 +269,61 @@ jobs:
           name: k8s-matrix-${{ matrix.leg }}
           path: .out/k8s-matrix/
           if-no-files-found: warn
+          retention-days: 14
+
+  # The readers of the stored format of an encrypted connection (storage.md R-STOR-079, R-STOR-091, Q-STOR-319): five fuzz
+  # targets of internal/blob/blobcrypt, five minutes each, one after the other (make fuzz-stored-format). Every download of an
+  # encrypted connection passes these readers, so they are fuzzed every night; their seeds, the vectors, run in every unit job.
+  # About 27 minutes of one self-hosted runner, beside the lanes (it starts no cluster). A crash fails the job and uploads its input.
+  fuzz-stored-format:
+    name: fuzz the stored format's readers (5 min per target)
+    if: ${{ !inputs.sets || contains(format(',{0},', inputs.sets), ',fuzz-stored-format,') }}
+    runs-on: self-hosted
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (the sets of a dispatch; on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: fuzz-stored-format
+          job: fuzz-stored-format
+          sets: ${{ inputs.sets }}
+          token: ${{ github.token }}
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 9
+        uses: ./.github/actions/build-tools
+
+      - name: make fuzz-stored-format
+        if: steps.leg.outputs.run == 'true'
+        run: make fuzz-stored-format STORED_FORMAT_FUZZTIME=5m
+
+      - name: Upload the failing input
+        if: failure() && steps.leg.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-stored-format
+          path: internal/blob/blobcrypt/testdata/fuzz/
+          if-no-files-found: ignore
           retention-days: 14
 
   # Q-ARCH-325: the perf jobs start after every kind leg has finished (!cancelled() lets them run when a leg failed), and vuln-perf

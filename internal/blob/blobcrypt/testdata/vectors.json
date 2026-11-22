@@ -1,0 +1,1224 @@
+{
+  "format": "quader-blob-v1",
+  "about": [
+    "Test vectors of the stored format quader-blob-v1, storage.md R-STOR-076 to R-STOR-079, R-STOR-081 (tails) and R-STOR-086 (names).",
+    "Written once by tools/blobvectors from the Go implementation and checked with tools/blobvectors/check.py; never regenerated.",
+    "Byte strings are lowercase hex. A plaintext is given as a rule (byte i is i mod 251, over length bytes) or in hex.",
+    "An object case gives its inputs (data key, seed, the storage key and identifier, salt, wrap nonce) and, explicitly, every segment's nonce, the final segment's last; its outputs are the object file, the record file (the object's metadata) and the stored size and SHA-256.",
+    "A case with a reason is negative: reading its object under its record, holding readerKeys, against copy (the database's digest, size and stored size, with the object file's length as the size the store answered), must fail with that reason; its inputs are those of the genuine object it changes.",
+    "A tail case is a staging tail at the session offset offset under the tail key of its data key; a reader compares its plaintext length and SHA-256."
+  ],
+  "cases": [
+    {
+      "name": "empty",
+      "kind": "object",
+      "description": "the empty plaintext: the final segment alone (the known answer of R-STOR-076)",
+      "knownAnswer": true,
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "0eb86d9c92e85fd9ec32bbc00d409536",
+      "wrapNonce": "23bd2e4d3e93e6be43b8cd85",
+      "segmentNonces": [
+        "0a34ba7650ec909a28eb0538"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0,
+        "storedSize": 68
+      },
+      "object": "objects/empty.bin",
+      "record": "objects/empty.record.json",
+      "storedSize": 68,
+      "storedSha256": "820f2790fe2906b81210038bf9ff9ffb262a03767a5b6c97e67a6a086f229437"
+    },
+    {
+      "name": "a",
+      "kind": "object",
+      "description": "the plaintext a (the known answers of R-STOR-076 and R-STOR-077)",
+      "knownAnswer": true,
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "segmentNonces": [
+        "05c628666f8f6834df05aa27",
+        "182e548168cd912fdcca99e7"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/a.bin",
+      "record": "objects/a.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "l1",
+      "kind": "object",
+      "description": "one byte by the rule",
+      "dataKey": "5fcef29d5a09f42a3ff221a83510ebd1e1b617af2fbf73e26dfbaabf331d5b37",
+      "seed": "b59f41af45860e0ae25d316b1e38e02ce2ff142749e8702c98d01bc638753e99",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 1,
+        "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "11635c8b54d5c79bb110c30e1dc2d1ba",
+      "wrapNonce": "9ab8b881d118b70345354b28",
+      "segmentNonces": [
+        "106d5e04764e397611c37ebb",
+        "645562d629ef7c75f2ced092"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/l1.bin",
+      "record": "objects/l1.record.json",
+      "storedSize": 97,
+      "storedSha256": "b08ee13415c474345d76fb169bb99bf5b166788d62f4e085fea6c4f1e6bee8d5"
+    },
+    {
+      "name": "l65535",
+      "kind": "object",
+      "description": "one data segment one byte short of full",
+      "dataKey": "efc8317733a5c76606749b329e96842da915108198f39ef9ce845550d26e3139",
+      "seed": "f95960e86520dac2e2d8dbff2149684a7a290e26b77f3a69579901f9f5148b49",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 65535,
+        "sha256": "dda402a2c028f0cbbdbc5c6ebae965eed9c75f71236e7022b0386d3455d5ae2f"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "f74517567161b3c4f6e7b2371d6bc085",
+      "wrapNonce": "1df486400568c5bada4751c7",
+      "segmentNonces": [
+        "cb6fa79659ad8be679dee9cf",
+        "9ee874be73845ed140c093e0"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "dda402a2c028f0cbbdbc5c6ebae965eed9c75f71236e7022b0386d3455d5ae2f",
+        "size": 65535,
+        "storedSize": 65631
+      },
+      "object": "objects/l65535.bin",
+      "record": "objects/l65535.record.json",
+      "storedSize": 65631,
+      "storedSha256": "f6542d44e8a10e4220b4f532952bbcd06d7ac1682a05e9990aa08cfeed686dc8"
+    },
+    {
+      "name": "l65536",
+      "kind": "object",
+      "description": "one full data segment",
+      "dataKey": "45f1cef0b60d0eeea43237764c761dbb773c4cc483a499031fc031b4ff68ffb9",
+      "seed": "f6db68c828929a9812f892f32614b760a9a522f9361e1bc4f2c93ae51fa2e4ea",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 65536,
+        "sha256": "4b640d85ab3ba30fd02c9fc9db4a8928f416322ad27022ea58a65aaee68a4df2"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "e05bf8dffb4aed842ebb4cf24fb0866c",
+      "wrapNonce": "e5ee4c88749203e44c0a6e34",
+      "segmentNonces": [
+        "aeca928316dead6bf1708c83",
+        "234d893fa653edf97965f23d"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "4b640d85ab3ba30fd02c9fc9db4a8928f416322ad27022ea58a65aaee68a4df2",
+        "size": 65536,
+        "storedSize": 65632
+      },
+      "object": "objects/l65536.bin",
+      "record": "objects/l65536.record.json",
+      "storedSize": 65632,
+      "storedSha256": "9f4e493ec7889cb1c9abe31ffabbe89069cf6af6ac74307827e246271e2a7fb6"
+    },
+    {
+      "name": "l65537",
+      "kind": "object",
+      "description": "a full data segment and one of one byte (the known answer of R-STOR-076: the stored object's SHA-256)",
+      "knownAnswer": true,
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 65537,
+        "sha256": "237356e18b503616912abb8ffaed3a72591e397d4ac294c4637917d48a3f529d"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "9e9618755b38b4b7f7bf7e411acff2d1",
+      "wrapNonce": "04d2271e5422ad88aa595152",
+      "segmentNonces": [
+        "05c628666f8f6834df05aa27",
+        "4a4223fa41066014f4e6f120",
+        "16bf6cc14bd367c14c27afd7"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "237356e18b503616912abb8ffaed3a72591e397d4ac294c4637917d48a3f529d",
+        "size": 65537,
+        "storedSize": 65661
+      },
+      "object": "objects/l65537.bin",
+      "record": "objects/l65537.record.json",
+      "storedSize": 65661,
+      "storedSha256": "f547d3127b4c42a11f36ff45996bf301cd35d84bbde6c4d0c22b0beb850ff144"
+    },
+    {
+      "name": "l196609",
+      "kind": "object",
+      "description": "three full data segments and one of one byte",
+      "dataKey": "35273f028da50df14dfc2de2963735d9505312a8f614ea73dc8b891d0c32d902",
+      "seed": "1206dae8c8828b4ce56cd61ebf7a95cddd4f49f36bf5e30e579e88fe72d1847e",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 196609,
+        "sha256": "bcdd5f57f522b30abb7671cf75eb113a108b7652de81d9ca2874f2e3a5a3cfc1"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "c94ae46d012110342ec53e0ab2edba02",
+      "wrapNonce": "35f9c24018acbffbdbef797b",
+      "segmentNonces": [
+        "c349577b9ecc26bd265199c9",
+        "676c23d31d02f4295ee67cdc",
+        "923ec1a04919c106243def08",
+        "8cb206c1867e5322b5ef42d7",
+        "811c4a12a1ea7b1d1a4aa2ef"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "bcdd5f57f522b30abb7671cf75eb113a108b7652de81d9ca2874f2e3a5a3cfc1",
+        "size": 196609,
+        "storedSize": 196789
+      },
+      "object": "objects/l196609.bin",
+      "record": "objects/l196609.record.json",
+      "storedSize": 196789,
+      "storedSha256": "62edeccee1c1d896d193a4d2d27da38f6756ded97cfd9513489cfd2974682c15"
+    },
+    {
+      "name": "older-a",
+      "kind": "object",
+      "description": "an older genuine object of the content a put back: it opens and yields a (R-STOR-078, the last row)",
+      "dataKey": "39113b1f78c8bc7e997fdef6e27b906999080180c790cdf13b078701a44b1dd4",
+      "seed": "0900b19d888a7908e287364804c19a68eca39a3192ce2c0487b7e182c7619979",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "b07430d20052d9258fd14d01510c0607",
+      "wrapNonce": "18b346f1b74a7b6a8de92e43",
+      "segmentNonces": [
+        "f9effb4b55b03b74e7c5e919",
+        "eb686bae91abc1c2ada9e003"
+      ],
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/older-a.bin",
+      "record": "objects/older-a.record.json",
+      "storedSize": 97,
+      "storedSha256": "febb8efff3c5ee036ac4a96dc07289a20e9d5b87f75e770711539a4a73b900a5"
+    },
+    {
+      "name": "tail-131072",
+      "kind": "tail",
+      "description": "a staging tail of an upload session at the session offset 131,072 (R-STOR-081): a tail segment and the last tail segment",
+      "dataKey": "f6dcb994bead5346ac460daaa8cfeaa91d33c722e6689a10f344ab6da3390bbf",
+      "seed": "d590588531233d2a9a57f9020aebabb16c1cbc419249f22232568e20449b62ca",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 65537,
+        "sha256": "237356e18b503616912abb8ffaed3a72591e397d4ac294c4637917d48a3f529d"
+      },
+      "segmentNonces": [
+        "fc3ced414f44f418afd7dbd6",
+        "723fec7836819afc67094e2b"
+      ],
+      "offset": 131072,
+      "object": "objects/tail-131072.bin",
+      "storedSize": 65593,
+      "storedSha256": "8fcdb9b1650f1d7b9fec9af9f4cd25d6349cd09ebcc83586ef86cf651113d7b1"
+    },
+    {
+      "name": "keyed-name",
+      "kind": "name",
+      "description": "the keyed name of the blob a (the known answer of R-STOR-086)",
+      "knownAnswer": true,
+      "nameKey": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "prefix": "quader",
+      "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+      "objectName": "quader/keyed/99/42/9942d541941e3141ba35550ee20b7bbf8c60fb3acc8123325c1b293b0e2922a6"
+    },
+    {
+      "name": "final-cut",
+      "kind": "object",
+      "row": "Truncation at a segment boundary, the final segment cut off",
+      "description": "a without its final segment: 29 bytes",
+      "reason": "size",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/final-cut.bin",
+      "record": "objects/final-cut.record.json",
+      "storedSize": 29,
+      "storedSha256": "7dc200946ae83d5c41904d9f08bfbf67977aa5e63ff9a103d0a08d4c7b2aa86e"
+    },
+    {
+      "name": "cut-inside",
+      "kind": "object",
+      "row": "Truncation inside a segment, or bytes appended",
+      "description": "a cut by one byte inside its final segment: 96 bytes, which no plaintext size produces",
+      "reason": "size",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/cut-inside.bin",
+      "record": "objects/cut-inside.record.json",
+      "storedSize": 96,
+      "storedSha256": "8659d5597034f344468d7970b40f779c1f2d348cd0e6970619c787f9a23dedb9"
+    },
+    {
+      "name": "appended",
+      "kind": "object",
+      "row": "Truncation inside a segment, or bytes appended",
+      "description": "a with one byte appended: 98 bytes, S(2) and not S(1)",
+      "reason": "size",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/appended.bin",
+      "record": "objects/appended.record.json",
+      "storedSize": 98,
+      "storedSha256": "a1c3a54d55eef66d7f202ff090160106dbcf0c36bd5126e0eb03933264cd87fd"
+    },
+    {
+      "name": "reordered",
+      "kind": "object",
+      "row": "Segments reordered",
+      "description": "two full data segments exchanged",
+      "reason": "segment",
+      "dataKey": "b13e9181958a14d9df7028b6d2fa0a180d273c292ba47ed97dc1361c354d2d00",
+      "seed": "fdac53a7bdf4988597bdb04dd7f08b3f017065d29ee78e2e67535ea2116398cd",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 131072,
+        "sha256": "feb1e4409d009e0ec502eaabe321f86b5197a881e9b765252ec8a75d6957596d"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "03390beec9721da08555a8147eab1c82",
+      "wrapNonce": "bbc52dc41437e70091d28081",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "feb1e4409d009e0ec502eaabe321f86b5197a881e9b765252ec8a75d6957596d",
+        "size": 131072,
+        "storedSize": 131196
+      },
+      "object": "objects/reordered.bin",
+      "record": "objects/reordered.record.json",
+      "storedSize": 131196,
+      "storedSha256": "a745d929e6cad676e7ba241cf0f15bd2ae2a5b6e406ea1f030381a778a7a1b5c"
+    },
+    {
+      "name": "dropped",
+      "kind": "object",
+      "row": "A segment dropped",
+      "description": "the first data segment of l65537 dropped: 97 bytes",
+      "reason": "size",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 65537,
+        "sha256": "237356e18b503616912abb8ffaed3a72591e397d4ac294c4637917d48a3f529d"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "9e9618755b38b4b7f7bf7e411acff2d1",
+      "wrapNonce": "04d2271e5422ad88aa595152",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "237356e18b503616912abb8ffaed3a72591e397d4ac294c4637917d48a3f529d",
+        "size": 65537,
+        "storedSize": 65661
+      },
+      "object": "objects/dropped.bin",
+      "record": "objects/dropped.record.json",
+      "storedSize": 97,
+      "storedSha256": "1ad365482043990eba03d7be216b81f50b832f50d08abf94307fccb0d579a312"
+    },
+    {
+      "name": "other-segment",
+      "kind": "object",
+      "row": "A segment of another object put in",
+      "description": "the data segment of a replaced by the data segment of l1 (another data key)",
+      "reason": "segment",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/other-segment.bin",
+      "record": "objects/other-segment.record.json",
+      "storedSize": 97,
+      "storedSha256": "3cbc0e2dd744d8eb4f8d2ca44028a1c58e036645b3bc8f5eb52aa80aa01de0b1"
+    },
+    {
+      "name": "data-as-final",
+      "kind": "object",
+      "row": "A data segment presented as final, or the final segment as data",
+      "description": "the final segment of a replaced by a data segment at index 1 holding u64(1) and the digest of a",
+      "reason": "final",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/data-as-final.bin",
+      "record": "objects/data-as-final.record.json",
+      "storedSize": 97,
+      "storedSha256": "74287177aa2f3e00933c5de661363871ff787c80a8ddd90380dd204bbe33fe0f"
+    },
+    {
+      "name": "final-as-data",
+      "kind": "object",
+      "row": "A data segment presented as final, or the final segment as data",
+      "description": "the data segment of l40 (40 bytes) replaced by a final segment at index 0",
+      "reason": "segment",
+      "dataKey": "b91b0acb29ea2f016a25bbdf7f05b36648a9b96bfc7cec45af258b2c1c7ecde1",
+      "seed": "cf5c20cb42a4892a2586bdc7a439f4a1ab05c8f69bbe71ebc1e3ce73011e5c1f",
+      "plaintext": {
+        "rule": "i mod 251",
+        "length": 40,
+        "sha256": "5faa4eec3611556812c2d74b437c8c49add3f910f10063d801441f7d75cd5e3b"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "27c9ad21ed71873dce5a1e97f1dc62d3",
+      "wrapNonce": "bdaa24aefb98ca535e79e6bc",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "5faa4eec3611556812c2d74b437c8c49add3f910f10063d801441f7d75cd5e3b",
+        "size": 40,
+        "storedSize": 136
+      },
+      "object": "objects/final-as-data.bin",
+      "record": "objects/final-as-data.record.json",
+      "storedSize": 136,
+      "storedSha256": "656a897fada6d470eeccec0b27fd512e5dcf69fc595af2a8c6ea8d47d385b00c"
+    },
+    {
+      "name": "final-length",
+      "kind": "object",
+      "row": "The final segment's length or digest changed by a holder of the data key (R-STOR-077 step 7)",
+      "description": "the final segment of a sealed at index 1 with the length 2",
+      "reason": "final",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/final-length.bin",
+      "record": "objects/final-length.record.json",
+      "storedSize": 97,
+      "storedSha256": "7a59082fc1defe950417e3ac3e3e72f23f37174ea207733c0b1ab8b59b7bf4d6"
+    },
+    {
+      "name": "final-digest",
+      "kind": "object",
+      "row": "The final segment's length or digest changed by a holder of the data key (R-STOR-077 step 7)",
+      "description": "the final segment of a sealed at index 1 with the digest of l1",
+      "reason": "final",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/final-digest.bin",
+      "record": "objects/final-digest.record.json",
+      "storedSize": 97,
+      "storedSha256": "574e7cba54ed51083d69b2956ea9110e75ccd996dc460e0791da02cbcf36ace3"
+    },
+    {
+      "name": "other-name",
+      "kind": "object",
+      "row": "A whole object put under another blob's name",
+      "description": "a with its record read as the copy of l1",
+      "reason": "record",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/other-name.bin",
+      "record": "objects/other-name.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "other-record",
+      "kind": "object",
+      "row": "The record of another object put on this body",
+      "description": "the body of a under the record of l1",
+      "reason": "record",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/other-record.bin",
+      "record": "objects/other-record.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "changed-format",
+      "kind": "object",
+      "row": "A changed record: format, key identifier, wrap or commitment",
+      "description": "quader-format quader-blob-v2",
+      "reason": "format",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/changed-format.bin",
+      "record": "objects/changed-format.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "no-record",
+      "kind": "object",
+      "row": "A changed record: format, key identifier, wrap or commitment",
+      "description": "the body of a without any record, as a plain object",
+      "reason": "format",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/no-record.bin",
+      "record": "objects/no-record.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "changed-key-unknown",
+      "kind": "object",
+      "row": "A changed record: format, key identifier, wrap or commitment",
+      "description": "quader-key names sk-default-9-0a1b2c3d, which the reader does not hold",
+      "reason": "unknown_key",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/changed-key-unknown.bin",
+      "record": "objects/changed-key-unknown.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "changed-key-other",
+      "kind": "object",
+      "row": "A changed record: format, key identifier, wrap or commitment",
+      "description": "quader-key names sk-default-2-0a1b2c3d, which the reader holds with the same key bytes: the identifier is in the wrap's additional data",
+      "reason": "record",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        },
+        {
+          "id": "sk-default-2-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/changed-key-other.bin",
+      "record": "objects/changed-key-other.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "changed-wrap",
+      "kind": "object",
+      "row": "A changed record: format, key identifier, wrap or commitment",
+      "description": "one bit of the wrap's sealed bytes changed",
+      "reason": "record",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/changed-wrap.bin",
+      "record": "objects/changed-wrap.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "changed-commitment",
+      "kind": "object",
+      "row": "A changed record: format, key identifier, wrap or commitment",
+      "description": "one bit of the commitment changed",
+      "reason": "commitment",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/changed-commitment.bin",
+      "record": "objects/changed-commitment.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "other-installation",
+      "kind": "object",
+      "row": "A record made under a storage key of another connection or another installation",
+      "description": "the data key of a wrapped under sk-other-1-0badf00d, a key the reader does not hold",
+      "reason": "unknown_key",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/other-installation.bin",
+      "record": "objects/other-installation.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "same-id-other-key",
+      "kind": "object",
+      "row": "A record made under a storage key of another connection or another installation",
+      "description": "the data key of a wrapped under another key with the identifier sk-default-1-0a1b2c3d",
+      "reason": "record",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/same-id-other-key.bin",
+      "record": "objects/same-id-other-key.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "other-connection",
+      "kind": "object",
+      "row": "The object copied to another connection of the same installation",
+      "description": "a read by a connection that holds only sk-backup-1-12345678",
+      "reason": "unknown_key",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-backup-1-12345678",
+          "key": "cc183098691e99daf984cd207df672c775455f13b2a5b0416bfbaa1941efec37"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/other-connection.bin",
+      "record": "objects/other-connection.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "two-keys",
+      "kind": "object",
+      "row": "A ciphertext that opens under two data keys (key commitment, Albertini and others, USENIX Security 2022)",
+      "description": "a second data key wrapped for the body of a, with the commitment of the first",
+      "reason": "commitment",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/two-keys.bin",
+      "record": "objects/two-keys.record.json",
+      "storedSize": 97,
+      "storedSha256": "b7e1f024f1bd8d775119c3536d9cf37ffb866bad982a4f6e1858e8cda5c4b6d7"
+    },
+    {
+      "name": "spliced",
+      "kind": "object",
+      "row": "Parts of two sealings of one upload session spliced (a part sent again with other bytes)",
+      "description": "the data segment of a sealed again under its data key with another seed and the plaintext b",
+      "reason": "digest",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/spliced.bin",
+      "record": "objects/spliced.record.json",
+      "storedSize": 97,
+      "storedSha256": "e91a172d73652eb189ffa7fa13e65530f0c9d1f801504799c271d7e8f63cebb7"
+    },
+    {
+      "name": "bit-in-segment",
+      "kind": "object",
+      "row": "One bit changed anywhere",
+      "description": "one bit of the data segment's ciphertext changed",
+      "reason": "segment",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/bit-in-segment.bin",
+      "record": "objects/bit-in-segment.record.json",
+      "storedSize": 97,
+      "storedSha256": "dfda4d5031889ddd3c04201f432c4ec4f1a61e3701389f600f791addaef6b109"
+    },
+    {
+      "name": "bit-in-final",
+      "kind": "object",
+      "row": "One bit changed anywhere",
+      "description": "one bit of the final segment's ciphertext changed",
+      "reason": "final",
+      "dataKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "seed": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "plaintext": {
+        "hex": "61",
+        "length": 1,
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      },
+      "wrapKey": {
+        "id": "sk-default-1-0a1b2c3d",
+        "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+      },
+      "salt": "808182838485868788898a8b8c8d8e8f",
+      "wrapNonce": "909192939495969798999a9b",
+      "readerKeys": [
+        {
+          "id": "sk-default-1-0a1b2c3d",
+          "key": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+        }
+      ],
+      "copy": {
+        "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1,
+        "storedSize": 97
+      },
+      "object": "objects/bit-in-final.bin",
+      "record": "objects/bit-in-final.record.json",
+      "storedSize": 97,
+      "storedSha256": "838b703582dd6e2c6e760f50d2fef915c51dcd39099e5b2cd7a0bafd5d30e8f4"
+    }
+  ]
+}

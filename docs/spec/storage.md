@@ -1702,7 +1702,8 @@ after the model of the segment chain of his s3-encryption-proxy, bound to the co
 specification with test vectors, fuzzing and an offline tool that reads a blob without a running Quader. This replaces his decision of
 2026-11-06, which imported that proxy's storage format and Go module; nothing of it was built, and its eleven open points are answered by the
 section [Encryption of stored content](#encryption-of-stored-content) (R-STOR-075 to R-STOR-091). Stage 2 of the owner's topic, on the seams
-of stage 1 (R-STOR-062); specified, not built. Raised from P2 to P1 with the topic, as stages 1 and 3 were.
+of stage 1 (R-STOR-062); its format is built (`internal/blob/blobcrypt`, R-STOR-076 to R-STOR-079), nothing calls it yet, and the rest is
+specified, not built. Raised from P2 to P1 with the topic, as stages 1 and 3 were.
 
 Why: a provider, its operators and whoever can read or copy a connection's bucket see ciphertext only, under names that do not tell which
 file is stored, while the key stays with Quader; and a changed object fails authentication on every read, ranged reads included, which
@@ -3994,7 +3995,10 @@ this section is the specification. His answers that this section carries out
 | 15 Where the storage keys lie | (a) Once: a sealed row of the database per connection and generation, with a command that prints them sealed for safekeeping beside the key ring | R-STOR-083, R-STOR-085 |
 | 12 A Bastion and the main store | (b) A later planner specifies the handover of a short-lived link and the data key of one released blob; this section leaves the room: one function that yields a copy's data key to the main installation's own code | R-STOR-083 |
 
-**Status.** Specified, not built. Until it is built `encrypted: true` is refused at start (R-STOR-050). It needs stage 1 on `main` first;
+**Status.** The format is built: the package `internal/blob/blobcrypt` holds the codec of R-STOR-076 to R-STOR-079, the tail segments of
+R-STOR-081 and the keyed name of R-STOR-086, with the vector files, their independent check and the fuzz targets of R-STOR-079 and the
+nightly job of R-STOR-091 (package 1 of the developer page); nothing calls it yet. Everything else is specified, not built, and until it is
+built `encrypted: true` is refused at start (R-STOR-050). The rest needs stage 1 on `main` first;
 the order of the packages is on the developer page [stored-content-encryption.md](../developer/stored-content-encryption.md). Its
 security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
 [stored-content-keys.md](../security/stored-content-keys.md) (the keys and who holds them) and
@@ -4188,7 +4192,8 @@ its stored size and the storage key's identifier (`blob_copies.storage_key_id`),
 
 1. `quader-format` is present and equal to `quader-blob-v1`; otherwise `format`.
 2. `quader-key` names a storage key of this connection (R-STOR-083); a replica that does not hold it reads the rows again once; still
-   unknown, `unknown_key`.
+   unknown, `unknown_key`. A `quader-key` that is missing, or is no identifier of the table above, is `record`
+   ([Q-STOR-322](#q-stor-322--a-missing-or-malformed-quader-key-is-record-not-unknown_key)).
 3. `W` opens under that key; otherwise `record`.
 4. The unwrapped digest and size equal the copy's; otherwise `record`.
 5. `S(L)` equals the copy's `stored_size` and the size or total the store answered; otherwise `size`.
@@ -4333,8 +4338,11 @@ and carries its data key between requests in its row
   connection equal to `size` and `sha256`); the payload checksum and the completion use them.
 - **Tails.** A tail object `_uploads/<session-id>/tail-<writer>` holds its bytes as tail segments under `K_tail`: segment `j` of a tail object
   that starts at the session offset `o` is `N ‖ Seal(K_tail, N, P_j, FMT ‖ u8(mark) ‖ u64(o) ‖ u64(j))`, with the mark `0x02` and `0x03` on its
-  last segment, and no final segment. The row keeps the tail's plaintext size and SHA-256 as today; reading a tail back authenticates every
-  segment and then compares size and SHA-256.
+  last segment, and no final segment. Every tail segment but the last holds 65,536 bytes, a tail holds at least one byte (a request whose
+  remainder is empty writes none), so a tail of `m` bytes is stored as `m + 28·⌈m / 65,536⌉`; Quader's writers derive a tail segment's nonce
+  as the first 12 bytes of `HMAC-SHA-256(seed, FMT ‖ " nonce" ‖ u8(mark) ‖ u64(o) ‖ u64(j))`
+  ([Q-STOR-321](#q-stor-321--a-staging-tails-nonces-take-its-session-offset-and-a-tail-holds-at-least-one-byte)). The row keeps the tail's
+  plaintext size and SHA-256 as today; reading a tail back authenticates every segment and then compares size and SHA-256.
 - **Counting.** The claim transaction adds to `upload_sessions.sealed_segments` the number of segments the request may seal
   (`⌈bytes / 65,536⌉ + 2`); a request that would pass `2^31` answers `409` with the code `session_exhausted` and the session is aborted
   (Q-STOR-318). A client that sends a blob once never comes near it.
@@ -4751,9 +4759,11 @@ kilobytes.
 
 What each pipeline job gains (estimates): the unit job about 2.9 s; the chart test about 0.5 s; the integration shard that runs `blob` about
 10 s and the one that runs `backup` about 8 s; `s3-conformance` about 3 s; every end-to-end leg nothing; the nightly one fuzz job of about
-27 minutes beside its legs. With 25 formats the cost is the same. No fuzz job runs nightly today: the fuzz legs of npm and NuGet run only on a
-dispatch with `closing=true` ([release.yml](../../.github/workflows/release.yml), jobs `fuzz-npm` and `fuzz-nuget`), so this job is the first
-of its kind in the nightly; a dispatch with `closing=true` runs it for 30 minutes per target as those legs do. Nothing of this needs the owner's
+27 minutes beside its legs. With 25 formats the cost is the same. No fuzz job ran nightly before it: the fuzz legs of npm and NuGet run only on
+a dispatch with `closing=true` ([release.yml](../../.github/workflows/release.yml), jobs `fuzz-npm` and `fuzz-nuget`), so this job is the first
+of its kind in the nightly. The closing run does not start it: the nightly fuzzes these readers every night, and a longer run is
+`make fuzz-stored-format STORED_FORMAT_FUZZTIME=30m` by hand
+([Q-STOR-323](#q-stor-323--the-closing-run-does-not-start-the-fuzz-job-of-the-stored-format)). Nothing of this needs the owner's
 store; whether his in-cluster object gateway keeps the record and replaces it on a copy is what the start check establishes there once the
 release runs (R-STOR-035), not a test.
 
@@ -8365,6 +8375,58 @@ data key per released blob to a Bastion is the owner's (decision 12 (b)) and is 
 **Choice:** (a). **Rationale:** the owner asked for the room; one function with a guard is the smallest room that can be tested.
 
 **Applied in the spec:** R-STOR-083.
+
+### Q-STOR-321 · A staging tail's nonces take its session offset, and a tail holds at least one byte
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-081 gives a tail segment's sealing and its additional data (`FMT ‖ u8(mark) ‖ u64(o) ‖ u64(j)`), but no nonce rule and no
+layout beyond "segment `j`"; R-STOR-080's rule (`HMAC-SHA-256(seed, FMT ‖ " nonce" ‖ u8(mark) ‖ u64(i))`) is written for an object's
+segments. A reader needs neither, since every nonce is stored, but a writer must keep R-STOR-076's rule under `K_tail`, and the vector
+file lists every nonce of its tail case.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The nonce is the first 12 bytes of `HMAC-SHA-256(seed, FMT ‖ " nonce" ‖ u8(mark) ‖ u64(o) ‖ u64(j))`, the shape of the tail's additional data; every segment but the last holds 65,536 bytes; a tail holds at least one byte, so its last segment, marked `0x03`, always exists (chosen) | One nonce rule per kind of segment, the data segments' layout | No two tail segments sealed under one seed share a nonce, even if a request ever wrote tails at two offsets; the stored size `m + 28·⌈m / 65,536⌉` follows from the row's size; a cut at a segment boundary removes the `0x03` segment or changes the size | A request whose remainder is empty writes no tail object |
+| (b) R-STOR-080's rule with `j` alone | One rule for both kinds | Shorter | Unique only while each request writes one tail; a second tail of a request at another offset would repeat every nonce under `K_tail` |
+| (c) An empty tail as one segment of 28 bytes | Every request writes a tail | A tail always exists | An object that holds nothing, written and read back for nothing |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-081; code: `NewTailSection` and `NewTailReader` of
+[internal/blob/blobcrypt](../../internal/blob/blobcrypt/seal.go), the vector `tail-131072`.
+
+### Q-STOR-322 · A missing or malformed quader-key is record, not unknown_key
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: step 2 of R-STOR-077 names `unknown_key` for an identifier the connection does not hold, and Q-STOR-311 makes that reason mark
+nothing, because the export's import can bring the key back. Open was what a record gives whose `quader-key` is missing, or is no identifier
+at all (other characters, more than 64 of them).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `record`: the copy is marked `corrupt` and repaired from another connection (chosen) | Only a well-formed identifier can be unknown | No import can bring back a key whose identifier the table `storage_keys` cannot hold (its `CHECK` refuses it), so nothing waits for one; the alert `QuaderStorageUnknownKey` stays a sign of missing rows | A record damaged in exactly this field is repaired, not reported as a missing key |
+| (b) `unknown_key` | Any identifier the replica does not hold | The words of step 2 | The copy is never repaired, and the alert says storage keys are missing when a record is damaged |
+
+**Choice:** (a). By the same reading a missing `quader-wrap` is `record` (step 3) and a missing `quader-commitment` is `commitment`
+(step 6). **Applied in the spec:** R-STOR-077; code: `Open` of [internal/blob/blobcrypt](../../internal/blob/blobcrypt/record.go).
+
+### Q-STOR-323 · The closing run does not start the fuzz job of the stored format
+
+Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Context: R-STOR-091 said that a dispatch with `closing=true` runs the job for 30 minutes per target, as the fuzz legs of npm and NuGet run.
+`closing` is an input of Test and Release (`release.yml`), which the closing run dispatches; the job lies in the nightly workflow
+(`performance.yml`), which has no such input and which the closing run does not start
+([releasing.md](../developer/releasing.md#the-run-that-closes-a-phase)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The nightly job alone, five minutes per target every night; a longer run by hand with `make fuzz-stored-format STORED_FORMAT_FUZZTIME=30m`, or a dispatch of the nightly with `-f sets=fuzz-stored-format` (chosen) | No variant for the closing run | The readers get 25 minutes of fuzzing every night, more in a week than 2.5 hours once at a phase's end; nothing outside the job changes | No longer run is tied to the end of a phase |
+| (b) An input `closing` in the nightly workflow | The nightly learns the closing run | The 30 minutes the sentence named | A second workflow to dispatch for one closing run, and an input that every other job of the nightly ignores |
+| (c) Five legs in Test and Release under `closing=true`, as `fuzz-npm` and `fuzz-nuget` | Like the formats' fuzz runs | The closing run holds every fuzz leg | 2.5 runner hours more per closing run for readers the nightly fuzzes anyway |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-091; code: the job `fuzz-stored-format` of
+[performance.yml](../../.github/workflows/performance.yml) and the Makefile block `fuzz-stored-format`.
 
 ## What this does not cover
 
