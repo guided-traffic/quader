@@ -257,6 +257,9 @@ run starts from it and from his word how the work goes on, not from the order of
   free number on the branch it stands on (the runner refuses a gap; 00114 is the contracts'); the
   packages that run side by side write only their own marked section of `api/openapi.yaml`, their own
   query file and wiring file; decision blocks of the series Q-CUR from 40 (R2), 60 (R3), 80 (R4).
+- **T-25 · Projects and Repositories leave the admin area's menu** (the owner's word of 19:30 and what has to
+  move with them, agreed by him at 19:34: section 10, under the owner's tasks of 2026-11-23): one package of
+  the screens, not begun.
 - **W8 · Web and end-to-end tests wait for what they stand for** (the packages' table of section 8), with
   what today added to it: a cluster name and ports per checkout so that a builder runs the journey or
   the end-to-end test it changed before it reports; the walk's widths on the development machine and on
@@ -740,29 +743,6 @@ records the recorder that tells such a stall apart).
   a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
   and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
   during the rolling restart). To do (W4, W8): what each waits for.
-- **`UI layout checks` is red in every run since the push of 14:34 (2026-11-23; Test and Release 45185325770,
-  45187733127, 45191858474; job 137751995332 of the last): the audit log's table stands as blocks at wide
-  widths when a key is long.** One screen of 464 fails, `admin-audit-event` as the administrator, in the
-  walk's state `long-key`: "quader-audit-log quader-data-table: 1 list(s) stand as blocks" at 1440 px and
-  at 1024 px, light. It came with the first group of the screens' second round (the lists that keep their
-  table, the audit log's filter by a resource), whose renders were looked at by the development agent
-  without that state among them. **The cause, measured by the builder of W9 (16:21):** beside an opened
-  event at 1440 px the log's columns needed 657 of 682 px at their smallest, a margin of 25 px, and the
-  runner's browser sets the same text a few per cent wider than the development machine's, so the table
-  fell to blocks there and not here; the row was the import of advisory data, whose actor has no name,
-  only an identifier, and whose target is the kind `vulnerability_source`. Repaired in its stack, not
-  landed: an actor without a name shows its identifier on one line, cut at the column's end with the
-  full value as its title; a target's kind breaks after its underscore; the target column's smallest
-  width is 6 rem; the log needs 625 px now. Held by the walk, which renders that row from now, and a
-  component test; **the local render did not show the failure even before the repair**, so the
-  pipeline's job is the proof, and a margin is all that covers the runner's wider text (to W8: the
-  walk on the development machine and on the runner must measure the same widths, or the check keeps
-  a reserve). Its full render run with the layout checks is its gate from now. **The repair landed at
-  17:53; the first run after it could not show it:** the job of the run of the push of 17:59 (Test and
-  Release 45222735716, job 137861079020) ended after 35 s at its fixture step, by another commit of the
-  same stack (the entry below), and rendered no screen. Open until a run renders the screens and the
-  audit log's table passes; the first such run is that of the push of 18:19. The layout checks take 42 to 50 minutes in a run, which
-  is why three pushes went out before the first result was read (the job gates no release).
 - **The drain of the roles missed its latency criterion in the scheduled nightly of 2026-11-23 (HA and
   Performance 45158700734, job 137640102202; read on 2026-11-23 at 17:01).** Nothing failed in function:
   ten evictions in 3 min 18 s, 72,786 pings all 200, 5,723 transfers without a wrong checksum, 473 `npm
@@ -818,7 +798,9 @@ records the recorder that tells such a stall apart).
   layout run of the day until the one of 17:06. Not read: the backend's log of the job (whether the
   remote's upstream was unreachable from the runner at that minute, or a breaker was open, or a change
   of the pushes of 17:53 and 17:59 makes the check undeterminable there). The layout job of the run of
-  the push of 18:27 says whether it was the minute. To do (W8, whatever that run says): the walk's seed
+  the push of 18:27 says whether it was the minute: **it was** (that job's seed passed and the job is
+  green, read at 19:23), so the cause is the answer of the remote's upstream at one minute, not a change.
+  To do (W8): the walk's seed
   does not depend on a public registry's answer (its remotes point at a stand-in, or the seed's publish
   retries a 503 that says "retry later"), and the audit log's repair is shown by the first run that
   renders.
@@ -844,6 +826,28 @@ records the recorder that tells such a stall apart).
   leg's artifact; if a kept-alive connection is ended by the server while a client may reuse it, it is
   the product's (R-HA-011 says what a drain owes a client), else the test's push retries a transport
   error once.
+- **`integration (shard a)` is red in the run of the push of 18:39, the first run of every area on the
+  changed harness (2026-11-23; Test and Release 45229955480, job 137886492542; read at 19:08).**
+  `TestR_DEB_010_FiftyParallelUploadsThroughThreeReplicas` (area `deblocal`): two of fifty uploads were
+  answered `503 database_unavailable` (`replicas_test.go:98`), the answer of a refused or timed-out
+  connection that outlasts the retry (`internal/meta/postgres/tx.go`). The area had passed in the
+  landing's gates on the same tree (154 s, a load of 20) and in the shard of the run before it; the
+  runners carried three runs of the evening at once. Not read: the request log of the two uploads (the
+  job's dump holds only the replicas' last lines), whether the pools of three replicas with fifty
+  uploads fit the test stack's connections on a starved runner, and whether the harness's change of
+  the children's environment (6c1062fd7) takes a setting from the replicas that the pipeline had given
+  them (the workflow sets no `QUADER_` variable for the shards, as far as read). To do: the shard is
+  run again once after the run has ended; a second failure of the same test is the harness's or the
+  product's and is read at its cause, a pass leaves it with the tests that wait for the host's speed.
+- **`e2e (push)` was red once, in the run of the push of 18:27 (2026-11-23; Test and Release 45227959384,
+  job 137882199385; read at 19:08).** `TestE1_14Exposure`, the case of R-EP-015 (an endpoint's rate-limit
+  class): "400 reads on customers with one token in 7.46s: map[200:400], want a 429 after the burst of
+  200". The reads took so long that the class refilled while they ran, so none was refused; the leg had
+  passed in every run of the day before it, and the push changed the refusal's text and wait, not the
+  admission; **the leg is green again in the run of the push of 18:39** (read at 19:16), so it was the
+  runner's speed at that minute. To do (W8, with the limits' client cases): the case sends its
+  burst faster than the class refills whatever the runner's speed (in parallel, or against a class
+  whose refill it sets), or measures the rate it reached and asserts against that.
 
 ### Product
 
@@ -979,6 +983,36 @@ the plan.
 
 **Of tests and tools:**
 
+- **Closed on 2026-11-23 by d3cf6ab53: the audit log stays a table at 1,440 and 1,024 px beside an opened
+  event, and the layout job is green.** Held by the job itself: `UI layout checks` is green in the run of the
+  push of 18:27 (Test and Release 45227959384), the first run since 14:34 that rendered every screen, with the
+  walk's row of an actor without a name among them; the two runs between failed before a screen was rendered,
+  by the fixtures in three browsers (reverted) and once by the seed (its own entry). What stays is in those
+  entries and in W8: the development machine did not show this failure, and a margin of 57 px is what covers
+  the runner's wider text. As it stood:
+  **`UI layout checks` is red in every run since the push of 14:34 (2026-11-23; Test and Release 45185325770,
+  45187733127, 45191858474; job 137751995332 of the last): the audit log's table stands as blocks at wide
+  widths when a key is long.** One screen of 464 fails, `admin-audit-event` as the administrator, in the
+  walk's state `long-key`: "quader-audit-log quader-data-table: 1 list(s) stand as blocks" at 1440 px and
+  at 1024 px, light. It came with the first group of the screens' second round (the lists that keep their
+  table, the audit log's filter by a resource), whose renders were looked at by the development agent
+  without that state among them. **The cause, measured by the builder of W9 (16:21):** beside an opened
+  event at 1440 px the log's columns needed 657 of 682 px at their smallest, a margin of 25 px, and the
+  runner's browser sets the same text a few per cent wider than the development machine's, so the table
+  fell to blocks there and not here; the row was the import of advisory data, whose actor has no name,
+  only an identifier, and whose target is the kind `vulnerability_source`. Repaired in its stack, not
+  landed: an actor without a name shows its identifier on one line, cut at the column's end with the
+  full value as its title; a target's kind breaks after its underscore; the target column's smallest
+  width is 6 rem; the log needs 625 px now. Held by the walk, which renders that row from now, and a
+  component test; **the local render did not show the failure even before the repair**, so the
+  pipeline's job is the proof, and a margin is all that covers the runner's wider text (to W8: the
+  walk on the development machine and on the runner must measure the same widths, or the check keeps
+  a reserve). Its full render run with the layout checks is its gate from now. **The repair landed at
+  17:53; the first run after it could not show it:** the job of the run of the push of 17:59 (Test and
+  Release 45222735716, job 137861079020) ended after 35 s at its fixture step, by another commit of the
+  same stack (the entry below), and rendered no screen. Open until a run renders the screens and the
+  audit log's table passes; the first such run is that of the push of 18:19. The layout checks take 42 to 50 minutes in a run, which
+  is why three pushes went out before the first result was read (the job gates no release).
 - **Closed on 2026-11-23 by 6c1062fd7: an integration test takes an address no other listener of the run
   got.** `testenv.FreeAddr` (`test/integration/testenv/freeaddr.go`) never hands out an address twice and
   replaces the helpers of the areas `tls`, `files`, `repository`, `overload` and `server`; those areas ran in
@@ -2896,6 +2930,41 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 
 What the tests cost by the specification: a format adds about 4 s of integration and 10 s in its own end-to-end
 leg and nothing in another format's leg; the layout walk gains about twenty screens.
+
+**T-25 · Projects and Repositories leave the admin area's menu** (owner, 2026-11-23, 19:30, whole: "Ich finde
+Projects und Repositories haben im Admin-Mneü nichts zusuchen. Sind da falsch plaziert. Ein Admin schaut nicht im
+Admin menü nach diesen beiden. Willst du das verteidigen oder kommt das weg? Wenn ja, schreibe es auf die Liste").
+**The development agent does not defend it: they go, and the owner agrees with what moves and where** (19:34,
+whole: "Ich stimme ebenso deinen Ausführungen zu, so vermerken"; the three points below and what goes are
+therefore his decision, not an open question for his walk). An administrator reads every project in the main area
+already (the list of projects with its filter "Your projects"), so the two entries are a second way to the same
+things, and they are the reason a path of the main area has a twin under `/admin`. **Not begun** (his word of
+17:15: nothing new today); written here as the task and as what has to move, since three things live only there
+today and must not be lost with the entries:
+
+1. **Creating a project** (administrators, `projects:write`): the button "New project" stands on the main area's
+   list of projects for those who may, with the dialog as it is.
+2. **What the admin list shows of a project and the main list does not** (the Owners, the members, the
+   repositories, the logical size it is charged, R-UI-041, Q-UI-577): shown on the main area's list to a holder of
+   `projects:read` as columns on demand (simple by default: a plain user's list stays as it is); deleting an
+   empty project stays an act of an administrator, from the project's own settings.
+3. **The list of every repository across projects** (`/admin/repositories`, R-UI-020: project, format, class,
+   visibility, the row's settings, files and delete, "New repository"): it is the only list across projects, and
+   not only an administrator wants it. Proposed by the development agent and agreed by the owner: an entry **Repositories**
+   under "Your work" in the main area lists the repositories the caller can see, of every project, with the
+   filters by format, class and project; an administrator sees all of them there. A new repository is created in
+   its project, as everywhere else.
+
+What goes: the two entries of the admin area's side bar, the routes `/admin/projects…` and `/admin/repositories…`
+(no redirect: nothing is owed to an old address), their rows in R-UI-003's table, which a test holds to the router
+since today, the walk's screens of the two pages, and every link and breadcrumb that led there (the admin
+dashboard's tiles, the search's suggestions marked as admin pages, the manual). What stays in the admin area:
+Dashboard, Upstream registries, Endpoints, Bastions, Identity, Access, System, Settings. To check when it is
+built, in every format's pages: no place of the main area links into `/admin` for a project or a repository
+(the rule that a search never leads into the admin area gets simpler by it), and the renders of both lists in
+both schemes, wide and narrow, as an administrator, a project's Owner and a plain user. It is one package of a
+builder for the screens, specification first (R-UI-003, R-UI-020, R-UI-041, R-UI-168 and the manual in the same
+change).
 
 ### Owner walk of 2026-11-18: the frontend
 
@@ -9153,6 +9222,35 @@ a test's setup met a closed connection (a new entry of section 8, not looked int
 release had gone out at 18:16. This plan's commit is pushed at 18:56, after the release, with no code
 push open: the marking of the landings of 18:27 and 18:39, the red jobs read, the delivery rules'
 state.
+**19:04, the owner's installation runs the release of 18:55** (both releases upgraded; image and chart
+published at 19:02).
+**19:08, two more red jobs are read, each a new entry of section 8, neither repaired today:** `integration
+(shard a)` of the run of the push of 18:39 (two of fifty parallel Debian uploads answered `503
+database_unavailable`; the first run of every area on the changed harness, so it is run again once
+when the run has ended) and `e2e (push)` of the run of the push of 18:27 (the rate-limit class's case
+saw no 429 because its burst took 7.5 s). The runners carried three runs at once. **Open now: 40
+entries in section 8 and 18 in section 12** (117 and 25 in the lists Closed).
+**19:23, the layout job is green in the run of the push of 18:27: the audit log's repair holds on the
+runner.** It is the first run since 14:34 that rendered every screen and found nothing; its seed passed,
+so the seed's failure of 18:19 was the answer of an upstream at one minute, and `e2e (push)` is green in
+the run of the push of 18:39, so the rate-limit case of 18:27 was the runner's speed. The layout
+entry moves to the list Closed; the two others keep their "To do" (W8), since each depends on what a
+test cannot rely on. **Open now: 39 entries in section 8 and 18 in section 12** (118 and 25 closed).
+The delivery rules' builder is in its integration areas (the Debian virtual area and those behind
+it, by its word of 19:22).
+**19:30, the owner names a task for the list** (T-25, section 10, his words whole): Projects and
+Repositories do not belong in the admin area's menu. The development agent does not defend the
+placement and writes down what moves with the entries (creating a project, the administrator's
+columns of the projects' list, the one list of repositories across projects, which becomes an entry
+of the main area); nothing of it is begun today.
+**19:33, the run of the push of 18:39 has ended:** its layout job is green too (the second run that
+renders every screen and finds nothing), its one red job is `integration (shard a)`. **The shard is run
+again, the first of at most three times** (job 137920683691), to tell a starved runner from a defect of
+the changed harness; its result goes into the shard's entry of section 8.
+**19:34, the owner agrees with T-25 as written** (his words in section 10): the two entries go; a project is
+created from the main area's list by those who may; the administrator's columns stand there on
+demand; an entry Repositories under "Your work" lists every repository the caller can see. It stays
+not begun.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
