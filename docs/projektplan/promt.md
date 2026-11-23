@@ -2218,6 +2218,24 @@ runs are in `git log`; this section holds the current state.
   commits that land before it and becomes 00109; the skip mark comes off its documents' commit, which would
   have skipped the run of the push. Its builder is at that since 01:23. **Not verified:** the summary's
   statements on a large table; a localized production build.
+- **Package 3 of the signed links reported at 02:21** (one commit of the type `feat` on the second package;
+  its builder worked from 00:48; every gate exit 0, the lint in 819 s beside other builders, four
+  integration areas). The operations of the settings with `If-Match` and the test link, which writes a
+  probe of 44 bytes and signs a link of a minute; the page `/admin/settings/storage` with the switch, its
+  two sentences and which connections can and cannot serve links on the plain path, and the minimum size,
+  the link's life, an address per connection with its test and the list of routes behind **Details**; the
+  repository's section **Download links**; the manual's page with what a link means for a client behind a
+  proxy. Decisions Q-STOR-355 and 356, Q-UI-956 and 957; gaps H-1353 and H-1354 (a probe outlives its
+  minute when a replica stops). Its cost: the unit job about 0.16 s, the web's about 0.5 s, the layout job
+  about 1.1 minutes. **The renders, looked at by the development agent (96, on a stack of the builder's
+  own):** the settings page reads well wide and narrow and stays. **Two things are sent back on the
+  repository's section** (the builder is at them since 02:21): the reason of an npm repository said that
+  npm's clients do not check what they download, where three of four do and the rule is about every client
+  of the format; and the control was disabled while the installation's switch is off, so an Owner could not
+  opt a repository out before the switch goes on (its own gap H-1353), which the brief's wording had
+  caused: it becomes usable whenever the format's clients check, with a sentence while the switch is off,
+  and the gap goes. That the section stands on every repository as one closed section with its reason
+  stays, as the signatures' section does. It lands after package F, onto which it is moved.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
