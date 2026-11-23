@@ -1,6 +1,8 @@
 # Signatures on artifacts
 
-Status: stage 1 is in work. Built (packages 1, 2 and 3 of 4, [developer/signatures.md](../developer/signatures.md)): the format
+Status: built, all three stages, except the virtual repository's filter of R-SIG-054 (H-1217), what R-SIG-024 and R-SIG-025 leave to
+the trash can, retention and copy of [storage.md](storage.md), and the test cases R-SIG-028 and R-SIG-033 name as not built. Stage 1 is
+built in four packages ([developer/signatures.md](../developer/signatures.md)): the format
 contract's declaration and detector of every format, kit check 18, the store of signature objects, signatures, attachments and origins
 with the commit hook and the fill hook that record them, and OCI's attachment tags without a version row (package 1); the read and the
 integrity check of every scheme, time, the trust step with its scopes, the four kinds of anchor with the shipped ones, those of the Helm
@@ -1238,11 +1240,12 @@ Acceptance criteria:
   keys answers of the three classes; the rewritten `dist.attestations.url`.
 - Integration (area `npm`, `TestR_SIG_028_…`, about 3 s, the npm stub serving keys and a version's attestations): through `npm-remote` the
   keys endpoint answers the stub's keys and the attestations endpoint the stub's, each stored once for two requests; through `npm-all`
-  the keys are the union and a local member adds none. Not built: a stub that signs its documents and a local bundle's case under the
-  public root, which need the trust step of package 2.
+  the keys are the union and a local member adds none. Built since: the stub serves left-pad's recorded documents with the registry
+  signatures of registry.npmjs.org's own key, and the job reads them valid by the keys the remote announces. Not built: a local bundle's
+  case under the public root.
 - End to end (the existing set `e2e (npm)`, one case, about 5 s, bytes): `npm audit signatures` passes for a package of the npm test upstream
-  installed through `npm-remote`, with the test upstream's key served at `-/npm/v1/keys`. Not built: the npm test upstream signs no
-  document yet; the case is added with it.
+  installed through `npm-remote`, with the test upstream's key served at `-/npm/v1/keys`. Built as R-SIG-050's case: left-pad of the
+  test upstream, installed through a remote of its own and a virtual repository, verifies by the key its remote announces.
 
 ### R-SIG-029 · NuGet: the signature inside the package
 Priority: **P1** · Covers: quader-only
@@ -2875,8 +2878,8 @@ Priority: **P1** · Covers: quader-only
 
 The gate judges artifacts, never what carries their signatures; which stored item is which is the format's knowledge
 ([Q-SIG-81](#q-sig-81--the-format-names-what-the-gate-judges-and-the-contract-rises-by-one)). The adapter of R-SIG-022 gains a method, and
-`ContractVersion` rises by one in the change that adds it (to 9 while stage 2 is not built,
-[Q-SIG-132](#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse)); the block is written into
+`ContractVersion` rises by one in the change that adds it (to 9, as stage 2 was not built then; stage 2's receipt attestations raised it
+to 10, [Q-SIG-132](#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse)); the block is written into
 [architecture.md](architecture.md) R-ARCH-008 by that change:
 
 ```go
@@ -2935,7 +2938,7 @@ An item Quader generated (`items.generated`) is never asked about and passes, as
   `GatesAttachment` (an attachment named an artifact) and `PassesArtifact` (an artifact named `GateNone`) fail it.
 
 Built (package 1): `formats.SignatureAdapter.Gate`, `GateKind`, `GateItem`, `GateSubject`, `GateNoneFor`; the contract rises from 8 to
-9, not to 10, because stage 2 is not built ([Q-SIG-132](#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse)).
+9, not to 10, because stage 2 was not built then ([Q-SIG-132](#q-sig-132--the-contract-rises-to-version-9-and-signatureverdicts-gains-refuse)).
 Every format on `main` implements it as the table says; NuGet, npm and Ansible Galaxy name what they derive or store as documents
 `GateNone` ([Q-SIG-143](#q-sig-143--what-a-format-derives-or-stores-as-a-document-is-gatenone)); OCI records `oci_manifests.attachment` at
 the commit (`oci.IsAttachment`, migration 00102) and reads it with the indexes that list a manifest (`Store.GateFacts`). Kit check 18 has

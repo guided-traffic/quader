@@ -14,11 +14,11 @@ R-BAS-057), the main installation's side, the Bastion's side, and the client cas
 supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, R-BAS-022, R-BAS-029, R-BAS-039 and the deferred table
 said about the formats a Bastion leaves out. The owner's decision 12 (b) of the same day, the handover of a link and of the data key per
 released blob, is specified in [The handover per blob](#the-handover-per-blob) (R-BAS-070 to R-BAS-079, Q-BAS-230 to Q-BAS-239, and the
-gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), built for plain copies; it lifts Q-BAS-10 for that and for
-nothing else. The development agent's decision of 2026-11-22 on Q-BAS-167, option (b), a read shape per package for a registry token and
-for every reader narrowed by package, is specified in [Read shapes per package](#read-shapes-per-package) (R-BAS-080 to R-BAS-088,
-Q-BAS-240 to Q-BAS-254, Q-BAS-260 and Q-BAS-261, H-1380 to H-1384 and H-1390); its decision point and its format contract (R-BAS-080,
-R-BAS-086) are built, the rest is not; it amends in place R-BAS-011, R-BAS-012, R-BAS-013, R-BAS-020, R-BAS-022,
+gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), built for plain and for encrypted copies; it
+lifts Q-BAS-10 for that and for nothing else. The development agent's decision of 2026-11-22 on Q-BAS-167, option (b), a read shape
+per package for a registry token and for every reader narrowed by package, is specified in
+[Read shapes per package](#read-shapes-per-package) (R-BAS-080 to R-BAS-088, Q-BAS-240 to Q-BAS-254, Q-BAS-260 and Q-BAS-261, H-1380
+to H-1384 and H-1390) and built, all four packages; it amends in place R-BAS-011, R-BAS-012, R-BAS-013, R-BAS-020, R-BAS-022,
 R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-BAS-074, the deferred table, Q-BAS-198, Q-BAS-200 and
 H-1242, and takes the interface's version 5, so that the handover takes 6.
 
@@ -3235,7 +3235,7 @@ handed over once an administrator has switched a registration's handover on; the
 check against what the main installation signs found that a refused value did not start the cooldown, which the Bastion's side now does
 (Q-BAS-293). The data keys are built (package 4, 2026-11-23: a copy on an encrypted connection is handed over with its own data key where no
 plain copy can serve, after its trace `bastion.data_key.handed`, [storage.md](storage.md) R-STOR-095's as-built note; the joined case on an
-encrypted connection, `TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey`). It builds on specifications whose code is not on `main`: the serve point and
+encrypted connection, `TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey`). It builds on specifications whose code is on `main`: the serve point and
 the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
 [developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
 1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
@@ -3544,7 +3544,7 @@ Acceptance criteria:
 
 *As built on 2026-11-23, the wire (package 1 of [the build plan](../developer/bastion-handover.md)):* `iface.InterfaceVersion` is 6, and
 [interface.txt](../../internal/bastion/iface/testdata/interface.txt) records `HeaderHandover`, `ClassHandover` (a valid class),
-`Handshake.Handover` (`"handover"`, always present, false until package 2 reads the registration's member) and the types of
+`Handshake.Handover` (`"handover"`, always present, the registration's member since package 2) and the types of
 [handover.go](../../internal/bastion/iface/handover.go): `HandoverOffer` with `String`, `Set`, `ParseHandoverOffer` and `HandoverOfferFrom`;
 `Handover` with `EncodeHandover`, `DecodeHandover`, `Set`, `HandoverFrom` and `Check(HandoverCheck)`; `HandoverKey` for the data key;
 `MaxHandoverBytes` (8 KiB) and `ETagContentAddress`. `DecodeHandover` holds every check that needs nothing but the value, `S(size)` included
@@ -3818,8 +3818,8 @@ what such a connection serves today ([api-and-ui.md](api-and-ui.md) R-UI-200,
 The manual's section [Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store) says what the
 handover is, when to switch it on (the measurement of [the build plan](../developer/bastion-handover.md#tests-and-what-they-cost)), what
 it needs (a public address on a host name that is not the main installation's, `trustedCA`, the Bastion's network), what an administrator
-takes on and what to do when a Bastion is taken over, the sizing, how to see that it works and why it does not, and that an encrypted
-connection's files are streamed until the data keys are handed.
+takes on and what to do when a Bastion is taken over, the sizing, how to see that it works and why it does not, and that a file of an
+encrypted connection is handed with its own data key.
 
 ### R-BAS-079 · Tests of the handover and what they cost
 Priority: **P1** · Covers: quader-only
@@ -4096,8 +4096,8 @@ Acceptance criteria:
 verbatim set or starts `%XX` with two upper-case hexadecimal digits, and `%XX` never stands for a byte of the verbatim set, so a name has
 exactly one spelling on the wire (`%41` for `A` is refused). `Marking.Set` writes both headers only for a name within the bounds and
 writes `partial` unless `PackageRead` is `full`, so a defect at the writer claims less, never more. `ParseMarking` refuses the five cases
-(`TestR_BAS_082_ParseMarkingRefusesAMalformedPackage`, `TestR_BAS_082_TheMarkingCarriesThePackage`). Nothing writes the headers yet: the
-main installation's marking (P3) and the Bastion's reading of them (P4) are not built.
+(`TestR_BAS_082_ParseMarkingRefusesAMalformedPackage`, `TestR_BAS_082_TheMarkingCarriesThePackage`). P1 wrote no header: the
+main installation's marking (P3) and the Bastion's reading of them (P4) are built since.
 
 *As built on 2026-11-22, the main installation's marking (package P3):* `Decided` keeps the request's context, the subject and the index
 beside the repository shape; at the status line `marking` reads `Absence.Package` for a `200` or `304` of a `Download`, `Metadata` or
@@ -4347,7 +4347,7 @@ Priority: **P1** · Covers: quader-only
 - The two headers of R-BAS-082, their values and the check's members of R-BAS-083 raise `iface.InterfaceVersion` to the next version, 5,
   with the reading of the token's grant (`iface.RegistryTokenGrant`, beside `RegistryTokenAnonymous`) and, if its builder keeps it, of the
   token's expiry ([Q-BAS-252](#q-bas-252--option-b-of-q-bas-202-is-bundled)). The interface file and the four OpenAPI operations carry it.
-  The handover (R-BAS-073), specified and not built, takes the version after it, 6
+  The handover (R-BAS-073), built since, takes the version after it, 6
   ([Q-BAS-251](#q-bas-251--the-version-numbering-against-the-handover)).
 - **At a mismatch** nothing changes and nothing is owed (R-BAS-009, R-BAS-027, R-BAS-028): the main installation answers `400
   bastion_interface_mismatch`, a Bastion replica treats it as unreachable and raises `QuaderBastionInterfaceMismatch`; callers with live
