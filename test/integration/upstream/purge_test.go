@@ -3,53 +3,15 @@
 package upstream
 
 import (
-	"slices"
 	"strings"
 	"testing"
 )
 
-// purged and kept are the tables whose rows reference a repository by a cascading foreign key, as the purge of a retired well-known
-// repository treats them (upstream_repository_purge of migration 00086, replaced last by 00114, Q-REPO-376, Q-CUR-111): content goes, configuration
-// stays. A table a later migration adds fails this test until it is put into one of the lists and, when purged, into the function.
-var (
-	purged = []string{
-		"ansible_collection_versions", "ansible_doc_fetches", "ansible_import_tasks", "ansible_tombstones", "ansible_upstream_versions",
-		"ansible_version_docs", "deb_binaries", "deb_remote_files", "deb_remote_indexes", "deb_remote_releases", "deb_suites", "deb_tombstones",
-		"items", "mirror_pending", "mirror_state", "npm_packages", "npm_remote_packages", "npm_tombstones", "nuget_symbol_file",
-		"nuget_tombstone", "nuget_version", "oci_manifests", "oci_tombstones", "packages", "remote_cache_entries", "remote_download",
-		"remote_download_bulks", "remote_examinations",
-		"remote_cache_invalidations", "remote_upstream_state", "remote_url_map", "repository_usage", "signature_attachments", "signature_fetches",
-		"signature_refusals",
-		"upload_sessions", "usage_bucket", "usage_daily_summary", "usage_limit_event", "vuln_finding",
-	}
-	kept = []string{
-		"authz_policy_selector", "deb_signing_keys", "endpoint_exposure_rule", "limit_assignment", "limit_ceiling", "namespace_claims",
-		"remote_delivery_requests", "remote_delivery_rules", "repository_secrets", "service_account", "signature_releases",
-		"virtual_deploy_targets", "virtual_members", "virtual_pin_rules",
-	}
-)
-
 // TestR_REPO_067_ThePurgeOfARetiredRepository: the purge removes what the removal of the row would have taken with it and keeps the
-// rows, and it refuses a repository that is not retired (Q-REPO-376). The lists above hold the schema's foreign keys.
+// rows, and it refuses a repository that is not retired (Q-REPO-376). Which tables it treats, purged or kept, is held against the
+// schema's foreign keys by the area conventions (TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision).
 func TestR_REPO_067_ThePurgeOfARetiredRepository(t *testing.T) {
 	f := newFixture(t)
-	t.Run("Q-REPO-376 every table that references a repository by a cascading key is purged or kept by a decision", func(t *testing.T) {
-		got := strings.Split(f.e.Text(`SELECT string_agg(DISTINCT c.conrelid::regclass::text, ',' ORDER BY c.conrelid::regclass::text)
-		                                FROM pg_constraint c WHERE c.contype = 'f' AND c.confrelid = 'repositories'::regclass AND c.confdeltype = 'c'`), ",")
-		for i := range got {
-			got[i] = strings.TrimPrefix(got[i], "quader.")
-		}
-		want := slices.Sorted(slices.Values(append(slices.Clone(purged), kept...)))
-		if !slices.Equal(got, want) {
-			t.Fatalf("tables with a cascading key to repositories\n got %v\nwant %v", got, want)
-		}
-		body := f.e.Text("SELECT pg_get_functiondef('upstream_repository_purge(bigint)'::regprocedure)")
-		for _, table := range purged {
-			if !strings.Contains(body, "DELETE FROM "+table+" ") {
-				t.Errorf("upstream_repository_purge does not purge %s", table)
-			}
-		}
-	})
 	id := f.id("galaxy")
 	f.e.Exec(`INSERT INTO remote_url_map (repo_id, path, upstream_url) VALUES ($1, 'x', 'https://galaxy.ansible.com/api/x')`, id)
 	// A signature of a remote's document: its attachment names no item, so only the purge's own delete removes it (R-SIG-004).

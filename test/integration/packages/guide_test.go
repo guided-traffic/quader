@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -89,28 +90,31 @@ func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 			t.Fatalf("anonymous with anonymous access off: %d", a.Status)
 		}
 	})
-	// Every format of the build is listed with its clients, a system-only one too (formats/clamav.md R-CLAMAV-001: the list
-	// names it with systemOnly, and its guide serves the company's ClamAV installations). A new format joins this table.
+	// Every format of the build is listed with the clients of its descriptor, a system-only one too (formats/clamav.md
+	// R-CLAMAV-001: the list names it with systemOnly, and its guide serves the company's ClamAV installations). Which clients
+	// each format names is TestR_API_053_EveryFormatNamesItsClients's (internal/formats/all, unit tier), so a new format
+	// changes nothing here (Q-ARCH-701).
 	t.Run("the formats list names the clients", func(t *testing.T) {
-		clients := map[string][]string{
-			"npm":     {"npm", "pnpm", "yarn", "yarn-classic"},
-			"nuget":   {"dotnet", "nuget", "visual-studio"},
-			"generic": {"curl"},
-			"oci":     {"docker", "podman"},
-			"deb":     {"apt"},
-			"ansible": {"ansible-galaxy"},
-			"clamav":  {"freshclam"},
+		want := map[string][]string{}
+		for _, d := range formats.Descriptors() {
+			for _, c := range d.Clients {
+				want[string(d.ID)] = append(want[string(d.ID)], c.ID)
+			}
 		}
+		listed := 0
 		for _, f := range e.get(e.tokA, "/api/v1/formats").JSON(t)["formats"].([]any) {
 			m := f.(map[string]any)
 			var ids []string
 			for _, c := range m["clients"].([]any) {
 				ids = append(ids, c.(map[string]any)["id"].(string))
 			}
-			want := clients[m["name"].(string)]
-			if !slices.Equal(ids, want) {
-				t.Errorf("%s: clients %v", m["name"], ids)
+			listed++
+			if w := want[m["name"].(string)]; !slices.Equal(ids, w) {
+				t.Errorf("%s: clients %v, its descriptor names %v", m["name"], ids, w)
 			}
+		}
+		if listed != len(formats.Descriptors()) {
+			t.Errorf("the list names %d formats, the build registers %d", listed, len(formats.Descriptors()))
 		}
 	})
 	t.Run("no guide names a token", func(t *testing.T) {

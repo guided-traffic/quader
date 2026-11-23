@@ -11777,6 +11777,34 @@ says which statements are its. The same windows of the log remain in the area `v
 [link_test.go](../../test/integration/querybudget/link_test.go), [deb_test.go](../../test/integration/querybudget/deb_test.go),
 [document_test.go](../../test/integration/querybudget/document_test.go), [env_test.go](../../test/integration/querybudget/env_test.go).
 
+### Q-ARCH-701 · A check of a list or a convention runs where every builder runs it: the unit tier, or the area `conventions`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: four checks of a list stood in a format's or a component's integration area (section 12 A of the plan, 2026-11-21): the
+purge's two lists of tables (`upstream`), the formats' clients (`packages`), the registry of revision columns (`postgres`) and the count
+of sealed columns the re-encryption walks (`repository`). Each failed in the pipeline after a landing whose builder had run the areas
+of its change and not that one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) What needs no database becomes a unit test; what reads the migrated schema moves into one small integration area `conventions` that every builder and every landing runs (chosen) | Two unit tests, one area of two tests | The unit job runs in every gate already; the area runs in seconds on one clone of the template | The area is one more name a gate must list |
+| (b) Decide the catalog checks from the migrations' text in the unit tier | No database | | A parser of the SQL of 110 migrations (tables, columns added, dropped and renamed, functions replaced); a wrong parse is a wrong check |
+| (c) Leave them and name the areas in every brief | Nothing to build | | Four red pipelines in one day said what that is worth |
+
+**Choice:** (a). The formats' clients: `TestR_API_053_EveryFormatNamesItsClients` ([clients_test.go](../../internal/formats/all/clients_test.go));
+the area `packages` now holds that the API lists every descriptor's clients and keeps no table of its own. The sealed columns:
+`TestR_ARCH_021_TheReencryptionWalksEverySealedColumn` ([sealed_columns_test.go](../../internal/app/sealed_columns_test.go)); the area
+`repository` asserts the task's count against `secrets.Columns()`. The purge's lists and the revision columns: the area
+[conventions](../../test/integration/conventions/conventions_test.go) (`TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision`,
+`TestRevisionColumns`); the areas `upstream` and `postgres` keep what the purge does and the test of the check itself.
+**Rationale:** a list that a change makes longer is checked where the change's builder runs tests anyway; a unit test costs
+milliseconds, the area seconds ([build-and-test.md](../developer/build-and-test.md#checks-of-a-list-or-a-convention)).
+
+**Applied in the spec:** none (test placement). Code: the four files above, [purge_test.go](../../test/integration/upstream/purge_test.go),
+[registry_test.go](../../test/integration/postgres/registry_test.go), [reseal_test.go](../../test/integration/repository/reseal_test.go),
+[guide_test.go](../../test/integration/packages/guide_test.go).
+
 ### Q-ARCH-702 · A test waits for the state it stands for and does not depend on the host's speed
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

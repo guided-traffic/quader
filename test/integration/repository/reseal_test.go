@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // TestSecretsReencryptTask runs the task on a worker of the harness: the
@@ -32,9 +33,9 @@ func TestSecretsReencryptTask(t *testing.T) {
 		t.Fatalf("job = %+v", job)
 	}
 	got := e.stack.Do(web.Replica, "GET", "/api/v1/system/jobs/"+id, tok, nil).JSON(t)["result"].(map[string]any)
-	// The five sealed columns: repository_secrets.sealed, deb_signing_keys.private_key, signing_identities.sealed_key, and the storage
-	// keys' storage_keys.sealed_key and upload_sessions.sealed_data_key (storage.md R-STOR-083).
-	if got["columns"] != float64(5) || got["failed"] != float64(0) || got["resealed"] != float64(0) {
+	// Every sealed column the replica registers; which they are is TestR_ARCH_021_TheReencryptionWalksEverySealedColumn's
+	// (internal/app, unit tier), so a newly sealed column changes nothing here (Q-ARCH-701).
+	if got["columns"] != float64(len(secrets.Columns())) || got["failed"] != float64(0) || got["resealed"] != float64(0) {
 		t.Fatalf("result = %v", got)
 	}
 }

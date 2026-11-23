@@ -102,16 +102,8 @@ ALTER TABLE cyc_a ADD FOREIGN KEY (b_id) REFERENCES cyc_b (id);
 
 func TestRevisionColumns(t *testing.T) {
 	st := getStack(t)
-	t.Run("every bigint rev_seq, revision, epoch and *_version column is in the revision-column registry", func(t *testing.T) {
-		_, _, admin := migrated(t, st)
-		missing, err := postgres.CheckRevisionColumns(context.Background(), admin, schemaName, meta.DefaultRevisionRegistry())
-		if err != nil || len(missing) != 0 {
-			t.Fatalf("unregistered: %v, %v", missing, err)
-		}
-		if !meta.IsRevisionColumn("packages", "rev_seq") || !meta.IsRevisionColumn("cluster_epoch", "epoch") {
-			t.Fatal("packages.rev_seq and cluster_epoch.epoch are the first revision columns")
-		}
-	})
+	// That the schema's columns are all registered is the area conventions' (TestRevisionColumns there, Q-ARCH-701); this area
+	// holds the check itself.
 	t.Run("the revision-column check finds a test migration that adds an unregistered revision column", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
 		extra := stepsWith(t, map[string]string{nextStep(1, "rev"): "-- quader:phase expand\nALTER TABLE repositories ADD COLUMN revision bigint NOT NULL DEFAULT 1;\n"})

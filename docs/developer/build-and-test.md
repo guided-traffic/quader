@@ -144,6 +144,18 @@ it, each green alone. What each waited for, and what it waits for now
 How a repair was shown to hold: the one test run with `GOMAXPROCS=1` under `taskpolicy -c background` (the lowest CPU class of macOS)
 while the other builders' gates ran, never by starving the machine for everyone and never by a `-count` loop.
 
+### Checks of a list or a convention
+
+A check that fails when a change makes a list longer (a new format, a sealed column, a table that references a repository, a
+revision column) runs where every builder runs it
+([Q-ARCH-701](../spec/architecture.md#q-arch-701--a-check-of-a-list-or-a-convention-runs-where-every-builder-runs-it-the-unit-tier-or-the-area-conventions)):
+in the unit tier when it needs no database (`TestR_API_053_EveryFormatNamesItsClients` in `internal/formats/all`,
+`TestR_ARCH_021_TheReencryptionWalksEverySealedColumn` in `internal/app`), in the area
+[conventions](../../test/integration/conventions/conventions_test.go) when it reads the migrated schema. That area builds like any
+other and runs its tests in under a second on one clone of the template: every builder and every landing runs
+`test/integration/run.sh ./test/integration/conventions/` beside the areas of the change. A new check of the kind goes there, not into
+the area of the format or component that made the list.
+
 ### The unit run's time
 
 `make test` runs every package under the race detector with the coverage of the whole module (`-coverpkg=./...`), eight
