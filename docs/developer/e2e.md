@@ -355,6 +355,20 @@ It exists because five findings (H-795, F-119, F-124, F-127 and the stall of the
 and since [Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
 it also records who used the CPU: the leg's own nodes, the runner's other pods or another leg's kind nodes.
 
+**The stalls before 2026-11-18 are closed, and what opens one again** (2026-11-23). The runs those findings and their kin named (the
+stalls of the drain, fault and `push` sets, all of 2026-11-11 or earlier) were closed without a reading of who used the CPU: each
+of them predates the first recorder (d209c2802, 2026-11-11), and every run before 2026-11-18 predates the CPU time per cgroup
+(68b0d7af0), so no artifact of theirs can tell the leg from its neighbours. The family's cause was found in the first stall the
+recorder caught (nightly 44186978088, Q-HA-305): every kind cluster of a runner machine shared one cgroup of weight 100 beside the
+runner pods' 1250, so beside the small jobs of a Test and Release run a leg kept about two CPUs. The runner definitions were changed
+outside this repository on 2026-11-18 (the `large` class in the table below), and on 2026-11-19 the legs on `large` of the second full
+nightly (44453781574), run beside two Test and Release runs, kept about nine tenths of their CPUs and were green. A stall is a finding
+again only when step 2 below shows **no neighbour**: in the window where a leg failed (a latency bound, a `502` or `503` of the edge,
+a request held at the edge, or a fault test that stopped with "the cluster was not healthy before the fault"), the leg's own CPU rose
+to what the machine gave it while the neighbours' did not rise. That stall is the leg's own, of the product or of the profile, and is
+entered as a finding with its set, run, window and readings; the plan keeps one standing entry for it, "A stall without a neighbour"
+in section 8 of [promt.md](../projektplan/promt.md). The artifact is kept 14 days, so the reading is made within them.
+
 On the CI runner the job's Docker daemon (the privileged `dind` container) sees the cgroup root of the whole machine. The runner pods, and the steps
 of the small jobs (compilers, linters, test binaries), are under `kubepods` (`cpu.weight` 1250). Where the daemon puts the containers it starts (the
 kind nodes, k6, the image builders, the integration jobs' service containers) depends on the runner class:
@@ -3031,7 +3045,7 @@ the amd64 images were not run.
 - The six manifest `GET` requests at Docker Hub of the closing run are not asserted (`TestOCIClosingPublic`). Counted once from the upstream request log of the packages and worker pods (`registry-1.docker.io/v2/library/busybox/manifests/...`, answered 200): 4 for the pull-through remote and the mirror of one platform together.
 - The OCI distribution conformance suite and the protocol criteria that need no client are the integration tier (`test/integration/oci*`, `make oci-conformance`).
 - No client of another version than the pins: `docker` 29 and `podman` 5 are the two rows.
-- The browser step of the package screen (R-OCI-031) is the UI work package's.
+- No browser journey walks the OCI package screens (R-OCI-031): what it would show is held by the component tests, the renders and the integration tier ([web-ui.md](web-ui.md), the OCI paragraph of the package screens).
 
 ## The counting Debian test upstream in the cluster
 
@@ -3120,7 +3134,7 @@ make apt-clients-image        # only build the four images into the local Docker
 
 ### Not covered by the Debian tests
 
-- `deb-long` (the delay bound under load, the drain of the worker that runs a build of a virtual repository) is not built: the delay bound already runs in `make test-performance` (Q-DEB-59). The Debian pass beside clients in the set `deb` and the drain during a Debian pass in a nightly HA set are not built: they need the APT client pods and the Debian test upstream with the worker pool of the mirror and a throttled stub for the drain, which is a long build of its own.
+- There is no set `deb-long` (the delay bound under load, the drain of the worker that runs a build of a virtual repository): what it was to show is held at cheaper tiers ([deb.md](deb.md#what-is-built-and-what-is-not)). The Debian pass beside clients in the set `deb` and the drain during a Debian pass in a nightly HA set are not built: they need the APT client pods and the Debian test upstream with the worker pool of the mirror and a throttled stub for the drain, which is a long build of its own.
 - The images run the host's architecture; the rows were run on arm64 (`linux/arm64` images), the amd64 images were not run.
 
 ## The test advisory source

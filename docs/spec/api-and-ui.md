@@ -20958,7 +20958,11 @@ area's repository list (`allowed` of [layout.ts](../../web/e2e/renders/layout.ts
 
 **Rationale:** the rule of Q-UI-896 is a fact of the repository, and every client action is one more place of the same fact. The
 development agent would revisit (b) if the repository list ever carries the repository's kind (Q-UI-893's condition), which also makes the
-key test unnecessary.
+key test unnecessary. **Kept on 2026-11-23** (the reading of the open findings): that the API still answers the addresses, the files'
+`downloadUrl` and `contentUrl` and the client setup of a system repository is this choice's consequence, not a defect, and the condition
+has not occurred: `RepositorySummary` and `Repository` carry no kind, only the admin area's `UpstreamRepository` does
+([openapi.yaml](../../api/openapi.yaml)). Since [Q-UI-908](#q-ui-908--upstreamclamav-answers-its-clients-while-its-switch-is-on-and-every-screen-treats-it-so)
+`upstream/clamav` answers clients while its switch is on, and there the addresses the API answers work while it is.
 
 **Applied in the spec:** R-UI-193. Code: [repository-list.ts](../../web/src/app/features/repositories/repository-list.ts),
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),

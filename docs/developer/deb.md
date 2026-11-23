@@ -650,8 +650,15 @@ Not built, or not proven:
 - The virtual class has no trigger on a change of claims (Q-DEB-65, [H-725](../security/deb-virtual.md#h-725--a-change-of-claims-reaches-the-merged-index-at-the-next-check-not-at-once))
   and enqueues its build after a member's publication has committed, not in it (H-726); `member_expired` and the dropping of a member's recorded `Date`
   are unit rules, not integration cases.
-- The nightly set `deb-long` (the delay bound of R-DEB-010 runs in `make test-performance`, Q-DEB-59; the bound of R-DEB-026 with `compression: ["xz"]` is
-  an integration case of `debvirtual`) and the Debian pass beside clients and under a drain in the e2e sets.
+- The Debian pass beside clients and under a drain in the e2e sets.
+- No nightly set `deb-long`, by the development agent's decision of 2026-11-23: what it was to run is held at cheaper tiers. The delay
+  bound of R-DEB-010 under load runs in `make test-performance` (Q-DEB-59, `TestR_DEB_010_DelayBound`), the bound of R-DEB-026 with
+  `compression: ["xz"]` is an integration case of `debvirtual` (`TestR_DEB_026_TheDelayOfAVirtualBuildOverALargeIndexStaysWithinItsBound`),
+  and what the drain of the worker that runs a build would show is a build stopped before its commit, which leaves the previous
+  generation served and is published by the next build (`TestR_DEB_010_AStoppedBuildLeavesThePreviousGeneration` in `deblocal`), with
+  the release of a running job at a drain, which is the job worker's for every kind and runs in the drain legs of the nightly. A leg of
+  its own would add a kind cluster per format for that, which the rule that a format adds a constant leaves out
+  ([CLAUDE.md](../../CLAUDE.md)).
 - The metric `quader_deb_remote_parse_total` of R-DEB-033.
 - What the spec defers ([Deferred](../spec/formats/debian.md#deferred)): source package uploads, snapshots, `.udeb`, `dput`, debug symbols, `Valid-Until`
   on Quader's own releases, an external key service, vulnerability matching, copy and move, endpoints with exposure rules, the Bastion and nested

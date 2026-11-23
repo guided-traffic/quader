@@ -11173,7 +11173,12 @@ closed was ended` at `INFO`, with the pool and the borrower.
 the fault tests' kill, still cuts at once) and `FillCount` ([replica_roles.go](../../internal/cluster/replica_roles.go)); the probe's line in
 [holders.go](../../internal/meta/postgres/holders.go). **Rationale:** the close waits for what a borrower holds and not for the driver
 (Q-ARCH-499); a loop of the replica cancelling its own statement was the one borrower the close cut on a healthy database. The job
-worker's heartbeat of its running jobs runs on the control connection too, but no job runs any more when the worker stops. The
+worker's heartbeat of its running jobs runs on the control connection too, but no job runs any more when the worker stops, and it
+keeps its plain cancel (2026-11-23, the last open point of F-136): a beat sends no statement while the worker runs no job
+(`heartbeat` of [worker.go](../../internal/jobs/worker.go) returns on an empty set), and every job has settled or been released by
+the quiesce before the close phase calls `Stop`. A beat can be in flight at `Stop` only when a handler outlived the quiesce, which is
+a fault of its own that `Stop`'s error names (`handlers still running at the end of the shutdown`); a beat cut then extends no lease,
+and the reaper returns the job when its lease expires. The
 development agent would revisit the choice if a loop's statement were seen to hold a healthy stop for longer than its own call timeout.
 
 **Applied in the spec:** R-ARCH-024 step 6. Tests: `TestR_ARCH_024_TheStopOfTheChangeLogWaitsForItsPollInFlight`,

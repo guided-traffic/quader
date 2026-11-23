@@ -3483,6 +3483,12 @@ above the spool. The malware scanner is sized from a measurement (Q-HA-364): two
 of 2 to 4 in `medium` and of 3 to 6 in `large` with 500m / 1280Mi, a `clamd` limit of 2Gi in all, and `config.malware.concurrency` 4, 4 and 6. The numbers are the starting points of the table in R-HA-050; no reference load test has measured them
 ([H-803](docs/spec/ha-and-helm.md#h-803--the-sizing-profiles-are-not-measured)). The profiles configure no database, pooler or Valkey: the chart deploys none of them.
 
+Size the PostgreSQL primary's memory for the connection budget the chart prints in its notes (it counts one pod more per role for a
+rollout), not only for `max_connections` to cover it: each connection of a serving pod held 6 to 8 MiB of the primary in one measurement
+on the development profile, so allow the budget times 8 MiB beside `shared_buffers`. Without a pooler the connections reach the primary
+itself; behind the poolers of R-HA-058 count the server connections the poolers declare. The migration Job checks the connections, not the
+memory ([Q-HA-446](docs/spec/ha-and-helm.md#q-ha-446--the-databases-memory-per-connection-is-a-figure-of-the-documents-not-a-check-of-the-preflight)).
+
 </details>
 
 Security notes on the login secrets:

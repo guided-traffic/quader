@@ -1605,9 +1605,10 @@ Priority: **P2** · Covers: quader-only
   package and running it, in each image, through `deb-local` (after an upload by the test and the index wait), `debian` in mode
   `pullThrough`, `debian-mirror` after a pass with the stub stopped, and `apt` (a local and a remote package; the claim row); an
   anonymous read; a keyring with another key, which must fail; the rotation table of R-DEB-017 on Debian 13, Ubuntu 24.04 and
-  Ubuntu 22.04; the flat root `deb <repo URL> ./` on Ubuntu 24.04. Set `deb-long` (nightly, R-HA-052): the delay bound of
-  R-DEB-010 under load, the bound of R-DEB-026 with `compression: ["xz"]`, and the drain of the worker that runs a build of a
-  virtual repository with the large index. One cluster shares one clock, so the time rules of Q-DEB-30 are proven by the
+  Ubuntu 22.04; the flat root `deb <repo URL> ./` on Ubuntu 24.04. No set `deb-long` (2026-11-23): the delay bound of
+  R-DEB-010 under load runs in `make test-performance` (Q-DEB-59), the bound of R-DEB-026 with `compression: ["xz"]` is an
+  integration case of `debvirtual`, and what a drain of the worker that runs a build shows, a build stopped before its commit, is an
+  integration case of R-DEB-010 ([deb.md](../../developer/deb.md#what-is-built-and-what-is-not)). One cluster shares one clock, so the time rules of Q-DEB-30 are proven by the
   integration asserts of R-DEB-010 and R-DEB-016, not by the e2e set. The set `deb` carries a Debian mirror of the stub (`TestDebMirror`), and a pass on two worker processes while clients install through it and
   the drain of the node whose process runs a Debian pass are not built (R-REPO-058, R-REPO-059, Q-REPO-306).
 - **Closing run** (the full run of Test and Release on the commit that closes the phase): the set `deb` with Valkey stopped, and a
@@ -1697,11 +1698,11 @@ against PostgreSQL, Valkey with Sentinel and S3 plus the conformance kit, and e2
 |---|---|---|---|
 | R-DEB-001 to R-DEB-005 (format, names, layout, permissions, errors) | grammars, version order, route table, `Classify` | formats API, `TestR_AUTHZ_007_DebActionMap`, error shapes, headers | `deb` |
 | R-DEB-006 to R-DEB-009 (upload, control, storage, coordinates) | `ar` reader, deb822 parser, crafted inputs, canonical paths | uploads over HTTP, idempotency, immutability, coordinates API, properties | `deb` (upload by the test, install) |
-| R-DEB-010 to R-DEB-014 (builds, content, by-hash, deletion, state) | renderers, determinism | parallel uploads on three replicas, fault-injected build, Valkey stopped, by-hash retention, trash, reindex, index wait | `deb`; `deb-long` (delay bound) |
+| R-DEB-010 to R-DEB-014 (builds, content, by-hash, deletion, state) | renderers, determinism | parallel uploads on three replicas, fault-injected build, Valkey stopped, by-hash retention, trash, reindex, index wait | `deb`; the delay bound in `make test-performance` (Q-DEB-59) |
 | R-DEB-015 to R-DEB-018 (keys, signatures, rotation, public key) | signer and verifier | key API, sealing, import rules, dual signatures, promotion, journal entry | `deb` (verification in four images, a wrong keyring fails, the rotation table) |
 | R-DEB-019 to R-DEB-023 (remote) | release parser, anti-rollback decision | the counting stub: byte-for-byte release, verification, rollback, pair, by-hash, plain-path check, pool digests, parse rows, shadowing check | `deb` (remote `pullThrough`) |
 | R-DEB-024, Mirror discovery | plan over fixtures | stub passes (suites, components, architectures, patterns, versions, bound, moved suite, unknown key, offline) | `deb` (a pass, `TestDebMirror`; a pass on two worker processes while clients install and the drain are not built) |
-| R-DEB-025 to R-DEB-028 (virtual) | merge over fixtures | merge order, claims, member paths, gate, member without stored copy, refresh, uploads through the target | `deb` (local and remote packages through `apt`, the claim row); `deb-long` (drain during a build) |
+| R-DEB-025 to R-DEB-028 (virtual) | merge over fixtures | merge order, claims, member paths, gate, member without stored copy, refresh, uploads through the target | `deb` (local and remote packages through `apt`, the claim row) |
 | R-DEB-029, R-DEB-030 (setup, screens) | templates render, kit check 8 | view API | `deb` (rendered snippets), browser journey of the package and key screens |
 | R-DEB-031 to R-DEB-035 (replicas, backups, metrics, limits, suites) | crafted inputs (kit) | Valkey stopped, journal replay of deletions and retirements, read budget rows | `deb` in `scatter`; closing run with Valkey stopped; restore drill (R-BAK-029) |
 
@@ -1761,7 +1762,7 @@ IDs of other pages below are reserved for those edits and recorded there by the 
 | [storage.md](../storage.md) | R-STOR-003: a virtual repository of a format with a job-built index holds the generated items of its indexes; the publication port that writes a generation's generated items (blobs first, one transaction with the caller's own writes, removals, `modified_at` given by the caller); R-STOR-018, R-STOR-019, R-STOR-007: generated items are never written, deleted, copied or moved by a client (409 `generated_item`); R-STOR-028: the summary lists a virtual repository that holds generated items; R-STOR-029: generated items count toward usage and are exempt from quota admission | Q-STOR-180, Q-STOR-181, Q-STOR-182 |
 | [authorization.md](../authorization.md) | R-AUTHZ-007: the per-format notes list the Debian table of R-DEB-004 and `TestR_AUTHZ_007_DebActionMap`; R-AUTHZ-009: the gate of a Debian virtual repository's index reads (rule 4 for a format whose merged index cannot depend on the caller) | Q-DEB-19, Q-DEB-20 |
 | [backup-and-restore.md](../backup-and-restore.md) | R-BAK-004: the format's tables; R-BAK-008: the remote's parsed rows go with the cache; R-BAK-022: the full build after a restore; R-BAK-024: the Debian entries (deletions, removed coordinates, key promotions and retirements) and that the key replay withholds and never erases | Q-DEB-22, Q-DEB-31, Q-DEB-34 |
-| [ha-and-helm.md](../ha-and-helm.md) | R-HA-054: the journal flags of `deb.package.deleted`, `deb.coordinates.removed`, `deb.signing_key.promoted` and `deb.signing_key.retired`; R-HA-052: the set `deb-long` and the Debian rows of `mirror-long` | Q-DEB-22, Q-DEB-31, Q-DEB-34 |
+| [ha-and-helm.md](../ha-and-helm.md) | R-HA-054: the journal flags of `deb.package.deleted`, `deb.coordinates.removed`, `deb.signing_key.promoted` and `deb.signing_key.retired`; R-HA-052: the Debian rows of `mirror-long` (no set `deb-long`, Q-DEB-59) | Q-DEB-22, Q-DEB-31, Q-DEB-34 |
 | [api-and-ui.md](../api-and-ui.md) | The management operations of R-DEB-009, R-DEB-014 and R-DEB-015 (with confirm and reinstate of a withheld key); the `apt` setup templates and guide; the signing key panel and the index state on the repository screen | Q-DEB-12 |
 | [operations-and-observability.md](../operations-and-observability.md) | The audit events and metrics of R-DEB-033; the job kinds `deb-index`, `deb-remote-parse` and the task `deb-index-refresh` | — |
 | [endpoints.md](../endpoints.md) | R-EP-018: the format has no exposure adapter, so an endpoint with exposure rules does not serve it | Q-DEB-26 |
@@ -2929,7 +2930,9 @@ between two events inside the database's clock and needs neither a cluster nor a
 | (a) An integration test with three in-process replicas, run per change at a small load (every upload published, the p50) and by `make test-performance` with `QUADER_PERF_GATE=1` at the reference load (10,000 files in three suites, ten uploads per second for 90 s), with and without Valkey (chosen) | The same tier as P-13 and P-14 (Q-ARCH-220) | One clock; the nightly job `latency` already runs it on the large runner after the kind legs; no cluster | Not the chart's three pods: a replica here is a process of the test |
 | (b) The e2e set `deb-long` on the kind cluster | What the spec names | The real chart | Timing on a shared cluster says nothing about the bound; the set is WP10's and does not exist yet |
 
-**Choice:** (a). The set `deb-long` keeps what needs a cluster: the drain during a build (R-DEB-031).
+**Choice:** (a). The set `deb-long` keeps what needs a cluster: the drain during a build (R-DEB-031). Since 2026-11-23 there is no set
+`deb-long`: a build stopped before its commit is an integration case of R-DEB-010, and the release of a job at a drain is the job
+worker's, run in the nightly's drain legs ([deb.md](../../developer/deb.md#what-is-built-and-what-is-not)).
 
 **Rationale:** Q-ARCH-293 puts a wall-clock target where its cause can be isolated. The development agent would revisit it if the nightly numbers differed
 from a cluster's.

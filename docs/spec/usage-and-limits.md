@@ -2371,6 +2371,12 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** the overview is an administrator's page, read rarely; its cost is bounded by the subjects of one period.
 Revisit when an installation has more than 50,000 subjects in a day. **Applied in the spec:** R-LIM-034.
 
+**The cursor stays an offset** (the development agent, 2026-11-23, when a builder named it for a refactor): every page aggregates the
+scope again and sorts the rows in Go (`listUsage` of [usage_api.go](../../internal/api/v1/usage_api.go)), so there is no stored order a
+keyset cursor could point into, and one would save nothing. What an offset costs is said here: a subject whose counts change between
+two pages can move in the order, so a page may repeat or miss a row; the export reads the whole scope in one answer (up to 100,000
+rows) and has no such seam. Revisit with the rest of this choice.
+
 ### Q-LIM-46 · The usage list names its cursor nextCursor, as every list
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

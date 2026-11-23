@@ -939,6 +939,12 @@ since the last tag.
 
 - **A job failed:** `gh run list --branch main --limit 3`, then for the newest commit's run
   `gh run view <id>` and `gh run rerun <id> --failed`. Nothing re-runs by itself.
+- **A run stays queued and no job is offered to the runners:** seen once, on 2026-11-21 for 17 minutes. Both scale sets'
+  listeners polled without an error and were told of no job, the hosting service's status page showed no incident, and one
+  listener had retried a request to the service's broker in the minute of the push; cancelled and started again on the same
+  commit, the run got its runners within seconds. Do the same (`gh run cancel <id>`, then `gh run rerun <id>`). The cause was
+  not established and nothing in the runners' cluster was changed for it; if it comes back, the listeners' logs of the push's
+  minute are what to read, in the runners' cluster.
 - **A commit was pushed while the run was in progress, with `[skip ci]` in its message:** that push starts
   no run and cancels none, so the running run passes, but Semantic Release then finds `main` ahead of its
   commit ("The local branch main is behind the remote one") and publishes nothing. GitHub reads the marker

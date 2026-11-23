@@ -237,6 +237,8 @@ Any `api` replica can answer any request of its routes, any `packages` replica a
 
 Change replica counts through `helm upgrade` rather than `kubectl scale`: the migration Job then compares the connections all replicas may open with PostgreSQL's `max_connections` (`database.preflight.connection_budget: enforce`) and stops the upgrade if they do not fit.
 
+The Job counts connections, not memory. Each connection of a serving pod held 6 to 8 MiB of the PostgreSQL primary in one measurement, so when you raise replica counts or `database.pool.max_conns`, give the primary about 8 MiB for every connection of the budget beside its `shared_buffers`. The budget the chart prints after `helm upgrade` already counts the extra pod a rollout starts per role; behind a transaction-mode pooler count the server connections the pooler opens instead.
+
 ## When a dependency is unavailable
 
 | Dependency | What happens |

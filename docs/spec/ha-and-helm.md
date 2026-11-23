@@ -2285,7 +2285,9 @@ count then depends only on the number of `worker` replicas, which follow job loa
   start-up warning (R-ARCH-025); the chart renders only the new name.
   The Job compares the budget with `SHOW max_connections`. With
   `database.preflight.connection_budget: enforce` (default) a shortfall fails the Job, and with it
-  `helm upgrade`, before the larger deployment exists. With `warn` it logs and continues.
+  `helm upgrade`, before the larger deployment exists. With `warn` it logs and continues. It checks connections, not the
+  database's memory, which the README and the manual give per connection
+  ([Q-HA-446](#q-ha-446--the-databases-memory-per-connection-is-a-figure-of-the-documents-not-a-check-of-the-preflight)).
 - Quader cannot read the pooler's limits. With the pooler, `NOTES.txt` prints the client connections
   each pooler must accept, `(serving_max + worker_max) × database.pool.max_conns` for the request pool
   and `serving_max + worker_max` for the control pool, next to the budget, and R-HA-058 lists the
@@ -11287,7 +11289,9 @@ not the node loss's. The recorder's helper runs from the kind nodes' image (bash
 `QUADER_E2E_EVIDENCE_MAX_SECONDS` like the other loops.
 
 **Rationale:** the stall family (H-795, F-119, F-124, the stall of the set `push`) kept its cause open because the recordings could not separate
-the leg from its neighbours; with the CPU time per cgroup that is one subtraction. The cgroup layout on the runner is the owner's
+the leg from its neighbours; with the CPU time per cgroup that is one subtraction (the family's runs before 2026-11-18, which no
+recorder of the CPU time covered, were closed on 2026-11-23, and what opens a stall again is in
+[e2e.md](../developer/e2e.md#reading-a-stall)). The cgroup layout on the runner is the owner's
 (the runner definitions are not in this repository): what it means for the runner classes is recorded in
 [promt.md](../projektplan/promt.md) section 8 with the measurements above.
 
@@ -12313,7 +12317,11 @@ it cannot log in a client for longer than the grace, and both instances of a poo
 
 **Choice:** (a). The value leaves the grace a margin of about 5 s for the slowest promotion measured, and keeps a factor of a thousand over
 an ordinary connect and login. Not run on a cluster before it landed: the next run of a pooler leg shows the value in the log of
-`requirePoolerProfile`.
+`requirePoolerProfile`. That run (44862237399, 2026-11-21) showed `server_connect_timeout 5` on all four instances and windows of 7.6
+to 10.5 s; no connect hung in it, so the 5 s themselves have not been exercised. Why the connect of 2026-11-20 got no answer is not
+searched further (2026-11-23): there is no packet trace to read, and a connect that hangs now costs an instance at most 5 s, inside the
+grace. What would show it again is `TestHAPooler_Switchover`: it logs each instance's window with its last failed server attempt and
+fails when the longest reaches `health.database_outage_grace` (Q-HA-370).
 
 **Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover
 row; [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), the pooler requirements of the [README](../../README.md) and of the manual
@@ -12955,6 +12963,26 @@ an empty list, and every entry would look like one of a connection that is not c
 | (c) The handler reads the configuration itself | No new field | — | `internal/blob/keys` and the handler hold no configuration; the restore's configuration is the caller's |
 
 **Choice:** (a). **Applied in the spec:** R-HA-054.
+
+### Q-HA-446 · The database's memory per connection is a figure of the documents, not a check of the preflight
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the nightly of 2026-11-20 measured what a connection of a serving pod costs the PostgreSQL primary: a `packages` pod with a pool
+of 20 gave back 120 to 155 MiB when it ended, 6 to 8 MiB a connection. The development profile's primary, sized without that figure, was
+8 MiB from its limit of 1 GiB for at least a day and then killed in a drain; it may use 3 GiB since
+([local-profile.md](../developer/local-profile.md)). The preflight of R-HA-016 compares the connection budget with `max_connections`, and
+neither the README's sizing table nor the manual said how much memory the primary needs for that budget.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The README's sizing section and the manual's scaling section give the figure and size the primary from the budget; the preflight checks connections only (chosen) | One sentence in each, marked as one measurement | The operator sizes from the budget the chart prints in its notes, which counts a rollout's extra pod per role (Q-HA-86) | Nothing checks it |
+| (b) The migration Job logs the budget times 8 MiB beside `shared_buffers` as a warning | A number at every upgrade | The operator meets it without reading | The Job reads the database through SQL and sees no memory limit of the server's container or machine; the warning would be a guess presented as a check, from one measurement |
+
+**Choice:** (a). **Rationale:** the preflight checks what it can read, and it can read `max_connections` but not the memory the server
+has. The figure is one measurement on the development profile; it is replaced when a reference load test measures the profiles
+([H-803](#h-803--the-sizing-profiles-are-not-measured)). **Applied in the spec:** R-HA-016; the [README](../../README.md)'s sizing
+profiles and the manual's [operations](../manual/admin/operations.md#scaling-api-packages-and-worker).
 
 ## What this does not cover
 

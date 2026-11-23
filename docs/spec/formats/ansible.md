@@ -3134,14 +3134,20 @@ of the format; the first request names the reason.
 merged-metadata cache is not built again, so a conflict that stays for a day is counted once per cache period and per replica, not per
 install; and a remote member the caller may not fill takes part with its cached versions only and is read only for the versions it has
 cached, so a conflict in an uncached version is not counted for that caller. Live today for any virtual repository with a local and a
-remote member that hold one version with two digests: the number says that a conflict exists, not how often it is met.
+remote member that hold one version with two digests: the number says that a conflict exists, not how often it is met. It stays so
+(the development agent, 2026-11-23): what the counter tells an operator is the same however often the conflict is met, that the
+repository holds a version with two archive digests and its clients get the winner's, and a count per served answer would need the
+merged-metadata cache to carry the conflict to every request it answers, a second path through the cache for the same message.
 
 ### H-863 · A role lookup is answered by one member, and the ids inside a role document are the upstream's
 
 The lookup of a role through a virtual repository is answered by the first remote member whose answer is not empty (Q-ANS-19); two
 members that hold different roles under one owner and name are not merged, and the second is never offered. The ids of the versions inside
 a role document (`summary_fields.versions[].id`) are the upstream's own and are not rewritten: the client does not use them as routes.
-Live for a virtual repository over two remotes of a Galaxy each; dormant with one.
+Live for a virtual repository over two remotes of a Galaxy each; dormant with one. It stays so (the development agent, 2026-11-23):
+roles are the legacy path, served by translation from remote members only (PKG-ANSIBLE-007, Q-ANS-6), and two remotes of a Galaxy
+behind one virtual repository is the only setup that meets the gap; a merge of the role documents of every member would be a second
+lookup path through every member for that setup alone. Revisited when an installation names such a setup.
 
 ### H-864 · Only two ansible-core releases are tested
 
