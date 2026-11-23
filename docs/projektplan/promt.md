@@ -619,6 +619,17 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
+- **A test that passed by the machine's own configuration made `main` red (2026-11-23, 07:33).** The offline
+  tool's test of a connection element named no region; the AWS configuration in the home directory of
+  this machine supplied one, a runner has none. Every local gate was green. The cause is repaired in the
+  test; the measure beside it: the landing's unit gate and a builder's full unit run are run with the
+  AWS environment emptied (the two region variables unset, the configuration and credentials files
+  pointed at nothing, the metadata service off), so that a local run sees what a runner sees. A release
+  was held for about half an hour by it.
+- **Seen on the Bastions screen's renders on 2026-11-23, with the builder of the handover's surface:** the
+  contacts of a card stack by their content and not by the width, so two cards of one page differ; the
+  tokens' table and the contacts' table wrap a date onto two lines at 1024 and 1440. The screen had
+  never been rendered with a registration.
 - **The offline tool has not read a real backup's pool (2026-11-23).** The encryption's fourth and sixth
   packages were built apart; the tool's reading of a pool object is tested with names its own test
   writes. One case in the area `backup` after an encrypted backup (list the pool with the export and the
@@ -2688,6 +2699,34 @@ runs are in `git log`; this section holds the current state.
   name that is not the main installation's, what an administrator takes on, the sizing, how to see why it
   does not work). Rendered on a stack of its own in every state, both schemes, wide and narrow. Builders
   with a test load: the encryption's package 7, the tests' harness, this one, and the landing's gates.
+  **Reported at 07:25** (one commit of the type `feat`, no Go code; every gate exit 0, the web's lint and
+  1,976 tests, the manual's build check and the layout checks of the two screens on its own stack).
+  Built: the block on every card between the actions and the last contact, with the switch for who may
+  change a registration and the word On or Off for who may only read; under it only the connections a
+  Bastion cannot read, a line each with its reasons, and one link to the storage settings' details; the
+  storage settings' field and test link for an encrypted connection too; the manual's section. Decisions
+  Q-BAS-295 (the card names only the connections a Bastion cannot read, where the requirement had said
+  each), Q-BAS-296 (until the data keys land the sentence names no key) and Q-UI-958; gap H-1480 (a card
+  without a line says only that the main installation can sign a link and read it back, not that the
+  Bastion's network reaches the store). Thirteen component tests, 0.76 s; the layout job gains 24 shots,
+  about 9 s. **Looked at by the development agent (rule 11):** the switch, its sentence, the reasons with
+  their icons and the link sit with the card's other controls in both schemes and wrap cleanly at 390;
+  the storage page says of an encrypted connection what holds today. **Sent back at 07:26 with four
+  points:** a card's contacts show in two forms on one page at one width, stacked for a long base URL and
+  as a table for a short one (so before its change too, but the owner's own Bastion would show the
+  stacked form at full width): the form is to depend on the width alone; the tokens' table wraps every
+  date at 1024; the read-only state is a bare word; and two defects it had seen beside its scope (the
+  API's description of a `null` for the switch, a stale unit of the German translation).
+- **In work since 07:27: package 4 of the handover, the data keys:** the main installation's half for a
+  copy on an encrypted connection: the second pass over the encrypted copies after the plain ones, the
+  blob's data key taken for the one copy handed over, the value's key and stored size, **the trace of
+  every handed key written and committed before the answer leaves, and a failed trace streams instead**,
+  the integration case beside the joined one. It is told: the key lives from its taking to the value's
+  encoding and is destroyed on every other path; no rendering holds it; a key that is unknown or
+  destroyed declines and never fails the download; the conditions are shown in the one table that
+  exists; and it names the statements such a download costs. The security page's two gaps of a data key
+  become live with it and say so in the same change. Builders with a test load: the encryption's
+  package 7 with its joins, the handover's packages 4 and 5, and the landing's gates with every area.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -5647,6 +5686,32 @@ migration makes a new template and drops the old one; four areas are measured on
 after and the numbers go into the test cost page with the prediction for the pipeline; and a wide set
 of areas runs on its final tree, since the change lies under every area. Builders with a test load:
 the handover's package 3 with the joined case, the encryption's packages 4 and 7, this one.
+**It reported at 07:24** (five commits, four of the type `test` and one `perf`; its builder worked from
+06:10; every gate exit 0, the lint over the whole repository and fifteen integration areas on its final
+tree). **Measured on this machine, one run each, from a worktree:** the four areas took 696 s before and
+313 s after (`ansiblelocal` 56.6 to 20.1 s, `endpoints` 29.5 to 16.0 s, `api` 210.7 to 101.7 s, `ci` 399.2 to
+175.3 s), and their fastest test, which builds an installation, 1.8 to 2.05 s before and 0.43 to 0.66 s
+after; the same test measured both times saved 1.25 to 1.39 s, which is the planner's split. The two
+runs stood on different stacks at different loads (4 to 55 before, 10 to 24 after). **No test was
+changed and none relied on what was taken away.** Built: one parse of the API's document per test
+binary, for which the test support package is exempted from the rule against state at package level,
+openly, in the rule's own list (Q-ARCH-580); a template database per day and per set of migrations, built
+under another name, marked a template only after its migration succeeded and renamed last, under an
+advisory lock, from which every stack is cloned and gets its three identity rows drawn again
+(Q-ARCH-581); no drain wait and a placeholder UI in the harness (Q-ARCH-582); the replica's own document
+parsed once per process, product code (Q-ARCH-583). Gap H-1470: what a clone keeps of its template (the
+random identifiers of the five built-in limit profiles, timestamps up to a day old, the grants as they
+were), which nothing shared names. One template of about 17 MB stays in each stack's PostgreSQL.
+**Computed for the pipeline, not measured:** shards of 26.4, 24.6, 26.0 and 23.4 minutes where they take
+34.8, 30.2, 33.0 and 34.9; with this machine's seconds as the floor, 29.2, 26.5, 28.3 and 27.2. **Not
+verified by it:** anything on a runner; two processes of the operating system racing for the template
+(two sessions in one process stand in); the day's turn; the pooled mode of PostgreSQL; a run from the
+main checkout with a built UI; the areas beyond its fifteen. **Moved onto the encryption's stack by the
+development agent at 07:24 without a conflict, and in the landing's gates since 07:25 in a second
+landing worktree: the set with the unit run and the lint, and then every integration area once, all
+seventy-one, in two streams,** since the change lies under each of them and the builder ran fifteen.
+**For the case runner's builder:** an installation costs 0.1 to 0.4 s now, most of it the replica's start,
+so one installation per area gains much less than the planner counted before the change.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
@@ -5733,6 +5798,26 @@ chart still refuses an encrypted connection corrected. **Both are in the landing
 the full set with the unit run and the lint and nine integration areas, `backup` last. **Not shown by a
 test of either:** the offline tool reading the pool of a real backup; both follow the specification's
 pool name, and the tool's case writes the names itself (section 8).
+**The landing's gates ran from 06:49 to 07:20, twenty-seven of them, each exit 0** (the lint in six
+minutes, the area `backup` in eight). The owner's values were rendered against the new chart before the
+push: it renders, thirty-nine objects, and nothing differs from the chart before but the version, so his
+installation needs no change of values. **Landed on 2026-11-23 at 07:26, in one push of two commits.**
+The run of the push before had its four integration shards and five end-to-end legs green; its layout
+checks and the two coverage jobs, which had waited for the shards, were ended by this push. **With this
+release the chart accepts `encrypted: true`, and the jobs, the backup and the restore handle an encrypted
+connection; the encryption of stored content is whole but for the destruction of a retired
+connection's keys,** which joins it now. The two builders' worktrees and branches are removed. His UI's
+backend is started again on this state (ready at 07:26). **Not released: the pipeline's unit job failed
+at 07:33 and Semantic Release was skipped at 07:38.** One test of the offline tool
+(`TestR_STOR_089_TheConnectionElement`) writes a connection element without a region and passes only
+where the machine's own AWS configuration names one, which this machine's does and a runner's does
+not; reproduced here with that environment emptied. The landing's gates and the builder's ran the unit
+tests with the machine's environment and so could not see it. **A builder repairs the test since
+07:39** (tests only: the elements name their region, the package's tests run with the AWS environment
+emptied, one assertion for an element without a region, and the whole unit run once with that
+environment emptied to find every other test of the kind); its commit is pushed at once, over the
+running red run, and the release then carries both packages. **From now the landing's unit gate runs
+with the AWS environment emptied** (section 8).
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
