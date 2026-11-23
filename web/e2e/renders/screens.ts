@@ -719,6 +719,21 @@ async function* remoteSections(page: Page): AsyncGenerator<string> {
 }
 
 /**
+ * A remote repository's section **Mirror** switched to the mode mirror (G5-65, R-UI-088): the format's own mirror settings (an OCI
+ * remote's tags and platforms, a Debian remote's distributions and architectures) appear under the bounds, which no stored repository of
+ * the seed shows; nothing is saved.
+ */
+async function* mirrorMode(page: Page): AsyncGenerator<string> {
+  // The section is found by its radio of the mode, not by its heading: a change puts "Unsaved changes" into the heading's name.
+  const section = page.locator('main quader-disclosure').filter({ has: page.locator('quader-mirror-settings') });
+  await section.getByRole('button', { name: 'Mirror', exact: true }).click();
+  await section.getByRole('radio', { name: /^Mirror/ }).check();
+  await expect(section.locator('quader-format-settings')).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'mirror';
+}
+
+/**
  * A service account's page (R-UI-181) as it opens, with its technical tokens (an active one, one with a long name, an expired and a
  * revoked one in the seed), a token's description being edited and its removal being confirmed, then the create form of a technical
  * token with its name first, where the caller may create one.
@@ -2596,6 +2611,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-deb', path: `${O}/repositories/${longDebKey}/settings`, kinds: admins, walk: allSections },
   { id: 'repository-settings-nuget-remote', path: `${O}/repositories/nuget-org/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-deb-remote', path: `${O}/repositories/debian/settings`, kinds: admins, walk: remoteSections },
+  // The section Mirror of an OCI and a Debian remote switched to the mode mirror, with the format's own mirror settings (G5-65).
+  { id: 'repository-settings-oci-mirror', path: `${O}/repositories/docker-hub-remote/settings`, kinds: ['admin'], walk: mirrorMode },
+  { id: 'repository-settings-deb-mirror', path: `${O}/repositories/debian/settings`, kinds: ['admin'], walk: mirrorMode },
   { id: 'repository-settings-ansible', path: `${O}/repositories/collections/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },

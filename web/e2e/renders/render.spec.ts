@@ -199,8 +199,10 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
       const main = document.querySelector('main');
       let inner = 0;
       let by = '';
+      // A text area keeps its height whatever the window's (R-UI-085: a typed field scrolls a longer value): the Debian remote's
+      // upstream keys, 75,000 characters, grew the window of every Debian settings picture to the cap of 16,000 px (G5-65).
       for (const el of Array.from(document.querySelectorAll<HTMLElement>('main *'))) {
-        if (!['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) continue;
+        if (el instanceof HTMLTextAreaElement || !['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) continue;
         const v = vertical(el);
         if (v > inner) {
           inner = v;
