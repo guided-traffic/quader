@@ -2378,7 +2378,9 @@ runs are in `git log`; this section holds the current state.
   yet (package 3), so nothing changes on an installation by this release,** and the interface's version
   stays the sixth. Its builder's worktree and branch are removed. His UI's backend is started again on
   this state (ready at 05:48). Released at 06:00; the plan's commits of the minutes between waited for
-  it.
+  it. **His installation runs the release since 06:09** (read at 06:11: both releases ready, thirteen pods
+  on the new image without a restart, the migration's job succeeded, so the registrations carry the
+  switch, off; from outside the Bastion answers with its certificate checked).
 - **The repair of the four tests reported at 03:55** (one commit of the type `test`; its builder worked from
   03:16; every gate exit 0, the two integration areas among them). None of the four causes was the
   product's, and each repaired test fails when the product's behaviour is taken away. (1) The key
@@ -5546,6 +5548,45 @@ of an encrypted connection with its refusals and the alert of an unknown key, wh
 every document an operator reads before switching encryption on. It lands after package 4, since the
 chart's acceptance makes an encrypted connection reachable and the jobs and the backup must handle one by
 then. Builders with a test load: the handover's packages 2 and 3, the encryption's packages 4 and 6.
+**Package 6 reported at 06:10** (one commit of the type `feat` on the state of the 05:01 push; its builder
+worked from 05:03; every gate exit 0 on its final tree, the lint over the whole repository, the chart's
+tests, the web's lint and tests and three integration areas among them). **Built:** `quader admin storage
+offline` with `list`, `verify`, `get` and `pull`: it reads an encrypted connection's bucket, or a directory
+`pull` wrote, with an export of the storage keys and the key ring's files and never a database; an
+object's name stands in for the database, every object is opened by its record and checked against its
+digest before a byte is called good, `get` never writes over a file, and no output holds a key. **It is
+the second reader of the stored format and read all 33 object cases of the vector files at its first
+run** (8 genuine, 25 refused). The chart passes `encrypted` through and refuses `keyed_names` without it;
+no key and no Secret is rendered; the alert `QuaderStorageUnknownKey` with one firing and two silent
+cases; the API's `destroyedAt` of a storage key, always empty until package 7 selects the column. No
+screen changes. **A defect its integration case found in its own code:** the tool's client of the store
+trusted no root certificate, so every request failed; it takes the configuration's defaults now.
+Decisions Q-STOR-450 to 452 (the pulled directory describes itself and is written only into an empty
+directory; `get` writes beside the target and links it only after the digest; a record's key is looked
+up over the whole export, so a backup's pool reads too); gaps H-1450 (the tool holds every key of the
+export in memory on the operator's machine) and H-1451 (a killed `get` leaves a partial file). Seven
+defences were each taken out once and a named test caught each. Its cost: the unit job about 0.55 s and
+one package's start, the chart's tests about 0.5 s, the shard with `blob` about 1 s. **Not verified by
+it:** any store but the stack's; a `pull` of more than a few objects; the runbook's import through a
+pod's standard input; Windows; the alert in a running Prometheus. **It is not moved onto `main`: it lands
+after package 4,** since its chart change makes an encrypted connection reachable. It wrote the manual's
+sentences about the scrub, the reconciliation into a new connection and the backup's pool for the state
+after package 4, and left three sentences that say a backup refuses to run for package 4 to take out
+(the README's sixth step, one of the backup page, the limitations' entry); the landing checks each
+against what package 4 brought. **Passed on to package 7's builder at 06:11:** the export's entry of a
+destroyed row as the offline reader expects it (a destruction time and no sealed key), the column the
+API's field waits for in the keys' statement and the summary's row, and the reason's exact label.
+**In work since 06:10: the tests' installation made cheap** (the development agent's decision of 05:57,
+(1)): three commits in the harness's two packages, the validator of the API's document once per test
+binary, a migrated template database that every stack clones with the installation's identity rows
+drawn again, the drain's wait set to nothing and a placeholder UI for the harness's replicas; then, if
+those are green, the replica's own parse of the document once per process as product code. It is told:
+no test changes its meaning, and a test that fails says what it relied on; the template's creation is
+safe when two processes start at once and is never left half migrated and marked ready; a changed
+migration makes a new template and drops the old one; four areas are measured once before and once
+after and the numbers go into the test cost page with the prediction for the pipeline; and a wide set
+of areas runs on its final tree, since the change lies under every area. Builders with a test load:
+the handover's package 3 with the joined case, the encryption's packages 4 and 7, this one.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
