@@ -128,7 +128,7 @@ func BuildLayout(ctx context.Context, src BlobReader, ref ImageRef, dir string, 
 	}
 	blobs := filepath.Join(dir, "blobs", "sha256")
 	if err := os.MkdirAll(blobs, 0o700); err != nil {
-		return err
+		return &syncwrite.WriteError{Op: "create", Err: err}
 	}
 	if err := copyBlob(ctx, src, ref, m.Config, blobs); err != nil {
 		return err
@@ -160,7 +160,13 @@ func BuildLayout(ctx context.Context, src BlobReader, ref ImageRef, dir string, 
 	return writeBlob(filepath.Join(dir, "oci-layout"), []byte(`{"imageLayoutVersion":"1.0.0"}`))
 }
 
-func writeBlob(p string, b []byte) error { return os.WriteFile(p, b, 0o600) }
+// writeBlob writes a small file of the layout; a failure is the disk's (Q-VULN-237).
+func writeBlob(p string, b []byte) error {
+	if err := os.WriteFile(p, b, 0o600); err != nil {
+		return &syncwrite.WriteError{Op: "write", Err: err}
+	}
+	return nil
+}
 
 func hexOf(digest string) string { return strings.TrimPrefix(digest, "sha256:") }
 
@@ -214,7 +220,7 @@ func copyBlob(ctx context.Context, src BlobReader, ref ImageRef, d descriptor, b
 	}
 	f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // a digest checked above, below the scan's own directory
 	if err != nil {
-		return err
+		return &syncwrite.WriteError{Op: "create", Err: err}
 	}
 	defer func() { _ = f.Close() }()
 	sum := sha256.New()

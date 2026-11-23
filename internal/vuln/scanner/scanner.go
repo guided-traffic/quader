@@ -29,6 +29,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 )
 
@@ -295,7 +296,7 @@ func (s *Service) analyse(rctx context.Context, c call) (string, func(), error) 
 		}
 	}
 	if err := os.MkdirAll(s.o.ScanDir, 0o700); err != nil {
-		return "", cleanup, err
+		return "", cleanup, &syncwrite.WriteError{Op: "create", Err: err}
 	}
 	d, err := os.MkdirTemp(s.o.ScanDir, AnalysisDirPrefix)
 	if err != nil {
@@ -372,6 +373,12 @@ func (s *Service) callErrorOf(ctx context.Context, err error) *callError {
 		return &callError{status: http.StatusBadGateway, code: imagescan.CodeRegistryUnavailable, detail: err.Error()}
 	case errors.Is(err, errRepositoryDisabled):
 		return &callError{status: http.StatusConflict, code: imagescan.CodeRepositoryDisabled, detail: err.Error()}
+	case errors.As(err, new(*syncwrite.WriteError)):
+		// The scanner's own volume refused a write: a full or failing spool. Neither the image nor the caller is at fault; the worker
+		// puts the scan off on another scanner without an attempt, and the operator reads this line (Q-VULN-237).
+		s.o.Log.Error("the scanner could not write to its spool; it answers scanner_disk_failed until the volume takes writes again",
+			"scan_dir", s.o.ScanDir, "error", err)
+		return &callError{status: http.StatusServiceUnavailable, code: imagescan.CodeScannerDiskFailed, detail: "the scanner could not write to its spool: " + err.Error()}
 	}
 	s.o.Log.Error("an analysis failed", "error", err)
 	return &callError{status: http.StatusUnprocessableEntity, code: imagescan.CodeAnalyserFailed, detail: "the analysis failed; the scanner's log has the cause"}

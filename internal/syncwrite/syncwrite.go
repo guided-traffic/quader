@@ -66,7 +66,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 		n += m
 		w.dirty += int64(m)
 		if err != nil {
-			return n, err
+			return n, &WriteError{Op: "write", Err: err}
 		}
 		p = p[k:]
 		if w.dirty >= w.every {
@@ -84,5 +84,21 @@ func (w *Writer) Sync() error {
 		return nil
 	}
 	w.dirty = 0
-	return w.f.Sync()
+	if err := w.f.Sync(); err != nil {
+		return &WriteError{Op: "flush", Err: err}
+	}
+	return nil
 }
+
+// WriteError is a failure of the file, not of what was copied into it: a write or a flush the volume refused (a full or a failing
+// disk). A caller tells it from a failure of its source with errors.As, so that a full disk is reported as the writer's, never as
+// the content's (vulnerability-scanning.md Q-VULN-237).
+type WriteError struct {
+	// Op is "write" or "flush".
+	Op  string
+	Err error
+}
+
+func (e *WriteError) Error() string { return "the local file: " + e.Op + ": " + e.Err.Error() }
+
+func (e *WriteError) Unwrap() error { return e.Err }

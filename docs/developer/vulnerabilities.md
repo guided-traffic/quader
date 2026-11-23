@@ -833,6 +833,7 @@ loader (container database, kind trivy-db): every 5 s before its first database,
 | the second `409` of a cycle | `scanner_versions_differ` | none | 1 minute |
 | `503 database_loading` after three tries within 3 s | none: the run ends with the result `waiting` and runs again after 30 s (Q-VULN-201) | none | the run, 30 s |
 | `503 scanner_busy`, `scanner_draining`; no connection; a refused handshake | `scanner_busy`, `scanner_unavailable` | none | 1 minute |
+| `503 scanner_disk_failed` (the scanner's own volume refused a write or a flush, a `*syncwrite.WriteError`, Q-VULN-237) after three tries within 3 s | `scanner_disk_failed` | none | 1 minute |
 | `422 analyser_failed` | `analyser_failed`, and the stored analysis is deleted (Q-VULN-202) | spent | the back-off |
 | `422 timeout`, `report_too_large`; a broken connection (`scanner_lost`); the deadline | the code | spent | the back-off |
 | `422 spool_too_small` | `spool_too_small` | none | 1 hour |

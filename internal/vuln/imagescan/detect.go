@@ -96,7 +96,7 @@ func (c *Client) Detect(ctx context.Context, call DetectCall) (Detection, error)
 	for try := 1; ; try++ {
 		det, err := c.detectOnce(ctx, call, q.Encode())
 		var se *ScanError
-		retry := errors.As(err, &se) && (se.Code == CodeScannerBusy || se.Code == CodeDatabaseLoading)
+		retry := errors.As(err, &se) && (se.Code == CodeScannerBusy || se.Code == CodeDatabaseLoading || se.Code == CodeScannerDiskFailed)
 		if !retry || try >= busyTries || time.Since(start) >= busyWindow {
 			return det, err
 		}
@@ -195,6 +195,9 @@ func detectProblemOf(res *http.Response) error {
 	case http.StatusServiceUnavailable:
 		if p.Code == CodeDatabaseLoading {
 			return &ScanError{Code: CodeDatabaseLoading, Defer: DatabaseLoadingWait, Detail: "the scanner holds no copy of the database in use yet: " + detail}
+		}
+		if p.Code == CodeScannerDiskFailed {
+			return &ScanError{Code: CodeScannerDiskFailed, Defer: scannerRetryAfter, Detail: "the scanner could not write to its spool: " + detail}
 		}
 		return &ScanError{Code: CodeScannerBusy, Defer: scannerRetryAfter, Detail: "every scanner the detection reached was busy or draining: " + detail}
 	case http.StatusUnprocessableEntity:

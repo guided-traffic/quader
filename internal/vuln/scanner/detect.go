@@ -176,11 +176,11 @@ func (s *Service) detect(rctx context.Context, body io.Reader, dbDir string) (st
 	}
 	held = release
 	if err := os.MkdirAll(s.o.ScanDir, 0o700); err != nil {
-		return "", cleanup, err
+		return "", cleanup, &syncwrite.WriteError{Op: "create", Err: err}
 	}
 	d, err := os.MkdirTemp(s.o.ScanDir, DetectionDirPrefix)
 	if err != nil {
-		return "", cleanup, err
+		return "", cleanup, &syncwrite.WriteError{Op: "create", Err: err}
 	}
 	dir = d
 	sbom := filepath.Join(dir, "analysis.json")
@@ -200,6 +200,23 @@ func (s *Service) detect(rctx context.Context, body io.Reader, dbDir string) (st
 // writeAnalysis decodes the body, the stored gzip, into path: at most MaxStoredAnalysisBytes on the wire and MaxAnalysisBytes decoded.
 // A body over either bound, or one that is no gzip, is malformed_request.
 func writeAnalysis(body io.Reader, path string) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // a path below the detection's own working directory
+	if err != nil {
+		return &syncwrite.WriteError{Op: "create", Err: err}
+	}
+	defer func() { _ = f.Close() }()
+	if err := decodeAnalysis(body, f); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return &syncwrite.WriteError{Op: "close", Err: err}
+	}
+	return nil
+}
+
+// decodeAnalysis decodes the body into f, flushed every 32 MiB: an analysis decodes to as much as 256 MiB, whose dirty pages would
+// count against the scanner container's memory (Q-VULN-225).
+func decodeAnalysis(body io.Reader, f syncwrite.File) error {
 	malformed := func(detail string) error {
 		return &callError{status: http.StatusBadRequest, code: imagescan.CodeMalformedRequest, detail: detail}
 	}
@@ -212,15 +229,11 @@ func writeAnalysis(body io.Reader, path string) error {
 		return malformed("the body is not gzip: " + err.Error())
 	}
 	defer func() { _ = zr.Close() }()
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // a path below the detection's own working directory
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-	// Flushed every 32 MiB: an analysis decodes to as much as 256 MiB, whose dirty pages would count against the scanner container's
-	// memory (Q-VULN-225).
 	n, err := syncwrite.Copy(f, io.LimitReader(zr, imagescan.MaxAnalysisBytes+1), syncwrite.Every)
+	var disk *syncwrite.WriteError
 	switch {
+	case errors.As(err, &disk):
+		return err // the scanner's own disk, answered by callErrorOf (Q-VULN-237)
 	case wire.over:
 		return malformed(fmt.Sprintf("the body exceeds %d bytes", imagescan.MaxStoredAnalysisBytes))
 	case err != nil:
@@ -228,7 +241,7 @@ func writeAnalysis(body io.Reader, path string) error {
 	case n > imagescan.MaxAnalysisBytes:
 		return malformed(fmt.Sprintf("the analysis exceeds %d bytes decoded", imagescan.MaxAnalysisBytes))
 	}
-	return f.Close()
+	return nil
 }
 
 // boundedReader ends with an error once more than left bytes would be read, and says so.

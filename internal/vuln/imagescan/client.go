@@ -46,6 +46,9 @@ const (
 	CodeRepositoryDisabled = "repository_disabled"
 	CodeScannerLost        = "scanner_lost"
 	CodeMalformedRequest   = "malformed_request"
+	// CodeScannerDiskFailed: the scanner could not write to its own spool, a full or failing volume (Q-VULN-237); the scanner's fault,
+	// neither the image's nor the caller's.
+	CodeScannerDiskFailed = "scanner_disk_failed"
 )
 
 // The waits of a scan put off for a reason of the installation (R-VULN-034): no attempt is spent.
@@ -175,7 +178,7 @@ func (c *Client) Analyse(ctx context.Context, call Call) (Analysis, error) {
 	for try := 1; ; try++ {
 		a, err := c.once(ctx, body)
 		var se *ScanError
-		if !errors.As(err, &se) || se.Code != CodeScannerBusy || try >= busyTries || time.Since(start) >= busyWindow {
+		if !errors.As(err, &se) || (se.Code != CodeScannerBusy && se.Code != CodeScannerDiskFailed) || try >= busyTries || time.Since(start) >= busyWindow {
 			return a, err
 		}
 		// The next connection may reach a free replica (Q-VULN-162).
@@ -265,6 +268,9 @@ func problemOf(res *http.Response) error {
 	detail := cut(p.Detail, 1024)
 	switch res.StatusCode {
 	case http.StatusServiceUnavailable:
+		if p.Code == CodeScannerDiskFailed {
+			return &ScanError{Code: CodeScannerDiskFailed, Defer: scannerRetryAfter, Detail: "the scanner could not write to its spool: " + detail}
+		}
 		return &ScanError{Code: CodeScannerBusy, Defer: scannerRetryAfter, Detail: "every scanner the call reached was busy or draining: " + detail}
 	case http.StatusBadGateway:
 		return &ScanError{Code: CodeRegistryUnavailable, Defer: scannerRetryAfter, Detail: "the scanner could not reach the scan listener of packages: " + detail}
