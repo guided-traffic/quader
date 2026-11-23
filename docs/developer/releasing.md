@@ -730,8 +730,10 @@ The input `sets` of a dispatch is a comma-separated list of set names or job key
 runs the leg `upgrade-release` and the leg `ha-suite` and no other. A job key selects every leg of its job (`-f sets=e2e-npm` runs `npm-ha` and `ha-suite`), and the perf jobs are
 selected by their keys `latency` and `vuln-perf`, the fuzz job by `fuzz-stored-format`. An empty list runs everything, as the schedule does, except the leg `upgrade-release`, which runs only when the
 list names it or its job `e2e-upgrade` until the first stable release (the input `nightly` of select-leg, [the switches](#switched-off-until-the-first-stable-release)); the perf jobs, which need the job, run all the same,
-because their condition starts with `!cancelled()`. A matrix leg that the list does not name shows as green with its
-steps skipped, and its job summary says so; a job without a matrix that the list does not name is skipped. A list with a space fails every matrix leg with an error.
+because their condition starts with `!cancelled()`. A job none of whose legs the list names, by set or by its key, is skipped by
+its own `if` and takes no runner ([Q-ARCH-597](../spec/architecture.md#q-arch-597--a-partial-dispatch-of-the-nightly-starts-only-the-jobs-whose-legs-it-names)); before, every job took its runner, a `large` pod for a lane job, to skip its steps. A matrix leg that the list does not name in a job it
+starts still takes its runner and shows as green with its steps skipped, and its job summary says so (`-f sets=ha-suite` starts the four
+legs of `e2e-npm`, three of which skip). A list with a space fails every matrix leg with an error.
 The composite action [select-leg](../../.github/actions/select-leg/action.yml) decides for every leg, in its script
 [select-leg.sh](../../.github/actions/select-leg/select-leg.sh) ([Q-ARCH-324](../spec/architecture.md#q-arch-324--how-is-one-leg-of-the-nightly-run-dispatched));
 the jobs without a matrix (`npm-ha-soak`, `latency`, `vuln-perf`, `fuzz-stored-format`) call it too, for the check [below](#a-scheduled-run-after-a-full-run).

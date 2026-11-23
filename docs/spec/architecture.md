@@ -10246,6 +10246,33 @@ Context: `HA and Performance (nightly)` has eleven jobs and sixteen legs. A manu
 
 **Applied in the spec:** none (CI wiring). Code: [performance.yml](../../.github/workflows/performance.yml) (input `sets`, the job-level `if`, the step `Select the leg`), [select-leg/action.yml](../../.github/actions/select-leg/action.yml). Elsewhere: [releasing.md](../developer/releasing.md#ha-and-performance-nightly).
 
+### Q-ARCH-597 · A partial dispatch of the nightly starts only the jobs whose legs it names
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Amends
+[Q-ARCH-324](#q-arch-324--how-is-one-leg-of-the-nightly-run-dispatched).
+
+Context: Q-ARCH-324 named its cost, a matrix job whose legs are all dropped still starts its runner pod; with twenty-two jobs beside `image`, all
+but one of them on `large` or GitHub-hosted runners, a dispatch of one leg started every one of them (plan entry "A partial dispatch of the nightly
+takes a large pod"). A job's `if` cannot read `matrix`, but it can read `inputs`, and each job's sets are known when the file is written.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every job with the step `Select the leg`, but `image`, has a job-level `if` that names its key and the sets of its legs (chosen) | `!inputs.sets`, or a space in the list, or the key or a set of the job in the list; the step decides the leg as before | No job none of whose legs is named takes a runner; no new job; the decision of a leg and the schedule's check stay in `select-leg` | A named job still starts a pod for each matrix leg, named or not; the sets stand in the `if` beside the matrix, held equal by a test |
+| (b) A job on `self-hosted` decides the legs and each job's `if`, or a matrix built with `fromJSON`, reads its output | The row of the triage of 2026-11-23 | (with `fromJSON`) only the named legs start; the schedule's check once per run | Q-ARCH-324 (c): the entries leave the file and actionlint; one more job before every leg |
+| (c) As it is | Every job starts | — | The cost Q-ARCH-324 named |
+
+**Choice:** (a). **Rationale:** the dispatch's sets are an input, which a job's `if` reads without a job before it, so the deciding job of
+(b) brings nothing for a dispatch; the step keeps the leg's decision and the scheduled run's check. The condition keeps the job's status
+function: `!cancelled()` where the job had it (the lanes), otherwise the implicit `success()`, so a failed `image` still skips the legs
+that need it. A list with a space starts every job, so that every leg fails with the step's error as before.
+`TestAPartialDispatchStartsOnlyTheJobsOfItsSets` ([partialdispatch_test.go](../../internal/tools/ciworkflows/partialdispatch_test.go)) fails
+when a job's `if` leaves out its key or one of its sets, names a set none of its legs takes, or when a job asks the step under another key.
+What stays: a scheduled run that defers to a full run (releasing.md, "A scheduled run after a full run") still starts a pod per job, and
+`-f sets=ha-suite` starts the four legs of `e2e-npm`. Not verified on GitHub: the first partial dispatch shows the skipped jobs.
+
+**Applied in the spec:** none (CI wiring). Code: [performance.yml](../../.github/workflows/performance.yml) (the job-level `if` of 22
+jobs). Elsewhere: [releasing.md](../developer/releasing.md#dispatching-one-leg).
+
 ### Q-ARCH-325 · Where do the perf jobs run relative to the kind legs?
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

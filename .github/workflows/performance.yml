@@ -27,8 +27,9 @@
 # (R-VULN-028, V-1 to V-9, perf/vuln) and opens an issue on a miss.
 #
 # A dispatch can run a part of the nightly (Q-ARCH-324): `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release,ha-suite`.
-# The input sets is a comma-separated list of set names or job keys; empty runs every leg the schedule runs (all but upgrade-release). A leg the list does not
-# name shows as a job with skipped steps, and its job summary says so. What the jobs run and how to reproduce them:
+# The input sets is a comma-separated list of set names or job keys; empty runs every leg the schedule runs (all but upgrade-release). A job none
+# of whose legs the list names is skipped by its own if and takes no runner (Q-ARCH-597); a leg the list does not name in a job it starts shows
+# as a job with skipped steps, and its job summary says so. What the jobs run and how to reproduce them:
 # docs/developer/releasing.md#ha-and-performance-nightly.
 #
 # The run name says what a run is: "HA and Performance (all legs)" for the schedule and a dispatch without sets, "HA and Performance
@@ -182,6 +183,7 @@ jobs:
   # jobs do not wait for it. It does not run the failure suite (H-805).
   k8s-matrix:
     name: Platform matrix (${{ matrix.leg }})
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',k8s-matrix,') || contains(format(',{0},', inputs.sets), ',k8s-min-helm4,') || contains(format(',{0},', inputs.sets), ',k8s-min-helm3,') || contains(format(',{0},', inputs.sets), ',k8s-max-helm4,') || contains(format(',{0},', inputs.sets), ',k8s-max-helm3,') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -277,7 +279,7 @@ jobs:
   # About 27 minutes of one self-hosted runner, beside the lanes (it starts no cluster). A crash fails the job and uploads its input.
   fuzz-stored-format:
     name: fuzz the stored format's readers (5 min per target)
-    if: ${{ !inputs.sets || contains(format(',{0},', inputs.sets), ',fuzz-stored-format,') }}
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',fuzz-stored-format,') }}
     runs-on: self-hosted
     timeout-minutes: 45
     steps:
@@ -331,7 +333,7 @@ jobs:
   latency:
     name: Latency
     needs: [e2e, e2e-npm, npm-ha-soak, e2e-nuget, e2e-drain-pooler, e2e-ci, e2e-bastion, e2e-vuln, e2e-backup, e2e-oci, e2e-edge, e2e-alerts, e2e-upgrade, format-oci, format-deb, format-ansible, format-npm, format-nuget]
-    if: ${{ !cancelled() && (!inputs.sets || contains(format(',{0},', inputs.sets), ',latency,')) }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',latency,')) }}
     runs-on: large
     timeout-minutes: 45
     steps:
@@ -421,7 +423,7 @@ jobs:
   vuln-perf:
     name: Vulnerability scanning performance
     needs: [e2e, e2e-npm, npm-ha-soak, e2e-nuget, e2e-drain-pooler, e2e-ci, e2e-bastion, e2e-vuln, e2e-backup, e2e-oci, e2e-edge, e2e-alerts, e2e-upgrade, format-oci, format-deb, format-ansible, format-npm, format-nuget, latency]
-    if: ${{ !cancelled() && (!inputs.sets || contains(format(',{0},', inputs.sets), ',vuln-perf,')) }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',vuln-perf,')) }}
     runs-on: large
     timeout-minutes: 150
     permissions:
@@ -552,7 +554,7 @@ jobs:
     name: e2e (npm-ha-soak)
     # Lane 2 (Q-ARCH-431): after e2e, whatever its result.
     needs: [image, e2e]
-    if: ${{ !cancelled() && (!inputs.sets || contains(format(',{0},', inputs.sets), ',npm-ha-soak,')) }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',npm-ha-soak,')) }}
     runs-on: large
     timeout-minutes: 90
     env:
@@ -737,6 +739,7 @@ jobs:
   e2e:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e,') || contains(format(',{0},', inputs.sets), ',drain-roles,') || contains(format(',{0},', inputs.sets), ',failover,') }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -999,6 +1002,7 @@ jobs:
   e2e-npm:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-npm,') || contains(format(',{0},', inputs.sets), ',npm-ha,') || contains(format(',{0},', inputs.sets), ',ha-suite,') || contains(format(',{0},', inputs.sets), ',ha-faults,') || contains(format(',{0},', inputs.sets), ',ha-pooler,') }}
     runs-on: large
     timeout-minutes: 120
     strategy:
@@ -1210,7 +1214,7 @@ jobs:
   e2e-nuget:
     name: e2e (${{ matrix.set }})
     needs: [image, e2e-npm]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-nuget,') || contains(format(',{0},', inputs.sets), ',nuget-ha,') || contains(format(',{0},', inputs.sets), ',cold-crash,') || contains(format(',{0},', inputs.sets), ',drain-load-b,') || contains(format(',{0},', inputs.sets), ',drain-load-c,') || contains(format(',{0},', inputs.sets), ',drain-load-e,')) }}
     runs-on: large
     timeout-minutes: 120
     strategy:
@@ -1423,7 +1427,7 @@ jobs:
   e2e-drain-pooler:
     name: e2e (${{ matrix.set }})
     needs: [image, e2e-edge]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-drain-pooler,') || contains(format(',{0},', inputs.sets), ',drain-load-pooler,')) }}
     runs-on: large
     timeout-minutes: 120
     strategy:
@@ -1633,7 +1637,7 @@ jobs:
   e2e-oci:
     name: e2e (${{ matrix.set }})
     needs: [image, e2e-backup]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-oci,') || contains(format(',{0},', inputs.sets), ',oci-long,')) }}
     runs-on: large
     timeout-minutes: 120
     strategy:
@@ -1833,7 +1837,7 @@ jobs:
   format-oci:
     name: e2e (${{ matrix.set }})
     needs: [image, e2e-oci]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',format-oci,') || contains(format(',{0},', inputs.sets), ',oci,')) }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -2023,7 +2027,7 @@ jobs:
   format-deb:
     name: e2e (${{ matrix.set }})
     needs: [image, format-oci]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',format-deb,') || contains(format(',{0},', inputs.sets), ',deb,')) }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -2213,7 +2217,7 @@ jobs:
   format-ansible:
     name: e2e (${{ matrix.set }})
     needs: [image, format-deb]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',format-ansible,') || contains(format(',{0},', inputs.sets), ',ansible,')) }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -2421,7 +2425,7 @@ jobs:
   format-npm:
     name: e2e (${{ matrix.set }})
     needs: [image, format-ansible]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',format-npm,') || contains(format(',{0},', inputs.sets), ',npm,')) }}
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -2614,6 +2618,7 @@ jobs:
   format-nuget:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',format-nuget,') || contains(format(',{0},', inputs.sets), ',nuget,') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -2810,6 +2815,7 @@ jobs:
   e2e-ci:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-ci,') || contains(format(',{0},', inputs.sets), ',ci-ha,') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
@@ -3018,6 +3024,7 @@ jobs:
   e2e-bastion:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-bastion,') || contains(format(',{0},', inputs.sets), ',bastion,') || contains(format(',{0},', inputs.sets), ',bastion-long,') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     strategy:
@@ -3259,6 +3266,7 @@ jobs:
   e2e-vuln:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-vuln,') || contains(format(',{0},', inputs.sets), ',vuln,') || contains(format(',{0},', inputs.sets), ',vuln-long,') || contains(format(',{0},', inputs.sets), ',vuln-pooler,') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
     strategy:
@@ -3505,7 +3513,7 @@ jobs:
   e2e-backup:
     name: e2e (backup)
     needs: [image, e2e-vuln]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-backup,') || contains(format(',{0},', inputs.sets), ',backup,')) }}
     runs-on: large
     timeout-minutes: 120
     env:
@@ -3708,7 +3716,7 @@ jobs:
     name: e2e (edge)
     # Lane 2 (Q-ARCH-431): after e2e-edge, whatever its result.
     needs: [image, npm-ha-soak]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-edge,') || contains(format(',{0},', inputs.sets), ',edge,')) }}
     runs-on: large
     timeout-minutes: 180
     env:
@@ -3918,7 +3926,7 @@ jobs:
   e2e-alerts:
     name: e2e (alerts)
     needs: image
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (!inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-alerts,') || contains(format(',{0},', inputs.sets), ',alerts,')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 210
     env:
@@ -4111,6 +4119,7 @@ jobs:
   e2e-upgrade:
     name: e2e (${{ matrix.set }})
     needs: image
+    if: ${{ !inputs.sets || contains(inputs.sets, ' ') || contains(format(',{0},', inputs.sets), ',e2e-upgrade,') || contains(format(',{0},', inputs.sets), ',upgrade,') || contains(format(',{0},', inputs.sets), ',upgrade-release,') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
