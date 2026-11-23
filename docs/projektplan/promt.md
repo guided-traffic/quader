@@ -2536,6 +2536,13 @@ runs are in `git log`; this section holds the current state.
   With three stacks nothing waits at a lock that another holds for long; the load is 7. The kit move's
   package 1 and the handover's package 2 wait for their areas' runs, the encryption's package 4 is at
   work; none has reported.
+- **In work since 04:47: package 3 of the handover, the Bastion's side:** the link client with its refusals
+  (no redirect, no credential, the refused hosts), the readers of a plain and of an encrypted body, the
+  offer, the fill by a direct read with the fallback before the first byte and the continuation after it,
+  the cooldown, the metrics and the alert; built and tested against the fake main installation, which can
+  hand over, so that it does not wait for package 2; the joined integration case comes when both are on
+  `main`. Builders with a test load: the kit move's package 1, the handover's packages 2 and 3, the
+  encryption's package 4, and the landing's gates.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
