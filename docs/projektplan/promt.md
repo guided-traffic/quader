@@ -242,7 +242,7 @@ Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, gree
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
 since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Started at 00:22 in its place: **T-24 · R5a** (the tab strip and the
-tab Downloads, on R4's API). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+tab Downloads, on R4's API). R5a landed at 01:00 (one commit; section 10). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
 took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). **v0.115.0** was released at 23:30 by the run of
 the rest of the Go tests (the evidence record's repair, T-25, the Bastion's fix of 18:39 and the Go tests);
@@ -574,7 +574,7 @@ order is what a user or an operator meets first. The state is kept here.
   passed on `main` too: a timing. The test's second start of the scan task was answered 409 (the first run had
   not ended), which its helper accepts, so no run began after the push and the database's change, and the run
   still in progress re-detected the stored images first. R4 adds a task beside it, which lets the first run end
-  later. Repaired at 00:50: the test starts a fresh run (`runFreshScan`, repeated until the task answers 202);
+  later. Repaired at 00:45: the test starts a fresh run (`runFreshScan`, repeated until the task answers 202);
   the area passed once (61 s). **Open, read and not confirmed:** whether a pass in progress when the database
   changes should take a push that arrives during it before its re-detections; R-VULN's promise names a pass, so
   this is a question of the specification, to be read with Q-VULN-200.
@@ -803,6 +803,11 @@ records the recorder that tells such a stall apart).
   whose refill it sets), or measures the rate it reached and asserts against that.
 
 ### Product
+
+- **A failure's details say a step twice (seen by the development agent on 2026-11-24 at R5a's renders,
+  `repository-npm-remote-downloads-failure-dark-1024.png`):** "Step  The answer's status `status`" and "Class
+  Upstream error `upstream_error`" put the sentence and the code side by side, which reads as a stutter where they
+  share a word. To do: the code in a muted line below its words, or only where it differs from them.
 
 - **A narrow list's stacked rows place their fields by the width that is left (seen by the development agent on
   2026-11-23 at T-25's renders, `all-repositories-chips-light-390.png`).** In the stacked rows of the shared
@@ -3071,7 +3076,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | landed at 00:18 on 2026-11-24 (one commit, Q-CUR-80 to Q-CUR-85, gaps H-1840 and H-1841, H-1725 and H-1728 now live): the job kind `remote-download`, the task `remote-downloads-dispatch`, failures as class, step, code, address, status and excerpt, a probe as a row, clients' failed fetches as rows, one version charged to the person, the queue's API; left for R3: a section's bulk (`400 catalogue_not_offered`) and a package preview's counts; left for R2's landing: its decider in `RemoteDownloadsServices.Decider` (the stub delivers everything); not covered: the cancel of a running row and the 30-minute bound by an integration test |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
-| T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | beside R2b |
+| T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | landed at 01:00 on 2026-11-24 (one commit, Q-CUR-130 to Q-CUR-133; the renders looked at by the development agent): the strip with the content tab and **Downloads** (`Downloads · 2 failed`), no tab Upstream until R5b, the states as buttons with counts, the failure class as a select, a row's whole failure with the upstream's excerpt as plain text, retry and cancel by role, a refresh every 5 s while rows wait or run; not tried: the mark "Not delivered here" until R2's decider is wired, the German texts on a screen |
 | T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | after them |
 | T-24 · R6 · Clients and documents | one end-to-end case per format in that format's own leg; the manual and the developer pages | R5b | last |
 
