@@ -430,7 +430,7 @@ order is what a user or an operator meets first. The state is kept here.
 |---|---|---|
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | in work since 08:16 |
-| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built at 09:30 and sent back to finish the shared virtual read, whose file was another builder's until then |
+| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built for every format; at the landing's gates since 10:30, stacked on the handover's data keys |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | in work since 09:40 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | waits for a place |
@@ -629,6 +629,16 @@ records the recorder that tells such a stall apart).
   `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
+- **The layout checks stopped once at the admin area's Storage page (Test and Release 45140417183 of
+  2026-11-23, a push without a change under `web/`; the run before it was green):** `admin-system-storage`
+  "stopped at 390 px: locator.click: Timeout 15000ms exceeded", waiting for the second closed disclosure of
+  the page; the report also counts "5 sideways", which fail nothing. A research reads the cause and what
+  the five are since 10:26 (read-only).
+- **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
+  (seen by the builder of W1, not repeated by it):** the web's `ci-editor-screens.spec.ts`, "the groups of
+  a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
+  and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
+  during the rolling restart). To do (W4, W8): what each waits for.
 - **Three integration tests failed on a starved machine on 2026-11-23, about 09:52 to 09:57, at a load of
   30 to 59 (four builders and the landing at their gates), and are not looked into:**
   `TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache/volume+valkey` ("a warm run sent 1 requests for
@@ -638,6 +648,9 @@ records the recorder that tells such a stall apart).
   of `blob` ("commit did not settle", on two trees in the same minutes, green at a load of 12 to 17). To do
   (W4): for each, whether it waits for what it stands for or for a time a starved host does not keep; the
   two of the Bastion compare answers while a link's health is in doubt, which a test can wait out.
+  `ColdAndWarmCache` failed a second time at 10:18 in its subtest `bucket` (a 504 in a warm run) at a load
+  of up to 133, which the landing's own gates helped to make: the lint ran beside two integration
+  streams; from 10:30 a landing runs its lint before its areas.
 - **`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` (area `identity`) failed once under load
   (2026-11-23, about 09:25, host load 40 to 46, four builders at their gates):** 401 where 429 was
   expected; alone it passed in 7 s. Not looked into. To do (W4): what it waits for and whether the
@@ -6485,6 +6498,24 @@ that key alone. **10:07, the three commits are at the gates again** (the basics,
 the areas `bastion`, `blob`, `backup` at a load of 13). The three tests that fail on a starved machine
 are entered in section 8 for W4.
 Builders with a test load: the screens' first round, W1, W3, W5b, the landing's gates.
+**10:18, W1 is back with the virtual read of every format** (three commits: the administrator flag, the
+test of the global read policy, the virtual read). One rule in one place (`internal/errs`, since a format
+may not import the engine): a walk goes on at a miss (a 404, a plain `forbidden`, a member that may not
+populate) and at a failure it names (502, 504, an upstream assumed offline or rate limited, a full fetch
+queue, content not available); every other answer ends the walk with that answer. What changes for a
+client: a member that refuses the read after the plan admitted it is skipped in npm, NuGet, Ansible
+Galaxy and generic files too (its 403 went to the client before); an answer nobody named, and a 503 of
+the replica's own database, end the walk (they went on to the next member before). A member whose check
+is still running ends the walk with its 503, before and after, in every format, held by a test for both
+pending codes; the gap it had entered for the shared engine is taken out again. Debian has no member
+walk. Its gates exit 0 but two under load (section 8). **10:26, the run of 09:39 ended with two red jobs:**
+the shard of the Debian test, and the layout checks, which stopped once at the admin area's Storage page
+(section 8; a research reads the cause, started 10:26). **10:29, the data keys' second gate run ended:**
+`blob` and `backup` exit 0 (545 s and 623 s on a starved machine), the basics and the lint exit 0,
+`bastion` exit 1 again by the same cache test in another subtest (section 8). **10:30, one stack for one
+push:** W1's three commits on the data keys' three, no conflict; its gates run with the lint before the
+areas: the basics, the web gates, the lint, then `bastion`, `authz`, `apikey`, `identity`, `files` and
+`ocivirtual`, `oci`, `signatures`, `virtual`, `npm`, `nuget`, `ansiblevirtual` in two streams.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
