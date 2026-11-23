@@ -5,6 +5,7 @@
 #
 #   e2e-evidence.sh start <dir>   starts the recorders and returns; e2e.sh calls it before the first step of a set
 #   e2e-evidence.sh stop  <dir>   stops them and writes the files below; e2e.sh calls it from its EXIT trap
+#   e2e-evidence.sh db-sample <dir>  takes one sample of the database's recorder (what the recorder does every interval; its test runs it)
 #
 # Recorders, all cheap on purpose (the probe of E0.15 once used more CPU than the installation, Q-HA-292): the samplers are shell loops
 # that read /proc and /sys with builtins and fork only `date` and `sleep` once per sample; they run inside the node containers
@@ -23,9 +24,12 @@
 #                     file, socket buffers, kernel) and the OOM kills of its cgroup; pod-names.tsv maps the uids to names
 #   containers.tsv    the containers of the job's own Docker daemon (kind nodes, k6, helpers), every 10 s: which `cgd:` rows are the leg's
 #   db-connections.csv  the connections of the database's primary by client and state (pg_stat_activity: application_name, state,
-#                     count), every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds, one `kubectl exec ... psql` per sample: whether a pool
-#                     ran out (each pool's size is the replicas' metric quader_db_pool_max_connections) or a pooler held its
-#                     connections across a drain (F-169); the pod that answered is in each row, so a switchover shows as a new name
+#                     count) and the private memory of their backends (the sum of RssAnon of /proc/<pid>/status, KiB), every
+#                     QUADER_E2E_EVIDENCE_POD_INTERVAL seconds, one `kubectl exec ... sh` per sample: whether a pool ran out or a pooler
+#                     held its connections across a drain (F-169), and what a connection costs the primary's memory; the pod that
+#                     answered is in each row, so a switchover shows as a new name
+#   db-pools.csv      each pool's size of each replica (its metric quader_db_pool_max_connections, read once per pod through the API
+#                     server's proxy to its ops port when the pod is first seen), so that db-connections.csv can be read against it
 #   secrets.tsv       the Secrets of every namespace at the start and at the end: namespace, name, resourceVersion, creation time, uid,
 #                     the managers that wrote them (managedFields). Names and metadata only, never a value.
 #   secrets-watch.log every change of a Secret during the run, one line each, with the time the watch saw it
@@ -49,7 +53,7 @@ set +e
 
 cmd="${1:-}"
 dir="${2:-}"
-[ -n "$cmd" ] && [ -n "$dir" ] || die "usage: e2e-evidence.sh start|stop <dir>"
+[ -n "$cmd" ] && [ -n "$dir" ] || die "usage: e2e-evidence.sh start|stop|db-sample <dir>"
 
 SAMPLE_INTERVAL="${QUADER_E2E_EVIDENCE_INTERVAL:-1}"
 EDGE_INTERVAL="${QUADER_E2E_EVIDENCE_EDGE_INTERVAL:-2}"
@@ -354,20 +358,59 @@ secrets_snapshot() {
   kubectl --context "$CTX" get secrets -A -o json 2>/dev/null | jq -r --arg l "$1" '.items[] | [$l, .metadata.namespace, .metadata.name, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.uid, ([.metadata.managedFields[]?.manager] | unique | join("+"))] | @tsv'
 }
 
-# db_sampler: the connections of the primary of quader-db by client and state, every POD_INTERVAL seconds, until the stop file; the
-# primary is looked up for every sample, so a switchover is followed. A sample that cannot run (no primary, an exec that fails) is
-# skipped without a row.
-db_sampler() {
+# DBSTAT runs in the postgres container of the primary (POSIX sh, psql and awk of the image): the client backends by application_name
+# and state, with the sum of the RssAnon of each backend's /proc/<pid>/status ($1 is the proc root), as `application_name,state,count,
+# anon_kib`. RssAnon is what a backend holds privately (its caches, sorts and plans); shared_buffers are shared memory and not in it.
+# PostgreSQL tells a backend's memory only to that backend (pg_backend_memory_contexts) or into the server log
+# (pg_log_backend_memory_contexts), neither cheap for every connection every few seconds; the kernel's line is one read per backend.
+read -r -d '' DBSTAT <<'EOF'
+proc=$1
+psql -d postgres -AtF, -c "SELECT pid, coalesce(nullif(application_name, ''), '-'), coalesce(state, '-') FROM pg_stat_activity WHERE backend_type = 'client backend'" |
+while IFS=, read -r pid app state; do
+  anon=0
+  if [ -r "$proc/$pid/status" ]; then
+    while read -r k v _; do
+      if [ "$k" = RssAnon: ]; then anon=$v; break; fi
+    done <"$proc/$pid/status"
+  fi
+  printf '%s,%s,%s\n' "$app" "$state" "$anon"
+done | awk -F, '{ k = $1 "," $2; n[k]++; a[k] += $3 } END { for (k in n) printf "%s,%d,%d\n", k, n[k], a[k] }'
+EOF
+
+# The replicas whose pools db-pools.csv records: the serving pods of the release, as the end-to-end tests select them (selQuader).
+DB_REPLICAS='app.kubernetes.io/instance=quader,quader/serve=true,app.kubernetes.io/component in (api,packages,worker)'
+# The scheme of the replicas' ops port 8081 (e2e.sh: QUADER_DEV_OPS_SCHEME, https unless a profile says otherwise).
+OPS_PROXY_SCHEME=""
+[ "${QUADER_DEV_OPS_SCHEME:-https}" = https ] && OPS_PROXY_SCHEME="https:"
+
+# db_sample: one sample of the database's recorder. The connections of the primary of quader-db and their memory, the primary looked
+# up for every sample, so that a switchover is followed; and the pool sizes of every replica not recorded yet (a pool's size is
+# configuration, fixed for a pod's life, so one read per pod suffices; a pod whose metrics cannot be read yet is asked again in the next
+# sample). A part that cannot run (no primary, an exec or a read that fails) writes no row.
+db_sample() {
   local pod t
-  while [ ! -e "$dir/.stop" ]; do
-    pod="$(kubectl --context "$CTX" -n "$NS" get pods -l cnpg.io/cluster=quader-db,cnpg.io/instanceRole=primary -o name 2>/dev/null | head -n 1)"
+  t="$(date +%s)000"
+  pod="$(kubectl --context "$CTX" -n "$NS" get pods -l cnpg.io/cluster=quader-db,cnpg.io/instanceRole=primary -o name 2>/dev/null | head -n 1)"
+  pod="${pod#pod/}"
+  if [ -n "$pod" ]; then
+    kubectl --context "$CTX" -n "$NS" exec "$pod" -c postgres -- sh -c "$DBSTAT" _ /proc \
+      2>/dev/null | while IFS= read -r line; do printf '%s,%s,%s\n' "$t" "$pod" "$line"; done >>"$dir/.db-connections.csv"
+  fi
+  touch "$dir/.db-pools.seen"
+  for pod in $(kubectl --context "$CTX" -n "$NS" get pods -l "$DB_REPLICAS" -o name 2>/dev/null); do
     pod="${pod#pod/}"
-    if [ -n "$pod" ]; then
-      t="$(date +%s)000"
-      kubectl --context "$CTX" -n "$NS" exec "$pod" -c postgres -- psql -d postgres -AtF, -c \
-        "SELECT coalesce(nullif(application_name, ''), '-'), coalesce(state, '-'), count(*) FROM pg_stat_activity WHERE backend_type = 'client backend' GROUP BY 1, 2" \
-        2>/dev/null | while IFS= read -r line; do printf '%s,%s,%s\n' "$t" "$pod" "$line"; done >>"$dir/.db-connections.csv"
-    fi
+    grep -qxF "$pod" "$dir/.db-pools.seen" && continue
+    kubectl --context "$CTX" get --raw "/api/v1/namespaces/$NS/pods/$OPS_PROXY_SCHEME$pod:8081/proxy/metrics" 2>/dev/null \
+      | awk -v t="$t" -v pod="$pod" '/^quader_db_pool_max_connections\{/ && match($0, /db_pool="[^"]*"/) {
+          printf "%s,%s,%s,%s\n", t, pod, substr($0, RSTART + 9, RLENGTH - 10), $NF; found = 1 } END { exit !found }' >>"$dir/.db-pools.csv" \
+      && echo "$pod" >>"$dir/.db-pools.seen"
+  done
+}
+
+# db_sampler: db_sample every POD_INTERVAL seconds, until the stop file.
+db_sampler() {
+  while [ ! -e "$dir/.stop" ]; do
+    db_sample
     sleep "$POD_INTERVAL"
   done
 }
@@ -580,21 +623,27 @@ pod-memory.csv     where the daemon's parent lies inside a pod: the pod's memory
 pods.csv           per pod of each kind node: CPU time, memory.current, anon, file, socket buffers, kernel memory and the OOM kills of its cgroup, every 5 s
 pod-names.tsv      the namespace and name of each pod uid in pods.csv
 containers.tsv     the containers of the job's own Docker daemon (the kind nodes, k6, helpers) by their 12-character id: every other cgd: row is a neighbour's
-db-connections.csv the connections of the database's primary by client and state (pg_stat_activity), every 5 s: unix_ms,pod,application_name,state,count
-secrets.tsv        the Secrets of every namespace at the start and at the end (resourceVersion, creation time, uid, writers); names and metadata only, no value
+db-connections.csv the connections of the database's primary by client and state (pg_stat_activity) and the private memory of their backends (the sum of RssAnon, KiB), every 5 s: unix_ms,pod,application_name,state,count,anon_kib
+db-pools.csv       each pool's size of each replica (quader_db_pool_max_connections), read once when the pod is first seen: unix_ms,pod,db_pool,max_connections
+secrets.tsv       the Secrets of every namespace at the start and at the end (resourceVersion, creation time, uid, writers); names and metadata only, no value
 secrets-watch.log  every change of a Secret during the run, with the time the watch saw it
 events.tsv         the Kubernetes events of every namespace, by time
 pods-final.txt     kubectl get pods -A -o wide at the end
 kept-pod-logs/     logs of pods deleted or evicted during the run, and of the secrets operator and cert-manager, one file per container instance
 README
   } >"$dir/README.txt"
-  { echo "unix_ms,pod,application_name,state,count"; cat "$dir/.db-connections.csv" 2>/dev/null; } >"$dir/db-connections.csv"
-  rm -f "$dir"/.db-connections.csv
+  { echo "unix_ms,pod,application_name,state,count,anon_kib"; cat "$dir/.db-connections.csv" 2>/dev/null; } >"$dir/db-connections.csv"
+  { echo "unix_ms,pod,db_pool,max_connections"; cat "$dir/.db-pools.csv" 2>/dev/null; } >"$dir/db-pools.csv"
+  rm -f "$dir"/.db-connections.csv "$dir"/.db-pools.csv "$dir"/.db-pools.seen
   rm -f "$dir"/.secrets-watch.fifo "$dir"/.stop "$dir"/.started "$dir"/.hostmode "$dir"/.*.pid "$dir"/.host.csv "$dir"/.events.jsonl "$dir"/.secrets-*.tsv "$dir"/.containers.tsv \
     "$dir"/.cgparent "$dir"/.podmem.csv
   rm -rf "$dir/.edge"
   log "evidence written to $dir"
   ;;
-*) die "usage: e2e-evidence.sh start|stop <dir>" ;;
+db-sample)
+  [ -d "$dir" ] || die "e2e-evidence.sh db-sample: no directory $dir"
+  db_sample
+  ;;
+*) die "usage: e2e-evidence.sh start|stop|db-sample <dir>" ;;
 esac
 exit 0
