@@ -630,7 +630,8 @@ records the recorder that tells such a stall apart).
   contacts of a card stack by their content and not by the width, so two cards of one page differ; the
   tokens' table and the contacts' table wrap a date onto two lines at 1024 and 1440. The screen had
   never been rendered with a registration.
-- **The offline tool has not read a real backup's pool (2026-11-23).** The encryption's fourth and sixth
+- **Closed on 2026-11-23 by the seventh package's joins: the offline tool has read a real backup's
+  pool.** As it stood: the encryption's fourth and sixth
   packages were built apart; the tool's reading of a pool object is tested with names its own test
   writes. One case in the area `backup` after an encrypted backup (list the pool with the export and the
   key ring) would join them, a second or two. For the batch.
@@ -2717,6 +2718,25 @@ runs are in `git log`; this section holds the current state.
   stacked form at full width): the form is to depend on the width alone; the tokens' table wraps every
   date at 1024; the read-only state is a bare word; and two defects it had seen beside its scope (the
   API's description of a `null` for the switch, a stale unit of the German translation).
+  **It reported again at 07:50** (a second commit of the type `fix` over its first, both moved onto the
+  state of the 07:26 push without a conflict; the web's lint and 1,977 tests, the manual's build check
+  and the layout checks of both screens on its stack, each exit 0). The six columns of a card's last
+  contact need about 1,030 px where a card has 1,094 at the wide width and 678 at the middle one, so it
+  cut the columns instead of changing the form by width (Q-UI-959): the replica with its client address,
+  release and interface version under the name, the time, the reported base URL; the tokens with the
+  hint and the creation under the description, the expiry, the last use. Times in both tables are
+  relative with the full time as the title, the repository's rule for a time in a list, so no date
+  breaks; a long name, address or URL breaks inside its own column. Both tables need about 640 px
+  whatever they hold: the same table at 1440 and 1024 for every card, stacked rows at 390 only. The
+  read-only state follows the settings pages, a sentence ("Direct reads from the object store are on.")
+  in place of heading and switch (Q-UI-960). The API's description of a `null` and the stale unit are
+  corrected. **Looked at again by the development agent:** two cards of different content show the same
+  tables at 1440 and 1024 in both schemes and stack at 390; with a replica name of 63 characters and an
+  IPv6 address the replica's column breaks them inside itself while the URL's column has room to spare
+  at 1440, which a real name of some thirty characters does not meet; left so. Not looked at by anybody:
+  the German page. **In the landing's gates since 07:51** (the set with the web's gates and the unit run
+  with the AWS environment emptied; no lint and no integration area, since no Go behaviour changed). It
+  is pushed with the tests' harness after the release of the repair's push and its shards.
 - **In work since 07:27: package 4 of the handover, the data keys:** the main installation's half for a
   copy on an encrypted connection: the second pass over the encrypted copies after the plain ones, the
   blob's data key taken for the one copy handed over, the value's key and stored size, **the trace of
@@ -5818,6 +5838,40 @@ emptied, one assertion for an element without a region, and the whole unit run o
 environment emptied to find every other test of the kind); its commit is pushed at once, over the
 running red run, and the release then carries both packages. **From now the landing's unit gate runs
 with the AWS environment emptied** (section 8).
+**The repair reported at 07:48 and is landed at 07:50** (one commit of the type `test`; its builder worked
+nine minutes): the element of the failing test names its region; the tests of the offline tool's
+package and of the binary's commands run with the AWS environment emptied, through one helper of the
+blob test package; one case holds that an element without a region is refused with the binary's
+sentence. **The whole unit run with that environment emptied, made before the repair, failed in this one
+test and nowhere else.** The product is right: the tool builds its client on the binary's own path.
+**One sentence of the specification was not:** it said the tool reads nothing of an environment; with
+the default credential source the AWS SDK's own chain supplies the credentials and, where the element
+names none, the region, as in the binary. Corrected by the development agent in the requirement's
+as-built note and in the function's comment, in a commit under the repair. Checked before the push on
+the two together: the build, the vet, the unit tests of the storage packages and the commands with the
+environment emptied, the evidence, the links and the lint of the touched packages. Its builder's
+worktree and branch are removed. **Released at 08:03, with the encryption's fourth and sixth packages in
+it;** the plan's commits of the minutes between waited for it.
+**The encryption's seventh package reported again at 08:02, joined with the fourth and the sixth** (two
+commits on their stack; every gate exit 0 on its final tree, the lint over the whole repository and
+seven integration areas, `backup` in 7 min 46 s). **A join showed a defect of package 4:** a restore into a
+connection whose identifier has destroyed keys was refused at its checks only when the connection was
+encrypted; a plain one passed, and the restored installation's replicas would then have refused to
+start. Closed in a commit of its own (type `fix`) with a test that failed before. What each join
+showed: package 4's scrub marks a destroyed key already, so the seventh package's own lines went, and a
+whole scrub is shown to mark the copy and repair it from another connection under a new key; the sweep
+leaves an object whose record names a destroyed key; package 4 writes the lists of a retained backup's
+keys as arrays, as the backups' check reads them, and **the check now meets a real retained backup in
+the backup area's encrypted case: refused while the first backup is retained, passed after the re-pool
+and the retention**; the restore draws keys on a path of its own, not through the holder, which a
+comment and two sentences of the specification had said; a destroyed row is read through the
+connections' API with its state and time; the offline tool's case reads an export the keys' own code
+wrote; and **the offline tool lists the pool of a real backup: three encrypted pool objects, each `ok`**,
+which closes that point of section 8. The areas gain 0.1 s (`backup`), 0.08 s (`blob`) and about 2 s
+(`api`, a node of its own for one read). **Moved onto `main` by the development agent at 08:02** over the
+handover's surface, without a conflict; the translation source extracted again into its commit,
+location notes only. Its landing's gates run on the final stack once the tests' harness has passed
+its own, so that its new integration cases run on the harness too.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
