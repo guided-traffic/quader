@@ -2254,6 +2254,53 @@ runs are in `git log`; this section holds the current state.
   stands between it and the save. Moved onto the Bastion's P4 and package F with two conflicts in documents,
   both sides kept; every gate exit 0 on that base, the lint over the whole repository and the areas `api`
   and `blob` among them. It is pushed with those two after their gates.
+- **Landed on 2026-11-23 at 03:14, in one push of four commits: the Bastion's P4, package F with its
+  documents, and package 3 of the signed links.** The gates of P4 with package F together ran in the landing
+  worktree from 02:31 to 03:13, twenty-eight of them, each exit 0, the unit run, the lint and eleven
+  integration areas among them; the links' third package came on top with its builder's gates on exactly
+  that base, and the build, the generated code, the evidence, the links, the API's client and the
+  translation source were checked on the four together. The run of the release before had ended at 03:11
+  with every job green, and his installation runs that release since 02:47. **With this push three features
+  are whole:** a Bastion answers per package (a warm pull of an image costs the main installation two to six
+  requests instead of thirteen to nineteen); the first stage of the storage topic has its surface, the tab
+  **Storage** with the storage summary; and signed links are reachable, by an administrator's switch on the
+  page of the storage settings and a repository's section, for OCI and Ansible Galaxy. His UI's backend is
+  started again on this state (ready at 03:15). The three builders' worktrees and branches are removed.
+  Released at 03:27; the plan's commits of the minutes between waited for it.
+- **In work since 03:16: the repair of four tests that failed without a defect of the product** (the
+  findings of section 8 that can stop a landing or the release's unit job: the key commands' case that
+  flips a character of a sealed value, the query budget's harness with one slow request in its window, the
+  remote engine's test of the fetch slots, the Bastion engine's timing check for large artifacts), each at
+  its cause and shown by reasoning and a deterministic case, not by repeated runs. Builders with a test
+  load: the encryption's package 3 (moving onto `main`'s top), the handover's package 1, the kit move's
+  package 1, this one.
+- **Package 1 of the handover per blob to a Bastion, the wire, reported at 03:23** (one commit of the type
+  `feat`; its builder worked from 02:28; every gate exit 0, the lint over the whole repository on its final
+  tree and three integration areas among them). Both sides speak the interface's sixth version and nothing
+  behaves differently: the offer's header with one spelling, the class of a handover's answer, the
+  handover's members with every check that needs the value alone at the decoding (the stored size against
+  the format's included) and the rest at a check before the read (expiry, the offer, the validator, refused
+  hosts); the encoder refuses what the decoder refuses. **A handed key shows nowhere:** its bytes lie behind
+  a pointer, every rendering writes a redaction, no error text holds the link, the key or a byte of a
+  malformed value, and the header is redacted in logs as a credential's is. The client refuses a handover
+  it did not offer, which keeps today's behaviour. Decisions Q-BAS-280 (the wire checks the stored size
+  itself, with its own copy of the format's rule held to the format's by a test) and Q-BAS-281 (narrower
+  checks than the requirement listed: a link with user information or a fragment is refused, the host is
+  compared by name, the encoding is strict). Each refusal was taken out once by a script; three survived as
+  equivalent to another check, and two cases were added where a refusal had no test. The unit job gains
+  about 0.08 s. **Moved onto `main` by the development agent** (one conflict in the specification's
+  decision blocks, both sides kept; the generated code and the web's client of the API generated again
+  into the commit), **and in the landing's gates since 03:24:** the full set and the Bastion's five areas
+  with `api`. It is pushed after the run of the push before it has finished its integration shards; the
+  two sides will speak different versions for some seconds on his cluster again. Its builder's worktree
+  and branch are removed.
+- **In work since 03:25, on its commit: package 2 of the handover,** the main installation's side for plain
+  copies: the registration's switch with its API, events and journal's replay, the conditions of the
+  handover beside the link's at the serve point (after the gates and the admission; it does not read the
+  format's declaration, so npm can be handed over), the marking, the charge at the issue, the link check's
+  two parts, one integration case with a plain connection and the query budget's case; migration 00110. An
+  encrypted copy is not handed over by it. Builders with a test load: the encryption's package 3, the kit
+  move's package 1, the repair of the four tests, the handover's package 2, and the landing's gates.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
@@ -2385,6 +2432,10 @@ runs are in `git log`; this section holds the current state.
   runs wait at the stack's lock. The encryption's package 3 (moving onto the landing's top), the links'
   package 3, the handover's package 1 and the kit move's package 1 are active within two minutes. The load
   is 34. His installation runs the release before this one, ready, until the chart is published.
+- **The timer's check at 03:16:** the push of 03:14 is in its run, no failed job, its release not cut yet. The
+  encryption's package 3, the handover's package 1, the kit move's package 1 and the repair of the four
+  tests are active within three minutes; none has reported since the landing. Two runs wait at the stack's
+  lock; the load is 7. His installation and its Bastion run the release before this push, ready.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
