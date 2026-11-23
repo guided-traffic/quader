@@ -80,7 +80,8 @@ func TestTemplateFollowsTheMigrations(t *testing.T) {
 	// Whatever a subtest leaves, the template of the embedded migrations is there again for the tests after it.
 	t.Cleanup(func() { stackTemplate(t, cfg, true) })
 
-	t.Run("Q-ARCH-581 a migration added during development: two processes that start at once make its template once and drop the old one", func(t *testing.T) {
+	t.Run("Q-ARCH-581 a migration added during development: two processes that start at once make its template once and drop the old one; "+
+		"a stack that still clones the old one makes it again", func(t *testing.T) {
 		// A step no server has seen: neither process finds the template, both ask for the lock, one builds, the other finds its result.
 		changed := withStep(t, "it_template_probe_"+RandHex(4), "CREATE TABLE it_template_probe (id integer);\n")
 		type result struct {
@@ -133,18 +134,12 @@ func TestTemplateFollowsTheMigrations(t *testing.T) {
 			t.Fatalf("a clone of the changed migrations: schema_state.applied %d (want %d), the new step's table %v", applied, len(steps)+1, probe)
 		}
 
-		// Back to the embedded migrations: their template is made again and the changed one dropped.
-		back := stackTemplate(t, cfg, true)
-		if back != embedded || databaseExists(t, name) || !databaseExists(t, embedded) {
-			t.Fatalf("back to the embedded migrations: %s (want %s); %s exists %v", back, embedded, name, databaseExists(t, name))
-		}
-	})
-
-	t.Run("Q-ARCH-581 a stack whose template another process dropped makes it again", func(t *testing.T) {
-		withMaint(t, func(c *pgx.Conn) error { return dropTemplate(ctx, c, embedded) })
-		s := NewStack(t, StackOptions{Name: "tplgone"})
-		if !databaseExists(t, embedded) || s.Number(`SELECT applied FROM schema_state`) == 0 {
-			t.Fatalf("the stack after its template was dropped: template %s exists %v", embedded, databaseExists(t, embedded))
+		// This process still clones the embedded migrations' template, which the build above dropped: the next stack finds it gone
+		// (SQLSTATE 3D000), makes it again and drops the changed one, as a run does after another checkout's run on its stack.
+		st := NewStack(t, StackOptions{Name: "tplgone"})
+		if !databaseExists(t, embedded) || databaseExists(t, name) || st.Number(`SELECT applied FROM schema_state`) != int64(len(steps)) {
+			t.Fatalf("the stack after its template was dropped: %s exists %v (want true), %s exists %v (want false), applied %d",
+				embedded, databaseExists(t, embedded), name, databaseExists(t, name), st.Number(`SELECT applied FROM schema_state`))
 		}
 	})
 

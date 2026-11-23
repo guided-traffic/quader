@@ -11978,7 +11978,7 @@ build several stacks at once.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) One template per PostgreSQL server for the embedded migrations of the day, made by the first stack that finds none, under an advisory lock, built under a name of its own and renamed when complete; every stack a clone with its identity rows drawn again (chosen) | One migration per server, day and change of a migration file | About 0.6 s off every installation; a second test binary, another checkout and the next run reuse the template | A template stays in each stack's PostgreSQL between runs (about 16 MB); a clone carries what the migration wrote with the time of its run, up to a day old (H-1470) |
+| (a) One template per PostgreSQL server for the embedded migrations of the day, made by the first stack that finds none, under an advisory lock, built under a name of its own and renamed when complete; every stack a clone with its identity rows drawn again (chosen) | One migration per server, day and change of a migration file | About 0.6 s off every installation; a second test binary, another checkout and the next run reuse the template | A template stays in each stack's PostgreSQL between runs (about 17 MB); a clone carries what the migration wrote with the time of its run, up to a day old (H-1470) |
 | (b) A template per test binary, dropped when the binary ends (the way of `uploads`) | No state between runs | Nothing stays | One migration per area and run (about 70); dropping needs a hook in every area's `TestMain`, and a killed binary leaves its template |
 | (c) As (a), keyed by the migration files alone | Fewer migrations | One migration per change of a file | What the migrations write with the time of their run ages without bound: a template made in November holds the audit partitions of November to February, and a stack without a replica (which makes the month's partition when it starts) cannot write an audit event in March |
 | (d) Keep the fresh migration and make the stack's PostgreSQL faster (`fsync`, `synchronous_commit`, `full_page_writes` off) | No harness change | No difference from a fresh installation | Every stack has to be restarted, which the other runs feel; not measured |
@@ -12008,9 +12008,9 @@ build several stacks at once.
 Nothing else differs between two installations in a way that a stack shares with another: the five built-in limit profiles of
 migration 81 get random ids, which no shared store names (Valkey keys carry the keyspace, a stack's objects lie below
 `it/<database>`), so the stacks of a day share those ids; the grants of the schema to `quader_app` are those of the moment the template
-was migrated, and no stack connects as that role (only `postgres` and `audit` do, on databases of their own). The areas that test the
-migrations or restore into fresh databases (`postgres`, `backup`, the template of `uploads`) and the areas with a database of their own
-keep their way. Shown by the harness's own tests ([template_integration_test.go](../../test/integration/testenv/template_integration_test.go)):
+was migrated, and no stack connects as that role (only `postgres` and `audit` do, on databases of their own). What tests the migrations or
+restores into fresh databases keeps its way: the area `postgres`, the restore targets of `backup` (its 54 tests on the harness clone the
+template like every other), the template of `uploads` and the areas with a database of their own. Shown by the harness's own tests ([template_integration_test.go](../../test/integration/testenv/template_integration_test.go)):
 two stacks differ in every identity row; a clone's bookkeeping is the newest embedded step; a migration added during development makes
 a new template and drops the old one, and back again; a template dropped by another process is made again; a failed migration leaves
 neither a template nor a build; two sessions that start at once build one template.

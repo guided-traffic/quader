@@ -113,8 +113,10 @@ func TestTemplateName(t *testing.T) {
 	})
 	t.Run("Q-ARCH-581 a changed migration, a further step and another day each name another template", func(t *testing.T) {
 		changed := fstest.MapFS{"00001_first.sql": steps["00001_first.sql"], "00002_second.sql": {Data: []byte("CREATE TABLE b (id bigint);\n")}}
-		more := fstest.MapFS{"00001_first.sql": steps["00001_first.sql"], "00002_second.sql": steps["00002_second.sql"],
-			"00003_third.sql": {Data: []byte("CREATE TABLE c (id int);\n")}}
+		more := fstest.MapFS{
+			"00001_first.sql": steps["00001_first.sql"], "00002_second.sql": steps["00002_second.sql"],
+			"00003_third.sql": {Data: []byte("CREATE TABLE c (id int);\n")},
+		}
 		for what, n := range map[string]string{"changed": name(changed, "20261123"), "more": name(more, "20261123"), "day": name(steps, "20261124")} {
 			if n == base {
 				t.Errorf("%s: still %s", what, n)
@@ -122,8 +124,10 @@ func TestTemplateName(t *testing.T) {
 		}
 	})
 	t.Run("Q-ARCH-581 no other database of the stacks' PostgreSQL has a name of the harness's templates, and none is dropped", func(t *testing.T) {
-		for _, other := range []string{"postgres", "quader", "template0", "template1", "quader_it_0123456789", "quader_ittpl_0123456789",
-			"quader_uploads_tmpl_abc", "quader_ittpl_20261123_0123456789abcdef_copy", "x" + base} {
+		for _, other := range []string{
+			"postgres", "quader", "template0", "template1", "quader_it_0123456789", "quader_ittpl_0123456789",
+			"quader_uploads_tmpl_abc", "quader_ittpl_20261123_0123456789abcdef_copy", "x" + base,
+		} {
 			if templateNames.MatchString(other) {
 				t.Errorf("%s matches the harness's pattern", other)
 			}

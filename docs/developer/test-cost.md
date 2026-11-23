@@ -1173,15 +1173,36 @@ minima carry less of it.
 
 **What the change itself adds** (CLAUDE.md, "Say what it costs"): unit tests of milliseconds (`internal/api/v1/apitest`, the template's name and the
 refusal to drop a foreign database in `test/integration/testenv`, no data); in the area `testenv` (shard b) `TestStacksAreClonesOfTheTemplate`
-(three stacks, 1.2 s), `TestTemplateFollowsTheMigrations` (three template migrations: one of a step added during development by two sessions at
-once, the embedded one twice, and a failing one-step migration; 9.0 to 9.1 s at a load of about 20) and `TestReplicaOfTheHarness` (three stacks,
-four replicas, 2.8 s); data: none beyond the template of about 16 MB that each instance's PostgreSQL keeps between runs. The template's one
+(four stacks, 0.4 to 1.2 s), `TestTemplateFollowsTheMigrations` (two template migrations, one of a step added during development by two
+sessions at once and the embedded one again for the next stack, and a failing one-step migration; 2.4 s at a load of 25) and
+`TestReplicaOfTheHarness` (three stacks, four replicas, 2.8 to 4.3 s); data: none beyond the template of about 17 MB (17.4 million bytes) that each instance's PostgreSQL keeps between runs. The template's one
 migration per day and change of a migration file is paid by the first stack of a run that finds none (about 1 s locally).
 
 **Computed for the pipeline [I]**: with the plan's counts of tests that build an installation per shard (a 257, b 171, c 216, d 354, a
 name-matching estimate) and its runner split of 1.95 s less per installation (validator 1.25, migration 0.5, drain 0.2, one stop per test), the
 shard jobs of Test and Release 45109360386 (a 34.8, b 30.2, c 33.0, d 34.9 minutes) would take about a 26.4, b 24.6, c 26.0, d 23.4 minutes;
 with the 1.3 s measured here per installation as the floor, about 29.2, 26.5, 28.3 and 27.2.
+
+**The areas run on the final tree** (the three changes and the replica's document parsed once per process,
+[Q-ARCH-583](../spec/architecture.md#q-arch-583--a-process-parses-the-management-api-document-once-whatever-number-of-apps-it-runs)), once each as
+the change's gates, 06:46 to 07:19 at a load of 5 to 56 [V]; every one passed, no test changed. For orientation only, the same area's seconds
+in the pipeline run 45109360386 before the change (a runner, coverage on, so not comparable one to one):
+
+| Area (shard) | Local, after [V] s | Pipeline, before [V] s | Area (shard) | Local, after [V] s | Pipeline, before [V] s |
+|---|---:|---:|---|---:|---:|
+| `testenv` (b) | 30.8 | 2.4 | `bastion` (c) | 119.3 | 184.8 |
+| `ansiblelocal` (a) | 37.8 | 65.8 | `postgres` (c) | 111.0 | 97.6 |
+| `endpoints` (b) | 15.6 | 28.2 | `uiassets` (b) | 26.2 | 25.5 |
+| `api` (c) | 71.1 | 162.8 | `authz` (b) | 68.8 | 78.3 |
+| `ci` (d) | 259.3 | 411.5 | `npm` (a) | 209.8 | 475.0 |
+| `backup` (c) | 513.1 | 467.3 | `mirror` (a) | 161.3 | 285.2 |
+| `nuget` (a) | 84.7 | 271.1 | `malware` (d) | 45.1 | 85.6 |
+| `vulnsync` (d) | 133.3 | 278.3 | | | |
+
+`testenv` grew by the harness's own tests: 23.5 s of its 30.8 were `TestTemplateFollowsTheMigrations` at a load near 50, then with three
+template migrations; cut to two, the area took 9.0 s and the test 2.4 s at a load of 25; `postgres` keeps databases of its own and does not use the template, and `backup` uses it in its 54 tests on the harness and restores into databases of its own; `uiassets` passes its own UI trees. NuGet's data-port
+test `TestQ_NUGET_48_TheDataPortReadsTheViewFromPostgreSQL`, which builds an installation without a replica, took 1.36 s locally from a
+worktree before the change (the kit move's first builder's run, 2026-11-23) and 0.27 s on the final tree [V].
 
 **Prediction to check in the first pipeline run after the change** (a prediction, not a result): the fastest data-port test, which builds an
 installation without a replica (`oci`'s data port, NuGet's `TestQ_NUGET_48`), falls from about 1.9 s to about 0.7 s. If it falls much less,

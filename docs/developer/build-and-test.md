@@ -460,9 +460,10 @@ build a killed process left), recognised by the whole name and the database's co
 stacks never share a Valkey keyspace. What a clone keeps from the template's migration (timestamps up to a day old, the ids of the
 built-in limit profiles, the grants to `quader_app`) is [H-1470](../spec/architecture.md#h-1470--a-stack-of-the-in-process-harness-carries-what-the-templates-migration-wrote-with-the-time-of-its-run).
 A changed migration during development changes the hash: the next stack makes a new template and the old one is dropped; nothing has
-to be cleaned by hand. Between runs each instance's PostgreSQL holds one template, about 16 MB. The areas that test the migrations or
-restore into fresh databases (`postgres`, `backup`) and the areas with databases of their own (`uploads` with its own template,
-`authz`, `audit`, `coordination` and the others the paragraph above names) do not use it.
+to be cleaned by hand. Between runs each instance's PostgreSQL holds one template, about 17 MB. What tests the migrations or restores
+into fresh databases does not use it: the area `postgres`, the restore targets of `backup` (its stacks on the harness clone the template),
+and the areas with databases of their own (`uploads` with its own template, `authz`, `audit`, `coordination` and the others the paragraph
+above names).
 
 The suites on the harness: [transfer](../../test/integration/transfer) (the HTTP surface of the files transfer and the
 repository operations, with the users and grants of `webenv_test.go`),
