@@ -241,7 +241,8 @@ did not do", F-126, the mirror's back-off bound, the process environment and the
 Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, green, and closed its entry.
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
-since it wires R2's decider). R4 landed at 00:30 (one commit; section 10). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Started at 00:22 in its place: **T-24 · R5a** (the tab strip and the
+tab Downloads, on R4's API). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
 took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). **v0.115.0** was released at 23:30 by the run of
 the rest of the Go tests (the evidence record's repair, T-25, the Bastion's fix of 18:39 and the Go tests);
@@ -566,6 +567,17 @@ order is what a user or an operator meets first. The state is kept here.
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
 ### Tests and tools
+
+- **`integration (shard d)` was red in the run of R4's push (2026-11-24; Test and Release 45287679724, read at
+  00:40): `TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections` (area `vulnimage`) saw five re-detections
+  before the pushed image's first detection.** Reproduced once on `main` and not on the commit before R4, then
+  passed on `main` too: a timing. The test's second start of the scan task was answered 409 (the first run had
+  not ended), which its helper accepts, so no run began after the push and the database's change, and the run
+  still in progress re-detected the stored images first. R4 adds a task beside it, which lets the first run end
+  later. Repaired at 00:50: the test starts a fresh run (`runFreshScan`, repeated until the task answers 202);
+  the area passed once (61 s). **Open, read and not confirmed:** whether a pass in progress when the database
+  changes should take a push that arrives during it before its re-detections; R-VULN's promise names a pass, so
+  this is a question of the specification, to be read with Q-VULN-200.
 
 - **T-25's landing left one link of the specification to a removed file, and the job `coverage generator
   (links and rules)` was red (2026-11-23; Test and Release 45274912230, read at 23:03).** Q-UI-577's code link
@@ -3057,7 +3069,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 | T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (two commits, migration 00114; the second, back at 17:16, says what the purge of a retired repository does with its tables: the queue's rows, its bulks and the examinations go, rules and requests stay with the tombstone, Q-CUR-111); landed at 17:59 |
 | T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | built and not landed (two commits on the branch `t24-r2-delivery-rules`, reported at 19:52; "The delivery rules are built and wait", below the table); R3 and R4 are not begun (the owner's word of 17:15) |
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
-| T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | landed at 00:30 on 2026-11-24 (one commit, Q-CUR-80 to Q-CUR-85, gaps H-1840 and H-1841, H-1725 and H-1728 now live): the job kind `remote-download`, the task `remote-downloads-dispatch`, failures as class, step, code, address, status and excerpt, a probe as a row, clients' failed fetches as rows, one version charged to the person, the queue's API; left for R3: a section's bulk (`400 catalogue_not_offered`) and a package preview's counts; left for R2's landing: its decider in `RemoteDownloadsServices.Decider` (the stub delivers everything); not covered: the cancel of a running row and the 30-minute bound by an integration test |
+| T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | landed at 00:18 on 2026-11-24 (one commit, Q-CUR-80 to Q-CUR-85, gaps H-1840 and H-1841, H-1725 and H-1728 now live): the job kind `remote-download`, the task `remote-downloads-dispatch`, failures as class, step, code, address, status and excerpt, a probe as a row, clients' failed fetches as rows, one version charged to the person, the queue's API; left for R3: a section's bulk (`400 catalogue_not_offered`) and a package preview's counts; left for R2's landing: its decider in `RemoteDownloadsServices.Decider` (the stub delivers everything); not covered: the cancel of a running row and the 30-minute bound by an integration test |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
 | T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | beside R2b |
 | T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | after them |
