@@ -284,10 +284,14 @@ func TestR_REPO_009_to_013_RepositoryLifecycle(t *testing.T) {
 		if consumer.header.Get("ETag") != `"1-consumer"` || cm["key"] != "gen-one" || cm["layout"] != "generic" {
 			t.Fatalf("%v\n%s", consumer.header, consumer.body)
 		}
-		for _, k := range []string{"includePatterns", "adminNotes", "disabled", "remote", "storage", "lifecycle"} {
+		for _, k := range []string{"includePatterns", "adminNotes", "remote", "storage", "lifecycle"} {
 			if _, ok := cm[k]; ok {
 				t.Errorf("the consumer view has %s", k)
 			}
+		}
+		// A reader learns whether the repository is disabled, since its screens offer no client setup of one (R-REPO-010, Q-UI-965).
+		if d, ok := cm["disabled"]; !ok || d != false {
+			t.Errorf("the consumer view's disabled is %v (present %v), want false", d, ok)
 		}
 		if addr, _ := cm["addresses"].([]any); len(addr) == 0 || !strings.HasSuffix(addr[0].(string), "/files/it/gen-one/") {
 			t.Errorf("addresses = %v", cm["addresses"])

@@ -395,6 +395,10 @@ func TestR_GENERIC_007_Patterns(t *testing.T) {
 		waitFor(t, "the repository to be disabled on B", 10*time.Second, func() bool { return b.get("reader", base+"d/x.bin").status == 404 })
 		problemOf(t, a.get("reader", base+"d/x.bin"), 404, "repository_disabled")
 		problemOf(t, a.put("maint", base+"d/y.bin", "y"), 404, "repository_disabled")
+		// The reader's consumer view says so (R-REPO-010, Q-UI-965).
+		if v := a.get("reader", "/api/v1/projects/it/repositories/generic-local").json(t); v["disabled"] != true || v["adminNotes"] != nil {
+			t.Errorf("the reader's view of the disabled repository: disabled %v, adminNotes %v", v["disabled"], v["adminNotes"])
+		}
 		if res := a.get("maint", "/api/v1/projects/it/repositories/generic-local/items?path=d/x.bin"); res.status != 200 {
 			t.Errorf("items API on a disabled repository: %d", res.status)
 		}
