@@ -25,7 +25,7 @@ import (
 // Repositories of the forwarded search beside the ones of newRemoteEnv.
 const (
 	fNoForward = "nuget-noforward" // a remote with forwardSearch false
-	fExclude   = "nuget-cexcl"     // a remote with excludePatterns ["Contoso.*"]
+	fExclude   = "nuget-cexcl"     // a remote with the delivery rule "section contoso.* block"
 	fAll       = "nuget-all"       // nuget-local, then nuget-org
 )
 
@@ -75,8 +75,9 @@ func newForwardEnv(t *testing.T, env ...string) *fenv {
 	c := &searchCounter{byQ: map[string]int{}}
 	e := &fenv{renv: newRemoteEnv(t, remoteOptions{Valkey: true, Wrap: c.wrap, Env: env}), searches: c}
 	content := []any{map[string]any{"pattern": "localhost", "sendCredentials": false}}
-	e.st.Repository(fNoForward, "remote", "nuget", withMember(t, e.remoteConfig(300, content, nil), "nuget", map[string]any{"forwardSearch": false}))
-	e.st.Repository(fExclude, "remote", "nuget", e.remoteConfig(300, content, []string{"Contoso.*"}))
+	e.st.Repository(fNoForward, "remote", "nuget", withMember(t, e.remoteConfig(300, content), "nuget", map[string]any{"forwardSearch": false}))
+	e.st.Repository(fExclude, "remote", "nuget", e.remoteConfig(300, content))
+	e.st.DeliveryRule(fExclude, testenv.SectionRule("contoso.*", "block"))
 	e.st.Repository(fAll, "virtual", "nuget", `{}`)
 	for i, m := range []string{rLocal, rRemote} {
 		e.st.Exec(`INSERT INTO virtual_members (virtual_id, position, member_id)
@@ -150,9 +151,9 @@ func (e *fenv) search(t *testing.T, a *testenv.Replica, repo, query string) forw
 // TestR_NUGET_016_ARemoteForwardsItsSearchAndFallsBackToItsCache: a remote addressed directly
 // forwards a query to the upstream's search resource and answers with the upstream's download
 // counts, owners and verified flag under its own addresses; it keeps the answer for the next
-// identical query; with forwardSearch false it lists only what it has cached; a query an exclude
-// pattern protects is not forwarded and a result the pattern excludes is removed with totalHits
-// reduced; with the upstream down it answers 200 from its cache.
+// identical query; with forwardSearch false it lists only what it has cached; a query a blocking
+// section rule protects is not forwarded and a result the rule blocks is removed with totalHits
+// reduced (R-CUR-002, R-CUR-003 point 3); with the upstream down it answers 200 from its cache.
 func TestR_NUGET_016_ARemoteForwardsItsSearchAndFallsBackToItsCache(t *testing.T) {
 	e := newForwardEnv(t)
 	a := e.start(1)[0]
@@ -208,7 +209,7 @@ func TestR_NUGET_016_ARemoteForwardsItsSearchAndFallsBackToItsCache(t *testing.T
 		}
 	})
 
-	t.Run("R-NUGET-016 an exclude pattern withholds its names and removes its results", func(t *testing.T) {
+	t.Run("R-NUGET-016 R-CUR-002 a blocking section rule withholds its names and removes its results", func(t *testing.T) {
 		for _, text := range []string{"contoso.secret", "contoso", "packageid:Contoso.Secret"} {
 			e.search(t, a, fExclude, q(text))
 			if n := e.searches.n(text); n != 0 {

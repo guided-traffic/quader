@@ -842,9 +842,18 @@ func mirrorDoc(t *testing.T, include []string, mirrorSettings string) []byte {
 	if mirrorSettings == "" {
 		mirrorSettings = "{}"
 	}
-	inc, _ := json.Marshal(include)
-	doc := `{"includePatterns":` + string(inc) + `,"excludePatterns":[],"remote":{"url":"https://registry.example.org/","mode":"mirror",` +
-		`"availability":{"mode":"online","failureThreshold":3,"circuitOpenSeconds":30},"limits":{"maxConcurrentFetches":16},"mirror":` + mirrorSettings + `}}`
+	// The scope of the mirror is remote.mirror.include (remote-curation.md R-CUR-017): a remote has no include patterns.
+	var m map[string]any
+	if err := json.Unmarshal([]byte(mirrorSettings), &m); err != nil {
+		t.Fatal(err)
+	}
+	if include == nil {
+		include = []string{}
+	}
+	m["include"] = include
+	ms, _ := json.Marshal(m)
+	doc := `{"remote":{"url":"https://registry.example.org/","mode":"mirror",` +
+		`"availability":{"mode":"online","failureThreshold":3,"circuitOpenSeconds":30},"limits":{"maxConcurrentFetches":16},"mirror":` + string(ms) + `}}`
 	return []byte(doc)
 }
 

@@ -96,3 +96,23 @@ func (s *Store) activeReindex(ctx context.Context, tx meta.Tx, repoID int64) (jo
 	_ = json.Unmarshal(j.Args, &a) //nolint:errcheck // arguments we wrote; a malformed one is no reindex
 	return j, a.Reindex, nil
 }
+
+// EnqueueVirtualBuilds enqueues, in the caller's transaction, a build of every virtual Debian repository that lists the remote
+// repository as a member: a change of the remote's delivery rules changes what their merge keeps (R-DEB-036, Q-CUR-9). The rules'
+// fingerprint is part of each suite's merge fingerprint, so the build merges again even where no member's release changed.
+func EnqueueVirtualBuilds(ctx context.Context, tx meta.Tx, memberID int64) error {
+	qs, err := txQueries(tx)
+	if err != nil {
+		return err
+	}
+	ids, err := qs.DebVirtualsOfMember(ctx, memberID)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if _, err := jobs.EnqueueTx(ctx, tx, indexSpec(), buildSpec(id, 0, IndexJobArgs{}, nil, "")); err != nil {
+			return err
+		}
+	}
+	return nil
+}

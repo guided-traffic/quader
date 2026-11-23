@@ -300,10 +300,10 @@ func TestR_REPO_051_NpmVersionBoundsIncrementalAndPatternChange(t *testing.T) {
 		}
 	})
 
-	t.Run("R-REPO-051 adding an include pattern makes the next pass full", func(t *testing.T) {
+	t.Run("R-REPO-051 R-CUR-017 adding a pattern to the mirror's scope makes the next pass full", func(t *testing.T) {
 		r.publish("@acme2/x", "1.0.0")
 		r.setDocument(run, remoteDocAt(r.upstream, "mirror", []string{"@acme/*", "@acme2/*"}, settings{"maxVersionsPerPackage": 2, "includePrereleases": false}, nil))
-		r.waitAdmits(run, "@acme2/x")
+		r.waitMirror(run, "the scope @acme2/*", func(s repository.RemoteSettings) bool { return slices.Contains(s.Mirror.Include, "@acme2/*") })
 		mark := r.traf.mark()
 		at := r.pass(run)
 		r.waitPass(at, "full", "complete", passWithin)

@@ -40,7 +40,10 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 		}
 	})
 	t.Run("R-REPO-070 scanner-trivy holds the image scanning's database and nothing else", func(t *testing.T) {
-		if f.config("scanner-trivy", "{disabled}") != "false" || f.config("scanner-trivy", "{includePatterns,0}") != "aquasec/trivy-db" ||
+		if scope, ok := f.trivyScope("scanner-trivy"); !ok {
+			t.Errorf("scanner-trivy delivers %s, want onlyAllowed with the product's rule for aquasec/trivy-db alone", scope)
+		}
+		if f.config("scanner-trivy", "{disabled}") != "false" ||
 			f.config("scanner-trivy", "{remote,url}") != "https://mirror.gcr.io/" || f.config("scanner-trivy", "{remote,cache,unusedRetentionHours}") != "48" ||
 			f.config("scanner-trivy", "{vulnerabilities,enabled}") != "false" {
 			t.Fatalf("scanner-trivy: %s", f.e.Text("SELECT r.config::text FROM repositories r JOIN upstream_repository u ON u.repository_id = r.id WHERE u.kind = 'system'"))

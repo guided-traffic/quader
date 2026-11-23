@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/observability"
+	rc "github.com/guided-traffic/quader/internal/remotecuration"
 )
 
 // The settings of a remote repository (R-REPO-024) live in the `remote` section of
@@ -92,6 +93,32 @@ type RemoteSettings struct {
 	// download of that version (R-REPO-065); true by default. A stored section written before the member existed reads as true
 	// (parseStoredRemote).
 	DownloadOnProbe bool `json:"downloadOnProbe"`
+	// Delivery is remote.delivery: the delivery mode and the switches of the curation (remote-curation.md R-CUR-001, R-CUR-020). The
+	// rules themselves are rows (remote_delivery_rules), not members of the document.
+	Delivery DeliverySettings `json:"delivery"`
+}
+
+// DeliverySettings is remote.delivery (remote-curation.md R-CUR-001, R-CUR-020): configuration of the repository, which only
+// repositories:write-config and the project's Owner set (R-CUR-005, Q-CUR-11).
+type DeliverySettings struct {
+	// Mode is allExceptBlocked (the default) or onlyAllowed.
+	Mode string `json:"mode"`
+	// ExamineOnRequest: a new request entry starts a download for examination (R-CUR-015, Q-CUR-23).
+	ExamineOnRequest bool `json:"examineOnRequest"`
+	// ExaminedRetentionDays is the age after which what was fetched for examination and is still not delivered is removed (R-CUR-016),
+	// 1 to 365.
+	ExaminedRetentionDays int `json:"examinedRetentionDays"`
+}
+
+// The bounds and defaults of remote.delivery (R-CUR-020).
+const (
+	DefaultExaminedRetentionDays = 30
+	maxExaminedRetentionDays     = 365
+)
+
+// DefaultDeliverySettings are the defaults of remote.delivery.
+func DefaultDeliverySettings() DeliverySettings {
+	return DeliverySettings{Mode: string(rc.AllExceptBlocked), ExamineOnRequest: true, ExaminedRetentionDays: DefaultExaminedRetentionDays}
 }
 
 // MirrorSettings is remote.mirror (R-REPO-050 to R-REPO-055). The members are present in the canonical section of every
@@ -115,13 +142,16 @@ type MirrorSettings struct {
 	// MaxBytes is the byte bound of the repository's stored content beyond which a pass adds nothing; nil: no bound of
 	// its own (R-REPO-052).
 	MaxBytes *int64 `json:"maxBytes"`
+	// Include is the mirror's scope (remote-curation.md R-CUR-017, Q-CUR-5): name patterns of R-AUTHZ-005 folded by the format's name
+	// rule, at most 100; empty is everything the rules deliver. A pass stores what the scope and the delivery rules both admit.
+	Include []string `json:"include"`
 }
 
 // DefaultMirrorSettings are the defaults of remote.mirror (R-REPO-050).
 func DefaultMirrorSettings() MirrorSettings {
 	return MirrorSettings{
 		IntervalSeconds: 3600, FullPassIntervalSeconds: 604800, Discovery: DiscoveryAuto, Concurrency: 4,
-		IncludePrereleases: true,
+		IncludePrereleases: true, Include: []string{},
 	}
 }
 
@@ -299,17 +329,25 @@ type remoteInput struct {
 	Mode                  *string               `json:"mode"`
 	Mirror                *mirrorInput          `json:"mirror"`
 	DownloadOnProbe       *bool                 `json:"downloadOnProbe"`
+	Delivery              *deliveryInput        `json:"delivery"`
+}
+
+type deliveryInput struct {
+	Mode                  *string `json:"mode"`
+	ExamineOnRequest      *bool   `json:"examineOnRequest"`
+	ExaminedRetentionDays *int    `json:"examinedRetentionDays"`
 }
 
 type mirrorInput struct {
-	Paused                  *bool   `json:"paused"`
-	IntervalSeconds         *int    `json:"intervalSeconds"`
-	FullPassIntervalSeconds *int    `json:"fullPassIntervalSeconds"`
-	Discovery               *string `json:"discovery"`
-	Concurrency             *int    `json:"concurrency"`
-	MaxVersionsPerPackage   *int    `json:"maxVersionsPerPackage"`
-	IncludePrereleases      *bool   `json:"includePrereleases"`
-	MaxBytes                *int64  `json:"maxBytes"`
+	Paused                  *bool    `json:"paused"`
+	IntervalSeconds         *int     `json:"intervalSeconds"`
+	FullPassIntervalSeconds *int     `json:"fullPassIntervalSeconds"`
+	Discovery               *string  `json:"discovery"`
+	Concurrency             *int     `json:"concurrency"`
+	MaxVersionsPerPackage   *int     `json:"maxVersionsPerPackage"`
+	IncludePrereleases      *bool    `json:"includePrereleases"`
+	MaxBytes                *int64   `json:"maxBytes"`
+	Include                 []string `json:"include"`
 }
 
 type outboundProxyInput struct {
@@ -381,9 +419,12 @@ func (r Repository) Remote() (RemoteSettings, bool) {
 // their defaults first, so that a section stored before they existed reads back with them (R-REPO-050, Q-REPO-130, R-REPO-065); a
 // member the stored section holds overwrites its default.
 func parseStoredRemote(raw json.RawMessage) (*RemoteSettings, error) {
-	s := RemoteSettings{Mode: ModePullThrough, Mirror: DefaultMirrorSettings(), DownloadOnProbe: true}
+	s := RemoteSettings{Mode: ModePullThrough, Mirror: DefaultMirrorSettings(), DownloadOnProbe: true, Delivery: DefaultDeliverySettings()}
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return nil, err
+	}
+	if s.Mirror.Include == nil {
+		s.Mirror.Include = []string{}
 	}
 	if _, err := url.Parse(s.URL); err != nil {
 		return nil, err

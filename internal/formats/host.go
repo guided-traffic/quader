@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
+
 	"github.com/google/uuid"
 
 	"github.com/guided-traffic/quader/internal/qname"
@@ -88,6 +90,11 @@ type Host interface {
 	// Signatures are the verdicts of signatures a format asks before it serves one to a client (signatures.md R-SIG-028). A host that
 	// has not wired the trust step answers [NoSignatureVerdicts], so a format never meets nil.
 	Signatures() SignatureVerdicts
+	// RecordRefusal records a refusal of a remote repository's delivery rules that reaches the client (remote-curation.md R-CUR-004):
+	// the event, the metric and the count in the request list. [ServeRoute] calls it once for the refusal a route answers, wherever it
+	// was decided (before a fill, at the serve point, at a document); a format does not call it. A host that records nothing does
+	// nothing.
+	RecordRefusal(ctx context.Context, rq *Request, rf *rules.Refusal)
 }
 
 // Ingestor is the upload pipeline of R-ARCH-014.

@@ -210,6 +210,12 @@ type Request struct {
 	// Unstored decides a verified body the engine would pass to its client unstored, because the object store cannot take it
 	// (R-STOR-036): nil passes it; an error is the answer instead of the body (the malware gate's, R-MAL-013). nil decides nothing.
 	Unstored func(ctx context.Context, digest [32]byte) error
+	// Undelivered is the refusal of the remote's delivery rules for the request's descriptor (remote-curation.md R-CUR-003 point 1,
+	// R-REPO-025 step 5a): nil when the rules deliver it or do not apply (a repository without rules, a background request, a system
+	// read). The host decides it from the replica's snapshot. A document is answered with it whether or not it is stored; an artifact
+	// that is not stored is answered with it before the offline, circuit, negative-cache and populate steps, so no upstream is asked.
+	// A stored artifact is decided at the serve point instead (the fourth check of the one serve decision, R-SIG-069).
+	Undelivered error
 }
 
 // Document is a metadata document as the engine hands it to the format.

@@ -28,7 +28,9 @@ type Address struct {
 
 // Fixed are the members the product fixes on a system repository beyond its address (R-REPO-070).
 type Fixed struct {
-	IncludePatterns      []string
+	// Allow are the names of the product's delivery rules of a remote system repository: mode onlyAllowed with `package <name>
+	// allow` each and no other rule (R-REPO-070); empty for none.
+	Allow                []string
 	Private              bool
 	ScanningOff          bool
 	UnusedRetentionHours int
@@ -226,7 +228,7 @@ func AddressEqual(declared, stored Address) bool {
 // FixedEqual reports whether the fixed members of a system repository are the declared ones. The level is compared only where the
 // declaration fixes it at private: the level of clamav is the administrator's while its clients are on (Q-REPO-414).
 func FixedEqual(declared, stored Fixed) bool {
-	return slices.Equal(nonNil(declared.IncludePatterns), nonNil(stored.IncludePatterns)) && (!declared.Private || stored.Private) &&
+	return slices.Equal(nonNil(declared.Allow), nonNil(stored.Allow)) && (!declared.Private || stored.Private) &&
 		declared.ScanningOff == stored.ScanningOff && declared.UnusedRetentionHours == stored.UnusedRetentionHours
 }
 

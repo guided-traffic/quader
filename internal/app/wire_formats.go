@@ -413,6 +413,8 @@ func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo r
 		DownloadBuffer: int(a.cfg.Storage.Download.BufferSize), Log: a.log.With("component", "formats"),
 		// A probe inserts the row of its version into the download queue (R-REPO-065, R-CUR-013).
 		Downloads: probeDownloads{a}, ProbeMetrics: a.probeMetrics(),
+		// The record of a client's refusal by the delivery rules (R-CUR-004, wire_delivery_rules.go).
+		Refusals: a.deliveryRecorder(),
 	}
 	// A nil pointer in an interface would not be nil: the session service is set only where it was built.
 	if a.uploads != nil {

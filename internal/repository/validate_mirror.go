@@ -9,6 +9,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
+	rc "github.com/guided-traffic/quader/internal/remotecuration"
 )
 
 // The mirror mode of a remote repository (repositories-and-proxy.md R-REPO-050 to R-REPO-052): remote.mode and the
@@ -48,6 +49,7 @@ func (r *remoteResolver) mirror(s *RemoteSettings, in remoteInput) {
 		MaxVersionsPerPackage:   intOr(m.MaxVersionsPerPackage, d.MaxVersionsPerPackage),
 		IncludePrereleases:      boolOr(m.IncludePrereleases, d.IncludePrereleases),
 		MaxBytes:                m.MaxBytes,
+		Include:                 r.mirrorInclude(m.Include),
 	}
 	r.mirrorRanges(s.Mirror)
 	if s.Mode != ModeMirror {
@@ -59,6 +61,41 @@ func (r *remoteResolver) mirror(s *RemoteSettings, in remoteInput) {
 	}
 	r.checkMirrorURL(s)
 	r.checkMirrorBound(s)
+}
+
+// mirrorInclude validates remote.mirror.include (remote-curation.md R-CUR-017): at most 100 name patterns of the format's pattern
+// rules, each folded by the format's name rule as a name it is matched against, so the stored scope is canonical.
+func (r *remoteResolver) mirrorInclude(in []string) []string {
+	if in == nil {
+		return []string{}
+	}
+	validatePatterns(r.v, r.info.PatternSubject, "/remote/mirror/include", in)
+	out := make([]string, len(in))
+	for i, p := range in {
+		out[i] = p
+		if r.info.PatternSubject == SubjectName && r.info.Names != nil {
+			if n, ok := r.info.Names.Normalize(p); ok {
+				out[i] = n
+			}
+		}
+	}
+	return out
+}
+
+// delivery resolves remote.delivery (remote-curation.md R-CUR-001, R-CUR-020).
+func (r *remoteResolver) delivery(s *RemoteSettings, in remoteInput) {
+	var d deliveryInput
+	if in.Delivery != nil {
+		d = *in.Delivery
+	}
+	def := DefaultDeliverySettings()
+	s.Delivery = DeliverySettings{
+		Mode:                  stringOr(d.Mode, def.Mode),
+		ExamineOnRequest:      boolOr(d.ExamineOnRequest, def.ExamineOnRequest),
+		ExaminedRetentionDays: intOr(d.ExaminedRetentionDays, def.ExaminedRetentionDays),
+	}
+	r.oneOf("/remote/delivery/mode", s.Delivery.Mode, string(rc.AllExceptBlocked), string(rc.OnlyAllowed))
+	r.rng("/remote/delivery/examinedRetentionDays", s.Delivery.ExaminedRetentionDays, 1, maxExaminedRetentionDays)
 }
 
 // checkMirrorURL refuses a query in the url of a mirror (Q-REPO-194): the formats' requests drop it, so a url that
@@ -83,19 +120,19 @@ func (r *remoteResolver) mirrorRanges(m MirrorSettings) {
 }
 
 // checkMirrorBound applies R-REPO-052: a mirror of one of the format's presets, each a public registry of unbounded size
-// (Q-REPO-323), needs include patterns that each bound it, or maxBytes; any other upstream without either is saved with a
-// warning.
+// (Q-REPO-323), needs a scope (remote.mirror.include) whose patterns each bound it, or maxBytes; any other upstream without either
+// is saved with a warning. The delivery rules are no bound: a Maintainer can allow everything (R-CUR-017).
 func (r *remoteResolver) checkMirrorBound(s *RemoteSettings) {
-	if s.Mirror.MaxBytes != nil || boundingIncludes(r.include) {
+	if s.Mirror.MaxBytes != nil || boundingIncludes(s.Mirror.Include) {
 		return
 	}
 	if known, ok := r.presetUpstream(s.URL); ok {
 		r.v.add("/remote/mode", errs.CodeMirrorUnbounded,
-			"a mirror of "+known+" needs a bound: include patterns that each have a literal prefix (such as @types/* or Microsoft.Extensions.*), or remote.mirror.maxBytes")
+			"a mirror of "+known+" needs a bound: remote.mirror.include with patterns that each have a literal prefix (such as @types/* or Microsoft.Extensions.*), or remote.mirror.maxBytes")
 		return
 	}
 	r.warn(WarnMirrorUnbounded, "/remote/mode",
-		"the mirror has neither include patterns with a literal prefix nor remote.mirror.maxBytes: it stores everything the upstream offers")
+		"the mirror has neither a scope (remote.mirror.include) with a literal prefix nor remote.mirror.maxBytes: it stores everything the upstream offers and the rules deliver")
 }
 
 // presetUpstream returns the URL of the format's preset that raw names, compared with the one predicate of the bound rule
@@ -145,19 +182,14 @@ func checkDelegatedMirror(v *validation, stored, next *RemoteSettings) {
 }
 
 // checkDelegatedMirrorScope applies Q-REPO-193 to a project Owner's update of a repository that is a mirror
-// and stays one: what the mirror covers (includePatterns, excludePatterns) and where it reads from (remote.url,
-// remote.extraHosts) are the administrator's. A write that turns the mode back to pullThrough may change them.
-func checkDelegatedMirrorScope(v *validation, stored, next *RemoteSettings, cur, nd *Document) {
+// and stays one: where it reads from (remote.url, remote.extraHosts) is the administrator's, as is its scope
+// (remote.mirror.include, kept by checkDelegatedMirror with the rest of remote.mirror, R-CUR-017). A write that turns the mode back to
+// pullThrough may change them.
+func checkDelegatedMirrorScope(v *validation, stored, next *RemoteSettings) {
 	if stored == nil || stored.Mode != ModeMirror || next.Mode != ModeMirror {
 		return
 	}
 	const why = "a project Owner keeps what an administrator of Quader chose for a mirror; turn the mode back to pullThrough to change it"
-	if !sameStrings(cur.IncludePatterns, nd.IncludePatterns) {
-		v.add("/includePatterns", errs.CodeMirrorRestricted, why)
-	}
-	if !sameStrings(cur.ExcludePatterns, nd.ExcludePatterns) {
-		v.add("/excludePatterns", errs.CodeMirrorRestricted, why)
-	}
 	if stored.URL != next.URL {
 		v.add("/remote/url", errs.CodeMirrorRestricted, why)
 	}
@@ -205,6 +237,7 @@ func sameStrings(a, b []string) bool {
 
 func sameMirrorButPause(a, b MirrorSettings) bool {
 	sameBytes := (a.MaxBytes == nil) == (b.MaxBytes == nil) && (a.MaxBytes == nil || *a.MaxBytes == *b.MaxBytes)
-	a.Paused, b.Paused, a.MaxBytes, b.MaxBytes = false, false, nil, nil
-	return sameBytes && a == b
+	sameScope := sameStrings(a.Include, b.Include)
+	a.Paused, b.Paused, a.MaxBytes, b.MaxBytes, a.Include, b.Include = false, false, nil, nil, nil, nil
+	return sameBytes && sameScope && reflect.DeepEqual(a, b)
 }

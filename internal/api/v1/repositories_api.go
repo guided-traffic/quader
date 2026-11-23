@@ -130,6 +130,37 @@ type repositoryRep struct {
 	Warnings       *[]repository.Warning `json:"warnings,omitempty"`
 }
 
+// MarshalJSON renders the document by its own MarshalJSON (a remote reads back without include and exclude patterns,
+// remote-curation.md R-CUR-002) followed by the members the server adds. Without it the document's method is promoted to the
+// representation and drops those members.
+func (r repositoryRep) MarshalJSON() ([]byte, error) {
+	d := r.Document
+	d.Project = "" // the representation's own project member stands for it
+	doc, err := json.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+	added, err := json.Marshal(struct {
+		Project        *string               `json:"project"`
+		Lifecycle      string                `json:"lifecycle"`
+		CreatedAt      time.Time             `json:"createdAt"`
+		UpdatedAt      time.Time             `json:"updatedAt"`
+		LastActivityAt *time.Time            `json:"lastActivityAt"`
+		Warnings       *[]repository.Warning `json:"warnings,omitempty"`
+	}{r.Project, r.Lifecycle, r.CreatedAt, r.UpdatedAt, r.LastActivityAt, r.Warnings})
+	if err != nil {
+		return nil, err
+	}
+	if len(doc) < 2 || doc[len(doc)-1] != '}' || len(added) < 2 || added[0] != '{' {
+		return nil, fmt.Errorf("api: the document of %s is no JSON object", r.Key)
+	}
+	out := append(doc[:len(doc)-1:len(doc)-1], ',')
+	if len(doc) == 2 { // "{}": no member to follow
+		out = out[:1]
+	}
+	return append(out, added[1:]...), nil
+}
+
 // readOnlyMembers are the members of the representation that the server adds.
 func readOnlyMembers() []string {
 	return []string{"lifecycle", "createdAt", "updatedAt", "lastActivityAt", "warnings"}

@@ -120,8 +120,10 @@ type slot struct {
 	local   *localRev
 	expires time.Time
 	fetched bool
-	// miss: the member does not know the package; failure: it could not be asked.
+	// miss: the member does not know the package; failure: it could not be asked; refusal: its delivery rules do not deliver the
+	// package (R-CUR-004), a miss whose first one answers when nothing serves (Q-CUR-8).
 	failure error
+	refusal error
 	fatal   error
 }
 
@@ -146,7 +148,7 @@ func (r *Resolver) build(ctx context.Context, c Caller, p *Plan, m Merger, ttl t
 	now := r.o.Now()
 	e := &mergedEntry{expires: now.Add(ttl), source: sourceLocal}
 	var parts []Part
-	var failure error
+	var failure, refusal error
 	for _, s := range slots {
 		switch {
 		case s.fatal != nil:
@@ -156,6 +158,8 @@ func (r *Resolver) build(ctx context.Context, c Caller, p *Plan, m Merger, ttl t
 			if failure == nil {
 				failure = s.failure
 			}
+		case s.refusal != nil && refusal == nil:
+			refusal = s.refusal
 		}
 		if s.local != nil {
 			e.locals = append(e.locals, *s.local)
@@ -175,10 +179,14 @@ func (r *Resolver) build(ctx context.Context, c Caller, p *Plan, m Merger, ttl t
 		}
 	}
 	if len(parts) == 0 {
-		// Step 7: 404 only when every consulted member said "not found".
+		// Step 7: the first transient failure, else the first member's rule refusal (Q-CUR-8), else 404: only when every consulted
+		// member said "not found".
 		e.source = sourceNone
 		if failure != nil {
 			return nil, failure
+		}
+		if refusal != nil {
+			return nil, refusal
 		}
 		return nil, p.notFound()
 	}
@@ -222,6 +230,9 @@ func (r *Resolver) remoteSlot(ctx context.Context, c Caller, p *Plan, m Merger, 
 	switch {
 	case err == nil:
 	case errs.IsMemberMiss(err):
+		if errs.IsRuleRefusal(err) {
+			s.refusal = err
+		}
 		return
 	case errs.IsMemberFailure(err) && ctx.Err() == nil:
 		s.failure = err
@@ -299,7 +310,7 @@ func mergeFingerprint(plan [32]byte, parts []Part, merged []byte) [32]byte {
 // is cached by the rendition cache, a remote one by the remote engine.
 func (r *Resolver) firstMatch(ctx context.Context, c Caller, p *Plan, m Merger) (*Merged, error) {
 	repo, d := p.Virtual.Name, p.Descriptor
-	var failure error
+	var failure, refusal error
 	for _, mem := range p.Local() {
 		doc, rev, found, err := m.LocalDocument(ctx, mem, d)
 		if err != nil {
@@ -321,6 +332,9 @@ func (r *Resolver) firstMatch(ctx context.Context, c Caller, p *Plan, m Merger) 
 		switch {
 		case err == nil:
 		case errs.IsMemberMiss(err):
+			if refusal == nil && errs.IsRuleRefusal(err) {
+				refusal = err
+			}
 			continue
 		case errs.IsMemberFailure(err) && ctx.Err() == nil:
 			if failure == nil {
@@ -345,6 +359,9 @@ func (r *Resolver) firstMatch(ctx context.Context, c Caller, p *Plan, m Merger) 
 	r.m.resolved(repo.String(), sourceNone)
 	if failure != nil {
 		return nil, failure
+	}
+	if refusal != nil {
+		return nil, refusal
 	}
 	return nil, p.notFound()
 }

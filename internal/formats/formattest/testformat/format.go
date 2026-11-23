@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -876,6 +877,20 @@ func (f Format) document(ctx context.Context, rq *formats.Request, name string) 
 			return nil, false, nil
 		}
 	}
+	// A remote repository's rules (remote-curation.md R-CUR-003): a package they refuse whole answers their refusal, and the
+	// versions they refuse are not listed (kit check 23).
+	if dv := formats.DeliveryView(rq); dv != nil {
+		if err := formats.Undelivered(rq, name, "", rules.KindDocument); err != nil {
+			return nil, false, err
+		}
+		kept := rows[:0:0]
+		for _, v := range rows {
+			if dv.Version(name, v.Version) {
+				kept = append(kept, v)
+			}
+		}
+		rows = kept
+	}
 	ln := rq.Host.Links(rq)
 	base := name[strings.LastIndex(name, "/")+1:]
 	versions := map[string]any{}
@@ -1064,6 +1079,13 @@ func (f Format) tarballGet(ctx context.Context, rq *formats.Request, w http.Resp
 	}
 	if err := rq.Host.Authorize(ctx, rq, t); err != nil {
 		return err
+	}
+	// The serve point of a remote repository decides its rules (R-CUR-003 point 2); the test format, which serves its remote's files
+	// from rows, asks them here.
+	if info := f.Classify(rq.Path); info.Package != "" {
+		if err := formats.Undelivered(rq, info.Package, info.Version, rules.KindArtifact); err != nil {
+			return err
+		}
 	}
 	it, ok, err := rq.Host.Items().Stat(ctx, rq.RepoRef(), rq.Path)
 	if err != nil {

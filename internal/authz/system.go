@@ -47,6 +47,10 @@ func enabled(r *repoInfo) *repoInfo {
 // isSystem reports whether the subject is a system subject.
 func isSystem(sub Subject) bool { return sub.Kind == principal.KindSystem }
 
+// System reports whether the subject is work of the product itself (R-AUTHZ-002): a scanner's or another system subject's read, which
+// a remote repository's delivery rules do not refuse (remote-curation.md Q-CUR-7).
+func (s Subject) System() bool { return isSystem(s) }
+
 // decideSystem is the decision on a coordinate of a system subject: its rule for every action, nothing else. A refusal is the 404
 // of a repository the caller cannot see (R-AUTHZ-016), whatever the repository's hideExistence says. A refusal that the repository's
 // switch alone causes carries the reason deny.repository-disabled, and its answer names the code repository_disabled (Q-VULN-226): the

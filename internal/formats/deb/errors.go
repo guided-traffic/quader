@@ -11,7 +11,7 @@ import (
 // APT shows the status line of a failed request and does not read bodies; curl and CI scripts read the body, whose `code` is one of
 //
 //	400  deb_distribution_required, deb_invalid_coordinate, deb_invalid_file_name, invalid_path
-//	403  deb_members_unreadable
+//	403  deb_members_unreadable, not_allowed_in_repository (a remote's delivery rules, with Cache-Control: no-store; R-DEB-036)
 //	404  deb_not_in_release, deb_no_upstream_keys
 //	405  no_deploy_target
 //	409  deb_version_exists, deb_filename_conflict, deb_withheld, generated_item, deb_no_next_key, deb_key_in_use, deb_key_state,

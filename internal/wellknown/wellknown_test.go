@@ -70,7 +70,7 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 			}
 			p := e.UpstreamPresets[i]
 			if d.URL != p.URL || d.DisplayName != p.DisplayName || d.Default != p.Default || !slices.Equal(d.ExtraHosts, p.ExtraHosts) ||
-				string(d.Settings) != string(p.Settings) || d.IncludePatterns != nil || d.Private || d.ScanningOff || d.UnusedRetentionHours != 0 ||
+				string(d.Settings) != string(p.Settings) || d.Allow != nil || d.Private || d.ScanningOff || d.UnusedRetentionHours != 0 ||
 				d.Class != catalog.Remote {
 				t.Errorf("%s = %+v, preset %+v", d.Key, d, p)
 			}
@@ -79,7 +79,7 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 	t.Run("R-REPO-070 scanner-trivy is the image scanning's database repository", func(t *testing.T) {
 		d, _ := wellknown.Lookup(got, wellknown.ScannerTrivyKey)
 		if d.Name() != wellknown.ScannerTrivy || d.Kind != wellknown.KindSystem || d.Format != "oci" || d.Class != catalog.Remote || d.URL != "https://mirror.gcr.io/" ||
-			len(d.ExtraHosts) != 0 || !slices.Equal(d.IncludePatterns, []string{wellknown.ScannerTrivyImage}) || !d.Private || !d.ScanningOff || d.UnusedRetentionHours != 48 {
+			len(d.ExtraHosts) != 0 || !slices.Equal(d.Allow, []string{wellknown.ScannerTrivyImage}) || !d.Private || !d.ScanningOff || d.UnusedRetentionHours != 48 {
 			t.Fatalf("scanner-trivy = %+v", d)
 		}
 		if wellknown.ScannerTrivy != (qname.Repo{Project: "upstream", Key: "scanner-trivy"}) || wellknown.ScannerTrivyImage != "aquasec/trivy-db" {
@@ -89,7 +89,7 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 	t.Run("R-REPO-075 Q-REPO-411 Q-REPO-413 clamav is the local repository of ClamAV's definitions that may serve clients", func(t *testing.T) {
 		d := got[len(got)-1]
 		if d.Name() != wellknown.Clamav || d.Kind != wellknown.KindSystem || d.Format != "clamav" || d.Class != catalog.Local || !d.Local() ||
-			d.URL != "" || d.ExtraHosts != nil || d.Settings != nil || d.IncludePatterns != nil || d.Private || d.Level != "private" ||
+			d.URL != "" || d.ExtraHosts != nil || d.Settings != nil || d.Allow != nil || d.Private || d.Level != "private" ||
 			d.ScanningOff || d.UnusedRetentionHours != 0 || d.DisplayName != "ClamAV definitions" || !d.Clients {
 			t.Fatalf("clamav = %+v", d)
 		}

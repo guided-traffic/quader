@@ -227,8 +227,9 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 	t.Run("R-REPO-070 scanner-trivy takes an administrator's address", func(t *testing.T) {
 		r := f.do(f.admin, "PUT", items+"/scanner-trivy/address", map[string]any{"url": "https://ghcr.example.org/"}, "If-Match", "*")
 		wantStatus(t, r, 200, "")
-		if f.config("scanner-trivy", "{remote,url}") != "https://ghcr.example.org/" || f.config("scanner-trivy", "{includePatterns,0}") != "aquasec/trivy-db" {
-			t.Fatalf("%s %s", f.config("scanner-trivy", "{remote,url}"), f.config("scanner-trivy", "{includePatterns,0}"))
+		scope, ok := f.trivyScope("scanner-trivy")
+		if f.config("scanner-trivy", "{remote,url}") != "https://ghcr.example.org/" || !ok {
+			t.Fatalf("%s %s", f.config("scanner-trivy", "{remote,url}"), scope)
 		}
 	})
 }

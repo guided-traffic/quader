@@ -148,6 +148,9 @@ func (a virtualAdapter) Merge(ctx context.Context, rq *formats.Request, p format
 	}
 	budget := remote.NewBudget(MaxDocumentBytes)
 	parts := make([]merge.Part, len(docs))
+	// refusedBy is the first member whose rules refused a version of its part (R-NUGET-035): a merge they left empty answers its
+	// refusal, which names it, as the walk answers the first member's refusal when nothing serves (R-CUR-004, Q-CUR-8).
+	var refusedBy *formats.MemberRules
 	for i, d := range docs {
 		parts[i] = merge.Part{
 			Member: d.Member.Name.String(), Tier: mergeTier(d.Tier), Position: d.Position, Doc: d.Doc,
@@ -155,6 +158,17 @@ func (a virtualAdapter) Merge(ctx context.Context, rq *formats.Request, p format
 		}
 		if d.Tier == formats.TierLocal {
 			continue
+		}
+		if m := memberWithRules(rq, d.Member); m != nil {
+			// Each remote member's part lists what that member's rules deliver (R-NUGET-035, R-CUR-003 point 3).
+			delivers := deliveredBy(m.Set, id)
+			parts[i].Delivers = func(v string) bool {
+				ok := delivers(v)
+				if !ok && refusedBy == nil {
+					refusedBy = m
+				}
+				return ok
+			}
 		}
 		var err error
 		if kind == merge.Flat {
@@ -166,7 +180,14 @@ func (a virtualAdapter) Merge(ctx context.Context, rq *formats.Request, p format
 			return nil, err
 		}
 	}
-	return merge.Do(kind, parts)
+	out, err := merge.Do(kind, parts)
+	if err != nil || refusedBy == nil {
+		return out, err
+	}
+	if entries, err := merge.Decode(out); err == nil && len(entries) == 0 {
+		return nil, memberRefusal(rq, refusedBy, id)
+	}
+	return out, nil
 }
 
 func mergeTier(t formats.Tier) merge.Tier {

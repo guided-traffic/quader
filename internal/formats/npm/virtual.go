@@ -105,12 +105,31 @@ func (a virtualAdapter) Merge(ctx context.Context, rq *formats.Request, p format
 		return nil, err
 	}
 	set := settingsOf(rq.Repo.Config)
-	parts := make([]merge.Part, len(docs))
-	for i, d := range docs {
-		parts[i] = merge.Part{
-			Member: d.Member.Name.String(), Tier: merge.Tier(d.Tier), Position: d.Position, Doc: d.Doc,
-			CachedVersions: d.CachedVersions, Restricted: d.Restricted,
+	parts := make([]merge.Part, 0, len(docs))
+	var emptied *formats.MemberRules
+	for _, d := range docs {
+		doc := d.Doc
+		if m := memberWithRules(rq, d.Member); m != nil {
+			// Each remote member's part lists what that member's rules deliver (R-NPM-049, R-CUR-003 point 3).
+			kept, ok, err := a.f.deliveredPart(ctx, n.String(), doc, m)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				if emptied == nil {
+					emptied = m
+				}
+				continue
+			}
+			doc = kept
 		}
+		parts = append(parts, merge.Part{
+			Member: d.Member.Name.String(), Tier: merge.Tier(d.Tier), Position: d.Position, Doc: doc,
+			CachedVersions: d.CachedVersions, Restricted: d.Restricted,
+		})
+	}
+	if len(parts) == 0 && emptied != nil {
+		return nil, memberRefusal(rq, emptied, n.String())
 	}
 	res, err := merge.Do(parts, merge.Options{Name: n.String(), LatestStrategy: set.LatestStrategy, DistTagStrategy: set.DistTagStrategy})
 	if err != nil {

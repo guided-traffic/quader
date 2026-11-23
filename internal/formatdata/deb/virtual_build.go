@@ -22,6 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // The build of a virtual repository's indexes (R-DEB-025, R-DEB-026): the members' indexes are merged as streams, in member order, with a
@@ -55,6 +56,10 @@ type VirtualMember struct {
 	// URL is remote.url of a remote member: its upstream identity (Q-DEB-43).
 	URL string
 	Ref items.RepoRef
+	// Delivery is a remote member's compiled delivery rules from the repository snapshot (remote-curation.md R-CUR-001, R-DEB-036): the
+	// merge leaves out the paragraphs whose binary package and version they refuse, and their fingerprint is an input of the suite's, so
+	// a change of the rules rebuilds the merge. Nil for a member that delivers everything, which costs the merge nothing.
+	Delivery *rules.Set
 }
 
 // VirtualRepo is a virtual Debian repository as a build reads it from the repository model: its names, the settings of its indexes, its
@@ -206,6 +211,28 @@ func (x *Indexer) buildVirtual(ctx context.Context, vr VirtualRepo, args IndexJo
 	return first
 }
 
+// memberInputs reads every member's input of a suite, records each one's record in records, and returns the parts and the earliest
+// Valid-Until of the members' releases.
+func (x *Indexer) memberInputs(ctx context.Context, vr VirtualRepo, in rows.VirtualInputs, suite string, prev virtualInputs, records map[string]memberRecord) ([]memberInput, *time.Time, error) {
+	var parts []memberInput
+	var validUntil *time.Time
+	for _, m := range vr.Members {
+		part, rec, until, err := x.memberInput(ctx, vr, in, m, suite, prev)
+		if err != nil {
+			return nil, nil, err
+		}
+		if part == nil {
+			continue
+		}
+		parts = append(parts, *part)
+		records[m.Key] = rec
+		if until != nil && (validUntil == nil || until.Before(*validUntil)) {
+			validUntil = until
+		}
+	}
+	return parts, validUntil, nil
+}
+
 // virtualSuite merges, signs and publishes one suite of a virtual repository, or records that its inputs did not change.
 func (x *Indexer) virtualSuite(ctx context.Context, vr VirtualRepo, in rows.VirtualInputs, vs rows.VirtualSuite, keys []*openpgp.Key, full bool) (string, error) {
 	suite := vs.Suite.Suite
@@ -216,21 +243,9 @@ func (x *Indexer) virtualSuite(ctx context.Context, vr VirtualRepo, in rows.Virt
 		return OutcomeFailed, errors.New("deb: the publication port is not available on this replica")
 	}
 	curr := virtualInputs{Members: map[string]memberRecord{}}
-	var parts []memberInput
-	var validUntil *time.Time
-	for _, m := range vr.Members {
-		part, rec, until, err := x.memberInput(ctx, vr, in, m, suite, prev)
-		if err != nil {
-			return OutcomeFailed, err
-		}
-		if part == nil {
-			continue
-		}
-		parts = append(parts, *part)
-		curr.Members[m.Key] = rec
-		if until != nil && (validUntil == nil || until.Before(*validUntil)) {
-			validUntil = until
-		}
+	parts, validUntil, err := x.memberInputs(ctx, vr, in, suite, prev, curr.Members)
+	if err != nil {
+		return OutcomeFailed, err
 	}
 	archs := slices.DeleteFunc(slices.Clone(vr.Architectures), func(a string) bool { return a == index.All })
 	curr.Fingerprint = fingerprintOf(vr, suite, curr.Members, validUntil, fingerprints(keys))
@@ -274,7 +289,11 @@ func (x *Indexer) virtualSuite(ctx context.Context, vr VirtualRepo, in rows.Virt
 					if !ok {
 						continue
 					}
-					_, err = index.MergeMember(ctx, w, seen, part.m.Key, r, func(name string) bool {
+					_, err = index.MergeMember(ctx, w, seen, part.m.Key, r, func(name, version string) bool {
+						// A remote member's delivery rules decide the paragraph first: they read no row (R-DEB-036).
+						if set := part.m.Delivery; set != nil && !set.Decide(name, version).Delivered {
+							return false
+						}
 						allowed, ok := cache[name]
 						if !ok {
 							var aerr error
@@ -503,11 +522,17 @@ func (x *Indexer) openMemberIndex(ctx context.Context, part memberInput, suite, 
 	return io.NopCloser(r), true, nil
 }
 
-// fingerprintOf is the digest of what decides the merge of a suite: the configuration, the settings of its indexes, and for each member
-// the generation or the release it merges (R-DEB-026).
+// fingerprintOf is the digest of what decides the merge of a suite: the configuration, the settings of its indexes, each remote member's
+// delivery rules (R-DEB-036), and for each member the generation or the release it merges (R-DEB-026). A member without rules adds
+// nothing, so a virtual repository none of whose members has rules keeps the fingerprint it had.
 func fingerprintOf(vr VirtualRepo, suite string, members map[string]memberRecord, until *time.Time, signers []string) string {
 	h := sha256.New()
 	fmt.Fprintf(h, "%s\n%s\n%s\n%s\n%v\n", vr.Fingerprint, suite, strings.Join(vr.Components, ","), strings.Join(vr.Architectures, ","), vr.Settings)
+	for _, m := range vr.Members {
+		if fp := m.Delivery.Fingerprint(); fp != "" {
+			fmt.Fprintf(h, "rules %s %s\n", m.Key, fp)
+		}
+	}
 	keys := make([]string, 0, len(members))
 	for k := range members {
 		keys = append(keys, k)

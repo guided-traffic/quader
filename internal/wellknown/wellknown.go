@@ -34,7 +34,7 @@ const (
 	// ScannerTrivyKey is the key of the repository in the project upstream.
 	ScannerTrivyKey = "scanner-trivy"
 	// ScannerTrivyImage is the image name of the analyser's vulnerability database at its registry: the one name the
-	// repository's include pattern admits and the scanning resolves a tag of.
+	// repository's delivery rule allows and the scanning resolves a tag of.
 	ScannerTrivyImage = "aquasec/trivy-db"
 	// ScannerTrivyURL is the product's upstream of the repository: the registry that serves ScannerTrivyImage.
 	ScannerTrivyURL = "https://mirror.gcr.io/"
@@ -144,9 +144,10 @@ type Declaration struct {
 	URL        string
 	ExtraHosts []catalog.PresetHost
 	Settings   json.RawMessage
-	// IncludePatterns are fixed include patterns of a system repository (scanner-trivy admits only its image); nil for a
-	// preset, whose patterns are an administrator's (R-REPO-069).
-	IncludePatterns []string
+	// Allow are the package names a system repository delivers, each the product's delivery rule `package <name> allow` in mode
+	// onlyAllowed (scanner-trivy delivers only its image, R-REPO-070, remote-curation.md R-CUR-002); nil for a preset, whose delivery
+	// mode and rules are an administrator's and the holders' of manage (R-REPO-069), and for a local system repository.
+	Allow []string
 	// Private is true for a repository whose levels are fixed at private (scanner-trivy); false for clamav, whose level the switch
 	// of its clients decides (it is created private, Level).
 	Private bool
@@ -210,7 +211,7 @@ const scannerTrivyFormat catalog.ID = "oci"
 func scannerTrivy() Declaration {
 	return Declaration{
 		Key: ScannerTrivyKey, Format: scannerTrivyFormat, Class: catalog.Remote, Kind: KindSystem, DisplayName: ScannerTrivyDisplayName,
-		URL: ScannerTrivyURL, ExtraHosts: []catalog.PresetHost{}, IncludePatterns: []string{ScannerTrivyImage},
+		URL: ScannerTrivyURL, ExtraHosts: []catalog.PresetHost{}, Allow: []string{ScannerTrivyImage},
 		Private: true, Level: systemLevel, ScanningOff: true, UnusedRetentionHours: ScannerTrivyRetentionHours,
 	}
 }
@@ -233,7 +234,7 @@ func (d Declaration) Local() bool { return d.Class == catalog.Local }
 
 // Fixed returns what the product fixes on the repository beyond its address: empty for a preset repository.
 func (d Declaration) Fixed() Fixed {
-	return Fixed{IncludePatterns: slices.Clone(d.IncludePatterns), Private: d.Private, ScanningOff: d.ScanningOff, UnusedRetentionHours: d.UnusedRetentionHours}
+	return Fixed{Allow: slices.Clone(d.Allow), Private: d.Private, ScanningOff: d.ScanningOff, UnusedRetentionHours: d.UnusedRetentionHours}
 }
 
 // Address returns the product's address of the repository (R-REPO-069).

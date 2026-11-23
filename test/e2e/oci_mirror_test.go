@@ -35,7 +35,7 @@ func (e *mirrorEnv) ociMirrorBody(t testing.TB, key string, tags int) map[string
 		"mirror": map[string]any{"concurrency": mirrorConcurrency, "maxVersionsPerPackage": tags},
 		"limits": map[string]any{"maxConcurrentFetches": mirrorMaxFetches},
 	})
-	body["includePatterns"] = []string{"library/*", "bulk/tags"}
+	body["remote"].(map[string]any)["mirror"].(map[string]any)["include"] = []string{"library/*", "bulk/tags"} // the mirror's scope (R-CUR-017)
 	body["oci"] = map[string]any{"mirror": map[string]any{"tags": []string{"t0*", "latest", "3", "1"}}}
 	return body
 }

@@ -2728,7 +2728,7 @@ the protocol research of 2026-11-23:
 
 Acceptance criteria:
 
-- Unit (kit checks 21 and 22, milliseconds): the search with `skip` at the window's end, the package call over a registration of two pages;
+- Unit (kit checks 22 and 23, milliseconds): the search with `skip` at the window's end, the package call over a registration of two pages;
   a refused `2.0.0` is absent from the version list, the registration and the search.
 - End-to-end (the leg `nuget`, about 10 s): with `version Acme.Core@1.1.0 allow`, a project referencing `Acme.Core` `[1.0,2.0)` restores
   1.1.0 from the stub's versions.

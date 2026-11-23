@@ -1,6 +1,9 @@
 # Curating a remote repository
 
-Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4), and of the screens (R-CUR-018) the tab strip and the tab **Downloads** (package R5a); the rest of its behaviour is not. The owner asked for it on 2026-11-23 (task T-24 of the
+Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, the delivery rules (R-CUR-001
+to R-CUR-006, R-CUR-017, package R2) are built with what [Q-CUR-42](#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)
+lists as not built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4), and of the screens (R-CUR-018) the tab strip and
+the tab **Downloads** (package R5a); the catalogue, the requests, examination and retention and the other screens are not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -197,13 +200,13 @@ asked at three places, always with the decision of R-CUR-001 on the repository's
   filtered or keyed differently (R-ARCH-027).
 - A filtered document is a rendition of its own: its key and validator carry the revision of the repository's rule set
   (`repositories.delivery_rules_revision`, R-CUR-006), so a change of the rules is never answered with a document rendered under the old ones.
-- The kit of the format contract holds every format with a remote class to it (check 22, R-CUR-022): with a rule that refuses one version
+- The kit of the format contract holds every format with a remote class to it (check 23, R-CUR-022): with a rule that refuses one version
   of a fixture package, no document of the format lists that version, the version's file answers the refusal with `Cache-Control:
   no-store`, and a package whose every version is refused answers the refusal at its document.
 
 Acceptance criteria:
 
-- Unit (kit check 22, `internal/formats/formattest`, milliseconds per format): the three statements above for every format with the class
+- Unit (kit check 23, `internal/formats/formattest`, milliseconds per format): the three statements above for every format with the class
   remote, against a host whose rule set refuses `2.0.0` of the fixture's package.
 - Integration, one case per format (areas `npm`, `nuget`, `ociremote`, `deb`, `ansible`, `TestR_CUR_003_…`, about 2 s each, the counting
   stub upstreams and their corpora): mode `onlyAllowed` with one version allowed; the package document lists that version only; the
@@ -248,13 +251,14 @@ Priority: **P1** · Covers: SEC-007, SEC-032
   (`blocked` or `not_allowed`), the kind (`document` or `artifact`).
 - **Metric:** `quader_remote_delivery_refusals_total{repo,reason,kind}`.
 - **Record:** every refusal on a client's request also counts in the request list's entry of its subject (R-CUR-015): one row per
-  repository, package and version, with the first and last time and the count, written with the event's throttle, so the list reads no
-  audit log.
+  repository, package and version, with the first and last time and the count, summed on each replica and written at most every 5 s per
+  subject ([Q-CUR-40](#q-cur-40--a-refusals-count-is-summed-on-the-replica-and-written-every-five-seconds)), so the list reads no audit log;
+  beyond `proxy.delivery.max_client_entries` entries without an asker the oldest last refusal goes.
 - A download ahead is never refused by the rules (R-CUR-014); a pass of the mirror fetches only what the rules deliver (R-CUR-017).
 
 Acceptance criteria:
 
-- Unit (kit check 22): every format renders `403` with `Cache-Control: no-store` for the code, and the body's code in its shape.
+- Unit (kit check 23): every format renders `403` with `Cache-Control: no-store` for the code, and the body's code in its shape.
 - Integration (area `npm`, `TestR_CUR_004_…`, about 2 s): a virtual repository over a remote that refuses `left-pad` and a second remote
   that delivers it serves the second's tarball; with only the first, the answer is the first's `403` and its text names the first;
   `npm install` through it prints the text (unit of the npm error writer).
@@ -328,7 +332,8 @@ it bounds every counter at zero from below and every bulk's bounds at one.
   format's canonical form, which the format declares as `catalog.VersionCanon` (new, beside its `catalog.Names`; R-CUR-007): npm and
   Ansible Galaxy the SemVer text as given, NuGet the identity of its versions, the URL form of R-NUGET-003 (normalized, lowercased,
   without build metadata, so `1.0.0-Beta` and `1.0.0-beta` are one, Q-CUR-3), Debian the version as the index row has it, OCI the tag as given. A
-  name the rule refuses answers `422 invalid_name`, a version the format cannot read `422 invalid_version`; the decision folds what it is
+  name the rule refuses answers `422 invalid_name` (registered with the rules' package, `internal/errs/codes.go`), a version the format
+  cannot read `422 invalid_version`, a pattern the matcher refuses `422 invalid_pattern`; the decision folds what it is
   asked with the same functions, so `NuGet 1.0` and a rule on `1.0.0` meet (the gap of H-380 does not arise).
 - **Limits:** at most `proxy.delivery.max_rules` (10,000 by default) rules per repository, of which at most 100 sections (the bound of a
   pattern list, R-REPO-005); beyond it `422 too_many_rules`.
@@ -509,7 +514,7 @@ Acceptance criteria:
 - Unit (`internal/formats`, milliseconds): `Register` refuses a remote format without the declaration and one whose declared call its
   adapter does not answer; every registered format's declaration is pinned by `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue`
   (`internal/formats/all`).
-- Unit (kit check 21, `internal/formats/formattest`, milliseconds per format, a fake upstream in process answering canned documents of a
+- Unit (kit check 22, `internal/formats/formattest`, milliseconds per format, a fake upstream in process answering canned documents of a
   few kilobytes from the format's fixture): each declared call answers a page whose names the format's rule accepts, a cursor that
   continues, `Done` at the end, and `ErrNotOffered` for an undeclared call; an answer above the bound of R-CUR-008 fails with
   `catalogue_answer_too_large`; no call reaches a host outside the upstream, its `extraHosts` and the declared `Hosts`.
@@ -1322,7 +1327,7 @@ constant amount; payloads of kilobytes.
 | Tier | What | Run time | Data |
 |---|---|---|---|
 | Unit | the rule decision (R-CUR-001), the failure classification (R-CUR-011), the queue's order and retries, the catalogue engine's budget, cache and bounds, the combined serve decision with the fourth check | about 2 s in all | none |
-| Unit, the format contract's kit | check 21 (the catalogue against a fake upstream in process) and check 22 (documents and refusals), per format | milliseconds per format, about 0.5 s for five | the fixture's canned documents, a few KB each |
+| Unit, the format contract's kit | check 22 (the catalogue against a fake upstream in process) and check 23 (documents and refusals), per format | milliseconds per format, about 0.5 s for five | the fixture's canned documents, a few KB each |
 | Integration, per format | one case: a rule refuses a document and an artifact (R-CUR-003), and one download ahead (R-CUR-010) | about 4 s per format, 20 s for five, spread over the shards | the stubs' existing corpora |
 | Integration, once (npm) | the virtual walk (R-CUR-004), the queue's failure and retry (R-CUR-011), the examination (R-CUR-014), the requests (R-CUR-015), the retention (R-CUR-016), the catalogue's API (R-CUR-008, R-CUR-009), the permissions (R-CUR-005), the mirror (R-CUR-017) | about 20 s | the npm stub with a search route of 50 lines added |
 | End-to-end, per format, in the format's own leg | what only the client shows: npm and NuGet resolve a range to the newest allowed version from a filtered document; `docker pull` of a refused tag prints `denied: …`; apt through the virtual repository sees the filtered index; `ansible-galaxy` installs the newest allowed version | about 10 s per leg | one package of the leg's corpus |
@@ -1513,7 +1518,7 @@ coordinator's D17 of 2026-11-23, from the research on examination.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A gate in the signature gate's shape: asked before a fill (no upstream request), as the fourth check of the one serve decision, and as a filter of documents (chosen) | R-CUR-003 | What is stored stays scanned and visible; the refusal has a reason; examination fits; one serve decision for every refusal of content | Three places to keep in step, held by kit check 22 |
+| (a) A gate in the signature gate's shape: asked before a fill (no upstream request), as the fourth check of the one serve decision, and as a filter of documents (chosen) | R-CUR-003 | What is stored stays scanned and visible; the refusal has a reason; examination fits; one serve decision for every refusal of content | Three places to keep in step, held by kit check 23 |
 | (b) In `Host.Authorize`, as the patterns are | Before the cache | One place | Hides from views; cannot tell "examined" from "missing"; a cached item's malware find is never said |
 | (c) A per-version list joined into the item lookup, as the vulnerability block | One query | Cheap at the serve point | Covers stored versions only, and npm and NuGet only (the lookup's join is version-based) |
 
@@ -1960,6 +1965,96 @@ development agent would revisit the requests if a retired repository's open requ
 
 **Applied in the spec:** R-CUR-021 ("A repository that goes away"); [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-067
 step 5 (a sentence); the function in [00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql).
+
+### Q-CUR-40 · A refusal's count is summed on the replica and written every five seconds
+
+Status: **Decided by the development agent** — selected from the options below while building the delivery rules (package R2); the
+owner reviews it at the walkthrough.
+
+Context: R-CUR-004 said the count of a client's refusals in the request list is "written with the event's throttle", once a minute per
+repository, package, version and client address. Its acceptance criterion counts two refusals within a minute as 2, which a write once a
+minute shows only after that minute.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The event once a minute as specified; the counts summed per subject in the replica's memory and written by one statement per subject every 5 s (chosen) | `internal/remotecuration/rules/store/record.go` | A refused client in a loop costs one write per subject per period, not per request; the list is at most 5 s behind; a test waits seconds, not a minute | A crash loses up to 5 s of counts ([H-1800](../security/remote-curation.md#h-1800--a-replica-loses-up-to-five-seconds-of-refusal-counts-at-a-crash)) |
+| (b) A write per refusal | Exact | Simple | A refused CI loop writes per request |
+| (c) The count written with the event, once a minute | As written | Fewest writes | The count lags a minute; the test waits a minute |
+
+**Choice:** (a). **Rationale:** the count is a figure for a decider, not a record that must survive a crash; the bound of writes is the
+point of the throttle. The development agent would revisit the period if the request list's writes show in the database's load.
+
+**Applied in the spec:** R-CUR-004 ("Record").
+
+### Q-CUR-41 · The vocabulary and the compiled rules are leaves; the contract hands a format the rules; the Host records a refusal
+
+Status: **Decided by the development agent** — selected from the options below while building the delivery rules (package R2); the
+owner reviews it at the walkthrough. It changes the layering the contracts package chose (R-ARCH-002, Q-CUR-110).
+
+Context: a format filters its documents by the rules of the request's repository (R-CUR-003 point 3) and refuses a package whole at its
+document, and a format may import only leaves besides the contract (R-ARCH-008). The contracts package registered `internal/remotecuration`
+whole as a domain package; its root imports nothing of the module.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The root (`Mode`, `Decision`, the ports) and `internal/remotecuration/rules` (the compiled `Set`, the decision, the `Refusal`, the journal's `Narrowing`) are leaves; the store and the record of a refusal are `rules/store`, domain; the contract adds `Delivery`, `Undelivered`, `RefusalOf`, `DeliveryView`, `DocumentView`, `JoinViews`, `DocumentFingerprint`, `SystemRead`, `MemberDelivery`, `MemberRules`, `ModeReason` and the Host's service `RecordRefusal` (chosen) | A format reads `rq.Repo.Delivery()` through the contract | One decision for the core and the formats; a refusal is recorded once, in `ServeRoute`, wherever it was decided; additions keep contract version 11 (R-ARCH-025) | The layer table names five sub-packages of the topic one by one |
+| (b) A port of the Host that answers per package and version | No new leaf | The formats call the Host | A document of thousands of versions calls the Host per version; the virtual merge needs a member's rules, which the Host does not name |
+| (c) An optional interface of the Host found by a type assertion | No contract method | Small | R-ARCH-008 forbids a type assertion to an interface of the contract outside `CapabilitiesOf` |
+
+**Choice:** (a). Also registered with it: the code `invalid_name` (422), which R-CUR-006 named and the contracts package had not
+registered. **Rationale:** what every format needs to decide a document is a pure value; the machinery that writes stays domain. The
+development agent would revisit (b) if a format needed rules that the snapshot cannot hold.
+
+**Applied in the spec:** [architecture.md](architecture.md) R-ARCH-008 (the Host block, `MemberRules`, the paragraph of supporting
+names); `internal/archtest/layers.go`, `internal/archtest/imports.go`.
+
+### Q-CUR-42 · The places the rules decide, as built; kit check 23; OCI and Debian in the kit
+
+Status: **Decided by the development agent** — selected from the options below while building the delivery rules (package R2); the
+owner reviews it at the walkthrough.
+
+Context: R-CUR-003 names three places; building them showed four details the page left open: where step 5a stands for a document, how a
+system read and the documents an artifact's gate reads are treated, how OCI's tags list is filtered, and what kit check 22 (now 23) holds
+for a Debian remote whose documents pass unchanged.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A document of a package (or a version) the rules do not deliver is refused before the cache lookup, stored or not; an artifact at step 5a for a miss and at the serve point when stored; the documents a format's gate reads for an artifact are not refused (the artifact decides); a system read is not refused at a document or the serve point, while a mirror's pass and the image database's fill admit only what the rules deliver; OCI filters its tags list itself on the cached name, `Host.PathsAllowed` joins no rule; the kit takes a Debian remote's `InRelease` as a `Passthrough` document (chosen) | `internal/formathost/remote.go`, `signature_gate.go`, `mirror_host.go`, `internal/formats/oci/delivery.go`, `internal/formats/formattest/checks_delivery.go` | One answer for a refused document, a stored infected file of a refused version still answers `malware_found` (Q-CUR-7), scanner-trivy still delivers only its database to the scanning's fill, a Docker Hub name's second spelling is not refused by a rule that names the first | A document refused while stored is never served stale |
+| (b) Every refusal at step 5a after the cache lookup | As R-REPO-025 orders it | Literal | A stored document of a refused package would be served, and each format would refuse it again |
+| (c) The rules joined into `Host.PathsAllowed` | One filter for every listing | Generic | OCI asks it for both spellings of a name: `library/nginx` allowed refuses `nginx`, so the pull answers 404 |
+
+**Choice:** (a). The check of the delivery rules is kit check 23: 21 was taken by the package shapes (R-BAS-086) and 22 is the
+catalogue's (R-ARCH-010).
+
+**Built and held** (package R2, 2026-11-23):
+- R-CUR-001: the decision (`internal/remotecuration/rules`, `TestR_CUR_001_TheDecisionTable`, `TestR_CUR_001_ThePackagesDecision`).
+- R-CUR-002: no patterns on a remote (`TestR_CUR_002_ARemoteHasNoIncludeOrExcludePatterns`), a blocked package listed and marked
+  (`TestR_CUR_002_ABlockedPackageStaysListedAndIsMarkedNotDelivered`), the search guard (`TestR_CUR_002_TheSearchGuard`, NuGet's forwarded
+  search), both spellings of a Docker Hub name (`TestR_CUR_002_ABlockRuleHoldsForBothSpellingsOfADockerHubName`).
+- R-CUR-003: before a fill, at the serve point and in the documents of the five formats (kit check 23; `TestR_CUR_003_…` in `npm`,
+  `nuget`, `ociremote`, `debvirtual` (the Debian remote and its virtual repository), `ansibleremote`).
+- R-CUR-004: the refusal's shapes (kit check 23), the virtual walk and the record (`TestR_CUR_004_AVirtualRepositoryWalksPastARefusingMember`,
+  `TestR_CUR_004_TheRefusalsText`).
+- R-CUR-005: the rules' operations (`TestR_CUR_005_WhoReadsWritesAndChecksTheRules`).
+- R-CUR-006: the store, the limits, the revision, the propagation to a second replica, the journal's part `rules`
+  (`TestR_CUR_006_TheRulesAreWrittenCheckedAndPropagated`), the part `deliveryMode` (`repository/journal_narrowed_test.go`).
+- R-CUR-017: the mirror's scope and the rules (`TestR_CUR_017_TheMirrorAdmitsWhatItsScopeAndTheRulesAdmit`,
+  `TestR_CUR_017_AMirrorStoresWhatItsScopeAndTheRulesBothAdmit`).
+
+**Not built** (the plan takes them over):
+- R-CUR-005: the rows of the project `upstream` (`upstream/npmjs`) and the `409 managed_by_product` of a rule write on a system repository
+  have no integration case (the upstream area's harness does not wire the rules' API); the unit of the code path is not written either.
+- R-CUR-006: the replay of the parts `rules` and `deliveryMode` after a restore has no test of its own (the code is
+  `internal/repository/journal_replay_delivery.go`).
+- R-CUR-004: the refusal through a Bastion is the main installation's (built by construction); the Bastion's integration areas were run,
+  no case of a refusal through a Bastion was added.
+- The screens (R5a, R5b) and the manual's sentences (R6) of the rules.
+
+**Rationale:** each detail keeps one answer per question. The development agent would revisit the treatment of a stored document of a
+refused package if serving it stale were wanted.
+
+**Applied in the spec:** R-CUR-003 (this block), [architecture.md](architecture.md) R-ARCH-010 (checks 21 to 23),
+[formats/oci.md](formats/oci.md) R-OCI-038 (the tags list).
 
 ### Q-CUR-130 · Until the catalogue's screens land, the strip holds the content and Downloads, and a visitor sees none
 

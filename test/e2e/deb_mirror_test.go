@@ -33,10 +33,10 @@ func TestDebMirror(t *testing.T) {
 			"url":  "https://" + debStubHost(t) + debstub.ArchiveBase + "/",
 			"mode": "mirror",
 			// the architecture is the one of the client pods (all is always kept)
-			"mirror": map[string]any{"concurrency": 2, "maxVersionsPerPackage": 2},
+			// the mirror's scope (R-CUR-017) is the names of the stub: quader-* and libquader1, which quader-hello depends on (a pattern
+			// that leaves a dependency out leaves it out of the mirror)
+			"mirror": map[string]any{"concurrency": 2, "maxVersionsPerPackage": 2, "include": []string{"quader-*", "libquader1"}},
 		},
-		// the names of the stub: quader-* and libquader1, which quader-hello depends on (a pattern that leaves a dependency out leaves it out of the mirror)
-		"includePatterns": []string{"quader-*", "libquader1"},
 		"deb": map[string]any{
 			"upstreamKeys": string(s.keyring(t, "a")),
 			"mirror":       map[string]any{"suites": []string{"stable"}, "components": []string{"main"}, "architectures": []string{arch}},

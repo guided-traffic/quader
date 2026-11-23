@@ -189,7 +189,7 @@ func TestPatternUnscopedOnlyWarning(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run("R-REPO-005 R-REPO-008 pattern_unscoped_only: "+c.name, func(t *testing.T) {
-			_, v, err := decodeValidate(t, `{"key":"rem","class":"remote","format":"pkgfmt","remote":{"url":"https://upstream.example.test/"},`+c.body+`}`, true)
+			_, v, err := decodeValidate(t, `{"key":"loc","class":"local","format":"pkgfmt",`+c.body+`}`, true)
 			if err != nil {
 				t.Fatal(err)
 			}

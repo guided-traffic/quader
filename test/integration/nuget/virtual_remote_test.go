@@ -146,7 +146,7 @@ func TestR_AUTHZ_008_AVersionWhoseOnlyCachedFileIsItsNuspecIsNotListedToACallerW
 	e := newRemoteEnv(t, remoteOptions{})
 	const guarded, deployOnly = "nuget-guarded", "nuget-deploy-fill"
 	content := []any{map[string]any{"pattern": "localhost", "sendCredentials": false}}
-	e.st.Repository(deployOnly, "remote", "nuget", strings.Replace(e.remoteConfig(300, content, nil), `"cacheFillAction":"read"`, `"cacheFillAction":"deploy"`, 1))
+	e.st.Repository(deployOnly, "remote", "nuget", strings.Replace(e.remoteConfig(300, content), `"cacheFillAction":"read"`, `"cacheFillAction":"deploy"`, 1))
 	// No merged-metadata cache, so that the viewer's second request merges what is cached then.
 	e.mixedVirtual(guarded, `{"virtual":{"mergedMetadataTtlSeconds":0}}`, deployOnly)
 	viewer := e.st.User("viewer")

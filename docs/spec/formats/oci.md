@@ -1639,8 +1639,9 @@ what more a registry offers is its operator's, so the capabilities are the prese
   is read.
 - **One version's download** is the probe's content (R-REPO-065, Q-OCI-224): the tag's manifest; of an index the manifests of
   `oci.platforms` with their attestations; their configs and layers.
-- **Documents:** the tags list (the stored list and the pass-through pages of R-OCI-024) lists the delivered tags, through the format's
-  `Host.PathsAllowed`, which the rules join; the catalog (R-OCI-017) lists a remote's image only while some version of it is delivered;
+- **Documents:** the tags list (the stored list and the pass-through pages of R-OCI-024) lists the delivered tags, filtered by the format on
+  the name the cache knows (`deliveredMask` in `internal/formats/oci/delivery.go`; `Host.PathsAllowed` does not join the rules, because OCI
+  asks it for both spellings of a Docker Hub name and a rule names one, [Q-CUR-42](../remote-curation.md#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)); the catalog (R-OCI-017) lists a remote's image only while some version of it is delivered;
   the referrers of a refused manifest answer the refusal.
 - **What `docker` shows:** `denied: <image> <tag> is not allowed in <project>/<repo>: …`.
 - **Limits the downloads meet** (the preview says them): Docker Hub allows an anonymous caller 100 manifest pulls per window (observed as
@@ -1649,7 +1650,7 @@ what more a registry offers is its operator's, so the capabilities are the prese
 
 Acceptance criteria:
 
-- Unit (kit checks 21 and 22, milliseconds): each preset's capabilities from its declaration; the tags list without a refused tag; a
+- Unit (kit checks 22 and 23, milliseconds): each preset's capabilities from its declaration; the tags list without a refused tag; a
   manifest by the digest of a refused tag answers the refusal while a delivered tag's digest is served.
 - Unit (`internal/formats/oci`, milliseconds): the Hub search's fallback when the canned answer is a `404` or does not parse.
 - End-to-end (the leg `oci`, about 10 s): `docker pull` of a refused tag through the remote prints `denied:` with the text.
@@ -3569,7 +3570,7 @@ an operator who wants one grant to cover both spellings.
 **Applied in the spec:** [R-OCI-025](#r-oci-025--remote-repository-docker-hub), [R-OCI-012](#r-oci-012--cross-repository-blob-mount). Code: `libraryName`, `otherSpelling`, `gateRemote`, `bothAllow`,
 `Format.SourceSpellings` in [remote_handlers.go](../../../internal/formats/oci/remote_handlers.go), `linkSource` in [ingest.go](../../../internal/formathost/ingest.go). Tests:
 `TestTheLibraryMappingNeedsDockerHubWithoutANamespacePrefix`, `TestADecisionOnADockerHubRemoteIsMadeOnBothSpellings`,
-`TestAnExcludeForOneSpellingHoldsForTheOther`, `TestAMountFromADockerHubRemoteIsDecidedOnBothSpellingsOfTheSource`.
+`TestR_CUR_002_ABlockRuleHoldsForBothSpellingsOfADockerHubName` (a remote's delivery rules replaced its exclude patterns, remote-curation.md R-CUR-002), `TestAMountFromADockerHubRemoteIsDecidedOnBothSpellingsOfTheSource`.
 
 ### Q-OCI-150 · One request of a client costs at most eight pages of the upstream's tags list
 

@@ -194,10 +194,11 @@ type MergeResult struct {
 }
 
 // MergeMember streams the paragraphs of one member's index, plain, into w in the member's own order: a paragraph is kept when keep
-// admits its package name (the member's patterns, the pin rules and claims, R-DEB-025) and no earlier member kept the same package,
-// version and architecture. The Filename of a kept paragraph becomes the member path; every other field stays as the member serves it. A
-// paragraph that does not validate is left out and counted, as the parse of a remote does (R-DEB-034).
-func MergeMember(ctx context.Context, w ParagraphSink, seen *Seen, memberKey string, r io.Reader, keep func(name string) bool) (MergeResult, error) {
+// admits its binary package name and version (the member's patterns, the pin rules and claims, R-DEB-025, and a remote member's delivery
+// rules, R-DEB-036) and no earlier member kept the same package, version and architecture. The Filename of a kept paragraph becomes the
+// member path; every other field stays as the member serves it. A paragraph that does not validate is left out and counted, as the parse
+// of a remote does (R-DEB-034).
+func MergeMember(ctx context.Context, w ParagraphSink, seen *Seen, memberKey string, r io.Reader, keep func(name, version string) bool) (MergeResult, error) {
 	var res MergeResult
 	rd := control.NewReader(r, false)
 	for n := 0; ; n++ {
@@ -221,7 +222,7 @@ func MergeMember(ctx context.Context, w ParagraphSink, seen *Seen, memberKey str
 			res.Skipped++
 			continue
 		}
-		if !keep(name) {
+		if !keep(name, version) {
 			res.Others++
 			continue
 		}

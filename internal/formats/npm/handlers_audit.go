@@ -304,9 +304,15 @@ func readableNames(ctx context.Context, rq *formats.Request, fw *auditForwarder)
 }
 
 // admitted says whether the include and exclude patterns of the forwarding remote and of
-// the requesting virtual repository admit a name (R-REPO-005): a name they refuse is one
-// the remote does not proxy, whatever it fetched before the pattern was set.
+// the requesting virtual repository admit a name (R-REPO-005), and whether the forwarding
+// remote's delivery rules deliver some version of it: a remote has rules where it had
+// patterns, and never asks its upstream about a name they do not deliver (remote-curation.md
+// R-CUR-002). A name they refuse is one the remote does not proxy, whatever it fetched
+// before the pattern or the rule was set.
 func admitted(rq *formats.Request, fw *auditForwarder, n string) bool {
+	if set := formats.Delivery(fw.rq); set != nil && !set.Package(n).Delivered {
+		return false
+	}
 	return fw.rq.Repo.Admits(n, false) && (fw.virtualID == 0 || rq.Repo.Admits(n, false))
 }
 

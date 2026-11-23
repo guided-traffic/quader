@@ -21,7 +21,7 @@ import (
 const (
 	rProbe    = "oci-probe"     // the switch on (the default)
 	rProbeOff = "oci-probe-off" // downloadOnProbe false
-	rProbeX   = "oci-probe-x"   // the exclude pattern library/nginx
+	rProbeX   = "oci-probe-x"   // the delivery rule "package library/nginx block"
 	// Virtual repositories over each of them (Q-REPO-367).
 	rProbeV    = "oci-probe-v"
 	rProbeVOff = "oci-probe-voff"
@@ -78,14 +78,14 @@ func (e *renv) probeRepo(key string, remoteExtra map[string]any) {
 		remote[k] = v
 	}
 	body := map[string]any{"remote": remote, "oci": map[string]any{"platforms": []string{"linux/amd64"}}}
-	if key == rProbeX {
-		body["excludePatterns"] = []string{"library/nginx"}
-	}
 	doc, err := json.Marshal(body)
 	if err != nil {
 		e.t.Fatal(err)
 	}
 	e.st.Repository(key, "remote", "oci", string(doc))
+	if key == rProbeX {
+		e.st.DeliveryRule(key, testenv.PackageRule("library/nginx", "block"))
+	}
 }
 
 // platformOf finds the child of an index of the stub by its platform, and the attestation of that child.
@@ -238,7 +238,8 @@ func TestR_REPO_065_AHeadOfATagListsItOnceTheBackgroundDownloadStoredTheImage(t 
 	}
 }
 
-func TestR_REPO_065_TheSwitchAndThePatternsStopABackgroundDownload(t *testing.T) {
+// The switch downloadOnProbe off and a delivery rule that refuses the image start no background download (R-REPO-065, R-CUR-003).
+func TestR_REPO_065_TheSwitchAndTheRulesStopABackgroundDownload(t *testing.T) {
 	e, rep := probeEnv(t)
 	busy, err := e.stub.Image("library/busybox", "latest")
 	if err != nil {
@@ -248,8 +249,8 @@ func TestR_REPO_065_TheSwitchAndThePatternsStopABackgroundDownload(t *testing.T)
 	if a := e.get(rep, rProbeOff, "library/busybox/manifests/latest"); a.Status != http.StatusOK {
 		t.Fatalf("the probe of the remote without the switch: %d", a.Status)
 	}
-	if a := e.get(rep, rProbeX, "library/nginx/manifests/latest"); a.Status != http.StatusNotFound {
-		t.Fatalf("the excluded image answers %d, want 404", a.Status)
+	if a := e.get(rep, rProbeX, "library/nginx/manifests/latest"); a.Status != http.StatusForbidden {
+		t.Fatalf("the blocked image answers %d, want the rule's 403 (R-CUR-004)", a.Status)
 	}
 	time.Sleep(3 * time.Second)
 	if n := e.st.Number(`SELECT count(*) FROM remote_download WHERE origin = 'probe'`); n != 0 {
@@ -265,7 +266,7 @@ func TestR_REPO_065_TheSwitchAndThePatternsStopABackgroundDownload(t *testing.T)
 		t.Fatal(err)
 	}
 	if n := e.stub.Counts().ManifestGets("library/nginx", ""); n != 0 || len(nginx.Manifests) == 0 {
-		t.Errorf("the excluded image was asked %d times", n)
+		t.Errorf("the blocked image was asked %d times", n)
 	}
 }
 

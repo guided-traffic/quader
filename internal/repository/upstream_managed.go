@@ -71,7 +71,7 @@ func managedPointers(kind wellknown.Kind, cur, nd *Document) ([]errs.FieldError,
 		case identityMember(k):
 		case patchableTop(k) && (kind != wellknown.KindSystem || !systemFixedTop(k)):
 		case k == "remote":
-			out = append(out, managedRemote(before[k], after[k])...)
+			out = append(out, managedRemote(kind, before[k], after[k])...)
 		case k == "storage" && kind != wellknown.KindSystem:
 			// storage.downloadLinks narrows what the repository serves and is an administrator's (R-STOR-014); the rest of
 			// storage is the product's.
@@ -85,14 +85,15 @@ func managedPointers(kind wellknown.Kind, cur, nd *Document) ([]errs.FieldError,
 	return out, nil
 }
 
-// managedRemote compares the remote sections: cacheFillAction and availability.mode (offline) are an administrator's, every other
-// member the product's.
-func managedRemote(before, after json.RawMessage) []errs.FieldError {
+// managedRemote compares the remote sections: cacheFillAction, availability.mode (offline) and, but on a system repository, the
+// delivery members (remote-curation.md R-CUR-001, R-REPO-069) are an administrator's, every other member the product's.
+func managedRemote(kind wellknown.Kind, before, after json.RawMessage) []errs.FieldError {
 	b, a := objectMembers(before), objectMembers(after)
 	var out []errs.FieldError
 	for _, k := range unionKeys(b, a) {
 		switch {
 		case k == "cacheFillAction":
+		case k == "delivery" && kind != wellknown.KindSystem:
 		case k == "availability":
 			out = append(out, managedObject("/remote/availability", b[k], a[k], "mode")...)
 		case !sameJSON(b[k], a[k]):

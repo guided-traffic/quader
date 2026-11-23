@@ -55,6 +55,7 @@ func conformance(t testing.TB) formattest.Fixture {
 		// The README texts the content cases seed (collectionSpec): check 15 fails when one is in an answer for a caller who may not read the wiki.
 		WikiSamples: []string{"# tools 1.0.0", "# tools 1.1.0", "# tools 2.0.0"},
 		Remote:      remoteFixture(),
+		Delivery:    deliveryFixture(),
 		Merge:       mergeFixture(),
 		Discovery:   discoveryFixture(),
 		Names: []formattest.NameCase{

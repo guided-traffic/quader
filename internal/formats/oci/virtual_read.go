@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // What a client sees of a virtual repository when it reads (R-OCI-027). A request addressed to a virtual repository is decided on the
@@ -123,8 +124,11 @@ type step struct {
 // walk tries the steps in order and serves the first that answers. A miss goes on to the next step; a failure of a member goes on too and
 // is the answer when nothing serves; any other error, or one after the answer has started, ends the request. unknown is the answer of a
 // walk in which every member said "not found".
+//
+// A refusal of a member's delivery rules is a miss whose first one is the answer when nothing serves, after a failure and before "not
+// found": "not found" would hide the act that changes the answer (remote-curation.md R-CUR-004, Q-CUR-8). Its text names that member.
 func walk(ctx context.Context, rq *formats.Request, w http.ResponseWriter, steps []step, unknown func() error) error {
-	var failure error
+	var failure, refusal error
 	for _, s := range steps {
 		rw := &resolvedWriter{ResponseWriter: w}
 		if !rq.Endpoint.Rules {
@@ -137,6 +141,9 @@ func walk(ctx context.Context, rq *formats.Request, w http.ResponseWriter, steps
 		case rw.wrote || ctx.Err() != nil:
 			return err
 		case isMemberMiss(err):
+			if refusal == nil && errs.IsRuleRefusal(err) {
+				refusal = err
+			}
 		case isMemberFailure(err):
 			failure = cmp.Or(failure, err)
 		default:
@@ -145,6 +152,9 @@ func walk(ctx context.Context, rq *formats.Request, w http.ResponseWriter, steps
 	}
 	if failure != nil {
 		return asAddressed(rq, failure)
+	}
+	if refusal != nil {
+		return refusal
 	}
 	return unknown()
 }
@@ -276,7 +286,11 @@ func (f *Format) serveCached(ctx context.Context, mrq *formats.Request, w http.R
 		return l.unknown()
 	}
 	if sum, ok := manifest.ParseDigest(digest); ok && l.contentType == "" {
-		// A manifest about to be served from a member's cache is gated like one served from the member itself (R-VULN-015).
+		// A manifest about to be served from a member's cache is decided by the member's delivery rules (R-OCI-038) and gated like one
+		// served from the member itself (R-VULN-015).
+		if err := manifestUndelivered(ctx, mrq, remoteName(mrq, client), digest, rules.KindArtifact); err != nil {
+			return err
+		}
 		if err := refuseBlockedImage(ctx, mrq, remoteName(mrq, client), sum); err != nil {
 			return err
 		}
@@ -486,6 +500,32 @@ type unionDesc struct {
 	raw    json.RawMessage
 }
 
+// localReferrers is the union of the local members' referrers of a virtual repository's referrers API (R-OCI-027), each page read with
+// the member's listing decision, and whether a member has more or cut its page.
+func localReferrers(ctx context.Context, st Store, locals []vmember, name string, subject [32]byte, artifactType string, after *[32]byte) (union []unionDesc, more, cut bool, err error) {
+	for _, m := range locals {
+		pg, err := readReferrers(ctx, st, m.rq.RepoRef().ID, name, subject, artifactType, after, func(ms []rows.Manifest) ([]bool, error) {
+			paths := make([]string, len(ms))
+			for i, x := range ms {
+				paths[i] = ManifestPath(name, digestText(x.Digest))
+			}
+			return m.rq.Host.PathsAllowed(ctx, m.rq, formats.ActionRead, paths)
+		})
+		if err != nil {
+			return nil, false, false, err
+		}
+		more, cut = more || pg.more, cut || pg.cut
+		for _, d := range pg.descs {
+			raw, err := json.Marshal(d)
+			if err != nil {
+				return nil, false, false, errs.E(errs.Internal, errs.CodeInternal, "The registry could not encode its answer.", errs.WithCause(err))
+			}
+			union = append(union, unionDesc{d.Digest, raw})
+		}
+	}
+	return union, more, cut, nil
+}
+
 // virtualReferrers is the referrers API through a virtual repository (R-OCI-027): the union of the members' descriptors for the digest,
 // deduplicated by digest, in digest order, filtered by artifactType and paged by R-OCI-016. A virtual repository without a local member
 // whose remote members all have no referrers API answers 404, as the remote does, so that the client falls back to the tag schema.
@@ -522,30 +562,22 @@ func (f *Format) virtualReferrers(ctx context.Context, rq *formats.Request, w ht
 	if err != nil {
 		return err
 	}
-	var union []unionDesc
-	more, cut, answered := false, false, false
-	for _, m := range locals {
-		pg, err := readReferrers(ctx, st, m.rq.RepoRef().ID, name, subject, artifactType, after, func(ms []rows.Manifest) ([]bool, error) {
-			paths := make([]string, len(ms))
-			for i, x := range ms {
-				paths[i] = ManifestPath(name, digestText(x.Digest))
-			}
-			return m.rq.Host.PathsAllowed(ctx, m.rq, formats.ActionRead, paths)
-		})
-		if err != nil {
-			return err
-		}
-		answered, more, cut = true, more || pg.more, cut || pg.cut
-		for _, d := range pg.descs {
-			raw, err := json.Marshal(d)
-			if err != nil {
-				return errs.E(errs.Internal, errs.CodeInternal, "The registry could not encode its answer.", errs.WithCause(err))
-			}
-			union = append(union, unionDesc{d.Digest, raw})
-		}
+	union, more, cut, err := localReferrers(ctx, st, locals, name, subject, artifactType, after)
+	if err != nil {
+		return err
 	}
-	var failure error
+	answered := len(locals) > 0
+	var failure, refusal error
 	for _, m := range remotes {
+		// The referrers of a manifest a member's rules refuse are that member's refusal, a miss the answer names when no member
+		// answers (R-OCI-038, Q-CUR-8).
+		if err := manifestUndelivered(ctx, m.rq, remoteName(m.rq, name), dgst, rules.KindDocument); err != nil {
+			if !errs.IsRuleRefusal(err) {
+				return err
+			}
+			refusal = cmp.Or(refusal, err)
+			continue
+		}
 		list, err := f.remoteReferrerList(ctx, m.rq, name, dgst, artifactType)
 		switch {
 		case err == nil:
@@ -570,6 +602,9 @@ func (f *Format) virtualReferrers(ctx context.Context, rq *formats.Request, w ht
 	if !answered {
 		if failure != nil {
 			return asAddressed(rq, failure)
+		}
+		if refusal != nil {
+			return refusal
 		}
 		return plan.Unknown(errs.E(errs.NotFound, errs.CodeOCINameUnknown, "No member of the repository serves referrers for this digest."))
 	}

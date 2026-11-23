@@ -89,6 +89,8 @@ func (r debVirtualRepos) Virtual(ctx context.Context, id int64) (debdata.Virtual
 		}
 		if rs, ok := m.Remote(); ok {
 			vm.URL = rs.URL
+			// The merge drops the rows a remote member's delivery rules refuse (R-DEB-036, Q-CUR-9).
+			vm.Delivery = m.Delivery()
 		}
 		fp += "|" + m.Name.Key + ":" + strconv.FormatInt(m.Version, 10)
 		out.Members = append(out.Members, vm)

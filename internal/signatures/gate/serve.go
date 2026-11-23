@@ -25,10 +25,15 @@ type Serve struct {
 	// Signatures is the signature gate and the download as it knows it; a nil gate, or one that does not apply, refuses nothing.
 	Signatures   *Gate
 	SignaturesOf Download
+	// Rules is the refusal of the delivery rules of the item's repository (remote-curation.md R-CUR-003, Q-CUR-7), the fourth check:
+	// nil when the rules deliver the item's version, for a repository without rules and for a system read. The caller decides it from
+	// the replica's snapshot, so it costs no statement.
+	Rules error
 }
 
-// Run decides all three checks before it waits (R-SIG-069): when one refuses, the answer is the first refusal in the order
-// malware_found, vulnerability_blocked, signature_not_verified, malware_not_checked, vulnerability_data_missing, and nothing waits; when
+// Run decides all four checks before it waits (R-SIG-069): when one refuses, the answer is the first refusal in the order
+// malware_found, vulnerability_blocked, not_allowed_in_repository (the delivery rules, R-CUR-003), signature_not_verified,
+// malware_not_checked, vulnerability_data_missing, and nothing waits, so a version the rules refuse never waits for a pending scan; when
 // none refuses and some are pending, the request waits once for all of them until each has decided or the earliest bound is reached,
 // decides again, and a check still pending answers its 503, the malware gate's first. The signature gate reads its rows only when no
 // check above it in the order refuses already. The answers, events and metrics of each check stay its own. A download the signature gate
@@ -63,6 +68,10 @@ func (s Serve) run(ctx context.Context) (*Verdict, bool, error) {
 	}
 	if block.Refused() && block.Code() == errs.CodeVulnerabilityBlocked {
 		return nil, false, s.Enforce.Refuse(ctx, s.VulnOf)
+	}
+	// After what was found in the content, before everything that is missing (Q-CUR-7).
+	if s.Rules != nil {
+		return nil, false, s.Rules
 	}
 	var sv *Verdict
 	if s.Signatures != nil && s.Signatures.Applies(s.SignaturesOf.Addressed, s.SignaturesOf.Holder) {

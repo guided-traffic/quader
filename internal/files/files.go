@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
+	rulestore "github.com/guided-traffic/quader/internal/remotecuration/rules/store"
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/authz"
@@ -102,7 +103,10 @@ type Options struct {
 	// signatures.onlyVerified is on passes it, decided with the malware gate and the vulnerability block before one wait (R-SIG-069).
 	// nil refuses nothing.
 	Signatures *sgate.Gate
-	Log        *slog.Logger
+	// Refusals records a refusal of the delivery rules answered to a client of /files/ (remote-curation.md R-CUR-004); nil records
+	// none.
+	Refusals *rulestore.Recorder
+	Log      *slog.Logger
 }
 
 // WriteGate is the question the read-only maintenance mode puts to every write: nil while writes are allowed, the 503 otherwise.
@@ -113,14 +117,15 @@ type WriteGate interface {
 
 // Service is the generic layer over the item store.
 type Service struct {
-	items   Items
-	repos   repository.Reader
-	formats Formats
-	enforce *enforce.Enforcer
-	writes  WriteGate
-	malware *gate.Gate
-	sigs    *sgate.Gate
-	log     *slog.Logger
+	items    Items
+	repos    repository.Reader
+	formats  Formats
+	enforce  *enforce.Enforcer
+	writes   WriteGate
+	malware  *gate.Gate
+	sigs     *sgate.Gate
+	refusals *rulestore.Recorder
+	log      *slog.Logger
 }
 
 // refuseWrite is the refusal of R-OPS-024; it runs after the decision, so a caller who may not write is told 403 and not the mode.
@@ -143,7 +148,8 @@ func New(o Options) (*Service, error) {
 		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Service{
-		items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, malware: o.Malware, sigs: o.Signatures, log: o.Log,
+		items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, malware: o.Malware, sigs: o.Signatures,
+		refusals: o.Refusals, log: o.Log,
 	}, nil
 }
 
@@ -159,6 +165,9 @@ type Caller struct {
 	// Received is when the request arrived; a download that waits for its malware verdict waits until malware.download_wait
 	// after it (R-MAL-014, Q-MAL-29). The zero time is the moment the gate asks.
 	Received time.Time
+	// BaseURL is the response base URL, without a trailing slash: the origin of the link in the text of a refusal of the delivery
+	// rules (R-CUR-004).
+	BaseURL string
 	// Recheck begins a holder on the index the replica holds now, with the key
 	// made known. A deploy decides again after its body arrived, and that
 	// decision must see a grant removed while the body was on the wire: it is

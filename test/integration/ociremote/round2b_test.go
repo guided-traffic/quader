@@ -72,22 +72,26 @@ func TestADecisionOnADockerHubRemoteIsMadeOnBothSpellings(t *testing.T) {
 	}
 }
 
-// A rule written for either spelling holds for both: an exclude pattern for nginx hides library/nginx as well, and the reverse.
+// A delivery rule holds for both spellings of a Docker Hub name: the rule names the image as the cache knows it (library/nginx,
+// R-OCI-038), and a client that types nginx or library/nginx gets the refusal of R-CUR-004 without an upstream request (R-CUR-002, R-CUR-003
+// point 1, which took over what an exclude pattern of the remote did).
 //
 // Mechanism of R-OCI-025, not a proof of its criteria: it checks a decision on both spellings, the quota answer or the mapping;
 // the criteria are the single library/nginx tag item and the quota_header count of a mirror pass.
-func TestAnExcludeForOneSpellingHoldsForTheOther(t *testing.T) {
+func TestR_CUR_002_ABlockRuleHoldsForBothSpellingsOfADockerHubName(t *testing.T) {
 	e := newEnv(t, options{})
 	rep := e.start(1)[0]
 	for _, name := range []string{"nginx", "library/nginx"} {
 		for _, path := range []string{"/manifests/1", "/tags/list", "/blobs/" + sha("x")} {
-			if a := e.get(rep, rHubX, name+path); a.Status != http.StatusNotFound {
-				t.Errorf("%s%s: %d %s, want 404", name, path, a.Status, a.Body)
+			a := e.get(rep, rHubX, name+path)
+			if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), `"DENIED"`) ||
+				!strings.Contains(string(a.Body), "is not allowed in it/"+rHubX) || a.Header.Get("Cache-Control") != "no-store" {
+				t.Errorf("%s%s: %d %v %s, want the refusal 403 DENIED", name, path, a.Status, a.Header.Get("Cache-Control"), a.Body)
 			}
 		}
 	}
 	if n := e.hub.Counts().Total(); n != 0 {
-		t.Errorf("the upstream got %d requests for an excluded name", n)
+		t.Errorf("the upstream got %d requests for a blocked name", n)
 	}
 	// Another name of the same repository is served.
 	if a := e.get(rep, rHubX, "alpine/manifests/3.19"); a.Status != 200 {

@@ -16,7 +16,7 @@ import (
 func TestErrorCodesAnswerTheStatusOfTheTable(t *testing.T) {
 	table := map[int][]string{
 		400: {"deb_distribution_required", "deb_invalid_coordinate", "deb_invalid_file_name", "invalid_path"},
-		403: {"deb_members_unreadable"},
+		403: {"deb_members_unreadable", "not_allowed_in_repository"},
 		404: {"deb_not_in_release", "deb_no_upstream_keys"},
 		405: {"no_deploy_target"},
 		409: {"deb_version_exists", "deb_filename_conflict", "deb_withheld", "generated_item", "deb_no_next_key", "deb_key_in_use", "deb_key_state", "reindex_running"},

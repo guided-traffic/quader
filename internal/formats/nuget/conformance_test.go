@@ -251,6 +251,7 @@ func conformance(f *Format) formattest.Fixture {
 		},
 		OptionNames: []string{"--password", "--store-password-in-clear-text", "-Password", "ClearTextPassword", "QUADER_TOKEN"},
 		Remote:      remoteFixture(),
+		Delivery:    deliveryFixture(),
 		Merge:       mergeFixture(),
 		Discovery:   discoveryFixture(),
 	}
@@ -285,6 +286,27 @@ func discoveryFixture() []formattest.DiscoveryCase {
 		{Name: "a relative address", Doc: with("/c/")},
 		{Name: "20,000 resources without the package content", Doc: many},
 		{Name: "a type nested 100,000 deep", Doc: []byte(deep)},
+	}
+}
+
+// deliveryFixture is the fixture of check 23 (R-NUGET-035): an upstream with the version list, an inlined registration and the
+// packages of 1.0.0 and 2.0.0 of acme.widgets; the documents that list versions are the version list and the registration index of
+// every hive.
+func deliveryFixture() *formattest.DeliveryFixture {
+	return &formattest.DeliveryFixture{
+		Remote: func() *formattest.MemRemote {
+			docs := registrationUpstream([]string{"1.0.0", "2.0.0"}, 64, true)
+			docs[PackageDocumentPath("acme.widgets")] = []byte(`{"versions":["1.0.0","2.0.0"]}`)
+			return &formattest.MemRemote{Docs: docs, Artifacts: map[string][]byte{
+				NupkgPath("acme.widgets", "1.0.0"): []byte("nupkg 1"), NupkgPath("acme.widgets", "2.0.0"): []byte("nupkg 2"),
+			}}
+		},
+		Package: "acme.widgets", Refused: "2.0.0", Kept: "1.0.0",
+		Documents: []string{
+			"v3/flatcontainer/acme.widgets/index.json", "v3/registration/acme.widgets/index.json",
+			"v3/registration-gz/acme.widgets/index.json", "v3/registration-semver2/acme.widgets/index.json",
+		},
+		Artifact: "v3/flatcontainer/acme.widgets/2.0.0/acme.widgets.2.0.0.nupkg",
 	}
 }
 

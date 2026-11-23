@@ -196,6 +196,17 @@ func Fixture() formattest.Fixture {
 				},
 			},
 		},
+		Delivery: &formattest.DeliveryFixture{
+			Remote:  func() *formattest.MemRemote { return &formattest.MemRemote{} },
+			Package: "left-pad", Refused: "2.0.0", Kept: "1.0.0",
+			Documents: []string{"left-pad"}, Artifact: "left-pad/-/left-pad-2.0.0.tgz",
+			Seed: func(h *formattest.Host) error {
+				if err := Publish(context.Background(), h, "left-pad", "1.0.0"); err != nil {
+					return err
+				}
+				return Publish(context.Background(), h, "left-pad", "2.0.0")
+			},
+		},
 		Skip: map[formattest.Check]string{
 			formattest.CheckView: "the test format has no package screens; the kit's own tests give it a view adapter (kit_view_test.go)",
 		},

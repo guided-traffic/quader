@@ -54,7 +54,7 @@ func restrictedRemote(v *validation, c Caller, cur, nd *Document) {
 	checkDelegatedMirror(v, stored, next)
 	checkDelegatedFormatMirror(v, cur, nd)
 	if cur != nil {
-		checkDelegatedMirrorScope(v, stored, next, cur, nd)
+		checkDelegatedMirrorScope(v, stored, next)
 	}
 }
 

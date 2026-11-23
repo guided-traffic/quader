@@ -100,8 +100,10 @@ func (e *mirrorEnv) startHeldPass(t *testing.T, label string, digit int, mode np
 	s := stub(t)
 	hp := &heldPass{names: e.extras[digit*longPassNames : (digit+1)*longPassNames]}
 	body := e.npmBody("npm-mirror-"+label+"-"+e.run, false)
-	body["includePatterns"] = []string{fmt.Sprintf("e2e-mirror-%s-%d*", e.run, digit)}
-	body["remote"].(map[string]any)["mirror"] = map[string]any{"concurrency": longPassConcurrency, "maxVersionsPerPackage": 1}
+	// the mirror's scope (R-CUR-017)
+	body["remote"].(map[string]any)["mirror"] = map[string]any{
+		"concurrency": longPassConcurrency, "maxVersionsPerPackage": 1, "include": []string{fmt.Sprintf("e2e-mirror-%s-%d*", e.run, digit)},
+	}
 	hp.key = body["key"].(string)
 	// registered before the remote is created: a scenario that fails in the create or the grant still removes it, and a remote left
 	// behind would run passes of its own against the test upstream during the scenarios after it

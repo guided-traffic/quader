@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
 	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
 	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // The documents and files of a remote repository (R-NUGET-008, R-NUGET-009, R-NUGET-015).
@@ -46,7 +47,36 @@ type remoteSpec struct {
 	gzip     bool
 	settings string
 	resolve  func(ctx context.Context) (remoteSource, error)
+	// filter is the request's filter of the ID's versions: the endpoint's exposure and the remote's delivery rules (R-NUGET-034,
+	// R-NUGET-035). It narrows when filter.filters(), and says what a document left without a version answers; nil narrows nothing.
+	filter *documentFilter
+	// part says the document is a part of the ID's versions (a registration page or leaf): one the filter left without a version is a
+	// missing one, since the page bounds or the leaf a client names need not exist.
+	part bool
+	// version is the version a document names alone (a registration leaf), "" for one of the whole ID: the rules' refusal of that
+	// version answers it before the stored documents are read (R-NUGET-035, R-CUR-003 point 1).
+	version string
 }
+
+// missing is the answer to a document that does not exist: the 404 of a missing resource, or the rules' refusal when they removed
+// every version the endpoint exposes of a document of the whole ID (documentFilter.missing).
+func (s remoteSpec) missing() error {
+	if s.filter == nil || s.part {
+		return errNoSuchResource()
+	}
+	return s.filter.missing()
+}
+
+// leafVersion is the version a registration document names alone: a leaf's.
+func leafVersion(kind registrationKind, ver string) string {
+	if kind == kindLeaf {
+		return ver
+	}
+	return ""
+}
+
+// filtered reports whether the document is filtered by the endpoint's exposure or the remote's delivery rules.
+func (s remoteSpec) filtered() bool { return s.filter != nil && s.filter.filters() }
 
 // serveRemote answers a GET or HEAD of a document of the ID lowerID of a remote repository:
 // the read permission and the exposure of the endpoint first, then the stored documents (which
@@ -61,6 +91,16 @@ func (f *Format) serveRemote(ctx context.Context, rq *formats.Request, w http.Re
 	if view := viewOf(rq); view != nil && !view.Package(lowerID) {
 		return errNoSuchResource()
 	}
+	// An ID the remote's delivery rules refuse whole answers their refusal, whatever the remote holds of it (R-NUGET-035,
+	// R-CUR-004); the engine refuses its fetch the same way.
+	if err := formats.Undelivered(rq, lowerID, "", rules.KindDocument); err != nil {
+		return err
+	}
+	if spec.version != "" && !hiddenVersion(rq, lowerID, spec.version) {
+		if err := formats.Undelivered(rq, lowerID, spec.version, rules.KindDocument); err != nil {
+			return err
+		}
+	}
 	src, err := spec.resolve(ctx)
 	if err != nil {
 		return err
@@ -70,19 +110,22 @@ func (f *Format) serveRemote(ctx context.Context, rq *formats.Request, w http.Re
 	serving := servingName(rq).String()
 	config := strconv.FormatInt(rq.Repo.Version, 10) + "/" + spec.settings
 	settings := config + "/" + src.fingerprint
+	// The key and the validator name what filters the document, the endpoint's exposure and the remote's delivery rules
+	// (R-NUGET-035, R-CUR-003), so a change of the rules is never answered with a rendition filtered by the old ones.
+	filter := formats.DocumentFingerprint(rq)
 	inputs := document.Inputs{
 		RenderVersion: RenderVersion, Repo: repo.ID, Variant: "remote/" + lowerID + "/" + spec.variant, Serving: serving,
-		BaseURL: links.Base(), Endpoint: rq.Endpoint.Name, Exposure: rq.Endpoint.ExposureFingerprint, Settings: settings,
+		BaseURL: links.Base(), Endpoint: rq.Endpoint.Name, Exposure: filter, Settings: settings,
 	}
 	key := formats.RenditionKey{
 		Repo: repo, Package: lowerID, Variant: "remote/" + spec.variant + "@" + serving, Encoding: encodingOf(false),
-		BaseURL: links.Base(), Endpoint: rq.Endpoint.Name, Exposure: rq.Endpoint.ExposureFingerprint,
+		BaseURL: links.Base(), Endpoint: rq.Endpoint.Name, Exposure: filter,
 		Settings: settings, RenderVersion: RenderVersion,
 	}
 	if src.status != "" {
 		w.Header().Set("Cache-Status", src.status)
 	}
-	if viewOf(rq) != nil {
+	if spec.filtered() {
 		// The validator follows the filtered rendering, not the stored upstream documents
 		// (Q-NUGET-87); the rendition is still keyed by them.
 		inputs.Settings = config
@@ -108,7 +151,7 @@ func (f *Format) serveRemote(ctx context.Context, rq *formats.Request, w http.Re
 			return err
 		}
 		if !found {
-			return errNoSuchResource()
+			return spec.missing()
 		}
 		if int64(len(body)) > MaxDocumentBytes {
 			return errs.E(errs.Internal, errs.CodeInternal, "The document is larger than the limit of documents held in memory.")
@@ -122,8 +165,8 @@ func (f *Format) serveRemote(ctx context.Context, rq *formats.Request, w http.Re
 	return document.Reply{ETag: etag, Body: body, Gzip: gzip, Vary: spec.gzip}.Write(w, rq.Method)
 }
 
-// serveRemoteFiltered answers a document of a remote on an endpoint with exposure rules
-// (R-NUGET-034, Q-NUGET-87). Its validator follows the filtered rendering instead of the digests
+// serveRemoteFiltered answers a document of a remote on an endpoint with exposure rules, or of a
+// remote with delivery rules (R-NUGET-034, R-NUGET-035, Q-NUGET-87). Its validator follows the filtered rendering instead of the digests
 // of the stored upstream documents, which change with every upstream change of the ID, those of
 // versions the endpoint hides included. The identity rendering comes from the rendition cache or
 // is rendered from the stored documents the request resolved, so a 304 here costs a cache hit
@@ -137,7 +180,7 @@ func serveRemoteFiltered(ctx context.Context, rq *formats.Request, w http.Respon
 			return err
 		}
 		if !found {
-			return errNoSuchResource()
+			return spec.missing()
 		}
 		if int64(len(body)) > MaxDocumentBytes {
 			return errs.E(errs.Internal, errs.CodeInternal, "The document is larger than the limit of documents held in memory.")
@@ -183,10 +226,12 @@ func digestHex(d [32]byte) string { return hex.EncodeToString(d[:]) }
 // stored list, rendered in URL form and ascending by precedence.
 func (f *Format) remoteFlatIndex(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	lowerID := rq.Params.Get("id")
-	keep := exposes(viewOf(rq), lowerID)
+	filter := newDocumentFilter(rq, lowerID)
+	keep := filter.keep()
 	return f.serveRemote(ctx, rq, w, lowerID, remoteSpec{
 		path:    PackageDocumentPath(lowerID),
 		variant: "flat",
+		filter:  filter,
 		resolve: func(ctx context.Context) (remoteSource, error) {
 			doc, err := storedDocument(ctx, rq, PackageDocumentPath(lowerID))
 			if err != nil {
@@ -272,7 +317,8 @@ func (f *Format) remoteRegistration(ctx context.Context, rq *formats.Request, w 
 	pg := registration.Paging{PageSize: paging.PageSize, InlineBelow: paging.InlineBelow}
 	links := rq.Host.Links(rq)
 	feed := registration.Feed(links.Registry(servingName(rq)) + FeedSegment + "/")
-	keep := exposes(viewOf(rq), lowerID)
+	filter := newDocumentFilter(rq, lowerID)
+	keep := filter.keep()
 	lower, upper, ver := rq.Params.Get("lower"), rq.Params.Get("upper"), rq.Params.Get("version")
 
 	variant := string(hive)
@@ -289,6 +335,9 @@ func (f *Format) remoteRegistration(ctx context.Context, rq *formats.Request, w 
 		variant:  variant,
 		gzip:     hive.Gzipped(),
 		settings: strconv.Itoa(pg.PageSize) + "/" + strconv.Itoa(pg.InlineBelow),
+		filter:   filter,
+		part:     kind != kindIndex,
+		version:  leafVersion(kind, ver),
 		resolve: func(ctx context.Context) (remoteSource, error) {
 			idx, err := storedDocument(ctx, rq, RegistrationIndexPath(lowerID))
 			if err != nil {
@@ -479,8 +528,8 @@ type registrationRender struct {
 	hive    registration.Hive
 	lowerID string
 	paging  registration.Paging
-	// versions are the versions of the upstream, ascending, keep the exposure filter of the
-	// endpoint (nil keeps all).
+	// versions are the versions of the upstream, ascending, keep the filter of the endpoint's exposure
+	// and the remote's delivery rules (nil keeps all).
 	versions []remote.Version
 	keep     func(lowerVersion string) bool
 	kind     registrationKind

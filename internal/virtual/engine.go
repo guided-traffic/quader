@@ -192,6 +192,12 @@ func planFingerprint(endpoint string, members []Member) [32]byte {
 	for _, m := range members {
 		writeInt(h, m.ID)
 		h.Write([]byte{classByte(m.Repo.Class), boolByte(m.MayFill)})
+		// A remote member's delivery rules decide what its part of a merge holds (remote-curation.md R-CUR-003): a merge under other
+		// rules is another merge. A member without rules adds nothing.
+		if fp := m.Repo.Delivery().Fingerprint(); fp != "" {
+			h.Write([]byte(fp))
+			h.Write([]byte{'|'})
+		}
 	}
 	var out [32]byte
 	copy(out[:], h.Sum(nil))

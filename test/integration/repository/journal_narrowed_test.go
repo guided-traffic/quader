@@ -105,8 +105,10 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 		return a.rec.since(n), err
 	}
 
+	// The include and exclude patterns are a local or a virtual repository's (a remote has rules instead, remote-curation.md R-CUR-002):
+	// their parts are journaled on npm-local.
 	t.Run("R-REPO-061 an exclude pattern added is journaled with that part only", func(t *testing.T) {
-		evs, err := patch("npmjs", "excludePatterns", []string{"@evil/*"})
+		evs, err := patch("npm-local", "excludePatterns", []string{"@evil/*"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -124,8 +126,8 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 			value       any
 		}{
 			"a description":                  {"npmjs", "description", "the public registry"},
-			"an exclude list emptied":        {"npmjs", "excludePatterns", []string{}},
-			"an include list set to nothing": {"npmjs", "includePatterns", []string{}},
+			"an exclude list emptied":        {"npm-local", "excludePatterns", []string{}},
+			"an include list set to nothing": {"npm-local", "includePatterns", []string{}},
 		} {
 			evs, err := patch(tc.key, tc.member, tc.value)
 			if err != nil {
@@ -137,10 +139,10 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 		}
 	})
 	t.Run("R-REPO-061 a mixed include update carries the new list, a widening one nothing", func(t *testing.T) {
-		if evs, err := patch("npmjs", "includePatterns", []string{"@a/*", "@b/*"}); err != nil || !slices.Contains(eventTypes(evs), repository.EventNarrowed) {
+		if evs, err := patch("npm-local", "includePatterns", []string{"@a/*", "@b/*"}); err != nil || !slices.Contains(eventTypes(evs), repository.EventNarrowed) {
 			t.Fatalf("include from empty: %v %v", eventTypes(evs), err)
 		}
-		evs, err := patch("npmjs", "includePatterns", []string{"@a/*", "@c/*"})
+		evs, err := patch("npm-local", "includePatterns", []string{"@a/*", "@c/*"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -148,9 +150,36 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 		if !slices.Equal(parts, []string{"include"}) || string(entry["include"]) != `["@a/*","@c/*"]` {
 			t.Fatalf("entry = %v parts = %v", entry, parts)
 		}
-		evs, err = patch("npmjs", "includePatterns", []string{"@a/*", "@c/*", "@d/*"})
+		evs, err = patch("npm-local", "includePatterns", []string{"@a/*", "@c/*", "@d/*"})
 		if err != nil || slices.Contains(eventTypes(evs), repository.EventNarrowed) {
 			t.Fatalf("a pattern added recorded %v, %v", eventTypes(evs), err)
+		}
+	})
+	t.Run("R-REPO-061 R-CUR-006 a remote's delivery mode set to onlyAllowed is journaled with the part deliveryMode, set back with none", func(t *testing.T) {
+		mode := func(m string) repository.Patcher {
+			return func(cur []byte) ([]byte, error) {
+				var doc map[string]any
+				if err := json.Unmarshal(cur, &doc); err != nil {
+					return nil, err
+				}
+				doc["remote"].(map[string]any)["delivery"] = map[string]any{"mode": m}
+				return json.Marshal(doc)
+			}
+		}
+		n := a.rec.count()
+		if _, err := a.svc.Patch(ctx, caller, qr("npmjs"), repository.Precondition{Any: true}, mode("onlyAllowed")); err != nil {
+			t.Fatal(err)
+		}
+		entry, parts := narrowedOf(t, a.rec.since(n))
+		if !slices.Equal(parts, []string{"deliveryMode"}) || string(entry["deliveryMode"]) != `"onlyAllowed"` {
+			t.Fatalf("entry = %v parts = %v", entry, parts)
+		}
+		n = a.rec.count()
+		if _, err := a.svc.Patch(ctx, caller, qr("npmjs"), repository.Precondition{Any: true}, mode("allExceptBlocked")); err != nil {
+			t.Fatal(err)
+		}
+		if got := eventTypes(a.rec.since(n)); slices.Contains(got, repository.EventNarrowed) {
+			t.Errorf("the mode set back recorded %v", got)
 		}
 	})
 	t.Run("R-REPO-061 autoClaim switched on is journaled", func(t *testing.T) {
@@ -217,10 +246,10 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 	})
 	t.Run("R-REPO-061 a refused or failed update records nothing", func(t *testing.T) {
 		n := a.rec.count()
-		_, err := a.svc.Patch(ctx, caller, qr("npmjs"), repository.MatchVersion(1), patchMember("excludePatterns", []string{"@stale/*"}))
+		_, err := a.svc.Patch(ctx, caller, qr("npm-local"), repository.MatchVersion(1), patchMember("excludePatterns", []string{"@stale/*"}))
 		wantCode(t, err, 412, errs.CodePreconditionFailed)
 		a.rec.setFail(true)
-		_, err = a.svc.Patch(ctx, caller, qr("npmjs"), repository.Precondition{Any: true}, patchMember("excludePatterns", []string{"@evil/*", "@new/*"}))
+		_, err = a.svc.Patch(ctx, caller, qr("npm-local"), repository.Precondition{Any: true}, patchMember("excludePatterns", []string{"@evil/*", "@new/*"}))
 		a.rec.setFail(false)
 		if err == nil {
 			t.Fatal("an update whose audit record fails succeeded")
@@ -228,7 +257,7 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 		if evs := a.rec.since(n); len(evs) != 0 {
 			t.Errorf("events = %v", eventTypes(evs))
 		}
-		st, err := a.svc.Get(ctx, qr("npmjs"))
+		st, err := a.svc.Get(ctx, qr("npm-local"))
 		if err != nil || slices.Contains(st.Document.ExcludePatterns, "@new/*") {
 			t.Errorf("the failed update left %v (%v)", st.Document.ExcludePatterns, err)
 		}

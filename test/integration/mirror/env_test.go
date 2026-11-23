@@ -47,16 +47,16 @@ const repoName = testenv.DefaultProject + "/" + repoKey
 type settings map[string]any
 
 // remoteDoc is the canonical document of a remote repository in mode mirror: every member present, as the repository service
-// stores it.
+// stores it. include is the mirror's scope, remote.mirror.include (remote-curation.md R-CUR-017), in the folded form the service stores.
 func remoteDoc(mode string, include []string, mirrorSettings settings) string {
-	m := map[string]any{"concurrency": 1}
-	for k, v := range mirrorSettings {
-		m[k] = v
-	}
 	if include == nil {
 		include = []string{}
 	}
-	doc := map[string]any{"includePatterns": include, "excludePatterns": []string{}, "remote": map[string]any{
+	m := map[string]any{"concurrency": 1, "include": include}
+	for k, v := range mirrorSettings {
+		m[k] = v
+	}
+	doc := map[string]any{"remote": map[string]any{
 		"url": "https://registry.example.org/", "extraHosts": []any{}, "authMode": "none", "username": "", "password": nil,
 		"clientCertificate": nil, "headers": []any{}, "forwardAuthOnRedirect": false, "outboundProxy": map[string]any{"mode": "direct"},
 		"connectTimeoutMs": 5000, "readTimeoutMs": 15000, "sourceNetwork": nil, "cacheFillAction": "read",

@@ -144,7 +144,7 @@ func (e *Engine) begin(ctx context.Context, jobID string, a PassArgs, res Result
 		// (R-REPO-054, Q-REPO-187).
 		return nil, "rate_limited", nil
 	}
-	fp := Fingerprint(include, exclude)
+	fp := Fingerprint(include, exclude, repo.Delivery().Fingerprint())
 	kind := DecideKind(st, fp, time.Duration(rs.Mirror.FullPassIntervalSeconds)*time.Second, now, a.Full)
 	if claimed, err := e.o.Store.Claim(ctx, Claim{Fence: fence, Full: a.Full, KindIfNew: kind, Now: now}); err != nil {
 		return nil, "", err
@@ -169,13 +169,14 @@ func (e *Engine) begin(ctx context.Context, jobID string, a PassArgs, res Result
 	return p, "", nil
 }
 
-// patterns returns the include and exclude patterns of a repository as stored.
+// patterns returns the mirror's scope of a repository (remote.mirror.include, remote-curation.md R-CUR-017) as the include patterns of a
+// pass; a remote has no exclude patterns (R-CUR-002), its delivery rules filter what the scope admits (Host.Admits).
 func patterns(r repository.Repository) (include, exclude []string, err error) {
-	var s repository.Settings
-	if err := json.Unmarshal(r.Config, &s); err != nil {
-		return nil, nil, fmt.Errorf("mirror: the document of %s: %w", r.Name, err)
+	rs, ok := r.Remote()
+	if !ok {
+		return nil, nil, fmt.Errorf("mirror: the remote section of %s does not read", r.Name)
 	}
-	return s.IncludePatterns, s.ExcludePatterns, nil
+	return rs.Mirror.Include, nil, nil
 }
 
 // run executes the attempt and ends it.

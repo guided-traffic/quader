@@ -236,16 +236,31 @@ func TestR_REPO_055_AFillThatAClientPreemptsReturnsMirrorErrPreempted(t *testing
 	}
 }
 
-func TestR_REPO_023_TheNamesAPassMayStoreAreThoseThePatternsTheClaimsAndTheFormatAdmit(t *testing.T) {
+// TestR_REPO_023_TheNamesAPassMayStoreAreThoseTheScopeTheRulesTheClaimsAndTheFormatAdmit: a name a pass may store is one the
+// mirror's scope (remote.mirror.include) covers and of which the delivery rules deliver some version (remote-curation.md R-CUR-017,
+// R-CUR-002), that no global claim refuses at the remote (R-REPO-023) and that the format has a document for.
+func TestR_REPO_023_TheNamesAPassMayStoreAreThoseTheScopeTheRulesTheClaimsAndTheFormatAdmit(t *testing.T) {
 	e := newEnv(t)
 	up := e.upstream()
-	raw, err := json.Marshal(map[string]any{
-		"remote": remoteSettings(up.URL), "includePatterns": []string{"acme-*", "claimed"}, "excludePatterns": []string{"acme-secret"},
-	})
+	rs := remoteSettings(up.URL)
+	rs.Mirror = repository.DefaultMirrorSettings()
+	rs.Mirror.Include = []string{"acme-*", "claimed", "beta-*"}
+	rs.Delivery = repository.DefaultDeliverySettings()
+	rs.Delivery.Mode = "onlyAllowed"
+	raw, err := json.Marshal(map[string]any{"remote": rs})
 	if err != nil {
 		t.Fatal(err)
 	}
 	e.exec("INSERT INTO repositories (key, format, class, config, project_id) SELECT 'hosted-names', 'proxytest', 'remote', $1::jsonb, id FROM project WHERE key = 'it'", string(raw))
+	// What the include and exclude patterns said is said by rules (R-CUR-002): sections that allow, a section that blocks.
+	for _, r := range [][3]string{{"section", "acme-*", "allow"}, {"section", "acme-secret", "block"}, {"package", "claimed", "allow"}, {"package", "other", "allow"}} {
+		pattern, name := r[1], ""
+		if r[0] == "package" {
+			pattern, name = "", r[1]
+		}
+		e.exec(`INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, effect)
+			SELECT gen_random_uuid(), id, $1, NULLIF($2, ''), NULLIF($3, ''), $4 FROM repositories WHERE key = 'hosted-names'`, r[0], pattern, name, r[2])
+	}
 	rem := e.lookup("hosted-names")
 	r := e.newReplica("a", replicaOpts{})
 	mh := r.mirrorHost(claims{"claimed": true})
@@ -254,9 +269,10 @@ func TestR_REPO_023_TheNamesAPassMayStoreAreThoseThePatternsTheClaimsAndTheForma
 		t.Fatal(err)
 	}
 	for name, want := range map[string]bool{
-		"acme-ui":     true,  // admitted by the include pattern
-		"acme-secret": false, // the exclude pattern (R-REPO-005)
-		"other":       false, // no include pattern matches
+		"acme-ui":     true,  // in the scope, allowed by a section rule
+		"acme-secret": false, // the blocking section rule wins at equal width (R-CUR-001)
+		"other":       false, // allowed, but outside the scope
+		"beta-x":      false, // in the scope, but no rule allows it in mode onlyAllowed
 		"claimed":     false, // a global claim refuses it at the remote (R-REPO-023, R-REPO-025 step 2)
 		"acme-a b":    false, // the format has no document for the name
 		"":            false,

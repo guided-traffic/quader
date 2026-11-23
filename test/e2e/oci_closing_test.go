@@ -148,12 +148,11 @@ func TestOCIClosingPublic(t *testing.T) {
 		mirror := "oci-hub-mirror-" + fx.run
 		fx.adm.do("POST", reposRoute, map[string]any{
 			"key": mirror, "class": "remote", "format": "oci",
-			// both spellings: a read of a Docker Hub name is decided on `busybox` and on `library/busybox` (Q-OCI-129, H-752)
-			"includePatterns": []string{"busybox", "library/busybox"},
 			"remote": map[string]any{
 				"url": "https://registry-1.docker.io/", "mode": "mirror",
 				"extraHosts": []map[string]any{{"pattern": "auth.docker.io", "sendCredentials": false}},
-				"mirror":     map[string]any{"concurrency": 1, "maxVersionsPerPackage": 1},
+				// the mirror's scope (R-CUR-017), in both spellings of a Docker Hub name (Q-OCI-129, H-752)
+				"mirror": map[string]any{"concurrency": 1, "maxVersionsPerPackage": 1, "include": []string{"busybox", "library/busybox"}},
 			},
 			// one platform: the index of busybox lists some twenty, and every platform manifest is a manifest GET that Docker Hub counts (Q-OCI-203)
 			"oci": map[string]any{"mirror": map[string]any{"tags": []string{"latest"}}, "platforms": []string{"linux/" + ociArch(t)}},

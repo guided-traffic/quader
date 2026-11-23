@@ -57,7 +57,6 @@ func TestR_REPO_055_AWorkerRunsAPassThroughItsOwnEngineAgainstTheNpmUpstream(t *
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
 	}})
 	doc := map[string]any{
-		"includePatterns": []string{pkg.Name}, "excludePatterns": []string{},
 		"remote": map[string]any{
 			"url": run.URL + "/", "extraHosts": []any{}, "authMode": "none", "username": "", "password": nil,
 			"clientCertificate": nil, "headers": []any{}, "forwardAuthOnRedirect": false, "outboundProxy": map[string]any{"mode": "direct"},
@@ -69,7 +68,7 @@ func TestR_REPO_055_AWorkerRunsAPassThroughItsOwnEngineAgainstTheNpmUpstream(t *
 			"integrity":    map[string]any{"checksumPolicy": "verify-if-available", "blockUnexpectedContentTypes": true, "allowedContentTypes": []any{}},
 			"availability": map[string]any{"mode": "online", "failureThreshold": 3, "circuitOpenSeconds": 30},
 			"limits":       map[string]any{"maxArtifactBytes": nil, "maxMetadataBytes": nil, "maxConcurrentFetches": 16},
-			"mode":         "mirror", "mirror": map[string]any{"concurrency": 2},
+			"mode":         "mirror", "mirror": map[string]any{"concurrency": 2, "include": []string{pkg.Name}},
 		},
 	}
 	raw, err := json.Marshal(doc)

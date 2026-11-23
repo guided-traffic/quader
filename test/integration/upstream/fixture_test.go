@@ -146,6 +146,16 @@ func (f *fixture) config(key, path string) string {
 	                 WHERE p.key = 'upstream' AND r.key = $1`, key, path)
 }
 
+// trivyScope says whether a repository of the project upstream delivers what scanner-trivy is for and nothing else: the mode onlyAllowed
+// with the product's one rule "package aquasec/trivy-db allow" and no include pattern (R-REPO-070, remote-curation.md R-CUR-002).
+func (f *fixture) trivyScope(key string) (string, bool) {
+	rules := f.e.Text(`SELECT coalesce(string_agg(d.kind || ' ' || coalesce(d.name, d.pattern) || ' ' || d.effect, ', '), '') FROM remote_delivery_rules d
+	                   WHERE d.repo_id = $1`, f.id(key))
+	got := f.config(key, "{remote,delivery,mode}") + "; " + rules + "; " + f.config(key, "{includePatterns}")
+	// The stored row may keep an empty list; a remote's document reads back without it.
+	return got, got == "onlyAllowed; package aquasec/trivy-db allow; <none>" || got == "onlyAllowed; package aquasec/trivy-db allow; []"
+}
+
 func (f *fixture) id(key string) int64 {
 	return f.e.Number("SELECT r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = 'upstream' AND r.key = $1", key)
 }

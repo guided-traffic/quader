@@ -270,6 +270,21 @@ func conformance(t *testing.T) formattest.Fixture {
 			},
 			DownloadLinks: tarballLinks,
 		},
+		// Check 23 (R-NPM-049): the upstream's latest is the refused 2.0.0, so the package document, the dist-tags and the document
+		// of latest show that latest moved to 1.0.0.
+		Delivery: &formattest.DeliveryFixture{
+			Remote: func() *formattest.MemRemote {
+				return &formattest.MemRemote{
+					Docs: map[string][]byte{"left-pad": upstreamDocument("left-pad", "https://registry.example.org/left-pad/-/", "1.0.0", "2.0.0")},
+					Artifacts: map[string][]byte{
+						"left-pad/-/left-pad-1.0.0.tgz": tgzFor(t, "left-pad", "1.0.0"), "left-pad/-/left-pad-2.0.0.tgz": tgzFor(t, "left-pad", "2.0.0"),
+					},
+				}
+			},
+			Package: "left-pad", Refused: "2.0.0", Kept: "1.0.0",
+			Documents: []string{"left-pad", "-/package/left-pad/dist-tags", "left-pad/latest"},
+			Artifact:  "left-pad/-/left-pad-2.0.0.tgz",
+		},
 		Merge: &formattest.MergeFixture{
 			Cases: []formattest.MergeCase{
 				{

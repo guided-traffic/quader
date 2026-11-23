@@ -21,6 +21,7 @@ const stemSeparators = ".-_"
 // The term is a package name as the format folds names. It is kept away when
 //   - an exclude pattern of the member matches it (for a format whose patterns match names; an
 //     include pattern restricts what a repository serves and protects nothing),
+//   - the delivery rules of a remote member keep it away (rules.Set.KeepsAway, R-CUR-002),
 //   - through a virtual repository (via), its pin rule for the name does not list the member, or,
 //     without a pin rule, a claim in effect in that repository covers the name and the member is
 //     not one of the claimants (R-REPO-019 steps 2 and 3),
@@ -51,6 +52,13 @@ func keepsAway(rt *Routing, idx *claimIndex, via *Repository, member Repository,
 	stems := stemCandidates(name)
 	if info.PatternSubject == SubjectName && (member.adm.excludes(name) || member.adm.hasStem(stems)) {
 		return true
+	}
+	// A remote's delivery rules (remote-curation.md R-CUR-002 "The search guard"): a term a blocking rule matches, or the stem of a
+	// blocked prefix, and in mode onlyAllowed a term no allowing rule covers, is not sent to its upstream.
+	if set := member.delivery; set != nil {
+		if set.KeepsAway(name) || slices.ContainsFunc(stems[1:], set.Blocks) {
+			return true
+		}
 	}
 	if via != nil && via.virt != nil {
 		return keptFromMember(rt, idx, via, member, name, stems)

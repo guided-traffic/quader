@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // The embedded files of a version (R-NUGET-024): GET and HEAD of v3/flatcontainer/{id}/{version}/icon, …/license and …/readme. A
@@ -88,7 +89,7 @@ func (f *Format) virtualEmbedded(ctx context.Context, rq *formats.Request, w htt
 	if !plan.Admitted {
 		return errNoSuchResource()
 	}
-	var failed error
+	var failed, refused error
 	for _, pm := range plan.Members {
 		mrq, err := memberRequest(rq, pm.Member.Name)
 		if err != nil {
@@ -99,6 +100,9 @@ func (f *Format) virtualEmbedded(ctx context.Context, rq *formats.Request, w htt
 		case err == nil:
 			return nil
 		case errs.IsMemberMiss(err):
+			if refused == nil && errs.IsRuleRefusal(err) {
+				refused = err
+			}
 		case errs.IsMemberFailure(err):
 			if failed == nil {
 				failed = err
@@ -107,8 +111,13 @@ func (f *Format) virtualEmbedded(ctx context.Context, rq *formats.Request, w htt
 			return err
 		}
 	}
+	// The first failure, else the first member's rule refusal, which names it, else 404 (R-REPO-019 step 7, remote-curation.md
+	// R-CUR-004, Q-CUR-8): "not found" would hide the act that changes the answer.
 	if failed != nil {
 		return failed
+	}
+	if refused != nil {
+		return refused
 	}
 	return plan.Unknown(errNoSuchResource())
 }
@@ -123,6 +132,11 @@ func (f *Format) embeddedIn(ctx context.Context, rq *formats.Request, w http.Res
 	}
 	if !cv.Version(ver) {
 		return errNoSuchResource()
+	}
+	// A file of a version a remote's delivery rules refuse answers their refusal, held or not (R-NUGET-035, R-CUR-003); the serve
+	// decision of a held .nupkg below would refuse it as well.
+	if err := formats.Undelivered(rq, lowerID, ver, rules.KindArtifact); err != nil {
+		return err
 	}
 	port, err := embeddedPortOf(rq.Host)
 	if err != nil {

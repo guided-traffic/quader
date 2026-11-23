@@ -175,14 +175,15 @@ func tarballHits(hits []hit) (out []hit) {
 }
 
 // remoteDocAt is the canonical document of a remote repository at url: every member present, as the repository service stores
-// it. remote members replace the defaults below by name.
+// it. include is the mirror's scope, remote.mirror.include (remote-curation.md R-CUR-017), in the folded form the service stores; remote
+// members replace the defaults below by name.
 func remoteDocAt(upstream, mode string, include []string, mirrorSettings settings, remote map[string]any) string {
-	m := map[string]any{"concurrency": 1}
-	for k, v := range mirrorSettings {
-		m[k] = v
-	}
 	if include == nil {
 		include = []string{}
+	}
+	m := map[string]any{"concurrency": 1, "include": include}
+	for k, v := range mirrorSettings {
+		m[k] = v
 	}
 	rem := map[string]any{
 		"url": upstream, "extraHosts": []any{}, "authMode": "none", "username": "", "password": nil,
@@ -200,7 +201,7 @@ func remoteDocAt(upstream, mode string, include []string, mirrorSettings setting
 	for k, v := range remote {
 		rem[k] = v
 	}
-	b, _ := json.Marshal(map[string]any{"includePatterns": include, "excludePatterns": []string{}, "remote": rem})
+	b, _ := json.Marshal(map[string]any{"remote": rem})
 	return string(b)
 }
 
@@ -378,12 +379,13 @@ func (r *rig) api(rep *testenv.Replica, method, path string, body any, hdr ...st
 	return r.st.Do(rep, method, path, r.admin, body, hdr...)
 }
 
-// waitAdmits waits until the replica's snapshot of the repository admits the package name.
-func (r *rig) waitAdmits(rep *testenv.Replica, name string) {
+// waitDelivered waits until the replica's snapshot of the repository holds rules that deliver some version of the package
+// (remote-curation.md R-CUR-001): a rule's write reaches a replica through the change area repo_config.
+func (r *rig) waitDelivered(rep *testenv.Replica, name string) {
 	r.t.Helper()
-	testenv.WaitFor(r.t, "the snapshot to admit "+name, 30*time.Second, func() bool {
+	testenv.WaitFor(r.t, "the snapshot to deliver "+name, 30*time.Second, func() bool {
 		repo, err := rep.App.Repositories().ByName(context.Background(), testenvName(repoKey))
-		return err == nil && repo.Admits(name, false)
+		return err == nil && repo.Delivery().Package(name).Delivered
 	})
 }
 

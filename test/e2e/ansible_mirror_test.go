@@ -31,9 +31,9 @@ func TestAnsibleMirror(t *testing.T) {
 				map[string]any{"pattern": ansibleStubSibling(host, "github"), "sendCredentials": false},
 				map[string]any{"pattern": ansibleStubSibling(host, "codeload"), "sendCredentials": false},
 			},
-			"mirror": map[string]any{"concurrency": 2},
+			// the mirror's scope (R-CUR-017)
+			"mirror": map[string]any{"concurrency": 2, "include": []string{"acme.*"}},
 		},
-		"includePatterns": []string{"acme.*"},
 	}
 	fx.adm.do("POST", reposRoute, body).want(t, "create "+key, 201)
 	t.Cleanup(func() { deleteRepository(t, fx.adm, key) })

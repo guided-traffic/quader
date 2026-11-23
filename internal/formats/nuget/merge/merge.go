@@ -112,6 +112,10 @@ type Part struct {
 	// versions of its document are listed, so that every listed version can be
 	// downloaded (R-AUTHZ-008).
 	Restricted bool
+	// Delivers is the delivery rules of a remote member over the versions (URL form) of the ID: a
+	// version it refuses is not the member's to give, so another member that delivers it supplies
+	// it, or no member does (R-NUGET-035, remote-curation.md R-CUR-003). nil delivers every version.
+	Delivers func(version string) bool
 }
 
 // rank orders the claims on one version: the tier of its package, then the position.
@@ -137,7 +141,7 @@ func Do(kind Kind, parts []Part) ([]byte, error) {
 			return nil, err
 		}
 		for _, e := range entries {
-			if p.Restricted && !p.Cached[e.Version] {
+			if p.Restricted && !p.Cached[e.Version] || p.Delivers != nil && !p.Delivers(e.Version) {
 				continue
 			}
 			r := rank{tier: tierOf(p, e.Version), position: p.Position}

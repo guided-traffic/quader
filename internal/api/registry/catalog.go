@@ -211,7 +211,9 @@ func (h *Catalog) page(r *http.Request, n int, last string) (names []string, mor
 					return nil, false, err
 				}
 				for i, name := range batch {
-					if !ok[i] {
+					// A remote lists an image only while its delivery rules deliver some version of it (remote-curation.md
+					// R-CUR-003, R-OCI-038); a repository without rules decides nothing here.
+					if !ok[i] || !c.repo.Delivery().Package(name).Delivered {
 						continue
 					}
 					if len(names) == n {
