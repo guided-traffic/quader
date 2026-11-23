@@ -79,7 +79,7 @@ function versionOf(v: FixtureVersion): PackageVersion & { readme: null } {
     lastDownloadedAt: null,
     hasReadme: false,
     metadata: clamavMetadata(v),
-    repositories: [{ key: REPO, class: 'local', publishedAt: iso(v.days) }],
+    repositories: [{ key: REPO, class: 'local', publishedAt: iso(v.days), available: true }],
     files: removed
       ? []
       : [{ path, sizeBytes: 63_018_446, sha256: 'd'.repeat(64), downloadUrl: `https://quader.example.com/files/${REPO}/${path}`, contentUrl: `${CONTENT}/${path}` }],

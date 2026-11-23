@@ -63,12 +63,12 @@ describe('Install command panel', () => {
   it('R-UI-009 without a virtual repository the first local one is the default; with one repository there is no picker', async () => {
     const local = await open({
       repositories: [
-        { key: 'web/npm-remote', class: 'remote', publishedAt: '2026-10-20T09:12:44.512Z' },
-        { key: 'web/npm-local', class: 'local', publishedAt: '2026-10-20T09:12:44.512Z' },
+        { key: 'web/npm-remote', class: 'remote', publishedAt: '2026-10-20T09:12:44.512Z', available: true },
+        { key: 'web/npm-local', class: 'local', publishedAt: '2026-10-20T09:12:44.512Z', available: true },
       ],
     });
     expect(local.fake.calls[0]?.repository).toBe('web/npm-local');
-    const single = await open({ repositories: [{ key: 'web/npm-local', class: 'local', publishedAt: '2026-10-20T09:12:44.512Z' }] });
+    const single = await open({ repositories: [{ key: 'web/npm-local', class: 'local', publishedAt: '2026-10-20T09:12:44.512Z', available: true }] });
     expect(single.root.querySelectorAll('select')).toHaveLength(1);
   });
 
@@ -144,7 +144,7 @@ describe('Install command panel', () => {
       inputs: {
         format: 'oci',
         name: 'aquasec/trivy-db',
-        version: { ...(await version()), version: '2', repositories: [{ key: 'upstream/scanner-trivy', class: 'remote', publishedAt: at }] },
+        version: { ...(await version()), version: '2', repositories: [{ key: 'upstream/scanner-trivy', class: 'remote', publishedAt: at, available: true }] },
       },
     });
     expect(text(only.root.querySelector('[data-testid="install-system"]')!)).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
@@ -154,13 +154,42 @@ describe('Install command panel', () => {
 
     const beside = await open({
       repositories: [
-        { key: 'upstream/scanner-trivy', class: 'remote', publishedAt: at },
-        { key: 'web/npm-local', class: 'local', publishedAt: at },
+        { key: 'upstream/scanner-trivy', class: 'remote', publishedAt: at, available: true },
+        { key: 'web/npm-local', class: 'local', publishedAt: at, available: true },
       ],
     });
     // One repository a client can use: no picker, and the command and Set up client are that one's.
     expect(beside.root.querySelectorAll('select')).toHaveLength(1);
     expect(beside.fake.calls.map((c) => c.repository)).toEqual(['web/npm-local']);
     expect(beside.root.querySelector('.setup-link a')?.getAttribute('href')).toContain('/projects/web/repositories/npm-local/setup');
+  });
+
+  it('Q-UI-965 a version held only by disabled repositories names them in one sentence and asks for no command', async () => {
+    const at = '2026-11-21T06:30:12.000Z';
+    const many = await open({
+      repositories: [
+        { key: 'web/npm-local', class: 'local', publishedAt: at, available: false },
+        { key: 'web/npm-remote', class: 'remote', publishedAt: at, available: false },
+        { key: 'web/npm-all', class: 'virtual', publishedAt: at, available: false },
+      ],
+    });
+    expect(text(many.root.querySelector('[data-testid="install-disabled"]')!)).toBe(
+      'The repositories web/npm-local, web/npm-remote are disabled: nobody can install this version until one of them is enabled again.',
+    );
+    expect(many.root.querySelector('quader-install-command, select, a')).toBeNull();
+    expect(many.fake.calls).toEqual([]);
+    await expectAccessible(many.root);
+
+    // A virtual repository that serves the version through another member stays; the disabled one is left out of the picker.
+    const through = await open({
+      repositories: [
+        { key: 'web/npm-local', class: 'local', publishedAt: at, available: false },
+        { key: 'web/npm-remote', class: 'remote', publishedAt: at, available: true },
+        { key: 'web/npm-all', class: 'virtual', publishedAt: at, available: true },
+      ],
+    });
+    const pickers = through.root.querySelectorAll('select');
+    expect([...pickers[1]!.options].map((o) => o.value)).toEqual(['web/npm-remote', 'web/npm-all']);
+    expect(through.fake.calls[0]?.repository).toBe('web/npm-all');
   });
 });

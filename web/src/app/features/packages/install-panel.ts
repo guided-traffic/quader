@@ -18,7 +18,8 @@ const CLAMAV_REF = upstreamName(CLAMAV_KEY);
  * repository, and the link below it to the client setup that configures the client once. A version in more than one
  * repository offers a repository picker that starts at a virtual repository containing it, else its first local one. A system
  * repository of the project `upstream` is never offered; a version held by system repositories alone gets one sentence instead of the
- * command (R-UI-193, Q-UI-898, Q-UI-899).
+ * command (R-UI-193, Q-UI-898, Q-UI-899). Nor is a repository the version is not available through, a disabled one or a virtual
+ * one that reaches it only through disabled members; a version held only by disabled repositories says so in one sentence (Q-UI-965).
  */
 @Component({
   selector: 'quader-install-panel',
@@ -36,12 +37,31 @@ export class InstallPanel {
   protected readonly chosenRepository = signal<string | null>(null);
 
   /**
-   * The repositories a client can install the version through: every one that holds it but a system repository of the project
-   * `upstream`, which answers every client 404 (R-UI-193, Q-UI-898). The picker offers these, and the command uses one of them.
+   * The repositories a client can install the version through: every one the version is available through (not disabled, nor a
+   * virtual one that reaches it only through disabled members, Q-UI-965) but a system repository of the project `upstream`, which
+   * answers every client 404 (R-UI-193, Q-UI-898). The picker offers these, and the command uses one of them.
    */
   protected readonly repositories = computed(() =>
-    this.version().repositories.filter((r) => !isSystemRepositoryName(r.key) || (r.key === CLAMAV_REF && !this.clamavClosed())),
+    this.version().repositories.filter(
+      (r) => r.available && (!isSystemRepositoryName(r.key) || (r.key === CLAMAV_REF && !this.clamavClosed())),
+    ),
   );
+  /**
+   * A version that no repository serves because the repositories that hold it are disabled: one sentence instead of the command,
+   * naming them, as the file of a disabled repository says it (Q-UI-965). Null where a repository serves it or only system
+   * repositories hold it.
+   */
+  protected readonly disabledNote = computed<string | null>(() => {
+    if (this.repositories().length > 0) return null;
+    const keys = this.version()
+      .repositories.filter((r) => !r.available && r.class !== 'virtual' && !isSystemRepositoryName(r.key))
+      .map((r) => r.key);
+    if (keys.length === 0) return null;
+    if (keys.length === 1) {
+      return $localize`:@@pkg.install.disabled-note:The repository ${keys[0]}:repository: is disabled: nobody can install this version until it is enabled again.`;
+    }
+    return $localize`:@@pkg.install.disabled-note-many:The repositories ${keys.join(', ')}:repositories: are disabled: nobody can install this version until one of them is enabled again.`;
+  });
   /** `upstream/clamav` answers no client now (Q-UI-908): asked only on a version of the ClamAV definitions. */
   private readonly clamavClosed = systemClosed(() => (this.format() === CLAMAV_FORMAT ? CLAMAV_REF : null));
   /**
@@ -54,7 +74,9 @@ export class InstallPanel {
    */
   protected readonly systemNote = computed(() => {
     const held = this.version().repositories;
-    return held.length > 0 && this.repositories().length === 0 ? systemClientSentence(upstreamKeyOf(held[0]!.key), 'version') : null;
+    return held.length > 0 && this.repositories().length === 0 && this.disabledNote() === null
+      ? systemClientSentence(upstreamKeyOf(held[0]!.key), 'version')
+      : null;
   });
   /** A virtual repository that contains the version, else the first local one, else the first. */
   protected readonly defaultRepository = computed<string | null>(() => {

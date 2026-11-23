@@ -50031,5 +50031,17 @@
         <target>Client-Zertifikat</target>
       </segment>
     </unit>
+    <unit id="pkg.install.disabled-note">
+      <segment>
+        <source>The repository <ph id="0" equiv="repository" disp="keys[0]"/> is disabled: nobody can install this version until it is enabled again.</source>
+        <target>Das Repository <ph id="0" equiv="repository" disp="keys[0]"/> ist deaktiviert: Niemand kann diese Version installieren, bis es wieder aktiviert ist.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.install.disabled-note-many">
+      <segment>
+        <source>The repositories <ph id="0" equiv="repositories" disp="keys.join(&apos;, &apos;)"/> are disabled: nobody can install this version until one of them is enabled again.</source>
+        <target>Die Repositories <ph id="0" equiv="repositories" disp="keys.join(&apos;, &apos;)"/> sind deaktiviert: Niemand kann diese Version installieren, bis eines davon wieder aktiviert ist.</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

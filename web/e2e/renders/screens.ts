@@ -2165,6 +2165,27 @@ async function* disabledFile(page: Page): AsyncGenerator<string> {
 }
 
 /**
+ * A version that no repository serves (Q-UI-965): every repository that holds it is disabled, or virtual and reaching it only through
+ * a disabled member, as the details' `available` says (R-API-029), answered in the browser. The install panel offers no command and
+ * names the disabled repository; the **Files** tab offers no **Download** and has no column for it.
+ */
+async function* disabledVersion(page: Page): AsyncGenerator<string> {
+  const details = '**/api/v1/packages/*/versions/1.1.0';
+  await answerWith(page, details, (b) => ({
+    ...b,
+    repositories: (b['repositories'] as Record<string, unknown>[]).map((r) => ({ ...r, available: false })),
+  }));
+  await expect(page.locator('main [data-testid="install-disabled"]')).toBeVisible();
+  await expect(page.locator('main quader-install-command')).toHaveCount(0);
+  yield '';
+  await page.getByRole('tab', { name: 'Files' }).click();
+  await expect(page.locator('main .version-tabs quader-data-table tbody tr').first()).toBeVisible();
+  await expect(page.locator('main .version-tabs a', { hasText: 'Download' })).toHaveCount(0);
+  yield 'files';
+  await page.unroute(details);
+}
+
+/**
  * A list whose read the server refuses for a moment (503): the shared error notice with **Retry**, which stands on the line of the
  * notice's text (R-UI-175). The answer is the browser's; the list's own state is the data table's.
  */
@@ -2348,6 +2369,8 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-npm-many', path: ver(P, manyVersionsPackage, '3.7.0'), kinds: ['plain'] },
   { id: 'package-version-npm-fixed', path: ver(P, { format: 'npm', name: 'xml-stream-parser' }, '0.9.2'), kinds: ['plain'] },
   { id: 'package-version-npm-long-name', path: ver(P, longNamePackage, '0.4.0'), kinds: ['plain'] },
+  // Its repositories disabled: no command, no Download, one sentence (Q-UI-965), as the file of a disabled repository.
+  { id: 'package-version-disabled', path: ver(P, npmPackage, '1.1.0'), kinds: ['plain'], walk: disabledVersion },
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
   { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all },

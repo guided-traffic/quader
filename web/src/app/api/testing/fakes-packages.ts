@@ -116,8 +116,8 @@ function version(
       engines: { node: '>=22' },
     },
     repositories: [
-      { key: 'web/npm-local', class: 'local', publishedAt: '2026-10-20T09:12:44.512Z' },
-      { key: 'web/npm-all', class: 'virtual', publishedAt: '2026-10-20T09:12:44.512Z' },
+      { key: 'web/npm-local', class: 'local', publishedAt: '2026-10-20T09:12:44.512Z', available: true },
+      { key: 'web/npm-all', class: 'virtual', publishedAt: '2026-10-20T09:12:44.512Z', available: true },
     ],
     files: [
       {
@@ -182,7 +182,7 @@ function nugetVersion(v: string, over: Partial<FakeVersion> = {}): FakeVersion {
         { targetFramework: 'net462', dependencies: [] },
       ],
     },
-    repositories: [{ key: 'web/nuget-local', class: 'local', publishedAt: '2026-10-25T00:00:00.000Z' }],
+    repositories: [{ key: 'web/nuget-local', class: 'local', publishedAt: '2026-10-25T00:00:00.000Z', available: true }],
     files: [
       {
         path: file,
@@ -250,7 +250,7 @@ function ociVersion(tag: string, metadata: Record<string, unknown>, manifestSize
     lastDownloadedAt: null,
     hasReadme: false,
     metadata,
-    repositories: [{ key: 'web/oci-local', class: 'local', publishedAt: '2026-11-05T00:00:00.000Z' }],
+    repositories: [{ key: 'web/oci-local', class: 'local', publishedAt: '2026-11-05T00:00:00.000Z', available: true }],
     files: [file(`team/app/_tags/${tag}`)],
     readme: null,
     ...over,
@@ -344,7 +344,7 @@ function debVersion(v: string, metadata: Record<string, unknown>, over: Partial<
     lastDownloadedAt: null,
     hasReadme: false,
     metadata,
-    repositories: [{ key: 'web/deb-local', class: 'local', publishedAt: '2026-11-08T00:00:00.000Z' }],
+    repositories: [{ key: 'web/deb-local', class: 'local', publishedAt: '2026-11-08T00:00:00.000Z', available: true }],
     files: [file('amd64'), file('arm64')],
     readme: null,
     ...over,
@@ -405,7 +405,7 @@ function ansibleVersion(v: string, metadata: Record<string, unknown>, over: Part
     lastDownloadedAt: null,
     hasReadme: false,
     metadata,
-    repositories: [{ key: 'web/ansible-local', class: 'local', publishedAt: '2026-11-08T00:00:00.000Z' }],
+    repositories: [{ key: 'web/ansible-local', class: 'local', publishedAt: '2026-11-08T00:00:00.000Z', available: true }],
     files: [
       {
         path,

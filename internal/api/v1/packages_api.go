@@ -444,6 +444,10 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 	}
 	base := httpserver.InfoFrom(ctx).BaseURL
 	out := versionOf(base, d)
+	if err := addAvailable(ctx, ps.Reader, d, &out); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	if err := s.addMalwareStatus(ctx, d, out.Files); err != nil {
 		httpserver.Problem(w, r, err)
 		return
@@ -457,6 +461,74 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 		out.Metadata.Docs = s.docsAnnouncement(r, id, version)
 	}
 	writeTagged(w, r, out)
+}
+
+// addAvailable marks the repositories a client gets the version through, from the replica's snapshot (Q-UI-965): a disabled
+// repository answers every client request 404, and a virtual repository leaves a disabled member out (R-REPO-019 step 2), so it
+// serves the version only through a member that takes part and holds it. The version page offers no install command and no
+// download through the others. A repository the snapshot no longer holds stays available: its client is told.
+func addAvailable(ctx context.Context, reader repository.Reader, d view.VersionDetail, out *gen.PackageVersion) error {
+	holders := map[qname.Repo]bool{}
+	for _, r := range d.Repositories {
+		if r.Class != string(repository.Virtual) {
+			holders[r.Repo] = true
+		}
+	}
+	for i, r := range d.Repositories {
+		if i >= len(out.Repositories) {
+			break
+		}
+		repo, err := reader.ByName(ctx, r.Repo)
+		if errs.KindOf(err) == errs.NotFound {
+			out.Repositories[i].Available = true
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		ok, err := servesVersion(ctx, reader, repo, holders, map[qname.Repo]bool{})
+		if err != nil {
+			return err
+		}
+		out.Repositories[i].Available = ok
+	}
+	return nil
+}
+
+// servesVersion reports whether a client gets the version through repo: repo is not disabled, and it holds the version, or it is a
+// virtual repository with a member that takes part and serves it. seen guards against a cycle of virtual repositories.
+func servesVersion(ctx context.Context, reader repository.Reader, repo repository.Repository, holders, seen map[qname.Repo]bool) (bool, error) {
+	if repo.Disabled || repo.Lifecycle == repository.Deleting {
+		return false, nil
+	}
+	if repo.Class != repository.Virtual {
+		return holders[repo.Name], nil
+	}
+	if seen[repo.Name] {
+		return false, nil
+	}
+	seen[repo.Name] = true
+	for _, m := range repo.Members() {
+		if !m.TakesPart() {
+			continue
+		}
+		if m.Class == repository.Virtual {
+			// A nested virtual repository's own members are read from the snapshot by its name.
+			nested, err := reader.ByName(ctx, m.Name)
+			if errs.KindOf(err) == errs.NotFound {
+				continue
+			}
+			if err != nil {
+				return false, err
+			}
+			m = nested
+		}
+		ok, err := servesVersion(ctx, reader, m, holders, seen)
+		if err != nil || ok {
+			return ok, err
+		}
+	}
+	return false, nil
 }
 
 func versionOf(base string, d view.VersionDetail) gen.PackageVersion {

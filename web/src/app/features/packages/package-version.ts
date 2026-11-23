@@ -474,8 +474,22 @@ export class PackageVersionPage {
     if (f.contentUrl.startsWith(CLAMAV_CONTENT)) return this.clamavClosed();
     return SYSTEM_CONTENT.some((prefix) => f.contentUrl.startsWith(prefix));
   }
-  /** Some file of the version can be downloaded: the column of the downloads stands (Q-UI-898). */
-  protected readonly downloadable = computed(() => (this.detail()?.files ?? []).some((f) => !this.inSystemRepository(f)));
+  /** The repositories that hold the version and are disabled: they answer every download 404 (R-REPO-005, Q-UI-965). */
+  private readonly disabledHolders = computed(
+    () => new Set((this.detail()?.repositories ?? []).filter((r) => !r.available && r.class !== 'virtual').map((r) => r.key)),
+  );
+  /**
+   * Whether a file is held by a disabled repository: its `contentUrl` is that repository's content route, which answers 404, so it
+   * offers no download, as the file of a disabled repository does not (Q-UI-965); the install panel says why.
+   */
+  protected inDisabledRepository(f: { readonly contentUrl: string }): boolean {
+    const repo = repositoryOfContent(f.contentUrl);
+    return repo !== null && this.disabledHolders().has(repo);
+  }
+  /** Some file of the version can be downloaded: the column of the downloads stands (Q-UI-898, Q-UI-965). */
+  protected readonly downloadable = computed(() =>
+    (this.detail()?.files ?? []).some((f) => !this.inSystemRepository(f) && !this.inDisabledRepository(f)),
+  );
   protected readonly repositoryColumns: readonly TableColumn[] = [
     { id: 'repository', label: $localize`:@@pkg.repo.repository:Repository` },
     { id: 'class', label: $localize`:@@pkg.repo.class:Class` },

@@ -169,7 +169,7 @@ function versionDetail(db: string, v: Version): Record<string, unknown> {
     licenses: [],
     hasReadme: false,
     metadata: metadata(db, v),
-    repositories: [{ key: REPO, class: 'local', publishedAt: iso(v.builtAgo - 40 * 60_000) }],
+    repositories: [{ key: REPO, class: 'local', publishedAt: iso(v.builtAgo - 40 * 60_000), available: true }],
     files,
   };
 }

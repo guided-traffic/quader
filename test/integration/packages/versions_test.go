@@ -196,7 +196,9 @@ func TestR_API_029_VersionDetails(t *testing.T) {
 		t.Errorf("distTags %v", tags)
 	}
 	repos := v["repositories"].([]any)
-	if len(repos) != 1 || repos[0].(map[string]any)["key"] != "it/npm-local" || repos[0].(map[string]any)["class"] != "local" {
+	// An enabled local repository serves the version: the page offers its command and its download (Q-UI-965).
+	if len(repos) != 1 || repos[0].(map[string]any)["key"] != "it/npm-local" || repos[0].(map[string]any)["class"] != "local" ||
+		repos[0].(map[string]any)["available"] != true {
 		t.Errorf("repositories %v", repos)
 	}
 	files := v["files"].([]any)

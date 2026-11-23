@@ -11314,6 +11314,8 @@ export interface components {
             class: "local" | "remote" | "virtual";
             /** Format: date-time */
             publishedAt: string;
+            /** @description A client gets the version through this repository. False where the repository is disabled, and where it is a virtual repository whose members that hold the version are all disabled, since a virtual repository leaves a disabled member out (R-REPO-019): the version page offers no install command and no download through it (Q-UI-965). */
+            available: boolean;
         };
         PackageFile: {
             /** @description The path of the file item in the repository that holds it. */
@@ -24302,12 +24304,14 @@ export interface operations {
                      *         {
                      *           "key": "npm-local",
                      *           "class": "local",
-                     *           "publishedAt": "2026-10-20T09:12:44.512Z"
+                     *           "publishedAt": "2026-10-20T09:12:44.512Z",
+                     *           "available": true
                      *         },
                      *         {
                      *           "key": "npm-all",
                      *           "class": "virtual",
-                     *           "publishedAt": "2026-10-20T09:12:44.512Z"
+                     *           "publishedAt": "2026-10-20T09:12:44.512Z",
+                     *           "available": true
                      *         }
                      *       ],
                      *       "files": [

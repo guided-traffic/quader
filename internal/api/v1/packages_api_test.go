@@ -443,3 +443,45 @@ func mustRepo(t *testing.T, text string) qname.Repo {
 	}
 	return n
 }
+
+func TestR_UI_111_AVersionNamesTheRepositoriesThatServeIt(t *testing.T) {
+	// A disabled repository answers every client request 404, and a virtual repository leaves a disabled member out (R-REPO-019),
+	// so the version page offers no command or download through either (Q-UI-965): the answer says which repositories serve the
+	// version, from the snapshot.
+	local := repository.Repository{Name: qname.Repo{Project: "it", Key: "npm-local"}, Class: repository.Local, Lifecycle: repository.Active, Disabled: true}
+	remote := repository.Repository{Name: qname.Repo{Project: "it", Key: "npmjs"}, Class: repository.Remote, Lifecycle: repository.Active}
+	other := repository.Repository{Name: qname.Repo{Project: "it", Key: "npm-other"}, Class: repository.Local, Lifecycle: repository.Active}
+	// npm reaches the version through its disabled member alone; npm-all through npmjs as well; npm-outer through npm-all nested.
+	onlyLocal := repository.Assemble(repository.Repository{Name: qname.Repo{Project: "it", Key: "npm"}, Class: repository.Virtual, Lifecycle: repository.Active},
+		[]repository.Repository{local, other}, nil, 0)
+	both := repository.Assemble(repository.Repository{Name: qname.Repo{Project: "it", Key: "npm-all"}, Class: repository.Virtual, Lifecycle: repository.Active},
+		[]repository.Repository{local, remote}, nil, 0)
+	outer := repository.Assemble(repository.Repository{Name: qname.Repo{Project: "it", Key: "npm-outer"}, Class: repository.Virtual, Lifecycle: repository.Active},
+		[]repository.Repository{both}, nil, 0)
+	gone := qname.Repo{Project: "it", Key: "npm-gone"}
+	d := view.VersionDetail{
+		Format: "npm", Name: "@team-a/ui", Version: "1.4.0",
+		Repositories: []view.RepositoryEntry{
+			{Repo: local.Name, Class: "local"},
+			{Repo: remote.Name, Class: "remote"},
+			{Repo: onlyLocal.Name, Class: "virtual"},
+			{Repo: both.Name, Class: "virtual"},
+			{Repo: outer.Name, Class: "virtual"},
+			{Repo: gone, Class: "local"},
+		},
+	}
+	reader := packagesReader{repos: map[string]repository.Repository{
+		"npm-local": local, "npmjs": remote, "npm-other": other, "npm": onlyLocal, "npm-all": both, "npm-outer": outer,
+	}}
+	out := versionOf("https://quader.example.com", d)
+	if err := addAvailable(context.Background(), reader, d, &out); err != nil {
+		t.Fatal(err)
+	}
+	var got []bool
+	for _, r := range out.Repositories {
+		got = append(got, r.Available)
+	}
+	if want := []bool{false, true, false, true, true, true}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("available = %v, want %v", got, want)
+	}
+}

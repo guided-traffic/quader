@@ -11515,6 +11515,8 @@ type PackageVersionList struct {
 
 // PackageVersionRepository defines model for PackageVersionRepository.
 type PackageVersionRepository struct {
+	// Available A client gets the version through this repository. False where the repository is disabled, and where it is a virtual repository whose members that hold the version are all disabled, since a virtual repository leaves a disabled member out (R-REPO-019): the version page offers no install command and no download through it (Q-UI-965).
+	Available   bool                          `json:"available"`
 	Class       PackageVersionRepositoryClass `json:"class"`
 	Key         string                        `json:"key"`
 	PublishedAt time.Time                     `json:"publishedAt"`

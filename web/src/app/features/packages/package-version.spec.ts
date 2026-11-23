@@ -157,7 +157,7 @@ describe('The page of a version (R-UI-111)', () => {
           ? v
           : {
               ...v,
-              repositories: [{ key: 'upstream/scanner-trivy', class: 'remote', publishedAt: v.publishedAt }],
+              repositories: [{ key: 'upstream/scanner-trivy', class: 'remote', publishedAt: v.publishedAt, available: true }],
               files: v.files.map((f) => ({ ...f, contentUrl: f.contentUrl.replace('/projects/web/repositories/npm-local/', '/projects/upstream/repositories/scanner-trivy/') })),
             },
       );
@@ -167,6 +167,45 @@ describe('The page of a version (R-UI-111)', () => {
     expect(text(r.root.querySelector('[data-testid="install-system"]')!)).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
     expect(command(r)).toBeUndefined();
     await expectAccessible(r.root);
+  });
+
+  it('R-UI-111 Q-UI-965 a version its disabled repository alone serves offers no Download and no command, and says why in one sentence', async () => {
+    // web/npm-local is disabled, and web/npm-all reaches the version only through it: neither serves it (R-REPO-019).
+    const r = await open({ tab: 'files' }, (fake) => {
+      fake.versionList = fake.versionList.map((v) =>
+        v.version !== '1.4.0' ? v : { ...v, repositories: v.repositories.map((repo) => ({ ...repo, available: false })) },
+      );
+    });
+    expect([...r.root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Download')).toBe(false);
+    expect([...r.root.querySelectorAll('.version-tabs thead th')].map((th) => text(th))).not.toContain('Download');
+    expect(text(r.root.querySelector('[data-testid="install-disabled"]')!)).toBe(
+      'The repository web/npm-local is disabled: nobody can install this version until it is enabled again.',
+    );
+    expect(command(r)).toBeUndefined();
+    expect(r.root.querySelector('[data-testid="install-system"]')).toBeNull();
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-111 Q-UI-965 a disabled repository beside one that serves the version is left out of the picker, and its file offers no Download', async () => {
+    const r = await open({ tab: 'files' }, (fake) => {
+      fake.versionList = fake.versionList.map((v) =>
+        v.version !== '1.4.0'
+          ? v
+          : {
+              ...v,
+              repositories: [
+                { key: 'web/npm-local', class: 'local', publishedAt: v.publishedAt, available: false },
+                { key: 'web/npm-remote', class: 'remote', publishedAt: v.publishedAt, available: true },
+              ],
+            },
+      );
+    });
+    // One repository serves the version: its command, no picker of repositories, no sentence.
+    expect(command(r)).toBe('npm install @team-a/ui@1.4.0');
+    expect(r.root.querySelectorAll('quader-install-panel select')).toHaveLength(1);
+    expect(r.root.querySelector('[data-testid="install-disabled"]')).toBeNull();
+    // The file is web/npm-local's copy: no Download, and no column for it.
+    expect([...r.root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Download')).toBe(false);
   });
 
   it('R-UI-111 the open tab is a query parameter: selecting a tab navigates with ?tab=', async () => {

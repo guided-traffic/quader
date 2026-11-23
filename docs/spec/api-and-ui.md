@@ -1616,6 +1616,11 @@ remain as their owners define them.)
   which reports the size of its versions: an OCI tag's file is the manifest document, so its `sizeBytes` is the image's (R-OCI-031,
   Q-OCI-130). `sizeBytes` is `null` when the size is not known and `sizePartial` says that it counts only the parts the repository
   holds (R-API-080). `downloadCount` and `lastDownloadedAt` count the fetches of the version by its format's rule (R-API-079).
+- The details of a version list the repositories that hold it, each with `key`, `class`, `publishedAt` and `available`: whether a client
+  gets the version through it. `available` is false for a disabled repository and for a virtual one whose members that hold the version
+  are all disabled, since resolution leaves a disabled member out ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-019); the
+  UI offers no install command and no download through such a repository
+  ([Q-UI-965](#q-ui-965--a-disabled-repository-offers-no-download-address-or-command-and-says-why-once)).
 - The `versions` list entries hold `version`, `prerelease`, `publishedAt`, `sizeBytes`, `sizePartial` (R-API-080), `repositories`
   (the qualified names `<projectKey>/<repoKey>` of the repositories the caller may read), `downloadCount` and `lastDownloadedAt`
   (R-API-065); with `include=digest` also
@@ -3954,6 +3959,10 @@ Priority: **MVP** · Covers: UI-010
 - Client picker per format (npm, pnpm, Yarn; .NET CLI, NuGet CLI, `PackageReference` XML); a
   repository picker when the version exists in more than one repository (default: a virtual
   repository containing it, else the first local one).
+- A repository the version is not `available` through (R-API-029: disabled, or a virtual one that reaches it only through disabled
+  members) is never offered; a version that only disabled repositories hold gets one muted sentence instead of the command, naming
+  them: "The repository web/npm-local is disabled: nobody can install this version until it is enabled again."
+  ([Q-UI-965](#q-ui-965--a-disabled-repository-offers-no-download-address-or-command-and-says-why-once)).
 - The command comes from the install snippet of R-API-030 with package and version, requested with
   `credentials=none` (the install command carries no credentials). A command of one line is an address field of R-UI-065
   with its joined copy button; a command of several lines is a code block with its copy button (Q-UI-320); either way a
@@ -22159,6 +22168,14 @@ its pull command, all of which failed. The page knew the repository was disabled
 **Choice:** (a). The item's own request with curl stays: the management API answers it. Every reader's page knows the state, since the
 reader's view of `GET /api/v1/projects/{project}/repositories/{key}` carries `disabled`.
 
+The same rule holds on a version's page, which is reached through the package list without the repository's page. The details of the
+version say for each repository that holds it whether a client gets the version through it (`available`, R-API-029): not through a
+disabled repository, and not through a virtual one whose members that hold the version are all disabled, since resolution leaves a
+disabled member out (R-REPO-019). The install panel offers only the others (R-UI-009); a version that only disabled repositories hold
+gets the sentence in the panel, naming them: "The repository web/npm-local is disabled: nobody can install this version until it is
+enabled again." The **Files** tab offers no **Download** for a file whose copy is a disabled repository's, and no column where no file
+has one.
+
 **Rationale:** the rule of Q-UI-898 is "nothing offers what the repository refuses", and a disabled repository refuses exactly what a
 system repository refuses. The development agent would revisit it if a disabled repository's downloads become possible for some
 callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes only today).
@@ -22168,7 +22185,10 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
-[document.go](../../internal/repository/document.go). The package pages are not covered: H-1560.
+[document.go](../../internal/repository/document.go); on a version's page
+[install-panel.ts](../../web/src/app/features/packages/install-panel.ts),
+[package-version.ts](../../web/src/app/features/packages/package-version.ts) and `addAvailable` of
+[packages_api.go](../../internal/api/v1/packages_api.go).
 
 ### Q-UI-966 · The state of the advisory data and the coverage are details; a banner only for who can act
 
@@ -22469,12 +22489,3 @@ from the grades on. Sorting by grade loads the list up to 1,000 entries and sort
 sort by grade; a repository with more items sorts its first 1,000 by name and grade, and the worst item may be the 1,001st. The
 list says so under the table. What makes it real: a remote repository that caches more than 1,000 packages, and a reader who
 looks for its worst one. Hardening: a server sort over a stored grade (Q-UI-373 (b)).
-
-### H-1560 · A version held by a disabled repository is still offered for install
-
-Component: the install panel and the **Files** tab of a version page (R-UI-111, Q-UI-965). Subject: every reader of a package one of
-whose holding repositories is disabled. Live today. The package API's list of the repositories that hold a version and its files'
-`downloadUrl` and `contentUrl` do not say that a repository is disabled, so the install panel may offer that repository's command and
-the **Files** tab its **Download**, which answer 404; the repository's own pages leave them out (Q-UI-965). What makes it real: a disabled
-local repository whose versions a reader opens through the package list. Hardening: `disabled` in `PackageVersionRepository` and the
-panel's choice of repositories without it, as Q-UI-898 does for a system repository.

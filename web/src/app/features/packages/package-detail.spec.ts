@@ -180,7 +180,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(headers(same)).not.toContain('Repositories');
     const differ = await open({}, (fake) => {
       const v = fake.versionList.find((x) => x.version === '1.3.0')!;
-      v.repositories = [{ key: 'web/npm-remote', class: 'remote', publishedAt: v.publishedAt }];
+      v.repositories = [{ key: 'web/npm-remote', class: 'remote', publishedAt: v.publishedAt, available: true }];
     });
     expect(headers(differ)).toContain('Repositories');
     const cell = rows(differ).find((tr) => text(tr.querySelector('th a')!) === '1.3.0')!.querySelector('td:last-child')!;

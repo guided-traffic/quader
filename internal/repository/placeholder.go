@@ -48,6 +48,10 @@ func (r Repository) takesNoPart() bool {
 	return r.Disabled || r.Lifecycle != Active || r.Placeholder() || r.Upstream.System()
 }
 
+// TakesPart reports whether a member takes part in its virtual repository's resolution (R-REPO-019 step 2): it is not disabled,
+// not being deleted, no placeholder and no system repository of the project upstream.
+func (r Repository) TakesPart() bool { return !r.takesNoPart() }
+
 // placeholderTail is the sentence of a placeholder's 404 (R-REPO-072) after the name of the member, one per state; "" for a state
 // that has none.
 func placeholderTail(state wellknown.State) string {
