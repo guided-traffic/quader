@@ -143,7 +143,7 @@ A remote NuGet repository reads the service index of its upstream (`remote.url`,
 | `502` | `nuget_invalid_upstream_document` | A version list, registration index or page of the upstream is not what its address promises; the copy Quader had stays | Retry later; if it persists the upstream is broken |
 | `404` | `not_found` | The upstream does not have the ID or the version, or the ID matches an exclude pattern of the remote, or the ID was withdrawn by the upstream (its cached packages stay stored and are served by the cache view) | Check the spelling and the patterns |
 
-Cached packages are served while the upstream is down. Content that is no NuGet package at all (no ZIP archive, no `.nuspec` in it, a `.nuspec` that is not XML) is cached and served as the upstream sent it; it has no entry in the package view and no search hit, and is counted in `quader_nuget_remote_unparseable_packages_total`. The search of a remote answers from the packages it has cached; the forwarding of a search to the upstream is not built yet.
+Cached packages are served while the upstream is down. Content that is no NuGet package at all (no ZIP archive, no `.nuspec` in it, a `.nuspec` that is not XML) is cached and served as the upstream sent it; it has no entry in the package view and no search hit, and is counted in `quader_nuget_remote_unparseable_packages_total`. The search of a remote is passed on to the upstream and answered from the packages it has cached when the upstream cannot be asked, when the remote's **Forward search** is off, or when the query names a package Quader keeps away from the remote.
 
 ### EINTEGRITY, audits and upstream failures
 

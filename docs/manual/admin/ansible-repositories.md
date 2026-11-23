@@ -1,6 +1,6 @@
 # Ansible Galaxy repositories
 
-What an administrator decides for repositories of the format Ansible Galaxy: the three classes, the settings, the limits, the import tasks and tombstones, and what is not built yet. The side of the clients is in the user guide page on ansible-galaxy.
+What an administrator decides for repositories of the format Ansible Galaxy: the three classes, the settings, the limits, the import tasks and tombstones. The side of the clients is in the user guide page on ansible-galaxy.
 
 ## Classes
 

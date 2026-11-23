@@ -168,7 +168,7 @@ config:
 kubectl -n quader exec deploy/quader-api -- /usr/local/bin/quader admin storage keys export > quader-storage-keys.json   # keep it beside the key ring's copy
 ```
 
-Quader reaches your OIDC provider over HTTPS and trusts the system roots. If the provider's certificate comes from a private CA, the chart has no value for it yet: mount the CA file with `extraVolumes` and `extraVolumeMounts` and list its path in `config.proxy.outbound.tls.ca_files`.
+Quader reaches your OIDC provider over HTTPS and trusts the system roots. If the provider's certificate comes from a private CA, name the bundle in `trustedCA.existingConfigMap` or `trustedCA.existingSecret`: the chart mounts it into every pod and adds its files to `config.proxy.outbound.tls.ca_files`.
 
 Quader's own backup is off by default, so the values above need nothing for it. To turn it on, add the switch and a bucket of its own for the backups, in another account or project if you can; with the switch on, the chart refuses to render without the bucket:
 

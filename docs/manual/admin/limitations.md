@@ -4,8 +4,8 @@ This page lists what this version of Quader does not do, and the known weak spot
 
 ## Package formats
 
-- **The formats in this version.** Quader serves generic files, npm packages, NuGet packages, container images (OCI) and Debian packages (APT). For NuGet (.NET) a local repository takes a push, an unlist, a relist and a delete and serves its service index, package files, package documents and search, and a remote repository proxies and caches a NuGet v3 feed (nuget.org by default); the search of a remote answers from the packages it has cached, because the forwarding of a search to the upstream is not built, and a virtual repository merges its members (local repositories and remotes), with a search over the packages they have; a search is not forwarded to nuget.org yet. Python, Maven and every other package format are not supported.
-- **Container images (OCI)** are served by local, remote and virtual repositories ([Container image repositories](container-repositories.md#not-supported-in-this-version) lists what is missing): an endpoint with exposure rules serves no container images, blob downloads are streamed by a replica and never redirected to the object store, untagged manifests are kept until somebody deletes them, a mirror copies no referrers, and several tags in one push are not supported.
+- **The formats in this version.** Quader serves generic files, npm packages, NuGet packages, container images (OCI), Debian packages (APT), Ansible Galaxy collections and roles, and ClamAV's signature databases. For NuGet (.NET) a local repository takes a push, an unlist, a relist and a delete and serves its service index, package files, package documents and search, and a remote repository proxies and caches a NuGet v3 feed (nuget.org by default) and passes a search on to it, answering from the packages it has cached when the upstream cannot be asked; a virtual repository merges its members (local repositories and remotes), with their searches. Python, Maven and every other package format are not supported.
+- **Container images (OCI)** are served by local, remote and virtual repositories ([Container image repositories](container-repositories.md#not-supported-in-this-version) lists what is missing): an endpoint with exposure rules serves no container images, untagged manifests are kept until somebody deletes them, a mirror copies no referrers other than an image's signatures and attestations, and several tags in one push are not supported.
 - **Debian packages (APT)** are served by local, remote (pull-through or mirror) and virtual repositories ([Debian (APT) repositories](apt-repositories.md#not-supported-in-this-version) lists what is missing): there are no nested virtual Debian repositories, no uploads of source packages, no `dput`, `.udeb` or debug-symbol packages, no `Valid-Until` in Quader's own releases, and no snapshots of a suite.
 - **Generic repositories are local only.** There are no remote or virtual generic repositories.
 - **npm commands that are not implemented.** `npm login` and `npm adduser`, `npm search`, `npm token`, `npm access`, `npm org`, `npm team`, `npm deprecate`, staged publishing and trusted publishing through OIDC. These requests answer `404`, or `501` for a `POST`. Instead of `npm login`, put a Quader token into `.npmrc` as the client setup of the repository shows.
@@ -54,11 +54,10 @@ This page lists what this version of Quader does not do, and the known weak spot
 
 ## Web UI
 
-- No search over packages and files from the top bar; it searches repositories only. Use the **Packages** list and the pages of a repository's files.
+- No search over files from the top bar; it finds repositories, packages and projects ([Search](../user/search.md)). Use the pages of a repository's files.
 - No warning before a session ends. Sessions end after 1 hour idle or 12 hours in total by default (`auth.sessions.idle_timeout`, `absolute_timeout`).
 - No trash can: deleted files and packages cannot be restored. The pages of a repository's files cannot copy or move files or edit properties.
 - The token screens cannot bind a token to an endpoint; use the management API or `quader admin token`, see [Endpoints and exposure rules](endpoints.md#bind-a-token-to-an-endpoint).
-- The exposure **Preview** judges only the versions you type, although its label says it lists the stored ones when empty, and it never shows which dist-tags stay visible.
 
 ## Audit trail
 

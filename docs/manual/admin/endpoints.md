@@ -20,7 +20,7 @@ Every installation has the default endpoint: the client listener on port 8080 wi
 | Replica header | when `X-Quader-Replica` names the answering replica: `authenticated`, `always`, `never` | `never` |
 | Concurrent requests | per replica and endpoint; over it the endpoint answers `503 server_busy` while other endpoints are unaffected | 1024 |
 
-A path of a family outside the surface answers `404`, the same as an unknown path. Generic repositories are served under `/files/`, so an endpoint that should serve them needs `files` in its surface; npm, NuGet, OCI and Debian are in `packages`. The `ci_exchange` family is reserved and has no working route yet.
+A path of a family outside the surface answers `404`, the same as an unknown path. Generic repositories are served under `/files/`, so an endpoint that should serve them needs `files` in its surface; every package format is in `packages`. The `ci_exchange` family holds the token exchange of GitLab CI jobs, `POST /api/v1/auth/oidc/token` ([GitLab CI federation](gitlab-ci.md)).
 
 ### Host check and 421
 

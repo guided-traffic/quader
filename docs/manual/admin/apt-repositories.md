@@ -225,6 +225,5 @@ The complete reference is in the [full reference](https://github.com/guided-traf
 - **Endpoints with exposure rules** do not serve Debian repositories; use an endpoint with `exposure: all`, or a [Quader Bastion](bastion.md), which serves them as the main installation does.
 - **No mirror of a flat repository**; flat upstreams are served by pull-through.
 - **No vulnerability matching** of Debian packages.
-- The metric `quader_deb_remote_parse_total` of the parse runs is not counted yet.
 
 [Known limitations](limitations.md) lists the limits of the other areas.

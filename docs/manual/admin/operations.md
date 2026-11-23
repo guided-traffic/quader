@@ -456,8 +456,8 @@ and uploads it with its chain (`PUT /api/v1/signing/identity/certificate`); a ke
 (`POST /api/v1/signing/identity/import`). While the Helm values name an identity, uploads answer `409 signing_identity_managed`. A new
 identity beside the current one is listed for `signing.identity.announce_period` (10 minutes) before it signs; the job `signing` on the
 queue `signing` switches it. The section and `GET /api/v1/signing/identity` show the identities and a refused pair of the files with its
-reason, the answer also the backlog; the trusted root and the chain are public at `/api/v1/signing/trusted-root.json` and `/api/v1/signing/chain.pem`. npm's registry
-signatures and the receipt attestations that use the identity are not built yet: until they are, nothing is signed with it.
+reason, the answer also the backlog; the trusted root and the chain are public at `/api/v1/signing/trusted-root.json` and `/api/v1/signing/chain.pem`. With the identity
+Quader signs npm's registry signatures of local versions and a receipt attestation of every artifact ([Signatures](signatures.md)).
 
 | Signal | Meaning | What to do |
 |---|---|---|

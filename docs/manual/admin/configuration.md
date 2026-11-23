@@ -227,7 +227,7 @@ Every further key of a connection (the file variants of bucket, region and endpo
 <details>
 <summary>Vulnerability scanning</summary>
 
-The scanning of stored packages against public advisory data is being built in this version; its keys are read and checked at start-up, and the behaviour they set arrives with it. A source URL that is not an `https` URL, an ecosystem no format of this release has an adapter for, `max_shrink` outside 0 to 1, a source in mode `repository` without a `repository`, and an `epss` mode other than `off` stop the start and name the key.
+The keys of the scanning of stored packages against public advisory data are read and checked at start-up. A source URL that is not an `https` URL, an ecosystem no format of this release has an adapter for, `max_shrink` outside 0 to 1, a source in mode `repository` without a `repository`, and an `epss` mode other than `off` stop the start and name the key.
 
 | Key | Default | Meaning |
 |---|---|---|
