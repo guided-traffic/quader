@@ -2820,7 +2820,11 @@ own tests:
    another kind returns a body taken from package content, and a `Volatile` route serves no stored item. The headers
    are checked on what a route serves, so each of the four needs a content case it serves (a status below 400); a route
    whose cases only refuse (an operation not built yet, a refusal by design) is listed in the fixture's `NoContent` with
-   the reason, and an entry for a route that a case serves fails (Q-ARCH-281).
+   the reason, and an entry for a route that a case serves fails (Q-ARCH-281). The format's `WriteError` answers a refusal
+   of a caller without a credential, as the chain hands it over with a Basic or a Bearer challenge, with `401` and a
+   `WWW-Authenticate` challenge, the error's or the format's own ([identity-and-authentication.md](identity-and-authentication.md)
+   R-AUTH-002): a client authenticates only when it is challenged, so this holds the challenge of every format with routes
+   once, without a client of the format.
 8. Every client in `Descriptor().Clients` has `configure` and `install` templates. No template
    contains a token placeholder that the server would fill. Every example a template declares (`Examples`) stands in its text,
    and a `PackageExample` belongs to an install template that places the package
@@ -2928,7 +2932,8 @@ Acceptance criteria:
 - A format that registers `/{package}` and `/{scope}/{name}` without a disambiguating rule fails
   kit check 1.
 - Registering the npm tarball route with kind `Volatile` instead of `Download` fails kit check 7 (it serves a stored
-  item). An `Admin` route that answers with the bytes of a stored package fails the check that drives it (check 9, its
+  item). A format whose `WriteError` answers a refusal without a credential without its challenge fails kit check 7
+  (`testformat.DropsChallenge`). An `Admin` route that answers with the bytes of a stored package fails the check that drives it (check 9, its
   change case), a `Volatile` search that answers with them passes (Q-ARCH-258).
 - A test format whose tag-changing `Admin` route updates package rows without incrementing
   `rev_seq` fails kit check 9.

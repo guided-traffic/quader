@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"path"
 	"reflect"
@@ -623,6 +624,25 @@ func (r *run) headers() {
 	for n := range r.fx.NoContent {
 		if !slices.ContainsFunc(routes, func(rt formats.Route) bool { return rt.Name == n && rt.Kind.WrapsContent() }) {
 			r.failf("NoContent names %q, which is no Download, Metadata, Computed or Volatile route of the format", n)
+		}
+	}
+	r.challenge()
+}
+
+// challenge is the duty of WriteError that check 7 holds for every format with routes (identity-and-authentication.md R-AUTH-002): a
+// refusal of a caller without a credential, as the chain hands it over with the challenge of the route's family (Basic for a package
+// client, Bearer for a browser, a token realm for a registry), answers 401 with a challenge, so that the client answers it with its
+// configured credentials. Which challenge is the format's: most keep the error's, NuGet and Ansible Galaxy offer Basic alone
+// (R-NUGET-012). A format that renders the 401 and drops the header leaves its clients without a way to authenticate.
+func (r *run) challenge() {
+	for _, given := range []string{`Basic realm="quader"`, `Bearer realm="https://quader.example.com/v2/token",service="quader"`} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, DefaultBaseURL+"/", nil)
+		r.f.WriteError(rec, req, errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "This repository requires an authenticated caller.",
+			errs.WithChallenge(given)))
+		if got := rec.Result().Header.Get("WWW-Authenticate"); rec.Code != http.StatusUnauthorized || strings.TrimSpace(got) == "" {
+			r.failf("WriteError answers a refusal without a credential that carries the challenge %q with %d and WWW-Authenticate %q, want 401 "+
+				"with a challenge: a client authenticates only when it is challenged", given, rec.Code, got)
 		}
 	}
 }

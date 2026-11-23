@@ -188,6 +188,9 @@ const (
 	// installation names the package of an answer from the decisions it holds at the status line, so a later decision would not
 	// count. Check 21 (bastion.md R-BAS-081, R-BAS-086).
 	DecidesAfterItsStatusLine Defect = "decides-after-its-status-line"
+	// DropsChallenge renders a refusal without a credential as 401 without the WWW-Authenticate the error carries: a client is never told
+	// to authenticate. Check 7 (identity-and-authentication.md R-AUTH-002).
+	DropsChallenge Defect = "drops-challenge"
 )
 
 // UndeclaredHeader is the protocol header the defect UndeclaredReplayHeader puts on the package document.
@@ -237,6 +240,12 @@ var _ formats.Format = Format{}
 
 // WriteError implements [formats.Format]: the core's problem+json, or with RendersBareErrors the status and the text alone.
 func (f Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
+	if f.has(string(DropsChallenge)) {
+		if e, ok := errs.As(err); ok && e.Kind == errs.Unauthenticated {
+			http.Error(w, e.Detail, http.StatusUnauthorized)
+			return
+		}
+	}
 	if !f.has(string(RendersBareErrors)) {
 		f.Base.WriteError(w, r, err)
 		return
