@@ -2474,6 +2474,13 @@ runs are in `git log`; this section holds the current state.
   first package among them for most of an hour; the load is 7. The encryption's package 3, the kit move's
   package 1, the repair of the four tests and the handover's package 2 are active within two minutes; none
   has reported.
+- **The timer's check at 04:14:** the run of the push of 03:14 ended at 04:05 with every job green; his
+  installation and its Bastion run its release, ready. The landing's gates of the handover's first package
+  exit 0 up to the fifth of six integration areas and stand at the lock for the last. Five runs wait at
+  the lock (the landing's gates, the kit move's package 1 with a formats' area, the handover's package 2,
+  the encryption's package 3 with the backup's area); the load is 12. The encryption's package 3, the
+  handover's package 2 and the second stack's builder are active within two minutes, the kit move's
+  builder nine minutes ago, waiting for its run.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
