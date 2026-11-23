@@ -5732,6 +5732,20 @@ landing worktree: the set with the unit run and the lint, and then every integra
 seventy-one, in two streams,** since the change lies under each of them and the builder ran fifteen.
 **For the case runner's builder:** an installation costs 0.1 to 0.4 s now, most of it the replica's start,
 so one installation per area gains much less than the planner counted before the change.
+**What is next, decided by the development agent at 08:04 by section 1's order:** the storage topic
+ends with the key destruction, the handover's data keys and its surface, each built or in its gates;
+section 10 holds no registry task; so the next units are FULL.md's block B in its order, F1 and F2.
+**In work since 08:05: the planner of the generic format's remote and virtual classes** (F1), and
+**since 08:06: the planner of the format PyPI** (F2: local, remote with pypi.org as the one-click
+choice, virtual; pip, Twine, Poetry and uv). Each writes the format's specification, the product's side
+by "simple by default", a build plan with packages that own disjoint files, and a test plan by "Tests
+stay runnable" with the new cost of an installation and one installation per area and class; each is
+told to answer, in a table, every topic that holds for all formats (the malware scan, the
+vulnerability scan, the signatures' gate, the limits, signed links by what each client verifies, a
+Bastion with its read shapes per package, the handover, exposure, search, retention, the import) and
+to name every decision that limits one of the owner's by the protocol. Planners do not count against
+the four builders. The case runner for a new format's areas is built when the harness has landed, so
+that the first format's areas are written in that shape.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
