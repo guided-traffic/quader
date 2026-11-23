@@ -73,6 +73,7 @@ A repository is never created disabled; disabling is an action of its settings p
 | **Exclude patterns** | `excludePatterns` | empty | What it refuses; an exclude wins over an include |
 | **Disable repository** in **Advanced** | `disabled` | off | The repository keeps its content but serves and accepts nothing |
 | **Hide existence from callers without access** | `hideExistence` | **Use the installation setting** | **Hide: answer as if it did not exist** answers 404 to refused reads, **Do not hide: answer 403** answers 403 |
+| **Downloads of this repository may go by signed links of the object store** (section **Download links**) | `storage.downloadLinks` | on | Off keeps every download of the repository streamed by Quader, whatever the installation's switch says; see [Download links](download-links.md#a-repositorys-opt-out). It can be set while the installation's switch is off and takes effect when an administrator switches links on. The box is disabled on a format not every client of which checks a digest; the API answers `422 not_applicable` there |
 
 For a generic repository the patterns match paths; for npm they match package names, such as `@acme/*`; for OCI they match image names, such as `team/*`; for Debian they match binary package names, such as `acme-*`. Up to 100 patterns per list; **Pattern syntax** in the form explains `*`, `**`, `?` and `\`. Changes to **Hide existence** are recorded as `authz.settings.changed` in the audit log.
 

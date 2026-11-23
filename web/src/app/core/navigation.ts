@@ -181,6 +181,10 @@ export const NAV_AREAS: readonly NavArea[] = [
               // <<< malware
               // The fourth page of the group (R-SIG-036): every holder of settings:read reads it, the security settings' writers change it.
               { route: '/admin/settings/signatures', icon: 'verified', label: $localize`:@@nav.settings.signatures:Signatures`, capability: 'settings:read' },
+              // >>> download-links
+              // The fifth page of the group (R-UI-200, Q-UI-950): the storage settings, with the switch of the signed links.
+              { route: '/admin/settings/storage', icon: 'cloud_download', label: $localize`:@@nav.settings.storage:Storage`, capability: 'settings:read' },
+              // <<< download-links
             ],
           },
         ],

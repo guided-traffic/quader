@@ -67,6 +67,9 @@ import { memberInactiveText } from './well-known-members';
 import { MalwareSwitchStore } from '../../core/malware-switch';
 import { RepositoryMalwareSection } from './repository-malware';
 import { RepositorySignaturesSection, SignatureSettingsChange } from './repository-signatures';
+// >>> download-links
+import { RepositoryDownloadLinksSection } from './repository-download-links';
+// <<< download-links
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -100,6 +103,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     PageHeader,
     RepositoryFields,
     RepositoryServiceAccounts,
+    RepositoryDownloadLinksSection,
     RepositoryLimitsSection,
     RepositoryMalwareSection,
     RepositorySignaturesSection,
@@ -734,6 +738,40 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.signaturesSaving.set(false);
     }
   }
+
+  // >>> download-links
+  // ---- The repository's opt-out of the signed links (R-UI-201, R-STOR-014) ----
+
+  /** The section on every repository but a system repository, whose members are the product's and whose routes declare none. */
+  protected readonly downloadLinksShown = computed(() => this.stored() !== null && !this.systemRepository());
+  /** `storage.downloadLinks` as stored: an absent member is the default, true. */
+  protected readonly downloadLinksStored = computed(() => this.stored()?.storage?.downloadLinks !== false);
+  protected readonly downloadLinksSaving = signal(false);
+  protected readonly downloadLinksFailure = signal<ApiError | null>(null);
+
+  /**
+   * Stores `storage.downloadLinks` with the loaded `ETag`. The merge patch carries that member only, so `storage.maxUploadSize` and
+   * other unsaved edits stay; a refusal (a 412, `422 not_applicable`) stands in the section.
+   */
+  protected async saveDownloadLinks(allowed: boolean): Promise<void> {
+    if (this.downloadLinksSaving() || !this.stored()) return;
+    this.downloadLinksSaving.set(true);
+    this.downloadLinksFailure.set(null);
+    try {
+      const saved = await this.api.patch(this.ref(), { storage: { downloadLinks: allowed } }, this.etag);
+      this.takeStored(saved.value, saved.etag);
+      this.notifier.status(
+        allowed
+          ? $localize`:@@repo.links.saved-on:Large downloads of this repository may go by signed links again.`
+          : $localize`:@@repo.links.saved-off:Quader delivers every download of this repository itself now.`,
+      );
+    } catch (e) {
+      this.downloadLinksFailure.set(asApiError(e));
+    } finally {
+      this.downloadLinksSaving.set(false);
+    }
+  }
+  // <<< download-links
 
   protected readonly membersSaving = signal(false);
   protected readonly membersFailure = signal<ApiError | null>(null);

@@ -14,22 +14,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/scope"
-	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
-	"github.com/guided-traffic/quader/internal/downloadlinks"
-	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// TestR_STOR_014_TheSwitchReachesEveryReplica: the switch written through the store of the management API on one replica reaches
-// another replica within 2 s with Valkey stopped (the change log in PostgreSQL carries it): a GET of an OCI blob there answers 307
-// to a link of the stack's store under the public address, which a plain HTTP client without Quader's credential fetches with the
-// blob's bytes and the overridden headers; switched off, the next GET there streams the bytes within 2 s, and the change carries
-// the journal entry (R-STOR-073 for the request log's delivery).
+// TestR_STOR_014_TheSwitchReachesEveryReplica: PATCH /api/v1/download-links/settings on one replica answers 200 for an
+// administrator, 403 for an auditor and 428 without If-Match; the switch reaches another replica within 2 s with Valkey stopped (the
+// change log in PostgreSQL carries it): a GET of an OCI blob there answers 307 to a link of the stack's store under the public
+// address, which a plain HTTP client without Quader's credential fetches with the blob's bytes and the overridden headers; switched
+// off through the API, the next GET there streams the bytes within 2 s, and the change carries the journal entry (R-STOR-073 for the
+// request log's delivery).
 func TestR_STOR_014_TheSwitchReachesEveryReplica(t *testing.T) {
 	// The stack runs no malware scanner, so a blob would stay without a verdict, which keeps it from links (Q-STOR-284): the
 	// scanning is off here, and the gate's part of the decision is the unit test's.
@@ -37,6 +33,9 @@ func TestR_STOR_014_TheSwitchReachesEveryReplica(t *testing.T) {
 	rita := st.User("rita")
 	st.Bind("admin", rita)
 	tok := st.Token(rita, scope.Scope{Inherit: true, Admin: true}) // the profile Unlimited: no pace figure (R-LIM-040)
+	olga := st.User("olga")
+	st.Bind("auditor", olga)
+	auditor := st.Token(olga, scope.Scope{Inherit: true, System: []string{"settings:read"}})
 	st.Repository("oci-local", "local", "oci", `{}`)
 	st.Policy("writers", []string{"read", "deploy"}, []string{"oci-local"}, rita)
 	web1 := st.Start(t, testenv.ReplicaOptions{Name: "web1"})
@@ -52,35 +51,38 @@ func TestR_STOR_014_TheSwitchReachesEveryReplica(t *testing.T) {
 	}
 	path := "/v2/" + testenv.DefaultProject + "/oci-local/app/blobs/" + digest
 
-	// The store as the management API writes through it: the change area and the audit event in the transaction of the change.
+	// The switch through the management API of web1 (R-STOR-014): a new installation is off, a change needs If-Match and
+	// settings:write.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	db, err := postgres.Open(ctx, st.DatabaseConfig(), "links-api", "web", testenv.Quiet())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(db.Close)
-	changes, err := cluster.NewChanges(cluster.ChangesOptions{DB: db.ControlPool(), Config: config.Cluster{}, WatchdogTimeout: 30 * time.Second, Log: testenv.Quiet(), Metrics: prometheus.NewRegistry()})
-	if err != nil {
-		t.Fatal(err)
-	}
-	rec, err := audit.New(audit.Options{DB: db, Replica: "links-api", Config: config.Audit{AsyncBuffer: 100}, Log: testenv.Quiet(), AppLog: testenv.Quiet()})
-	if err != nil {
-		t.Fatal(err)
-	}
-	store := downloadlinks.NewStore(downloadlinks.StoreOptions{Runner: db, Changes: changes, Audit: rec, Log: testenv.Quiet()})
-	cur, err := store.Settings(ctx)
-	if err != nil || cur.Enabled {
-		t.Fatalf("a new installation: %+v %v", cur, err)
+	read := st.Do(web1, "GET", "/api/v1/download-links/settings", tok, nil)
+	if read.Status != http.StatusOK || read.JSON(t)["enabled"] != false || read.Header.Get("ETag") == "" {
+		t.Fatalf("a new installation: %d %s", read.Status, read.Body)
 	}
 	// The stack's store answers on 127.0.0.1 and localhost with one certificate; localhost is no host of the replicas
 	// (server.base_url http://quader.test), so a client drops its credential on the redirect.
 	endpoint, _ := url.Parse(testenv.S3Config(t).Endpoint)
 	public := "https://localhost:" + endpoint.Port()
-	on := cur
-	on.Enabled, on.MinSize, on.PublicAddresses = true, 0, map[string]string{config.DefaultConnectionID: public}
-	if _, err := store.Update(ctx, audit.Actor{Kind: "user", Name: "rita"}, on, cur.Version); err != nil {
-		t.Fatal(err)
+	patch := func(token, body string, ifMatch ...string) testenv.Answer {
+		t.Helper()
+		hdr := []string{"Content-Type", "application/merge-patch+json"}
+		if len(ifMatch) > 0 {
+			hdr = append(hdr, "If-Match", ifMatch[0])
+		}
+		return st.Do(web1, "PATCH", "/api/v1/download-links/settings", token, body, hdr...)
+	}
+	on := `{"enabled": true, "minSize": 0, "publicAddresses": {"` + config.DefaultConnectionID + `": "` + public + `"}}`
+	t.Run("R-STOR-014 a change without If-Match is 428, by an auditor 403", func(t *testing.T) {
+		if a := patch(tok, on); a.Status != http.StatusPreconditionRequired {
+			t.Errorf("without If-Match: %d %s", a.Status, a.Body)
+		}
+		if a := patch(auditor, on, read.Header.Get("ETag")); a.Status != http.StatusForbidden {
+			t.Errorf("an auditor: %d %s", a.Status, a.Body)
+		}
+	})
+	switched := patch(tok, on, read.Header.Get("ETag"))
+	if switched.Status != http.StatusOK || switched.JSON(t)["enabled"] != true {
+		t.Fatalf("an administrator's change: %d %s", switched.Status, switched.Body)
 	}
 
 	noFollow := &http.Client{
@@ -148,14 +150,8 @@ func TestR_STOR_014_TheSwitchReachesEveryReplica(t *testing.T) {
 		}
 	})
 
-	cur, err = store.Settings(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	off := cur
-	off.Enabled = false
-	if _, err := store.Update(ctx, audit.Actor{Kind: "user", Name: "rita"}, off, cur.Version); err != nil {
-		t.Fatal(err)
+	if a := patch(tok, `{"enabled": false}`, switched.Header.Get("ETag")); a.Status != http.StatusOK || a.JSON(t)["enabled"] != false {
+		t.Fatalf("switching off: %d %s", a.Status, a.Body)
 	}
 	took = testenv.WaitFor(t, "the bytes from the other replica", 2*time.Second+500*time.Millisecond, func() bool {
 		resp := get(web2)

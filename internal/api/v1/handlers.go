@@ -254,6 +254,12 @@ type Options struct {
 	Malware MalwareServices
 	// <<< malware
 
+	// >>> download-links
+	// DownloadLinks holds the services of the operations of the delivery by signed links (download_links_api.go); without its store
+	// and the replica's side the operations answer 503.
+	DownloadLinks DownloadLinksServices
+	// <<< download-links
+
 	// >>> signatures
 	// Signatures holds the services of the operations of signatures on artifacts and of the member signatures of a stored file and
 	// of a version (signatures_api.go, signatures_views.go, signatures_findings.go); without a store the operations answer 503 and no

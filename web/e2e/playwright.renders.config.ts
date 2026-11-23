@@ -8,6 +8,7 @@ import { authFile, edge } from './renders/paths';
  * configuration; by hand: `npx playwright test -c e2e/playwright.renders.config.ts [--grep <screen>]` in web/.
  *
  * UI_RENDERS_EDGE      the dev server, default https://localhost:4200
+ * UI_RENDERS_STATE     the profile's state directory, default .dev/ui-dev (a stack of its own names its own)
  * UI_RENDERS_WORKERS   browsers at a time, default 3 (the host is shared)
  */
 export default defineConfig({

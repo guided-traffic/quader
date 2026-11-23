@@ -201,7 +201,7 @@ describe('App shell', () => {
     expect(toggles.map((b) => b.querySelector('.nav-label')?.textContent)).toEqual(['Identity', 'Access', 'System', 'Settings']);
     // One group Settings with a page per topic, General first (Q-UI-326); System holds no settings entry.
     const settings = root.querySelector<HTMLElement>(`#${toggles[3]!.getAttribute('aria-controls')}`)!;
-    expect([...settings.querySelectorAll('.nav-label')].map((l) => l.textContent)).toEqual(['General', 'Authentication', 'Malware scanning', 'Signatures']);
+    expect([...settings.querySelectorAll('.nav-label')].map((l) => l.textContent)).toEqual(['General', 'Authentication', 'Malware scanning', 'Signatures', 'Storage']);
     const system = root.querySelector<HTMLElement>(`#${toggles[2]!.getAttribute('aria-controls')}`)!;
     expect([...system.querySelectorAll('.nav-label')].map((l) => l.textContent)).not.toContain('General settings');
     expect(root.querySelectorAll('nav .nav-icon').length).toBeGreaterThanOrEqual(10);

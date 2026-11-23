@@ -1,6 +1,6 @@
 # Delivery by signed links of the object store
 
-Status: specified on 2026-11-22; packages 1 and 2 built on 2026-11-22, package 3 not built ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
+Status: specified on 2026-11-22; packages 1 and 2 built on 2026-11-22, package 3 on 2026-11-23: all three are built ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
 [usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040; [api-and-ui.md](../spec/api-and-ui.md) R-UI-200, R-UI-201;
 [security/download-links.md](../security/download-links.md)). This page is the build plan: the three packages, what each owns, the order,
 the tests and what they cost.
@@ -38,7 +38,7 @@ Package 1 is small and lands first; it is built: `formats.Route.ClientDigest` an
 case turned `npm.tarball.get` back ([Q-STOR-354](../spec/storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)). A package that needs
 the routes whose clients check (the settings' `routes`, the repository's `not_applicable`) walks `formats.List()` and each format's
 `Routes()` for `ClientDigest.Checks`. Package 2 is the whole feature behind the API; package 3 makes it reachable. The directories do not
-overlap; `internal/app/` is package 2's alone, and package 3 mounts its handler through the router the API already has.
+overlap but for the wiring: package 3 added `downloadLinksAPI` to `internal/app/` and mounts its handler through the router the API already has.
 
 ## Package 2 as built
 
@@ -82,6 +82,25 @@ What the handover's builder finds: the public addresses (`Settings.PublicAddress
 (`Connection.Presign` with `PresignOptions` without overrides), the link check's first part (`LinkCheck.Works`) and the decided
 `ConnectionState.HandoverUsable` with its reasons; the serve point takes a second option beside `ServeOptions.Link`.
 
+## Package 3 as built
+
+Built on 2026-11-23. What each file does:
+
+| File | Responsibility |
+|---|---|
+| [api/v1/download_links_api.go](../../internal/api/v1/download_links_api.go) | The four operations: `GET`/`PATCH …/settings` (the row through `DownloadLinkStore`, the states of `Links.States()`, `routes` from `formats.List()`), `POST …/test`, `GET …/switch` (the snapshot's `enabled` and the formats of the routes); the `422` of `downloadlinks.Validate` at its pointers, the `409 connection_unavailable` of a test |
+| [downloadlinks/testlink.go](../../internal/downloadlinks/testlink.go) | `Links.TestLink`: the address checked as a save checks it, the probe `_probe/link-test-<random>` written through the connection's store, the link with its overrides against the typed address, the probe's deletion when the link's life is over, the sweep of probes older than an hour (Q-STOR-356) |
+| [errs/codes.go](../../internal/errs/codes.go) | `connection_unavailable` (`409`) |
+| [app/wire_downloadlinks.go](../../internal/app/wire_downloadlinks.go), [app.go](../../internal/app/app.go) | `downloadLinksAPI`: the area's store and replica side for the operations; a role without the area answers them `503` |
+| [api/openapi.yaml](../../api/openapi.yaml) | The tag `download-links`, the four operations, `DownloadLinkSettings` and its parts, and `RepositoryStorageSettings`, the closed member `storage` of a repository document |
+| [web/…/download-links-api.ts](../../web/src/app/api/download-links-api.ts), [core/download-links-switch.ts](../../web/src/app/core/download-links-switch.ts) | The client of the operations; the switch read once per page load for the repository's section |
+| [settings/storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts), [.html](../../web/src/app/features/settings/storage-settings.html) | **Admin area › Settings › Storage** (R-UI-200): the status, the connections that can serve links, the switch, **Details** with the fields, the test link and the routes; the merge patch of the changed members |
+| [repositories/repository-download-links.ts](../../web/src/app/features/repositories/repository-download-links.ts) | The repository's section **Download links** (R-UI-201, Q-UI-956); its save is `saveDownloadLinks` of [repository-detail.ts](../../web/src/app/features/repositories/repository-detail.ts) |
+| [manual/admin/download-links.md](../manual/admin/download-links.md) | The administrator's page and the Owner's opt-out, with what a link means for a client behind a proxy or a firewall |
+
+The integration case of area `blob` switches on and off through `PATCH` on the first replica (the `428` and an auditor's `403` first), so
+the store's change area, the snapshot and the serve point are reached through the operation an administrator uses.
+
 ## The decision, step by step
 
 R-STOR-070 lists fourteen steps. Where each is answered:
@@ -102,7 +121,7 @@ R-STOR-070 lists fourteen steps. Where each is answered:
 ## Tests and what they cost
 
 By the rule "Tests stay runnable" of the repository's working rules: every behaviour once, at the cheapest tier; nothing that grows with
-the number of formats outside a format's own leg; bytes to kilobytes. Measured where a row says so; package 3's rows are estimates.
+the number of formats outside a format's own leg; bytes to kilobytes. Every row is measured.
 
 | Tier | What | Package | Time | Data |
 |---|---|---|---|---|
@@ -111,11 +130,15 @@ the number of formats outside a format's own leg; bytes to kilobytes. Measured w
 | Conformance | `checkPresign` asks for the three overrides and checks them (job `s3-conformance`, against Silo) | 2 | measured against the stack's SeaweedFS: 0.01 s | 2 KiB |
 | Integration | area `blob`: the switch through the store reaches another replica within 2 s with Valkey stopped (measured 0.8 s); a link of an OCI blob fetched by a plain client from the stack's store; area `querybudget`: a download by link costs one statement | 2 | measured: 4.2 s for the `blob` case (two replicas started; the switch reached the other in 0.85 s), 8.0 s for the `querybudget` case (a third replica started, the blob uploaded) | one blob of 40 bytes |
 | End-to-end | one case in each leg of a format that declares (`oci`: Docker and Podman; `ansible`: `ansible-galaxy` of both images): a fresh one-file artifact through a `307`, then its object altered in the bucket (a gzip stream's header time flipped) and refused by every client | 2 | measured once on a kind cluster on 2026-11-22: 36 s for the OCI case, 54 s for the Ansible case (most of it the wait for the first `307` and the client pods' commands) | kilobytes |
-| Unit (API) | the operations, `If-Match`, the reasons, the test link | 3 | about 1 s | none |
-| Web unit | the page and the repository's section (Vitest) | 3 | about 2 s | none |
+| Unit (API) | the operations, `If-Match`, `403`, `422` at the pointers, the reasons, the test link and its `409` (`TestR_STOR_014_TheOperations`, `TestR_STOR_074_TheConnectionAndItsAddress`), and the test link's probe, life and sweep (`TestR_STOR_074_TheTestLink`) | 3 | measured in the unit job's mode: 0.11 s and 0.04 s of their own (the shared parse of the document, about 7 s, is paid once per test binary by whichever test asks first), under 0.01 s | bytes: the probe's 44 |
+| Integration | area `blob`: the case of R-STOR-014 switches on and off through `PATCH`, after a `428` and an auditor's `403` | 3 | measured: the package 5.5 s, as before (three requests more) | one blob of 40 bytes |
+| Web unit | the page (12 cases) and the repository's section (6 cases) (Vitest) | 3 | measured: 0.24 s and 0.25 s | none |
 
 What each pipeline job gains: the unit job about 3 s (package 1's share measured: about 0.8 s; package 2's 0.17 s of tests and the
-compile of one package more); the web unit job about 2 s (package 3); `s3-conformance` under a second; the integration shard that holds
+compile of one package more; package 3's 0.16 s); the web unit job about 0.5 s (package 3); the job `ui-layout` the two screens' pictures
+(measured on a stack of the package's own with two browsers: `admin-settings-storage` 55 s as the administrator and 2 s as the auditor,
+`repository-settings-links` 39 s each as the Owner and the administrator, about 1.1 minutes of the job's wall time with its three
+browsers); `s3-conformance` under a second; the integration shard that holds
 `blob` about 4 s, the one that holds `querybudget` about 8 s; `e2e (oci)` about 36 s and `e2e (ansible)` about 54 s; every other leg
 nothing. A change of the serve point is shared code: it starts the npm leg, which has no case of the links since npm declares nothing
 (Q-STOR-354), so the clients' check of a link is shown by the OCI and Ansible legs when their format changes and in the nightly.

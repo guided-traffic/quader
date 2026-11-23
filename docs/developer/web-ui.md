@@ -173,8 +173,10 @@ through the dev server works only against a Quader whose base URL is `https://lo
   against a stack of its own instead: a copy of [compose.yaml](../../deploy/ui-dev/compose.yaml) with another project name, other
   container names and other ports, the state in the worktree's own `.dev/ui-dev` (`config.sh <state>`, then its ports and its base URL
   replaced in `quader.yaml`), the worktree's `quader` and `devidp` on ports of their own, its dev server with `--port` and
-  `QUADER_UI_DEV_BACKEND`, and the renders with `UI_RENDERS_EDGE` set to that dev server and `UI_RENDERS_POSTGRES` to the copy's
-  PostgreSQL container, so that the seed's SQL writes the worktree's database and not the running profile's (the scanner replicas of
+  `QUADER_UI_DEV_BACKEND`, and the renders with `UI_RENDERS_EDGE` set to that dev server, `UI_RENDERS_POSTGRES` to the copy's
+  PostgreSQL container and `UI_RENDERS_STATE` to the copy's state directory (where the seed reads the break-glass password and the
+  database password; the state may then lie outside `.dev/ui-dev`, and the dev server takes its certificate with `--ssl-cert` and
+  `--ssl-key`), so that the seed's SQL writes the worktree's database and not the running profile's (the scanner replicas of
   2026-11-21 rendered this way), and the screens of the ClamAV definitions the same day, whose
   backend needed the migration of the format).
 
@@ -1433,6 +1435,18 @@ are hidden until it answers that the scanning is on (Q-UI-874), and the security
 `<quader-security-views>` under their own header (Q-UI-873). The settings page reads the scanner replicas through `SystemApi.scanners()` and
 shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-replicas kind="clamav">` under the worker's summary
 ([shared/scanner](../../web/src/app/shared/scanner/scanner-replicas.ts), R-OPS-048, Q-UI-897).
+
+## The download links screens
+
+The settings page **Admin area › Settings › Storage** (R-UI-200, [storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts))
+and a repository's section **Download links** (R-UI-201, [repository-download-links.ts](../../web/src/app/features/repositories/repository-download-links.ts));
+the files, the decisions and the tests are on [download-links.md](download-links.md#package-3-as-built). The page names the formats its
+switch reaches from the `routes` of its answer and their display names from `GET /api/v1/formats`, so a format that declares later needs no
+change of the page. The section reads `getDownloadLinkSwitch` once per page load through `DownloadLinksSwitchStore` and stands on every
+repository but a system one, usable while the installation's switch is off and disabled with its reason only where not every client of
+the format checks a digest (Q-UI-956). The renders'
+walks (`storageSettings`, `downloadLinksSection` of [screens.ts](../../web/e2e/renders/screens.ts)) change the answers in the browser for the
+states the profile's one connection cannot hold: several connections, an encrypted one, a failed link check, none that can serve.
 
 ## The signatures screens
 

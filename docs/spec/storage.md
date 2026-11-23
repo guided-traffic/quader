@@ -1306,20 +1306,32 @@ owner left the open questions to it: a pace limit of the caller is no longer a c
 issue.* This block replaces the switch per repository it specified before
 ([ADR-045](../decisions.md#adr-045--presigned-download-redirects-as-a-per-repository-opt-in-p2), superseded). Built behind the API on
 2026-11-22 (package 2 of [developer/download-links.md](../developer/download-links.md#work-packages)); the operations below, the settings page
-and the repository's section on the screen are package 3 and not built.
+and the repository's section on the screen on 2026-11-23 (package 3).
 
 **As built** (2026-11-22, package 2): the row `download_link_settings` (migration 00108) with its store, its audit event and the replay
 of a switch turned off ([internal/downloadlinks/store.go](../../internal/downloadlinks/store.go)), the replica's snapshot and its change
 area `download_link_settings` ([snapshot.go](../../internal/downloadlinks/snapshot.go)), the validation of a write
 (`downloadlinks.Validate`, [settings.go](../../internal/downloadlinks/settings.go)), the repository's member `storage.downloadLinks` with the
-closed object `storage` ([internal/repository/storage.go](../../internal/repository/storage.go)), and the serve point of R-STOR-070. The store
-is written by the operations of package 3, which are not built: until then nothing but a test and the end-to-end driver
-(`driver links on|off`, [links.go](../../test/e2e/cmd/driver/links.go)) writes the row, and a new installation keeps links off.
+closed object `storage` ([internal/repository/storage.go](../../internal/repository/storage.go)), and the serve point of R-STOR-070. The
+end-to-end driver (`driver links on|off`, [links.go](../../test/e2e/cmd/driver/links.go)) writes the row through the store as well.
+
+**As built** (2026-11-23, package 3): the four operations are [download_links_api.go](../../internal/api/v1/download_links_api.go), their
+answers `DownloadLinkSettings` and `DownloadLinkSwitch` of the OpenAPI document. `GET …/settings` reads the row from PostgreSQL and each
+connection's state from the answering replica (`downloadlinks.Links.States`); a connection's `publicAddress` is the saved address and
+`null` where its links name the endpoint, which `endpoint` holds
+([Q-STOR-355](#q-stor-355--a-connections-publicaddress-in-the-answer-is-the-saved-one-null-for-the-endpoint)). `routes` walks the
+registered formats' routes for `ClientDigest.Checks`, so a format that declares later appears in the answer and on the screens without a
+change of either; `GET …/switch` reads the replica's snapshot and names those formats. `PATCH` applies the merge patch to the four members
+(any other member answers `400` at its pointer), checks the result with `downloadlinks.Validate` against the replica's connections and host
+rule, and writes it with the revision of `If-Match`; a stored address the write leaves as it is is not checked again, so the address of
+a connection the configuration no longer has refuses no other change and stays in the row until a write sends `null` for it
+(Q-STOR-355). The test link is `downloadlinks.Links.TestLink`
+([testlink.go](../../internal/downloadlinks/testlink.go), R-STOR-074). The screens are R-UI-200 and R-UI-201.
 
 **What the switch does.** A download that meets every condition of R-STOR-070 is answered `307 Temporary Redirect` to a link to the
 stored object, signed for `GET` (R-STOR-072); the client fetches the bytes from the object store. Everything else is answered by Quader
 as before (R-STOR-012, R-STOR-013): every document and index, `HEAD`, a conditional request, a range, a file below the minimum size,
-every file of `/files/`, and every route whose format's clients do not check a digest themselves (R-STOR-071).
+every file of `/files/`, and every route not every client of whose format checks a digest itself (R-STOR-071).
 
 **The settings** ([Q-STOR-280](#q-stor-280--the-switch-is-one-row-of-its-own-with-its-own-operations-as-the-malware-scans)):
 
@@ -1411,9 +1423,14 @@ Acceptance criteria:
   `{"enabled": true, "minSize": 0}` by an administrator answers `200`, by an auditor `403`, without `If-Match` `428`; a `GET` of an OCI
   blob through another replica answers `307` within 2 s, with Valkey stopped as well, and the `Location` fetched by a plain HTTP client
   returns the blob's bytes; `{"enabled": false}` makes the next `GET` there `200` with the bytes within 2 s, and its audit event carries
-  the journal flag (`TestR_STOR_014_TheSwitchReachesEveryReplica`). *As built by package 2: the switch is written through the store the
-  operations write through, with Valkey stopped; the answers of the operations (`200`, `403`, `428`) are package 3's to add to the case
-  ([Q-STOR-353](#q-stor-353--the-cases-of-package-2-write-the-switch-through-the-store-and-the-end-to-end-cases-are-named-after-their-legs-sets)).*
+  the journal flag (`TestR_STOR_014_TheSwitchReachesEveryReplica`). *As built: package 2 wrote the switch through the store
+  ([Q-STOR-353](#q-stor-353--the-cases-of-package-2-write-the-switch-through-the-store-and-the-end-to-end-cases-are-named-after-their-legs-sets));
+  since package 3 the case switches on and off through `PATCH` on the first replica and checks the `428` and an auditor's `403` first.*
+- Unit (`internal/api/v1`): the settings carry their `ETag`, the defaults and the routes whose clients check (`oci.blob.get`,
+  `ansible.artifact.get`, not `npm.tarball.get`); the switch names `ansible` and `oci` for every signed-in caller; a change without
+  `If-Match` is `428`, with a stale one `412`, by a caller without `settings:write` `403`; values outside their ranges and an unknown
+  connection are `422` at their pointers, another member `400`; a `null` address returns the connection to its endpoint; without the area
+  the operations answer `503` (`TestR_STOR_014_TheOperations`).
 - Unit (`internal/downloadlinks`): a new installation is off with 1 MiB and 60 s; a write outside the ranges, an address that is not an
   `https` origin or lies below a host of Quader, and a connection the installation does not have are refused; a merge patch's `null` returns
   a connection to its endpoint (`TestR_STOR_014_TheSettings`).
@@ -1734,14 +1751,26 @@ period while it has not answered ([Q-STOR-351](#q-stor-351--the-link-check-runs-
 Each connection's state, `Usable` with its reasons and `HandoverUsable` with its own, is `downloadlinks.ConnectionState`
 ([links.go](../../internal/downloadlinks/links.go)); the host rule is `downloadlinks.HostRule` ([hosts.go](../../internal/downloadlinks/hosts.go)).
 A connection that cannot serve links is logged while the switch is on
-([Q-STOR-352](#q-stor-352--a-connection-that-cannot-serve-links-is-logged-while-the-switch-is-on)). The test link is package 3's.
+([Q-STOR-352](#q-stor-352--a-connection-that-cannot-serve-links-is-logged-while-the-switch-is-on)). The test link is
+`downloadlinks.Links.TestLink` ([testlink.go](../../internal/downloadlinks/testlink.go), package 3, 2026-11-23): it refuses an address as a
+save would, writes the probe through the connection's own store without a payload checksum, signs the link with the overrides
+`text/plain; charset=utf-8`, `attachment; filename="quader-link-test.txt"` and `private, no-store`, and deletes the probe with a timer when
+the link's life is over; each test first deletes the probes of earlier tests older than an hour (at most ten pages of the listing). A
+connection whose circuit is open, whose probe cannot be written or whose link cannot be signed answers `409 connection_unavailable`, and the
+operation is not admitted in the read-only maintenance mode
+([Q-STOR-356](#q-stor-356--a-test-link-of-a-connection-that-cannot-take-its-probe-is-409-and-the-test-waits-out-the-maintenance-mode)).
 
 Acceptance criteria:
 
 - Unit (`internal/api/v1`): the settings' answer names `quader_host` for an address below `server.base_url`, `not_https` for an `http`
   endpoint without an address, and `link_check_failed` for a store fake that drops `Content-Disposition`; a `PATCH` with such an address
   answers `422` at `/publicAddresses/default`; the test link answers a link signed against the entered address, and `409` while the
-  circuit is open (`TestR_STOR_074_TheConnectionAndItsAddress`).
+  circuit is open (`TestR_STOR_074_TheConnectionAndItsAddress`). *As built: the connections are three in-memory ones (`plain`, `insecure`,
+  `dropping`), so the pointer is the connection's own; the test link's `422` at `/publicAddress` and at `/connection` is checked too.*
+- Unit (`internal/downloadlinks`): the test link writes the 44-byte probe below `_probe/link-test-`, names the address as typed, lives
+  60 s, serves the probe as `quader-link-test.txt`, and its probe goes when the life is over; a probe older than an hour went before; an
+  encrypted connection is tested; an address a save refuses, an unknown connection and an open circuit are refused
+  (`TestR_STOR_074_TheTestLink`).
 - Unit (`internal/blob`): the link check fails against an in-memory store that ignores `response-content-disposition`, and the
   connection serves no link while the others' downloads go on (`TestR_STOR_074_TheLinkCheck`).
 - Unit (`internal/downloadlinks`): the reasons per connection (`encrypted` for a fake of stage 2, `not_https`, `quader_host` with the host,
@@ -10070,6 +10099,44 @@ serves. Streamed, Quader's own check (R-STOR-013) aborts such a download.
 
 **Choice:** (a). **Applied in the spec:** R-STOR-071's table, its as-built note and criteria, R-STOR-014's and R-STOR-074's criteria; code:
 [routes.go](../../internal/formats/npm/routes.go), the table test in [all_test.go](../../internal/formats/all/all_test.go).
+
+### Q-STOR-355 · A connection's publicAddress in the answer is the saved one, null for the endpoint
+
+Status: **Decided by the development agent** (package 3 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-014's answer names per connection `endpoint` and `publicAddress` without saying whether `publicAddress` is the saved setting
+or the origin the links name now. The settings page shows the saved address, else the endpoint, as the field's value (Q-UI-951), and its
+merge patch sends `null` to return a connection to its endpoint; an address equal to the endpoint is not saved, so a later change of the
+endpoint is followed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `publicAddress` is the saved address, `null` when none is saved (chosen) | The row's value; the effective origin is `publicAddress ?? endpoint` | The page knows whether a `null` has to be sent; the answer says what a restore or another administrator would see in the row | A reader computes the effective origin |
+| (b) The effective origin, the endpoint where none is saved | | What the links name, as is | A saved address equal to the endpoint and none saved look the same: the page cannot send the `null` that makes the endpoint followed again |
+| (c) Both, as two members | | Nothing to compute | One more member for what `endpoint` already gives |
+
+**Choice:** (a). The answer lists the connections the replica configures; an address the row holds for a connection the configuration no
+longer has is not shown, so a write checks only the addresses it changes, and such an entry never blocks a save of the page.
+**Applied in the spec:** R-STOR-014 (as built), the OpenAPI document's `DownloadLinkConnection`; code: `touched` in
+[download_links_api.go](../../internal/api/v1/download_links_api.go).
+
+### Q-STOR-356 · A test link of a connection that cannot take its probe is 409, and the test waits out the maintenance mode
+
+Status: **Decided by the development agent** (package 3 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-074 answers `409 connection_unavailable` for a connection that is failing. A store can refuse the probe's write while the
+circuit is still closed (a full bucket, a policy that forbids the prefix, a store that went away a second ago), and signing can fail. The
+read-only maintenance mode (R-OPS-024) refuses every write but those the list of `x-quader-maintenance: allowed` names; the test writes an
+object of the family `_probe/` and nothing in PostgreSQL.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every failure to write the probe or to sign its link is `409 connection_unavailable` with what the store said; the operation is not admitted in the maintenance mode (chosen) | One answer for "this connection cannot give a link now" | The administrator learns the store's refusal at once; a maintenance window is for storage work, and the test of an address is no part of keeping the installation usable, which is what the allowed list holds | A test during a maintenance window waits for its end |
+| (b) A refused write is `503`, an open circuit `409` | | Kinds kept apart | Two answers for one fact; the page would explain both |
+| (c) The test is admitted in the maintenance mode | | The address can be tested while the installation is read-only | A write to the store during a window that may be moving it, and a change of R-OPS-024's list for a convenience |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-074 (as built); code: [testlink.go](../../internal/downloadlinks/testlink.go), the problem
+code `connection_unavailable` in [codes.go](../../internal/errs/codes.go).
 
 ### Q-STOR-370 · The storage summary has no member quota until the quota settings exist
 

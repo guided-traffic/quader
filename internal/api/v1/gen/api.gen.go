@@ -1099,6 +1099,30 @@ func (e DebSigningKeyState) Valid() bool {
 	}
 }
 
+// Defines values for DownloadLinkReasonCode.
+const (
+	Encrypted       DownloadLinkReasonCode = "encrypted"
+	LinkCheckFailed DownloadLinkReasonCode = "link_check_failed"
+	NotHttps        DownloadLinkReasonCode = "not_https"
+	QuaderHost      DownloadLinkReasonCode = "quader_host"
+)
+
+// Valid indicates whether the value is a known member of the DownloadLinkReasonCode enum.
+func (e DownloadLinkReasonCode) Valid() bool {
+	switch e {
+	case Encrypted:
+		return true
+	case LinkCheckFailed:
+		return true
+	case NotHttps:
+		return true
+	case QuaderHost:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EncryptionKeyCanary.
 const (
 	EncryptionKeyCanaryAbsent EncryptionKeyCanary = "absent"
@@ -8857,6 +8881,116 @@ type DisableRequest struct {
 	RevokeTokens *bool `json:"revokeTokens,omitempty"`
 }
 
+// DownloadLinkConnection One connection and whether it can serve links on the replica that answers (storage.md R-STOR-074, R-STOR-096).
+type DownloadLinkConnection struct {
+	// Encrypted The connection encrypts what it stores (R-STOR-075); it never serves a client's link.
+	Encrypted bool `json:"encrypted"`
+
+	// Endpoint The connection's endpoint, where its links go without a public address.
+	Endpoint string `json:"endpoint"`
+
+	// HandoverReasons Why it cannot serve a handover; empty when `handoverUsable`.
+	HandoverReasons []DownloadLinkReason `json:"handoverReasons"`
+
+	// HandoverUsable The connection can serve a handover to a Bastion now on this replica (R-STOR-096), an encrypted one too.
+	HandoverUsable bool `json:"handoverUsable"`
+
+	// Name The connection's id (R-STOR-050).
+	Name string `json:"name"`
+
+	// PublicAddress The saved public address, an https origin its links name; null when the links name the endpoint.
+	PublicAddress *string `json:"publicAddress"`
+
+	// Reasons Why it cannot; empty when `usable`.
+	Reasons []DownloadLinkReason `json:"reasons"`
+
+	// Usable The connection can serve a client's link now on this replica.
+	Usable bool `json:"usable"`
+}
+
+// DownloadLinkReason Why a connection cannot serve links (storage.md R-STOR-074): `encrypted`, `not_https` (its public address or endpoint is not
+// https), `quader_host` (a link's host would be a host of Quader or lie below one; `detail` names that host),
+// `link_check_failed` (the link check did not pass or has not answered on this replica; `detail` says what the store answered).
+type DownloadLinkReason struct {
+	Code   DownloadLinkReasonCode `json:"code"`
+	Detail *string                `json:"detail"`
+}
+
+// DownloadLinkReasonCode defines model for DownloadLinkReason.Code.
+type DownloadLinkReasonCode string
+
+// DownloadLinkRoute defines model for DownloadLinkRoute.
+type DownloadLinkRoute struct {
+	// Format The format's name, as `GET /api/v1/formats` names it.
+	Format string `json:"format"`
+
+	// Route The route's id within the format (`oci.blob.get`).
+	Route string `json:"route"`
+}
+
+// DownloadLinkSettings The installation's switch of the signed links, its details and each connection's state (storage.md R-STOR-014).
+type DownloadLinkSettings struct {
+	// Connections Every connection of the installation in its read order, as the replica that answers decides it.
+	Connections []DownloadLinkConnection `json:"connections"`
+
+	// Enabled Large downloads whose clients all check a digest are answered by a signed link of the object store; false by default.
+	Enabled bool `json:"enabled"`
+
+	// LinkLifeSeconds How long a link is valid; 60 on a new installation. The signing credential's own expiry can shorten it.
+	LinkLifeSeconds int `json:"linkLifeSeconds"`
+
+	// MinSize The smallest file in bytes that is handed to a link; 1048576 (1 MiB) on a new installation.
+	MinSize int64 `json:"minSize"`
+
+	// Routes The routes whose clients all check a digest themselves (R-STOR-071), by format and route; no other download is handed to a link.
+	Routes    []DownloadLinkRoute `json:"routes"`
+	UpdatedAt time.Time           `json:"updatedAt"`
+
+	// UpdatedBy `<kind>:<name>` of the principal who changed the row last; null for none.
+	UpdatedBy *string `json:"updatedBy"`
+
+	// Version The revision of the row; the `ETag` is its quoted form.
+	Version int64 `json:"version"`
+}
+
+// DownloadLinkSettingsPatch A merge patch of the settings (storage.md R-STOR-014); a member left out keeps its value.
+type DownloadLinkSettingsPatch struct {
+	Enabled         *bool  `json:"enabled,omitempty"`
+	LinkLifeSeconds *int   `json:"linkLifeSeconds,omitempty"`
+	MinSize         *int64 `json:"minSize,omitempty"`
+
+	// PublicAddresses Per connection an https origin; null returns the connection to its endpoint.
+	PublicAddresses *map[string]*string `json:"publicAddresses,omitempty"`
+}
+
+// DownloadLinkSwitch defines model for DownloadLinkSwitch.
+type DownloadLinkSwitch struct {
+	// Enabled The installation's switch of the signed links (R-STOR-014).
+	Enabled bool `json:"enabled"`
+
+	// Formats The formats with a route whose clients all check a digest (R-STOR-071), sorted by name.
+	Formats []string `json:"formats"`
+}
+
+// DownloadLinkTest A test link (storage.md R-STOR-074); it is a bearer for its minute.
+type DownloadLinkTest struct {
+	// Command `curl -fsS '<url>'`, which prints the probe's line where the network reaches the object store.
+	Command   string    `json:"command"`
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// Url The link to the probe, signed against the address that was sent.
+	Url string `json:"url"`
+}
+
+// DownloadLinkTestRequest defines model for DownloadLinkTestRequest.
+type DownloadLinkTestRequest struct {
+	// Connection The connection's id.
+	Connection string `json:"connection"`
+
+	// PublicAddress The address as typed, saved or not; an https origin.
+	PublicAddress string `json:"publicAddress"`
+}
+
 // EncryptionKey defines model for EncryptionKey.
 type EncryptionKey struct {
 	// Active The answering replica seals with this key.
@@ -12196,8 +12330,14 @@ type Repository struct {
 	// reference needs `repositories:write-config` or `vulnerabilities:triage` (`403 signature_weakening_refused` for a project Owner).
 	// It belongs in the closed section **Signatures** of a repository's settings, never in the form that creates one.
 	Signatures *RepositorySignatureSettings `json:"signatures,omitempty"`
-	Storage    *map[string]interface{}      `json:"storage,omitempty"`
-	UpdatedAt  *time.Time                   `json:"updatedAt,omitempty"`
+
+	// Storage The member `storage` of a repository document (storage.md R-STOR-014, Q-STOR-283), a closed object: any other member answers
+	// `422 invalid_value` at its pointer. `downloadLinks: false` keeps every download of the repository away from a signed link of the
+	// object store, whatever the installation's switch says, also while it is off; it is taken on a format with a route whose clients
+	// all check a digest (the `formats` of `GET /api/v1/download-links/switch`) and answered `422 not_applicable` on any other. `false` records
+	// `repository.narrowed`. An absent member is the default.
+	Storage   *RepositoryStorageSettings `json:"storage,omitempty"`
+	UpdatedAt *time.Time                 `json:"updatedAt,omitempty"`
 
 	// Virtual The `virtual` section of a virtual repository (R-REPO-017). The members, the deploy target and
 	// the pin rules are stored as rows, so that a repository which is a member or a target cannot be
@@ -12424,6 +12564,18 @@ type RepositorySignatureSettings struct {
 	Anchors      *[]string `json:"anchors,omitempty"`
 	Fetch        *bool     `json:"fetch,omitempty"`
 	OnlyVerified *bool     `json:"onlyVerified,omitempty"`
+}
+
+// RepositoryStorageSettings The member `storage` of a repository document (storage.md R-STOR-014, Q-STOR-283), a closed object: any other member answers
+// `422 invalid_value` at its pointer. `downloadLinks: false` keeps every download of the repository away from a signed link of the
+// object store, whatever the installation's switch says, also while it is off; it is taken on a format with a route whose clients
+// all check a digest (the `formats` of `GET /api/v1/download-links/switch`) and answered `422 not_applicable` on any other. `false` records
+// `repository.narrowed`. An absent member is the default.
+type RepositoryStorageSettings struct {
+	DownloadLinks *bool `json:"downloadLinks,omitempty"`
+
+	// MaxUploadSize The largest upload in bytes this repository accepts (R-STOR-004).
+	MaxUploadSize *int64 `json:"maxUploadSize,omitempty"`
 }
 
 // RepositorySuggestion defines model for RepositorySuggestion.
@@ -16215,6 +16367,12 @@ type ReplaceCiIssuerParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// UpdateDownloadLinkSettingsParams defines parameters for UpdateDownloadLinkSettings.
+type UpdateDownloadLinkSettingsParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListEndpointsParams defines parameters for ListEndpoints.
 type ListEndpointsParams struct {
 	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
@@ -18141,6 +18299,12 @@ type ReplaceCiMappingJSONRequestBody = CiMappingInput
 // ReplaceCiIssuerJSONRequestBody defines body for ReplaceCiIssuer for application/json ContentType.
 type ReplaceCiIssuerJSONRequestBody = CiIssuerInput
 
+// UpdateDownloadLinkSettingsApplicationMergePatchPlusJSONRequestBody defines body for UpdateDownloadLinkSettings for application/merge-patch+json ContentType.
+type UpdateDownloadLinkSettingsApplicationMergePatchPlusJSONRequestBody = DownloadLinkSettingsPatch
+
+// TestDownloadLinkJSONRequestBody defines body for TestDownloadLink for application/json ContentType.
+type TestDownloadLinkJSONRequestBody = DownloadLinkTestRequest
+
 // CheckExposureJSONRequestBody defines body for CheckExposure for application/json ContentType.
 type CheckExposureJSONRequestBody = ExposureCheckRequest
 
@@ -19287,6 +19451,18 @@ type ServerInterface interface {
 	// RefreshCiIssuerKeys Fetch the discovery document and keys of a CI issuer now
 	// (POST /api/v1/ci/issuers/{name}/keys/refresh)
 	RefreshCiIssuerKeys(w http.ResponseWriter, r *http.Request, name string)
+	// GetDownloadLinkSettings Read the switch of the signed links, its details and each connection's state
+	// (GET /api/v1/download-links/settings)
+	GetDownloadLinkSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateDownloadLinkSettings Change the switch of the signed links or its details
+	// (PATCH /api/v1/download-links/settings)
+	UpdateDownloadLinkSettings(w http.ResponseWriter, r *http.Request, params UpdateDownloadLinkSettingsParams)
+	// GetDownloadLinkSwitch Whether the signed links are on, and the formats they can reach
+	// (GET /api/v1/download-links/switch)
+	GetDownloadLinkSwitch(w http.ResponseWriter, r *http.Request)
+	// TestDownloadLink Make a test link to a probe, signed against a public address as typed
+	// (POST /api/v1/download-links/test)
+	TestDownloadLink(w http.ResponseWriter, r *http.Request)
 	// ListEndpoints List the endpoints
 	// (GET /api/v1/endpoints)
 	ListEndpoints(w http.ResponseWriter, r *http.Request, params ListEndpointsParams)
@@ -21909,6 +22085,93 @@ func (siw *ServerInterfaceWrapper) RefreshCiIssuerKeys(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RefreshCiIssuerKeys(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDownloadLinkSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetDownloadLinkSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDownloadLinkSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDownloadLinkSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDownloadLinkSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateDownloadLinkSettingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDownloadLinkSettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDownloadLinkSwitch operation middleware
+func (siw *ServerInterfaceWrapper) GetDownloadLinkSwitch(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDownloadLinkSwitch(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestDownloadLink operation middleware
+func (siw *ServerInterfaceWrapper) TestDownloadLink(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestDownloadLink(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -37624,6 +37887,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/releases", wrapper.CreateMalwareRelease)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/malware/releases/{sha256}", wrapper.DeleteMalwareRelease)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/rescan", wrapper.RescanMalware)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/download-links/settings", wrapper.GetDownloadLinkSettings)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/download-links/settings", wrapper.UpdateDownloadLinkSettings)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/download-links/test", wrapper.TestDownloadLink)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/download-links/switch", wrapper.GetDownloadLinkSwitch)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/signatures", wrapper.GetPackageVersionSignatures)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/signatures", wrapper.GetFileSignatures)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signatures/objects/{sha256}", wrapper.GetSignatureObject)

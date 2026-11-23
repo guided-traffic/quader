@@ -13,7 +13,7 @@ import (
 // The member storage of a document (storage.md R-STOR-014, Q-STOR-283): a closed object with maxUploadSize (R-STOR-004) and
 // downloadLinks, the repository's opt-out of the delivery by signed links of the object store. Any other member is
 // invalid_value at its pointer, so no setting is accepted and ignored. downloadLinks is taken on every class of a format with a
-// route whose clients check a digest (catalog.Entry.ClientDigest, R-STOR-071) and is not_applicable on any other; an absent
+// route whose clients all check a digest (catalog.Entry.ClientDigest, R-STOR-071) and is not_applicable on any other; an absent
 // member is the default true, and false only takes away (Q-STOR-282).
 
 // The members of storage.
@@ -51,7 +51,7 @@ func validateStorage(v *validation, info catalog.Entry, d *Document) {
 				v.add("/storage/downloadLinks", codeInvalidValue, "must be true or false")
 			case !info.ClientDigest:
 				v.add("/storage/downloadLinks", errs.CodeNotApplicable, fmt.Sprintf(
-					"the %s format has no route whose clients check a digest, so none of its downloads is ever handed to a signed link (R-STOR-071)", info.ID))
+					"not every client of the %s format checks the bytes it downloads against a digest, so none of its downloads is ever handed to a signed link (R-STOR-071)", info.ID))
 			}
 		case "presignedDownloads":
 			v.add("/storage/presignedDownloads", codeInvalidValue,

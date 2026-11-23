@@ -934,6 +934,98 @@ async function* malwareSection(page: Page): AsyncGenerator<string> {
   await page.unroute('**/api/v1/malware/switch');
 }
 
+// >>> download-links
+/** Opens the closed section headed `heading` and waits for its fold to end. */
+async function openHeaded(page: Page, heading: string): Promise<void> {
+  const { toggle } = sectionHeaded(page, heading);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+}
+
+/**
+ * **Settings › Storage** (R-UI-200): as the stack answers (the switch off, the profile's one connection); Details open; a test link of
+ * the connection's endpoint from the server; the switch on with that connection; three connections of which one is encrypted and one
+ * failed its link check, Details open; no connection that can serve a link (an address under a host of Quader and an encrypted one);
+ * a link life and an address the page refuses at their fields before it sends. Nothing is saved.
+ */
+async function* storageSettings(page: Page): AsyncGenerator<string> {
+  const settings = '**/api/v1/download-links/settings';
+  await expect(page.getByRole('heading', { name: 'Download links' })).toBeVisible();
+  yield '';
+  await openHeaded(page, 'Details');
+  yield 'details';
+  await page.getByRole('button', { name: /^Test link/ }).first().click();
+  await expect(page.locator('main [data-testid^="links-test-"] quader-address-field').first()).toBeVisible();
+  yield 'test';
+  await answerWith(page, settings, (b) => ({ ...b, enabled: true }));
+  await expect(page.locator('main [data-testid="links-status"] .ok')).toBeVisible();
+  yield 'on';
+  const plain = (name: string, endpoint: string, over: Record<string, unknown> = {}): Record<string, unknown> => ({
+    name, encrypted: false, endpoint, publicAddress: null, usable: true, reasons: [], handoverUsable: true, handoverReasons: [], ...over,
+  });
+  await answerWith(page, settings, (b) => ({
+    ...b,
+    enabled: true,
+    minSize: 16 * 1048576,
+    connections: [
+      plain('default', 'https://s3.eu-central-1.example.com', { publicAddress: 'https://objects.example.com' }),
+      plain('archive', 'https://objects.archive.internal.example.com', {
+        encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }],
+      }),
+      plain('eu-backup-frankfurt', 'https://s3.backup.eu-central-2.example.net', {
+        usable: false, handoverUsable: false,
+        reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
+        handoverReasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
+      }),
+    ],
+  }));
+  await openHeaded(page, 'Details');
+  yield 'several';
+  await answerWith(page, settings, (b) => ({
+    ...b,
+    enabled: true,
+    connections: [
+      plain('default', 'https://s3.localhost:8443', { usable: false, reasons: [{ code: 'quader_host', detail: 'localhost' }] }),
+      plain('archive', 'https://objects.archive.internal.example.com', { encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }] }),
+    ],
+  }));
+  await expect(page.locator('main [data-testid="links-none"]')).toBeVisible();
+  yield 'none';
+  await page.unroute(settings);
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await openHeaded(page, 'Details');
+  await page.locator('main #links-life').fill('5');
+  await page.locator('main input[id^="links-address-"]').first().fill('http://objects.example.com/blobs');
+  await page.getByRole('button', { name: /^Save changes/ }).click();
+  await expect(page.getByText('Enter a number of seconds from 10 to 3,600.')).toBeVisible();
+  yield 'invalid';
+}
+
+/**
+ * The repository's section **Download links** (R-UI-201, Q-UI-956) on an OCI repository: with the installation's switch off as the stack
+ * has it (usable, with the sentence that the choice takes effect when an administrator switches links on), with the switch on, and on an
+ * npm repository, not every client of which checks a digest (disabled, with its reason). Nothing is saved.
+ */
+async function* downloadLinksSection(page: Page): AsyncGenerator<string> {
+  await openHeaded(page, 'Download links');
+  await expect(page.locator('main [data-testid="repo-links-installation-off"]')).toBeVisible();
+  yield '';
+  const sw = '**/api/v1/download-links/switch';
+  await answerWith(page, sw, (b) => ({ ...b, enabled: true }));
+  await openHeaded(page, 'Download links');
+  await expect(page.locator('main [data-testid="repo-links-installation-on"]')).toBeVisible();
+  yield 'on';
+  await page.goto(`${P}/repositories/npm-internal/settings`);
+  await page.waitForLoadState('networkidle');
+  await openHeaded(page, 'Download links');
+  await expect(page.locator('main [data-testid="repo-links-not-applicable"]')).toBeVisible();
+  yield 'not-applicable';
+  await page.unroute(sw);
+}
+// <<< download-links
+
 /** A repository's settings with Internal restricted: the Owner keeps the internal levels with a note, an administrator sees notes. */
 async function* restrictedSettings(page: Page): AsyncGenerator<string> {
   await restrictInternal(page);
@@ -2244,6 +2336,10 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
   // The strict repository's section Malware scan (R-MAL-020): its Owner may not switch it off, an administrator may.
   { id: 'repository-settings-malware', path: `${P}/repositories/${malwarePackage.repo}/settings`, kinds: owners, walk: malwareSection },
+  // >>> download-links
+  // The repository's section Download links (R-UI-201): the installation's switch off and on, and a format not every client of which checks.
+  { id: 'repository-settings-links', path: `${P}/repositories/images/settings`, kinds: owners, walk: downloadLinksSection },
+  // <<< download-links
   // The fetch of a remote's signatures (R-SIG-040): a project's remote, and Docker Hub of the project upstream, an administrator's.
   { id: 'repository-settings-signatures', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: signaturesSection },
   // The gate of a repository (R-SIG-074): off, the question before switching on, any anchor, chosen anchors with a removed one (read-only
@@ -2363,6 +2459,10 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings },
+  // >>> download-links
+  { id: 'admin-settings-storage', path: '/ui/admin/settings/storage', kinds: admins, walk: storageSettings },
+  { id: 'admin-settings-storage-read', path: '/ui/admin/settings/storage', kinds: ['auditor'] },
+  // <<< download-links
   { id: 'admin-settings-signatures-read', path: '/ui/admin/settings/signatures', kinds: ['auditor'] },
   // The section Signing identity in each state of R-SIG-056: with the controls of security-settings:write, and read-only.
   { id: 'admin-settings-signing', path: '/ui/admin/settings/signatures', kinds: [...admins, 'auditor'], walk: signingIdentity },

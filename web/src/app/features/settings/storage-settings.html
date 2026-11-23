@@ -1,0 +1,239 @@
+<quader-page-header heading="Storage" i18n-heading="@@storage.settings.heading" />
+<quader-needs capability="settings:write" />
+
+@if (loadError(); as e) {
+  <quader-error-notice [error]="e" (retry)="load()" />
+}
+
+@if (settings(); as s) {
+  <div class="settings">
+    <section class="open-section" aria-labelledby="links-heading">
+      <h2 id="links-heading" i18n="@@links.heading">Download links</h2>
+
+      <!-- The state the saved switch gives (R-UI-200 item 1): green only while links are issued. -->
+      <p data-testid="links-status">
+        @if (!s.enabled) {
+          <span class="badge"
+            ><span class="material-icons" aria-hidden="true">cloud_off</span
+            ><ng-container i18n="@@links.status.off">Off</ng-container></span
+          >&ngsp;<ng-container i18n="@@links.status.off-text">Quader delivers every download itself.</ng-container>
+        } @else if (noneUsable()) {
+          <span class="warn"
+            ><span class="material-icons" aria-hidden="true">warning</span
+            ><ng-container i18n="@@links.status.on-none">On, but no link is issued</ng-container></span
+          >&ngsp;<ng-container i18n="@@links.status.on-none-text">No connection can serve a link; the reasons are below.</ng-container>
+        } @else {
+          <span class="ok"
+            ><span class="material-icons" aria-hidden="true">check_circle</span
+            ><ng-container i18n="@@links.status.on">On</ng-container></span
+          >&ngsp;<ng-container i18n="@@links.status.on-text">Large downloads of {{ reach() }} go directly from the object store.</ng-container>
+        }
+      </p>
+
+      <!-- Which connections serve links (R-STOR-074): the names on the plain path, the reasons under Details; when none can, the
+           reasons stand here above the switch (Q-UI-954). -->
+      @if (noneUsable()) {
+        <div class="banner-warning" role="note" data-testid="links-none">
+          <span class="material-icons inline warn" aria-hidden="true">warning</span>
+          <div>
+            @for (c of s.connections; track c.name) {
+              @for (line of reasonsOf(c); track $index) {
+                <p>{{ line }}</p>
+              }
+            }
+          </div>
+        </div>
+      } @else {
+        <dl class="facts" data-testid="links-connections">
+          <dt i18n="@@links.connections.serve">Can serve links</dt>
+          <dd translate="no">{{ usableNames() }}</dd>
+          @if (unusable().length > 0) {
+            <dt i18n="@@links.connections.none">Cannot serve links</dt>
+            <dd>
+              <span translate="no">{{ unusableNames() }}</span>&ngsp;<span class="muted" i18n="@@links.connections.why">(Details says why)</span>
+            </dd>
+          }
+        </dl>
+      }
+
+      <form (submit)="save($event)" novalidate>
+        @if (formError(); as e) {
+          <quader-error-notice [error]="e" />
+        }
+        @if (canWrite()) {
+          <quader-checkbox [checked]="enabled()" [describedBy]="'links-note links-limits'" (checkedChange)="enabled.set($event)">
+            <ng-container i18n="@@links.switch">Deliver large downloads by signed links of the object store</ng-container>
+          </quader-checkbox>
+        } @else {
+          <p data-testid="links-switch-state">
+            @if (s.enabled) {
+              <ng-container i18n="@@links.switch-on"><strong>Deliver large downloads by signed links of the object store</strong> is on.</ng-container>
+            } @else {
+              <ng-container i18n="@@links.switch-off"><strong>Deliver large downloads by signed links of the object store</strong> is off.</ng-container>
+            }
+          </p>
+        }
+        <p id="links-note" class="muted" i18n="@@links.note">
+          A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may
+          download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store.
+        </p>
+        <!-- The speed limits (Q-LIM-99): one sentence, no notice and no profile. -->
+        <p id="links-limits" class="muted" i18n="@@links.limits">
+          A download handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily
+          budgets when the link is issued.
+        </p>
+        <p>
+          <a routerLink="/help/admin/download-links" fragment="what-a-link-costs" i18n="@@links.costs">What a link costs</a>
+        </p>
+
+        <quader-disclosure
+          i18n-heading="@@links.details"
+          heading="Details"
+          i18n-hint="@@links.details.hint"
+          hint="The minimum size, how long a link is valid, and where clients reach the object store."
+          [level]="3"
+          [(expanded)]="detailsOpen"
+        >
+          <fieldset class="form-grid" [disabled]="!canWrite()">
+            <legend class="visually-hidden" i18n="@@links.details.legend">Download link details</legend>
+            <div class="field">
+              <label class="field-label" for="links-min-size" i18n="@@links.min-size">Minimum size in MiB</label>
+              <input
+                id="links-min-size"
+                class="text-input field-w-number"
+                type="number"
+                min="0"
+                max="1048576"
+                step="any"
+                inputmode="decimal"
+                [value]="minSize()"
+                [readonly]="!canWrite()"
+                [attr.aria-invalid]="shownError('/minSize', minSizeError()) ? 'true' : null"
+                aria-describedby="links-min-size-hint links-min-size-error"
+                (input)="minSize.set($any($event.target).value)"
+              />
+              <p id="links-min-size-hint" class="hint" i18n="@@links.min-size.hint">Smaller files are always delivered by Quader.</p>
+              @if (shownError('/minSize', minSizeError()); as text) {
+                <p id="links-min-size-error" class="field-error">{{ text }}</p>
+              }
+            </div>
+            <div class="field">
+              <label class="field-label" for="links-life" i18n="@@links.life">Link valid for, in seconds</label>
+              <input
+                id="links-life"
+                class="text-input field-w-number"
+                type="number"
+                min="10"
+                max="3600"
+                step="1"
+                inputmode="numeric"
+                [value]="linkLife()"
+                [readonly]="!canWrite()"
+                [attr.aria-invalid]="shownError('/linkLifeSeconds', linkLifeError()) ? 'true' : null"
+                aria-describedby="links-life-hint links-life-error"
+                (input)="linkLife.set($any($event.target).value)"
+              />
+              <p id="links-life-hint" class="hint" i18n="@@links.life.hint">A link can be passed on while it is valid.</p>
+              @if (shownError('/linkLifeSeconds', linkLifeError()); as text) {
+                <p id="links-life-error" class="field-error">{{ text }}</p>
+              }
+            </div>
+
+            @for (c of plainConnections(); track c.name) {
+              <div class="link-address" [attr.data-testid]="'links-address-' + c.name">
+                <div class="field">
+                  <label class="field-label" [for]="'links-address-' + c.name" i18n="@@links.address">Public address of {{ c.name }}</label>
+                  <input
+                    class="text-input field-w-name"
+                    type="url"
+                    spellcheck="false"
+                    autocomplete="off"
+                    translate="no"
+                    [id]="'links-address-' + c.name"
+                    [value]="address(c)"
+                    [readonly]="!canWrite()"
+                    [attr.aria-invalid]="shownError(addressPointer(c), addressError(c)) || testFieldError(c) ? 'true' : null"
+                    [attr.aria-describedby]="'links-address-hint-' + c.name"
+                    (input)="setAddress(c, $any($event.target).value)"
+                  />
+                  <p class="hint" [id]="'links-address-hint-' + c.name" i18n="@@links.address.hint">
+                    The address your clients reach the object store at. It must not be an address of Quader.
+                  </p>
+                  @for (line of reasonsOf(c); track $index) {
+                    <p class="hint reason" [attr.data-testid]="'links-reason-' + c.name">
+                      <span class="material-icons inline warn" aria-hidden="true">warning</span>{{ line }}
+                    </p>
+                  }
+                  @if (shownError(addressPointer(c), addressError(c)) ?? testFieldError(c); as text) {
+                    <p class="field-error">{{ text }}</p>
+                  }
+                </div>
+                @if (canWrite()) {
+                  <div class="row-actions">
+                    <button class="btn btn-default" type="button" [disabled]="testing() !== null" (click)="test(c)">
+                      <ng-container i18n="@@links.test">Test link</ng-container>
+                      <span class="visually-hidden" translate="no"> ({{ c.name }})</span>
+                    </button>
+                  </div>
+                  <div class="test-result" role="status" aria-live="polite" [attr.data-testid]="'links-test-' + c.name">
+                    @if (testNotice(c); as e) {
+                      <quader-error-notice [error]="e" />
+                    }
+                    @if (tests()[c.name]?.link; as link) {
+                      <p>
+                        <a [href]="link.url" target="_blank" rel="noopener noreferrer" i18n="@@links.test.open">Open test link</a>
+                      </p>
+                      <quader-address-field
+                        [value]="link.command"
+                        i18n-label="@@links.test.command"
+                        label="Command that fetches the test link"
+                        i18n-copyLabel="@@links.test.copy"
+                        copyLabel="Copy the command"
+                      />
+                      <p class="hint" i18n="@@links.test.text">
+                        Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader
+                        download link test: this link works.' Run the command on a machine of your clients to test their network.
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @for (c of encryptedConnections(); track c.name) {
+              @for (line of reasonsOf(c); track $index) {
+                <p class="hint encrypted" [attr.data-testid]="'links-reason-' + c.name">
+                  <span class="material-icons inline" aria-hidden="true">lock</span>{{ line }}
+                </p>
+              }
+            }
+          </fieldset>
+
+          <h4 i18n="@@links.routes">Downloads that can go by link</h4>
+          <p class="muted routes-hint" i18n="@@links.routes.hint">Only downloads whose clients all check the bytes against a digest themselves; every other download is delivered by Quader.</p>
+          <ul class="routes" data-testid="links-routes">
+            @for (r of s.routes; track r.route) {
+              <li>{{ formatName(r.format) }}:&ngsp;<code translate="no">{{ r.route }}</code></li>
+            }
+          </ul>
+        </quader-disclosure>
+
+        @if (s.updatedBy; as by) {
+          <p class="muted">
+            <ng-container i18n="@@links.changed-by">Last changed by</ng-container>&ngsp;<span translate="no">{{ principal(by) }}</span>&ngsp;<quader-time-ago
+              [at]="s.updatedAt"
+            />
+          </p>
+        }
+        @if (canWrite()) {
+          <div class="row-actions">
+            <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()">
+              <ng-container i18n="@@links.save">Save changes</ng-container>
+              <span class="visually-hidden" i18n="@@links.save-for"> (download links)</span>
+            </button>
+          </div>
+        }
+      </form>
+    </section>
+  </div>
+}

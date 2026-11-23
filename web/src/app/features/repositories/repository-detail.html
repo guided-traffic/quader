@@ -337,6 +337,24 @@
           />
         }
 
+        <!-- >>> download-links -->
+        <!-- The repository's opt-out of the signed links of the object store (R-UI-201): a closed section after Signatures, never
+             part of the creation form; disabled with its reason only where not every client of the format checks a digest, usable
+             while the installation's switch is off (Q-UI-956). -->
+        @if (downloadLinksShown()) {
+          <quader-repository-download-links
+            [stored]="downloadLinksStored()"
+            [format]="repo.format"
+            [formatLabel]="formatLabel()"
+            [virtual]="repo.class === 'virtual'"
+            [canChange]="managed() ? canNarrow() : canChange()"
+            [saving]="downloadLinksSaving()"
+            [failure]="downloadLinksFailure()"
+            (save)="saveDownloadLinks($event)"
+          />
+        }
+        <!-- <<< download-links -->
+
         <!-- >>> W-26 limits -->
         @if (limitsShown()) {
           <quader-repository-limits [project]="project()" [repository]="key()" [remote]="repo.class === 'remote'" />

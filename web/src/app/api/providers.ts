@@ -56,6 +56,9 @@ import { HttpUpstreamApi, UpstreamApi } from './upstream-api';
 // >>> malware
 import { HttpMalwareApi, MalwareApi } from './malware-api';
 // <<< malware
+// >>> download-links
+import { DownloadLinksApi, HttpDownloadLinksApi } from './download-links-api';
+// <<< download-links
 // >>> signatures
 import { HttpSignaturesApi, SignaturesApi } from './signatures-api';
 import { HttpSigningApi, SigningApi } from './signing-api';
@@ -130,6 +133,9 @@ export function provideApiServices(): Provider[] {
     // >>> malware
     { provide: MalwareApi, useClass: HttpMalwareApi },
     // <<< malware
+    // >>> download-links
+    { provide: DownloadLinksApi, useClass: HttpDownloadLinksApi },
+    // <<< download-links
     // >>> signatures
     { provide: SignaturesApi, useClass: HttpSignaturesApi },
     { provide: SigningApi, useClass: HttpSigningApi },

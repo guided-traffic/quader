@@ -201,6 +201,13 @@ tags:
       the scanning, the finds of the security dashboard, the verdict of a blob, the release of a blob and the rescan.
   # <<< malware
   #
+  # >>> download-links
+  - name: download-links
+    description: |
+      Delivery by signed links of the object store (storage.md R-STOR-014, R-STOR-074, Q-API-400): the installation's switch and its
+      details, each connection's state for links, the test link of a public address, and the switch's facts for a repository's settings.
+  # <<< download-links
+  #
   # >>> signatures
   - name: signatures
     description: |
@@ -14547,6 +14554,190 @@ paths:
           $ref: "#/components/responses/Unavailable"
   # <<< malware
   #
+  # >>> download-links
+  /api/v1/download-links/settings:
+    get:
+      operationId: getDownloadLinkSettings
+      tags: [download-links]
+      summary: Read the switch of the signed links, its details and each connection's state
+      description: |
+        The installation's switch **Deliver large downloads by signed links of the object store** with its details and its `ETag`
+        (storage.md R-STOR-014), every connection with whether it can serve a client's link on the replica that answers and why not
+        (R-STOR-074) and whether it can serve a handover to a Bastion and why not (R-STOR-096), and the routes whose clients check a
+        digest themselves, the only downloads the switch reaches (R-STOR-071). The row is read from PostgreSQL, so an answer after a
+        write shows it; the connections' states are this replica's, decided from its configuration, the settings' snapshot and its
+        link check.
+      x-quader-permission:
+        permission: settings:read
+      responses:
+        "200":
+          description: The settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadLinkSettings"
+              example:
+                enabled: true
+                minSize: 1048576
+                linkLifeSeconds: 60
+                connections:
+                  - {name: default, encrypted: false, endpoint: "https://s3.eu-central-1.example.com", publicAddress: null, usable: true, reasons: [], handoverUsable: true, handoverReasons: []}
+                  - {name: archive, encrypted: true, endpoint: "https://objects.internal.example.com", publicAddress: null, usable: false, reasons: [{code: encrypted, detail: null}], handoverUsable: true, handoverReasons: []}
+                routes:
+                  - {format: ansible, route: ansible.artifact.get}
+                  - {format: oci, route: oci.blob.get}
+                version: 4
+                updatedAt: "2026-11-23T08:10:00Z"
+                updatedBy: "user:ada"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    patch:
+      operationId: updateDownloadLinkSettings
+      tags: [download-links]
+      summary: Change the switch of the signed links or its details
+      description: |
+        A JSON merge patch of `enabled`, `minSize`, `linkLifeSeconds` and `publicAddresses` (storage.md R-STOR-014); `If-Match` is
+        required. A connection's `null` in `publicAddresses` returns it to its endpoint. The values are checked as R-STOR-014 and
+        R-STOR-074 say: `minSize` 0 to 1 TiB, `linkLifeSeconds` 10 to 3,600, each address an `https` origin that is no host of Quader
+        nor below one, for a connection the installation has; a violation answers `422 invalid_value` at its pointer. A change
+        records `storage.download_links.changed` with `before` and `after`; switching the delivery off carries the journal flag, so
+        a restore to an earlier point keeps links off. Every replica follows within the bound of R-ARCH-018. The answer is the
+        settings after the change.
+      x-quader-permission:
+        permission: settings:write
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/DownloadLinkSettingsPatch"
+            example: {enabled: true, publicAddresses: {default: "https://objects.example.com"}}
+      responses:
+        "200":
+          description: The settings after the change.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadLinkSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/download-links/test:
+    post:
+      operationId: testDownloadLink
+      tags: [download-links]
+      summary: Make a test link to a probe, signed against a public address as typed
+      description: |
+        A link the administrator opens in a browser or fetches with the answer's `curl` command from a client of his network, to see
+        whether that network reaches the object store at the address (storage.md R-STOR-074, Q-UI-952). The address is checked as a
+        save would check it (`422` at `/publicAddress`, and at `/connection` for a connection the installation does not have); it
+        need not be saved. The replica writes the probe `_probe/link-test-<random>` with the 44 bytes `Quader download link test:
+        this link works.` and a line break on the connection, signs a link to it with a life of 60 s and the file name
+        `quader-link-test.txt`, and deletes the probe when the link's life is over (and the probes older than an hour that a stopped
+        replica left). Quader sends no request to the address. A connection that is failing on this replica answers
+        `409 connection_unavailable`. An encrypted connection is tested too, since a Bastion reads it by a link (R-STOR-096); its
+        probe is plain.
+      x-quader-permission:
+        permission: settings:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DownloadLinkTestRequest"
+            example: {connection: default, publicAddress: "https://objects.example.com"}
+      responses:
+        "200":
+          description: The test link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadLinkTest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/download-links/switch:
+    get:
+      operationId: getDownloadLinkSwitch
+      tags: [download-links]
+      summary: Whether the signed links are on, and the formats they can reach
+      description: |
+        The two facts a repository's settings page needs (storage.md R-STOR-014, R-UI-201): `enabled` is the installation's switch as
+        the replica's snapshot holds it, and `formats` the formats with a route whose clients all check a digest themselves (R-STOR-071),
+        the only ones whose repositories take `storage.downloadLinks`. Every signed-in caller reads it; it holds nothing else.
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The switch.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadLinkSwitch"
+              example: {enabled: true, formats: [ansible, oci]}
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< download-links
+  #
   # >>> signatures
   /api/v1/packages/{packageId}/versions/{version}/signatures:
     parameters:
@@ -24125,8 +24316,7 @@ components:
         virtual:
           $ref: "#/components/schemas/VirtualSettings"
         storage:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/RepositoryStorageSettings"
         npm:
           $ref: "#/components/schemas/NpmSettings"
         nuget:
@@ -27156,6 +27346,185 @@ components:
           type: boolean
           default: false
     # <<< malware
+    # >>> download-links
+    DownloadLinkSettings:
+      type: object
+      additionalProperties: false
+      required: [enabled, minSize, linkLifeSeconds, connections, routes, version, updatedAt, updatedBy]
+      description: The installation's switch of the signed links, its details and each connection's state (storage.md R-STOR-014).
+      properties:
+        enabled:
+          type: boolean
+          description: Large downloads whose clients all check a digest are answered by a signed link of the object store; false by default.
+        minSize:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1099511627776
+          description: The smallest file in bytes that is handed to a link; 1048576 (1 MiB) on a new installation.
+        linkLifeSeconds:
+          type: integer
+          minimum: 10
+          maximum: 3600
+          description: How long a link is valid; 60 on a new installation. The signing credential's own expiry can shorten it.
+        connections:
+          type: array
+          description: Every connection of the installation in its read order, as the replica that answers decides it.
+          items:
+            $ref: "#/components/schemas/DownloadLinkConnection"
+        routes:
+          type: array
+          description: The routes whose clients all check a digest themselves (R-STOR-071), by format and route; no other download is handed to a link.
+          items:
+            $ref: "#/components/schemas/DownloadLinkRoute"
+        version:
+          type: integer
+          format: int64
+          description: The revision of the row; the `ETag` is its quoted form.
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: [string, "null"]
+          description: "`<kind>:<name>` of the principal who changed the row last; null for none."
+    DownloadLinkConnection:
+      type: object
+      additionalProperties: false
+      required: [name, encrypted, endpoint, publicAddress, usable, reasons, handoverUsable, handoverReasons]
+      description: One connection and whether it can serve links on the replica that answers (storage.md R-STOR-074, R-STOR-096).
+      properties:
+        name:
+          type: string
+          description: The connection's id (R-STOR-050).
+        encrypted:
+          type: boolean
+          description: The connection encrypts what it stores (R-STOR-075); it never serves a client's link.
+        endpoint:
+          type: string
+          description: The connection's endpoint, where its links go without a public address.
+        publicAddress:
+          type: [string, "null"]
+          description: The saved public address, an https origin its links name; null when the links name the endpoint.
+        usable:
+          type: boolean
+          description: The connection can serve a client's link now on this replica.
+        reasons:
+          type: array
+          description: Why it cannot; empty when `usable`.
+          items:
+            $ref: "#/components/schemas/DownloadLinkReason"
+        handoverUsable:
+          type: boolean
+          description: The connection can serve a handover to a Bastion now on this replica (R-STOR-096), an encrypted one too.
+        handoverReasons:
+          type: array
+          description: Why it cannot serve a handover; empty when `handoverUsable`.
+          items:
+            $ref: "#/components/schemas/DownloadLinkReason"
+    DownloadLinkReason:
+      type: object
+      additionalProperties: false
+      required: [code, detail]
+      description: |
+        Why a connection cannot serve links (storage.md R-STOR-074): `encrypted`, `not_https` (its public address or endpoint is not
+        https), `quader_host` (a link's host would be a host of Quader or lie below one; `detail` names that host),
+        `link_check_failed` (the link check did not pass or has not answered on this replica; `detail` says what the store answered).
+      properties:
+        code:
+          type: string
+          enum: [encrypted, not_https, quader_host, link_check_failed]
+        detail:
+          type: [string, "null"]
+    DownloadLinkRoute:
+      type: object
+      additionalProperties: false
+      required: [format, route]
+      properties:
+        format:
+          type: string
+          description: The format's name, as `GET /api/v1/formats` names it.
+        route:
+          type: string
+          description: The route's id within the format (`oci.blob.get`).
+    DownloadLinkSettingsPatch:
+      type: object
+      additionalProperties: false
+      description: A merge patch of the settings (storage.md R-STOR-014); a member left out keeps its value.
+      properties:
+        enabled:
+          type: boolean
+        minSize:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1099511627776
+        linkLifeSeconds:
+          type: integer
+          minimum: 10
+          maximum: 3600
+        publicAddresses:
+          type: object
+          description: Per connection an https origin; null returns the connection to its endpoint.
+          additionalProperties:
+            type: [string, "null"]
+    DownloadLinkTestRequest:
+      type: object
+      additionalProperties: false
+      required: [connection, publicAddress]
+      properties:
+        connection:
+          type: string
+          description: The connection's id.
+        publicAddress:
+          type: string
+          description: The address as typed, saved or not; an https origin.
+    DownloadLinkTest:
+      type: object
+      additionalProperties: false
+      required: [url, expiresAt, command]
+      description: A test link (storage.md R-STOR-074); it is a bearer for its minute.
+      properties:
+        url:
+          type: string
+          description: The link to the probe, signed against the address that was sent.
+        expiresAt:
+          type: string
+          format: date-time
+        command:
+          type: string
+          description: "`curl -fsS '<url>'`, which prints the probe's line where the network reaches the object store."
+    DownloadLinkSwitch:
+      type: object
+      additionalProperties: false
+      required: [enabled, formats]
+      properties:
+        enabled:
+          type: boolean
+          description: The installation's switch of the signed links (R-STOR-014).
+        formats:
+          type: array
+          description: The formats with a route whose clients all check a digest (R-STOR-071), sorted by name.
+          items:
+            type: string
+    RepositoryStorageSettings:
+      type: object
+      additionalProperties: false
+      description: |
+        The member `storage` of a repository document (storage.md R-STOR-014, Q-STOR-283), a closed object: any other member answers
+        `422 invalid_value` at its pointer. `downloadLinks: false` keeps every download of the repository away from a signed link of the
+        object store, whatever the installation's switch says, also while it is off; it is taken on a format with a route whose clients
+        all check a digest (the `formats` of `GET /api/v1/download-links/switch`) and answered `422 not_applicable` on any other. `false` records
+        `repository.narrowed`. An absent member is the default.
+      properties:
+        maxUploadSize:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The largest upload in bytes this repository accepts (R-STOR-004).
+        downloadLinks:
+          type: boolean
+          default: true
+    # <<< download-links
     # >>> signatures
     RepositorySignatureSettings:
       type: object

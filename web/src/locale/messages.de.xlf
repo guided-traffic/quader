@@ -13687,6 +13687,24 @@
         <target>Deaktiviert</target>
       </segment>
     </unit>
+    <unit id="repo.links.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:765</note>
+      </notes>
+      <segment>
+        <source>Large downloads of this repository may go by signed links again.</source>
+        <target>Große Downloads dieses Repositorys dürfen wieder über signierte Links gehen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:766</note>
+      </notes>
+      <segment>
+        <source>Quader delivers every download of this repository itself now.</source>
+        <target>Quader liefert jetzt jeden Download dieses Repositorys selbst aus.</target>
+      </segment>
+    </unit>
     <unit id="repo.members.saved">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:577</note>
@@ -25981,6 +25999,96 @@
         <target>Von diesem Build nicht unterstützt</target>
       </segment>
     </unit>
+    <unit id="repo.links.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:23,24</note>
+      </notes>
+      <segment>
+        <source>Download links</source>
+        <target>Download-Links</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:25,26</note>
+      </notes>
+      <segment>
+        <source>Whether large downloads of this repository may go directly from the object store.</source>
+        <target>Ob große Downloads dieses Repositorys direkt aus dem Objektspeicher kommen dürfen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:39,40</note>
+      </notes>
+      <segment>
+        <source>Downloads of this repository may go by signed links of the object store</source>
+        <target>Downloads dieses Repositorys dürfen über signierte Links des Objektspeichers gehen</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.state-allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:44,46</note>
+      </notes>
+      <segment>
+        <source>Downloads of this repository may go by signed links of the object store.</source>
+        <target>Downloads dieses Repositorys dürfen über signierte Links des Objektspeichers gehen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.state-quader">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:46,48</note>
+      </notes>
+      <segment>
+        <source>Quader delivers every download of this repository itself.</source>
+        <target>Quader liefert jeden Download dieses Repositorys selbst aus.</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.not-applicable">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:53,55</note>
+      </notes>
+      <segment>
+        <source> Not every <ph id="0" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/> client checks the bytes it downloads against a digest, so Quader delivers every download of this repository itself. </source>
+        <target> Nicht jeder <ph id="0" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/>-Client prüft die heruntergeladenen Bytes gegen einen Digest, deshalb liefert Quader jeden Download dieses Repositorys selbst aus. </target>
+      </segment>
+    </unit>
+    <unit id="repo.links.installation-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:63,65</note>
+      </notes>
+      <segment>
+        <source> The installation does not hand downloads to links at the moment; your choice takes effect when an administrator switches them on. </source>
+        <target> Die Installation gibt derzeit keine Downloads an Links ab; Ihre Wahl wirkt, sobald ein Administrator sie einschaltet. </target>
+      </segment>
+    </unit>
+    <unit id="repo.links.installation-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:59,61</note>
+      </notes>
+      <segment>
+        <source> The installation delivers large downloads by link. </source>
+        <target> Die Installation liefert große Downloads per Link aus. </target>
+      </segment>
+    </unit>
+    <unit id="repo.links.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:68,71</note>
+      </notes>
+      <segment>
+        <source>A member that does not allow it is delivered by Quader.</source>
+        <target>Ein Mitglied, das es nicht erlaubt, wird von Quader ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.save-for">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:76,78</note>
+      </notes>
+      <segment>
+        <source> (download links)</source>
+        <target> (Download-Links)</target>
+      </segment>
+    </unit>
     <unit id="repo.field.notes-text">
       <notes>
         <note category="location">src/app/features/repositories/repository-fields.ts:22,24</note>
@@ -28462,6 +28570,15 @@
       <segment>
         <source>A pass is already queued or running.</source>
         <target>Ein Durchlauf ist bereits eingereiht oder läuft.</target>
+      </segment>
+    </unit>
+    <unit id="nav.settings.storage">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:186</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+        <target>Speicher</target>
       </segment>
     </unit>
     <unit id="nav.project.members">
@@ -34901,6 +35018,402 @@
       <segment>
         <source>Package types</source>
         <target>Pakettypen</target>
+      </segment>
+    </unit>
+    <unit id="storage.settings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:1</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+        <target>Speicher</target>
+      </segment>
+    </unit>
+    <unit id="links.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:11,13</note>
+      </notes>
+      <segment>
+        <source>Download links</source>
+        <target>Download-Links</target>
+      </segment>
+    </unit>
+    <unit id="links.status.off">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:18,19</note>
+      </notes>
+      <segment>
+        <source>Off</source>
+        <target>Aus</target>
+      </segment>
+    </unit>
+    <unit id="links.status.off-text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:19,20</note>
+      </notes>
+      <segment>
+        <source>Quader delivers every download itself.</source>
+        <target>Quader liefert jeden Download selbst aus.</target>
+      </segment>
+    </unit>
+    <unit id="links.status.on-none">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:23,24</note>
+      </notes>
+      <segment>
+        <source>On, but no link is issued</source>
+        <target>An, aber es wird kein Link ausgegeben</target>
+      </segment>
+    </unit>
+    <unit id="links.status.on-none-text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:24,26</note>
+      </notes>
+      <segment>
+        <source>No connection can serve a link; the reasons are below.</source>
+        <target>Keine Verbindung kann einen Link ausgeben; die Gründe stehen darunter.</target>
+      </segment>
+    </unit>
+    <unit id="links.status.on">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:28,29</note>
+      </notes>
+      <segment>
+        <source>On</source>
+        <target>An</target>
+      </segment>
+    </unit>
+    <unit id="links.status.on-text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:29,30</note>
+      </notes>
+      <segment>
+        <source>Large downloads of <ph id="0" equiv="INTERPOLATION" disp="{{ reach() }}"/> go directly from the object store.</source>
+        <target>Große Downloads von <ph id="0" equiv="INTERPOLATION" disp="{{ reach() }}"/> kommen direkt aus dem Objektspeicher.</target>
+      </segment>
+    </unit>
+    <unit id="links.connections.serve">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:48,49</note>
+      </notes>
+      <segment>
+        <source>Can serve links</source>
+        <target>Können Links ausgeben</target>
+      </segment>
+    </unit>
+    <unit id="links.connections.none">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:51,53</note>
+      </notes>
+      <segment>
+        <source>Cannot serve links</source>
+        <target>Können keine Links ausgeben</target>
+      </segment>
+    </unit>
+    <unit id="links.connections.why">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:53,55</note>
+      </notes>
+      <segment>
+        <source>(Details says why)</source>
+        <target>(Details nennen den Grund)</target>
+      </segment>
+    </unit>
+    <unit id="links.switch">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:65,66</note>
+      </notes>
+      <segment>
+        <source>Deliver large downloads by signed links of the object store</source>
+        <target>Große Downloads über signierte Links des Objektspeichers ausliefern</target>
+      </segment>
+    </unit>
+    <unit id="links.switch-on">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:70,71</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Deliver large downloads by signed links of the object store</pc> is on.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Große Downloads über signierte Links des Objektspeichers ausliefern</pc> ist an.</target>
+      </segment>
+    </unit>
+    <unit id="links.switch-off">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:72,73</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Deliver large downloads by signed links of the object store</pc> is off.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Große Downloads über signierte Links des Objektspeichers ausliefern</pc> ist aus.</target>
+      </segment>
+    </unit>
+    <unit id="links.note">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:77,79</note>
+      </notes>
+      <segment>
+        <source> A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store. </source>
+        <target> Ein Client holt die Datei dann mit einem kurz gültigen Link aus dem Objektspeicher. Quader entscheidet weiter, wer herunterladen darf, sieht die Bytes aber nicht mehr: Der Client prüft sie, und die Clients müssen den Objektspeicher erreichen können. </target>
+      </segment>
+    </unit>
+    <unit id="links.limits">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:82,84</note>
+      </notes>
+      <segment>
+        <source> A download handed to a link is not slowed by the caller&apos;s speed limit; its size is charged to the caller&apos;s hourly and daily budgets when the link is issued. </source>
+        <target> Ein Download über einen Link wird nicht durch das Tempolimit des Aufrufers gebremst; seine Größe wird beim Ausgeben des Links auf dessen Stunden- und Tagesbudget angerechnet. </target>
+      </segment>
+    </unit>
+    <unit id="links.costs">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:86,89</note>
+      </notes>
+      <segment>
+        <source>What a link costs</source>
+        <target>Was ein Link kostet</target>
+      </segment>
+    </unit>
+    <unit id="links.details">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:92</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+        <target>Details</target>
+      </segment>
+    </unit>
+    <unit id="links.details.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:93,95</note>
+      </notes>
+      <segment>
+        <source>The minimum size, how long a link is valid, and where clients reach the object store.</source>
+        <target>Die Mindestgröße, wie lange ein Link gültig ist und wo Clients den Objektspeicher erreichen.</target>
+      </segment>
+    </unit>
+    <unit id="links.details.legend">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:98,99</note>
+      </notes>
+      <segment>
+        <source>Download link details</source>
+        <target>Details der Download-Links</target>
+      </segment>
+    </unit>
+    <unit id="links.min-size">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:100,101</note>
+      </notes>
+      <segment>
+        <source>Minimum size in MiB</source>
+        <target>Mindestgröße in MiB</target>
+      </segment>
+    </unit>
+    <unit id="links.min-size.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:115,116</note>
+      </notes>
+      <segment>
+        <source>Smaller files are always delivered by Quader.</source>
+        <target>Kleinere Dateien liefert immer Quader aus.</target>
+      </segment>
+    </unit>
+    <unit id="links.life">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:121,122</note>
+      </notes>
+      <segment>
+        <source>Link valid for, in seconds</source>
+        <target>Link gültig für, in Sekunden</target>
+      </segment>
+    </unit>
+    <unit id="links.life.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:136,137</note>
+      </notes>
+      <segment>
+        <source>A link can be passed on while it is valid.</source>
+        <target>Solange ein Link gültig ist, kann er weitergegeben werden.</target>
+      </segment>
+    </unit>
+    <unit id="links.address">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:145,146</note>
+      </notes>
+      <segment>
+        <source>Public address of <ph id="0" equiv="INTERPOLATION" disp="{{ c.name }}"/></source>
+        <target>Öffentliche Adresse von <ph id="0" equiv="INTERPOLATION" disp="{{ c.name }}"/></target>
+      </segment>
+    </unit>
+    <unit id="links.address.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:160,161</note>
+      </notes>
+      <segment>
+        <source> The address your clients reach the object store at. It must not be an address of Quader. </source>
+        <target> Die Adresse, unter der Ihre Clients den Objektspeicher erreichen. Sie darf keine Adresse von Quader sein. </target>
+      </segment>
+    </unit>
+    <unit id="links.test">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:174,175</note>
+      </notes>
+      <segment>
+        <source>Test link</source>
+        <target>Link testen</target>
+      </segment>
+    </unit>
+    <unit id="links.test.open">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:184,185</note>
+      </notes>
+      <segment>
+        <source>Open test link</source>
+        <target>Testlink öffnen</target>
+      </segment>
+    </unit>
+    <unit id="links.test.command">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:189,190</note>
+      </notes>
+      <segment>
+        <source>Command that fetches the test link</source>
+        <target>Befehl, der den Testlink abruft</target>
+      </segment>
+    </unit>
+    <unit id="links.test.copy">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:191,193</note>
+      </notes>
+      <segment>
+        <source>Copy the command</source>
+        <target>Befehl kopieren</target>
+      </segment>
+    </unit>
+    <unit id="links.test.text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:194,195</note>
+      </notes>
+      <segment>
+        <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of your clients to test their network. </source>
+        <target> 60 Sekunden gültig. Erreicht Ihr Netz den Objektspeicher, steht in der Datei quader-link-test.txt „Quader download link test: this link works.“. Führen Sie den Befehl auf einem Rechner Ihrer Clients aus, um deren Netz zu prüfen. </target>
+      </segment>
+    </unit>
+    <unit id="links.routes">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:212,213</note>
+      </notes>
+      <segment>
+        <source>Downloads that can go by link</source>
+        <target>Downloads, die per Link gehen können</target>
+      </segment>
+    </unit>
+    <unit id="links.routes.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:213,214</note>
+      </notes>
+      <segment>
+        <source>Only downloads whose clients all check the bytes against a digest themselves; every other download is delivered by Quader.</source>
+        <target>Nur Downloads, deren Clients alle die Bytes selbst gegen einen Digest prüfen; jeden anderen Download liefert Quader aus.</target>
+      </segment>
+    </unit>
+    <unit id="links.changed-by">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:223</note>
+      </notes>
+      <segment>
+        <source>Last changed by</source>
+        <target>Zuletzt geändert von</target>
+      </segment>
+    </unit>
+    <unit id="links.save">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:231,232</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="links.save-for">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:232,233</note>
+      </notes>
+      <segment>
+        <source> (download links)</source>
+        <target> (Download-Links)</target>
+      </segment>
+    </unit>
+    <unit id="links.reason.encrypted">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:41</note>
+      </notes>
+      <segment>
+        <source>The connection <ph id="0" equiv="name" disp="name"/> is encrypted. Quader delivers its content itself.</source>
+        <target>Die Verbindung <ph id="0" equiv="name" disp="name"/> ist verschlüsselt. Quader liefert ihre Inhalte selbst aus.</target>
+      </segment>
+    </unit>
+    <unit id="links.reason.not-https">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:43</note>
+      </notes>
+      <segment>
+        <source>The address of <ph id="0" equiv="name" disp="name"/> does not use https. Links need https.</source>
+        <target>Die Adresse von <ph id="0" equiv="name" disp="name"/> verwendet kein https. Links brauchen https.</target>
+      </segment>
+    </unit>
+    <unit id="links.reason.quader-host">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:45</note>
+      </notes>
+      <segment>
+        <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link.</source>
+        <target>Die Adresse von <ph id="0" equiv="name" disp="name"/> liegt unter <ph id="1" equiv="host" disp="detail"/>, einer Adresse von Quader. Image-Clients würden ihre Zugangsdaten mitsenden, und der Objektspeicher lehnt einen solchen Link ab.</target>
+      </segment>
+    </unit>
+    <unit id="links.reason.link-check">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:47</note>
+      </notes>
+      <segment>
+        <source>The object store of <ph id="0" equiv="name" disp="name"/> did not answer a test link as expected: <ph id="1" equiv="detail" disp="detail"/>. Quader delivers its content itself.</source>
+        <target>Der Objektspeicher von <ph id="0" equiv="name" disp="name"/> hat einen Testlink nicht wie erwartet beantwortet: <ph id="1" equiv="detail" disp="detail"/>. Quader liefert seine Inhalte selbst aus.</target>
+      </segment>
+    </unit>
+    <unit id="links.min-size.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:195</note>
+      </notes>
+      <segment>
+        <source>Enter a size from 0 to 1,048,576 MiB.</source>
+        <target>Geben Sie eine Größe von 0 bis 1.048.576 MiB ein.</target>
+      </segment>
+    </unit>
+    <unit id="links.life.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:202</note>
+      </notes>
+      <segment>
+        <source>Enter a number of seconds from 10 to 3,600.</source>
+        <target>Geben Sie eine Anzahl Sekunden von 10 bis 3.600 ein.</target>
+      </segment>
+    </unit>
+    <unit id="links.address.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:232</note>
+      </notes>
+      <segment>
+        <source>Enter an https address without a path, such as https://objects.example.com.</source>
+        <target>Geben Sie eine https-Adresse ohne Pfad ein, etwa https://objects.example.com.</target>
+      </segment>
+    </unit>
+    <unit id="links.saved">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:322</note>
+      </notes>
+      <segment>
+        <source>Download link settings saved.</source>
+        <target>Einstellungen der Download-Links gespeichert.</target>
       </segment>
     </unit>
     <unit id="setup.unknown-guide">
@@ -43564,6 +44077,15 @@
       <segment>
         <source>Signatures</source>
         <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="route.settings.storage.title">
+      <notes>
+        <note category="location">src/app/features/settings/settings.routes.ts:34</note>
+      </notes>
+      <segment>
+        <source>Storage settings</source>
+        <target>Speichereinstellungen</target>
       </segment>
     </unit>
     <unit id="sig.settings.heading">

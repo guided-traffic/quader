@@ -333,6 +333,14 @@ const (
 
 // <<< malware
 //
+// >>> download-links
+
+// CodeConnectionUnavailable: a test link of a connection that is failing on the replica, its circuit open or its probe not written
+// (409, storage.md R-STOR-074).
+const CodeConnectionUnavailable = "connection_unavailable"
+
+// <<< download-links
+//
 // >>> signatures
 
 // Codes of signatures on artifacts (signatures.md R-SIG-016, R-SIG-019, R-SIG-020, R-SIG-034): answers of the management API. A refused
@@ -949,6 +957,10 @@ var registry = []CodeInfo{
 	{CodeAlreadyReleased, Conflict, "Already released", "A release already passes the blob; withdraw it first to grant another."},
 	{CodeMalwareNotEnabled, Conflict, "Malware scanning off", "malware.enabled is false in the installation's configuration: no verdict is made, so there is nothing to scan again."},
 	// <<< malware
+	//
+	// >>> download-links
+	{CodeConnectionUnavailable, Conflict, "Connection unavailable", "The connection to the object store is failing on the replica that answered (its circuit is open, or the probe could not be written), so no test link was made. Try again when the connection works; the System page shows its state."},
+	// <<< download-links
 	//
 	// >>> signatures
 	{CodeAnchorManaged, Conflict, "Trust anchor managed", "The anchor is shipped with Quader or declared in the Helm values: its material cannot be changed or removed through the API. A shipped anchor can only be switched off and on; an anchor of the Helm values changes with the values."},

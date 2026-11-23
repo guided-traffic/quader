@@ -1,16 +1,17 @@
 # Delivery by signed links of the object store
 
-Status: specified on 2026-11-22; built behind the API on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
+Status: specified on 2026-11-22; built behind the API on 2026-11-22, reachable through the management API and the screens since 2026-11-23 ([storage.md](../spec/storage.md) R-STOR-014, R-STOR-070 to R-STOR-074;
 [usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040;
 [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing),
 [ADR-243](../decisions.md#adr-243--a-route-declares-whether-its-clients-check-a-digest-and-kit-check-20-holds-it)). Built: the format's
 declaration that its clients check a digest (`formats.Route.ClientDigest`, R-STOR-071) with kit check 20, declared by `oci.blob.get` and
 `ansible.artifact.get`; the serve point that reads it ([download_links.go](../../internal/formathost/download_links.go),
 `edge.ServeItem`'s `307`), the row of the switch with its store, audit event and snapshot, the host rule, each connection's link check and
-state, and the signing ([internal/downloadlinks](../../internal/downloadlinks/)). Not built: the operations of the management API that
-switch it on, the settings page and the repository's section (package 3). A new installation keeps the switch off, and nothing of the
-product switches it on before package 3 lands, so every gap below is dormant until an administrator switches it on; the sections describe
-what then holds.
+state, and the signing ([internal/downloadlinks](../../internal/downloadlinks/)); the operations of the management API
+([download_links_api.go](../../internal/api/v1/download_links_api.go): the settings for `settings:read`, their change and the test link for
+`settings:write`, the switch's facts for every signed-in caller), the settings page `/admin/settings/storage` and the repository's section
+**Download links** (R-UI-200, R-UI-201). A new installation keeps the switch off, so every gap below is dormant until an administrator
+switches it on; the sections describe what then holds.
 
 The perspective of this page is what changes for the security of a download when Quader answers it with a link to the object store
 instead of the bytes: who can use the link, what Quader no longer sees or checks, and what the object store learns and records.
@@ -37,7 +38,7 @@ between the client and the object store.
 - It is issued only after everything a streamed download passes: authentication, the decision point with the endpoint's exposure, the
   format's serve-time check, the malware gate, the vulnerability block and the signature gate on decided passing states, and the check of
   the download limits (R-STOR-070). It is never issued for a request a Bastion forwarded, for a system read, for `HEAD`, a range, a
-  conditional answer, a file of `/files/`, or a route whose format's clients do not check a digest themselves. A Bastion's request may get
+  conditional answer, a file of `/files/`, or a route not every client of whose format checks a digest itself. A Bastion's request may get
   a handover instead, which the Bastion reads and verifies itself and never hands on (R-STOR-095, [bastion-handover.md](bastion-handover.md)).
 - Its life is `linkLifeSeconds` (60 s unless the administrator sets up to an hour), bounded by the signing credential's own expiry
   (R-STOR-072). Within its life anyone who holds it can use it ([H-12](../spec/storage.md#h-12--presigned-download-urls-are-bearer-capabilities)).
@@ -188,8 +189,17 @@ administrator (R-LIM-010). Dormant: live once the switch is on. The development 
 limit no condition of a link: the transfer by a link runs between the client and the object store at the store's speed, and only the hour
 and day budgets, charged in full at the issue, and the parallel lease of the issue bound it (H-1276). An administrator who set a speed limit
 to make a caller fetch slowly gets that only for the downloads Quader streams (below the minimum size, a range, `/files/`, a format whose
-clients do not check). In `audit` nothing about the pace of a link is recorded, as `enforce` paces none. What makes it real: a caller whose
+clients do not all check). In `audit` nothing about the pace of a link is recorded, as `enforce` paces none. What makes it real: a caller whose
 speed limit was meant to spread its load over time, a CI fleet pulling large layers, against a store whose bandwidth is shared with the
 installation's own traffic (H-1283). The ways out are a smaller hour or day budget for that caller, a higher minimum size, a repository's
 opt-out, or the switch.
 
+### H-1354 · A probe of a test link outlives its minute when the replica stops
+
+Component: the test link (`POST /api/v1/download-links/test`, R-STOR-074, [testlink.go](../../internal/downloadlinks/testlink.go)).
+Subject: the probe objects `_probe/link-test-<random>` of each connection. Live whenever an administrator tests. The replica deletes a
+probe with a timer of its own when the link's life is over; a replica that stops within that minute leaves the probe (44 bytes of a fixed
+text) until the next test, which deletes the probes older than an hour, at most ten pages of the listing. The orphan sweep keeps every key
+below `_probe/` (R-STOR-059). Whoever kept the link fetches the probe's fixed text until the link's own expiry, never after: the link, not
+the object, ends the access. What makes it real: nothing beyond a few bytes of storage per stopped test; it is named so that a listing of
+`_probe/` that shows them is not taken for an intrusion.

@@ -5435,6 +5435,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/download-links/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the switch of the signed links, its details and each connection's state
+         * @description The installation's switch **Deliver large downloads by signed links of the object store** with its details and its `ETag`
+         *     (storage.md R-STOR-014), every connection with whether it can serve a client's link on the replica that answers and why not
+         *     (R-STOR-074) and whether it can serve a handover to a Bastion and why not (R-STOR-096), and the routes whose clients check a
+         *     digest themselves, the only downloads the switch reaches (R-STOR-071). The row is read from PostgreSQL, so an answer after a
+         *     write shows it; the connections' states are this replica's, decided from its configuration, the settings' snapshot and its
+         *     link check.
+         */
+        get: operations["getDownloadLinkSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the switch of the signed links or its details
+         * @description A JSON merge patch of `enabled`, `minSize`, `linkLifeSeconds` and `publicAddresses` (storage.md R-STOR-014); `If-Match` is
+         *     required. A connection's `null` in `publicAddresses` returns it to its endpoint. The values are checked as R-STOR-014 and
+         *     R-STOR-074 say: `minSize` 0 to 1 TiB, `linkLifeSeconds` 10 to 3,600, each address an `https` origin that is no host of Quader
+         *     nor below one, for a connection the installation has; a violation answers `422 invalid_value` at its pointer. A change
+         *     records `storage.download_links.changed` with `before` and `after`; switching the delivery off carries the journal flag, so
+         *     a restore to an earlier point keeps links off. Every replica follows within the bound of R-ARCH-018. The answer is the
+         *     settings after the change.
+         */
+        patch: operations["updateDownloadLinkSettings"];
+        trace?: never;
+    };
+    "/api/v1/download-links/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a test link to a probe, signed against a public address as typed
+         * @description A link the administrator opens in a browser or fetches with the answer's `curl` command from a client of his network, to see
+         *     whether that network reaches the object store at the address (storage.md R-STOR-074, Q-UI-952). The address is checked as a
+         *     save would check it (`422` at `/publicAddress`, and at `/connection` for a connection the installation does not have); it
+         *     need not be saved. The replica writes the probe `_probe/link-test-<random>` with the 44 bytes `Quader download link test:
+         *     this link works.` and a line break on the connection, signs a link to it with a life of 60 s and the file name
+         *     `quader-link-test.txt`, and deletes the probe when the link's life is over (and the probes older than an hour that a stopped
+         *     replica left). Quader sends no request to the address. A connection that is failing on this replica answers
+         *     `409 connection_unavailable`. An encrypted connection is tested too, since a Bastion reads it by a link (R-STOR-096); its
+         *     probe is plain.
+         */
+        post: operations["testDownloadLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/download-links/switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the signed links are on, and the formats they can reach
+         * @description The two facts a repository's settings page needs (storage.md R-STOR-014, R-UI-201): `enabled` is the installation's switch as
+         *     the replica's snapshot holds it, and `formats` the formats with a route whose clients all check a digest themselves (R-STOR-071),
+         *     the only ones whose repositories take `storage.downloadLinks`. Every signed-in caller reads it; it holds nothing else.
+         */
+        get: operations["getDownloadLinkSwitch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/packages/{packageId}/versions/{version}/signatures": {
         parameters: {
             query?: never;
@@ -10668,9 +10753,7 @@ export interface components {
             };
             remote?: components["schemas"]["RemoteSettings"];
             virtual?: components["schemas"]["VirtualSettings"];
-            storage?: {
-                [key: string]: unknown;
-            };
+            storage?: components["schemas"]["RepositoryStorageSettings"];
             npm?: components["schemas"]["NpmSettings"];
             nuget?: components["schemas"]["NugetSettings"];
             oci?: components["schemas"]["OciSettings"];
@@ -12558,6 +12641,114 @@ export interface components {
         RepositoryMalwareSettings: {
             /** @default false */
             onlyChecked: boolean;
+        };
+        /** @description The installation's switch of the signed links, its details and each connection's state (storage.md R-STOR-014). */
+        DownloadLinkSettings: {
+            /** @description Large downloads whose clients all check a digest are answered by a signed link of the object store; false by default. */
+            enabled: boolean;
+            /**
+             * Format: int64
+             * @description The smallest file in bytes that is handed to a link; 1048576 (1 MiB) on a new installation.
+             */
+            minSize: number;
+            /** @description How long a link is valid; 60 on a new installation. The signing credential's own expiry can shorten it. */
+            linkLifeSeconds: number;
+            /** @description Every connection of the installation in its read order, as the replica that answers decides it. */
+            connections: components["schemas"]["DownloadLinkConnection"][];
+            /** @description The routes whose clients all check a digest themselves (R-STOR-071), by format and route; no other download is handed to a link. */
+            routes: components["schemas"]["DownloadLinkRoute"][];
+            /**
+             * Format: int64
+             * @description The revision of the row; the `ETag` is its quoted form.
+             */
+            version: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description `<kind>:<name>` of the principal who changed the row last; null for none. */
+            updatedBy: string | null;
+        };
+        /** @description One connection and whether it can serve links on the replica that answers (storage.md R-STOR-074, R-STOR-096). */
+        DownloadLinkConnection: {
+            /** @description The connection's id (R-STOR-050). */
+            name: string;
+            /** @description The connection encrypts what it stores (R-STOR-075); it never serves a client's link. */
+            encrypted: boolean;
+            /** @description The connection's endpoint, where its links go without a public address. */
+            endpoint: string;
+            /** @description The saved public address, an https origin its links name; null when the links name the endpoint. */
+            publicAddress: string | null;
+            /** @description The connection can serve a client's link now on this replica. */
+            usable: boolean;
+            /** @description Why it cannot; empty when `usable`. */
+            reasons: components["schemas"]["DownloadLinkReason"][];
+            /** @description The connection can serve a handover to a Bastion now on this replica (R-STOR-096), an encrypted one too. */
+            handoverUsable: boolean;
+            /** @description Why it cannot serve a handover; empty when `handoverUsable`. */
+            handoverReasons: components["schemas"]["DownloadLinkReason"][];
+        };
+        /**
+         * @description Why a connection cannot serve links (storage.md R-STOR-074): `encrypted`, `not_https` (its public address or endpoint is not
+         *     https), `quader_host` (a link's host would be a host of Quader or lie below one; `detail` names that host),
+         *     `link_check_failed` (the link check did not pass or has not answered on this replica; `detail` says what the store answered).
+         */
+        DownloadLinkReason: {
+            /** @enum {string} */
+            code: "encrypted" | "not_https" | "quader_host" | "link_check_failed";
+            detail: string | null;
+        };
+        DownloadLinkRoute: {
+            /** @description The format's name, as `GET /api/v1/formats` names it. */
+            format: string;
+            /** @description The route's id within the format (`oci.blob.get`). */
+            route: string;
+        };
+        /** @description A merge patch of the settings (storage.md R-STOR-014); a member left out keeps its value. */
+        DownloadLinkSettingsPatch: {
+            enabled?: boolean;
+            /** Format: int64 */
+            minSize?: number;
+            linkLifeSeconds?: number;
+            /** @description Per connection an https origin; null returns the connection to its endpoint. */
+            publicAddresses?: {
+                [key: string]: string | null;
+            };
+        };
+        DownloadLinkTestRequest: {
+            /** @description The connection's id. */
+            connection: string;
+            /** @description The address as typed, saved or not; an https origin. */
+            publicAddress: string;
+        };
+        /** @description A test link (storage.md R-STOR-074); it is a bearer for its minute. */
+        DownloadLinkTest: {
+            /** @description The link to the probe, signed against the address that was sent. */
+            url: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @description `curl -fsS '<url>'`, which prints the probe's line where the network reaches the object store. */
+            command: string;
+        };
+        DownloadLinkSwitch: {
+            /** @description The installation's switch of the signed links (R-STOR-014). */
+            enabled: boolean;
+            /** @description The formats with a route whose clients all check a digest (R-STOR-071), sorted by name. */
+            formats: string[];
+        };
+        /**
+         * @description The member `storage` of a repository document (storage.md R-STOR-014, Q-STOR-283), a closed object: any other member answers
+         *     `422 invalid_value` at its pointer. `downloadLinks: false` keeps every download of the repository away from a signed link of the
+         *     object store, whatever the installation's switch says, also while it is off; it is taken on a format with a route whose clients
+         *     all check a digest (the `formats` of `GET /api/v1/download-links/switch`) and answered `422 not_applicable` on any other. `false` records
+         *     `repository.narrowed`. An absent member is the default.
+         */
+        RepositoryStorageSettings: {
+            /**
+             * Format: int64
+             * @description The largest upload in bytes this repository accepts (R-STOR-004).
+             */
+            maxUploadSize?: number;
+            /** @default true */
+            downloadLinks: boolean;
         };
         /**
          * @description The member `signatures` of a repository document (R-SIG-040, R-SIG-061, R-REPO-004). `fetch`, on a remote repository, lets the
@@ -27008,6 +27199,199 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getDownloadLinkSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "enabled": true,
+                     *       "minSize": 1048576,
+                     *       "linkLifeSeconds": 60,
+                     *       "connections": [
+                     *         {
+                     *           "name": "default",
+                     *           "encrypted": false,
+                     *           "endpoint": "https://s3.eu-central-1.example.com",
+                     *           "publicAddress": null,
+                     *           "usable": true,
+                     *           "reasons": [],
+                     *           "handoverUsable": true,
+                     *           "handoverReasons": []
+                     *         },
+                     *         {
+                     *           "name": "archive",
+                     *           "encrypted": true,
+                     *           "endpoint": "https://objects.internal.example.com",
+                     *           "publicAddress": null,
+                     *           "usable": false,
+                     *           "reasons": [
+                     *             {
+                     *               "code": "encrypted",
+                     *               "detail": null
+                     *             }
+                     *           ],
+                     *           "handoverUsable": true,
+                     *           "handoverReasons": []
+                     *         }
+                     *       ],
+                     *       "routes": [
+                     *         {
+                     *           "format": "ansible",
+                     *           "route": "ansible.artifact.get"
+                     *         },
+                     *         {
+                     *           "format": "oci",
+                     *           "route": "oci.blob.get"
+                     *         }
+                     *       ],
+                     *       "version": 4,
+                     *       "updatedAt": "2026-11-23T08:10:00Z",
+                     *       "updatedBy": "user:ada"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DownloadLinkSettings"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateDownloadLinkSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "enabled": true,
+                 *       "publicAddresses": {
+                 *         "default": "https://objects.example.com"
+                 *       }
+                 *     }
+                 */
+                "application/merge-patch+json": components["schemas"]["DownloadLinkSettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description The settings after the change. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadLinkSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    testDownloadLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "connection": "default",
+                 *       "publicAddress": "https://objects.example.com"
+                 *     }
+                 */
+                "application/json": components["schemas"]["DownloadLinkTestRequest"];
+            };
+        };
+        responses: {
+            /** @description The test link. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadLinkTest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getDownloadLinkSwitch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The switch. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "enabled": true,
+                     *       "formats": [
+                     *         "ansible",
+                     *         "oci"
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DownloadLinkSwitch"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

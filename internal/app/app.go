@@ -615,6 +615,8 @@ func (a *App) startClient() error {
 			Storage: a.storageAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).
 			Malware: a.malwareAPI(),
+			// The operations of the delivery by signed links of the object store (wire_downloadlinks.go).
+			DownloadLinks: a.downloadLinksAPI(),
 			// The signatures' operations and the member signatures of a file and a version (wire_signatures.go).
 			Signatures: a.signaturesAPI(),
 			// Quader's signing identity (wire_signing.go).

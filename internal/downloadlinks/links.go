@@ -74,6 +74,9 @@ type Links struct {
 	logged  map[string]string
 	loaded  bool
 	checkMu sync.Mutex // one link check run at a time
+
+	// afterFunc schedules the deletion of a test link's probe (testlink.go); nil is time.AfterFunc.
+	afterFunc func(time.Duration, func())
 }
 
 // New creates the replica's side with the defaults of a new installation until a snapshot is set.

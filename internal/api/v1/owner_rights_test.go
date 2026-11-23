@@ -89,6 +89,7 @@ var ownerRightsReads = map[string]string{
 	"getVulnerabilityFinding":          "as getVulnerabilitySummary; a finding outside the read scope is a 404",
 	"exportVulnerabilityFindings":      "as getVulnerabilitySummary",
 	"getMalwareSwitch":                 "malware.enabled and the installation's switch: nothing of the owner's account (Q-MAL-45)",
+	"getDownloadLinkSwitch":            "the installation's switch of the signed links and the formats it reaches: nothing of the owner's account (Q-API-400)",
 	"listMalwareFinds":                 "the finds the read scope of the decision point admits for the subject, scope included, item by item (malwareScopeOf, R-MAL-022)",
 	"listSignatureFindings":            "the invalid and blocked signatures the read scope of the decision point admits for the subject, scope included, file by file (malwareScopeOf, R-SIG-038)",
 	"listSignatureRefusals":            "the refused downloads the read scope of the decision point admits for the subject, scope included, path by path (malwareScopeOf, R-SIG-073)",

@@ -3671,7 +3671,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/advisory-sources` | Advisory sources of the vulnerability data | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
 | `/admin/system`, `/admin/system/jobs`, `/admin/system/backups` | System status, jobs, backups | R-UI-038, R-UI-048 |
-| `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/sign-in` (P1), `/admin/settings/storage` (P1) | The group Settings: General, Authentication (Q-UI-326); Storage, built first with its section **Download links** (specified, not built: R-UI-200, Q-UI-950) | R-UI-031 to R-UI-034, R-UI-200 |
+| `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/sign-in` (P1), `/admin/settings/storage` (P1) | The group Settings: General, Authentication (Q-UI-326); Storage, built first with its section **Download links** (built on 2026-11-23: R-UI-200, Q-UI-950) | R-UI-031 to R-UI-034, R-UI-200 |
 | `/admin/settings/malware` (specified, not built) | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
 | `/admin/projects` | Every project, to create and edit them | R-UI-041 |
 | `/login` (`?auto_sign_in=false`), `/logged-out` | Sign-in, signed out | R-UI-004 |
@@ -4974,30 +4974,46 @@ Acceptance criteria:
 Priority: **P1** · Covers: STOR-032, STOR-033
 
 The owner's decision of 2026-11-22 ([storage.md](storage.md) R-STOR-014): one switch of the installation in the admin area, off by
-default, the minimum size, the link's life and the public host behind a disclosure.
+default, the minimum size, the link's life and the public host behind a disclosure. Built on 2026-11-23 (package 3 of
+[developer/download-links.md](../developer/download-links.md#work-packages)):
+[storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts).
 
 - **Where** ([Q-UI-950](#q-ui-950--the-switch-is-the-first-section-of-the-storage-settings-page)). `/admin/settings/storage`, the page of
   R-UI-034, the fifth of the group **Settings** after **Signatures**; its title **Storage**. It is built with this section first; the
   sections of R-UI-034 (trash can, offline mode) join it when they are built. The holder of `settings:read` sees it, the holder of
   `settings:write` changes it; every other caller has no entry.
-- **The section Download links**, open, one column (R-UI-087's form; R-UI-085's widths):
-  1. A status line: **Off**: "Quader delivers every download itself."; **On**: "Large downloads of <formats> go directly from the object
-     store."; **On, but no link is issued**: the reasons below. `<formats>` are the display names of the formats of the settings' `routes`
-     (today Container images (OCI), npm, Ansible Galaxy).
-  2. The checkbox **Deliver large downloads by signed links of the object store**, with the note "A client then fetches the file from the
+- **The section Download links**, open, one column (R-UI-087's form; R-UI-085's widths). The plain path is the state, the connections
+  that serve links and the switch; everything else is behind **Details**
+  ([Q-UI-957](#q-ui-957--the-plain-path-names-the-connections-that-serve-links-their-reasons-and-the-routes-are-details)):
+  1. A status line of the saved switch: **Off** (a neutral badge) "Quader delivers every download itself."; **On** (green) "Large
+     downloads of <formats> go directly from the object store."; **On, but no link is issued** (a warning badge) "No connection can serve a
+     link; the reasons are below.". `<formats>` are the display names of the formats of the settings' `routes`, joined as a sentence joins
+     them (today Ansible Galaxy and OCI (Docker)); the page has no list of its own, so a format that declares later is named without a
+     change of the page.
+  2. Which connections serve links, as two facts: **Can serve links** with the connections that can serve links now, and **Cannot serve
+     links** with the others and "(Details says why)". When none can, the warning notice of Q-UI-954 stands here instead.
+  3. The checkbox **Deliver large downloads by signed links of the object store**, with the note "A client then fetches the file from the
      object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the
-     client checks them, and the clients must be able to reach the object store." and a link **What a link costs** to the manual's page.
-  3. *(Removed on 2026-11-22 with [Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue): a speed limit keeps no caller from links, so the page names no
-     profile and shows no notice about speed limits; [Q-UI-953](#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit) is
-     superseded.)*
-  4. A closed disclosure **Details** (R-UI-087's closed section form), its fields with their values filled in, never empty with a hint
-     ([Q-UI-951](#q-ui-951--the-details-are-fields-with-their-values-sized-to-them)):
-     **Minimum size** (a number in MiB, value `1`, 0 to 1,048,576, about 9 characters wide), "Smaller files are always delivered by
-     Quader."; **Link valid for** (seconds, value `60`, 10 to 3,600, about 6 characters wide), "A link can be passed on while it is valid.";
+     client checks them, and the clients must be able to reach the object store.", the sentence of the speed limits
+     ([Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)): "A download
+     handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily budgets when the link
+     is issued.", and a link **What a link costs** to the manual's page. The page shows no notice about speed limits and names no limit
+     profile ([Q-UI-953](#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit) is superseded).
+  4. A closed disclosure **Details** (R-UI-087's closed section form, a heading of the third level), its fields with their values filled
+     in, never empty with a hint ([Q-UI-951](#q-ui-951--the-details-are-fields-with-their-values-sized-to-them)):
+     **Minimum size in MiB** (value `1`, 0 to 1,048,576, the field width `number`), "Smaller files are always delivered by Quader.";
+     **Link valid for, in seconds** (value `60`, 10 to 3,600, the field width `number`), "A link can be passed on while it is valid.";
      per connection that is not encrypted **Public address of <connection>** (value: the saved address, else the connection's endpoint;
-     about 48 characters wide), "The address your clients reach the object store at. It must not be an address of Quader.", with the button
-     **Test link** beside it ([Q-UI-952](#q-ui-952--the-test-is-a-link-the-administrator-opens-from-a-client-of-his-network)).
-  5. **Save changes**, sending only the changed members as a merge patch with `If-Match`; a `412` opens the conflict dialog of R-UI-042.
+     the field width `name`), "The address your clients reach the object store at. It must not be an address of Quader.", its reasons
+     under it, and the button **Test link** under the field
+     ([Q-UI-952](#q-ui-952--the-test-is-a-link-the-administrator-opens-from-a-client-of-his-network)); an encrypted connection has no field
+     and its sentence stands after the fields. Then **Downloads that can go by link**: "Only downloads whose clients all check the bytes against a
+     digest themselves; every other download is delivered by Quader.", and per route of `routes` the format's display name and the route.
+  5. **Save changes**, sending only the changed members as a merge patch with `If-Match`; a field left as the connection's endpoint, or
+     emptied, sends `null` where an address is saved and nothing where none is (Q-UI-951); a `412` opens the conflict dialog of R-UI-042.
+     The page checks the ranges and that an address is an `https` origin before it sends ("Enter a size from 0 to 1,048,576 MiB.", "Enter
+     a number of seconds from 10 to 3,600.", "Enter an https address without a path, such as https://objects.example.com."), opens
+     **Details** for a refused field, and shows the server's refusal at its field.
 - **When no link can be issued at all** ([Q-UI-954](#q-ui-954--when-no-connection-can-serve-a-link-the-page-says-why-and-the-switch-stays-usable)):
   every connection is encrypted, or none can serve links for another reason. A warning notice above the checkbox names each connection
   and its reason in plain words; the checkbox stays usable, and with it on the status line says **On, but no link is issued**. Under a
@@ -5010,10 +5026,11 @@ default, the minimum size, the link's life and the public host behind a disclosu
   | `quader_host` | The address of <name> lies under <host>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link. | Die Adresse von <name> liegt unter <host>, einer Adresse von Quader. Image-Clients würden ihre Zugangsdaten mitsenden, und der Objektspeicher lehnt einen solchen Link ab. |
   | `link_check_failed` | The object store of <name> did not answer a test link as expected: <detail>. Quader delivers its content itself. | Der Objektspeicher von <name> hat einen Testlink nicht wie erwartet beantwortet: <detail>. Quader liefert seine Inhalte selbst aus. |
 
-- **The test link.** **Test link** sends the connection and the address as typed (`POST /api/v1/download-links/test`, R-STOR-074) and
-  shows under the field: the link **Open test link** (a new tab), the command with a copy button, and "Valid for 60 seconds. When your
-  network reaches the object store, the file quader-link-test.txt reads 'Quader download link test: this link works.' Run the command on
-  a machine of your clients to test their network." An address the server refuses shows its error at the field; nothing is saved.
+- **The test link.** **Test link** sends the connection and the address as typed (`POST /api/v1/download-links/test`, R-STOR-074), or the
+  endpoint where the field is empty, and shows under the button: the link **Open test link** (a new tab), the command in an address field
+  with its copy button, and "Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader
+  download link test: this link works.' Run the command on a machine of your clients to test their network." An address that is no
+  `https` origin, or one the server refuses, shows its error at the field; a `409` stands as a notice under the button; nothing is saved.
 - **The other texts**, English and German:
 
   | English | German |
@@ -5021,36 +5038,47 @@ default, the minimum size, the link's life and the public host behind a disclosu
   | Storage | Speicher |
   | Download links | Download-Links |
   | Deliver large downloads by signed links of the object store | Große Downloads über signierte Links des Objektspeichers ausliefern |
-  | Off: Quader delivers every download itself. | Aus: Quader liefert jeden Download selbst aus. |
-  | On: large downloads of <formats> go directly from the object store. | An: Große Downloads von <formats> kommen direkt aus dem Objektspeicher. |
-  | On, but no link is issued: | An, aber es wird kein Link ausgegeben: |
+  | Off | Aus |
+  | Quader delivers every download itself. | Quader liefert jeden Download selbst aus. |
+  | On | An |
+  | Large downloads of <formats> go directly from the object store. | Große Downloads von <formats> kommen direkt aus dem Objektspeicher. |
+  | On, but no link is issued | An, aber es wird kein Link ausgegeben |
+  | No connection can serve a link; the reasons are below. | Keine Verbindung kann einen Link ausgeben; die Gründe stehen darunter. |
+  | Can serve links | Können Links ausgeben |
+  | Cannot serve links | Können keine Links ausgeben |
+  | (Details says why) | (Details nennen den Grund) |
   | A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store. | Ein Client holt die Datei dann mit einem kurz gültigen Link aus dem Objektspeicher. Quader entscheidet weiter, wer herunterladen darf, sieht die Bytes aber nicht mehr: Der Client prüft sie, und die Clients müssen den Objektspeicher erreichen können. |
+  | A download handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily budgets when the link is issued. | Ein Download über einen Link wird nicht durch das Tempolimit des Aufrufers gebremst; seine Größe wird beim Ausgeben des Links auf dessen Stunden- und Tagesbudget angerechnet. |
   | What a link costs | Was ein Link kostet |
   | Details | Details |
-  | Minimum size | Mindestgröße |
+  | Minimum size in MiB | Mindestgröße in MiB |
   | Smaller files are always delivered by Quader. | Kleinere Dateien liefert immer Quader aus. |
-  | Link valid for | Link gültig für |
+  | Link valid for, in seconds | Link gültig für, in Sekunden |
   | A link can be passed on while it is valid. | Solange ein Link gültig ist, kann er weitergegeben werden. |
   | Public address of <connection> | Öffentliche Adresse von <connection> |
   | The address your clients reach the object store at. It must not be an address of Quader. | Die Adresse, unter der Ihre Clients den Objektspeicher erreichen. Sie darf keine Adresse von Quader sein. |
   | Test link | Link testen |
   | Open test link | Testlink öffnen |
   | Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader download link test: this link works.' Run the command on a machine of your clients to test their network. | 60 Sekunden gültig. Erreicht Ihr Netz den Objektspeicher, steht in der Datei quader-link-test.txt „Quader download link test: this link works.“. Führen Sie den Befehl auf einem Rechner Ihrer Clients aus, um deren Netz zu prüfen. |
+  | Downloads that can go by link | Downloads, die per Link gehen können |
+  | Only downloads whose clients all check the bytes against a digest themselves; every other download is delivered by Quader. | Nur Downloads, deren Clients alle die Bytes selbst gegen einen Digest prüfen; jeden anderen Download liefert Quader aus. |
   | Save changes | Änderungen speichern |
 
-  The units `MiB` and `s` stand after their fields; the German texts use the glossary's terms ([GLOSSARY.md](../../web/src/locale/GLOSSARY.md):
-  Repository, Standard, Download-Adresse).
+  The German texts use the glossary's terms ([GLOSSARY.md](../../web/src/locale/GLOSSARY.md): Repository, Standard, Download-Adresse).
 - **Read-only** for the holder of `settings:read` without `settings:write`: the state as text ("**Deliver large downloads by signed links
-  of the object store** is off."), the details as values, no button.
+  of the object store** is off."), the details as read-only values, no button.
 - The page is rendered and looked at before it lands (rule 11 of the plan): light and dark, wide and narrow, with the switch off, on, on
-  with a reason (`quader_host`, `link_check_failed`), with a test link shown, and read-only.
+  with several connections of which one is encrypted and one failed its link check, with no connection that can serve a link, with a test
+  link shown, with refused fields, and read-only.
+- **An encrypted connection's address** for a handover to a Bastion (R-STOR-096) has no field on this page: the API takes and tests it, and
+  its field joins the page with the handover's screen.
 
 Acceptance criteria:
 
 - Web unit (Vitest, under a second): the fields show `1`, `60` and the connection's endpoint as values when nothing is saved; a save sends
-  only the changed members with `If-Match`; a connection with
-  `quader_host` shows its sentence under its field and in the notice; **Test link** shows the link and the command; an auditor sees text and
-  no button (`TestR_UI_200`, `download-links-settings.spec.ts`).
+  only the changed members with `If-Match`, `null` for an address that returns to the endpoint; refused values stand at their fields
+  before anything is sent; a connection with `quader_host` shows its sentence in the notice; **Test link** shows the link and the command;
+  an auditor sees text and no button; the status names the formats of the answer's routes (`storage-settings.spec.ts`).
 
 ### R-UI-035 · CI identity
 Priority: **MVP** · Covers: UI-049, CIOIDC-024
@@ -6428,8 +6456,8 @@ The settings page follows the style guide's settings pages: one column of at mos
 5. Closed: **Mirror** (status above the settings, R-UI-021, and the format's `mirror` member), **<Display name> settings**, **Access
    details** (include and exclude patterns, Hide existence), **Administrator notes**, **Signatures** (the background fetch of a remote and
    the gate **Only artifacts with a verified signature can be downloaded from this repository**, specified in [signatures.md](signatures.md)
-   R-SIG-040 and R-SIG-074 and not built), **Download links** (a format whose clients check a digest: the repository's opt-out of
-   signed links, R-UI-201, specified and not built), **Signing keys** and **Indexes** (Debian local and virtual), **Import tasks** and **Tombstones**
+   R-SIG-040 and R-SIG-074 and not built), **Download links** (every repository but a system repository: the repository's opt-out of
+   signed links, disabled with its reason where it cannot act, R-UI-201, Q-UI-956), **Signing keys** and **Indexes** (Debian local and virtual), **Import tasks** and **Tombstones**
    (Ansible), **Details** (class, format, layout, project,
    client address, created, last changed, last activity), **API** (the stored document; each section's unsaved change as a request),
    **Advanced** ([Q-UI-352](#q-ui-352--disable-move-and-delete-are-in-advanced)): **Disable repository** or **Enable repository**,
@@ -6459,24 +6487,42 @@ Acceptance criteria:
 ### R-UI-201 · The repository's settings: the section Download links
 Priority: **P1** · Covers: STOR-032
 
-- **Where** ([Q-UI-955](#q-ui-955--the-repositorys-opt-out-is-a-closed-section-shown-only-where-a-link-can-happen)): a closed section
+Built on 2026-11-23 (package 3): [repository-download-links.ts](../../web/src/app/features/repositories/repository-download-links.ts).
+
+- **Where** ([Q-UI-955](#q-ui-955--the-repositorys-opt-out-is-a-closed-section-shown-only-where-a-link-can-happen), changed by
+  [Q-UI-956](#q-ui-956--the-repositorys-section-stands-on-every-repository-disabled-with-its-reason-where-it-cannot-act)): a closed section
   **Download links** of the repository's settings page (R-UI-087), after **Signatures**; never part of a creation form, not even of its
-  advanced settings. Shown only for a repository whose format has a route whose clients check a digest (`formats` of
-  `GET /api/v1/download-links/switch`, R-STOR-014): today OCI and Ansible Galaxy, every class (*changed on 2026-11-22: npm no longer,
-  [Q-STOR-354](storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)*).
+  advanced settings. It stands on every repository but a system repository, of every format and class.
 - **What it holds:** the checkbox **Downloads of this repository may go by signed links of the object store**, checked by default
-  (`storage.downloadLinks`), with one line on the installation's state: "The installation delivers large downloads by link." or "The
-  installation's switch is off: Quader delivers every download itself.", and for a virtual repository "A member that does not allow it
-  is delivered by Quader." Its own **Save changes**, as every section of R-UI-087.
-- German: **Download-Links**; **Downloads dieses Repositorys dürfen über signierte Links des Objektspeichers gehen**; "Die Installation
-  liefert große Downloads per Link aus."; "Der Schalter der Installation ist aus: Quader liefert jeden Download selbst aus."; "Ein
-  Mitglied, das es nicht erlaubt, wird von Quader ausgeliefert."
-- A caller who may not change the repository sees the state as text.
+  (`storage.downloadLinks`), with one line on why it acts or when, and its own **Save changes**, as every section of R-UI-087:
+  - the format has a route whose clients all check a digest (`formats` of `GET /api/v1/download-links/switch`, R-STOR-014; today OCI and
+    Ansible Galaxy, every class; npm no longer,
+    [Q-STOR-354](storage.md#q-stor-354--yarn-4-installs-a-tarball-whose-object-was-altered-so-npms-tarball-route-declares-nothing)): the
+    checkbox is usable whatever the installation's switch says. With the switch on it says "The installation delivers large downloads by
+    link."; with the switch off "The installation does not hand downloads to links at the moment; your choice takes effect when an
+    administrator switches them on.", so that an Owner opts a repository out before the switch goes on. A virtual repository adds "A
+    member that does not allow it is delivered by Quader.";
+  - not every client of the format checks a digest (the member is `not_applicable`): the checkbox is unchecked and disabled, with "Not
+    every <Format> client checks the bytes it downloads against a digest, so Quader delivers every download of this repository itself."
+    This is the one state that disables it.
+  The switch is read once per page load; a switch that could not be read says nothing of the installation, and the API decides.
+- German: **Download-Links**; **Downloads dieses Repositorys dürfen über signierte Links des Objektspeichers gehen**; "Ob große Downloads
+  dieses Repositorys direkt aus dem Objektspeicher kommen dürfen." (the section's hint); "Die Installation liefert große Downloads per Link
+  aus."; "Die Installation gibt derzeit keine Downloads an Links ab; Ihre Wahl wirkt, sobald ein Administrator sie einschaltet."; "Ein
+  Mitglied, das es nicht erlaubt, wird von Quader ausgeliefert."; "Nicht jeder <Format>-Client prüft die heruntergeladenen Bytes gegen einen
+  Digest, deshalb liefert Quader jeden Download dieses Repositorys selbst aus."
+- A caller who may not change the repository sees the state as text: "Downloads of this repository may go by signed links of the object
+  store." or "Quader delivers every download of this repository itself." („Downloads dieses Repositorys dürfen über signierte Links des
+  Objektspeichers gehen.“, „Quader liefert jeden Download dieses Repositorys selbst aus.“).
+- A save sends `{"storage": {"downloadLinks": <value>}}` with `If-Match`; the merge patch keeps `storage.maxUploadSize`. A well-known
+  repository of `upstream` takes the administrator's write, as its other narrowing settings (R-REPO-069).
 
 Acceptance criteria:
 
-- Web unit (Vitest): the section is absent on a NuGet repository and present, closed, on an npm repository; unchecking and saving sends
-  `{"storage": {"downloadLinks": false}}` with `If-Match` (`TestR_UI_201`).
+- Web unit (Vitest): the section stands closed after **Signatures**; on an OCI repository unchecking and saving sends
+  `{"storage": {"downloadLinks": false}}` with `If-Match`; on a NuGet repository the checkbox is disabled with the sentence of a format not
+  every client of which checks; with the installation's switch off it stays usable, says when the choice takes effect and saves; a virtual
+  repository says what a member does; a caller who may not change it reads text (`repository-download-links.spec.ts`).
 
 ### R-UI-088 · A title and a heading name one thing
 Priority: **MVP** · Covers: UI-031
@@ -21267,7 +21313,49 @@ is never a step of the creation flow. A NuGet, Debian or generic repository neve
 | (b) A line in **Access details** | | One section fewer | Access details are about who reads, this is about how bytes leave |
 | (c) On every repository | | One form for all | A switch that does nothing on half the formats |
 
-**Choice:** (a). **Applied in the spec:** R-UI-201, R-UI-087.
+**Choice:** (a). **Applied in the spec:** R-UI-201, R-UI-087. *Where the section stands was changed on 2026-11-23 by
+[Q-UI-956](#q-ui-956--the-repositorys-section-stands-on-every-repository-disabled-with-its-reason-where-it-cannot-act); the closed
+section and its place outside the creation flow stay.*
+
+### Q-UI-956 · The repository's section stands on every repository, disabled with its reason where it cannot act
+
+Status: **Decided by the development agent** (package 3 of the signed links) — selected from the options below; the owner reviews it.
+It changes Q-UI-955's place of the section. *Changed on 2026-11-23 by the development agent after looking at the renders: the checkbox is
+no longer disabled while the installation's switch is off, so that a project Owner opts a repository out before an administrator switches
+links on; the reason of a format names what is true, that not every client of it checks.*
+
+Context: Q-UI-955 showed the section only on a format with a declaring route. Since then npm's declaration was turned back (Q-STOR-354): an
+npm repository, which had the section, lost it without a word, and its Owner who looks for why npm's downloads never go by link finds
+nothing. A declaration says that every client of the format checks (R-STOR-071): three of npm's four client families do, so the reason of a
+format that declares nothing is that not every client of it checks. The member only takes away (R-STOR-014), and an Owner who wants every
+download of a repository checked by Quader has to be able to say so before the switch goes on. The product rule: "simple by default, details
+on demand", and no control that does nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The closed section on every repository but a system repository; the checkbox disabled with one sentence only where not every client of the format checks; usable while the installation's switch is off, with a sentence that says when the choice takes effect (chosen) | `not_applicable` is said where an Owner looks; the opt-out is in reach before links exist | The answer to "why does this repository never go by link" stands at its place; an Owner keeps a repository out ahead of the switch; the control acts, later, and says so | One closed section more on formats that will never serve a link, as the signatures' section stands on a format without a gate |
+| (b) As (a), and disabled while the installation's switch is off | | No control whose effect waits | An Owner cannot opt out before the switch goes on; the repository's large downloads go by link from that moment until he acts |
+| (c) Q-UI-955 as decided: only for a declaring format | | Fewer sections | Nothing on the formats that do not check, npm included |
+
+**Choice:** (a). **Applied in the spec:** R-UI-201, R-UI-087; code: [repository-download-links.ts](../../web/src/app/features/repositories/repository-download-links.ts).
+
+### Q-UI-957 · The plain path names the connections that serve links; their reasons and the routes are details
+
+Status: **Decided by the development agent** (package 3 of the signed links) — selected from the options below; the owner reviews it.
+
+Context: R-UI-200 put the reasons of a connection under its field in **Details** and a notice above the switch when no connection can
+serve a link (Q-UI-954). With several connections (stage 1 of the storage topic), an administrator who switches links on needs to see at
+once which connections will serve them; why the others do not, and which downloads are reached at all, are an expert's question. The
+status names the formats; Q-LIM-99 asked for one sentence about speed limits beside the switch.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The status, two facts **Can serve links** / **Cannot serve links** with the names, the switch with its note and the speed limits' sentence; the reasons under each field and the routes in **Details**; the notice above the switch only when none can (chosen) | Names on the plain path, reasons on demand | The state in one look; the details stay where they are acted on (the address) | An encrypted connection's reason has no field to stand under: it stands after the fields |
+| (b) Every connection with its reason on the plain path | | Nothing to open | A list of reasons for an installation whose first connection works |
+| (c) Only the status | | Shortest | "On" with a failing second connection reads as all well |
+
+**Choice:** (a). The labels name their unit ("Minimum size in MiB", "Link valid for, in seconds"), as R-UI-088 asks of a label.
+**Applied in the spec:** R-UI-200; code: [storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
 
 ### Q-UI-871 · The security dashboard has two views, Vulnerabilities and Malware
 

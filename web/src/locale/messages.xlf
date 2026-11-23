@@ -2252,7 +2252,7 @@
     <unit id="nav.repositories">
       <notes>
         <note category="location">src/app/core/navigation.ts:113</note>
-        <note category="location">src/app/core/navigation.ts:224</note>
+        <note category="location">src/app/core/navigation.ts:228</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -2309,7 +2309,7 @@
     <unit id="nav.service-accounts">
       <notes>
         <note category="location">src/app/core/navigation.ts:128</note>
-        <note category="location">src/app/core/navigation.ts:213</note>
+        <note category="location">src/app/core/navigation.ts:217</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -2326,7 +2326,7 @@
     <unit id="nav.usage">
       <notes>
         <note category="location">src/app/core/navigation.ts:132</note>
-        <note category="location">src/app/core/navigation.ts:217</note>
+        <note category="location">src/app/core/navigation.ts:221</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -2343,7 +2343,7 @@
     <unit id="nav.ci">
       <notes>
         <note category="location">src/app/core/navigation.ts:136</note>
-        <note category="location">src/app/core/navigation.ts:220</note>
+        <note category="location">src/app/core/navigation.ts:224</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -2360,7 +2360,7 @@
     <unit id="nav.permissions">
       <notes>
         <note category="location">src/app/core/navigation.ts:146</note>
-        <note category="location">src/app/core/navigation.ts:210</note>
+        <note category="location">src/app/core/navigation.ts:214</note>
       </notes>
       <segment>
         <source>Permission policies</source>
@@ -2446,9 +2446,17 @@
         <source>Signatures</source>
       </segment>
     </unit>
+    <unit id="nav.settings.storage">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:186</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+      </segment>
+    </unit>
     <unit id="nav.project.members">
       <notes>
-        <note category="location">src/app/core/navigation.ts:208</note>
+        <note category="location">src/app/core/navigation.ts:212</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -2456,7 +2464,7 @@
     </unit>
     <unit id="nav.packages">
       <notes>
-        <note category="location">src/app/core/navigation.ts:226</note>
+        <note category="location">src/app/core/navigation.ts:230</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:30</note>
       </notes>
       <segment>
@@ -2465,7 +2473,7 @@
     </unit>
     <unit id="nav.vulnerabilities">
       <notes>
-        <note category="location">src/app/core/navigation.ts:229</note>
+        <note category="location">src/app/core/navigation.ts:233</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -2473,7 +2481,7 @@
     </unit>
     <unit id="nav.section.project-access">
       <notes>
-        <note category="location">src/app/core/navigation.ts:238</note>
+        <note category="location">src/app/core/navigation.ts:242</note>
       </notes>
       <segment>
         <source>Access</source>
@@ -2481,7 +2489,7 @@
     </unit>
     <unit id="nav.project.settings">
       <notes>
-        <note category="location">src/app/core/navigation.ts:244</note>
+        <note category="location">src/app/core/navigation.ts:248</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -9254,6 +9262,7 @@
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:410,412</note>
         <note category="location">src/app/features/repositories/repository-detail.html:37,40</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:79,81</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:65,67</note>
         <note category="location">src/app/features/repositories/repository-signatures.ts:215,217</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:336,338</note>
@@ -10316,7 +10325,7 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:154</note>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:433,434</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:451,452</note>
         <note category="location">src/app/features/repositories/repository-list.html:65,66</note>
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:261</note>
@@ -19161,7 +19170,7 @@
     <unit id="repo.deleting">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:164,165</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:530,531</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:548,549</note>
         <note category="location">src/app/features/repositories/repository-list.html:265,266</note>
       </notes>
       <segment>
@@ -20894,7 +20903,7 @@
         <note category="location">src/app/features/repositories/mirror-settings.ts:44</note>
         <note category="location">src/app/features/repositories/repository-create.html:196,197</note>
         <note category="location">src/app/features/repositories/repository-detail.html:218</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:443</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:447</note>
       </notes>
       <segment>
         <source>Mirror</source>
@@ -21990,8 +21999,8 @@
         <note category="location">src/app/features/repositories/repository-create.html:100,102</note>
         <note category="location">src/app/features/repositories/repository-create.ts:659</note>
         <note category="location">src/app/features/repositories/repository-detail.html:87,89</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:439</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:464</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:443</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:468</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -22075,9 +22084,9 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:186,187</note>
         <note category="location">src/app/features/repositories/repository-create.ts:661</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:348,349</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:449</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:466</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:366,367</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:453</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:470</note>
       </notes>
       <segment>
         <source>Administrator notes</source>
@@ -22095,7 +22104,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:192,193</note>
         <note category="location">src/app/features/repositories/repository-detail.html:290,291</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:447</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:451</note>
       </notes>
       <segment>
         <source>Access details</source>
@@ -22246,7 +22255,7 @@
     <unit id="repo.field.include">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:663</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:468</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:472</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
       <segment>
@@ -22256,7 +22265,7 @@
     <unit id="repo.field.exclude">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:665</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:470</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:474</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
       <segment>
@@ -22266,7 +22275,7 @@
     <unit id="repo.field.hide">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:667</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:472</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:476</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
       <segment>
@@ -22309,6 +22318,7 @@
     <unit id="repo.settings.save">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:31,32</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:75,76</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:61,62</note>
         <note category="location">src/app/features/repositories/repository-signatures.ts:211,212</note>
         <note category="location">src/app/features/repositories/virtual-members.html:51,52</note>
@@ -22328,7 +22338,7 @@
     <unit id="repo.col.format">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:56,57</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:435,436</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:453,454</note>
         <note category="location">src/app/features/repositories/repository-list.html:52,53</note>
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:259</note>
@@ -22392,7 +22402,7 @@
     <unit id="upstream.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:148,149</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:441</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:445</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:81</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:97,98</note>
       </notes>
@@ -22485,7 +22495,7 @@
     </unit>
     <unit id="repo.settings.notes-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:350,352</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:368,370</note>
       </notes>
       <segment>
         <source>Notes for the people who configure the repository.</source>
@@ -22493,7 +22503,7 @@
     </unit>
     <unit id="repo.tab.deb-keys">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:363,364</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:381,382</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -22501,7 +22511,7 @@
     </unit>
     <unit id="repo.settings.deb-keys-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:365,366</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:383,384</note>
       </notes>
       <segment>
         <source>The keys that sign the repository&apos;s indexes.</source>
@@ -22509,7 +22519,7 @@
     </unit>
     <unit id="repo.settings.deb-index">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:375</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:393</note>
       </notes>
       <segment>
         <source>Indexes</source>
@@ -22517,7 +22527,7 @@
     </unit>
     <unit id="repo.settings.deb-index-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:376,377</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:394,395</note>
       </notes>
       <segment>
         <source>The state of each suite&apos;s indexes, and a rebuild.</source>
@@ -22525,7 +22535,7 @@
     </unit>
     <unit id="repo.tab.ansible-imports">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:388,389</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:406,407</note>
       </notes>
       <segment>
         <source>Import tasks</source>
@@ -22533,7 +22543,7 @@
     </unit>
     <unit id="repo.settings.imports-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:390,391</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:408,409</note>
       </notes>
       <segment>
         <source>The imports of published collections and their logs.</source>
@@ -22541,7 +22551,7 @@
     </unit>
     <unit id="repo.tab.ansible-tombstones">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:401,402</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:419,420</note>
       </notes>
       <segment>
         <source>Tombstones</source>
@@ -22549,7 +22559,7 @@
     </unit>
     <unit id="repo.settings.tombstones-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:403,404</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:421,422</note>
       </notes>
       <segment>
         <source>Deleted collection versions whose names stay taken.</source>
@@ -22557,7 +22567,7 @@
     </unit>
     <unit id="repo.settings.service-accounts">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:415,416</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:433,434</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -22565,7 +22575,7 @@
     </unit>
     <unit id="repo.settings.service-accounts-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:417,418</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:435,436</note>
       </notes>
       <segment>
         <source>Accounts that hold their rights on this repository and nowhere else, each with its technical tokens.</source>
@@ -22573,7 +22583,7 @@
     </unit>
     <unit id="repo.settings.details">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:429</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:447</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:430</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:448</note>
       </notes>
@@ -22583,7 +22593,7 @@
     </unit>
     <unit id="repo.settings.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:430,433</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:448,451</note>
       </notes>
       <segment>
         <source>The class, the format, the layout and the dates of the repository.</source>
@@ -22591,7 +22601,7 @@
     </unit>
     <unit id="repo.detail.layout">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:437,438</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:455,456</note>
       </notes>
       <segment>
         <source>Layout</source>
@@ -22599,7 +22609,7 @@
     </unit>
     <unit id="repo.detail.project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:440,441</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:458,459</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -22607,7 +22617,7 @@
     </unit>
     <unit id="repo.detail.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:444,445</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:462,463</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:477,478</note>
       </notes>
       <segment>
@@ -22616,7 +22626,7 @@
     </unit>
     <unit id="repo.detail.updated">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:448,449</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:466,467</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:481,482</note>
       </notes>
       <segment>
@@ -22625,7 +22635,7 @@
     </unit>
     <unit id="repo.col.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:452,453</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:470,471</note>
         <note category="location">src/app/features/repositories/repository-list.ts:337</note>
       </notes>
       <segment>
@@ -22634,7 +22644,7 @@
     </unit>
     <unit id="repo.tab.api">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:461</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:479</note>
       </notes>
       <segment>
         <source>API</source>
@@ -22642,7 +22652,7 @@
     </unit>
     <unit id="repo.settings.api-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:462,464</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:480,482</note>
       </notes>
       <segment>
         <source>The stored document, and each unsaved change as the request that saves it.</source>
@@ -22650,7 +22660,7 @@
     </unit>
     <unit id="repo.detail.api.document">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:464,465</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:482,483</note>
       </notes>
       <segment>
         <source>Stored document</source>
@@ -22658,7 +22668,7 @@
     </unit>
     <unit id="repo.detail.api.patch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:466,467</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:484,485</note>
       </notes>
       <segment>
         <source>Your change as a request</source>
@@ -22666,7 +22676,7 @@
     </unit>
     <unit id="repo.detail.api.nochange">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:471,473</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:489,491</note>
       </notes>
       <segment>
         <source>Change a setting to see the request that saves it.</source>
@@ -22674,7 +22684,7 @@
     </unit>
     <unit id="repo.detail.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:481,482</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:499,500</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -22682,7 +22692,7 @@
     </unit>
     <unit id="repo.settings.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:483,485</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:501,503</note>
       </notes>
       <segment>
         <source>Disable, move or delete this repository.</source>
@@ -22690,7 +22700,7 @@
     </unit>
     <unit id="repo.enable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:490,491</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:508,509</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -22698,7 +22708,7 @@
     </unit>
     <unit id="repo.enable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:491,492</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:509,510</note>
       </notes>
       <segment>
         <source>The repository is disabled: it serves nothing and takes no publish.</source>
@@ -22706,8 +22716,8 @@
     </unit>
     <unit id="repo.enable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:492,494</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:867</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:510,512</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:905</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -22715,7 +22725,7 @@
     </unit>
     <unit id="repo.disable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:494,495</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:512,513</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -22723,7 +22733,7 @@
     </unit>
     <unit id="repo.disable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:495,496</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:513,514</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it; its content stays.</source>
@@ -22731,8 +22741,8 @@
     </unit>
     <unit id="repo.disable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:496,498</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:862</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:514,516</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:900</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -22740,7 +22750,7 @@
     </unit>
     <unit id="repo.move.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:501,502</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:519,520</note>
       </notes>
       <segment>
         <source>Move to another project</source>
@@ -22748,7 +22758,7 @@
     </unit>
     <unit id="repo.move.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:503,504</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:521,522</note>
       </notes>
       <segment>
         <source> The repository keeps its key and its content; its address changes. You must be Owner of the target project too. </source>
@@ -22756,7 +22766,7 @@
     </unit>
     <unit id="repo.move.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:508,509</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:526,527</note>
       </notes>
       <segment>
         <source>Target project</source>
@@ -22764,7 +22774,7 @@
     </unit>
     <unit id="repo.move.action">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:514,515</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:532,533</note>
       </notes>
       <segment>
         <source> Move repository </source>
@@ -22772,7 +22782,7 @@
     </unit>
     <unit id="repo.delete.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:520,521</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:538,539</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -22780,7 +22790,7 @@
     </unit>
     <unit id="repo.detail.delete-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:521,522</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:539,540</note>
       </notes>
       <segment>
         <source>Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</source>
@@ -22788,7 +22798,7 @@
     </unit>
     <unit id="repo.detail.delete">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:522,524</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:540,542</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -22796,7 +22806,7 @@
     </unit>
     <unit id="wellknown.account.basic-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:227</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:231</note>
       </notes>
       <segment>
         <source>Username and password of <ph id="0" equiv="user" disp="remote.username"/></source>
@@ -22804,7 +22814,7 @@
     </unit>
     <unit id="upstream.auth.basic">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:228</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:232</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:713</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:15</note>
       </notes>
@@ -22814,7 +22824,7 @@
     </unit>
     <unit id="upstream.auth.bearer">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:230</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:234</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:715</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:16</note>
       </notes>
@@ -22824,7 +22834,7 @@
     </unit>
     <unit id="wellknown.account.none">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:232</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:236</note>
       </notes>
       <segment>
         <source>No account</source>
@@ -22832,7 +22842,8 @@
     </unit>
     <unit id="repo.settings.unsaved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:354</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:358</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:123</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:104</note>
         <note category="location">src/app/features/repositories/repository-signatures.ts:326</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:215</note>
@@ -22843,7 +22854,7 @@
     </unit>
     <unit id="repo.settings.format-heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:454</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:458</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="this.formatLabel()"/> settings</source>
@@ -22851,8 +22862,8 @@
     </unit>
     <unit id="repo.edit.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:548</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:574</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:552</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:578</note>
       </notes>
       <segment>
         <source>Repository saved.</source>
@@ -22860,7 +22871,7 @@
     </unit>
     <unit id="repo.visibility.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:636</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:640</note>
       </notes>
       <segment>
         <source>Visibility saved.</source>
@@ -22868,7 +22879,7 @@
     </unit>
     <unit id="repo.malware.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:698</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:702</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded from this repository now.</source>
@@ -22876,15 +22887,31 @@
     </unit>
     <unit id="repo.malware.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:699</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:703</note>
       </notes>
       <segment>
         <source>This repository follows the installation&apos;s malware setting again.</source>
       </segment>
     </unit>
+    <unit id="repo.links.saved-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:765</note>
+      </notes>
+      <segment>
+        <source>Large downloads of this repository may go by signed links again.</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.saved-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:766</note>
+      </notes>
+      <segment>
+        <source>Quader delivers every download of this repository itself now.</source>
+      </segment>
+    </unit>
     <unit id="repo.members.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:762</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:800</note>
       </notes>
       <segment>
         <source>Members saved.</source>
@@ -22892,7 +22919,7 @@
     </unit>
     <unit id="mirror.paused-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:791</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:829</note>
       </notes>
       <segment>
         <source>Mirror paused.</source>
@@ -22900,7 +22927,7 @@
     </unit>
     <unit id="mirror.resumed-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:791</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:829</note>
       </notes>
       <segment>
         <source>Mirror resumed.</source>
@@ -22908,7 +22935,7 @@
     </unit>
     <unit id="repo.disable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:858</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:896</note>
       </notes>
       <segment>
         <source>Disable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -22916,7 +22943,7 @@
     </unit>
     <unit id="repo.disable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:860</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:898</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it, and virtual repositories skip it, until it is enabled again. Its content stays.</source>
@@ -22924,7 +22951,7 @@
     </unit>
     <unit id="repo.enable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:865</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:903</note>
       </notes>
       <segment>
         <source>Enable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -22932,7 +22959,7 @@
     </unit>
     <unit id="repo.enable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:866</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:904</note>
       </notes>
       <segment>
         <source>Clients can download from it and publish to it again.</source>
@@ -22940,7 +22967,7 @@
     </unit>
     <unit id="repo.disable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:900</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:938</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> disabled.</source>
@@ -22948,7 +22975,7 @@
     </unit>
     <unit id="repo.enable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:901</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:939</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> enabled.</source>
@@ -22956,7 +22983,7 @@
     </unit>
     <unit id="repo.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:907</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:945</note>
         <note category="location">src/app/features/repositories/repository-list.ts:445</note>
       </notes>
       <segment>
@@ -22965,7 +22992,7 @@
     </unit>
     <unit id="repo.delete.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:909</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:947</note>
         <note category="location">src/app/features/repositories/repository-list.ts:447</note>
       </notes>
       <segment>
@@ -22974,7 +23001,7 @@
     </unit>
     <unit id="repo.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:911</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:949</note>
         <note category="location">src/app/features/repositories/repository-list.ts:449</note>
       </notes>
       <segment>
@@ -22983,7 +23010,7 @@
     </unit>
     <unit id="repo.move.choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:937</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:975</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -22991,7 +23018,7 @@
     </unit>
     <unit id="repo.move.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:955</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:993</note>
       </notes>
       <segment>
         <source>Move repository <ph id="0" equiv="key" disp="this.ref()"/> to project <ph id="1" equiv="project" disp="target"/>?</source>
@@ -22999,7 +23026,7 @@
     </unit>
     <unit id="repo.move.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:957</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:995</note>
       </notes>
       <segment>
         <source>The repository gets a new address; clients must switch to it. Policies, pins, virtual memberships and CI mappings that name it in this project stop applying, and the move is refused while any of them exists.</source>
@@ -23007,7 +23034,7 @@
     </unit>
     <unit id="repo.move.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:959</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:997</note>
       </notes>
       <segment>
         <source>Move repository</source>
@@ -23015,7 +23042,7 @@
     </unit>
     <unit id="repo.move.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:968</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1006</note>
       </notes>
       <segment>
         <source>Repository moved to project <ph id="0" equiv="project" disp="target"/>.</source>
@@ -23023,7 +23050,7 @@
     </unit>
     <unit id="repo.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:982</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1020</note>
         <note category="location">src/app/features/repositories/repository-list.ts:494</note>
       </notes>
       <segment>
@@ -23032,7 +23059,7 @@
     </unit>
     <unit id="repo.delete.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:987</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1025</note>
         <note category="location">src/app/features/repositories/repository-list.ts:484</note>
       </notes>
       <segment>
@@ -23041,7 +23068,7 @@
     </unit>
     <unit id="repo.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:992</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1030</note>
         <note category="location">src/app/features/repositories/repository-list.ts:388</note>
       </notes>
       <segment>
@@ -23050,7 +23077,7 @@
     </unit>
     <unit id="repo.gate.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:998</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1036</note>
       </notes>
       <segment>
         <source>Only artifacts with a verified signature can be downloaded from this repository now.</source>
@@ -23058,7 +23085,7 @@
     </unit>
     <unit id="repo.gate.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1001</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1039</note>
       </notes>
       <segment>
         <source>This repository serves artifacts whatever their signatures say again.</source>
@@ -23066,7 +23093,7 @@
     </unit>
     <unit id="repo.signatures.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1004</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1042</note>
       </notes>
       <segment>
         <source>Quader no longer fetches the upstream&apos;s signatures for this repository.</source>
@@ -23074,10 +23101,90 @@
     </unit>
     <unit id="repo.signatures.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1005</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1043</note>
       </notes>
       <segment>
         <source>Quader fetches the upstream&apos;s signatures for this repository again.</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:23,24</note>
+      </notes>
+      <segment>
+        <source>Download links</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:25,26</note>
+      </notes>
+      <segment>
+        <source>Whether large downloads of this repository may go directly from the object store.</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:39,40</note>
+      </notes>
+      <segment>
+        <source>Downloads of this repository may go by signed links of the object store</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.state-allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:44,46</note>
+      </notes>
+      <segment>
+        <source>Downloads of this repository may go by signed links of the object store.</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.state-quader">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:46,48</note>
+      </notes>
+      <segment>
+        <source>Quader delivers every download of this repository itself.</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.not-applicable">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:53,55</note>
+      </notes>
+      <segment>
+        <source> Not every <ph id="0" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/> client checks the bytes it downloads against a digest, so Quader delivers every download of this repository itself. </source>
+      </segment>
+    </unit>
+    <unit id="repo.links.installation-on">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:59,61</note>
+      </notes>
+      <segment>
+        <source> The installation delivers large downloads by link. </source>
+      </segment>
+    </unit>
+    <unit id="repo.links.installation-off">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:63,65</note>
+      </notes>
+      <segment>
+        <source> The installation does not hand downloads to links at the moment; your choice takes effect when an administrator switches them on. </source>
+      </segment>
+    </unit>
+    <unit id="repo.links.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:68,71</note>
+      </notes>
+      <segment>
+        <source>A member that does not allow it is delivered by Quader.</source>
+      </segment>
+    </unit>
+    <unit id="repo.links.save-for">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:76,78</note>
+      </notes>
+      <segment>
+        <source> (download links)</source>
       </segment>
     </unit>
     <unit id="repo.field.notes-text">
@@ -27297,6 +27404,14 @@
         <source>Signatures</source>
       </segment>
     </unit>
+    <unit id="route.settings.storage.title">
+      <notes>
+        <note category="location">src/app/features/settings/settings.routes.ts:34</note>
+      </notes>
+      <segment>
+        <source>Storage settings</source>
+      </segment>
+    </unit>
     <unit id="sig.settings.heading">
       <notes>
         <note category="location">src/app/features/settings/signature-settings.html:1</note>
@@ -28532,6 +28647,358 @@
       </notes>
       <segment>
         <source>The identity is retired.</source>
+      </segment>
+    </unit>
+    <unit id="storage.settings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:1</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+      </segment>
+    </unit>
+    <unit id="links.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:11,13</note>
+      </notes>
+      <segment>
+        <source>Download links</source>
+      </segment>
+    </unit>
+    <unit id="links.status.off">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:18,19</note>
+      </notes>
+      <segment>
+        <source>Off</source>
+      </segment>
+    </unit>
+    <unit id="links.status.off-text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:19,20</note>
+      </notes>
+      <segment>
+        <source>Quader delivers every download itself.</source>
+      </segment>
+    </unit>
+    <unit id="links.status.on-none">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:23,24</note>
+      </notes>
+      <segment>
+        <source>On, but no link is issued</source>
+      </segment>
+    </unit>
+    <unit id="links.status.on-none-text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:24,26</note>
+      </notes>
+      <segment>
+        <source>No connection can serve a link; the reasons are below.</source>
+      </segment>
+    </unit>
+    <unit id="links.status.on">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:28,29</note>
+      </notes>
+      <segment>
+        <source>On</source>
+      </segment>
+    </unit>
+    <unit id="links.status.on-text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:29,30</note>
+      </notes>
+      <segment>
+        <source>Large downloads of <ph id="0" equiv="INTERPOLATION" disp="{{ reach() }}"/> go directly from the object store.</source>
+      </segment>
+    </unit>
+    <unit id="links.connections.serve">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:48,49</note>
+      </notes>
+      <segment>
+        <source>Can serve links</source>
+      </segment>
+    </unit>
+    <unit id="links.connections.none">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:51,53</note>
+      </notes>
+      <segment>
+        <source>Cannot serve links</source>
+      </segment>
+    </unit>
+    <unit id="links.connections.why">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:53,55</note>
+      </notes>
+      <segment>
+        <source>(Details says why)</source>
+      </segment>
+    </unit>
+    <unit id="links.switch">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:65,66</note>
+      </notes>
+      <segment>
+        <source>Deliver large downloads by signed links of the object store</source>
+      </segment>
+    </unit>
+    <unit id="links.switch-on">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:70,71</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Deliver large downloads by signed links of the object store</pc> is on.</source>
+      </segment>
+    </unit>
+    <unit id="links.switch-off">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:72,73</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Deliver large downloads by signed links of the object store</pc> is off.</source>
+      </segment>
+    </unit>
+    <unit id="links.note">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:77,79</note>
+      </notes>
+      <segment>
+        <source> A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store. </source>
+      </segment>
+    </unit>
+    <unit id="links.limits">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:82,84</note>
+      </notes>
+      <segment>
+        <source> A download handed to a link is not slowed by the caller&apos;s speed limit; its size is charged to the caller&apos;s hourly and daily budgets when the link is issued. </source>
+      </segment>
+    </unit>
+    <unit id="links.costs">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:86,89</note>
+      </notes>
+      <segment>
+        <source>What a link costs</source>
+      </segment>
+    </unit>
+    <unit id="links.details">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:92</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+      </segment>
+    </unit>
+    <unit id="links.details.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:93,95</note>
+      </notes>
+      <segment>
+        <source>The minimum size, how long a link is valid, and where clients reach the object store.</source>
+      </segment>
+    </unit>
+    <unit id="links.details.legend">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:98,99</note>
+      </notes>
+      <segment>
+        <source>Download link details</source>
+      </segment>
+    </unit>
+    <unit id="links.min-size">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:100,101</note>
+      </notes>
+      <segment>
+        <source>Minimum size in MiB</source>
+      </segment>
+    </unit>
+    <unit id="links.min-size.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:115,116</note>
+      </notes>
+      <segment>
+        <source>Smaller files are always delivered by Quader.</source>
+      </segment>
+    </unit>
+    <unit id="links.life">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:121,122</note>
+      </notes>
+      <segment>
+        <source>Link valid for, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="links.life.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:136,137</note>
+      </notes>
+      <segment>
+        <source>A link can be passed on while it is valid.</source>
+      </segment>
+    </unit>
+    <unit id="links.address">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:145,146</note>
+      </notes>
+      <segment>
+        <source>Public address of <ph id="0" equiv="INTERPOLATION" disp="{{ c.name }}"/></source>
+      </segment>
+    </unit>
+    <unit id="links.address.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:160,161</note>
+      </notes>
+      <segment>
+        <source> The address your clients reach the object store at. It must not be an address of Quader. </source>
+      </segment>
+    </unit>
+    <unit id="links.test">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:174,175</note>
+      </notes>
+      <segment>
+        <source>Test link</source>
+      </segment>
+    </unit>
+    <unit id="links.test.open">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:184,185</note>
+      </notes>
+      <segment>
+        <source>Open test link</source>
+      </segment>
+    </unit>
+    <unit id="links.test.command">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:189,190</note>
+      </notes>
+      <segment>
+        <source>Command that fetches the test link</source>
+      </segment>
+    </unit>
+    <unit id="links.test.copy">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:191,193</note>
+      </notes>
+      <segment>
+        <source>Copy the command</source>
+      </segment>
+    </unit>
+    <unit id="links.test.text">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:194,195</note>
+      </notes>
+      <segment>
+        <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of your clients to test their network. </source>
+      </segment>
+    </unit>
+    <unit id="links.routes">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:212,213</note>
+      </notes>
+      <segment>
+        <source>Downloads that can go by link</source>
+      </segment>
+    </unit>
+    <unit id="links.routes.hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:213,214</note>
+      </notes>
+      <segment>
+        <source>Only downloads whose clients all check the bytes against a digest themselves; every other download is delivered by Quader.</source>
+      </segment>
+    </unit>
+    <unit id="links.changed-by">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:223</note>
+      </notes>
+      <segment>
+        <source>Last changed by</source>
+      </segment>
+    </unit>
+    <unit id="links.save">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:231,232</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+      </segment>
+    </unit>
+    <unit id="links.save-for">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:232,233</note>
+      </notes>
+      <segment>
+        <source> (download links)</source>
+      </segment>
+    </unit>
+    <unit id="links.reason.encrypted">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:41</note>
+      </notes>
+      <segment>
+        <source>The connection <ph id="0" equiv="name" disp="name"/> is encrypted. Quader delivers its content itself.</source>
+      </segment>
+    </unit>
+    <unit id="links.reason.not-https">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:43</note>
+      </notes>
+      <segment>
+        <source>The address of <ph id="0" equiv="name" disp="name"/> does not use https. Links need https.</source>
+      </segment>
+    </unit>
+    <unit id="links.reason.quader-host">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:45</note>
+      </notes>
+      <segment>
+        <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link.</source>
+      </segment>
+    </unit>
+    <unit id="links.reason.link-check">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:47</note>
+      </notes>
+      <segment>
+        <source>The object store of <ph id="0" equiv="name" disp="name"/> did not answer a test link as expected: <ph id="1" equiv="detail" disp="detail"/>. Quader delivers its content itself.</source>
+      </segment>
+    </unit>
+    <unit id="links.min-size.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:195</note>
+      </notes>
+      <segment>
+        <source>Enter a size from 0 to 1,048,576 MiB.</source>
+      </segment>
+    </unit>
+    <unit id="links.life.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:202</note>
+      </notes>
+      <segment>
+        <source>Enter a number of seconds from 10 to 3,600.</source>
+      </segment>
+    </unit>
+    <unit id="links.address.invalid">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:232</note>
+      </notes>
+      <segment>
+        <source>Enter an https address without a path, such as https://objects.example.com.</source>
+      </segment>
+    </unit>
+    <unit id="links.saved">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:322</note>
+      </notes>
+      <segment>
+        <source>Download link settings saved.</source>
       </segment>
     </unit>
     <unit id="setup.unknown-guide">

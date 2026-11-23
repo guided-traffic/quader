@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/downloadlinks"
 )
 
@@ -40,4 +41,14 @@ func (a *App) wireDownloadLinks(ctx context.Context, in infra, bl blobArea) (dow
 		return downloadLinksArea{}, err
 	}
 	return downloadLinksArea{store: store, links: links}, nil
+}
+
+// downloadLinksAPI is the services of the operations of the signed links (download_links_api.go): the store and the replica's
+// side; a role without the area answers them with 503.
+func (a *App) downloadLinksAPI() v1.DownloadLinksServices {
+	dl := part[downloadLinksArea](a.parts)
+	if dl.store == nil || dl.links == nil {
+		return v1.DownloadLinksServices{}
+	}
+	return v1.DownloadLinksServices{Store: dl.store, Links: dl.links}
 }
