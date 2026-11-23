@@ -76,4 +76,37 @@ func TestR_VULN_028_RequestTransactionsCountsWhatARequestRan(t *testing.T) {
 	if got := r.Of("a").Statements(); got["GetLiveItem"] != 2 || got["NPMTombstoned"] != 1 || got["IdentityTokenBySecret"] != 1 || len(got) != 3 {
 		t.Errorf("the statements of request a by name: %v", got)
 	}
+	// The text of a name a request ran, for a test that looks into it; a statement of no request is not kept.
+	if got := r.SQL("NPMTombstoned"); got != "-- name: NPMTombstoned :one\nSELECT 2" {
+		t.Errorf("the text of NPMTombstoned = %q", got)
+	}
+	if got := r.SQL("UpsertDownloadStats"); got != "" {
+		t.Errorf("the text of a statement no request ran = %q", got)
+	}
+}
+
+// R-ARCH-027 (Q-ARCH-700): per request, a name counts when it ran in nine requests of ten, by its runs per request, rounded; a
+// name of fewer requests (a cache entry that expired in one of them) is no statement of every request.
+func TestR_ARCH_027_PerRequestCountsWhatNineInTenRan(t *testing.T) {
+	r := NewRequestTransactions()
+	r.idOf = func(ctx context.Context) string { s, _ := ctx.Value(requestKey{}).(string); return s }
+	r.Count(true)
+	c := &pgx.Conn{}
+	ids := make([]string, 20)
+	for i := range ids {
+		ids[i] = string(rune('a' + i))
+		ctx := context.WithValue(context.Background(), requestKey{}, ids[i])
+		r.TraceQueryStart(ctx, c, pgx.TraceQueryStartData{SQL: "-- name: GetLiveItem :many\nSELECT 1"})
+		if i < 18 { // nine in ten: counted, twice per request
+			r.TraceQueryStart(ctx, c, pgx.TraceQueryStartData{SQL: "-- name: Twice :one\nSELECT 2"})
+			r.TraceQueryStart(ctx, c, pgx.TraceQueryStartData{SQL: "-- name: Twice :one\nSELECT 2"})
+		}
+		if i < 17 { // fewer than nine in ten: not counted
+			r.TraceQueryStart(ctx, c, pgx.TraceQueryStartData{SQL: "-- name: Cached :one\nSELECT 3"})
+		}
+	}
+	r.Count(false)
+	if got := r.PerRequest(ids); len(got) != 2 || got["GetLiveItem"] != 1 || got["Twice"] != 2 {
+		t.Errorf("per request: %v, want GetLiveItem x1 and Twice x2", got)
+	}
 }

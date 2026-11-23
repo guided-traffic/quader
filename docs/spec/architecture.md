@@ -5565,10 +5565,10 @@ answer (the failure count or the marker refresh;
 the replica's cache answers costs none.
 
 Measurement:
-- The budget tests of `test/integration/querybudget` and `test/integration/vulnblock` count a statement as a request's when it ran for nine requests in ten of a window
-  and its runs spread over at least half of the time from the second request's start to the last one's (`testenv.PerRequest`): the
-  scheduler's tick offers every task's slot at once, one `InsertJob` per task, and is no statement of a download however many tasks
-  there are, and one slow request does not hide the requests' statements ([malware-scanning.md](malware-scanning.md) Q-MAL-92).
+- The budget tests of `test/integration/querybudget` and `test/integration/vulnblock` count the statements that ran with each request's ID
+  (`testenv.RequestTransactions`, Q-ARCH-700) and a name as a statement of every request when it ran in nine requests of ten
+  (`RequestTransactions.PerRequest`): the scheduler's tick, the replica's own loops and the batched writers carry no request ID and are
+  never counted, however many tasks there are and however loaded the host.
 - `perf/` holds k6 scripts and a Go driver for P-12. The full run of Test and Release on the commit that closes the phase runs them on a staging cluster
   sized like the reference, and runs P-16 with the `web` Deployment scaled from 3 to 6 replicas.
 - Pull requests run Go micro-benchmarks for `Match`, `Rewrite`, `Merge` and `authz.Decide`. A
@@ -11818,7 +11818,9 @@ replicas of `env.start`. The windows' fixed waits went with the log: a second be
 first run of the weekly orphan sweep in the Debian case, and the second before each first request after a write, which is now one
 change-log poll of the replica (`PollNow`). The area's run on 2026-11-23 at a host load of 35 to 40: every download 1 statement
 (`GetLiveItem`), the virtual repository's remote member 2, as before. **Rationale:** the budget is the request's; only the request's ID
-says which statements are its. The same windows of the log remain in the area `vulnblock` (`querycount_test.go`), not touched here.
+says which statements are its. The same windows of the log remained in the area `vulnblock` (`querycount_test.go`) until the rest of W4
+(2026-11-23) counted there by request too; the nine-in-ten rule is now `RequestTransactions.PerRequest` of the harness, and the harness
+reads no log: `Stack.LogStatements`, `StatementLogSince`, the log's `PerRequest` and the stack's variable `QUADER_TEST_PG_CONTAINER` are gone.
 
 **Applied in the spec:** none (test wiring). Code: [download_test.go](../../test/integration/querybudget/download_test.go),
 [link_test.go](../../test/integration/querybudget/link_test.go), [deb_test.go](../../test/integration/querybudget/deb_test.go),

@@ -66,7 +66,6 @@ q() { printf "'%s'" "$1"; }
   echo "QUADER_TEST_PG_DSN=$(q "postgres://quader:quader-it@127.0.0.1:$IT_PG_PORT/quader?sslmode=verify-full&sslrootcert=$state/certs/ca.crt")"
   echo "QUADER_TEST_PG_PGBOUNCER_DSN=$(q "postgres://quader:quader-it@127.0.0.1:$IT_PGBOUNCER_PORT/quader?sslmode=verify-full&sslrootcert=$state/certs/ca.crt")"
   echo "QUADER_TEST_PG_HOST=127.0.0.1"
-  echo "QUADER_TEST_PG_CONTAINER=$IT_PROJECT-postgres"
   echo "QUADER_TEST_PG_PORT=$IT_PG_PORT"
   echo "QUADER_TEST_PG_PGBOUNCER_PORT=$IT_PGBOUNCER_PORT"
   echo "QUADER_TEST_PG_USER=quader"

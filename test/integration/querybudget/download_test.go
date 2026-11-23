@@ -66,21 +66,9 @@ func (e *env) perRequest(t *testing.T, what string, send func() (status int, id 
 		ids = append(ids, id)
 	}
 	e.rt.Count(false)
-	runs, in := map[string]int{}, map[string]int{}
-	for _, id := range ids {
-		for name, n := range e.rt.Of(id).Statements() {
-			runs[name] += n
-			in[name]++
-		}
-	}
-	out := map[string]int{}
-	for name, n := range runs {
-		if in[name]*10 >= len(ids)*9 {
-			out[name] = (n + len(ids)/2) / len(ids)
-		}
-	}
+	out := e.rt.PerRequest(ids)
 	if len(out) == 0 {
-		t.Fatalf("%s: no statement ran in nine requests in ten; the counter is not in the replica (e.start): %v", what, runs)
+		t.Fatalf("%s: no statement ran in nine requests in ten; the counter is not in the replica (e.start): %v", what, e.rt.Of(ids[0]).Statements())
 	}
 	return out
 }

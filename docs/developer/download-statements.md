@@ -1,12 +1,12 @@
 # The statements of a download
 
-A download of a stored file costs one PostgreSQL statement per route ([R-ARCH-027](../spec/architecture.md#r-arch-027--performance-targets)), counted on the
-database's log, not assumed. This page is how the one statement is built, what reads from it, and how to add a format's rows to it.
+A download of a stored file costs one PostgreSQL statement per route ([R-ARCH-027](../spec/architecture.md#r-arch-027--performance-targets)), counted by the
+request's ID, not assumed. This page is how the one statement is built, what reads from it, and how to add a format's rows to it.
 
 ## Measured
 
-`TestR_ARCH_027_ADownloadCostsOneStatement` ([test/integration/querybudget](../../test/integration/querybudget/download_test.go)) turns `log_statement` on for the
-database of its own stack, warms a path, sends 30 downloads to one replica and counts the statements by their sqlc name. Statements per download:
+`TestR_ARCH_027_ADownloadCostsOneStatement` ([test/integration/querybudget](../../test/integration/querybudget/download_test.go)) starts its replica with
+`testenv.RequestTransactions`, warms a path, sends 30 downloads to it and counts the statements each download ran, by their sqlc name. Statements per download:
 
 | Route | Before | After | Budget |
 |---|---|---|---|
@@ -32,16 +32,14 @@ At the scale of the performance run of R-VULN-028 (100,000 stored versions, 10,0
 A remote hit whose package document is expired, or was validated before a restore, revalidates the document first (one conditional request in one flight,
 [Q-NPM-13](../spec/formats/npm.md#q-npm-13--removal-marks-after-a-restore-and-for-cached-tarballs)) and then reads the facts again; that request is outside the budget and costs the statements of the revalidation.
 
-The first-request measurement of `TestR_ARCH_027_ADocumentOfACallerWithPathPatternsCostsOneStatement` (a document after a write) does not use the log:
-it starts the replica with `testenv.RequestTransactions` and reads the statements of the one request by its `X-Request-Id`, so a statement of the replica's
-own loops (the readiness check reads `system_state` twice) never falls into the count. The log window stays where a test counts many identical requests
-and tolerates a lost line (`perRequestAs`): `testenv.PerRequest` takes the instant each request of the window began and counts a statement
-that ran for nine requests in ten and spread over at least half of the time from the second request's start to the last one's, so a burst
-of the scheduler's tick does not count and one slow request does not hide the requests' statements
-([Q-MAL-92](../spec/malware-scanning.md#q-mal-92--a-statement-counts-toward-the-download-budget-when-it-runs-across-the-downloads)). A replica of the role `all`, the one of `TestR_ARCH_027_ADebianDownloadCostsOneStatement`
-([deb_test.go](../../test/integration/querybudget/deb_test.go)), runs the latest slot of every task at its first tick; the test waits until the run of the
-orphan sweep has ended before its window, because the sweep's pause check, finish and checkpoint per prefix of the connection (storage.md R-STOR-026)
-would pass the window's nine-in-ten rule as statements of every download (`awaitFirstRun`).
+Every measurement of the area counts by the request's ID ([Q-ARCH-700](../spec/architecture.md#q-arch-700--a-statement-budget-counts-the-statements-that-ran-with-the-requests-id-not-the-databases-log-of-a-window)):
+its replicas run `testenv.RequestTransactions`, the pgx tracer of the request pool and the control connection, and a statement is a request's when it
+ran with that request's context, read by the answer's `X-Request-Id`. A statement of the replica's own loops (the readiness check reads
+`system_state` twice), a run of the scheduler or of a task (the orphan sweep of a replica of the role `all`) and a batched writer carry no request ID and
+never fall into the count, however loaded the host. A test of many identical requests (`perRequestAs`) counts a name as a statement of every request
+when it ran in nine requests of ten (`RequestTransactions.PerRequest`): a name of fewer is a cache entry that expired in one of them. The count of the
+vulnerability scanning's downloads ([querycount_test.go](../../test/integration/vulnblock/querycount_test.go)) counts the same way since 2026-11-23;
+no test reads the database's log any more.
 
 ## How the one statement is built
 

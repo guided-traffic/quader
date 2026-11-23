@@ -33,6 +33,8 @@ type RequestTransactions struct {
 	// tx is the explicit transaction each connection is inside, batch the batch it sends.
 	tx, batch map[*pgx.Conn]open
 	reqs      map[string]*RequestCost
+	// sql is the text of each statement name a request ran, the first one seen.
+	sql map[string]string
 }
 
 // open is a transaction a connection is inside: the request that began it ("" for none) and its index among the request's
@@ -66,7 +68,7 @@ var (
 
 // NewRequestTransactions returns an empty counter.
 func NewRequestTransactions() *RequestTransactions {
-	return &RequestTransactions{idOf: httpserver.RequestID, tx: map[*pgx.Conn]open{}, batch: map[*pgx.Conn]open{}, reqs: map[string]*RequestCost{}}
+	return &RequestTransactions{idOf: httpserver.RequestID, tx: map[*pgx.Conn]open{}, batch: map[*pgx.Conn]open{}, reqs: map[string]*RequestCost{}, sql: map[string]string{}}
 }
 
 // Option is the database option that installs the counter in a replica (ReplicaOptions.Database). One counter may serve
@@ -100,6 +102,33 @@ func (r *RequestTransactions) Of(id string) RequestCost {
 	return out
 }
 
+// SQL is the text of a statement a counted request ran, by its name (RequestCost); "" for a name no request ran.
+func (r *RequestTransactions) SQL(name string) string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.sql[name]
+}
+
+// PerRequest returns the statements of the requests with the IDs by name, per request: a name that ran in at least nine
+// requests in ten, by the number of its runs per request, rounded. A name that ran in fewer is a cache entry that expired in
+// one of them, which is no statement of every request (R-ARCH-027, Q-ARCH-700).
+func (r *RequestTransactions) PerRequest(ids []string) map[string]int {
+	runs, in := map[string]int{}, map[string]int{}
+	for _, id := range ids {
+		for name, n := range r.Of(id).Statements() {
+			runs[name] += n
+			in[name]++
+		}
+	}
+	out := map[string]int{}
+	for name, n := range runs {
+		if in[name]*10 >= len(ids)*9 {
+			out[name] = (n + len(ids)/2) / len(ids)
+		}
+	}
+	return out
+}
+
 // begin opens a transaction of the request and returns it; the caller holds the lock.
 func (r *RequestTransactions) begin(id string, first ...string) open {
 	c, ok := r.reqs[id]
@@ -113,7 +142,11 @@ func (r *RequestTransactions) begin(id string, first ...string) open {
 
 // add puts a statement of the request into the open transaction o when the request began it, and into a transaction of its
 // own otherwise; the caller holds the lock.
-func (r *RequestTransactions) add(id string, o open, ok bool, name string) {
+func (r *RequestTransactions) add(id string, o open, ok bool, sql string) {
+	name := StatementName(sql)
+	if _, seen := r.sql[name]; !seen {
+		r.sql[name] = sql
+	}
 	if ok && o.id == id {
 		c := r.reqs[id]
 		c.Transactions[o.i] = append(c.Transactions[o.i], name)
@@ -178,7 +211,7 @@ func (r *RequestTransactions) TraceQueryStart(ctx context.Context, conn *pgx.Con
 		return ctx
 	}
 	o, ok := r.tx[conn]
-	r.add(id, o, ok, StatementName(d.SQL))
+	r.add(id, o, ok, d.SQL)
 	return ctx
 }
 
@@ -226,7 +259,7 @@ func (r *RequestTransactions) TraceBatchQuery(ctx context.Context, conn *pgx.Con
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	o, ok := r.batch[conn]
-	r.add(id, o, ok, StatementName(d.SQL))
+	r.add(id, o, ok, d.SQL)
 }
 
 // TraceBatchEnd ends a batch.

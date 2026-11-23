@@ -339,7 +339,7 @@ integration harness passes it (`testenv.ReplicaOptions.Vuln`); (4) `wireFiles`, 
 **The query budget.** R-ARCH-027 budgets one query for a local download and one for a remote hit, and a download meets it
 ([download-statements.md](download-statements.md)). The scanning adds none:
 [querycount_test.go](../../test/integration/vulnblock/querycount_test.go) counts the statements a download runs
-from the PostgreSQL log, on a replica that scans and one that does not, in one database, and requires the same statements per download and
+by its request ID (`testenv.RequestTransactions`, Q-ARCH-700), on a replica that scans and one that does not, in one database, and requires the same statements per download and
 one `GetLiveItem`. Before the serve check's rows joined the item lookup a local download ran `GetLiveItem` and the format's serve check (2 statements) and a remote hit `ProxyEntryGet`,
 `GetLiveItem` and `NPMRemoteTarballFacts` twice (4), with the scanning or without it; the item lookup now reads the serve check's rows and the cache entry too.
 
