@@ -115,8 +115,9 @@ type LimiterOptions struct {
 	// Valkey carries the cluster-scoped counters; nil means every limiter runs
 	// its fallback.
 	Valkey *Valkey
-	// Registry receives quader_ratelimit_decisions_total and
-	// quader_ratelimit_fallback; nil registers nothing.
+	// Registry receives quader_ratelimit_decisions_total,
+	// quader_ratelimit_valkey_failures_total and quader_ratelimit_fallback; nil
+	// registers nothing.
 	Registry prometheus.Registerer
 	// LiveReplicas returns the number n of live replicas of this replica's role
 	// in the replica registry, refreshed with the heartbeat (R-ARCH-034). Values
@@ -141,6 +142,9 @@ type LimiterSet struct {
 	now   func() time.Time
 
 	decisions *prometheus.CounterVec
+	// failures counts a limiter's calls to Valkey that failed (quader_ratelimit_valkey_failures_total): each held its request for
+	// at most valkey.command_timeout before the replica's share decided (R-ARCH-031, R-ARCH-034).
+	failures *prometheus.CounterVec
 
 	mu       sync.Mutex
 	limiters map[string]*Limiter
@@ -172,9 +176,16 @@ func NewLimiterSet(o LimiterOptions) (*LimiterSet, error) {
 		Name: "quader_ratelimit_decisions_total",
 		Help: "Rate-limit checks by limiter, mode (cluster, fallback, replica) and outcome (admitted, refused).",
 	}, []string{"limiter", "mode", "outcome"})
+	ls.failures = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "quader_ratelimit_valkey_failures_total",
+		Help: "Calls of a cluster-scoped limiter to Valkey that failed, by limiter; each waited at most valkey.command_timeout.",
+	}, []string{"limiter"})
 	if o.Registry != nil {
 		if err := o.Registry.Register(ls.decisions); err != nil {
 			return nil, fmt.Errorf("cluster: registering quader_ratelimit_decisions_total: %w", err)
+		}
+		if err := o.Registry.Register(ls.failures); err != nil {
+			return nil, fmt.Errorf("cluster: registering quader_ratelimit_valkey_failures_total: %w", err)
 		}
 		if err := o.Registry.Register(fallbackCollector{ls}); err != nil {
 			return nil, fmt.Errorf("cluster: registering quader_ratelimit_fallback: %w", err)
@@ -363,7 +374,7 @@ func (l *Limiter) TakeNAt(ctx context.Context, bucket string, n int, at time.Tim
 			}
 			return l.record(v)
 		}
-		l.set.store.degraded()
+		l.failedCall()
 	} else if l.set.store != nil {
 		l.set.store.degraded()
 	}
@@ -429,7 +440,7 @@ func (l *Limiter) GiveBack(ctx context.Context, v Verdict) {
 		return
 	}
 	if err := l.set.store.giveBack(context.WithoutCancel(ctx), b.w, int64(b.units)); err != nil {
-		l.set.store.degraded()
+		l.failedCall()
 	}
 }
 
@@ -564,7 +575,7 @@ func (l *Limiter) Exceeded(ctx context.Context, bucket string) bool {
 			l.inFallback.Store(false)
 			return float64(prev)*(1-el)+float64(cur) >= float64(l.burst)
 		}
-		l.set.store.degraded()
+		l.failedCall()
 	} else if l.scope == ScopeCluster && l.set.store != nil {
 		l.set.store.degraded()
 	}
@@ -592,7 +603,7 @@ func (l *Limiter) Count(ctx context.Context, bucket string) {
 			l.inFallback.Store(false)
 			return
 		}
-		l.set.store.degraded()
+		l.failedCall()
 	} else if l.scope == ScopeCluster && l.set.store != nil {
 		l.set.store.degraded()
 	}
@@ -624,6 +635,14 @@ func (l *Limiter) localMode() Mode {
 		return ModeReplica
 	}
 	return ModeFallback
+}
+
+// failedCall records a call to Valkey that was made and failed: the mechanism ran degraded, and the limiter's own counter of the
+// calls that held a request (quader_ratelimit_valkey_failures_total) grows. A check that does not try Valkey, because it cannot be
+// used (the circuit is open), counts as degraded only.
+func (l *Limiter) failedCall() {
+	l.set.store.degraded()
+	l.set.failures.WithLabelValues(l.name).Inc()
 }
 
 func (l *Limiter) record(v Verdict) Verdict {

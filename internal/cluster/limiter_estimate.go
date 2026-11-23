@@ -35,7 +35,7 @@ func (l *Limiter) Estimate(ctx context.Context, bucket string, add bool) (int, e
 		cur, prev, err = l.set.store.read(ctx, l.keyName, l.bucketKey(bucket), idx, 2*l.window)
 	}
 	if err != nil {
-		l.set.store.degraded()
+		l.failedCall()
 		l.inFallback.Store(true)
 		return 0, ErrUnavailable
 	}

@@ -4605,7 +4605,9 @@ The owning pages define the limit classes, their bucket keys and their values
   `valkey.command_timeout` (R-ARCH-031).
 - Every decision counts in `quader_ratelimit_decisions_total{limiter,mode,outcome}`, with `mode` =
   `cluster`, `fallback` or `replica` and `outcome` = `admitted` or `refused`
-  ([operations-and-observability.md](operations-and-observability.md) R-OPS-008).
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-008). Every call of a limiter to Valkey
+  that was made and failed, the call that holds a request for up to `valkey.command_timeout`, counts in
+  `quader_ratelimit_valkey_failures_total{limiter}`; a check while the breaker is open makes no call and is not counted.
 - Further cluster-scoped limiters are registered by their owners, for example `webhook_test`, 10
   test deliveries per minute per principal
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-043, P1).
@@ -4623,7 +4625,8 @@ Acceptance criteria:
   `quader_ratelimit_fallback` is 1 on every replica.
 - With 1 s of latency injected in front of Valkey, the limiter adds at most `valkey.command_timeout`
   to at most `valkey.circuit_breaker.failure_threshold` checks per replica, and nothing once the breaker is
-  open.
+  open. The held checks are counted by `quader_ratelimit_valkey_failures_total`, not by the time a client measured,
+  which a loaded host stretches for reasons that are not the limiter's.
 
 ## Configuration, secrets and outbound connections
 

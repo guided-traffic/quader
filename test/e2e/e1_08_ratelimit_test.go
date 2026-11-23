@@ -224,6 +224,20 @@ func TestE1_08RateLimits(t *testing.T) {
 		// wait for valkey.command_timeout (500 ms). Three clients send in turn, so every replica sees a few
 		// checks at a time; the window is longer than the pause.
 		tok := newToken(t, adm, "e2e-rl")
+		// The limiters' own counters, over the api pods: the calls to Valkey that failed, each of which held its request for up
+		// to command_timeout, and the checks of api_read the replica's share decided. A request's time measured here is the
+		// host's as well, and a loaded runner stretched requests past the bound (26 against 24, once): held checks are counted
+		// by the limiter.
+		limiterCounts := func() (failed, failedRead, fallbackRead float64) {
+			for _, p := range readyAPIPods(t) {
+				m := metricsOf(t, p)
+				failed += msum(m, "quader_ratelimit_valkey_failures_total")
+				failedRead += m[`quader_ratelimit_valkey_failures_total{limiter="api_read"}`]
+				fallbackRead += msum(m, `quader_ratelimit_decisions_total{limiter="api_read",mode="fallback"`)
+			}
+			return failed, failedRead, fallbackRead
+		}
+		failed0, failedRead0, fallback0 := limiterCounts()
 		paused := make(chan struct{})
 		go func() {
 			defer close(paused)
@@ -252,35 +266,29 @@ func TestE1_08RateLimits(t *testing.T) {
 		}
 		wg.Wait()
 		<-paused
-		slow, fastAfter := 0, 0
-		var firstSlow, lastSlow time.Duration
+		failed1, failedRead1, fallback1 := limiterCounts()
+		held := int(failed1 - failed0)
+		// A check of api_read the share decided without a call that failed: the open circuit answered it at once.
+		atOnce := int(fallback1-fallback0) - int(failedRead1-failedRead0)
+		slow := 0
 		for _, s := range samples {
 			if s.dur >= 400*time.Millisecond {
-				if slow == 0 {
-					firstSlow = s.at
-				}
 				slow++
-				lastSlow = s.at
 			}
 		}
-		for _, s := range samples {
-			if s.at > lastSlow && s.dur < 150*time.Millisecond {
-				fastAfter++
-			}
-		}
-		t.Logf("%d requests in 9 s; %d took 400 ms or more (first at +%s, last at +%s); %d fast ones after the last slow one",
-			len(samples), slow, firstSlow.Round(time.Millisecond), lastSlow.Round(time.Millisecond), fastAfter)
+		t.Logf("%d requests in 9 s; the limiters' calls to Valkey that failed and held their request: %d; checks the open circuit answered at once: %d; %d requests took 400 ms or more by this client's clock",
+			len(samples), held, atOnce, slow)
 		const threshold, replicas, clients = 5, 3, 3
-		if slow == 0 {
-			t.Error("no request was held: the pause did not reach the limiter")
+		if held == 0 {
+			t.Error("no check was held: the pause did not reach the limiter")
 		}
 		// failure_threshold held checks per replica, and the checks already in flight on the other clients when the
 		// circuit opens.
-		if bound := threshold*replicas + clients*replicas; slow > bound {
-			t.Errorf("%d requests were held by the limiter, want at most %d (failure_threshold %d per replica plus those in flight)", slow, bound, threshold)
+		if bound := threshold*replicas + clients*replicas; held > bound {
+			t.Errorf("%d checks were held by the limiters, want at most %d (failure_threshold %d per replica plus those in flight)", held, bound, threshold)
 		}
-		if fastAfter < 30 {
-			t.Errorf("only %d fast requests after the last held one: the circuit did not stay open for the rest of the pause", fastAfter)
+		if atOnce < 30 {
+			t.Errorf("only %d checks answered at once by the open circuit: it did not stay open for the rest of the pause", atOnce)
 		}
 		waitFor(t, "the circuit closed again", 2*time.Minute, time.Second, func() bool {
 			for _, p := range readyAPIPods(t) {

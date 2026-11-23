@@ -394,6 +394,31 @@ func TestLimiterFallback(t *testing.T) {
 		}
 	})
 
+	t.Run("R-ARCH-034 R-ARCH-031 every call to Valkey that failed counts in quader_ratelimit_valkey_failures_total, a check with the circuit open does not", func(t *testing.T) {
+		st, clk := newMemWindows(), newLimClock()
+		reg := prometheus.NewRegistry()
+		set := replica(t, st, clk, 3, reg)
+		l := set.NewLimiter("api_read", ScopeCluster, 50, 200)
+		auth := set.NewLimiter("auth.credential_failures", ScopeCluster, 1, 5)
+		st.fail = true
+		l.Take(t.Context(), "t")
+		l.Take(t.Context(), "t")
+		auth.Exceeded(t.Context(), "addr")
+		auth.Count(t.Context(), "addr")
+		if _, err := auth.Estimate(t.Context(), "addr", true); err == nil {
+			t.Fatal("an estimate with a failing store answered")
+		}
+		st.fail, st.down = false, true
+		l.Take(t.Context(), "t")
+		auth.Exceeded(t.Context(), "addr")
+		if got := gaugeValue(t, reg, "quader_ratelimit_valkey_failures_total", "api_read"); got != 2 {
+			t.Errorf("api_read: %v failed calls counted, want the 2 takes that were tried", got)
+		}
+		if got := gaugeValue(t, reg, "quader_ratelimit_valkey_failures_total", "auth.credential_failures"); got != 3 {
+			t.Errorf("auth.credential_failures: %v failed calls counted, want the read, the count and the estimate", got)
+		}
+	})
+
 	t.Run("R-ARCH-034 a replica-scoped limiter never uses the store", func(t *testing.T) {
 		st, clk := newMemWindows(), newLimClock()
 		l := replica(t, st, clk, 3, nil).NewLimiter("local", ScopeReplica, 1, 3)

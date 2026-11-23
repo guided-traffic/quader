@@ -30,8 +30,8 @@ type Options struct {
 	// Signer signs the answer records (R-BAS-032). Required with Valkey.
 	Signer *cache.Signer
 	Log    *slog.Logger
-	// Registry receives quader_valkey_*, quader_ratelimit_decisions_total and quader_ratelimit_fallback; nil
-	// registers nothing.
+	// Registry receives quader_valkey_*, quader_ratelimit_decisions_total, quader_ratelimit_valkey_failures_total and
+	// quader_ratelimit_fallback; nil registers nothing.
 	Registry prometheus.Registerer
 	// Metrics counts the answer records that failed their signature; nil counts nothing.
 	Metrics *metrics.Metrics
