@@ -49,6 +49,9 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
            says why where the address would stand (Q-UI-898, Q-UI-899). -->
       @if (system()) {
         <p class="content-note system-note" data-testid="file-system">{{ systemNote() }}</p>
+      } @else if (disabled()) {
+        <!-- A disabled repository answers every download 404 (R-REPO-005): no address, no Download, one sentence (Q-UI-965). -->
+        <p class="content-note system-note" data-testid="file-disabled" i18n="@@files.disabled-note">The repository is disabled: nobody can download this file until it is enabled again.</p>
       } @else if (it.downloadUrl; as url) {
         <div class="file-address">
           <span class="field-label" i18n="@@files.download-address">Download address</span>
@@ -225,6 +228,8 @@ export class RepositoryFile {
   readonly item = input.required<Item>();
   /** The repository's format: Debian's sentence and the kinds a file without a signature names (R-SIG-009), a generic sibling. */
   readonly format = input('generic');
+  /** The repository is disabled: the file has no address, no download and no download with curl (Q-UI-965). */
+  readonly disabled = input(false);
 
   // ---- The signatures (R-SIG-035) ----
   private readonly signaturesApi = inject(SignaturesApi);
@@ -283,7 +288,7 @@ export class RepositoryFile {
   /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {
     const url = this.item().downloadUrl;
-    return url && !this.system() ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
+    return url && !this.system() && !this.disabled() ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
   });
   /**
    * A file of a system repository of the project `upstream` (R-UI-193): Quader's own work reads it, and every download, by its

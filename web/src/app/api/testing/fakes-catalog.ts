@@ -562,6 +562,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
           layout: 'generic',
           visibility: repo.visibility ?? { artifacts: 'private', wiki: 'private' },
           addresses: [`https://quader.example.net/files/${ref}/`],
+          disabled: repo.disabled ?? false,
         },
         etag: `"${this.version(key)}-consumer"`,
       };

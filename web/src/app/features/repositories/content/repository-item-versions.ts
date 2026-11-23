@@ -30,7 +30,7 @@ const VERSIONS_PAGE = 20;
   template: `
     <!-- A system repository answers every client's request 404: its versions have no install or pull command, and no row offers
          Show command (Q-UI-898). -->
-    @if (!system()) {
+    @if (!closed()) {
       <div class="command-panel">
         <p class="command-title">
           {{ shape().commandLabel }}
@@ -89,7 +89,7 @@ const VERSIONS_PAGE = 20;
               }
             </td>
           }
-          @if (!system()) {
+          @if (!closed()) {
             <td class="actions">
               <button
                 type="button"
@@ -188,11 +188,15 @@ export class RepositoryItemVersions {
       { id: 'published', label: s.publishedLabel },
     );
     if (this.scanned()) columns.push({ id: 'vulnerabilities', label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities` });
-    if (!this.system()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
+    if (!this.closed()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
     return columns;
   });
   /** A system repository of the project `upstream` (R-UI-193): no command for any of its versions (Q-UI-898). */
   protected readonly system = systemClosed(() => this.repository());
+  /** The repository is disabled and answers no client: no command either (Q-UI-965). */
+  readonly disabled = input(false);
+  /** No client reaches the versions: a system repository that answers no client, or a disabled one. */
+  protected readonly closed = computed(() => this.system() || this.disabled());
 
   constructor() {
     effect(() => {

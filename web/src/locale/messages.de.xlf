@@ -50076,5 +50076,11 @@
         <target>Speicher</target>
       </segment>
     </unit>
+    <unit id="files.disabled-note">
+      <segment>
+        <source>The repository is disabled: nobody can download this file until it is enabled again.</source>
+        <target>Das Repository ist deaktiviert: Niemand kann diese Datei herunterladen, bis es wieder aktiviert ist.</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

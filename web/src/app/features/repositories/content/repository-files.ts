@@ -118,7 +118,7 @@ export const FILES_PAGE = 200;
               –
             }
           </td>
-          @if (!system()) {
+          @if (!closed()) {
             <td class="actions">
               @if (c.kind === 'file' && fileUrl(c); as url) {
                 <quader-copy-button [value]="url" [label]="copyUrlLabel(c)" [quiet]="true" />
@@ -184,14 +184,19 @@ export class RepositoryFiles {
     { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },
     { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true },
     { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change` },
-    // A system repository's files have no address to copy, so the column would stay empty (Q-UI-898).
-    ...(this.system() ? [] : [{ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true }]),
+    // A system repository's files and a disabled repository's have no address to copy, so the column would stay empty (Q-UI-898,
+    // Q-UI-965).
+    ...(this.closed() ? [] : [{ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true }]),
   ]);
   /**
    * A system repository of the project `upstream` (R-UI-193): every download by path answers 404 to every caller (R-REPO-070,
    * R-REPO-075), so no file's row offers its download address (Q-UI-898).
    */
   protected readonly system = systemClosed(() => this.repository());
+  /** The repository is disabled: it answers every download by path 404, so no file's row offers its address (Q-UI-965). */
+  readonly disabled = input(false);
+  /** No client reaches the files: a system repository that answers no client, or a disabled one. */
+  protected readonly closed = computed(() => this.system() || this.disabled());
 
   constructor() {
     effect(() => {

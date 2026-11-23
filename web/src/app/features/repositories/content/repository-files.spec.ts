@@ -249,6 +249,37 @@ describe('The files of a repository', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-193 Q-UI-965 a file of a disabled repository offers no Download, no download address and no download with curl, and says why once; so does a reader\'s view', async () => {
+    for (const consumer of [false, true]) {
+      const { root, fixture } = await open('generic-local', 'releases/1.0/app.zip', (_, catalog) => {
+        catalog.repositories = catalog.repositories.map((r) => (r.key === 'generic-local' ? { ...r, disabled: true } : r));
+        catalog.consumerOnly = consumer;
+      });
+      expect([...root.querySelectorAll('a')].some((a) => a.textContent?.includes('Download'))).toBe(false);
+      expect(root.querySelector('.file-address')).toBeNull();
+      expect(text(root.querySelector('[data-testid="file-disabled"]')!)).toBe(
+        'The repository is disabled: nobody can download this file until it is enabled again.',
+      );
+      // The header offers no Set up client either, to the reader too (R-UI-052).
+      expect([...root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Set up client')).toBe(false);
+      const details = root.querySelector<HTMLElement>('quader-disclosure.details')!;
+      details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
+      await settle(fixture);
+      const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
+      // The item's own request stays: the management API answers it (Q-UI-898).
+      expect(commands).toHaveLength(1);
+      expect(commands[0]).not.toContain('-O');
+    }
+  });
+
+  it('R-UI-193 Q-UI-965 a folder of a disabled repository offers no file address to copy, and has no column for it', async () => {
+    const { root } = await open('generic-local', undefined, (_, catalog) => {
+      catalog.repositories = catalog.repositories.map((r) => (r.key === 'generic-local' ? { ...r, disabled: true } : r));
+    });
+    expect(root.querySelector('quader-data-table tbody quader-copy-button')).toBeNull();
+    expect(root.querySelector('quader-data-table td.actions')).toBeNull();
+  });
+
   it('R-UI-011 a reader of a file may download and copy, and is offered no Delete', async () => {
     const { root } = await open('generic-local', 'readme.txt', undefined, (c) => c.action === 'read');
     expect(text(root.querySelector('.file-actions')!)).toContain('Download');

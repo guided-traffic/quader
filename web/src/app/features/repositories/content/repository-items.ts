@@ -103,7 +103,7 @@ export const GRADE_SORT_MAX = 1000;
             <div [id]="'versions-' + p.id" class="collapse-region" [class.open]="isOpen(p.id)">
               <div>
                 @if (opened().has(p.id)) {
-                  <quader-repository-item-versions [pkg]="p" [repository]="repository()" [shape]="shape()" [scanned]="graded()" />
+                  <quader-repository-item-versions [pkg]="p" [repository]="repository()" [shape]="shape()" [scanned]="graded()" [disabled]="disabled()" />
                 }
               </div>
             </div>
@@ -136,6 +136,8 @@ export class RepositoryItems {
    * `other` who may not, `none` for a disabled repository. It offers no button: **Set up client** is the header's.
    */
   readonly fill = input<'publisher' | 'other' | 'none'>('other');
+  /** The repository is disabled: an opened item offers no install or pull command (Q-UI-965). */
+  readonly disabled = input(false);
   readonly filterChange = output<string>();
   readonly sortParamChange = output<ItemSort>();
 

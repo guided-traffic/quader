@@ -4078,7 +4078,10 @@ own and no tree across the repositories of a project.
   the facts **Size**, **Media type**, **Created**, **Last changed** (each with who, where known) and **SHA-256** (its short form, the
   full value as the title, a copy button); a missing or damaged content says so under **Content**. **Details**, closed: every checksum
   (SHA-256, SHA-512, SHA-1, MD5) with a copy button, the download statistics (**Downloads**, **Last download**, **Last downloader**,
-  read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17). Properties (P1, R-API-026)
+  read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17). A file of a disabled
+  repository, which answers every download 404 (R-REPO-005), has no **Download**, no download address and no download with `curl`;
+  one muted sentence says why where the address stood, and its folder's rows have no address to copy and an opened image no
+  command ([Q-UI-965](#q-ui-965--a-disabled-repository-offers-no-download-address-or-command-and-says-why-once)). Properties (P1, R-API-026)
   and Effective permissions (P1, R-API-034) are not built yet. The link from a file to its package version appears when the API
   reports one; it reports none today (`package` is always null).
 - What a plain reader sees: the list, a folder, a file, Download and the copy buttons. Every operation of R-UI-011 is offered only to
@@ -22126,6 +22129,37 @@ the states in the API document would rename the generated Go constants of the re
 
 **Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-061; `api/openapi.yaml` `StorageConnection`.
 
+### Q-UI-965 · A disabled repository offers no download, address or command, and says why once
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "A disabled repository's file page offers
+Download, which answers 404"; the owner reviews it at the walkthrough.
+
+Context: verified in the code. `/files/` and the content route of the UI refuse a disabled repository with 404 `repository_disabled`
+for every caller (`target.resolved` of [files.go](../../internal/files/files.go), strict); the management API reads it. The file's
+page offered **Download**, its download address and **Download with curl**, a folder's rows their address to copy and an opened image
+its pull command, all of which failed. The page knew the repository was disabled only from the full document: the reader's view
+(R-REPO-010) did not say it, so a reader was also offered **Set up client**.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Leave each of them out, as for a system repository (Q-UI-898), with one muted sentence where the address stood: "The repository is disabled: nobody can download this file until it is enabled again."; the reader's view carries `disabled` (chosen) | R-UI-010, R-REPO-010 | One rule for a repository that answers no client, whatever the reason; the reader learns why once, where the address would be; the header's badge **disabled** and the absent **Set up client** reach the reader too | Two places (the sentence and the badge) say one fact |
+| (b) **Download** stays, disabled, with the reason beside it | The style guide's "a disabled option stays visible and says why" | The reader sees what is missing | A control nobody on this page can use, on every file of the repository; the address and the curl command would need the same |
+| (c) Leave them out without a sentence | — | Shortest | A file page without the thing every other one has, unexplained but for the badge |
+
+**Choice:** (a). The item's own request with curl stays: the management API answers it. Every reader's page knows the state, since the
+reader's view of `GET /api/v1/projects/{project}/repositories/{key}` carries `disabled`.
+
+**Rationale:** the rule of Q-UI-898 is "nothing offers what the repository refuses", and a disabled repository refuses exactly what a
+system repository refuses. The development agent would revisit it if a disabled repository's downloads become possible for some
+callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes only today).
+
+**Applied in the spec:** R-UI-010, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-010. Code:
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
+[repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
+[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
+[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
+[document.go](../../internal/repository/document.go). The package pages are not covered: H-1560.
+
 ## What this does not cover
 
 
@@ -22243,3 +22277,12 @@ from the grades on. Sorting by grade loads the list up to 1,000 entries and sort
 sort by grade; a repository with more items sorts its first 1,000 by name and grade, and the worst item may be the 1,001st. The
 list says so under the table. What makes it real: a remote repository that caches more than 1,000 packages, and a reader who
 looks for its worst one. Hardening: a server sort over a stored grade (Q-UI-373 (b)).
+
+### H-1560 · A version held by a disabled repository is still offered for install
+
+Component: the install panel and the **Files** tab of a version page (R-UI-111, Q-UI-965). Subject: every reader of a package one of
+whose holding repositories is disabled. Live today. The package API's list of the repositories that hold a version and its files'
+`downloadUrl` and `contentUrl` do not say that a repository is disabled, so the install panel may offer that repository's command and
+the **Files** tab its **Download**, which answer 404; the repository's own pages leave them out (Q-UI-965). What makes it real: a disabled
+local repository whose versions a reader opens through the package list. Hardening: `disabled` in `PackageVersionRepository` and the
+panel's choice of repositories without it, as Q-UI-898 does for a system repository.

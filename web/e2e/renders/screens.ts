@@ -2140,6 +2140,18 @@ async function* gateSetup(page: Page): AsyncGenerator<string> {
 // ---- States the seed does not hold, answered in the browser ----
 
 /**
+ * A file of a disabled repository (R-UI-193, Q-UI-965): the repository's answer, the full document and the reader's view alike, says
+ * that it is disabled, so the file offers no **Download**, no download address and no download with curl, and says why once.
+ */
+async function* disabledFile(page: Page): AsyncGenerator<string> {
+  const doc = `**/api/v1/projects/${mainProject}/repositories/assets`;
+  await answerWith(page, doc, (b) => ({ ...b, disabled: true }));
+  await expect(page.locator('main quader-repository-file')).toBeVisible();
+  yield '';
+  await page.unroute(doc);
+}
+
+/**
  * A list whose read the server refuses for a moment (503): the shared error notice with **Retry**, which stands on the line of the
  * notice's text (R-UI-175). The answer is the browser's; the list's own state is the data table's.
  */
@@ -2269,6 +2281,8 @@ export const screens: readonly Screen[] = [
   { id: 'files-many', path: `${P}/repositories/assets/files/icons/material`, kinds: ['plain'], walk: manyEntries },
   { id: 'files-empty-folder', path: `${P}/repositories/assets/files/drafts`, kinds: all },
   { id: 'files-file', path: `${P}/repositories/assets/files/README.md`, kinds: all, walk: fileView },
+  // A file of a disabled repository: no Download, no address, one sentence (Q-UI-965).
+  { id: 'files-file-disabled', path: `${P}/repositories/assets/files/README.md`, kinds: all, walk: disabledFile },
   { id: 'files-file-long', path: `${P}/repositories/assets/files/${deepFolder}/sprite-with-every-icon-of-the-design-system-for-the-customer-portal.svg`, kinds: ['plain'] },
   { id: 'files-npm', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-`, kinds: all },
   { id: 'files-npm-file', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz`, kinds: owners },

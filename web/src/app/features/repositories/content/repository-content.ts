@@ -168,10 +168,8 @@ export class RepositoryContent {
     const r = this.repository();
     return r && !isConsumerView(r) && r.class === 'remote' ? (r.remote?.url ?? null) : null;
   });
-  protected readonly disabled = computed(() => {
-    const r = this.repository();
-    return r !== undefined && !isConsumerView(r) && (r.disabled ?? false);
-  });
+  /** The repository is disabled: the full document and the reader's view say so alike (R-REPO-010), so every reader's page knows it. */
+  protected readonly disabled = computed(() => this.repository()?.disabled ?? false);
 
   /**
    * The repository's addresses: the consumer view carries them; the full document does not, so the address is built from the
@@ -191,8 +189,8 @@ export class RepositoryContent {
    * that no field stands without a name (Q-UI-320). Set up client does not show it, so it stays here (R-UI-169).
    */
   protected readonly otherAddresses = computed(() =>
-    // A system repository answers every download by path 404: no address of it is offered (Q-UI-898).
-    (this.system() ? [] : this.addresses())
+    // A system repository and a disabled one answer every download by path 404: no address of it is offered (Q-UI-898, Q-UI-965).
+    (this.system() || this.disabled() ? [] : this.addresses())
       .slice(1)
       .map((value) => {
         const label = $localize`:@@repo.content.files-address:Address for downloads by path (curl, wget)`;
