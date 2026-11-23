@@ -296,7 +296,12 @@ Rules while building:
   day; the run record has the cases): no agents of its own; its own processes are stopped by PID or by a
   pattern that holds its worktree's path; a kind cluster gets a name, an image tag and a kubeconfig file of
   its own; a worktree is cut from the pushed `main`, so a base that is merged and not pushed is reached by a
-  fast-forward to its hash, which the brief names; a migration is numbered at the landing, gapless, and runs
+  fast-forward to its hash, which the brief names; **integration tests are run with
+  `test/integration/run.sh <packages> [go test flags]` from the builder's worktree** (since 2026-11-23: it
+  takes whichever instance of the main checkout's integration stack is free, holds its lock and loads its
+  env; three instances run on the development machine; `QUADER_TEST_INSTANCE=<n>` pins one; never the bare
+  `lockf … sh -c` line, and never `make integration-up` or `integration-down` from a worktree); a migration
+  is numbered at the landing, gapless, and runs
   the integration areas `postgres` and `upstream`; a change of what a task, a job, a statement or a registry
   walks, counts or lists is followed by a search for that name under `test/integration`, and the areas found
   are run; a unit test's cost is measured in the unit job's mode, and a test of the API's package uses the
@@ -2362,6 +2367,15 @@ runs are in `git log`; this section holds the current state.
   of the PostgreSQL container's name into its env file (the query budget and the vulnerability block's
   area need it once they stand on the new code), **and starts a second and a third instance.** It lands
   with the encryption's third package; the rule for a builder's brief changes with it (section 3).
+  **Started ahead of the landing, at 04:35,** because the handover's second package stood at the lock with
+  eleven areas, the kit move's first package with its formats' areas and the landing's gates with five: the
+  stack's scripts of the commit are put into the main checkout's working tree, uncommitted (they are taken
+  out again in the moment before the landing's merge brings them), and `make integration-up INSTANCE=2` and
+  `INSTANCE=3` from the main checkout brought both instances up in half a minute; the first instance's
+  containers were not touched (up for two days). The three builders at work are told the script by its
+  path in the main checkout, with the first instance pinned for the query budget, the vulnerability block's
+  area and `server` while their code stands on an older base, since that older test code names the first
+  instance's container and port.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
