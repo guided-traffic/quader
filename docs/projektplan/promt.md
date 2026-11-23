@@ -428,21 +428,21 @@ order is what a user or an operator meets first. The state is kept here.
 
 | Package | What it closes | State |
 |---|---|---|
-| Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | in work since 08:15 |
+| Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | built; at the landing's gates since 09:28 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | in work since 08:16 |
-| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | in work since 08:49 |
+| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built at 09:30 and sent back to finish the shared virtual read, whose file was another builder's until then |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; the fixed waits of three seconds in the clients' cases; the help text of waiting downloads | waits for a place |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher | waits for a place |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy | waits for a place |
-| W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine | waits for a place |
+| W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; a code push during a nightly | after the screens' first round |
-| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds | after W6 (it owns the Makefile) |
+| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now | after W6 (it owns the Makefile) |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice) | after the screens' first round |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | waits for a place |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number | last |
-| W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | open |
+| W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements are written (they land with the signatures); the readings of runs are at work since 09:07 |
 
 ### Tests and tools
 
@@ -679,6 +679,18 @@ records the recorder that tells such a stall apart).
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
   tables held no event and no metric of the signatures before the gate's two were added; the location notes of
   the German translation file are stale.
+- **The integration harness writes an empty policy without a word (found on 2026-11-23 by the builder of
+  W1, read in the code).** `testenv.Stack.Policy` inserts a policy's selectors by a join on the project's and
+  the repository's key; a key that does not resolve (a bare repository name that falls into another
+  project, a call before the repository exists) inserts no selector, and a policy without a selector
+  grants nothing. That is what answered `deny.no-grant` to a token of the default scope in the area
+  `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
+  expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
+  to no row, then every area is run once and each test that relied on it is repaired.
+- **`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` (area `identity`) failed once under load
+  (2026-11-23, about 09:25, host load 40 to 46, four builders at their gates):** 401 where 429 was
+  expected; alone it passed in 7 s. Not looked into. To do (W4): what it waits for and whether the
+  throttle's window can pass before the last attempt on a starved host.
 
 ### Product
 
@@ -908,6 +920,13 @@ records the recorder that tells such a stall apart).
 - **F-154 · The runners' own image** (owner, 2026-11-19, "Option A, ich glaube das ist schon lange überfällig"): it is built in
   `guided-traffic/container-images`; and the tag rule ("Option A"): the runners name the tag that does not move,
   `<runner version>-<build time>`. [releasing.md](../developer/releasing.md) describes both without the owner.
+
+- **The count of a writer's reads through the signature gate may count pushes (seen on 2026-11-23 by the
+  builder of the signatures with the real clients, not looked into).** After a few pushes and signings with
+  Docker, cosign and Notation the counter stood at 29, so a `docker push`'s own reads probably count as a
+  writer's read through the gate and the audit event `signature.download_by_writer` says less than its name. To
+  do: read which requests of a push take the writer's path and count only a read of content the gate
+  holds back.
 
 ### Closed
 
@@ -6149,6 +6168,44 @@ and one standing entry, sixteen single points, the decisions that close an entry
 page changes in a worktree and a script for the plan; one reads the logs and artifacts of the fourteen
 points only a run can decide, before they expire, each to a verdict, and reads this morning's push
 against the harness's two predictions when its shards have ended.
+**09:27, the signatures with the real clients are back** (two commits, gates exit 0; measured on a stack
+of its own with each client in a container of its pinned image: the .NET SDK, Docker, Podman,
+ansible-core, npm, cosign, Notation). Five of the seven points no longer occur: both forms in which
+`dotnet nuget sign` names a signer are read (two signed packages of a throwaway root replace the old
+fixture and hold it at the unit tier), signing in a gated OCI repository works by digest and by tag, a
+posted Ansible signature stays, a remote image's version lists its signatures, a registry-signed npm
+package gets the right text, and every client names the artifact as it knows it. **One point did occur
+and is repaired:** `dotnet restore` printed `403 (Forbidden)` six times and `ansible-galaxy` `HTTP Error
+403`, since neither prints an error answer's body. NuGet's answers of the three download checks now
+carry their text in `X-NuGet-Warning`, which the client prints; Ansible Galaxy's version document now
+answers what its archive's download would, in the local, remote and virtual class, since it is the one
+document the client reads in order to download (Q-SIG-241 replaces Q-SIG-214, ADR-256). **This touches
+the owner's Q-SIG-79** (the gate acts at the download): a held-back version's document is refused too;
+said to him at 09:30. Left as written gaps: no OCI client shows a text while an image is being checked
+(H-1540); `ansible-galaxy` shows only the status for an archive no repository had stored before
+(H-1541). Not verified: nuget.org's countersignature under the shipped anchors with a client; the
+Details link of a refusal opened in a browser. Its measure of the brief's error is in the entry of
+08:47.
+**09:28, the statements are written** (one documents commit and a script for the plan): the stall family
+closes by one statement with a section "Reading a stall" on the developer page of the end-to-end tests
+and one standing entry in section 8; thirteen entries more close wholly and move to Closed when it
+lands, others partly. One point did not hold and stays open: the reading said nothing was to cut at the
+sets `vuln-long` and `vuln-pooler`, and Q-VULN-128 says to fold the drain variant into a pooler leg once
+one runs under npm's load, which `ha-pooler` and `drain-load-pooler` now do (to W7). **The two land
+together:** stacked at 09:28, the gates run (basics and lint exit 0 by 09:30; thirteen areas).
+**09:30, W1 is back and goes on** (five commits, gates exit 0 but one test under load, see section 8).
+(1) The administrator flag: `ownerIsAdmin` and `isAdmin` leave the answer for a caller without
+`identities:read`, except `ownerIsAdmin` on the caller's own tokens, which the session tells it anyway
+and the profile needs (Q-AUTH-428); H-836 is closed; the token table marks a token inactive only where
+the field says so. No new state of a screen, so no render: a row without the badge is what the renders
+show already. (2) The global read policy: the evaluation allows, a unit test holds it; the cause was
+the harness's policy helper (section 8). (3) The virtual read: by R-AUTHZ-009 and R-REPO-019 a member
+the caller may not read is skipped, so OCI's rule is the right one and the shared engine's is the
+defect; OCI now goes on only at a miss or a failure it names (Q-OCI-245), which four invented answers
+passed before. The shared engine's file was the signatures builder's until 09:27, so its builder had
+stopped at a failing test; since 09:31 it repairs the shared engine for npm, NuGet, Ansible Galaxy and
+generic files on the stack above and says what a member's pending check does to a virtual read.
+Builders with a test load: the data keys' join, the screens' first round, W1, the landing's gates.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
