@@ -27,6 +27,15 @@ type twinStore struct {
 	arrival  []int64
 	// Events are the journaled events in the order they were written: the audit event type and its path.
 	Events []string
+	// Published are the package files package.published was recorded for (R-REPO-048).
+	Published []rows.Published
+}
+
+func (t *twinStore) RecordPublished(_ context.Context, _ formats.Tx, in rows.Published) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.Published = append(t.Published, in)
+	return nil
 }
 
 func newTwin() *twinStore {

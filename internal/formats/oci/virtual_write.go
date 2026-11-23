@@ -165,12 +165,12 @@ func (f *Format) linkManifest(ctx context.Context, orq, trq *formats.Request, st
 	if err := f.linkFromMembers(ctx, orq, trq, st, name, live, child, depth+1); err != nil {
 		return err
 	}
-	skipped, err := f.shadowCheck(ctx, trq, name, live)
+	skipped, shadow, err := f.shadowCheck(ctx, trq, name, live)
 	if err != nil {
 		return err
 	}
 	return f.linkItem(ctx, orq, trq, name, ManifestPath(name, digest), child.MediaType,
-		&manifestCommit{&pushed{name: name, m: child, shadowSkipped: skipped}})
+		&manifestCommit{&pushed{name: name, m: child, shadowSkipped: skipped, shadow: shadow}})
 }
 
 // parseMember reads the manifest a member answered with, as a push is read, and checks it against the digest it was asked by.

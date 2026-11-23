@@ -13,6 +13,10 @@ import (
 type JournalStore interface {
 	// RecordPackageDeleted writes the audit event deb.package.deleted with the journal entry a restore's replay withholds the file by.
 	RecordPackageDeleted(ctx context.Context, tx formats.Tx, in rows.PackageDeleted) error
+	// RecordPublished writes the audit event package.published of a package file an upload stored, with the outcome of the name's
+	// auto claim and of its shadowing check, and the security event repository.remote_package_shadowed when the upload shadows a
+	// remote member's name on the strength of manage (R-REPO-048).
+	RecordPublished(ctx context.Context, tx formats.Tx, in rows.Published) error
 	// RecordCoordinatesRemoved writes deb.coordinates.removed with its journal entry, beside deb.coordinates.changed.
 	RecordCoordinatesRemoved(ctx context.Context, tx formats.Tx, in rows.CoordinatesRemoved) error
 	// RecordCoordinatesChanged writes deb.coordinates.changed (R-DEB-009); the removal of any coordinate is also recorded with

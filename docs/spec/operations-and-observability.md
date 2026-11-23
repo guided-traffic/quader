@@ -2071,7 +2071,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `proxy.integrity_mismatch` | A | — | Security event: a fetched artifact does not match the digest the upstream announced; nothing is stored (R-REPO-041) | `path`, `announced`, `computedSha256` |
 | `proxy.tls_untrusted` | A | — | Security event: the upstream's certificate is not trusted; at most once a minute per repository and host (R-REPO-047) | `host` |
 | `proxy.egress_denied` | A | — | Security event: the egress address policy refused the upstream's address; at most once a minute per repository and host (R-REPO-038) | `host` |
-| `package.published` | T | yes | A package version was accepted (npm publish, NuGet push). Journal flag with `journal_entry: optional` (R-OPS-014): journaled for local NuGet repositories only ([formats/nuget.md](formats/nuget.md) R-NUGET-033) | `package`, `version`, `files` |
+| `package.published` | T | yes | A package version was accepted (npm publish, NuGet push, Ansible Galaxy publish, an OCI tag or the first manifest of an image name pushed by digest, a Debian package file uploaded, R-REPO-048). Journal flag with `journal_entry: optional` (R-OPS-014): journaled for local NuGet repositories only ([formats/nuget.md](formats/nuget.md) R-NUGET-033) | `package`, `version`, `files` |
 | `package.deleted` | T | yes | A package version was deleted or unpublished. Journal flag with `journal_entry: optional`, as for `package.published` | `package`, `version` |
 | `oci.manifest.deleted` | T | yes | A manifest of an OCI image name was deleted, with the cascade of [formats/oci.md](formats/oci.md) R-OCI-018. Journal flag with a required entry `{"repository", "name", "digest", "actorId"}`, so a restore withholds the image (R-OCI-033, Q-OCI-30); written for every manifest a deletion or its cascade removes, by the system actor `removal` when no principal asked for it | `name`, `digest`, `deleted` |
 | `oci.reinstate` | T | — | `quader admin oci reinstate` put back a manifest that a journal replay had withheld ([formats/oci.md](formats/oci.md) R-OCI-033); not journaled, because it restores access rather than removing it | `name`, `digest` |
@@ -3751,7 +3751,7 @@ selects them.
 
 | Type | Fires when | Filter subject | `data` beyond repository and actor | Available |
 |---|---|---|---|---|
-| `package.published` | A package version is accepted (npm publish, NuGet push); one event per version | package name | `package{name,version}`, `files[{path,sha256,size}]` | P1 |
+| `package.published` | A package version is accepted (npm publish, NuGet push, Ansible Galaxy publish, an OCI tag, a Debian package file); one event per version | package name | `package{name,version}`, `files[{path,sha256,size}]` | P1 |
 | `package.deleted` | A version is deleted or unpublished | package name | `package{name,version}` | P1 |
 | `package.metadata_changed` | Deprecate or undeprecate, unlist or relist, dist-tag set or removed | package name | `package{name,version}`, `change{kind,…}` (`deprecated`, `undeprecated`, `unlisted`, `relisted`, `tag_set`, `tag_removed`) | P1 |
 | `artifact.deployed` | A file is stored in a local repository by any upload path; one event per file | path | `path`, `name`, `sha256`, `size`, `overwritten` | P1 |

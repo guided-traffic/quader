@@ -97,6 +97,33 @@ type Blob struct {
 
 // ManifestDeleted is the deletion of a manifest to record in the transaction that removes its item (R-OCI-018, R-OCI-033): the
 // audit event oci.manifest.deleted with its journal entry.
+// Published is a version an image name was given (R-REPO-048, R-OPS-014): a new tag, or the first manifest of the name pushed by its
+// digest. Its event package.published carries what the guards of a first version decided.
+type Published struct {
+	// RepoKey is "<projectKey>/<repoKey>".
+	RepoKey string
+	Name    string
+	// Version is the tag, or "sha256:<hex>" for a push by digest.
+	Version string
+	// Path, SHA256 and Size are those of the item the push committed: the tag item, or the manifest item.
+	Path   string
+	SHA256 [32]byte
+	Size   int64
+	// Actor is the principal id behind the push.
+	Actor string
+	// Claim is the outcome of the namespace auto claim of the name's first version, "" for a later version.
+	Claim string
+	// ShadowUndetermined says that a remote member of a containing virtual repository could not be asked whether it serves the name;
+	// Shadowed are the virtual repositories and the remote members that serve it, published on the strength of manage.
+	ShadowUndetermined bool
+	Shadowed           []ShadowPair
+}
+
+// ShadowPair names a virtual repository and its remote member that serves a name.
+type ShadowPair struct {
+	Virtual, Remote string
+}
+
 type ManifestDeleted struct {
 	RepoID int64
 	// RepoKey is "<projectKey>/<repoKey>".

@@ -117,14 +117,20 @@ func (f *Format) commitTagItem(ctx context.Context, tx formats.Tx, c formats.Com
 		return err
 	}
 	if existing == nil {
+		var claim string
 		if first {
-			if _, err := c.Packages.AutoClaim(ctx, p.name); err != nil {
+			res, err := c.Packages.AutoClaim(ctx, p.name)
+			if err != nil {
 				return err
 			}
+			claim = res.String()
 		}
 		if _, err := c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{
 			Version: p.tag, DisplayVersion: p.tag, LeadItem: &c.Item, CreatedBy: c.Actor,
 		}); err != nil {
+			return err
+		}
+		if err := recordPublished(ctx, tx, c, p, p.tag, claim, first); err != nil {
 			return err
 		}
 	}
@@ -156,7 +162,13 @@ func (f *Format) commitManifestItem(ctx context.Context, tx formats.Tx, c format
 			return err
 		}
 		if first {
-			if _, err := c.Packages.AutoClaim(ctx, p.name); err != nil {
+			res, err := c.Packages.AutoClaim(ctx, p.name)
+			if err != nil {
+				return err
+			}
+			// The first manifest of a name pushed by its digest (a child of an index, pushed before the index's tag) is the push the
+			// shadowing check ran for: it is the name's first version for package.published (R-REPO-048).
+			if err := recordPublished(ctx, tx, c, p, p.m.Digest, res.String(), true); err != nil {
 				return err
 			}
 		}
@@ -204,4 +216,25 @@ func manifestInput(repoID int64, name string, m *manifest.Manifest) rows.Manifes
 		in.References = append(in.References, ref)
 	}
 	return in
+}
+
+// recordPublished records package.published of a version the push gave the name (a new tag, or the first manifest pushed by its
+// digest), with the outcome of the name's auto claim and, for its first version, of the shadowing check (R-REPO-048): every format's
+// publish carries them alike (audit.PublishGuards).
+func recordPublished(ctx context.Context, tx formats.Tx, c formats.CommitEvent, p *pushed, version, claim string, first bool) error {
+	st, err := portOf(c.Data)
+	if err != nil {
+		return err
+	}
+	in := rows.Published{
+		RepoKey: c.Repo.Name.String(), Name: p.name, Version: version, Path: c.Path.Path, Size: c.Size, Actor: c.Actor, Claim: claim,
+	}
+	copy(in.SHA256[:], c.Digests.SHA256)
+	if first {
+		in.ShadowUndetermined = p.shadow.Undetermined
+		for _, x := range p.shadow.Shadowed {
+			in.Shadowed = append(in.Shadowed, rows.ShadowPair{Virtual: x.Virtual, Remote: x.Remote})
+		}
+	}
+	return st.RecordPublished(ctx, tx, in)
 }

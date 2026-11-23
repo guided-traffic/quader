@@ -1713,6 +1713,11 @@ before the operation's transaction. No database transaction is held open during 
 | At least one R serves n | proceed; security audit event `repository.remote_package_shadowed` (package, L, the pairs (V, R), actor) in the commit transaction | 403 `shadows_remote_package`; nothing stored, no claim created |
 | None serves n, at least one undetermined | proceed; the publish's audit event records `shadowCheck: undetermined` | 503 `shadow_check_unavailable` with `Retry-After` (the remaining circuit-open time, else 30 s); nothing stored |
 
+- The publish's audit event is `package.published` in every format that has publishes (npm records `npm.publish`), and it carries the
+  claim's outcome and `shadowCheck: undetermined` through one function (`audit.PublishGuards`); the security event
+  `repository.remote_package_shadowed` is written in the same transaction. In OCI the first version of a name is a new tag or the first
+  manifest of the name pushed by its digest (a child of an index, pushed before the index's tag), in Debian the first package file of a
+  name an upload stores ([Q-REPO-431](#q-repo-431--oci-and-debian-record-packagepublished-with-the-guards-of-a-first-version)).
 - The check comes in addition to `deploy` and package ownership ([R-AUTHZ-018](authorization.md));
   it never grants anything. A refusal is audited as a denial with reason `deny.shadowing`.
 - An unreachable upstream fails closed: it must not be a way around the check. Only first publishes
@@ -10380,6 +10385,29 @@ columns too.
 | (b) A journal entry of its own (`upstream.clients_off`) with its own replay handler | A new event | Explicit | A second mechanism for one column |
 
 **Choice:** (a). **Applied in the spec:** R-REPO-075; [developer/clamav.md](../developer/clamav.md).
+
+### Q-REPO-431 · OCI and Debian record package.published with the guards of a first version
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That OCI and
+Debian record an undetermined shadowing check as the three other formats do was set by the coordinator of the findings run of
+2026-11-23.
+
+Context: R-REPO-048 has the publish's audit event record `shadowCheck: undetermined` and the commit write
+`repository.remote_package_shadowed`. npm, NuGet and Ansible Galaxy did (`audit.PublishGuards`); OCI and Debian ran the check, dropped
+its outcome and wrote neither event: neither format had a publish event at all.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Both write `package.published` (`package`, `version`, `files`, the guards) and the security event: OCI for a new tag and for the first manifest of a name pushed by its digest, Debian for every package file an upload stores (chosen) | Each data port's `RecordPublished`, from the commit hook | Every format records a publish and its guards alike, and a webhook subscriber of `package.published` hears of images and Debian packages too | An OCI push of a multi-platform image by tag writes one event for its tag and, when the name had no version, one for its first child pushed by digest |
+| (b) Only the security event and a new detail on another event | No publish event | Fewer events | R-REPO-048's detail has no event to live in; webhooks of OCI and Debian publishes stay missing |
+| (c) Say the two cannot | The requirement's text excludes them | Nothing to build | Both run the check and can record it; nothing in their protocol stops them |
+
+**Choice:** (a). **Applied in the spec:** R-REPO-048; [operations-and-observability.md](operations-and-observability.md) the event
+`package.published`; [formats/oci.md](formats/oci.md) R-OCI-034; [formats/debian.md](formats/debian.md) R-DEB-033. Code: `recordPublished`
+in [hooks.go](../../internal/formats/oci/hooks.go), `commitFile` in [hooks.go](../../internal/formats/deb/hooks.go), `RecordPublished` in
+[published.go](../../internal/formatdata/oci/published.go) and [published.go](../../internal/formatdata/deb/published.go). Tests:
+`TestR_REPO_048_AnOCIPushRecordsTheGuardsOfItsFirstVersion`, `TestR_REPO_048_ADebianUploadRecordsTheGuardsOfItsFirstVersion` (unit,
+milliseconds).
 
 ## What this does not cover
 

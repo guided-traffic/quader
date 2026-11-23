@@ -124,6 +124,31 @@ type RemovedFile struct {
 	VersionFiles int
 }
 
+// Published is a package file an upload stored (R-REPO-048, R-OPS-014): its event package.published carries what the guards of a first
+// version decided.
+type Published struct {
+	// RepoKey is "<projectKey>/<repoKey>".
+	RepoKey string
+	Path    string
+	Package string
+	Version string
+	SHA256  [32]byte
+	Size    int64
+	// Actor is the principal id of the upload.
+	Actor string
+	// Claim is the outcome of the namespace auto claim of the name's first version, "" for a later upload.
+	Claim string
+	// ShadowUndetermined says that a remote member of a containing virtual repository could not be asked whether it serves the name;
+	// Shadowed are the virtual repositories and the remote members that serve it, uploaded on the strength of manage.
+	ShadowUndetermined bool
+	Shadowed           []ShadowPair
+}
+
+// ShadowPair names a virtual repository and its remote member that serves a name.
+type ShadowPair struct {
+	Virtual, Remote string
+}
+
 // PackageDeleted is the data of the audit event deb.package.deleted with its journal entry (R-DEB-032).
 type PackageDeleted struct {
 	RepoID  int64

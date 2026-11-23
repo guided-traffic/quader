@@ -37,6 +37,15 @@ type twin struct {
 	hideInTx map[string]bool
 	// fetches are the targets of the background fetch of signatures the format queued (R-SIG-026).
 	fetches []string
+	// published are the versions package.published was recorded for (R-REPO-048).
+	published []rows.Published
+}
+
+func (t *twin) RecordPublished(_ context.Context, _ formats.Tx, in rows.Published) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.published = append(t.published, in)
+	return nil
 }
 
 type mkey struct {

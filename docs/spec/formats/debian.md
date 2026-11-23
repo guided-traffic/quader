@@ -1525,6 +1525,7 @@ Priority: **P2** · Covers: quader-only
 | Event | When | Journal |
 |---|---|---|
 | `authz.write.allowed` with `deploy` or `delete` | uploads, coordinate changes, deletions (R-AUTHZ-029) | — |
+| `package.published` | a package file an upload stored, with the guards of a name's first version (`claim`, `shadowCheck: undetermined`) and the security event `repository.remote_package_shadowed` when the upload shadows a remote member's name ([repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-048, Q-REPO-431) | — |
 | `deb.package.deleted` | a package file removed | yes |
 | `deb.coordinates.changed` | coordinates replaced (R-DEB-009) | — |
 | `deb.coordinates.removed` | coordinates removed from a file, beside `deb.coordinates.changed` (R-DEB-009) | yes |

@@ -90,7 +90,9 @@ type uploadCommit struct {
 	// shadowSkipped says the repository held a live version when the shadowing check ran, so nothing was asked: the commit must not
 	// find the upload to be the first one then.
 	shadowSkipped bool
-	result        rows.UploadResult
+	// shadow is what the shadowing check found when it asked (R-REPO-048); the commit records it with the name's first version.
+	shadow formats.ShadowOutcome
+	result rows.UploadResult
 }
 
 func coordStrings(cs []rows.Coordinate) []string {
@@ -164,11 +166,11 @@ func (f *Format) handleUpload(ctx context.Context, rq *formats.Request, w http.R
 	} else if taken {
 		return filenameConflict(in)
 	}
-	skipped, err := f.shadowCheck(ctx, rq, in.name(), len(live))
+	skipped, shadow, err := f.shadowCheck(ctx, rq, in.name(), len(live))
 	if err != nil {
 		return err
 	}
-	pc := &uploadCommit{in: in, coords: coords, shadowSkipped: skipped}
+	pc := &uploadCommit{in: in, coords: coords, shadowSkipped: skipped, shadow: shadow}
 	insp := &formats.Inspection{Package: in.name(), Version: in.version(), Properties: properties(in.pkg, coordStrings(coords)), Payload: in}
 	if _, err := rq.Host.Ingest().Commit(ctx, rq, sp, formats.Commit{
 		Path: formats.Path{Path: in.path}, MediaType: MediaType, CreateOnly: true, Inspection: insp, Payload: pc,
@@ -242,22 +244,22 @@ func filenameConflict(in *incoming) error {
 
 // shadowCheck is the shadowing check of a first upload of a name (R-DEB-006, R-REPO-048). It runs with no transaction open. A refusal
 // is the 403 or 503 the check built. skipped says that the repository held a live version, so nothing was asked.
-func (f *Format) shadowCheck(ctx context.Context, rq *formats.Request, name string, live int) (skipped bool, err error) {
+func (f *Format) shadowCheck(ctx context.Context, rq *formats.Request, name string, live int) (skipped bool, out formats.ShadowOutcome, err error) {
 	if live > 0 {
-		return true, nil
+		return true, formats.ShadowOutcome{}, nil
 	}
-	out, err := rq.Host.Resolver().ShadowCheck(ctx, rq, name)
+	out, err = rq.Host.Resolver().ShadowCheck(ctx, rq, name)
 	if err != nil {
-		return false, err
+		return false, formats.ShadowOutcome{}, err
 	}
 	if !out.Proceed {
 		if out.Refusal != nil {
-			return false, out.Refusal
+			return false, out, out.Refusal
 		}
-		return false, errs.E(errs.Unavailable, errs.CodeShadowCheckUnavailable,
+		return false, out, errs.E(errs.Unavailable, errs.CodeShadowCheckUnavailable,
 			"Whether a remote repository serves the package name could not be determined; try again.", errs.WithRetryAfter(out.RetryAfter))
 	}
-	return false, nil
+	return false, out, nil
 }
 
 func ioError(err error) error {

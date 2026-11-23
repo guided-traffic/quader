@@ -146,10 +146,13 @@ func (f *Format) commitFile(ctx context.Context, tx formats.Tx, c formats.Commit
 		formats.OwnershipWrite{Publish: true, FirstVersion: first}); err != nil {
 		return err
 	}
+	var claim string
 	if first {
-		if _, err := c.Packages.AutoClaim(ctx, in.name()); err != nil {
+		res, err := c.Packages.AutoClaim(ctx, in.name())
+		if err != nil {
 			return err
 		}
+		claim = res.String()
 	}
 	var vid formats.VersionID
 	for _, v := range live {
@@ -181,6 +184,21 @@ func (f *Format) commitFile(ctx context.Context, tx formats.Tx, c formats.Commit
 		return err
 	}
 	p.result = res
+	if res.Created {
+		pub := rows.Published{
+			RepoKey: c.Repo.Name.String(), Path: c.Path.Path, Package: in.name(), Version: in.version(), Size: c.Size, Actor: c.Actor, Claim: claim,
+		}
+		copy(pub.SHA256[:], c.Digests.SHA256)
+		if first {
+			pub.ShadowUndetermined = p.shadow.Undetermined
+			for _, x := range p.shadow.Shadowed {
+				pub.Shadowed = append(pub.Shadowed, rows.ShadowPair{Virtual: x.Virtual, Remote: x.Remote})
+			}
+		}
+		if err := st.RecordPublished(ctx, tx, pub); err != nil {
+			return err
+		}
+	}
 	return c.Packages.SetProperties(ctx, c.Item, properties(in.pkg, coordStrings(res.Coordinates)))
 }
 

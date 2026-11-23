@@ -90,6 +90,10 @@ type Store interface {
 	// RecordManifestDeleted writes the audit event oci.manifest.deleted with the journal entry a restore's replay withholds the
 	// manifest by (R-OCI-033).
 	RecordManifestDeleted(ctx context.Context, tx formats.Tx, in rows.ManifestDeleted) error
+	// RecordPublished writes the audit event package.published of a version the name was given, with the outcome of the name's auto
+	// claim and of its shadowing check, and the security event repository.remote_package_shadowed when the version shadows a remote
+	// member's name on the strength of manage (R-REPO-048).
+	RecordPublished(ctx context.Context, tx formats.Tx, in rows.Published) error
 	// GateFacts reads, for manifests of image names of the repository, whether each is an attachment the format recognised at its
 	// commit and the indexes of the name that list it (signatures.md R-SIG-063). A manifest that is not recorded is absent.
 	GateFacts(ctx context.Context, repoID int64, keys []rows.ManifestKey) (map[rows.ManifestKey]rows.GateFacts, error)

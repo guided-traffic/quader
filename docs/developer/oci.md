@@ -810,6 +810,7 @@ the job are [signatures.md](signatures.md)'s.
 
 | What | Where |
 |---|---|
+| A new tag, and the first manifest of a name pushed by its digest, write `package.published` with the guards of the name's first version (`audit.PublishGuards`) and, when it shadows a remote member's name, `repository.remote_package_shadowed` (R-REPO-048, Q-REPO-431) | [hooks.go](../../internal/formats/oci/hooks.go) `recordPublished`, [published.go](../../internal/formatdata/oci/published.go) |
 | An attachment tag (`sha256-<hex>`, `.sig`, `.att`, `.sbom`) is no version and no version of a mirror's plan | [hooks.go](../../internal/formats/oci/hooks.go) `commitTagItem`, [mirror_tags.go](../../internal/formats/oci/mirror_tags.go) `selectTags` |
 | The removal of a local manifest takes its attachment tags and the manifests they point at unless another tag or a kept manifest names them (R-SIG-025); `Store.TagTargets` reads a tag's manifest from the items or a remote's tag document | [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) `attachmentsOf`, `heldElsewhere`; [store_signatures.go](../../internal/formatdata/oci/store_signatures.go) |
 | The removal of a remote's manifest item takes the alias items of its referrers and of its attachment tags' manifests (Q-SIG-101) | [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) `cachedAttachments` |

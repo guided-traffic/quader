@@ -168,6 +168,9 @@ type pushed struct {
 	// shadowSkipped says that the shadowing check asked nothing because the name held a live version when it ran; a commit that
 	// then finds the push to be the name's first version asks the client to retry, so that the check runs (R-REPO-048).
 	shadowSkipped bool
+	// shadow is what the shadowing check found when it asked (R-REPO-048): undetermined, or the remote members a first version
+	// shadows on the strength of manage. The commit records it with the first version.
+	shadow formats.ShadowOutcome
 }
 
 // tagCommit is the payload of the tag item, the lead of a push by tag; manifestCommit the payload of the manifest item, the companion
@@ -283,11 +286,11 @@ func (f *Format) handleManifestPut(ctx context.Context, addr *formats.Request, w
 	if err := checkReferences(ctx, st, nil, repo.ID, name, m); err != nil {
 		return err
 	}
-	skipped, err := f.shadowCheck(ctx, rq, name, len(live))
+	skipped, shadow, err := f.shadowCheck(ctx, rq, name, len(live))
 	if err != nil {
 		return err
 	}
-	p := &pushed{name: name, tag: tag, m: m, shadowSkipped: skipped}
+	p := &pushed{name: name, tag: tag, m: m, shadowSkipped: skipped, shadow: shadow}
 	if byDigest {
 		_, err = rq.Host.Ingest().Commit(ctx, rq, sp, formats.Commit{
 			Path: formats.Path{Path: path}, MediaType: m.MediaType, Payload: &manifestCommit{p},
@@ -439,22 +442,22 @@ func checkReferences(ctx context.Context, st Store, tx formats.Tx, repoID int64,
 // shadowCheck is the shadowing check of the first version of a name (R-OCI-006, R-REPO-048). It runs with no transaction open.
 // skipped says that the repository held a live version, so nothing was asked: the commit must not find the push to be the first one
 // then.
-func (f *Format) shadowCheck(ctx context.Context, rq *formats.Request, name string, live int) (skipped bool, err error) {
+func (f *Format) shadowCheck(ctx context.Context, rq *formats.Request, name string, live int) (skipped bool, out formats.ShadowOutcome, err error) {
 	if live > 0 {
-		return true, nil
+		return true, formats.ShadowOutcome{}, nil
 	}
-	out, err := rq.Host.Resolver().ShadowCheck(ctx, rq, name)
+	out, err = rq.Host.Resolver().ShadowCheck(ctx, rq, name)
 	if err != nil {
-		return false, err
+		return false, formats.ShadowOutcome{}, err
 	}
 	if !out.Proceed {
 		if out.Refusal != nil {
-			return false, out.Refusal
+			return false, out, out.Refusal
 		}
-		return false, errs.E(errs.Unavailable, errs.CodeShadowCheckUnavailable,
+		return false, out, errs.E(errs.Unavailable, errs.CodeShadowCheckUnavailable,
 			"Whether the image name is served by a remote repository could not be determined; try again.", errs.WithRetryAfter(out.RetryAfter))
 	}
-	return false, nil
+	return false, out, nil
 }
 
 // readSpool reads the spooled body, which the spool bounded at the manifest limit.

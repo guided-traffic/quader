@@ -153,6 +153,11 @@ per repository, 32 components per suite) are checked in the transaction after th
 ([wire_deb_api.go](../../internal/app/wire_deb_api.go)) decides deploy and delete per side, enforces ownership and writes in one transaction, because
 the API layer imports no format (Q-DEB-48). A removed coordinate writes `deb.coordinates.removed` with its journal entry.
 
+An upload that stores a new package file writes `package.published` in its commit (`commitFile` in [hooks.go](../../internal/formats/deb/hooks.go),
+`RecordPublished` in [published.go](../../internal/formatdata/deb/published.go)); the name's first version carries the auto claim's outcome and an
+undetermined shadowing check (`audit.PublishGuards`), and writes `repository.remote_package_shadowed` when it shadows a remote member's name
+(R-REPO-048, Q-REPO-431).
+
 ### Deletion
 
 `DELETE pool/<file>` and every other removal (items API, `/files/`, trash) end in `OnItemsRemoved`. The item store has deleted a permanently removed

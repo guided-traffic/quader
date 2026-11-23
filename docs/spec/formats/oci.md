@@ -1227,6 +1227,10 @@ Priority: **P1** · Covers: quader-only
 
 - Writes record the authorization events of R-AUTHZ-029 like every format (`authz.write.allowed` with `deploy`, `overwrite` or
   `delete`; a remote fill with `populate`). Tag moves are writes with `overwrite`.
+- A push that gives an image name a version writes `package.published` (`package`, `version`, `files`): a new tag, with the tag as the
+  version, and the first manifest of a name pushed by its digest, with the digest; the name's first version carries the auto claim's
+  outcome and `shadowCheck: undetermined`, and the security event `repository.remote_package_shadowed` when it shadows a remote member's
+  name ([repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-048, Q-REPO-431).
 - The token service writes `auth.registry_token.denied` for a token request the authentication stage refused with 401, as an
   access event with the endpoint in its column, deduplicated per client address, endpoint, reason and form of the credential
   within `audit.token_rejection_dedup_window` (R-OPS-015), and no event per issued token; issued tokens are counted. A rejected

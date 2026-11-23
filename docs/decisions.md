@@ -11277,10 +11277,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-234 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+235 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 234 questions</summary>
+<summary>Q-REPO: 235 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11518,6 +11518,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-418](spec/repositories-and-proxy.md#q-repo-418--a-registry-preset-is-a-value-put-into-the-form-and-nothing-follows-it) | A registry preset is a value put into the form, and nothing follows it | Decided by the development agent | (a) The form copies the URL and the hosts into its fields; the create sends them; the repository holds them as its own; a changed or removed preset reaches no repository | — |
 | [Q-REPO-419](spec/repositories-and-proxy.md#q-repo-419--the-repository-administrators-write-the-presets-and-a-creator-reads-them-with-the-forms-defaults) | The repository administrators write the presets, and a creator reads them with the form's defaults | Decided by the development agent | (a) `repositories:write-config` writes, `repositories:read-config` reads the list; a creator reads the format's presets in `getRepositoryDefaults` | — |
 | [Q-REPO-420](spec/repositories-and-proxy.md#q-repo-420--switching-the-clients-off-is-the-journal-part-clientsoff) | Switching the clients off is the journal part `clientsOff` | Decided by the development agent | (a) A part `clientsOff` of `repository.narrowed`; the replay sets `clients_enabled` false and writes the document so that every replica reads it | — |
+| [Q-REPO-431](spec/repositories-and-proxy.md#q-repo-431--oci-and-debian-record-packagepublished-with-the-guards-of-a-first-version) | OCI and Debian record package.published with the guards of a first version | Decided by the development agent | (a) Both write `package.published` (`package`, `version`, `files`, the guards) and the security event: OCI for a new tag and for the first manifest of a name pushed by its digest, Debian for every package file an upload stores | — |
 
 </details>
 
