@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // makeDryRun is what `make -n <args>` would run in the repository, as a make of its own (a run under `make test` passes its
@@ -37,6 +39,46 @@ func goTestLine(out string) string {
 		}
 	}
 	return ""
+}
+
+// The linter has one time limit, passed by make (G2-29, G3-26), and a second run on the machine waits for the first instead of
+// ending at once with "parallel golangci-lint is running" (G4-13): make lint and make gosec pass --timeout and
+// --allow-serial-runners, say first when another run holds the lock, and .golangci.yml sets no timeout of its own.
+func TestTheLinterHasOneLimitAndWaitsForAnotherRun(t *testing.T) {
+	t.Parallel()
+	for _, target := range []string{"lint", "gosec"} {
+		out := makeDryRun(t, target, "LINT_TIMEOUT=17m")
+		run := ""
+		for _, l := range strings.Split(out, "\n") {
+			if strings.Contains(l, "golangci-lint") && strings.Contains(l, " run ") {
+				run = l
+			}
+		}
+		if run == "" {
+			t.Errorf("make %s runs no golangci-lint run:\n%s", target, out)
+			continue
+		}
+		for _, want := range []string{"--timeout 17m", "--allow-serial-runners"} {
+			if !strings.Contains(run, want) {
+				t.Errorf("make %s runs %q; it lacks %s", target, run, want)
+			}
+		}
+		if strings.Contains(run, "--allow-parallel-runners") {
+			t.Errorf("make %s drops golangci-lint's lock: %q", target, run)
+		}
+		if !strings.Contains(out, "pgrep -f") {
+			t.Errorf("make %s does not say that it waits for another run", target)
+		}
+	}
+	var cfg struct {
+		Run map[string]any `yaml:"run"`
+	}
+	if err := yaml.Unmarshal([]byte(readRepoFile(t, ".golangci.yml")), &cfg); err != nil {
+		t.Fatal(err)
+	}
+	if v, ok := cfg.Run["timeout"]; ok {
+		t.Errorf(".golangci.yml sets run.timeout %v beside LINT_TIMEOUT of the Makefile; the limit lives in one place", v)
+	}
 }
 
 // The unit run before a push (make unit; G2-19 of the triage of 2026-11-23): the packages of make test, the environment a runner

@@ -581,7 +581,9 @@ Locally: `make sbom-generator-check` (Docker with buildx and `jq`).
 Both run through the same pinned golangci-lint (`GOLANGCI_LINT_VERSION`), with the linter settings of
 [.golangci.yml](../../.golangci.yml). An accepted gosec finding carries its reason in the code
 (`//nolint:gosec // reason`) or in the configuration; the standalone gosec binary does not read those
-annotations, so the repository runs gosec through golangci-lint and has one gosec version.
+annotations, so the repository runs gosec through golangci-lint and has one gosec version. Both targets pass the one time limit, `LINT_TIMEOUT` of the [Makefile](../../Makefile) (20 minutes, below the 25 of the lint
+job; `.golangci.yml` sets none), and `--allow-serial-runners`, so a second run on one machine waits for the first
+([build-and-test.md](build-and-test.md#targets)).
 
 ### Compatibility
 

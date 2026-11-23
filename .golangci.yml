@@ -2,9 +2,7 @@
 version: "2"
 
 run:
-  # A cold run over the whole tree with every build tag passed five minutes on the development machine and ended with
-  # "0 issues" and "Timeout exceeded"; ten leave room on a cold runner.
-  timeout: 10m
+  # No timeout here: make lint and make gosec pass the one limit, LINT_TIMEOUT of the Makefile.
   tests: true
   build-tags:
     - integration
