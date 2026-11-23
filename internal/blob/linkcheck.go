@@ -61,6 +61,15 @@ type LinkCheck struct {
 	Overrides bool
 	// Detail says what the store answered when a part failed, for the settings' reason link_check_failed; never the link.
 	Detail string
+	// Answered: the store answered the link (a status line came back); false with Ran when the fetch failed. Status and Bytes are
+	// that answer's status and the body's bytes read (at most one more than WantBytes, the probe's size); Header, HeaderValue and
+	// HeaderWant name the first override the answer did not honour. The settings page words its sentence from these (Q-UI-996).
+	Answered      bool
+	Status, Bytes int
+	WantBytes     int
+	Header        string
+	HeaderValue   string
+	HeaderWant    string
 	// At is when the check ran.
 	At time.Time
 }
@@ -106,7 +115,7 @@ func linkCheck(ctx context.Context, e *ConformanceEnv, f Fetcher) (LinkCheck, er
 	}
 	defer resp.Body.Close()
 	got, err := io.ReadAll(io.LimitReader(resp.Body, int64(len(data))+1))
-	r.Ran = true
+	r.Ran, r.Answered, r.Status, r.Bytes, r.WantBytes = true, true, resp.StatusCode, len(got), len(data)
 	if err != nil || resp.StatusCode != http.StatusOK || !bytes.Equal(got, data) {
 		r.Detail = fmt.Sprintf("the link answered %d with %d bytes, want 200 with the probe's %d", resp.StatusCode, len(got), len(data))
 		return r, errors.New(r.Detail)
@@ -116,6 +125,7 @@ func linkCheck(ctx context.Context, e *ConformanceEnv, f Fetcher) (LinkCheck, er
 		{"Content-Type", linkProbeContentType}, {"Content-Disposition", linkProbeDisposition}, {"Cache-Control", linkProbeCache},
 	} {
 		if got := resp.Header.Get(h.name); got != h.want {
+			r.Header, r.HeaderValue, r.HeaderWant = h.name, got, h.want
 			r.Detail = fmt.Sprintf("the link's answer carries %s %q, want %q: the store does not honour response-%s", h.name, got, h.want, lowerHeader(h.name))
 			return r, errors.New(r.Detail)
 		}

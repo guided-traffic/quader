@@ -280,6 +280,14 @@ func TestR_STOR_074_TheConnectionAndItsAddress(t *testing.T) {
 		if dropping.Usable || codes(dropping) != "link_check_failed" || !strings.Contains(*dropping.Reasons[0].Detail, "Content-Disposition") || !dropping.HandoverUsable {
 			t.Errorf("dropping %+v", dropping)
 		}
+		// Q-UI-996: the page words the reason from its fields, not from the English detail.
+		if c := dropping.Reasons[0].Check; c == nil || c.Outcome != gen.OverrideIgnored || c.Header == nil || *c.Header != "Content-Disposition" ||
+			c.ExpectedValue == nil || !strings.HasPrefix(*c.ExpectedValue, "attachment;") || c.Status != nil {
+			t.Errorf("dropping's check %+v", c)
+		}
+		if plain.Reasons[0].Check != nil {
+			t.Errorf("a reason other than link_check_failed carries a check: %+v", plain.Reasons[0].Check)
+		}
 	})
 	t.Run("R-STOR-074 a PATCH with an address below a host of Quader is 422 at its pointer", func(t *testing.T) {
 		w := linkCall(h, http.MethodPatch, "/api/v1/download-links/settings", `{"publicAddresses":{"dropping":"https://blobs.quader.example.com"}}`, `"1"`)
@@ -332,4 +340,21 @@ func TestR_STOR_074_TheConnectionAndItsAddress(t *testing.T) {
 			t.Errorf("open circuit: %d %s", w.Code, w.Body)
 		}
 	})
+}
+
+// TestQ_UI_996_TheLinkChecksFields: each outcome of a failed link check carries the fields its sentence needs and no others.
+func TestQ_UI_996_TheLinkChecksFields(t *testing.T) {
+	if c := downloadLinkCheck(&blob.LinkCheck{}); c == nil || c.Outcome != gen.NotRun || c.Status != nil {
+		t.Errorf("not run %+v", c)
+	}
+	if c := downloadLinkCheck(&blob.LinkCheck{Ran: true, Detail: "the link was not answered: timeout"}); c == nil || c.Outcome != gen.NoAnswer {
+		t.Errorf("no answer %+v", c)
+	}
+	c := downloadLinkCheck(&blob.LinkCheck{Ran: true, Answered: true, Status: 403, Bytes: 0, WantBytes: 2048})
+	if c == nil || c.Outcome != gen.UnexpectedAnswer || *c.Status != 403 || *c.Bytes != 0 || *c.ExpectedStatus != 200 || *c.ExpectedBytes != 2048 || c.Header != nil {
+		t.Errorf("unexpected answer %+v", c)
+	}
+	if downloadLinkCheck(nil) != nil {
+		t.Error("a reason without a check carries one")
+	}
 }

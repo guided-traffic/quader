@@ -1099,6 +1099,30 @@ func (e DebSigningKeyState) Valid() bool {
 	}
 }
 
+// Defines values for DownloadLinkCheckOutcome.
+const (
+	NoAnswer         DownloadLinkCheckOutcome = "no_answer"
+	NotRun           DownloadLinkCheckOutcome = "not_run"
+	OverrideIgnored  DownloadLinkCheckOutcome = "override_ignored"
+	UnexpectedAnswer DownloadLinkCheckOutcome = "unexpected_answer"
+)
+
+// Valid indicates whether the value is a known member of the DownloadLinkCheckOutcome enum.
+func (e DownloadLinkCheckOutcome) Valid() bool {
+	switch e {
+	case NoAnswer:
+		return true
+	case NotRun:
+		return true
+	case OverrideIgnored:
+		return true
+	case UnexpectedAnswer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DownloadLinkReasonCode.
 const (
 	Encrypted       DownloadLinkReasonCode = "encrypted"
@@ -8908,6 +8932,38 @@ type DisableRequest struct {
 	RevokeTokens *bool `json:"revokeTokens,omitempty"`
 }
 
+// DownloadLinkCheck What a connection's link check saw on the answering replica (storage.md R-STOR-074, Q-UI-996): `not_run` (no check has
+// answered there yet), `no_answer` (the store did not answer the test link), `unexpected_answer` (it answered `status` with
+// `bytes` bytes where the check wants `expectedStatus` with the probe's `expectedBytes`), `override_ignored` (the answer carried
+// the header `header` with `value` where the link asked for `expectedValue`: the store does not honour that override). The
+// members of another outcome are absent.
+type DownloadLinkCheck struct {
+	// Bytes The bytes of its body the check read, at most one more than `expectedBytes`.
+	Bytes *int `json:"bytes,omitempty"`
+
+	// ExpectedBytes The probe's size in bytes.
+	ExpectedBytes *int `json:"expectedBytes,omitempty"`
+
+	// ExpectedStatus The status the check wants, 200.
+	ExpectedStatus *int `json:"expectedStatus,omitempty"`
+
+	// ExpectedValue The value the link asked for.
+	ExpectedValue *string `json:"expectedValue,omitempty"`
+
+	// Header The response header whose override the store did not honour (`Content-Type`, `Content-Disposition`, `Cache-Control`).
+	Header  *string                  `json:"header,omitempty"`
+	Outcome DownloadLinkCheckOutcome `json:"outcome"`
+
+	// Status The HTTP status the test link answered.
+	Status *int `json:"status,omitempty"`
+
+	// Value The value the answer carried for `header`; empty when it carried none.
+	Value *string `json:"value,omitempty"`
+}
+
+// DownloadLinkCheckOutcome defines model for DownloadLinkCheck.Outcome.
+type DownloadLinkCheckOutcome string
+
 // DownloadLinkConnection One connection and whether it can serve links on the replica that answers (storage.md R-STOR-074, R-STOR-096).
 type DownloadLinkConnection struct {
 	// Encrypted The connection encrypts what it stores (R-STOR-075); it never serves a client's link.
@@ -8937,8 +8993,12 @@ type DownloadLinkConnection struct {
 
 // DownloadLinkReason Why a connection cannot serve links (storage.md R-STOR-074): `encrypted`, `not_https` (its public address or endpoint is not
 // https), `quader_host` (a link's host would be a host of Quader or lie below one; `detail` names that host),
-// `link_check_failed` (the link check did not pass or has not answered on this replica; `detail` says what the store answered).
+// `link_check_failed` (the link check did not pass or has not answered on this replica; `check` says what the store answered
+// against what the check wanted, the fields a page words in the reader's language, and `detail` the same as one English
+// sentence for a log or a script).
 type DownloadLinkReason struct {
+	// Check What the link check's fetch answered, for `link_check_failed`; absent for every other code.
+	Check  *DownloadLinkCheck     `json:"check,omitempty"`
 	Code   DownloadLinkReasonCode `json:"code"`
 	Detail *string                `json:"detail"`
 }

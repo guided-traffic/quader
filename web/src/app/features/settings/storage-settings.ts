@@ -19,6 +19,7 @@ import { AddressField } from '../../shared/address-field';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
+import { linkCheckClause } from '../../shared/link-check';
 import { principalName } from '../../shared/malware/malware-words';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { Checkbox } from '../../shared/ui/checkbox';
@@ -35,7 +36,7 @@ const MAX_LIFE = 3600;
 
 /** The sentence of a reason a connection cannot serve links, in the words of R-UI-200's table. */
 export function linkReasonText(name: string, reason: DownloadLinkReason): string {
-  const detail = reason.detail ?? '';
+  const detail = reason.code === 'link_check_failed' ? linkCheckClause(reason) : (reason.detail ?? '');
   switch (reason.code) {
     case 'encrypted':
       return $localize`:@@links.reason.encrypted:The connection ${name}:name: is encrypted. Quader delivers its content to clients itself.`;

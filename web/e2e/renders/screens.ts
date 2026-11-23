@@ -38,7 +38,7 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
-import { auditDataKeys, bastionsHandover, bastionsRead } from './bastions';
+import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink } from './bastions';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -1001,8 +1001,8 @@ async function* storageSettings(page: Page): AsyncGenerator<string> {
       }),
       plain('eu-backup-frankfurt', 'https://s3.backup.eu-central-2.example.net', {
         usable: false, handoverUsable: false,
-        reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
-        handoverReasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
+        reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048", check: forbiddenLink }],
+        handoverReasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048", check: forbiddenLink }],
       }),
       // An encrypted connection a Bastion cannot read: its sentence and why a Bastion cannot stand under its field (Q-UI-990).
       plain('vault-eu-west', 'https://vault.s3.quader.example.com', {

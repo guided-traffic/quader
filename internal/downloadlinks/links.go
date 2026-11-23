@@ -28,8 +28,11 @@ const (
 )
 
 // Reason is why a connection cannot serve links: a code and what it names (the host it collides with, what the store answered).
+// Check is the link check behind link_check_failed, whose fields a page words in its reader's language (Q-UI-996); nil for every
+// other code.
 type Reason struct {
 	Code, Detail string
+	Check        *blob.LinkCheck
 }
 
 // ConnectionState is what a replica decided of one connection from its own configuration, the settings' snapshot and its link
@@ -210,18 +213,23 @@ func (l *Links) decide(c *blob.Connection, set Settings) ConnectionState {
 	}
 	handover := slices.Clone(address)
 	if !st.LinkCheck.Ran || !st.LinkCheck.Works {
-		handover = append(handover, Reason{Code: ReasonLinkCheckFailed, Detail: checkDetail(st.LinkCheck)})
+		handover = append(handover, checkReason(st.LinkCheck))
 	}
 	if st.Encrypted {
 		st.Reasons = append(st.Reasons, Reason{Code: ReasonEncrypted})
 	}
 	st.Reasons = append(st.Reasons, address...)
 	if !st.LinkCheck.Passed() {
-		st.Reasons = append(st.Reasons, Reason{Code: ReasonLinkCheckFailed, Detail: checkDetail(st.LinkCheck)})
+		st.Reasons = append(st.Reasons, checkReason(st.LinkCheck))
 	}
 	st.Usable, st.HandoverUsable = len(st.Reasons) == 0, len(handover) == 0
 	st.HandoverReasons = handover
 	return st
+}
+
+// checkReason is the reason link_check_failed of a check that did not pass: its English detail and the check itself.
+func checkReason(r blob.LinkCheck) Reason {
+	return Reason{Code: ReasonLinkCheckFailed, Detail: checkDetail(r), Check: &r}
 }
 
 func checkDetail(r blob.LinkCheck) string {

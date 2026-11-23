@@ -475,7 +475,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
             encrypted('archive'),
             encrypted('vault', {
               handoverUsable: false,
-              handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes' }],
+              handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes', check: { outcome: 'unexpected_answer', status: 403, bytes: 0, expectedStatus: 200, expectedBytes: 2048 } }],
             }),
           ],
         });
@@ -483,7 +483,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     });
     const why = reasons(root, 'partners')!;
     expect(lines(why)).toEqual([
-      'A Bastion gets the files of vault through the main installation: its object store did not answer a test link as expected (the link answered 403 with 0 bytes).',
+      'A Bastion gets the files of vault through the main installation: its object store did not answer a test link as expected (the test link answered with status 403 and 0 bytes instead of status 200 and 2,048 bytes).',
     ]);
     expect(why.querySelector<HTMLAnchorElement>('a')!.getAttribute('href')).toBe('/admin/settings/storage#details');
   });
@@ -496,12 +496,12 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
           handoverUsable: false,
           handoverReasons: [
             { code: 'quader_host', detail: 'quader.example.com' },
-            { code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes' },
+            { code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes', check: { outcome: 'override_ignored', header: 'Content-Disposition', value: '', expectedValue: 'attachment' } },
           ],
         }),
       ]).map((l) => l.text),
     ).toEqual([
-      'A Bastion gets the files of default through the main installation: its address lies under quader.example.com, an address of Quader; its object store did not answer a test link as expected (the link answered 403 with 0 bytes).',
+      'A Bastion gets the files of default through the main installation: its address lies under quader.example.com, an address of Quader; its object store did not answer a test link as expected (its answer carries no Content-Disposition instead of “attachment”).',
     ]);
     expect(handoverLines([linkConnection(), linkConnection({ name: 'b', handoverUsable: true })])).toEqual([]);
   });

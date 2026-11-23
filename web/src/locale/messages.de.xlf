@@ -50047,5 +50047,47 @@
         <target>gefunden</target>
       </segment>
     </unit>
+    <unit id="links.check.byte">
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> byte</source>
+        <target><ph id="0" equiv="count" disp="n"/> Byte</target>
+      </segment>
+    </unit>
+    <unit id="links.check.bytes">
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> bytes</source>
+        <target><ph id="0" equiv="count" disp="n"/> Bytes</target>
+      </segment>
+    </unit>
+    <unit id="links.check.no-answer">
+      <segment>
+        <source>the test link got no answer</source>
+        <target>der Testlink bekam keine Antwort</target>
+      </segment>
+    </unit>
+    <unit id="links.check.not-run">
+      <segment>
+        <source>the link check has not run on this replica yet</source>
+        <target>der Link-Test ist auf diesem Replikat noch nicht gelaufen</target>
+      </segment>
+    </unit>
+    <unit id="links.check.override">
+      <segment>
+        <source>its answer carries <ph id="0" equiv="header" disp="header"/> “<ph id="1" equiv="value" disp="value"/>” instead of “<ph id="2" equiv="expected" disp="expected"/>”</source>
+        <target>seine Antwort trägt <ph id="0" equiv="header" disp="header"/> „<ph id="1" equiv="value" disp="value"/>“ statt „<ph id="2" equiv="expected" disp="expected"/>“</target>
+      </segment>
+    </unit>
+    <unit id="links.check.override-none">
+      <segment>
+        <source>its answer carries no <ph id="0" equiv="header" disp="header"/> instead of “<ph id="1" equiv="expected" disp="expected"/>”</source>
+        <target>seine Antwort trägt kein <ph id="0" equiv="header" disp="header"/> statt „<ph id="1" equiv="expected" disp="expected"/>“</target>
+      </segment>
+    </unit>
+    <unit id="links.check.unexpected">
+      <segment>
+        <source>the test link answered with status <ph id="0" equiv="status" disp="status"/> and <ph id="1" equiv="bytes" disp="bytes"/> instead of status <ph id="2" equiv="expectedStatus" disp="expectedStatus"/> and <ph id="3" equiv="expectedBytes" disp="expectedBytes"/></source>
+        <target>der Testlink antwortete mit Status <ph id="0" equiv="status" disp="status"/> und <ph id="1" equiv="bytes" disp="bytes"/> statt mit Status <ph id="2" equiv="expectedStatus" disp="expectedStatus"/> und <ph id="3" equiv="expectedBytes" disp="expectedBytes"/></target>
+      </segment>
+    </unit>
   </file>
 </xliff>

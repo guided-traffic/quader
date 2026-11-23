@@ -22487,6 +22487,27 @@ the limit of 200 characters if a value a reader needs (a long URL with its query
 **Applied in the spec:** R-UI-037, R-UI-087, R-UI-170. Code: [document-block.ts](../../web/src/app/shared/document-block.ts),
 `allowed` and `CODE_BLOCK_SCROLL` of [layout.ts](../../web/e2e/renders/layout.ts).
 
+### Q-UI-996 · A failed link check's reason is a sentence of the page, built from the check's fields
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "A failed test link's reason is a developer's
+English sentence, in both languages"; the owner reviews it at the walkthrough.
+
+Context: the storage settings and a Bastion's card put the server's `detail` of `link_check_failed` into their sentence as it came, "the
+link answered 403 with 0 bytes, want 200 with the probe's 2048", inside a German sentence too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reason carries `check`: the outcome (`not_run`, `no_answer`, `unexpected_answer`, `override_ignored`) and its fields, the status and the bytes received against those expected, or the header whose override the store ignored with its value and the one asked for; the page words it, "the test link answered with status 403 and 0 bytes instead of status 200 and 2,048 bytes", "mit Status 403 und 0 Bytes statt mit Status 200 und 2.048 Bytes"; `detail` stays the English sentence for a log or a script (chosen) | `DownloadLinkCheck` | Each language says it in its words and units; one source for the two pages | A field more in the answer |
+| (b) Translate the server's sentence by pattern | — | No API change | Breaks with the next wording of the server |
+| (c) Leave the detail out of the sentence | — | Short | The administrator does not learn what the store answered |
+
+**Choice:** (a). **Rationale:** a page says in its reader's language what an answer's fields say; a sentence of the server is for its
+log. The development agent sees no case for revisiting this.
+
+**Applied in the spec:** [storage.md](storage.md) R-STOR-074; `api/openapi.yaml` `DownloadLinkReason`, `DownloadLinkCheck`. Code:
+`LinkCheck` of [linkcheck.go](../../internal/blob/linkcheck.go), `downloadLinkCheck` of
+[download_links_api.go](../../internal/api/v1/download_links_api.go), [link-check.ts](../../web/src/app/shared/link-check.ts).
+
 ### Q-UI-997 · The audit log keeps five columns, and an opened event stands beside it only where both keep their form
 
 Status: **Decided by the development agent** on 2026-11-23, closing points 1 to 4 of the open finding "Seen by the builder of the screens'

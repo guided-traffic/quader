@@ -27461,13 +27461,55 @@ components:
       description: |
         Why a connection cannot serve links (storage.md R-STOR-074): `encrypted`, `not_https` (its public address or endpoint is not
         https), `quader_host` (a link's host would be a host of Quader or lie below one; `detail` names that host),
-        `link_check_failed` (the link check did not pass or has not answered on this replica; `detail` says what the store answered).
+        `link_check_failed` (the link check did not pass or has not answered on this replica; `check` says what the store answered
+        against what the check wanted, the fields a page words in the reader's language, and `detail` the same as one English
+        sentence for a log or a script).
       properties:
         code:
           type: string
           enum: [encrypted, not_https, quader_host, link_check_failed]
         detail:
           type: [string, "null"]
+        check:
+          description: What the link check's fetch answered, for `link_check_failed`; absent for every other code.
+          oneOf:
+            - $ref: "#/components/schemas/DownloadLinkCheck"
+            - type: "null"
+    DownloadLinkCheck:
+      type: object
+      additionalProperties: false
+      required: [outcome]
+      description: |
+        What a connection's link check saw on the answering replica (storage.md R-STOR-074, Q-UI-996): `not_run` (no check has
+        answered there yet), `no_answer` (the store did not answer the test link), `unexpected_answer` (it answered `status` with
+        `bytes` bytes where the check wants `expectedStatus` with the probe's `expectedBytes`), `override_ignored` (the answer carried
+        the header `header` with `value` where the link asked for `expectedValue`: the store does not honour that override). The
+        members of another outcome are absent.
+      properties:
+        outcome:
+          type: string
+          enum: [not_run, no_answer, unexpected_answer, override_ignored]
+        status:
+          type: integer
+          description: The HTTP status the test link answered.
+        bytes:
+          type: integer
+          description: The bytes of its body the check read, at most one more than `expectedBytes`.
+        expectedStatus:
+          type: integer
+          description: The status the check wants, 200.
+        expectedBytes:
+          type: integer
+          description: The probe's size in bytes.
+        header:
+          type: string
+          description: The response header whose override the store did not honour (`Content-Type`, `Content-Disposition`, `Cache-Control`).
+        value:
+          type: string
+          description: The value the answer carried for `header`; empty when it carried none.
+        expectedValue:
+          type: string
+          description: The value the link asked for.
     DownloadLinkRoute:
       type: object
       additionalProperties: false

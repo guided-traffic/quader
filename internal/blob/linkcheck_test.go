@@ -36,6 +36,11 @@ func TestR_STOR_074_TheLinkCheck(t *testing.T) {
 		if r.Passed() || !r.Ran || !strings.Contains(r.Detail, "response-content-disposition") {
 			t.Fatalf("%+v", r)
 		}
+		// Q-UI-996: what the store answered as fields, for a page to word: the link worked, the override did not.
+		if !r.Answered || r.Status != 200 || r.Bytes != r.WantBytes || r.WantBytes != 2048 || r.Header != "Content-Disposition" ||
+			r.HeaderValue == r.HeaderWant || !strings.HasPrefix(r.HeaderWant, "attachment;") {
+			t.Fatalf("fields %+v", r)
+		}
 		body, _, err := m.Get(ctx, "quader/sha256/aa/bb/x", nil)
 		if err != nil {
 			t.Fatal(err)

@@ -10,6 +10,9 @@ import { Page, expect } from '@playwright/test';
 type Json = Record<string, unknown>;
 
 const DAY = 86_400_000;
+
+/** A link check the store answered 403 with no bytes (Q-UI-996): the fields the pages word the reason from. */
+export const forbiddenLink = { outcome: 'unexpected_answer', status: 403, bytes: 0, expectedStatus: 200, expectedBytes: 2048 };
 const at = (days: number): string => new Date(Date.now() + days * DAY).toISOString();
 
 function contact(replica: string, address: string, baseUrl: string, minutesAgo: number): Json {
@@ -75,8 +78,8 @@ const blocked = [
   connection('eu-backup-frankfurt', 'https://s3.backup.eu-central-2.example.net', {
     usable: false,
     handoverUsable: false,
-    reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
-    handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes, want 200 with the probe\'s 2048' }],
+    reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048", check: forbiddenLink }],
+    handoverReasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048", check: forbiddenLink }],
   }),
   connection('onprem', 'http://seaweedfs.quader-storage.svc:8333', {
     usable: false,

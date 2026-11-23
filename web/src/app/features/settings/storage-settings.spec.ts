@@ -52,9 +52,9 @@ function mixed(api: FakeDownloadLinksApi): void {
         name: 'eu-backup',
         endpoint: 'https://objects.backup.example.net',
         usable: false,
-        reasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes, want 200 with the probe\'s 2048' }],
+        reasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes, want 200 with the probe\'s 2048', check: { outcome: 'unexpected_answer', status: 403, bytes: 0, expectedStatus: 200, expectedBytes: 2048 } }],
         handoverUsable: false,
-        handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes' }],
+        handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes', check: { outcome: 'unexpected_answer', status: 403, bytes: 0, expectedStatus: 200, expectedBytes: 2048 } }],
       }),
     ],
   });
@@ -106,7 +106,8 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(root.querySelector('[data-testid="links-none"]')).toBeNull();
     expect(words(root.querySelector('[data-testid="links-reason-archive"]')!)).toBe('The connection archive is encrypted. Quader delivers its content to clients itself.');
     expect(words(root.querySelector('[data-testid="links-reason-eu-backup"]')!)).toBe(
-      "The object store of eu-backup did not answer a test link as expected: the link answered 403 with 0 bytes, want 200 with the probe's 2048. Quader delivers its content itself.",
+      // Q-UI-996: the sentence is built from the check's fields, not from the server's English detail.
+      'The object store of eu-backup did not answer a test link as expected: the test link answered with status 403 and 0 bytes instead of status 200 and 2,048 bytes. Quader delivers its content itself.',
     );
   });
 

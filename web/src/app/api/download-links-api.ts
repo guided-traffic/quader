@@ -8,6 +8,8 @@ export type DownloadLinkSettings = Schema<'DownloadLinkSettings'>;
 export type DownloadLinkConnection = Schema<'DownloadLinkConnection'>;
 /** Why a connection cannot serve links: `encrypted`, `not_https`, `quader_host`, `link_check_failed`. */
 export type DownloadLinkReason = Schema<'DownloadLinkReason'>;
+/** What a connection's link check saw against what it wanted (Q-UI-996): the fields a page words a failed check from. */
+export type DownloadLinkCheck = Schema<'DownloadLinkCheck'>;
 /** A route whose clients check a digest themselves (R-STOR-071). */
 export type DownloadLinkRoute = Schema<'DownloadLinkRoute'>;
 /** A merge patch of the settings; a connection's `null` returns it to its endpoint. */

@@ -8,6 +8,7 @@ import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { Switch } from '../../shared/ui/switch';
+import { linkCheckClause } from '../../shared/link-check';
 
 /**
  * Why a Bastion cannot read a connection's files from the object store, as the clause of its line (storage.md R-STOR-096): the
@@ -15,7 +16,7 @@ import { Switch } from '../../shared/ui/switch';
  * (R-STOR-095, Q-BAS-300).
  */
 export function handoverReasonText(reason: DownloadLinkReason): string {
-  const detail = reason.detail ?? '';
+  const detail = reason.code === 'link_check_failed' ? linkCheckClause(reason) : (reason.detail ?? '');
   switch (reason.code) {
     case 'not_https':
       return $localize`:@@bastion.handover.reason.not-https:its address does not use https`;

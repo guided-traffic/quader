@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/downloadlinks"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -113,9 +114,27 @@ func downloadLinkSettingsRep(links *downloadlinks.Links, st downloadlinks.Settin
 func downloadLinkReasons(rs []downloadlinks.Reason) []gen.DownloadLinkReason {
 	out := make([]gen.DownloadLinkReason, 0, len(rs))
 	for _, r := range rs {
-		out = append(out, gen.DownloadLinkReason{Code: gen.DownloadLinkReasonCode(r.Code), Detail: optionalText(r.Detail)})
+		out = append(out, gen.DownloadLinkReason{Code: gen.DownloadLinkReasonCode(r.Code), Detail: optionalText(r.Detail), Check: downloadLinkCheck(r.Check)})
 	}
 	return out
+}
+
+// downloadLinkCheck is the link check behind link_check_failed as its fields (Q-UI-996): what the store answered against what the
+// check wanted, which the settings page and a Bastion's card word in the reader's language; nil without a check.
+func downloadLinkCheck(c *blob.LinkCheck) *gen.DownloadLinkCheck {
+	switch {
+	case c == nil:
+		return nil
+	case !c.Ran:
+		return &gen.DownloadLinkCheck{Outcome: gen.NotRun}
+	case !c.Answered:
+		return &gen.DownloadLinkCheck{Outcome: gen.NoAnswer}
+	case !c.Works:
+		want := http.StatusOK
+		return &gen.DownloadLinkCheck{Outcome: gen.UnexpectedAnswer, Status: &c.Status, Bytes: &c.Bytes, ExpectedStatus: &want, ExpectedBytes: &c.WantBytes}
+	default:
+		return &gen.DownloadLinkCheck{Outcome: gen.OverrideIgnored, Header: &c.Header, Value: &c.HeaderValue, ExpectedValue: &c.HeaderWant}
+	}
 }
 
 // downloadLinkSettingsDoc is what a merge patch of the settings applies to (R-STOR-014): a null address removes the connection's

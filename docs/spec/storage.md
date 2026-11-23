@@ -1720,7 +1720,10 @@ which is not encrypted ([R-STOR-048](#r-stor-048--client-side-encryption-of-stor
   of Quader nor below one (R-STOR-072), and its link check passed on the replica. Each replica decides it from its own configuration at
   start and at every refresh of the settings' snapshot; a replica that finds a connection unable logs it once per change (`warn`, the
   reason and the host it collides with) and sets the gauge of R-STOR-073 to 0. The settings' answer names the reasons per connection:
-  `encrypted`, `not_https`, `quader_host` (with the host), `link_check_failed` (with what the store answered). Whether a connection can serve
+  `encrypted`, `not_https`, `quader_host` (with the host), `link_check_failed` (with what the store answered: the English `detail`, and
+  `check`, the outcome and its fields, the status and the bytes received against those expected or the header whose override the store
+  ignored, from which a page words its sentence, [api-and-ui.md](api-and-ui.md)
+  [Q-UI-996](api-and-ui.md#q-ui-996--a-failed-link-checks-reason-is-a-sentence-of-the-page-built-from-the-checks-fields)). Whether a connection can serve
   a handover to a Bastion is R-STOR-096: the same address rules and the first part of the link check, on encrypted connections too.
 - **The link check** ([Q-STOR-294](#q-stor-294--each-connection-proves-at-start-that-a-link-with-the-overrides-works)): a check of the
   store's conformance (R-STOR-035) that every replica serving downloads runs for each connection at its start, whether or not the rest of
