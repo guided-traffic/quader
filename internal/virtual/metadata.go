@@ -221,9 +221,9 @@ func (r *Resolver) remoteSlot(ctx context.Context, c Caller, p *Plan, m Merger, 
 	doc, err := r.o.Remotes.Metadata(ctx, r.call(c, p.Virtual, mem, d))
 	switch {
 	case err == nil:
-	case isMiss(err):
+	case errs.IsMemberMiss(err):
 		return
-	case isTransient(err) && ctx.Err() == nil:
+	case errs.IsMemberFailure(err) && ctx.Err() == nil:
 		s.failure = err
 		return
 	default:
@@ -320,9 +320,9 @@ func (r *Resolver) firstMatch(ctx context.Context, c Caller, p *Plan, m Merger) 
 		doc, err := r.o.Remotes.Metadata(ctx, r.call(c, p.Virtual, mem, d))
 		switch {
 		case err == nil:
-		case isMiss(err):
+		case errs.IsMemberMiss(err):
 			continue
-		case isTransient(err) && ctx.Err() == nil:
+		case errs.IsMemberFailure(err) && ctx.Err() == nil:
 			if failure == nil {
 				failure = err
 			}

@@ -1030,14 +1030,16 @@ Virtual resolution follows R-REPO-019 with these format rules (Q-OCI-18):
   [Q-OCI-162](#q-oci-162--a-miss-goes-on-to-the-next-member-a-failure-is-the-answer-only-when-nothing-serves)). The request is decided on the virtual
   repository first (grants, the endpoint's exposure, the repository's patterns), then planned for the image name as the client typed it; every
   member answers through the handler a direct request meets, on a request made for the member, so the addressed repository of each decision stays the
-  virtual one. A member that does not have the item, that the caller may not read in, or whose cache the caller may not fill, is a miss and the walk goes on; a
-  member that refuses the item by a block (`403` with `vulnerability_blocked`, `vulnerability_data_missing`, `malware_found` or `malware_not_checked`) or holds it
-  pending a malware verdict (`503 malware_check_pending`) ends the walk with that answer, because the member that holds the item decides
-  ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-015, [malware-scanning.md](../malware-scanning.md) R-MAL-018,
-  [Q-OCI-240](#q-oci-240--a-block-of-a-member-ends-the-walk)); the signature gate's `403 signature_not_verified` and `503
-  signature_check_pending` end it the same way (specified, not built: [signatures.md](../signatures.md) R-SIG-065); a
-  member that cannot be asked or whose stored object is lost is remembered, and its failure is the answer only when no member serves the item (`404` would be a
-  false statement about an item that may exist). A digest is taken in three passes: the local members, the caches of the remote members, then the upstreams of
+  virtual one. The walk goes on only at an answer it names ([Q-OCI-245](#q-oci-245--the-walk-goes-on-only-at-a-miss-or-a-failure-it-names)).
+  A member that does not have the item (`404`), that the caller may not read in (`403 forbidden`), or whose cache the caller may not fill
+  (`403 populate_not_permitted`), is a miss and the walk goes on; a member that cannot be asked (`502`, `504`, `503` with
+  `upstream_assumed_offline`, `upstream_rate_limited` or `unavailable`) or whose stored object is lost (`content_unavailable`) is
+  remembered, and its failure is the answer only when no member serves the item (`404` would be a false statement about an item that may
+  exist). Every other answer of a member ends the walk with that answer: a block (`403` with `vulnerability_blocked`,
+  `vulnerability_data_missing`, `malware_found` or `malware_not_checked`), a pending malware verdict (`503 malware_check_pending`), the
+  signature gate's `403 signature_not_verified` and `503 signature_check_pending`, and any refusal written later, because the member that
+  holds the item decides ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-015, [malware-scanning.md](../malware-scanning.md)
+  R-MAL-018, [signatures.md](../signatures.md) R-SIG-065, [Q-OCI-240](#q-oci-240--a-block-of-a-member-ends-the-walk)). A digest is taken in three passes: the local members, the caches of the remote members, then the upstreams of
   the remote members the caller may fill.
 - **Lists** ([Q-OCI-161](#q-oci-161--the-tags-list-and-the-referrers-of-a-virtual-repository-are-unions-decided-for-the-caller-in-every-member-and-on-the-virtual-repository)).
   The tags list is the union of the tags each member holds and the caller may read in it, read again on the virtual repository itself, sorted, without repeats,
@@ -3894,7 +3896,71 @@ The walk had no test with a blocked member; since the correction `TestR_OCI_027_
 | (b) Every `Forbidden` ends the walk | — | Simple | A member the caller may not read would hide the next member's image, against R-REPO-019 |
 | (c) Leave it | — | — | A blocked image is served from another member |
 
-**Choice:** (a). **Applied in the spec:** R-OCI-027; [malware-scanning.md](../malware-scanning.md) R-MAL-018.
+**Choice:** (a). **Applied in the spec:** R-OCI-027; [malware-scanning.md](../malware-scanning.md) R-MAL-018. **Turned round by
+[Q-OCI-245](#q-oci-245--the-walk-goes-on-only-at-a-miss-or-a-failure-it-names):** the walk now names what lets it go on, not the
+refusals that end it.
+
+### Q-OCI-245 · The walk goes on only at a miss or a failure it names
+
+Status: **Decided by the development agent**; that a walk names its misses, in OCI and in the engine of every other format, was set by
+the coordinator of the findings run of 2026-11-23; which answers it names is the development agent's, from the requirements below. The
+decision is taken here because OCI's walk was where it was found; it holds for every format (the owner's rule of 2026-11-19).
+
+Context, verified before this change: OCI's `isMemberMiss` ([virtual_read.go](../../../internal/formats/oci/virtual_read.go)) counted
+every `Forbidden` as a miss unless its code was one of the seven of `isBlock`, and `isMemberFailure` counted every `Unavailable` as a
+failure unless `isBlock` named it. The engine that npm, NuGet, Ansible Galaxy and generic files resolve through
+([virtual/artifact.go](../../../internal/virtual/artifact.go)) named its misses (`404`, `403 populate_not_permitted`) but not `403
+forbidden`, so a member that refused the read after the plan admitted it ended the walk with a visible `403`, and it counted every `502`,
+`503` and `504` as a failure except the two pending codes it listed. A refusal or a pending answer written later and not added to those
+lists would have let the walk go on to the next member, which then serves what the first one holds back. Nothing made it live: every
+block and pending code of [codes.go](../../../internal/errs/codes.go) was listed, and the engine decides a member's read in its plan on
+the coordinate its fetch is decided on. The question a walk has to answer is which answers say "this member does not have it for the
+caller" (a miss) and which say "this member could not be asked" (a failure); the requirements name them.
+
+- A miss: a `404` of any code (the member does not have the item; a `404` says that nothing exists for the caller, R-AUTHZ-016);
+  `403 forbidden`, the caller may not read the item in that member (an unreadable member is skipped and never turns the answer into
+  `403`, [authorization.md](../authorization.md) R-AUTHZ-009 rules 2 and 8, [repositories-and-proxy.md](../repositories-and-proxy.md)
+  R-REPO-019 step 4; R-OCI-027 names "a member the caller may not read in" as a miss); `403 populate_not_permitted`, the caller may not
+  fill the member's cache (R-AUTHZ-008).
+- A failure: the member's upstream could not be used (`502` and `504`, every code of R-REPO-029), it is assumed offline
+  (`upstream_assumed_offline`) or rate limits Quader (`upstream_rate_limited`), every fetch slot stayed busy (`fetch_queue_timeout`), the
+  member is offline (OCI), its stored object is lost (`content_unavailable`, Q-REPO-205), or a dependency answers `503 unavailable`
+  (R-REPO-019 step 7).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One rule names the misses and failures for every format; every other answer ends the walk (chosen) | `errs.IsMemberMiss` and `errs.IsMemberFailure` hold the lists above; OCI's walk calls them | A refusal or a pending answer written later ends the walk by itself; one list for six formats | A failure code written later ends the walk until it is named: a client gets that `503` at once instead of another member's copy |
+| (b) Keep the lists of what ends the walk (`isBlock`, the pending codes of `isTransient`) | — | Nothing to change | Safe only while every author of a refusal remembers two lists |
+
+**Choice:** (a). A miss lets the walk go on in every tier: a local member, a remote member's cache, a remote member's fetch, and the
+metadata fan-out of the merge. A `503` that no rule names, such as a gate's pending answer or a `503` of the replica's own database,
+ends the walk with that answer: a pending gate holds the item and decides (Q-OCI-240, R-MAL-018, signatures.md R-SIG-065), and the
+database of the replica is no statement about the member, so the next member would meet the same `503`.
+
+**What a pending member does** (a check still running: `503 malware_check_pending`, `503 signature_check_pending`), before and after
+this change, the same in every format: the walk ends with the member's `503` and its `Retry-After`, and no later member is asked, in
+every tier and in the merge of a document. Before, OCI listed the two codes in `isBlock` and the engine in `isTransient`; now neither
+code is named, so both end the walk as every unnamed answer does. A pending answer of a local member's or a cached item comes from the
+item's serving and was never classified; it ends the walk before and after. Debian's merged index has no member walk: its gate asks
+`read` on every member (R-AUTHZ-009 rule 4).
+
+**What a caller without access to one member gets** is unchanged in every format: the plan drops the member (R-REPO-019 step 4), and
+content that only that member holds answers `404` (R-AUTHZ-009 rule 8); Debian answers `403 deb_members_unreadable`. What changed is
+the case behind it: a member that the plan admits and that refuses the read when it is asked again (OCI decides a remote member's name
+on both spellings, Q-OCI-129) is a miss in every format, where the engine answered its `403`.
+
+**Rationale:** the risk was a refusal nobody added; an allow-list fails closed, and the requirements already name both lists. The
+development agent would revisit it if a new failure of reaching a member gets a code of its own: it is then added to `errs.IsMemberFailure`.
+
+**Applied in the spec:** R-OCI-027, [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-019 steps 4 and 7. Code:
+`IsMemberMiss` and `IsMemberFailure` in [errs/member.go](../../../internal/errs/member.go), the walks `Artifact` and `Stored` in [virtual/artifact.go](../../../internal/virtual/artifact.go), the merge
+in [virtual/metadata.go](../../../internal/virtual/metadata.go); `isMemberMiss`, `isMemberFailure` in
+[virtual_read.go](../../../internal/formats/oci/virtual_read.go); `isBlock` is gone. The page reads of one remote member's list
+(NuGet's registration pages, Ansible Galaxy's version pages) already named their one tolerated refusal (`populate_not_permitted` for
+a caller who may not fill) and are unchanged. Tests: `TestR_AUTHZ_009_OnlyANamedMissLetsTheWalkGoOn`
+([virtual/named_miss_test.go](../../../internal/virtual/named_miss_test.go)), `TestR_OCI_027_OnlyANamedMissLetsTheWalkGoOn`
+([virtual_named_miss_test.go](../../../internal/formats/oci/virtual_named_miss_test.go)), `TestR_OCI_027_ABlockOfAMemberEndsTheWalk`,
+`TestR_AUTHZ_009_AnUnnamedRefusalOfAMembersPageEndsTheMerge` of NuGet and of Ansible Galaxy.
 
 ## What this does not cover
 

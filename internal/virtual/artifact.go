@@ -41,10 +41,10 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 	}
 	for _, m := range p.Local() {
 		hit, ok, err := t.Local(ctx, m, d)
-		if err != nil {
+		if err != nil && !errs.IsMemberMiss(err) {
 			return err
 		}
-		if ok {
+		if err == nil && ok {
 			return serve(m, hit, sourceLocal)
 		}
 	}
@@ -53,6 +53,9 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 	var failure error
 	for _, m := range remotes {
 		hit, ok, err := t.RemoteCached(ctx, m, d)
+		if errs.IsMemberMiss(err) {
+			continue // the member's cache does not have it for the caller
+		}
 		if err != nil && !contentLost(err) {
 			return err
 		}
@@ -104,11 +107,11 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 			tw.Header().Del(ResolvedFromHeader)
 		}
 		switch {
-		case err == nil, isMiss(err):
+		case err == nil, errs.IsMemberMiss(err):
 			// This member does not have it.
-		case tw.wrote || !isTransient(err) || ctx.Err() != nil:
-			// A failure after the first byte, or one that is not about reaching the member,
-			// ends the request: the next member cannot continue it.
+		case tw.wrote || !errs.IsMemberFailure(err) || ctx.Err() != nil:
+			// A failure after the first byte, or an answer the walk does not name, ends the
+			// request: the next member cannot continue it, or must not serve what this one holds back.
 			r.m.resolved(repo.String(), sourceNone)
 			return err
 		case failure == nil:
@@ -133,6 +136,9 @@ func (r *Resolver) Stored(ctx context.Context, p *Plan, t Tiers) (Hit, bool, err
 	}
 	for _, m := range p.Local() {
 		hit, ok, err := t.Local(ctx, m, p.Descriptor)
+		if errs.IsMemberMiss(err) {
+			continue
+		}
 		if err != nil || ok {
 			return hit, ok, err
 		}
@@ -140,6 +146,7 @@ func (r *Resolver) Stored(ctx context.Context, p *Plan, t Tiers) (Hit, bool, err
 	for _, m := range p.Remote() {
 		hit, ok, err := t.RemoteCached(ctx, m, p.Descriptor)
 		switch {
+		case errs.IsMemberMiss(err):
 		case err != nil && !contentLost(err):
 			return nil, false, err
 		case err == nil && ok:
@@ -201,34 +208,9 @@ func (c Caller) asAddressed(p *Plan, err error) error {
 
 // <<< WP2.9 exposure
 
-// isMiss reports whether an error from a remote member says "the member does not have it": a
-// 404, or the refusal to populate, which a virtual repository counts as a miss (R-AUTHZ-008).
-func isMiss(err error) bool {
-	e, ok := errs.As(err)
-	if !ok {
-		return false
-	}
-	return e.Kind == errs.NotFound || (e.Kind == errs.Forbidden && e.Code == errs.CodePopulateNotPermitted)
-}
-
 // contentLost reports whether an error refuses a stored item because its object is missing or failed verification
 // (content_unavailable, storage.md R-STOR-012).
 func contentLost(err error) bool {
 	e, ok := errs.As(err)
 	return ok && e.Code == errs.CodeContentUnavailable
-}
-
-// isTransient reports whether an error says the member could not be asked or did not answer. The pending answers of the malware
-// gate and of the signature gate are none: the member holds the item and decides, and their 503 ends the walk as their refusals do
-// (R-MAL-018, signatures.md R-SIG-065, R-REPO-019 step 7).
-func isTransient(err error) bool {
-	e, ok := errs.As(err)
-	if !ok || e.Code == errs.CodeMalwareCheckPending || e.Code == errs.CodeSignatureCheckPending {
-		return false
-	}
-	switch e.Kind {
-	case errs.UpstreamFailed, errs.UpstreamTimeout, errs.Unavailable:
-		return true
-	}
-	return false
 }

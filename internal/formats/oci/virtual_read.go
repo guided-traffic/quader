@@ -101,41 +101,17 @@ func (w *resolvedWriter) Write(b []byte) (int, error) {
 
 func (w *resolvedWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
-// isMemberMiss reports whether an error of a member says "this member does not have it" for the caller: the item is not there, the caller
-// may not read it there, or may not bring it into the cache of a remote member (R-AUTHZ-008, which a virtual repository counts as a miss).
-// A refusal of a block is no miss: the member holds the item and decides, so the walk ends with it (R-OCI-027, Q-OCI-240).
-func isMemberMiss(err error) bool {
-	e, ok := errs.As(err)
-	return ok && (e.Kind == errs.NotFound || (e.Kind == errs.Forbidden && !isBlock(e)))
-}
+// isMemberMiss reports whether an error of a member is a miss the walk names, after which it goes on to the next member: the rule of
+// every format's walk, errs.IsMemberMiss (a 404; 403 forbidden, R-AUTHZ-009 rules 2 and 8; 403 populate_not_permitted, R-AUTHZ-008).
+// Every other refusal, a block and a refusal written later alike, ends the walk with the member's answer (R-OCI-027, Q-OCI-245).
+func isMemberMiss(err error) bool { return errs.IsMemberMiss(err) }
 
-// isBlock reports whether a refusal is a block of the item a member holds: the vulnerability scanning's (R-VULN-015) or the malware
-// gate's (R-MAL-013), and the gate's pending answer (R-MAL-014). The walk ends with it in every tier (Q-OCI-240).
-func isBlock(e *errs.Error) bool {
-	switch e.Code {
-	case errs.CodeVulnerabilityBlocked, errs.CodeVulnerabilityDataMissing, errs.CodeMalwareFound, errs.CodeMalwareNotChecked,
-		errs.CodeMalwareCheckPending, errs.CodeSignatureNotVerified, errs.CodeSignatureCheckPending:
-		return true
-	}
-	return false
-}
-
-// isMemberFailure reports whether an error says the member could not be asked or did not answer, or that its stored object is lost: the
-// walk goes on, and the failure is the answer when no member serves the item, because "not found" would be a false statement about an
-// item that may exist (R-REPO-019 step 7).
+// isMemberFailure reports whether an error is a failure the walk names: a member that is offline, or errs.IsMemberFailure (the upstream
+// could not be used, the stored object is lost, R-REPO-019 step 7). The walk goes on, and the failure is the answer when no member
+// serves the item, because "not found" would be a false statement about an item that may exist. Any other 503, a gate's pending answer
+// included, ends the walk (Q-OCI-245).
 func isMemberFailure(err error) bool {
-	if errors.Is(err, formats.ErrOffline) {
-		return true
-	}
-	e, ok := errs.As(err)
-	if !ok || isBlock(e) {
-		return false
-	}
-	switch e.Kind {
-	case errs.UpstreamFailed, errs.UpstreamTimeout, errs.Unavailable:
-		return true
-	}
-	return e.Code == errs.CodeContentUnavailable
+	return errors.Is(err, formats.ErrOffline) || errs.IsMemberFailure(err)
 }
 
 // step is one attempt of a walk: serve the answer from a member.

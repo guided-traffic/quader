@@ -1212,7 +1212,9 @@ For a request to virtual repository V with descriptor d (R-REPO-003) by caller c
    format: V admits nothing under it, no remote member is consulted or served from its cache, and a remote
    repository addressed directly refuses it (Q-REPO-123).
 4. Drop members on which c does not hold `read` for d. Unreadable members are skipped silently; they
-   never turn the answer into 403 ([R-AUTHZ-009](authorization.md)).
+   never turn the answer into 403 ([R-AUTHZ-009](authorization.md)). A member that refuses the read when it is asked
+   (`403 forbidden`) counts as "not found" as well, in every tier and in a merge
+   ([formats/oci.md](formats/oci.md) Q-OCI-245).
 5. Order the remaining members stably: priority members first (R-REPO-022, P1), else list order.
 6. Resolve by kind:
    - `artifact`, in three tiers, first hit wins: (a) local members; (b) remote members' caches,
@@ -1242,7 +1244,11 @@ For a request to virtual repository V with descriptor d (R-REPO-003) by caller c
    placeholder would have been asked for carries the sentence of R-REPO-072 as its detail. A member that holds the item and refuses
    it by a block of the vulnerability scanning or by the malware gate, or holds it pending a malware verdict (`503
    malware_check_pending`), is no failure: its answer ends the walk in every tier ([vulnerability-scanning.md](vulnerability-scanning.md)
-   R-VULN-015, [malware-scanning.md](malware-scanning.md) R-MAL-018).
+   R-VULN-015, [malware-scanning.md](malware-scanning.md) R-MAL-018). The walk names what lets it go on: "not found" is a `404`, `403
+   forbidden` (step 4) or `403 populate_not_permitted`; a transient failure is a `502` or `504`, or a `503` with
+   `upstream_assumed_offline`, `upstream_rate_limited`, `fetch_queue_timeout`, `content_unavailable` or `unavailable`. Every other
+   answer of a member, a gate's pending answer and a refusal written later included, ends the walk with that answer
+   ([formats/oci.md](formats/oci.md) Q-OCI-245, the one rule of every format).
 
 - Artifact responses MUST carry `Quader-Resolved-From: <member key>`, a member of the project `upstream` as `upstream/<key>`;
   the member is one the caller can read, so the header discloses nothing new. On an endpoint with exposure rules the header is

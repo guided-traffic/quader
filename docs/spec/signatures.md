@@ -3044,7 +3044,7 @@ Priority: **P1** · Covers: BEYOND-019
 
 Built (package 1): `gate.Download.Members` is, for a virtual addressed repository whose gate is on, its members the caller may read
 (`Host.readableMembers`, `MemberUsableOn` on the request's index); the addressed gate reads in its project's scope, the holder's in its own;
-both walks end on the two answers (`isBlock` of OCI, `isTransient` of the virtual engine). The test is the unit tier's
+both walks end on the two answers (`errs.IsMemberMiss` and `errs.IsMemberFailure`, which the virtual engine and OCI's walk call, name neither: an answer no rule names ends the walk, Q-OCI-245). The test is the unit tier's
 (`TestR_SIG_065_EachGateJudgesInItsViewAndScope`): the integration test of npm with the company's Sigstore is not written
 ([Q-SIG-141](#q-sig-141--the-integration-area-tests-the-gate-through-files-the-rest-at-the-unit-tier)).
 

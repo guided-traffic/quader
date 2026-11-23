@@ -203,6 +203,8 @@ type fakeRemote struct {
 	formats.RemoteFetcher
 	mu   sync.Mutex
 	docs map[string][]byte
+	// fail answers a request with the error instead of the document, by the key rkey makes.
+	fail map[string]error
 	asks []string
 	// probes are the probes the format told of, with the key of their request's repository (R-REPO-065, Q-REPO-367).
 	probes []string
@@ -225,7 +227,11 @@ func (r *fakeRemote) Metadata(_ context.Context, rq *formats.Request, p formats.
 	r.mu.Lock()
 	r.asks = append(r.asks, k)
 	b, ok := r.docs[k]
+	failure := r.fail[k]
 	r.mu.Unlock()
+	if failure != nil {
+		return nil, failure
+	}
 	if !ok {
 		return nil, errs.E(errs.NotFound, errs.CodeNotFound, "The upstream has no such document.")
 	}
