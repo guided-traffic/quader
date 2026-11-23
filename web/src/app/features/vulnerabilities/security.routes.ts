@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { advisoryMatcher } from './vulnerabilities.routes';
+import { advisoryMatcher, advisoryTitle, findingTitle } from './vulnerabilities.routes';
 import { SECURITY_CONTEXT, VULN_CONTEXT } from './vuln-context';
 
 /**
@@ -33,12 +33,12 @@ export const SECURITY_ROUTES: Routes = [
       },
       {
         path: 'findings/:id',
-        title: $localize`:@@route.vulnerabilities.finding.title:Finding`,
+        title: findingTitle,
         loadComponent: () => import('./vulnerability-finding').then((m) => m.FindingPage),
       },
       {
         matcher: advisoryMatcher,
-        title: $localize`:@@route.vulnerabilities.advisory.title:Advisory`,
+        title: advisoryTitle,
         data: { crumbParam: 'id' },
         loadComponent: () => import('./vulnerability-advisory').then((m) => m.AdvisoryPage),
       },

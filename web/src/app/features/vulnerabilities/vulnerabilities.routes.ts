@@ -1,4 +1,23 @@
-import { Routes, UrlMatcher, UrlSegment } from '@angular/router';
+import { inject } from '@angular/core';
+import { ResolveFn, Routes, UrlMatcher, UrlSegment } from '@angular/router';
+import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
+
+/**
+ * The title of a finding's page, which the breadcrumb's last step shows too: the advisory that names the page's heading
+ * (Q-UI-968), read from the finding; its identifier when the read fails, so the page itself shows the error. "Finding" named
+ * every finding's tab alike.
+ */
+export const findingTitle: ResolveFn<string> = async (route) => {
+  const id = route.paramMap.get('id') ?? '';
+  try {
+    return (await inject(VulnerabilitiesApi).finding(id)).value.finding.advisory;
+  } catch {
+    return id;
+  }
+};
+
+/** The title of an advisory's page: its identifier, as its heading names it (Q-UI-968). */
+export const advisoryTitle: ResolveFn<string> = (route) => route.paramMap.get('id') ?? '';
 
 /**
  * `/vulnerabilities/advisories/{ecosystem}/{id}` (R-VULN-022): the identifier is one segment (an advisory id has no
@@ -22,12 +41,12 @@ export const VULNERABILITIES_ROUTES: Routes = [
   },
   {
     path: 'findings/:id',
-    title: $localize`:@@route.vulnerabilities.finding.title:Finding`,
+    title: findingTitle,
     loadComponent: () => import('./vulnerability-finding').then((m) => m.FindingPage),
   },
   {
     matcher: advisoryMatcher,
-    title: $localize`:@@route.vulnerabilities.advisory.title:Advisory`,
+    title: advisoryTitle,
     data: { crumbParam: 'id' },
     loadComponent: () => import('./vulnerability-advisory').then((m) => m.AdvisoryPage),
   },

@@ -36,8 +36,8 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   // >>> M4b vulnerabilities
   ['/projects/web/vulnerabilities', 'Vulnerabilities'],
   // A finding and an advisory are named by the advisory (Q-UI-968).
-  ['/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001', 'Finding', 'GHSA-aaaa-aaaa-0001'],
-  ['/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001', 'Advisory', 'GHSA-aaaa-aaaa-0001'],
+  ['/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001', 'GHSA-aaaa-aaaa-0001', 'GHSA-aaaa-aaaa-0001'],
+  ['/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001', 'GHSA-aaaa-aaaa-0001', 'GHSA-aaaa-aaaa-0001'],
   // <<< M4b vulnerabilities
   ['/projects/web/repositories/npm-local/setup', 'Set up client'],
   ['/guides', 'Guides'],
@@ -161,7 +161,8 @@ describe('route map', () => {
   it('R-VULN-022 /projects/{project}/vulnerabilities/findings/{id} binds the finding and the trail links the report', async () => {
     const root = await open('/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001');
     expect(root.querySelector('main')?.textContent).toContain('quader-test-vuln@1.0.0');
-    expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Projects', 'web', 'Vulnerabilities', '0193a000-0000-7000-8000-000000000001']);
+    // The trail's last step is the page's title, the finding's advisory (Q-UI-968).
+    expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Projects', 'web', 'Vulnerabilities', 'GHSA-aaaa-aaaa-0001']);
   });
 
   it('R-UI-158 /security is the security dashboard of the main area: its trail is Security audit, Security dashboard, never the admin area', async () => {
@@ -177,7 +178,7 @@ describe('route map', () => {
 
     const finding = await open('/security/findings/0193a000-0000-7000-8000-000000000001', auditor);
     expect(finding.querySelector('main h1')?.textContent?.trim()).toBe('GHSA-aaaa-aaaa-0001');
-    expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Security audit', 'Security dashboard', '0193a000-0000-7000-8000-000000000001']);
+    expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Security audit', 'Security dashboard', 'GHSA-aaaa-aaaa-0001']);
   });
 
   it('R-UI-158 Q-UI-622 /security is Page not found for a caller without content:metadata-read, a security administrator included', async () => {

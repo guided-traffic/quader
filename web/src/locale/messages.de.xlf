@@ -4754,16 +4754,6 @@
         <target>Nur Niedrig oder Unbekannt, höchstens <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/></target>
       </segment>
     </unit>
-    <unit id="route.vulnerabilities.advisory.title">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/security.routes.ts:29</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerabilities.routes.ts:30</note>
-      </notes>
-      <segment>
-        <source>Advisory</source>
-        <target>Advisory</target>
-      </segment>
-    </unit>
     <unit id="ep.preview.col.visible">
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:569,571</note>
@@ -21357,16 +21347,6 @@
       <segment>
         <source>One per line. Empty: the preset of the kind.</source>
         <target>Eine pro Zeile. Leer: die Vorgabe der Art.</target>
-      </segment>
-    </unit>
-    <unit id="route.vulnerabilities.finding.title">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/security.routes.ts:24</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerabilities.routes.ts:25</note>
-      </notes>
-      <segment>
-        <source>Finding</source>
-        <target>Befund</target>
       </segment>
     </unit>
     <unit id="copy.label">

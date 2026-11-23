@@ -22335,7 +22335,10 @@ header of Q-UI-307.
 | (b) The shared header with **All findings** kept as a button | — | A visible way back | Two ways to the same list (the breadcrumb is one) |
 | (c) As it was | — | — | The audit's finding stays |
 
-**Choice:** (a).
+**Choice:** (a). *Amended on 2026-11-23* (point 9 of the open finding "Seen by the builder of the screens' first round on its renders"):
+the page titles name the object too, a finding's its advisory (the route's title resolver reads the finding; its identifier where the
+read fails) and an advisory's its identifier, and the breadcrumb's last step with them; "Finding" and "Advisory" named every such tab
+alike. Code: `findingTitle`, `advisoryTitle` of [vulnerabilities.routes.ts](../../web/src/app/features/vulnerabilities/vulnerabilities.routes.ts).
 
 **Rationale:** the style guide's anatomy of a page names the way up to a list (the breadcrumb) and the object in the heading. The
 development agent sees no case for revisiting this.
