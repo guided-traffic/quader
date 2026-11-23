@@ -17,6 +17,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
 	"github.com/guided-traffic/quader/internal/formats/ansible/version"
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // The remote class's registration and its handlers (R-ANS-016 to R-ANS-018, R-ANS-020). The documents are rendered from the upstream
@@ -87,8 +88,9 @@ func storedDocument(ctx context.Context, rq *formats.Request, path, variant stri
 
 // etag is the weak validator of a rendering: a hash of the inputs of the rendering, computed without rendering. The inputs are the
 // render version, the repository (its id, the key it is served under and its configuration version), the base URL, the endpoint with
-// its exposure fingerprint, and the parts: what the document is a function of (the digests of the stored documents, the paging).
-// Every replica sends the same value for the same inputs.
+// its exposure fingerprint and the revision of the repository's delivery rules (R-CUR-003: a change of the rules is never answered with
+// a document rendered under the old ones), and the parts: what the document is a function of (the digests of the stored documents, the
+// paging). Every replica sends the same value for the same inputs.
 func etag(rq *formats.Request, kind string, parts ...string) string {
 	h := sha256.New()
 	field := func(s string) {
@@ -104,7 +106,7 @@ func etag(rq *formats.Request, kind string, parts ...string) string {
 	field(strconv.FormatInt(rq.Repo.Version, 10))
 	field(rq.Host.Links(rq).Base())
 	field(rq.Endpoint.Name)
-	field(rq.Endpoint.ExposureFingerprint)
+	field(formats.DocumentFingerprint(rq))
 	field(kind)
 	for _, p := range parts {
 		field(p)
@@ -198,7 +200,35 @@ func (f *Format) remoteCollection(ctx context.Context, rq *formats.Request, w ht
 	if err != nil {
 		return err
 	}
-	return remoteReply(rq, w, etag(rq, "collection", hexSum(doc.Digest)), doc.Status.Header, func() ([]byte, error) {
+	parts := []string{hexSum(doc.Digest)}
+	// The delivery rules (R-ANS-047): highest_version is the highest delivered version, which the version list says when the
+	// upstream's highest is refused; a collection none of whose versions is delivered answers the refusal.
+	highest := ""
+	if set := formats.Delivery(rq); set != nil {
+		raw, err := doc.Bytes(ctx)
+		if err != nil {
+			return err
+		}
+		s, err := parseUpstreamCollection(raw)
+		if err != nil {
+			return err
+		}
+		if s.HighestVersion != "" && !set.Decide(ns+"."+name, s.HighestVersion).Delivered {
+			l, err := remoteListEntries(ctx, rq, VersionsDocumentPath(ns, name))
+			if err != nil {
+				return err
+			}
+			kept, err := deliveredEntries(rq, set, ns+"."+name, l.entries)
+			if err != nil {
+				return err
+			}
+			if highest = highestOf(kept); highest == "" {
+				return formats.RefusalOf(rq, set, ns+"."+name, "", set.Decide(ns+"."+name, s.HighestVersion).Reason, rules.KindDocument)
+			}
+			parts = append(parts, l.digests...)
+		}
+	}
+	return remoteReply(rq, w, etag(rq, "collection", parts...), doc.Status.Header, func() ([]byte, error) {
 		raw, err := doc.Bytes(ctx)
 		if err != nil {
 			return nil, err
@@ -208,6 +238,9 @@ func (f *Format) remoteCollection(ctx context.Context, rq *formats.Request, w ht
 			return nil, err
 		}
 		s.Namespace, s.Name = ns, name
+		if highest != "" {
+			s.HighestVersion = highest
+		}
 		return galaxydoc.RenderCollection(s, remoteAddr(rq)), nil
 	})
 }
@@ -228,6 +261,9 @@ func (f *Format) remoteVersions(ctx context.Context, rq *formats.Request, w http
 	limit, _ := strconv.Atoi(q.Get("limit"))
 	offset, _ := strconv.Atoi(q.Get("offset"))
 	limit, offset = galaxydoc.PageLimit(limit), max(offset, 0)
+	if set := formats.Delivery(rq); set != nil {
+		return f.remoteDeliveredVersions(ctx, rq, w, ns, name, set, limit, offset)
+	}
 
 	first, err := storedDocument(ctx, rq, path, offsetVariant(0))
 	if err != nil {
@@ -295,6 +331,29 @@ func (f *Format) remoteVersions(ctx context.Context, rq *formats.Request, w http
 		a := remoteAddr(rq)
 		a.Namespace, a.Name = ns, name
 		return galaxydoc.RenderVersionList(window, head.count, limit, offset, a), nil
+	})
+}
+
+// remoteDeliveredVersions answers the version list of a repository with delivery rules (R-ANS-047): every stored page is read, the
+// versions the rules refuse are left out, and the page of the request, meta.count and the links are computed over the delivered ones.
+func (f *Format) remoteDeliveredVersions(ctx context.Context, rq *formats.Request, w http.ResponseWriter, ns, name string, set *rules.Set, limit, offset int) error {
+	l, err := remoteListEntries(ctx, rq, VersionsDocumentPath(ns, name))
+	if err != nil {
+		return err
+	}
+	kept, err := deliveredEntries(rq, set, ns+"."+name, l.entries)
+	if err != nil {
+		return err
+	}
+	tag := etag(rq, "versions", strings.Join(l.digests, ","), strconv.Itoa(limit), strconv.Itoa(offset), "delivered")
+	return remoteReply(rq, w, tag, l.status, func() ([]byte, error) {
+		var window []galaxydoc.VersionEntry
+		if offset < len(kept) {
+			window = kept[offset:min(offset+limit, len(kept))]
+		}
+		a := remoteAddr(rq)
+		a.Namespace, a.Name = ns, name
+		return galaxydoc.RenderVersionList(window, len(kept), limit, offset, a), nil
 	})
 }
 

@@ -53,6 +53,9 @@ var ownerRightsExempt = map[string]string{
 		"parent and so no derivation limits, as an administrator's session (rotationParent)",
 	"rotateCurrentToken":  "acts on the presenting token itself, only if it was created selfRotatable (R-AUTH-030)",
 	"runRepositoryMirror": "repositories:write-config or an Owner of the project, both through the decision point with the scope",
+	"putDeliveryRule":     "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005)",
+	"deleteDeliveryRule":  "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005)",
+	"checkDeliveryRules":  "a question that writes nothing: read on the repository through the decision point with the scope (R-CUR-005)",
 	"revokeBastionToken":  "endpoints:write or tokens:revoke through the decision point, with the scope (requireAny)",
 }
 
@@ -82,6 +85,7 @@ var ownerRightsReads = map[string]string{
 	"getVersion":                       "the build facts of the replica; nothing of an account",
 	"getAvatar":                        "an image by its digest, readable by every authenticated caller (Q-AUTH-195); nothing of the caller's account",
 	"getRepositoryMirror":              "decided through the decision point with the scope (requireMirrorReader)",
+	"listDeliveryRules":                "decided through the decision point with the scope (requireRuleReader, R-CUR-005)",
 	"listCacheEntries":                 "decided through the decision point with the scope (requireCacheReader)",
 	"getVulnerabilitySummary":          "counts over the repositories the read scope of the decision point admits for the subject, scope included (vulnCaller, ReadScopeOn)",
 	"getVulnerabilityTrend":            "as getVulnerabilitySummary",

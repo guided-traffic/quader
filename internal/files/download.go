@@ -6,10 +6,14 @@ import (
 
 	"github.com/guided-traffic/quader/internal/qname"
 
+	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/malware/gate"
+	rc "github.com/guided-traffic/quader/internal/remotecuration"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
+	rulestore "github.com/guided-traffic/quader/internal/remotecuration/rules/store"
 	"github.com/guided-traffic/quader/internal/repository"
 	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
@@ -110,11 +114,37 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
 		}
 	}
+	srv.Rules = s.rulesRefusal(c, repo, it.Path, t.class)
 	decided, err := srv.RunDecided(ctx)
 	if err != nil {
+		if rf, ok := rules.RefusalOf(err); ok {
+			s.refusals.Refused(ctx, rf, rulestore.RefusalContext{Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint})
+		}
 		return Resolved{}, err
 	}
 	return Resolved{Repo: repo, Item: it, Decided: decided}, nil
+}
+
+// rulesRefusal is the fourth check of a file of /files/ (remote-curation.md R-CUR-003 point 2): the refusal of a remote repository's
+// delivery rules for the package and version the format classifies the path in, from the replica's snapshot; nil for a repository
+// without rules, a path of no package and a system read.
+func (s *Service) rulesRefusal(c Caller, repo repository.Repository, path string, class PathClass) error {
+	set := repo.Delivery()
+	if set == nil || class.Package == "" || c.Subject.Kind == principal.KindSystem {
+		return nil
+	}
+	var d rc.Decision
+	if class.Version == "" {
+		d = set.Package(class.Package)
+	} else {
+		d = set.Decide(class.Package, class.Version)
+	}
+	if d.Delivered {
+		return nil
+	}
+	n, v := set.Fold(class.Package, class.Version)
+	rf := &rules.Refusal{RepoID: repo.NumericID(), Repo: repo.Name, Name: n, Version: v, Reason: d.Reason, Kind: rules.KindArtifact, Path: path}
+	return rf.Err(c.BaseURL)
 }
 
 // Open opens the content of a resolved file for streaming ([items.Store.Open]).

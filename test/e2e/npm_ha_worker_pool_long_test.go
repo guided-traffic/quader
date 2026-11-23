@@ -28,9 +28,9 @@ func TestNPMHA_R_REPO_058_DrainOfTheNodeOfAMirrorPass(t *testing.T) {
 	s := stub(t)
 	const concurrency = 2
 	body := e.npmBody("npm-mirror-drain-"+e.run, false)
-	body["includePatterns"] = []string{"e2e-mirror-" + e.run + "-*"}
 	remote := body["remote"].(map[string]any)
-	remote["mirror"] = map[string]any{"concurrency": concurrency, "maxVersionsPerPackage": 1}
+	// the mirror's scope (R-CUR-017)
+	remote["mirror"] = map[string]any{"concurrency": concurrency, "maxVersionsPerPackage": 1, "include": []string{"e2e-mirror-" + e.run + "-*"}}
 	key := e.create(t, body)
 	s.setMode(t, npmstub.Mode{DelayMS: map[string]int{"document": 100, "tarball": 1000}})
 	t.Cleanup(func() { s.setMode(t, npmstub.Mode{}) })

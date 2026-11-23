@@ -79,6 +79,11 @@ func toRepository(r q.Repository, project string, cat *catalog.Registry) (Reposi
 	// A name pattern is folded with the format's name rule, like the name it is
 	// matched against (R-REPO-005, R-AUTHZ-005).
 	include, exclude := s.IncludePatterns, s.ExcludePatterns
+	if out.Class == Remote {
+		// A remote has no patterns: its delivery rules decide (remote-curation.md R-CUR-002). A section stored before the rules
+		// existed is not carried into rules: such a remote delivers everything until its rules are set.
+		include, exclude = nil, nil
+	}
 	if subject == SubjectName {
 		include, exclude = foldAll(cat, r.Format, include), foldAll(cat, r.Format, exclude)
 	}
@@ -111,7 +116,21 @@ func toRepository(r q.Repository, project string, cat *catalog.Registry) (Reposi
 		}
 		out.remote = rs
 	}
+	// The mode alone until the snapshot adds the repository's rule rows (withRules).
+	out.deliveryRevision = r.DeliveryRulesRevision
+	if err := compileDelivery(&out, nil, cat); err != nil {
+		return out, err
+	}
 	return out, nil
+}
+
+// withRules compiles the repository's rule set with its rule rows, read beside the row by the snapshot. A repository whose rules
+// do not compile is disabled and the error says why.
+func withRules(r *Repository, list []storedRule, cat *catalog.Registry) error {
+	if r.Class != Remote || len(list) == 0 {
+		return nil
+	}
+	return compileDelivery(r, list, cat)
 }
 
 // >>> M2 virtual

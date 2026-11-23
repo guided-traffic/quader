@@ -54,16 +54,18 @@ const maxRetryAfter = 30 * time.Second
 // once for every attempt of a download (measured on 2026-11-23, signatures.md Q-SIG-241).
 const headerWarning = "X-NuGet-Warning"
 
-// downloadCheck reports whether a code is an answer of the three checks of a download
-// (signatures.md R-SIG-069): the malware gate, the vulnerability block and the signature gate.
-// Their text says why a package is refused or held and what to do, which the status line cannot,
-// so it also goes into headerWarning (Q-SIG-241). Every other error keeps the body alone: a 404
-// is how a restore asks its sources, and a warning on each would bury the one that matters.
+// downloadCheck reports whether a code is an answer of the checks of a download (signatures.md
+// R-SIG-069): the malware gate, the vulnerability block, the signature gate, and the refusal of
+// a remote's delivery rules, which also answers the version list and the registration of a
+// package they refuse (R-NUGET-035, remote-curation.md R-CUR-004). Their text says why a package
+// is refused or held and what to do, which the status line cannot, so it also goes into
+// headerWarning (Q-SIG-241). Every other error keeps the body alone: a 404 is how a restore asks
+// its sources, and a warning on each would bury the one that matters.
 func downloadCheck(code string) bool {
 	switch code {
 	case errs.CodeMalwareFound, errs.CodeMalwareNotChecked, errs.CodeMalwareCheckPending,
 		errs.CodeVulnerabilityBlocked, errs.CodeVulnerabilityDataMissing,
-		errs.CodeSignatureNotVerified, errs.CodeSignatureCheckPending:
+		errs.CodeSignatureNotVerified, errs.CodeSignatureCheckPending, errs.CodeNotAllowedInRepository:
 		return true
 	}
 	return false

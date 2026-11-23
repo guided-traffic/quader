@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -89,6 +90,9 @@ type HostOptions struct {
 	// Subject is who acts on every request the Host builds; the zero value is a
 	// subject without a name, which is neither anonymous nor authenticated.
 	Subject authz.Subject
+	// Delivery are the delivery mode and rules of a remote repository (remote-curation.md R-CUR-001); nil is a remote that delivers
+	// everything. Check 23 sets it; the Host then refuses through its Remote what the rules do not deliver, as the remote engine does.
+	Delivery *DeliveryRules
 }
 
 // Host is the in-memory implementation of formats.Host: an item store, the
@@ -257,6 +261,7 @@ func NewHost(f formats.Format, o HostOptions) *Host {
 	if m, ok := o.Remote.(*MemRemote); ok {
 		m.note = h.noteRead
 	}
+	h.withDelivery(o)
 	return h
 }
 
@@ -557,6 +562,9 @@ func (h *Host) Signatures() formats.SignatureVerdicts {
 	}
 	return formats.NoSignatureVerdicts
 }
+
+// RecordRefusal implements formats.Host: the kit records no refusal (R-CUR-004); its checks read the answer.
+func (h *Host) RecordRefusal(context.Context, *formats.Request, *rules.Refusal) {}
 
 // Markup implements formats.Host.
 func (h *Host) Markup() formats.Markup {

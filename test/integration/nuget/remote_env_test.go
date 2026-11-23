@@ -97,11 +97,13 @@ func newRemoteEnv(t *testing.T, o remoteOptions) *renv {
 	e.tokNobody = st.Token(nobody, scope.Default())
 
 	content := []any{map[string]any{"pattern": "localhost", "sendCredentials": false}}
-	st.Repository(rRemote, "remote", "nuget", e.remoteConfig(300, content, nil))
-	st.Repository(rFast, "remote", "nuget", e.remoteConfig(2, content, nil))
-	st.Repository(rExclude, "remote", "nuget", e.remoteConfig(300, content, []string{"Contoso.Core.*"}))
+	st.Repository(rRemote, "remote", "nuget", e.remoteConfig(300, content))
+	st.Repository(rFast, "remote", "nuget", e.remoteConfig(2, content))
+	st.Repository(rExclude, "remote", "nuget", e.remoteConfig(300, content))
+	// What an exclude pattern of the remote said is a section rule that blocks (R-CUR-002), in the folded form of NuGet's names.
+	st.DeliveryRule(rExclude, testenv.SectionRule("contoso.core.*", "block"))
 	// This remote does not admit the content host: the service index names it, the engine refuses.
-	st.Repository(rNoHost, "remote", "nuget", e.remoteConfig(300, []any{}, nil))
+	st.Repository(rNoHost, "remote", "nuget", e.remoteConfig(300, []any{}))
 	st.Repository(rLocal, "local", "nuget", "{}")
 	st.Policy("nuget-readers", []string{"read"}, []string{rRemote, rFast, rExclude, rNoHost, rLocal}, reader)
 	return e
@@ -109,7 +111,7 @@ func newRemoteEnv(t *testing.T, o remoteOptions) *renv {
 
 // remoteConfig is the canonical document of a remote repository that points to the test
 // upstream: every member present, as the repository service stores it.
-func (e *renv) remoteConfig(ttl int, extraHosts []any, exclude []string) string {
+func (e *renv) remoteConfig(ttl int, extraHosts []any) string {
 	remote := map[string]any{
 		"url": e.url, "extraHosts": extraHosts, "authMode": "none", "username": "", "password": nil,
 		"clientCertificate": nil, "headers": []any{}, "forwardAuthOnRedirect": false, "outboundProxy": map[string]any{"mode": "direct"},
@@ -122,11 +124,7 @@ func (e *renv) remoteConfig(ttl int, extraHosts []any, exclude []string) string 
 		"availability": map[string]any{"mode": "online", "failureThreshold": 3, "circuitOpenSeconds": 30},
 		"limits":       map[string]any{"maxArtifactBytes": nil, "maxMetadataBytes": nil, "maxConcurrentFetches": 16},
 	}
-	doc := map[string]any{"remote": remote}
-	if exclude != nil {
-		doc["excludePatterns"] = exclude
-	}
-	b, err := json.Marshal(doc)
+	b, err := json.Marshal(map[string]any{"remote": remote})
 	if err != nil {
 		e.t.Fatal(err)
 	}

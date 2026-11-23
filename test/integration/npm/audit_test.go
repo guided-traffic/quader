@@ -158,15 +158,17 @@ func TestR_NPM_038_TheForwardedSetThroughARemoteAndAVirtualRepository(t *testing
 // scopedPath escapes the slash of a scoped name the way npm does.
 func scopedPath(name string) string { return strings.Replace(name, "/", "%2f", 1) }
 
-func TestR_NPM_038_PatternsAndTheVirtualRepositorysForwardingMember(t *testing.T) {
+// TestR_NPM_038_DeliveryRulesAndTheVirtualRepositorysForwardingMember: the forwarding member's delivery rules withhold a name they
+// block from the audit, as its exclude patterns did (R-NPM-038, R-CUR-002 "What stays a routing rule": a remote never asks its upstream
+// about a name its rules do not deliver).
+func TestR_NPM_038_DeliveryRulesAndTheVirtualRepositorysForwardingMember(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{})
-	// npm-audit-off forwards nothing; npm-audit-pat refuses JSONStream by its patterns; the
+	// npm-audit-off forwards nothing; npm-audit-pat refuses JSONStream by a rule that blocks it; the
 	// virtual repository lists npm-audit-off first, so npm-audit-pat is its forwarding member.
 	off := map[string]any{"audit": map[string]any{"mode": "disabled"}}
 	r.st.Repository("npm-audit-off", "remote", "npm", r.remoteConfig(3600, nil, off))
-	patterned := r.remoteConfig(3600, nil, nil)
-	patterned = strings.Replace(patterned, `{"remote"`, `{"excludePatterns":["JSONStream"],"remote"`, 1)
-	r.st.Repository("npm-audit-pat", "remote", "npm", patterned)
+	r.st.Repository("npm-audit-pat", "remote", "npm", r.remoteConfig(3600, nil, nil))
+	r.st.DeliveryRule("npm-audit-pat", testenv.PackageRule("JSONStream", "block"))
 	r.st.Repository("npm-audit-all", "virtual", "npm", `{}`)
 	for i, m := range []string{"npm-audit-off", "npm-audit-pat"} {
 		r.st.Exec(`INSERT INTO virtual_members (virtual_id, position, member_id)
@@ -178,7 +180,7 @@ func TestR_NPM_038_PatternsAndTheVirtualRepositorysForwardingMember(t *testing.T
 	if a := r.view(rep, "npm-audit-pat", "lodash", r.tokA); a.Status != 200 {
 		t.Fatalf("%d %s", a.Status, a.Body)
 	}
-	// The pattern came after the fetch: the record exists, the name is refused all the same.
+	// The rule came after the fetch: the record exists, the name is refused all the same.
 	r.st.Exec(`INSERT INTO npm_remote_packages (repo_id, name, doc_sha256) SELECT id, 'JSONStream', sha256('x') FROM repositories WHERE key = 'npm-audit-pat'`)
 	r.stub.Reset()
 

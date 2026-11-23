@@ -17,11 +17,18 @@ func TestR_REPO_069_TheProductKeepsTheProjectUpstream(t *testing.T) {
 	f.start()
 	repo := "/api/v1/projects/upstream/repositories/npmjs"
 
-	t.Run("R-REPO-069 a merge patch changes the narrowing settings and nothing else", func(t *testing.T) {
+	t.Run("R-REPO-069 R-CUR-005 a merge patch changes the narrowing settings and nothing else", func(t *testing.T) {
 		cur := f.do(f.admin, "GET", repo, nil)
 		wantStatus(t, cur, 200, "")
-		ok := f.do(f.admin, "PATCH", repo, map[string]any{"excludePatterns": []string{"@evil/*"}}, "If-Match", cur.Header.Get("ETag"),
+		// A remote has no exclude patterns (R-CUR-002); what narrows it is its delivery mode, which an administrator sets on a well-known
+		// upstream, and its rules (R-CUR-005). The rules' API is not wired into this area's replicas (test/integration/stack).
+		excl := f.do(f.admin, "PATCH", repo, map[string]any{"excludePatterns": []string{"@evil/*"}}, "If-Match", cur.Header.Get("ETag"),
 			"Content-Type", "application/merge-patch+json")
+		if !hasField(t, excl, "/excludePatterns", "not_applicable") {
+			t.Errorf("an exclude pattern on the remote: %d %s", excl.Status, excl.Body)
+		}
+		ok := f.do(f.admin, "PATCH", repo, map[string]any{"remote": map[string]any{"delivery": map[string]any{"mode": "onlyAllowed"}}},
+			"If-Match", cur.Header.Get("ETag"), "Content-Type", "application/merge-patch+json")
 		wantStatus(t, ok, 200, "")
 		if f.events("repository.narrowed", "npmjs") != 1 {
 			t.Error("the narrowing is not recorded")

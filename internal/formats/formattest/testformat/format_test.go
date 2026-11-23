@@ -130,7 +130,7 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 			// Check 7 fails with it: the bare error loses the challenge of a 401 as well.
 			"R-MAL-016 R-MAL-029 a format whose errors lose the headers of the core error fails check 17", testformat.RendersBareErrors,
 			formattest.CheckMalware, "without Cache-Control: no-store",
-			[]formattest.Check{formattest.CheckAdmission, formattest.CheckHeaders},
+			[]formattest.Check{formattest.CheckAdmission, formattest.CheckHeaders, formattest.CheckDelivery},
 		},
 		{
 			"R-AUTH-002 a format whose 401 drops the challenge the error carries fails check 7", testformat.DropsChallenge, formattest.CheckHeaders,

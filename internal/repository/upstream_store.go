@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"github.com/guided-traffic/quader/internal/qname"
 
@@ -17,6 +20,7 @@ import (
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	rc "github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/wellknown"
 )
@@ -82,9 +86,12 @@ func (u *upstreamStore) Stored(ctx context.Context) ([]wellknown.Stored, error) 
 			Key: row.Key, Format: catalog.ID(row.Format), Class: Class(row.Class), Kind: wellknown.Kind(f.Kind),
 			Retired: f.RetiredAt.Valid, Overridden: f.AddressOverridden,
 			Fixed: wellknown.Fixed{
-				IncludePatterns: d.IncludePatterns, Private: d.Visibility.Artifacts == LevelPrivate && d.Visibility.Wiki == LevelPrivate,
+				Private:     d.Visibility.Artifacts == LevelPrivate && d.Visibility.Wiki == LevelPrivate,
 				ScanningOff: d.Vulnerabilities != nil && !d.Vulnerabilities.Enabled,
 			},
+		}
+		if st.Fixed.Allow, err = productAllows(ctx, qs, row.ID, d); err != nil {
+			return nil, err
 		}
 		// A local repository (scanner-clamav, R-REPO-075) has no remote section: no address, no account, no cache period.
 		if rs, err := parseStoredRemote(d.Remote); d.Class == Remote && err == nil {
@@ -134,8 +141,11 @@ func (u *upstreamStore) Create(ctx context.Context, decl wellknown.Declaration) 
 	d.normalize()
 	c := u.c
 	c.product.level = decl.Level
-	_, err := u.s.createTx(ctx, u.tx, c, wellknown.ProjectKey, d, decl.Kind)
-	return described(err)
+	st, err := u.s.createTx(ctx, u.tx, c, wellknown.ProjectKey, d, decl.Kind)
+	if err != nil || decl.Kind != wellknown.KindSystem || decl.Local() {
+		return described(err)
+	}
+	return u.s.writeProductRules(ctx, u.tx, st.Repository, decl.Fixed().Allow)
 }
 
 // described adds the field errors of a refused write to its message: `quader migrate` logs the error and exits, and a catalog
@@ -176,6 +186,9 @@ func (u *upstreamStore) Write(ctx context.Context, decl wellknown.Declaration, w
 		}
 		return nd, nil
 	})
+	if err == nil && w.Fixed && !decl.Local() {
+		err = u.s.writeProductRules(ctx, u.tx, st.Repository, decl.Fixed().Allow)
+	}
 	if err != nil || !w.RemoveAccount {
 		return err
 	}
@@ -346,10 +359,10 @@ func setRemote(d *Document, set map[string]any) error {
 	return nil
 }
 
-// setFixed writes the members the product fixes on a system repository (R-REPO-070, R-REPO-075): the include patterns, both levels
-// private, the scanning off where the format has it, and the cache period of a remote one.
+// setFixed writes the members the product fixes on a system repository (R-REPO-070, R-REPO-075): both levels private, the scanning off
+// where the format has it, and for a remote one the cache period and the delivery mode onlyAllowed of its product rules (the rules
+// themselves are rows, writeProductRules).
 func (s *Service) setFixed(d *Document, f wellknown.Fixed) error {
-	d.IncludePatterns = append([]string(nil), f.IncludePatterns...)
 	if f.Private {
 		d.Visibility = Visibility{Artifacts: LevelPrivate, Wiki: LevelPrivate}
 	}
@@ -370,7 +383,75 @@ func (s *Service) setFixed(d *Document, f wellknown.Fixed) error {
 		return err
 	}
 	cache["unusedRetentionHours"] = raw
-	return setRemote(d, map[string]any{"cache": cache})
+	section := map[string]any{"cache": cache}
+	if len(f.Allow) > 0 {
+		delivery := objectMembers(objectMembers(d.Remote)["delivery"])
+		if delivery == nil {
+			delivery = map[string]json.RawMessage{}
+		}
+		delivery["mode"] = json.RawMessage(`"` + string(rc.OnlyAllowed) + `"`)
+		section["delivery"] = delivery
+	}
+	return setRemote(d, section)
+}
+
+// productAllows reads the product's delivery rules of a remote system repository as the reconcile compares them (R-REPO-070): the names
+// of its package rules that allow, sorted, in mode onlyAllowed; a repository with any other rule, or in the other mode, reads as one
+// without them, so the reconcile writes them again.
+func productAllows(ctx context.Context, qs *q.Queries, id int64, d Document) ([]string, error) {
+	rs, err := parseStoredRemote(d.Remote)
+	if d.Class != Remote || err != nil || rs.Delivery.Mode != string(rc.OnlyAllowed) {
+		return nil, nil //nolint:nilerr // a section that does not read holds no product rule
+	}
+	rows, err := qs.DeliveryRulesOfRepository(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, r := range rows {
+		if r.Kind != string(rc.KindPackage) || r.Effect != string(rc.Allow) {
+			return nil, nil
+		}
+		out = append(out, r.Name.String)
+	}
+	slices.Sort(out)
+	return out, nil
+}
+
+// writeProductRules makes the product's delivery rules of a system repository the only ones (R-REPO-070): every rule removed, a
+// `package <name> allow` per name, the rule set's revision raised and the change area told, so every replica rebuilds the repository's
+// rule set. A rule write through the API on such a repository answers 409 managed_by_product.
+func (s *Service) writeProductRules(ctx context.Context, tx meta.Tx, r Repository, allow []string) error {
+	qs, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	id := r.NumericID()
+	rows, err := qs.DeliveryRulesOfRepository(ctx, id)
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if _, err := qs.DeliveryRuleDelete(ctx, q.DeliveryRuleDeleteParams{RepoID: id, ID: row.ID.String()}); err != nil {
+			return err
+		}
+	}
+	for _, name := range allow {
+		n, ok := s.cat.NormalizeName(r.Format, name)
+		if !ok {
+			return fmt.Errorf("repository: the product's rule names %q, which is no name of %s", name, r.Format)
+		}
+		if err := qs.DeliveryRuleInsert(ctx, q.DeliveryRuleInsertParams{
+			ID: uuid.Must(uuid.NewV7()).String(), RepoID: id, Kind: string(rc.KindPackage), Name: n, Effect: string(rc.Allow),
+			Note: "The product's rule (R-REPO-070).",
+		}); err != nil {
+			return err
+		}
+	}
+	if _, err := qs.DeliveryRulesRaiseRevision(ctx, id); err != nil {
+		return err
+	}
+	return s.notif.Notify(tx, cluster.AreaRepoConfig, 1, changePayload{ID: r.ID, Key: r.Name.String(), Op: "updated", Version: r.Version})
 }
 
 // UpstreamPurgeJobKind is the job kind that removes the content of a retired well-known repository and keeps its rows

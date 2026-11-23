@@ -18,7 +18,7 @@ func para(pkg, ver, arch, filename string) string {
 	return fmt.Sprintf("Package: %s\nVersion: %s\nArchitecture: %s\nFilename: %s\nSize: 1\nSHA256: %s\n", pkg, ver, arch, filename, strings.Repeat("a", 64))
 }
 
-func keepAll(string) bool { return true }
+func keepAll(string, string) bool { return true }
 
 // R-DEB-025, Q-DEB-38: the first member in the order keeps a package, version and architecture; a later member's paragraph for it is left
 // out; the Filename of a kept paragraph is the member path and every other field stays as it was.
@@ -79,7 +79,7 @@ func TestMergeMemberSkipsWhatDoesNotValidateAndWhatIsNotKept(t *testing.T) {
 		para("other", "1.0", "amd64", "pool/o/other/other_1.0_amd64.deb"),
 	}, "\n")
 	var out Plain
-	res, err := MergeMember(context.Background(), &out, NewSeen(0), "m", strings.NewReader(doc), func(n string) bool { return n != "other" })
+	res, err := MergeMember(context.Background(), &out, NewSeen(0), "m", strings.NewReader(doc), func(n, _ string) bool { return n != "other" })
 	if err != nil {
 		t.Fatal(err)
 	}

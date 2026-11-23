@@ -69,6 +69,36 @@ func remoteFixture() *formattest.RemoteFixture {
 	}
 }
 
+// deliveryFixture is the fixture of check 23 (remote-curation.md R-CUR-003, R-ANS-047): acme.tools with 1.0.0 and 2.0.0 upstream, the
+// collection document naming 2.0.0 as its highest version, so that a rule refusing 2.0.0 moves highest_version and leaves 2.0.0 out of
+// the version list and its count.
+func deliveryFixture() *formattest.DeliveryFixture {
+	const idx = upstreamHost + "/api/v3/plugin/ansible/content/published/collections/index/acme/tools/"
+	entry := func(v string) string {
+		return `{"version":"` + v + `","href":"` + idx + `versions/` + v + `/","created_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:00:00Z","requires_ansible":null,"marks":[]}`
+	}
+	versions := `{"meta":{"count":2},"links":{"first":null,"previous":null,"next":null,"last":null},"data":[` + entry("2.0.0") + `,` + entry("1.0.0") + `]}`
+	collectionDoc := `{"href":"` + idx + `","namespace":"acme","name":"tools","deprecated":false,"versions_url":"` + idx + `versions/",` +
+		`"highest_version":{"href":"` + idx + `versions/2.0.0/","version":"2.0.0"},"created_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:00:00Z"}`
+	return &formattest.DeliveryFixture{
+		Remote: func() *formattest.MemRemote {
+			return &formattest.MemRemote{
+				Docs: map[string][]byte{
+					CollectionDocumentPath("acme", "tools"): []byte(collectionDoc),
+					VersionsDocumentPath("acme", "tools"):   []byte(versions),
+				},
+				Artifacts: map[string][]byte{
+					ArtifactPath("acme", "tools", "1.0.0"): []byte("archive 1"),
+					ArtifactPath("acme", "tools", "2.0.0"): []byte("archive 2"),
+				},
+			}
+		},
+		Package: "acme.tools", Refused: "2.0.0", Kept: "1.0.0",
+		Documents: []string{"v3/collections/acme/tools/", "v3/collections/acme/tools/versions/"},
+		Artifact:  "v3/artifacts/collections/acme-tools-2.0.0.tar.gz",
+	}
+}
+
 // discoveryFixture are the API roots of check 6 (R-ANS-016): the one the public Galaxy serves, one without v1 (a hub), and crafted
 // ones that must be refused - a prefix with a scheme, one that leaves the API root, one that is absolute, no v3 API, no object.
 func discoveryFixture() []formattest.DiscoveryCase {

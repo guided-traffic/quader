@@ -147,6 +147,20 @@ type Document struct {
 	Settings
 }
 
+// MarshalJSON renders the document. A remote repository's reads back without includePatterns and excludePatterns: a remote has none
+// (remote-curation.md R-CUR-002); the shallower members shadow those of the embedded settings and are omitted.
+func (d Document) MarshalJSON() ([]byte, error) {
+	type plain Document
+	if d.Class != Remote {
+		return json.Marshal(plain(d))
+	}
+	return json.Marshal(struct {
+		plain
+		IncludePatterns *[]string `json:"includePatterns,omitempty"`
+		ExcludePatterns *[]string `json:"excludePatterns,omitempty"`
+	}{plain: plain(d)})
+}
+
 // Visibility is the `visibility` member of the repository document (R-REPO-004): the level of the artifacts and the level of
 // the wiki, each one of private, internal and public. The wiki is never more open than the artifacts, and the artifacts never
 // more open than the project (R-AUTHZ-033 rule 2).

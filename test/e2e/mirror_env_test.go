@@ -287,13 +287,14 @@ func (e *mirrorEnv) npmBody(key string, paused bool) map[string]any {
 	}
 }
 
-// npmNamesBody is a remote of the private test upstream, which offers no feed: the pass takes the exact names of the include patterns.
+// npmNamesBody is a remote of the private test upstream, which offers no feed: the pass takes the exact names of the mirror's scope
+// (remote.mirror.include, R-CUR-017).
 func (e *mirrorEnv) npmNamesBody(key string, names []string) map[string]any {
 	return map[string]any{
-		"key": key, "format": "npm", "includePatterns": names,
+		"key": key, "format": "npm",
 		"remote": map[string]any{
 			"url": "https://" + e.npm.stubHost + "/", "mode": "mirror",
-			"mirror": map[string]any{"concurrency": mirrorConcurrency},
+			"mirror": map[string]any{"concurrency": mirrorConcurrency, "include": names},
 			"limits": map[string]any{"maxConcurrentFetches": mirrorMaxFetches},
 		},
 	}

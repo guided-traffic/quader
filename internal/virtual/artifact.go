@@ -49,41 +49,13 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 		}
 	}
 	remotes := p.Remote()
-	// failure is the first transient failure of a member: the answer when no member serves the item (step 7).
-	var failure error
-	for _, m := range remotes {
-		hit, ok, err := t.RemoteCached(ctx, m, d)
-		if errs.IsMemberMiss(err) {
-			continue // the member's cache does not have it for the caller
-		}
-		if err != nil && !contentLost(err) {
-			return err
-		}
-		if err != nil {
-			// The member's cache holds the item and its object is lost (Q-REPO-205): the walk goes on, its fetch tier
-			// included, which fills it again for a caller who may; a caller who may not gets this 503, not a 404.
-			failure = cmp.Or(failure, err)
-			continue
-		}
-		if !ok {
-			continue
-		}
-		tw := &trackWriter{ResponseWriter: w}
-		if !c.Rules {
-			tw.Header().Set(ResolvedFromHeader, repository.MemberRef(repo.Project, m.Repo.Name))
-		}
-		herr := hit(tw)
-		if herr == nil || tw.wrote || !contentLost(herr) {
-			r.m.resolved(repo.String(), sourceCache)
-			return herr
-		}
-		failure = cmp.Or(failure, herr)
-		// The read found the cached copy's object missing or damaged and marked it, before anything was written: the
-		// member's cache does not have the item, and the walk goes on, its fetch tier included, which fills it again
-		// (storage.md R-STOR-027, Q-REPO-204); the loss is the answer when nothing serves it (Q-REPO-205). A local member's
-		// lost object stays its answer: that is data loss.
-		tw.Header().Del(ResolvedFromHeader)
+	// failure is the first transient failure of a member, refusal the first refusal of a member's delivery rules: the answer when no
+	// member serves the item, in that order (step 7, Q-CUR-8).
+	var miss walkMisses
+	if done, err := r.cacheTier(ctx, c, p, t, w, &miss); done {
+		return err
 	}
+	failure, refusal := miss.failure, miss.refusal
 	for _, m := range remotes {
 		if !m.MayFill {
 			// A member the caller may not fill counts as a miss (R-AUTHZ-009 rule 3).
@@ -108,7 +80,10 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 		}
 		switch {
 		case err == nil, errs.IsMemberMiss(err):
-			// This member does not have it.
+			// This member does not have it, or its rules do not deliver it.
+			if refusal == nil && !tw.wrote && errs.IsRuleRefusal(err) {
+				refusal = err
+			}
 		case tw.wrote || !errs.IsMemberFailure(err) || ctx.Err() != nil:
 			// A failure after the first byte, or an answer the walk does not name, ends the
 			// request: the next member cannot continue it, or must not serve what this one holds back.
@@ -121,6 +96,9 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 	r.m.resolved(repo.String(), sourceNone)
 	if failure != nil {
 		return failure
+	}
+	if refusal != nil {
+		return refusal
 	}
 	return p.notFound()
 }
@@ -213,4 +191,59 @@ func (c Caller) asAddressed(p *Plan, err error) error {
 func contentLost(err error) bool {
 	e, ok := errs.As(err)
 	return ok && e.Code == errs.CodeContentUnavailable
+}
+
+// walkMisses is what the walk keeps of the members that did not serve: the first transient failure and the first refusal of a member's
+// delivery rules (step 7, Q-CUR-8).
+type walkMisses struct{ failure, refusal error }
+
+// cacheTier is the second tier of R-REPO-019 step 6: the caches of the remote members, without contacting an upstream. done reports that
+// the walk ends with err (a member served the item, or an answer the walk does not name); otherwise ms holds what the next tier and the
+// end of the walk need.
+func (r *Resolver) cacheTier(ctx context.Context, c Caller, p *Plan, t Tiers, w http.ResponseWriter, ms *walkMisses) (done bool, err error) {
+	repo, d := p.Virtual.Name, p.Descriptor
+	for _, m := range p.Remote() {
+		hit, ok, err := t.RemoteCached(ctx, m, d)
+		if errs.IsMemberMiss(err) {
+			if ms.refusal == nil && errs.IsRuleRefusal(err) {
+				ms.refusal = err
+			}
+			continue // the member's cache does not have it for the caller
+		}
+		if err != nil && !contentLost(err) {
+			return true, err
+		}
+		if err != nil {
+			// The member's cache holds the item and its object is lost (Q-REPO-205): the walk goes on, its fetch tier
+			// included, which fills it again for a caller who may; a caller who may not gets this 503, not a 404.
+			ms.failure = cmp.Or(ms.failure, err)
+			continue
+		}
+		if !ok {
+			continue
+		}
+		tw := &trackWriter{ResponseWriter: w}
+		if !c.Rules {
+			tw.Header().Set(ResolvedFromHeader, repository.MemberRef(repo.Project, m.Repo.Name))
+		}
+		herr := hit(tw)
+		if !tw.wrote && errs.IsRuleRefusal(herr) {
+			// The member's rules do not deliver what its cache holds (R-CUR-003 point 2): a miss of this member, and the walk goes on
+			// to the next one, which may deliver it under its own rules (R-CUR-004).
+			ms.refusal = cmp.Or(ms.refusal, herr)
+			tw.Header().Del(ResolvedFromHeader)
+			continue
+		}
+		if herr == nil || tw.wrote || !contentLost(herr) {
+			r.m.resolved(repo.String(), sourceCache)
+			return true, herr
+		}
+		ms.failure = cmp.Or(ms.failure, herr)
+		// The read found the cached copy's object missing or damaged and marked it, before anything was written: the
+		// member's cache does not have the item, and the walk goes on, its fetch tier included, which fills it again
+		// (storage.md R-STOR-027, Q-REPO-204); the loss is the answer when nothing serves it (Q-REPO-205). A local member's
+		// lost object stays its answer: that is data loss.
+		tw.Header().Del(ResolvedFromHeader)
+	}
+	return false, nil
 }

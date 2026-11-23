@@ -1776,7 +1776,7 @@ R-CUR-007), from the protocol research of 2026-11-23:
 
 Acceptance criteria:
 
-- Unit (kit checks 21 and 22, milliseconds): the keyword search, the namespace level and the package call against canned answers; a
+- Unit (kit checks 22 and 23, milliseconds): the keyword search, the namespace level and the package call against canned answers; a
   refused version is absent from the version list and `meta.count`.
 - End-to-end (the leg `ansible`, about 10 s): with one version of a stub collection allowed, `ansible-galaxy collection install ns.name`
   installs it, and `ns.name:==<refused>` prints the refusal.

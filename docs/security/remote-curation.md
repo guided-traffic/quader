@@ -1,6 +1,7 @@
 # Curating a remote repository
 
-Status: specified on 2026-11-23, not built ([remote-curation.md](../spec/remote-curation.md)). Every section below describes that design.
+Status: specified on 2026-11-23 ([remote-curation.md](../spec/remote-curation.md)); the delivery rules are built (R-CUR-001 to R-CUR-006,
+R-CUR-017), the catalogue, the downloads ahead, the requests and the examination are not. A gap of an unbuilt mechanism says "dormant".
 The perspective of this page is what the curation of a remote repository lets a person make Quader do and show: what a search of the
 upstream tells its operator and shows its caller, which hosts it reaches, what a delivery rule keeps from a client and what it does not,
 who can make Quader download how much, and what is kept of content that no client may get.
@@ -143,7 +144,7 @@ makes it real: a change of the Hub API.
 ### H-1724 · A blob of a refused tag can be fetched by its digest when the image is partly allowed
 
 Component: the delivery rules for OCI (R-OCI-038, Q-CUR-10). Subject: an image of a remote with version rules (some tags allowed or
-blocked). Dormant until built. A blob by digest is delivered when some version of the image is, because a blob names no tag; a client
+blocked). Live since the delivery rules are built. A blob by digest is delivered when some version of the image is, because a blob names no tag; a client
 that knows the digest of a layer of a refused tag fetches it, through the remote and from the upstream. Manifests by digest are decided by
 the stored tags that name them, so a client cannot pull the refused tag's image as a whole. What makes it real: a layer that a refused tag
 holds and an allowed one does not, and a client that learned its digest elsewhere; the signature gate made the same cut (H-1196).
@@ -160,7 +161,7 @@ Maintainer who downloads a large section, or several, of a registry with a pull 
 ### H-1726 · A Debian remote addressed directly lists what its rules refuse
 
 Component: the delivery rules for Debian (R-DEB-036, Q-CUR-9). Subject: an APT client that uses a Debian remote directly instead of a
-virtual repository over it. Dormant until built. The upstream's signed indexes pass unchanged, so `apt` lists every package and is
+virtual repository over it. Live since the delivery rules are built. The upstream's signed indexes pass unchanged, so `apt` lists every package and is
 refused the file with a status line that carries no reason; the refused content is not served, but the listing shows what the rules
 were meant to keep out of view. What makes it real: a client set up against the remote in mode `onlyAllowed`; the client setup names the
 virtual repository instead.
@@ -188,3 +189,12 @@ Component: the listing of a remote (R-API-081, R-CUR-014, Q-CUR-26). Subject: wh
 built. A stored version that the rules do not deliver is listed to every reader of the repository, marked not delivered, with its
 verdicts; so is an open request's examination. A reader therefore learns which packages are being looked at before a decision. What
 makes it real: an examination that is confidential to its deciders, such as a package considered for a security product.
+
+### H-1800 · A replica loses up to five seconds of refusal counts at a crash
+
+Component: the record of a client's refusal (R-CUR-004, Q-CUR-40). Subject: the request list's figure "refused to clients N times".
+Live. A replica sums the refusals per subject in memory and writes them every 5 s, and once more when it stops; a replica that crashes
+loses what it summed since its last write, and a replica that cannot write keeps at most 8,192 subjects. The event
+`remote.delivery.refused` and the metric are not affected. What makes it real: a crash of a replica that answers many refusals; the
+figure is a decider's hint, never a control.
+

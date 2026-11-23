@@ -82,8 +82,11 @@ func (f *Format) memberParts(ctx context.Context, rq *formats.Request, d formats
 	}
 	cached := merge.Part{Member: key, Tier: int(formats.TierRemoteCached), Position: d.Position, SHA256: sums}
 	rest := merge.Part{Member: key, Tier: int(formats.TierRemote), Position: d.Position, SHA256: sums}
+	// A version the member's delivery rules refuse leaves its part; another member may still supply it (R-CUR-003, R-ANS-047).
+	set := memberDelivery(rq, d.Member.Name)
 	for _, e := range entries {
 		switch {
+		case set != nil && !set.Decide(ns+"."+name, e.Version).Delivered:
 		case d.CachedVersions[e.Version]:
 			cached.Entries = append(cached.Entries, e)
 		case !d.Restricted:

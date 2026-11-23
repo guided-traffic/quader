@@ -210,6 +210,7 @@ formats.Host: method Links(*Request) LinkBuilder
 formats.Host: method Markup() Markup
 formats.Host: method Packages() PackageStore
 formats.Host: method PathsAllowed(context.Context, *Request, Action, []string) ([]bool, error)
+formats.Host: method RecordRefusal(context.Context, *Request, *rules.Refusal)
 formats.Host: method Remote() RemoteFetcher
 formats.Host: method Renditions() RenditionCache
 formats.Host: method Resolver() Resolver
@@ -280,6 +281,9 @@ formats.MemberDocument: field Restricted bool
 formats.MemberDocument: field Revision Revision
 formats.MemberDocument: field Stale bool
 formats.MemberDocument: field Tier Tier
+formats.MemberRules: field Ref RepoRef
+formats.MemberRules: field Set *rules.Set
+formats.MemberRules: method Refusal(*Request, string) error
 formats.Merged: field Bytes []byte
 formats.Merged: field CacheStatus string
 formats.Merged: field MergeFingerprint [32]byte
@@ -677,20 +681,28 @@ formats.CapabilitiesFor: func(ID) Capabilities
 formats.CapabilitiesOf: func(Format) Capabilities
 formats.CatalogEntry: func(Format) catalog.Entry
 formats.DefaultSignatureFetchLimits: func() SignatureFetchLimits
+formats.Delivery: func(*Request) *rules.Set
+formats.DeliveryView: func(*Request) ExposureView
 formats.Descriptors: func() []Descriptor
+formats.DocumentFingerprint: func(*Request) string
+formats.DocumentView: func(*Request) ExposureView
 formats.ExecuteGuide: func(GuideSection, GuideData) (string, error)
 formats.GateNoneFor: func([]GateItem) []GateSubject
 formats.GuideTopics: func() []string
 formats.HiddenFingerprint: func([]string) string
+formats.JoinViews: func(ExposureView, ExposureView) ExposureView
 formats.List: func() []Format
 formats.LiveVersions: func(context.Context, *Request, PackageRow) ([]string, RevSeq, error)
 formats.Lookup: func(string) (Format, bool)
 formats.MatchRoutes: func([]Route, string, string) (*Route, Params, error)
+formats.MemberDelivery: func(*Request, RepoRef) *MemberRules
+formats.ModeReason: func(*rules.Set) rc.Reason
 formats.NoMarkup: func() Markup
 formats.NoSignatures: func(string, string) SignatureAdapter
 formats.NoVulnerabilityData: func() VulnerabilityData
 formats.ProbeFiles: func(Probe) []discover.Item
 formats.RefusalFrom: func(*http.Request) (Refusal, bool)
+formats.RefusalOf: func(*Request, *rules.Set, string, string, rc.Reason, rules.RefusalKind) error
 formats.Register: func(Format)
 formats.RemoteCapabilities: func(ID) RemoteCaps
 formats.RepositoryAllowed: func(context.Context, RepoRef) error
@@ -701,7 +713,9 @@ formats.SignatureFetchLimitsFrom: func(context.Context) SignatureFetchLimits
 formats.SignatureRoleValid: func(string) bool
 formats.SignatureSchemeValid: func(string) bool
 formats.SignatureSourceValid: func(string) bool
+formats.SystemRead: func(*Request) bool
 formats.Template: func(string) (func(string) (Params, bool))
+formats.Undelivered: func(*Request, string, string, rules.RefusalKind) error
 formats.Validate: func(Format) error
 formats.WithRefusal: func(*http.Request, Refusal) *http.Request
 formats.WithSignatureFetchLimits: func(context.Context, SignatureFetchLimits) context.Context

@@ -185,16 +185,17 @@ func forged(t *testing.T, store journal.Store, event string, entry map[string]an
 	return handWritten(t, store, event, raw)
 }
 
-// TestR_REPO_061_AnExcludeAddedAfterTheRestorePointIsReplayed: the pattern added to npmjs after t is in effect after the
-// restore; the entries that cannot be replayed are reported without writing anything.
+// TestR_REPO_061_AnExcludeAddedAfterTheRestorePointIsReplayed: the pattern added to npm-local after t is in effect after the
+// restore; the entries that cannot be replayed are reported without writing anything. The repositories are local: a remote has no
+// patterns, its rules are narrowed by the part rules (remote-curation.md R-CUR-002, R-CUR-006).
 func TestR_REPO_061_AnExcludeAddedAfterTheRestorePointIsReplayed(t *testing.T) {
 	w := newNarrowWorld(t)
-	w.create("remote", "npmjs", "npm", `"excludePatterns":["@old/*"]`)
-	w.create("remote", "npm-gone", "npm", "")
-	w.create("remote", "npm-deleting", "npm", "")
+	w.create("local", "npm-local", "npm", `"excludePatterns":["@old/*"]`)
+	w.create("local", "npm-gone", "npm", "")
+	w.create("local", "npm-deleting", "npm", "")
 	w.snapshot()
-	w.patch("npmjs", "excludePatterns", []string{"@old/*", "@evil/*"})
-	w.patch("npmjs", "description", "the public registry")
+	w.patch("npm-local", "excludePatterns", []string{"@old/*", "@evil/*"})
+	w.patch("npm-local", "description", "the public registry")
 	if n := w.src.number("SELECT count(*) FROM revocation_outbox WHERE event = 'repository.narrowed'"); n != 1 {
 		t.Fatalf("%d repository.narrowed rows, want 1: the description update narrows nothing", n)
 	}
@@ -208,18 +209,18 @@ func TestR_REPO_061_AnExcludeAddedAfterTheRestorePointIsReplayed(t *testing.T) {
 
 	rst := w.tw.open(w.tw.restored)
 	rst.exec("UPDATE repositories SET lifecycle = 'deleting' WHERE key = 'npm-deleting'")
-	before := rst.configVersion("npmjs")
+	before := rst.configVersion("npm-local")
 	sum, _ := rst.replay(store, w.tw.at, rst.changes)
-	if o := outcomes(sum)["repository.narrowed web/npmjs"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) {
-		t.Errorf("repository.narrowed web/npmjs: %v, want applied", o)
+	if o := outcomes(sum)["repository.narrowed web/npm-local"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) {
+		t.Errorf("repository.narrowed web/npm-local: %v, want applied", o)
 	}
-	if got := rst.member("npmjs", "excludePatterns"); got != `["@old/*", "@evil/*"]` {
+	if got := rst.member("npm-local", "excludePatterns"); got != `["@old/*", "@evil/*"]` {
 		t.Errorf("excludePatterns = %s", got)
 	}
-	if rst.configVersion("npmjs") != before+1 || rst.disabledRepo("npmjs") {
-		t.Errorf("config_version %d -> %d, disabled %v", before, rst.configVersion("npmjs"), rst.disabledRepo("npmjs"))
+	if rst.configVersion("npm-local") != before+1 || rst.disabledRepo("npm-local") {
+		t.Errorf("config_version %d -> %d, disabled %v", before, rst.configVersion("npm-local"), rst.disabledRepo("npm-local"))
 	}
-	if d := rst.text("SELECT COALESCE(config->>'description', '') FROM repositories WHERE key = 'npmjs'"); d != "" {
+	if d := rst.text("SELECT COALESCE(config->>'description', '') FROM repositories WHERE key = 'npm-local'"); d != "" {
 		t.Errorf("the description %q was replayed", d)
 	}
 	if rst.number("SELECT count(*) FROM audit_event WHERE action = 'repository.narrowed'") != 0 {
@@ -242,12 +243,13 @@ func TestR_REPO_061_AnExcludeAddedAfterTheRestorePointIsReplayed(t *testing.T) {
 
 // TestR_REPO_061_AnIncludeListIsIntersectedAndAnEmptyIntersectionDisables: an include list narrowed after t is the
 // intersection with the restored list, an empty restored list takes the journaled one, and no pattern left disables the
-// repository and reports it suspended (Q-REPO-247).
+// repository and reports it suspended (Q-REPO-247). The repositories are local: a remote has no include list (remote-curation.md
+// R-CUR-002).
 func TestR_REPO_061_AnIncludeListIsIntersectedAndAnEmptyIntersectionDisables(t *testing.T) {
 	w := newNarrowWorld(t)
-	w.create("remote", "shrunk", "npm", `"includePatterns":["@a/*","@b/*","@x/*"]`)
-	w.create("remote", "firstlist", "npm", "")
-	w.create("remote", "foreign", "npm", `"includePatterns":["@z/*"]`)
+	w.create("local", "shrunk", "npm", `"includePatterns":["@a/*","@b/*","@x/*"]`)
+	w.create("local", "firstlist", "npm", "")
+	w.create("local", "foreign", "npm", `"includePatterns":["@z/*"]`)
 	w.snapshot()
 	w.patch("shrunk", "includePatterns", []string{"@a/*", "@b/*"})
 	w.patch("firstlist", "includePatterns", []string{"@acme/*"})
@@ -731,10 +733,10 @@ func (failingHook) OnDelete(context.Context, meta.Tx, repository.Caller, reposit
 // row of revocation_outbox, no audit event and no change; the same update without the failure leaves exactly one row.
 func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testing.T) {
 	w := newNarrowWorld(t)
-	w.create("remote", "npmjs", "npm", "")
+	w.create("local", "npm-local", "npm", "")
 	ctx := context.Background()
 	patch := func(svc *repository.Service) error {
-		_, err := svc.Patch(ctx, repoCaller, qname.Repo{Project: "web", Key: "npmjs"}, repository.Precondition{Any: true}, setMember("excludePatterns", []string{"@evil/*"}))
+		_, err := svc.Patch(ctx, repoCaller, qname.Repo{Project: "web", Key: "npm-local"}, repository.Precondition{Any: true}, setMember("excludePatterns", []string{"@evil/*"}))
 		return err
 	}
 	rows := func() int64 {
@@ -759,7 +761,7 @@ func TestR_REPO_061_ANarrowingUpdateWritesItsEntryInTheSameTransaction(t *testin
 		if n := w.src.number("SELECT count(*) FROM audit_event WHERE action IN ('repository.narrowed', 'repository.updated')"); n != 0 {
 			t.Errorf("%d audit events after a rolled-back update", n)
 		}
-		if got := w.src.member("npmjs", "excludePatterns"); got != "[]" {
+		if got := w.src.member("npm-local", "excludePatterns"); got != "[]" {
 			t.Errorf("excludePatterns = %s after a rolled-back update", got)
 		}
 	})
@@ -807,9 +809,9 @@ func init() {
 // A second replay reports the same.
 func TestR_HA_054_AnEntryTheDatabaseRefusesDoesNotStopTheReplay(t *testing.T) {
 	w := newNarrowWorld(t)
-	w.create("remote", "npmjs", "npm", "")
+	w.create("local", "npm-local", "npm", "")
 	w.snapshot()
-	w.patch("npmjs", "excludePatterns", []string{"@evil/*"})
+	w.patch("npm-local", "excludePatterns", []string{"@evil/*"})
 	store := w.ship(1)
 	bad := forged(t, store, "refusetest.exec", map[string]any{"Text": "{\"a\": \"b\u0000\"}", "key": "web/ali\nce \x00"})
 	w.src.close()
@@ -819,7 +821,7 @@ func TestR_HA_054_AnEntryTheDatabaseRefusesDoesNotStopTheReplay(t *testing.T) {
 	if got := outcomeOf(t, sum, bad); got != journal.Skipped {
 		t.Errorf("the refused entry: %s, want skipped", got)
 	}
-	if o := outcomes(sum)["repository.narrowed web/npmjs"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) {
+	if o := outcomes(sum)["repository.narrowed web/npm-local"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) {
 		t.Errorf("the entry after it: %v, want applied", o)
 	}
 	if !strings.Contains(printed, `"refusetest.exec" "web/ali\nce \x00" `) {

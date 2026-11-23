@@ -486,23 +486,29 @@ func addAvailable(ctx context.Context, reader repository.Reader, d view.VersionD
 		if err != nil {
 			return err
 		}
-		ok, err := servesVersion(ctx, reader, repo, holders, map[qname.Repo]bool{})
+		ok, err := servesVersion(ctx, reader, repo, d, holders, map[qname.Repo]bool{})
 		if err != nil {
 			return err
 		}
 		out.Repositories[i].Available = ok
+		// A remote that stores the version and whose rules do not deliver it lists it, marked, with the reason (R-CUR-014, Q-CUR-26).
+		if dec := repo.Delivery().Decide(d.Name, d.Version); repo.Class == repository.Remote && !dec.Delivered {
+			reason := gen.PackageVersionRepositoryUnavailableReason(dec.Reason)
+			out.Repositories[i].UnavailableReason = &reason
+		}
 	}
 	return nil
 }
 
-// servesVersion reports whether a client gets the version through repo: repo is not disabled, and it holds the version, or it is a
-// virtual repository with a member that takes part and serves it. seen guards against a cycle of virtual repositories.
-func servesVersion(ctx context.Context, reader repository.Reader, repo repository.Repository, holders, seen map[qname.Repo]bool) (bool, error) {
+// servesVersion reports whether a client gets the version through repo: repo is not disabled, and it holds the version and its
+// delivery rules deliver it (a remote's, R-CUR-003), or it is a virtual repository with a member that takes part and serves it. seen
+// guards against a cycle of virtual repositories.
+func servesVersion(ctx context.Context, reader repository.Reader, repo repository.Repository, d view.VersionDetail, holders, seen map[qname.Repo]bool) (bool, error) {
 	if repo.Disabled || repo.Lifecycle == repository.Deleting {
 		return false, nil
 	}
 	if repo.Class != repository.Virtual {
-		return holders[repo.Name], nil
+		return holders[repo.Name] && repo.Delivery().Decide(d.Name, d.Version).Delivered, nil
 	}
 	if seen[repo.Name] {
 		return false, nil
@@ -523,7 +529,7 @@ func servesVersion(ctx context.Context, reader repository.Reader, repo repositor
 			}
 			m = nested
 		}
-		ok, err := servesVersion(ctx, reader, m, holders, seen)
+		ok, err := servesVersion(ctx, reader, m, d, holders, seen)
 		if err != nil || ok {
 			return ok, err
 		}

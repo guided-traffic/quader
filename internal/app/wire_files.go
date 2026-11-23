@@ -100,6 +100,7 @@ func (a *App) wireFiles(ctx context.Context, in infra, repo repositoryArea, id i
 	}
 	svc, err := files.New(files.Options{
 		Items: store, Repos: repo.reader, Formats: fm.seam, Enforce: vz.enforcer, Malware: mw.gate, Signatures: sg.gate, Writes: in.sys, Log: log,
+		Refusals: a.deliveryRecorder(),
 	})
 	if err != nil {
 		return filesArea{}, err

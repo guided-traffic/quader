@@ -165,9 +165,23 @@ func conformance(t testing.TB) formattest.Fixture {
 		Remote: &formattest.RemoteFixture{
 			Upstream: "https://deb.upstream.test", Identity: "an APT archive's documents hold no address of the upstream: they are passed through byte for byte (R-DEB-019)",
 			Docs: []formattest.RemoteDoc{
-				{Name: "release", Path: "dists/stable/InRelease", Body: []byte("-----BEGIN PGP SIGNED MESSAGE-----\n\nOrigin: test\n-----BEGIN PGP SIGNATURE-----\n\nAAAA\n-----END PGP SIGNATURE-----\n")},
+				{Name: "release", Path: "dists/stable/InRelease", Body: []byte(kitRelease)},
 				{Name: "index", Path: "dists/stable/main/binary-amd64/Packages.gz", Body: []byte("\x1f\x8b\x08\x00opaque")},
 			},
+		},
+		// The delivery rules of a remote (check 23, R-DEB-036, Q-CUR-9): the refused version's package file answers the refusal. A Debian
+		// remote passes its upstream's signed InRelease and indexes byte for byte, so it has no document that leaves a version out or
+		// refuses a package: its InRelease is a Passthrough document that answers the upstream's bytes under the rules, and the filtered view
+		// is a virtual repository's merge (delivery_test.go).
+		Delivery: &formattest.DeliveryFixture{
+			Remote: func() *formattest.MemRemote {
+				return &formattest.MemRemote{Docs: map[string][]byte{"dists/stable/InRelease": []byte(kitRelease)}, Artifacts: map[string][]byte{
+					"pool/main/h/hello/hello_1.0_amd64.deb": []byte("deb 1"), "pool/main/h/hello/hello_2.0_amd64.deb": []byte("deb 2"),
+				}}
+			},
+			Package: "hello", Refused: "2.0", Kept: "1.0",
+			Passthrough: []string{"dists/stable/InRelease"},
+			Artifact:    "pool/main/h/hello/hello_2.0_amd64.deb",
 		},
 		Changes: conformanceChanges(),
 		View: &formattest.ViewFixture{
@@ -245,3 +259,6 @@ func fieldOf(paragraph, name string) string {
 	}
 	return ""
 }
+
+// kitRelease is an upstream's InRelease as the remote passes it, byte for byte (R-DEB-019).
+const kitRelease = "-----BEGIN PGP SIGNED MESSAGE-----\n\nOrigin: test\n-----BEGIN PGP SIGNATURE-----\n\nAAAA\n-----END PGP SIGNATURE-----\n"

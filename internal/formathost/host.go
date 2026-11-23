@@ -18,16 +18,20 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/downloadlinks"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/malware/gate"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
+	rulestore "github.com/guided-traffic/quader/internal/remotecuration/rules/store"
 	"github.com/guided-traffic/quader/internal/repository"
 	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
@@ -131,7 +135,10 @@ type Options struct {
 	// decisions; nil counts nothing.
 	Downloads    BackgroundDownloads
 	ProbeMetrics *ProbeMetrics
-	Log          *slog.Logger
+	// Refusals records the refusals of the delivery rules answered to clients (remote-curation.md R-CUR-004): the event, the metric and
+	// the count in the request list. nil records none.
+	Refusals *rulestore.Recorder
+	Log      *slog.Logger
 }
 
 // Host implements formats.Host.
@@ -141,6 +148,13 @@ type Host struct {
 }
 
 var _ formats.Host = (*Host)(nil)
+
+// RecordRefusal implements [formats.Host].
+func (h *Host) RecordRefusal(ctx context.Context, rq *formats.Request, rf *rules.Refusal) {
+	h.o.Refusals.Refused(ctx, rf, rulestore.RefusalContext{
+		Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx), Endpoint: rq.Subject.Endpoint,
+	})
+}
 
 // New creates the host.
 func New(o Options) (*Host, error) {

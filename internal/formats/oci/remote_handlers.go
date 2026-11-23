@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
 	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // What a client sees of a remote repository (R-OCI-021 to R-OCI-025). The routes are the ones of the local class; the handlers of
@@ -90,8 +91,13 @@ func (f *Format) SourceSpellings(upstreamURL string, p formats.Path) []formats.P
 // screens and the populate check of a fill use `library/<n>`, so an exclusion written for either spelling, in a policy, a token scope, an
 // exposure rule, a pattern or a claim, holds whichever the client types; a grant on a Docker Hub remote has to name both spellings (an
 // include-all grant does). target names the client's spelling; pathOf places a name in the layout; deny is the refusal for a name the rules hide.
-func gateRemote(ctx context.Context, rq *formats.Request, client string, target formats.Target, pathOf func(name string) string, deny func() error) error {
+// delivered is the refusal of the repository's delivery rules (R-CUR-004, R-OCI-038), asked after the decision point on the client's spelling
+// and before the other spelling's listing decision, which joins the rules and would answer a refused image as a missing one.
+func gateRemote(ctx context.Context, rq *formats.Request, client string, target formats.Target, pathOf func(name string) string, deny, delivered func() error) error {
 	if err := rq.Host.Authorize(ctx, rq, target); err != nil {
+		return err
+	}
+	if err := delivered(); err != nil {
 		return err
 	}
 	other := otherSpelling(rq, client)
@@ -147,7 +153,8 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 		}
 		path := ManifestPath(name, ref)
 		pathOf := func(n string) string { return ManifestPath(n, ref) }
-		if err := gateRemote(ctx, rq, client, formats.Target{Package: client, Path: pathOf(client), Actions: read}, pathOf, errManifestUnknown); err != nil {
+		delivered := func() error { return manifestUndelivered(ctx, rq, name, ref, rules.KindArtifact) }
+		if err := gateRemote(ctx, rq, client, formats.Target{Package: client, Path: pathOf(client), Actions: read}, pathOf, errManifestUnknown, delivered); err != nil {
 			return err
 		}
 		if sum, ok := manifest.ParseDigest(ref); ok {
@@ -167,7 +174,8 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 	}
 	path := TagPath(name, ref)
 	pathOf := func(n string) string { return TagPath(n, ref) }
-	if err := gateRemote(ctx, rq, client, formats.Target{Package: client, Version: ref, Path: pathOf(client), Actions: read}, pathOf, errManifestUnknown); err != nil {
+	delivered := func() error { return formats.Undelivered(rq, name, ref, rules.KindDocument) }
+	if err := gateRemote(ctx, rq, client, formats.Target{Package: client, Version: ref, Path: pathOf(client), Actions: read}, pathOf, errManifestUnknown, delivered); err != nil {
 		return err
 	}
 	doc, err := rq.Host.Remote().Metadata(ctx, rq, formats.Path{Path: path}, "")
@@ -296,7 +304,9 @@ func (f *Format) remoteBlobGet(ctx context.Context, rq *formats.Request, w http.
 	path := BlobPath(name, digest)
 	pathOf := func(n string) string { return BlobPath(n, digest) }
 	target := formats.Target{Package: client, Path: pathOf(client), Actions: []formats.Action{formats.ActionRead}}
-	if err := gateRemote(ctx, rq, client, target, pathOf, errBlobUnknown); err != nil {
+	// A blob names no tag: it is delivered while some version of the image is (R-OCI-038, H-1724).
+	delivered := func() error { return formats.Undelivered(rq, name, "", rules.KindArtifact) }
+	if err := gateRemote(ctx, rq, client, target, pathOf, errBlobUnknown, delivered); err != nil {
 		return err
 	}
 	vw := validatorWriter{ResponseWriter: w, digest: digest, contentType: blobContentType}
@@ -346,7 +356,9 @@ func (f *Format) remoteTagsList(ctx context.Context, rq *formats.Request, w http
 		return errs.E(errs.NotFound, errs.CodeOCINameUnknown, "The upstream has no image of this name.")
 	}
 	target := formats.Target{Package: clientName, Path: TaglistPath(clientName), Actions: []formats.Action{formats.ActionRead}}
-	if err := gateRemote(ctx, rq, clientName, target, TaglistPath, deny); err != nil {
+	// An image without a delivered tag answers the rules' refusal at its tags list (R-CUR-003, R-OCI-038).
+	delivered := func() error { return formats.Undelivered(rq, name, "", rules.KindDocument) }
+	if err := gateRemote(ctx, rq, clientName, target, TaglistPath, deny, delivered); err != nil {
 		return err
 	}
 	query := rq.URL.Query()
@@ -531,9 +543,15 @@ func unreachable(err error) bool {
 	return ok && e.Code == errs.CodeUpstreamAssumedOffline
 }
 
-// readableMask decides one listing-form check for the tags of a name.
+// readableMask decides one listing-form check for the tags of a name of a remote repository, and leaves out the tags its delivery rules
+// refuse (R-OCI-038).
 func readableMask(ctx context.Context, rq *formats.Request, name string, tags []string) ([]bool, error) {
-	return bothAllow(ctx, rq, name, tags, TagPath)
+	out, err := bothAllow(ctx, rq, name, tags, TagPath)
+	if err != nil {
+		return nil, err
+	}
+	deliveredMask(rq, remoteName(rq, name), tags, out)
+	return out, nil
 }
 
 // bothAllow decides the read of one entry per element on the spelling the client typed and on the other one; an entry is held when both hold.
@@ -578,7 +596,9 @@ func (f *Format) remoteReferrers(ctx context.Context, rq *formats.Request, w htt
 	}
 	pathOf := func(n string) string { return ManifestPath(n, dgst) }
 	target := formats.Target{Package: client, Path: pathOf(client), Actions: []formats.Action{formats.ActionRead}}
-	if err := gateRemote(ctx, rq, client, target, pathOf, deny); err != nil {
+	// The referrers of a manifest the rules refuse answer their refusal (R-OCI-038).
+	delivered := func() error { return manifestUndelivered(ctx, rq, remoteName(rq, client), dgst, rules.KindDocument) }
+	if err := gateRemote(ctx, rq, client, target, pathOf, deny, delivered); err != nil {
 		return err
 	}
 	artifactType := rq.URL.Query().Get("artifactType")

@@ -71,6 +71,7 @@ func conformance() formattest.Fixture {
 		Skip: map[formattest.Check]string{
 			formattest.CheckRewrite:   "local class only: no remote adapter (R-CLAMAV-008)",
 			formattest.CheckMerge:     "local class only: no virtual adapter (R-CLAMAV-008)",
+			formattest.CheckDelivery:  "local class only: no remote class, so no delivery rules (R-CLAMAV-008, remote-curation.md R-CUR-023)",
 			formattest.CheckInspect:   "no upload route: only the database task writes the repository, in process (R-CLAMAV-008)",
 			formattest.CheckWiki:      "no wiki content: a definition file has no documentation (R-CLAMAV-008)",
 			formattest.CheckAdmission: "no Download route: both routes are of the kind Metadata (Q-CLAMAV-2, R-CLAMAV-008)",
@@ -85,13 +86,13 @@ func TestR_ARCH_010_Conformance(t *testing.T) {
 	formattest.Run(t, Format{}, conformance())
 }
 
-// TestR_CLAMAV_008_TheKitSkipsExactlyWhatTheFormatLeavesOut: the six skipped checks are the ones the format has nothing to run over, and
+// TestR_CLAMAV_008_TheKitSkipsExactlyWhatTheFormatLeavesOut: the seven skipped checks are the ones the format has nothing to run over, and
 // every other check runs and passes.
 func TestR_CLAMAV_008_TheKitSkipsExactlyWhatTheFormatLeavesOut(t *testing.T) {
 	rep := formattest.Evaluate(Format{}, conformance())
 	skipped := map[formattest.Check]bool{
 		formattest.CheckRewrite: true, formattest.CheckMerge: true, formattest.CheckInspect: true, formattest.CheckWiki: true,
-		formattest.CheckAdmission: true, formattest.CheckMalware: true,
+		formattest.CheckAdmission: true, formattest.CheckMalware: true, formattest.CheckDelivery: true,
 	}
 	for _, res := range rep {
 		switch {

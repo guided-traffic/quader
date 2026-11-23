@@ -131,11 +131,12 @@ func FinalKind(kind discover.PassKind, method discover.Method, s State) discover
 	return kind
 }
 
-// Fingerprint is the fingerprint of the include and exclude patterns kept in mirror_state.
-func Fingerprint(include, exclude []string) []byte {
+// Fingerprint is the fingerprint of the scope (the include and exclude patterns) and of the delivery rules (their mode and revision,
+// rules.Set.Fingerprint, "" for none) kept in mirror_state: a change of either makes the next pass full (remote-curation.md R-CUR-017).
+func Fingerprint(include, exclude []string, rules string) []byte {
 	h := sha256.New()
 	var n [8]byte
-	for _, list := range [][]string{include, exclude} {
+	for _, list := range [][]string{include, exclude, {rules}} {
 		binary.BigEndian.PutUint64(n[:], uint64(len(list)))
 		h.Write(n[:])
 		for _, p := range list {

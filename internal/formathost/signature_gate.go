@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/malware/gate"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 	"github.com/guided-traffic/quader/internal/repository"
 	sgate "github.com/guided-traffic/quader/internal/signatures/gate"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
@@ -101,7 +102,53 @@ func (h *Host) checks(ctx context.Context, rq *formats.Request, repo formats.Rep
 			srv.Signatures, srv.SignaturesOf = h.o.SignatureGate, d
 		}
 	}
+	if row.Kind == items.KindFile {
+		refusal, err := h.rulesRefusal(ctx, rq, repo, row.Path)
+		if err != nil {
+			return false, err
+		}
+		srv.Rules = refusal
+	}
 	return srv.RunDecided(ctx)
+}
+
+// rulesRefusal is the fourth check of a stored file (remote-curation.md R-CUR-003 point 2, Q-CUR-7): the refusal of the delivery rules
+// of the repository that holds it, for the package and version the holder's format classifies its path in (a file of no version by
+// the package's decision, an OCI blob as R-OCI-038 says). The rule set is the replica's snapshot of the holder, the request's own
+// repository or a member of the virtual repository it addressed, so the check costs no statement. A system read is not refused.
+func (h *Host) rulesRefusal(ctx context.Context, rq *formats.Request, holder formats.RepoRef, path string) (error, error) {
+	if holder.Class != formats.Remote || systemRead(rq) {
+		return nil, nil
+	}
+	held := rq
+	if rq.Repo == nil || rq.Repo.NumericID() != holder.ID {
+		if h.o.Repos == nil {
+			return nil, nil
+		}
+		repo, err := h.o.Repos.ByName(ctx, holder.Name)
+		if err != nil {
+			return nil, err
+		}
+		if repo.Delivery() == nil {
+			return nil, nil
+		}
+		// The refusal names the holder, a member the caller may read (Q-CUR-8).
+		c := *rq
+		c.Repo = &repo
+		held = &c
+	}
+	if held.Repo.Delivery() == nil {
+		return nil, nil
+	}
+	f, known := h.o.lookup(held.Repo.Format)
+	if !known {
+		return nil, nil
+	}
+	info := f.Classify(formats.Path{Path: path})
+	if info.Package == "" {
+		return nil, nil
+	}
+	return formats.Undelivered(held, info.Package, info.Version, rules.KindArtifact), nil
 }
 
 // gateDownload builds the signature gate's view of a download: the addressed repository and the holder from the replica's snapshot, and

@@ -20,6 +20,7 @@ import (
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -73,8 +74,14 @@ func (r *remote) metadataSince(ctx context.Context, rq *formats.Request, p forma
 	return r.document(rq, d, err)
 }
 
+// artifactFlow marks the context of an artifact's request: the documents the format's gate reads for it are not refused by the delivery
+// rules, which decide the artifact itself, at step 5a for a miss and at the serve point for a stored one (R-CUR-003, Q-CUR-7), so that a
+// stored infected file of a refused version answers malware_found and the refusal names the version.
+type artifactFlow struct{}
+
 // Artifact implements [formats.RemoteFetcher].
 func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Path, expected formats.Digests, w http.ResponseWriter) error {
+	ctx = context.WithValue(ctx, artifactFlow{}, true)
 	preq, err := r.request(ctx, rq, p, "", proxy.Artifact)
 	if err != nil {
 		return err
@@ -102,6 +109,11 @@ func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Pa
 				hit.Facts = facts
 				preq.Hit = &hit
 			}
+		} else if preq.Undelivered != nil {
+			// Step 5a for an artifact that is not stored (R-CUR-003): refused before the format's gate reads a document of it from the
+			// upstream, so no upstream request is made for a version the rules do not deliver.
+			noteRemote(rq, preq.Undelivered)
+			return preq.Undelivered
 		} else if expected, err = r.gate(ctx, rq, p); err != nil {
 			noteRemote(rq, err)
 			return err
@@ -296,10 +308,29 @@ func (r *remote) request(ctx context.Context, rq *formats.Request, p formats.Pat
 	}
 	if bg, ok := backgroundFrom(ctx); ok {
 		// A pass's request, or a request a format makes through Host.Remote() while it works for the pass (its gate
-		// revalidating a package document): a background request of the pass (mirror_host.go).
+		// revalidating a package document): a background request of the pass (mirror_host.go). A download ahead is never refused
+		// by the rules, and a pass asks only for what they deliver (R-CUR-014, R-CUR-017).
 		bg.apply(&preq, rq, info, p)
+		return preq, nil
+	}
+	if kind == proxy.Artifact || ctx.Value(artifactFlow{}) == nil {
+		preq.Undelivered = undelivered(rq, info, kind)
 	}
 	return preq, nil
+}
+
+// undelivered is step 5a of a client's request (R-CUR-003, R-REPO-025): the refusal of the repository's delivery rules for the
+// descriptor the format's classification gives the path, from the replica's snapshot. A path of no package (a search, a service
+// index) is decided by none; a document or an artifact of no version is decided by the package's decision (an OCI blob, R-OCI-038).
+func undelivered(rq *formats.Request, info formats.PathInfo, kind proxy.Kind) error {
+	if info.Package == "" {
+		return nil
+	}
+	rk := rules.KindDocument
+	if kind == proxy.Artifact {
+		rk = rules.KindArtifact
+	}
+	return formats.Undelivered(rq, info.Package, info.Version, rk)
 }
 
 func principalOf(ctx context.Context) httpserver.Principal { return httpserver.PrincipalFrom(ctx) }

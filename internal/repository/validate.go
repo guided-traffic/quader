@@ -125,6 +125,15 @@ func validateSections(v *validation, info catalog.Entry, d *Document) {
 		}
 	}
 	if d.Class == Remote {
+		// A remote has no include and exclude patterns: what they said is said by its delivery rules (remote-curation.md R-CUR-002,
+		// Q-CUR-4), which are no second mechanism beside them.
+		const why = "a remote repository has no include or exclude patterns: its delivery mode and rules say what it delivers (POST …/delivery-rules)"
+		if len(d.IncludePatterns) > 0 {
+			na("/includePatterns", why)
+		}
+		if len(d.ExcludePatterns) > 0 {
+			na("/excludePatterns", why)
+		}
 		validateRemote(v, info, d)
 		applyPresetSettings(info, d)
 	}

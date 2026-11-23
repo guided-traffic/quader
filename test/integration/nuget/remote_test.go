@@ -329,7 +329,10 @@ func TestR_NUGET_015_AWithdrawnIDIsGoneUntilTheUpstreamServesItAgain(t *testing.
 	}
 }
 
-func TestR_NUGET_015_PatternsKeepAnIDAwayFromTheUpstreamAndLeaveTheServiceIndex(t *testing.T) {
+// TestR_NUGET_015_ABlockingRuleKeepsAnIDAwayFromTheUpstreamAndLeavesTheServiceIndex: a section rule that blocks Contoso.Core.* (what
+// an exclude pattern of the remote said, R-CUR-002) refuses the ID's documents and packages with the 403 of R-CUR-004 before any upstream
+// request, while the service index, which names no package, and another ID are served (R-NUGET-015, R-CUR-003).
+func TestR_NUGET_015_ABlockingRuleKeepsAnIDAwayFromTheUpstreamAndLeavesTheServiceIndex(t *testing.T) {
 	e := newRemoteEnv(t, remoteOptions{})
 	rep := e.start(1)[0]
 	before := e.stub.Counts().Total()
@@ -337,16 +340,16 @@ func TestR_NUGET_015_PatternsKeepAnIDAwayFromTheUpstreamAndLeaveTheServiceIndex(
 		"v3/flatcontainer/contoso.core.abstractions/index.json", "v3/registration-semver2/contoso.core.abstractions/index.json",
 		nupkgPath("Contoso.Core.Abstractions", "1.0.0"),
 	} {
-		if a := e.get(rep, rExclude, p); a.Status != 404 {
-			t.Errorf("%s: %d, want 404", p, a.Status)
+		a := e.get(rep, rExclude, p)
+		if a.Status != 403 || !strings.Contains(string(a.Body), "not_allowed_in_repository") || a.Header.Get("Cache-Control") != "no-store" {
+			t.Errorf("%s: %d %q %s, want the rule's 403", p, a.Status, a.Header.Get("Cache-Control"), a.Body)
 		}
 	}
 	if got := e.stub.Counts().Total(); got != before {
-		t.Errorf("%d requests reached the upstream for an excluded ID", got-before)
+		t.Errorf("%d requests reached the upstream for a blocked ID", got-before)
 	}
-	// An ID outside the pattern is restorable: the service index, which names no package, is admitted.
 	if a := e.get(rep, rExclude, "v3/flatcontainer/newtonsoft.json/index.json"); a.Status != 200 {
-		t.Errorf("an ID outside the exclude pattern: %d %s", a.Status, a.Body)
+		t.Errorf("an ID outside the rule: %d %s", a.Status, a.Body)
 	}
 }
 

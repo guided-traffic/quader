@@ -156,10 +156,10 @@ func TestOCIRemoteMirror(t *testing.T) {
 
 	key := "oci-mirror-" + fx.run
 	body := ociRemoteBody(t, key, map[string]any{
-		"mode":   "mirror",
-		"mirror": map[string]any{"concurrency": 2, "maxVersionsPerPackage": 2},
+		"mode": "mirror",
+		// the mirror's scope (R-CUR-017)
+		"mirror": map[string]any{"concurrency": 2, "maxVersionsPerPackage": 2, "include": []string{"acme/*"}},
 	})
-	body["includePatterns"] = []string{"acme/*"}
 	body["oci"] = map[string]any{"mirror": map[string]any{"tags": []string{"1.*", "latest"}}}
 	fx.adm.do("POST", reposRoute, body).want(t, "create "+key, 201)
 	t.Cleanup(func() { deleteRepository(t, fx.adm, key) })

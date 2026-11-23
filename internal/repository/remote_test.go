@@ -68,9 +68,9 @@ func TestRemoteDefaults(t *testing.T) {
 			Availability: Availability{Mode: "online", FailureThreshold: 5, CircuitOpenSeconds: 300},
 			Limits:       RemoteLimits{MaxConcurrentFetches: 64},
 			Mode:         "pullThrough",
-			Mirror:       MirrorSettings{IntervalSeconds: 3600, FullPassIntervalSeconds: 604800, Discovery: "auto", Concurrency: 4, IncludePrereleases: true},
+			Mirror:       MirrorSettings{IntervalSeconds: 3600, FullPassIntervalSeconds: 604800, Discovery: "auto", Concurrency: 4, IncludePrereleases: true, Include: []string{}},
 			// R-REPO-065: a probe starts the background download unless the repository turns it off.
-			DownloadOnProbe: true,
+			DownloadOnProbe: true, Delivery: DefaultDeliverySettings(),
 		}
 		if got := settingsOf(t, d); !reflect.DeepEqual(got, want) {
 			t.Fatalf("settings =\n%+v\nwant\n%+v", got, want)

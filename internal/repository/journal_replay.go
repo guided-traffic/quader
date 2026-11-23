@@ -210,6 +210,9 @@ func readNarrowed(o journal.Object) (e narrowedEntry, id int64, why string) {
 	if why := checkSignaturesPart(e.Signatures); why != "" {
 		return e, 0, why
 	}
+	if why := checkDeliveryParts(e); why != "" {
+		return e, 0, why
+	}
 	return e, id, ""
 }
 
@@ -302,6 +305,10 @@ func (r *replayer) narrowed() (journal.Result, error) {
 		return journal.Result{}, err
 	}
 	if err := r.clientsOff(e.ClientsOff); err != nil {
+		return journal.Result{}, err
+	}
+	r.deliveryMode(e.DeliveryMode)
+	if err := r.deliveryRules(e.Rules); err != nil {
 		return journal.Result{}, err
 	}
 	return r.finish(e.parts())

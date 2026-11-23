@@ -10,6 +10,8 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta"
+	rc "github.com/guided-traffic/quader/internal/remotecuration"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 	"github.com/guided-traffic/quader/internal/signatures/gateset"
 	"github.com/guided-traffic/quader/internal/vuln"
 )
@@ -41,6 +43,11 @@ const (
 	// partDownloadLinks is storage.downloadLinks set to false: the repository's downloads are no longer handed to signed links of the
 	// object store (R-STOR-014, Q-STOR-282).
 	partDownloadLinks = "downloadLinks"
+	// partRules is a write of a remote's delivery rules that blocked a subject or removed an allow (remote-curation.md R-CUR-006); the
+	// rules' store records it (rules.Narrowing).
+	partRules = "rules"
+	// partDeliveryMode is remote.delivery.mode set to onlyAllowed (R-CUR-006).
+	partDeliveryMode = "deliveryMode"
 )
 
 // repoRef names a repository of an entry: its ID as decimal text, which the replay acts on, and its qualified name, for
@@ -106,6 +113,11 @@ type narrowedEntry struct {
 	Signatures *signaturesChange `json:"signatures,omitempty"`
 	// DownloadLinksOff is true for the write that set storage.downloadLinks to false; the replay sets it false again.
 	DownloadLinksOff bool `json:"downloadLinksOff,omitempty"`
+	// Rules are the subjects a write of the delivery rules blocked or whose allow it removed; the replay adds the blocks and removes
+	// the allows (remote-curation.md R-CUR-006).
+	Rules *rules.Narrowing `json:"rules,omitempty"`
+	// DeliveryMode is "onlyAllowed" for the write that set remote.delivery.mode to it; the replay sets it again.
+	DeliveryMode string `json:"deliveryMode,omitempty"`
 }
 
 // parts lists the parts the entry carries, in the order of the table of R-REPO-061.
@@ -128,6 +140,8 @@ func (e narrowedEntry) parts() []string {
 	add(e.ClientsOff, partClientsOff)
 	add(e.Signatures != nil, partSignatures)
 	add(e.DownloadLinksOff, partDownloadLinks)
+	add(!e.Rules.Empty(), partRules)
+	add(e.DeliveryMode != "", partDeliveryMode)
 	return out
 }
 
@@ -176,7 +190,19 @@ func (s *Service) narrowing(r Repository, cur, nd *Document, curRel, rel *virtua
 	}
 	// Setting storage.downloadLinks to false keeps the repository's downloads in Quader (R-STOR-014, R-REPO-061).
 	e.DownloadLinksOff = downloadLinksOf(cur.Storage) && !downloadLinksOf(nd.Storage)
+	// Setting remote.delivery.mode to onlyAllowed narrows what a remote delivers (remote-curation.md R-CUR-006).
+	if r.Class == Remote && deliveryModeOf(cur) != rc.OnlyAllowed && deliveryModeOf(nd) == rc.OnlyAllowed {
+		e.DeliveryMode = string(rc.OnlyAllowed)
+	}
 	return e
+}
+
+// deliveryModeOf is remote.delivery.mode of a document, allExceptBlocked when the section does not read.
+func deliveryModeOf(d *Document) rc.Mode {
+	if rs, err := parseStoredRemote(d.Remote); err == nil && len(d.Remote) > 0 {
+		return rc.Mode(rs.Delivery.Mode)
+	}
+	return rc.AllExceptBlocked
 }
 
 // includeNarrowed is the new include list when the update narrows it: the list is not empty (an emptied list admits

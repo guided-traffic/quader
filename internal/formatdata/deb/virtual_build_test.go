@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	rc "github.com/guided-traffic/quader/internal/remotecuration"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 func at(s string) *time.Time {
@@ -61,5 +63,28 @@ func TestAdmitReleaseRefusesARollbackOfTheRecordedDate(t *testing.T) {
 	}
 	if _, _, err := admitRelease(m, older, time.Time{}, virtualInputs{}, now); err != nil {
 		t.Fatalf("no record, no floor: %v", err)
+	}
+}
+
+// TestR_DEB_036_ARulesChangeChangesTheSuitesFingerprint: a remote member's delivery rules are an input of the merge, so a new revision of
+// them rebuilds the suite, and a member without rules leaves the fingerprint as it was (R-DEB-036, R-CUR-003).
+func TestR_DEB_036_ARulesChangeChangesTheSuitesFingerprint(t *testing.T) {
+	set := func(rev int64) *rules.Set {
+		s, err := rules.Compile(rc.AllExceptBlocked, rev, []rules.Rule{{Kind: rc.KindVersion, Name: "hello", Version: "2.0", Effect: rc.Block}}, nil, rules.Canon{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	vr := func(s *rules.Set) VirtualRepo {
+		return VirtualRepo{Fingerprint: "v1", Members: []VirtualMember{{Key: "debian", Class: "remote", Delivery: s}}}
+	}
+	plain := fingerprintOf(vr(nil), "stable", nil, nil, nil)
+	if plain != fingerprintOf(VirtualRepo{Fingerprint: "v1"}, "stable", nil, nil, nil) {
+		t.Error("a member without rules changes the fingerprint")
+	}
+	one, two := fingerprintOf(vr(set(1)), "stable", nil, nil, nil), fingerprintOf(vr(set(2)), "stable", nil, nil, nil)
+	if one == plain || one == two {
+		t.Errorf("fingerprints without rules, revision 1 and revision 2: %s %s %s, want three different ones", plain, one, two)
 	}
 }

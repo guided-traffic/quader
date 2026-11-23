@@ -127,11 +127,11 @@ func TestR_AUTHZ_026_AnOwnerWritesRemoteRepositoriesWithinTheRules(t *testing.T)
 		wantStatus(t, f.do(f.admin, "POST", repos, remote("admin-ref", reference, nil)), 201, "")
 		routed := map[string]any{"url": upstream, "sourceNetwork": "10.99.0.0/24", "outboundProxy": map[string]any{"mode": "direct"}}
 		wantStatus(t, f.do(f.admin, "POST", repos, remote("admin-net", routed, nil)), 201, "")
-		wantStatus(t, f.do(f.admin, "POST", repos, remote("admin-mirror", map[string]any{"url": upstream, "mode": "mirror"},
-			map[string]any{"includePatterns": []string{"@acme/*"}})), 201, "")
+		wantStatus(t, f.do(f.admin, "POST", repos, remote("admin-mirror",
+			map[string]any{"url": upstream, "mode": "mirror", "mirror": map[string]any{"include": []string{"@acme/*"}}}, nil)), 201, "")
 	})
-	t.Run("Q-REPO-193 an Owner does not widen the scope of a mirror or move its source, and may pause it", func(t *testing.T) {
-		wantStatus(t, patch(f.alice, "admin-mirror", map[string]any{"includePatterns": []string{"*"}}), 422, "mirror_restricted")
+	t.Run("Q-REPO-193 R-CUR-017 an Owner does not widen the scope of a mirror or move its source, and may pause it", func(t *testing.T) {
+		wantStatus(t, patch(f.alice, "admin-mirror", map[string]any{"remote": map[string]any{"mirror": map[string]any{"include": []string{"*"}}}}), 422, "mirror_restricted")
 		wantStatus(t, patch(f.alice, "admin-mirror", map[string]any{"remote": map[string]any{"url": "https://evil.example.test/"}}), 422, "mirror_restricted")
 		wantStatus(t, patch(f.alice, "admin-mirror", map[string]any{"remote": map[string]any{"mirror": map[string]any{"paused": true}}}), 200, "")
 	})

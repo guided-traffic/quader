@@ -33,11 +33,11 @@ func presetCatalog() *catalog.Registry {
 func validatePresetDoc(t *testing.T, include, remote string) (Document, *validation) {
 	t.Helper()
 	body := `{"key":"p-remote","class":"remote","format":"twopreset"`
-	if include != "" {
-		body += `,"includePatterns":` + include
+	if remote == "" && include != "" {
+		remote = `{}`
 	}
 	if remote != "" {
-		body += `,"remote":` + remote
+		body += `,"remote":` + withMirrorInclude(t, remote, include)
 	}
 	d, err := DecodeDocument([]byte(body + `}`))
 	if err != nil {

@@ -258,7 +258,7 @@ func TestR_REPO_051_TheVersionBoundsKeepTheNewestAndThePinned(t *testing.T) {
 // last full pass is older than fullPassIntervalSeconds, or it is requested; otherwise a feed pass is incremental.
 func TestR_REPO_051_APassIsFullOrIncrementalByTheRules(t *testing.T) {
 	now := time.Date(2026, 11, 5, 10, 0, 0, 0, time.UTC)
-	fp := Fingerprint([]string{"@acme/*"}, nil)
+	fp := Fingerprint([]string{"@acme/*"}, nil, "")
 	base := State{FeedCursor: []byte(`{"seq":5}`), FeedMethod: discover.MethodFeed, PatternsFingerprint: fp, LastFullPassAt: now.Add(-time.Hour)}
 	week := 7 * 24 * time.Hour
 	cases := []struct {
@@ -271,8 +271,8 @@ func TestR_REPO_051_APassIsFullOrIncrementalByTheRules(t *testing.T) {
 	}{
 		{"incremental after a complete feed pass", func(s State) State { return s }, fp, week, false, discover.PassIncremental},
 		{"no cursor", func(s State) State { s.FeedCursor = nil; return s }, fp, week, false, discover.PassFull},
-		{"the patterns changed", func(s State) State { return s }, Fingerprint([]string{"@acme/*", "@acme2/*"}, nil), week, false, discover.PassFull},
-		{"the exclude patterns changed", func(s State) State { return s }, Fingerprint([]string{"@acme/*"}, []string{"x"}), week, false, discover.PassFull},
+		{"the patterns changed", func(s State) State { return s }, Fingerprint([]string{"@acme/*", "@acme2/*"}, nil, ""), week, false, discover.PassFull},
+		{"the delivery rules changed", func(s State) State { return s }, Fingerprint([]string{"@acme/*"}, nil, "do2"), week, false, discover.PassFull},
 		{"the last full pass is too old", func(s State) State { s.LastFullPassAt = now.Add(-8 * 24 * time.Hour); return s }, fp, week, false, discover.PassFull},
 		{"no full pass interval", func(s State) State { s.LastFullPassAt = now.Add(-800 * 24 * time.Hour); return s }, fp, 0, false, discover.PassIncremental},
 		{"requested by the arguments", func(s State) State { return s }, fp, week, true, discover.PassFull},

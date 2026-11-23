@@ -174,6 +174,12 @@ type Options struct {
 	Mirror MirrorServices
 	// <<< M6b mirror
 
+	// >>> T-24 rules
+	// DeliveryRules holds the services of the delivery rules of a remote repository (delivery_rules_api.go); a nil member answers
+	// their operations with 503.
+	DeliveryRules DeliveryRulesServices
+	// <<< T-24 rules
+
 	// >>> M2 packages
 	// Packages are the services of the package operations (packages_api.go); a
 	// zero value answers them with 503.

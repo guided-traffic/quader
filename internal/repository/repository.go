@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 	"github.com/guided-traffic/quader/internal/signatures/gateset"
 	"github.com/guided-traffic/quader/internal/vuln"
 )
@@ -99,7 +100,17 @@ type Repository struct {
 	signatureGate gateset.Setting
 	// downloadLinksOff is the member storage.downloadLinks set to false (R-STOR-014).
 	downloadLinksOff bool
+	// delivery is the compiled delivery mode and rules of a remote repository (remote-curation.md R-CUR-006); nil delivers
+	// everything: a remote in mode allExceptBlocked without a rule, and every other class. deliveryRevision is the row's
+	// delivery_rules_revision.
+	delivery         *rules.Set
+	deliveryRevision int64
 }
+
+// Delivery is the repository's compiled delivery mode and rules as the replica's snapshot holds them (remote-curation.md R-CUR-003,
+// R-CUR-006): the one place every serve point, document and pass of a remote asks, with no statement. Nil delivers everything and
+// costs nothing.
+func (r Repository) Delivery() *rules.Set { return r.delivery }
 
 // DownloadLinks reports whether the repository lets a download be handed to a signed link of the object store: true unless its
 // member storage.downloadLinks says false (R-STOR-014, Q-STOR-282). It reads the replica's snapshot, so the serve point costs no

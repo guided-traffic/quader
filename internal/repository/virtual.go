@@ -278,6 +278,8 @@ type snapshotRows struct {
 	rels     map[int64]*virtualRel
 	projects map[string]string
 	upstream map[int64]q.UpstreamRepository
+	// rules are the delivery rules of the remote repositories (remote-curation.md R-CUR-006).
+	rules map[int64][]storedRule
 }
 
 // readSnapshot reads the repository table and then the relational part of the
@@ -301,6 +303,9 @@ func readSnapshot(ctx context.Context, run meta.Runner) (snapshotRows, error) {
 			return err
 		}
 		if out.upstream, err = upstreamFactsByID(ctx, qs); err != nil {
+			return err
+		}
+		if out.rules, err = rulesByRepository(ctx, qs); err != nil {
 			return err
 		}
 		out.rels, err = loadVirtualRels(ctx, qs, virtualIDs(out.rows))

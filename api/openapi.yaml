@@ -130,6 +130,13 @@ tags:
       that narrow what it serves.
   # <<< upstream
   #
+  # >>> T-24 rules
+  - name: remote-curation
+    description: |
+      The curation of a remote repository (remote-curation.md): its delivery rules, the upstream catalogue, the downloads ahead of a
+      client with their queue, and the requests for an allow.
+  # <<< T-24 rules
+  #
   # >>> M1 files
   - name: items
     description: Files and folders of a repository, their listing, statistics and deletion.
@@ -16386,6 +16393,270 @@ paths:
           $ref: "#/components/responses/Unavailable"
   # <<< M6b mirror
   #
+  # >>> T-24 rules
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: listDeliveryRules
+      tags: [remote-curation]
+      summary: List the delivery rules of a remote repository
+      description: |
+        The delivery rules of a remote repository (R-CUR-001, R-CUR-006), newest first, with their notes: `kind` and `effect` filter,
+        `q` matches a substring of the subject. Cursor pagination (R-API-010). Needs `manage` on the repository, `repositories:read-config`
+        or the system role `admin` (R-CUR-005); a repository hidden from the caller answers `404`, a local or virtual one
+        `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [section, package, version]
+        - name: effect
+          in: query
+          schema:
+            type: string
+            enum: [allow, block]
+        - name: q
+          in: query
+          description: A substring of the rule's subject, compared without case.
+          schema:
+            type: string
+            maxLength: 1024
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of rules.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRulePage"
+              example:
+                items:
+                  - id: 0193f2c4-7a7e-7b51-9b1e-2f0d6c9e1a10
+                    kind: package
+                    subject: lodash
+                    name: lodash
+                    effect: allow
+                    note: Reviewed by the platform team.
+                    requestId: null
+                    createdBy: {id: 0193f2c4-0000-7000-8000-000000000001, name: priya}
+                    createdAt: "2026-11-23T10:00:00Z"
+                nextCursor: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: putDeliveryRule
+      tags: [remote-curation]
+      summary: Create or replace the delivery rule of a subject
+      description: |
+        Creates the rule of a subject, or replaces the effect and the note of the subject's rule: the subject is the rule's identity
+        (R-CUR-006). The name is stored by the format's name rule, a pattern folded by it, a version in the format's canonical form; a
+        name the format refuses answers `422 invalid_name`, a version it cannot read (a range included) `422 invalid_version`, a pattern
+        the matcher refuses `422 invalid_pattern`; beyond `proxy.delivery.max_rules` or a 101st section rule `422 too_many_rules`. The
+        write raises the rule set's revision and reaches every replica within the snapshot's bound; a block, or an allow turned into a
+        block, also records `repository.narrowed`. Writes `remote.rule.created` or `remote.rule.updated`. Needs `manage` on the repository
+        or the system role `admin` (R-CUR-005); a system repository of the project `upstream` keeps the product's rules
+        (`409 managed_by_product`); a local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRuleInput"
+            example:
+              kind: version
+              name: lodash
+              version: 4.17.20
+              effect: block
+              note: CVE under review.
+      responses:
+        "200":
+          description: The subject's rule was replaced.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRuleWritten"
+        "201":
+          description: The rule was created.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRuleWritten"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/check:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: checkDeliveryRules
+      tags: [remote-curation]
+      summary: Ask which delivery rule decides a package or a version
+      description: |
+        The decision of R-CUR-001 for a package name and, where given, a version, on the rules as this replica's snapshot holds them,
+        and what made it: a rule (its kind, subject and effect) or the mode (R-CUR-006). Without a version it is the package's decision
+        (some version delivered). It reads nothing but the snapshot and writes nothing. Needs `read` on the repository (R-CUR-005); a
+        local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryCheckInput"
+            example:
+              name: lodash
+              version: 4.17.20
+      responses:
+        "200":
+          description: The decision.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryDecision"
+              example:
+                delivered: false
+                reason: blocked
+                decidedBy: {kind: version, subject: lodash@4.17.20, effect: block}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: ruleId
+        in: path
+        required: true
+        description: The rule's ID (a UUID).
+        schema:
+          type: string
+          format: uuid
+          x-quader-reserved-names: [check]
+    delete:
+      operationId: deleteDeliveryRule
+      tags: [remote-curation]
+      summary: Remove a delivery rule
+      description: |
+        Removes the rule (R-CUR-006): the rule set's revision rises, and removing an allow also records `repository.narrowed`. Writes
+        `remote.rule.deleted`. Needs `manage` on the repository or the system role `admin`; a system repository of the project
+        `upstream` keeps the product's rules (`409 managed_by_product`). A rule the repository does not hold answers `404`.
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "204":
+          description: The rule is removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< T-24 rules
+  #
   # >>> M5 backup
   /api/v1/system/backups:
     get:
@@ -24299,12 +24570,14 @@ components:
         includePatterns:
           type: array
           maxItems: 100
+          description: Local and virtual repositories (R-REPO-005); a remote has none and answers `422 not_applicable` (R-CUR-002).
           items:
             type: string
             maxLength: 1024
         excludePatterns:
           type: array
           maxItems: 100
+          description: Local and virtual repositories (R-REPO-005); a remote has none and answers `422 not_applicable` (R-CUR-002).
           items:
             type: string
             maxLength: 1024
@@ -25185,9 +25458,18 @@ components:
         available:
           type: boolean
           description: >-
-            A client gets the version through this repository. False where the repository is disabled, and where it is a virtual
-            repository whose members that hold the version are all disabled, since a virtual repository leaves a disabled member out
-            (R-REPO-019): the version page offers no install command and no download through it (Q-UI-965).
+            A client gets the version through this repository. False where the repository is disabled, where it is a remote
+            repository whose delivery rules do not deliver the version (remote-curation.md R-CUR-014, Q-CUR-26: stored, listed and not
+            delivered), and where it is a virtual repository whose members that hold and deliver the version are all disabled, since a
+            virtual repository leaves a disabled member out (R-REPO-019): the version page offers no install command and no download
+            through it (Q-UI-965).
+        unavailableReason:
+          type: string
+          enum: [blocked, notAllowed]
+          description: |
+            Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, or the repository delivers
+            only what is allowed and no rule allows it (R-CUR-014). Absent where the repository delivers it or `available` is false
+            for another reason.
     PackageFile:
       type: object
       required: [path, sizeBytes, sha256, downloadUrl, contentUrl]
@@ -26105,6 +26387,8 @@ components:
             another upstream the warning `mirror_unbounded`; an Owner without `repositories:write-config` `422 mirror_restricted` (Q-REPO-142).
         mirror:
           $ref: "#/components/schemas/MirrorSettings"
+        delivery:
+          $ref: "#/components/schemas/DeliverySettings"
         downloadOnProbe:
           type: boolean
           default: true
@@ -29767,8 +30051,41 @@ components:
           minimum: 1048576
           description: |
             Byte bound of the repository's stored content beyond which the pass adds nothing; `null` no bound of its own
-            (R-REPO-052). A mirror of the format's well-known upstream needs it or include patterns that each have a literal
-            prefix (`422 mirror_unbounded`).
+            (R-REPO-052). A mirror of the format's well-known upstream needs it or a scope (`include`) whose patterns each have a
+            literal prefix (`422 mirror_unbounded`).
+        include:
+          type: array
+          maxItems: 100
+          default: []
+          items:
+            type: string
+            maxLength: 1024
+          description: |
+            The mirror's scope (remote-curation.md R-CUR-017): name patterns of R-AUTHZ-005, folded by the format's name rule; `[]` is
+            everything the delivery rules deliver. A pass stores what the scope and the rules both admit.
+    DeliverySettings:
+      type: object
+      additionalProperties: false
+      description: |
+        The delivery mode and the switches of the curation of a remote repository (`remote.delivery`, remote-curation.md R-CUR-001,
+        R-CUR-020): configuration, which `repositories:write-config` and the project's Owner set. The rules themselves are written through
+        `…/delivery-rules`.
+      properties:
+        mode:
+          type: string
+          enum: [allExceptBlocked, onlyAllowed]
+          default: allExceptBlocked
+          description: Everything is delivered unless a rule blocks it, or nothing unless a rule allows it.
+        examineOnRequest:
+          type: boolean
+          default: true
+          description: A new request entry starts a download for examination (R-CUR-015).
+        examinedRetentionDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 30
+          description: What was fetched for examination and is still not delivered is removed after these days (R-CUR-016).
     MirrorMethod:
       type: string
       enum: [feed, listing, names]
@@ -29786,6 +30103,137 @@ components:
           type: boolean
           default: false
           description: Make the requested pass a full one, which discovers every name again instead of reading the feed from its cursor (R-REPO-051).
+    # >>> T-24 rules
+    DeliveryRuleInput:
+      type: object
+      description: |
+        A delivery rule as a request writes it (R-CUR-001, R-CUR-006): a `section` holds a name pattern of R-AUTHZ-005, a `package` a
+        name (every version, future ones included), a `version` a name and one exact version (no range).
+      additionalProperties: false
+      required: [kind, effect]
+      properties:
+        kind:
+          type: string
+          enum: [section, package, version]
+        pattern:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        name:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        version:
+          type: string
+          minLength: 1
+          maxLength: 256
+        effect:
+          type: string
+          enum: [allow, block]
+        note:
+          type: string
+          maxLength: 1000
+          description: Seen only by those who may read the rules.
+    DeliveryRule:
+      type: object
+      description: A delivery rule as stored, its members in the format's canonical forms (R-CUR-006).
+      required: [id, kind, subject, effect, note, requestId, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [section, package, version]
+        subject:
+          type: string
+          description: The pattern of a section, the name of a package, `<name>@<version>` of a version.
+        pattern:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        effect:
+          type: string
+          enum: [allow, block]
+        note:
+          type: string
+        requestId:
+          type: [string, "null"]
+          format: uuid
+          description: The request entry whose allow wrote the rule (R-CUR-015).
+        createdBy:
+          type: [object, "null"]
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+    DeliveryRuleWritten:
+      allOf:
+        - $ref: "#/components/schemas/DeliveryRule"
+        - type: object
+          required: [revision]
+          properties:
+            revision:
+              type: integer
+              format: int64
+              description: The revision of the repository's rule set after the write.
+    DeliveryRulePage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryRule"
+        nextCursor:
+          type: [string, "null"]
+    DeliveryCheckInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        version:
+          type: string
+          minLength: 1
+          maxLength: 256
+    DeliveryDecision:
+      type: object
+      description: The decision of R-CUR-001 and what made it.
+      required: [delivered, decidedBy]
+      properties:
+        delivered:
+          type: boolean
+        reason:
+          type: string
+          enum: [blocked, notAllowed]
+          description: Why the rules do not deliver it; absent when delivered.
+        decidedBy:
+          type: object
+          description: The rule that decided (`kind`, `subject`, `effect`), or the mode when no rule matched (`mode`).
+          properties:
+            kind:
+              type: string
+              enum: [section, package, version]
+            subject:
+              type: string
+            effect:
+              type: string
+              enum: [allow, block]
+            mode:
+              type: string
+              enum: [allExceptBlocked, onlyAllowed]
+    # <<< T-24 rules
     MirrorStatus:
       type: object
       description: |

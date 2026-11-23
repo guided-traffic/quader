@@ -54,6 +54,11 @@ func (e *Engine) metadata(ctx context.Context, rq Request, restoredAt time.Time)
 	if err := e.validate(rq, Metadata); err != nil {
 		return nil, err
 	}
+	// Step 5a for a document (R-CUR-003): a document of a package, or of a version, that the rules do not deliver is refused whether
+	// or not it is stored, and no upstream is asked.
+	if rq.Undelivered != nil {
+		return nil, rq.Undelivered
+	}
 	rem := rq.Remote
 	if blocked, err := e.goneGate(ctx, rq); err != nil || blocked != nil {
 		return nil, firstError(err, blocked)

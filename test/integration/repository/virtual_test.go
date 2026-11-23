@@ -356,7 +356,8 @@ func TestVirtualPinsAndWarnings(t *testing.T) {
 		}
 	})
 	t.Run("R-REPO-005 R-REPO-008 pattern_unscoped_only is returned by the service", func(t *testing.T) {
-		st := a.mustCreate("rem-star", "remote", "pkgfmt", `"excludePatterns":["*"]`)
+		// A local repository: a remote has no patterns (remote-curation.md R-CUR-002).
+		st := a.mustCreate("loc-star", "local", "pkgfmt", `"excludePatterns":["*"]`)
 		if !slices.Equal(warnings(st), []string{"pattern_unscoped_only"}) {
 			t.Fatalf("warnings = %v", warnings(st))
 		}

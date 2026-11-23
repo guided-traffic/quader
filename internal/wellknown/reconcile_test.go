@@ -120,7 +120,7 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 	})
 	t.Run("R-REPO-070 the fixed members of scanner-trivy are written back, also under an administrator's address", func(t *testing.T) {
 		stored := with("scanner-trivy", func(s *wellknown.Stored) {
-			s.Fixed.IncludePatterns = []string{"aquasec/*"}
+			s.Fixed.Allow = []string{"aquasec/other"}
 			s.Address.URL = "https://mirror.example.com/"
 			s.Overridden = true
 		})

@@ -6299,6 +6299,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the delivery rules of a remote repository
+         * @description The delivery rules of a remote repository (R-CUR-001, R-CUR-006), newest first, with their notes: `kind` and `effect` filter,
+         *     `q` matches a substring of the subject. Cursor pagination (R-API-010). Needs `manage` on the repository, `repositories:read-config`
+         *     or the system role `admin` (R-CUR-005); a repository hidden from the caller answers `404`, a local or virtual one
+         *     `400 not_applicable`.
+         */
+        get: operations["listDeliveryRules"];
+        put?: never;
+        /**
+         * Create or replace the delivery rule of a subject
+         * @description Creates the rule of a subject, or replaces the effect and the note of the subject's rule: the subject is the rule's identity
+         *     (R-CUR-006). The name is stored by the format's name rule, a pattern folded by it, a version in the format's canonical form; a
+         *     name the format refuses answers `422 invalid_name`, a version it cannot read (a range included) `422 invalid_version`, a pattern
+         *     the matcher refuses `422 invalid_pattern`; beyond `proxy.delivery.max_rules` or a 101st section rule `422 too_many_rules`. The
+         *     write raises the rule set's revision and reaches every replica within the snapshot's bound; a block, or an allow turned into a
+         *     block, also records `repository.narrowed`. Writes `remote.rule.created` or `remote.rule.updated`. Needs `manage` on the repository
+         *     or the system role `admin` (R-CUR-005); a system repository of the project `upstream` keeps the product's rules
+         *     (`409 managed_by_product`); a local or virtual repository answers `400 not_applicable`.
+         */
+        post: operations["putDeliveryRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask which delivery rule decides a package or a version
+         * @description The decision of R-CUR-001 for a package name and, where given, a version, on the rules as this replica's snapshot holds them,
+         *     and what made it: a rule (its kind, subject and effect) or the mode (R-CUR-006). Without a version it is the package's decision
+         *     (some version delivered). It reads nothing but the snapshot and writes nothing. Needs `read` on the repository (R-CUR-005); a
+         *     local or virtual repository answers `400 not_applicable`.
+         */
+        post: operations["checkDeliveryRules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The rule's ID (a UUID). */
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a delivery rule
+         * @description Removes the rule (R-CUR-006): the rule set's revision rises, and removing an allow also records `repository.narrowed`. Writes
+         *     `remote.rule.deleted`. Needs `manage` on the repository or the system role `admin`; a system repository of the project
+         *     `upstream` keeps the product's rules (`409 managed_by_product`). A rule the repository does not hold answers `404`.
+         */
+        delete: operations["deleteDeliveryRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/backups": {
         parameters: {
             query?: never;
@@ -10751,7 +10847,9 @@ export interface components {
             description?: string;
             /** @description Only for holders of `repositories:read-config`. */
             adminNotes?: string;
+            /** @description Local and virtual repositories (R-REPO-005); a remote has none and answers `422 not_applicable` (R-CUR-002). */
             includePatterns?: string[];
+            /** @description Local and virtual repositories (R-REPO-005); a remote has none and answers `422 not_applicable` (R-CUR-002). */
             excludePatterns?: string[];
             disabled?: boolean;
             visibility?: components["schemas"]["RepositoryVisibility"];
@@ -11314,8 +11412,15 @@ export interface components {
             class: "local" | "remote" | "virtual";
             /** Format: date-time */
             publishedAt: string;
-            /** @description A client gets the version through this repository. False where the repository is disabled, and where it is a virtual repository whose members that hold the version are all disabled, since a virtual repository leaves a disabled member out (R-REPO-019): the version page offers no install command and no download through it (Q-UI-965). */
+            /** @description A client gets the version through this repository. False where the repository is disabled, where it is a remote repository whose delivery rules do not deliver the version (remote-curation.md R-CUR-014, Q-CUR-26: stored, listed and not delivered), and where it is a virtual repository whose members that hold and deliver the version are all disabled, since a virtual repository leaves a disabled member out (R-REPO-019): the version page offers no install command and no download through it (Q-UI-965). */
             available: boolean;
+            /**
+             * @description Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, or the repository delivers
+             *     only what is allowed and no rule allows it (R-CUR-014). Absent where the repository delivers it or `available` is false
+             *     for another reason.
+             * @enum {string}
+             */
+            unavailableReason?: "blocked" | "notAllowed";
         };
         PackageFile: {
             /** @description The path of the file item in the repository that holds it. */
@@ -11882,6 +11987,7 @@ export interface components {
              */
             mode: "pullThrough" | "mirror";
             mirror?: components["schemas"]["MirrorSettings"];
+            delivery?: components["schemas"]["DeliverySettings"];
             /**
              * @description A request that names exactly one version or file without fetching its content (the manifest of an OCI tag, an npm version
              *     document, a HEAD of a file) starts the download of that version's content in the background, charged to the caller's
@@ -14254,10 +14360,39 @@ export interface components {
             /**
              * Format: int64
              * @description Byte bound of the repository's stored content beyond which the pass adds nothing; `null` no bound of its own
-             *     (R-REPO-052). A mirror of the format's well-known upstream needs it or include patterns that each have a literal
-             *     prefix (`422 mirror_unbounded`).
+             *     (R-REPO-052). A mirror of the format's well-known upstream needs it or a scope (`include`) whose patterns each have a
+             *     literal prefix (`422 mirror_unbounded`).
              */
             maxBytes?: number | null;
+            /**
+             * @description The mirror's scope (remote-curation.md R-CUR-017): name patterns of R-AUTHZ-005, folded by the format's name rule; `[]` is
+             *     everything the delivery rules deliver. A pass stores what the scope and the rules both admit.
+             * @default []
+             */
+            include: string[];
+        };
+        /**
+         * @description The delivery mode and the switches of the curation of a remote repository (`remote.delivery`, remote-curation.md R-CUR-001,
+         *     R-CUR-020): configuration, which `repositories:write-config` and the project's Owner set. The rules themselves are written through
+         *     `…/delivery-rules`.
+         */
+        DeliverySettings: {
+            /**
+             * @description Everything is delivered unless a rule blocks it, or nothing unless a rule allows it.
+             * @default allExceptBlocked
+             * @enum {string}
+             */
+            mode: "allExceptBlocked" | "onlyAllowed";
+            /**
+             * @description A new request entry starts a download for examination (R-CUR-015).
+             * @default true
+             */
+            examineOnRequest: boolean;
+            /**
+             * @description What was fetched for examination and is still not delivered is removed after these days (R-CUR-016).
+             * @default 30
+             */
+            examinedRetentionDays: number;
         };
         /**
          * @description How a pass discovers names (R-REPO-051).
@@ -14276,6 +14411,81 @@ export interface components {
              * @default false
              */
             full: boolean;
+        };
+        /**
+         * @description A delivery rule as a request writes it (R-CUR-001, R-CUR-006): a `section` holds a name pattern of R-AUTHZ-005, a `package` a
+         *     name (every version, future ones included), a `version` a name and one exact version (no range).
+         */
+        DeliveryRuleInput: {
+            /** @enum {string} */
+            kind: "section" | "package" | "version";
+            pattern?: string;
+            name?: string;
+            version?: string;
+            /** @enum {string} */
+            effect: "allow" | "block";
+            /** @description Seen only by those who may read the rules. */
+            note?: string;
+        };
+        /** @description A delivery rule as stored, its members in the format's canonical forms (R-CUR-006). */
+        DeliveryRule: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "section" | "package" | "version";
+            /** @description The pattern of a section, the name of a package, `<name>@<version>` of a version. */
+            subject: string;
+            pattern?: string;
+            name?: string;
+            version?: string;
+            /** @enum {string} */
+            effect: "allow" | "block";
+            note: string;
+            /**
+             * Format: uuid
+             * @description The request entry whose allow wrote the rule (R-CUR-015).
+             */
+            requestId: string | null;
+            createdBy: {
+                id: string;
+                name: string;
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        DeliveryRuleWritten: components["schemas"]["DeliveryRule"] & {
+            /**
+             * Format: int64
+             * @description The revision of the repository's rule set after the write.
+             */
+            revision: number;
+        };
+        DeliveryRulePage: {
+            items: components["schemas"]["DeliveryRule"][];
+            nextCursor: string | null;
+        };
+        DeliveryCheckInput: {
+            name: string;
+            version?: string;
+        };
+        /** @description The decision of R-CUR-001 and what made it. */
+        DeliveryDecision: {
+            delivered: boolean;
+            /**
+             * @description Why the rules do not deliver it; absent when delivered.
+             * @enum {string}
+             */
+            reason?: "blocked" | "notAllowed";
+            /** @description The rule that decided (`kind`, `subject`, `effect`), or the mode when no rule matched (`mode`). */
+            decidedBy: {
+                /** @enum {string} */
+                kind?: "section" | "package" | "version";
+                subject?: string;
+                /** @enum {string} */
+                effect?: "allow" | "block";
+                /** @enum {string} */
+                mode?: "allExceptBlocked" | "onlyAllowed";
+            };
         };
         /**
          * @description The status of the mirror of a remote repository (R-REPO-056), read from PostgreSQL. `pass` and `lastCompletePass` are
@@ -28907,6 +29117,221 @@ export interface operations {
             409: components["responses"]["Conflict"];
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listDeliveryRules: {
+        parameters: {
+            query?: {
+                kind?: "section" | "package" | "version";
+                effect?: "allow" | "block";
+                /** @description A substring of the rule's subject, compared without case. */
+                q?: string;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of rules. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "0193f2c4-7a7e-7b51-9b1e-2f0d6c9e1a10",
+                     *           "kind": "package",
+                     *           "subject": "lodash",
+                     *           "name": "lodash",
+                     *           "effect": "allow",
+                     *           "note": "Reviewed by the platform team.",
+                     *           "requestId": null,
+                     *           "createdBy": {
+                     *             "id": "0193f2c4-0000-7000-8000-000000000001",
+                     *             "name": "priya"
+                     *           },
+                     *           "createdAt": "2026-11-23T10:00:00Z"
+                     *         }
+                     *       ],
+                     *       "nextCursor": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DeliveryRulePage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    putDeliveryRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "kind": "version",
+                 *       "name": "lodash",
+                 *       "version": "4.17.20",
+                 *       "effect": "block",
+                 *       "note": "CVE under review."
+                 *     }
+                 */
+                "application/json": components["schemas"]["DeliveryRuleInput"];
+            };
+        };
+        responses: {
+            /** @description The subject's rule was replaced. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRuleWritten"];
+                };
+            };
+            /** @description The rule was created. */
+            201: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRuleWritten"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    checkDeliveryRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "lodash",
+                 *       "version": "4.17.20"
+                 *     }
+                 */
+                "application/json": components["schemas"]["DeliveryCheckInput"];
+            };
+        };
+        responses: {
+            /** @description The decision. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "delivered": false,
+                     *       "reason": "blocked",
+                     *       "decidedBy": {
+                     *         "kind": "version",
+                     *         "subject": "lodash@4.17.20",
+                     *         "effect": "block"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DeliveryDecision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteDeliveryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The rule's ID (a UUID). */
+                ruleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rule is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

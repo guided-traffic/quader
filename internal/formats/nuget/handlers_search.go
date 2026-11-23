@@ -109,6 +109,9 @@ type searchTarget struct {
 	// search (R-REPO-005, Q-NUGET-77): the repository's own and, for a member, the virtual
 	// repository's. nil when no pattern restricts.
 	admits func(lowerID string) bool
+	// delivers is the delivery rules of a remote (R-NUGET-035, remote-curation.md R-CUR-003): a version they refuse is not found, and
+	// an ID without a delivered version not at all. nil when the repository delivers everything.
+	delivers func(lowerID, lowerVersion string) bool
 }
 
 // patterned is the part of a repository the pattern test reads; *repository.Repository has it.
@@ -145,7 +148,8 @@ func patternsOf(repos ...patterned) func(lowerID string) bool {
 // the hits of the page p names and the number of packages the caller may read that match. A
 // virtual repository runs it for each of its local members (R-NUGET-018), all of them on one
 // budget. The store counts and pages only for a caller who reads the repository whole when no
-// pattern applies; otherwise the patterns and the scope decide each version in the scan.
+// pattern and no delivery rule applies; otherwise the patterns, the rules and the scope decide
+// each version in the scan.
 func searchRepo(ctx context.Context, st Store, scope formats.ReadScope, t searchTarget, p search.Params, budget *scanBudget) (hits []rows.SearchHit, total int, err error) {
 	q := rows.SearchQuery{
 		RepoID: t.id, Terms: p.Terms, Prerelease: p.Prerelease, SemVer2: p.SemVer2, PackageType: p.PackageType,
@@ -154,11 +158,14 @@ func searchRepo(ctx context.Context, st Store, scope formats.ReadScope, t search
 	switch {
 	case shape == formats.ReadNone:
 		return nil, 0, nil
-	case shape == formats.ReadAll && t.admits == nil:
+	case shape == formats.ReadAll && t.admits == nil && t.delivers == nil:
 		return searchWhole(ctx, st, q, p)
 	}
 	mayRead := func(lowerID, lowerVersion string) bool {
 		if t.admits != nil && !t.admits(lowerID) {
+			return false
+		}
+		if t.delivers != nil && !t.delivers(lowerID, lowerVersion) {
 			return false
 		}
 		return shape == formats.ReadAll || scope.MayRead(t.key, lowerID, lowerVersion)

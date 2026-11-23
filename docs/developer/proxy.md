@@ -545,12 +545,19 @@ job remote-background-download (queue default, exclusive per version)          a
   (`TestQ_REPO_367_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt` in
   [probe_test.go](../../internal/formathost/probe_test.go)) and twice in integration, npm's case for the probe told on the virtual
   repository and OCI's for the one told on the member. A further format adds its unit case, not an integration case.
-- **The patterns on the background path.** The decision admits each file of a probe, and the job and a mirror pass fill each file,
-  only when the repository's include and exclude patterns admit it: one check, `patternsAdmit` in
-  [mirror_host.go](../../internal/formathost/mirror_host.go), the same for every format, held by
-  `TestR_REPO_065_TheBackgroundPathAdmitsOnlyWhatThePatternsAdmit` ([probe_patterns_test.go](../../internal/formathost/probe_patterns_test.go)).
-  The integration case `TestR_REPO_065_TheSwitchAndThePatternsStopABackgroundDownload` holds the read's own refusal of an excluded image,
-  which never reaches the decision.
+- **The rules on the background path.** A remote has no include and exclude patterns ([remote-curation.md](../spec/remote-curation.md)
+  R-CUR-002). A mirror pass asks only for a name its scope (`remote.mirror.include`) covers and of which the delivery rules deliver a
+  version, and fills only a version they deliver (`MirrorHost.Admits`, `admitted` and `mirrorScope` in
+  [mirror_host.go](../../internal/formathost/mirror_host.go), held by `TestR_CUR_017_TheMirrorAdmitsWhatItsScopeAndTheRulesAdmit`); a
+  probe's background download is a download ahead and is not refused by the rules (R-CUR-014). The integration case
+  `TestR_REPO_065_TheSwitchAndTheRulesStopABackgroundDownload` holds the read's own refusal of a blocked image, which never reaches the
+  decision.
+- **Step 5a, the delivery rules before a fill** (R-REPO-025, R-CUR-003). `remote.request` ([remote.go](../../internal/formathost/remote.go))
+  decides the descriptor the format's `Classify` gives the path on the replica's snapshot and sets `proxy.Request.Undelivered`; the engine
+  answers it for a document whether or not it is stored ([metadata.go](../../internal/proxy/metadata.go)) and for an artifact that is not
+  stored ([artifact.go](../../internal/proxy/artifact.go)). A stored artifact is decided at the serve point, the fourth check of
+  `gate.Serve` (`rulesRefusal` in [signature_gate.go](../../internal/formathost/signature_gate.go)). The documents the format's gate reads
+  for an artifact are not refused (`artifactFlow`): the artifact decides. A background request and a system read are not refused.
 
 ### Wiring
 

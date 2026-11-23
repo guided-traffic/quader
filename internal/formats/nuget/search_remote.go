@@ -99,7 +99,11 @@ func (f *Format) remoteSearch(ctx context.Context, s searchSource, st Store, p s
 			return hits, total, err
 		}
 	}
-	return searchRepo(ctx, st, scope, searchTarget{key: s.ref.Name, id: s.ref.ID, admits: s.admits}, p, s.budget)
+	t := searchTarget{key: s.ref.Name, id: s.ref.ID, admits: s.admits}
+	if set := formats.Delivery(s.call); set != nil {
+		t.delivers = func(lowerID, lowerVersion string) bool { return set.Decide(lowerID, lowerVersion).Delivered }
+	}
+	return searchRepo(ctx, st, scope, t, p, s.budget)
 }
 
 // mayForward decides whether a query goes to the upstream (R-NUGET-016, Q-NUGET-79): not when the
@@ -336,13 +340,25 @@ func (f *Format) keepForCaller(ctx context.Context, s searchSource, scope format
 
 // forwardedHit is one upstream result as this caller may see it; ok is false for a result that
 // is removed: one that is no NuGet package, one the remote's include and exclude patterns do not
-// admit, one a claim or a pin rule keeps away from the remote (addressed directly; a virtual
+// admit, one the remote's delivery rules refuse whole (a version they refuse leaves the result),
+// one a claim or a pin rule keeps away from the remote (addressed directly; a virtual
 // repository decides that in its merge), one of which the caller may read no version, and one
 // the upstream may have matched on a version the caller may not read (matchedOnReadable).
 func (f *Format) forwardedHit(ctx context.Context, s searchSource, scope formats.ReadScope, terms []rows.SearchTerm, raw json.RawMessage) (rows.SearchHit, bool, error) {
 	h, ok := resultHit(raw)
 	if !ok || !s.call.Repo.Admits(h.LowerID, false) {
 		return rows.SearchHit{}, false, nil
+	}
+	if set := formats.Delivery(s.call); set != nil {
+		// The remote's delivery rules (R-NUGET-035): a result whose ID they refuse whole is removed, and the versions they refuse leave
+		// the result as a version the caller may not read does, latest and its metadata included.
+		id := h.LowerID
+		if !set.Package(id).Delivered {
+			return rows.SearchHit{}, false, nil
+		}
+		if h, ok = readableOnly(h, func(v string) bool { return set.Decide(id, v).Delivered }); !ok {
+			return rows.SearchHit{}, false, nil
+		}
 	}
 	if !s.merged {
 		away, err := s.rq.Host.Resolver().KeepsAway(ctx, s.rq, s.ref, h.LowerID)

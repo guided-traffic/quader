@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C) built on 2026-11-23, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C) and the delivery rules (R2) built on 2026-11-23, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -34,8 +34,8 @@ that several builders work at once, the contracts between them, and the tests ea
 | Package | Delivers | Depends on | Builder-days (estimate) |
 |---|---|---|---|
 | **C · Contracts** (built) | the migration of every table, the domain package's skeleton and its layer row, the catalogue's interface and types, the version canon, the descriptor's declaration and contract version 11 with every format's declaration (the floor: lookup), the error codes, the audit events' registrations, the configuration keys, the job queue `downloads` | — | 0.5 |
-| **R2 · Delivery rules** | R-CUR-001 to R-CUR-006, R-CUR-017 (the mirror's scope), the rules' API; the refusal before a fill, at the serve point and in the five formats' documents (kit check 22); the virtual walk; the journal and the Bastion's feed; the listing marks; a remote without patterns | C | 2.5 |
-| **R3 · Upstream catalogue** | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 21) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
+| **R2 · Delivery rules** (built) | R-CUR-001 to R-CUR-006, R-CUR-017 (the mirror's scope), the rules' API; the refusal before a fill, at the serve point and in the five formats' documents (kit check 23); the virtual walk; the journal and the Bastion's feed; the listing marks; a remote without patterns | C | 2.5 |
+| **R3 · Upstream catalogue** | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 22) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
 | **R4 · Downloads ahead and the queue** | R-CUR-010 to R-CUR-013: the queue's store, dispatch, run, retries and failures in words; the probe's row; bulks and their expansion; the API; the client failure rows; the charge; a fill without a client is no refused download (Q-CUR-22) | C (the expansion calls the catalogue's interface; its integration case of a bulk lands with whichever of R3 and R4 lands second) | 2 |
 | **R2b · Requests, examination, retention** | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
 | **R5a · The tab strip and the tab Downloads** | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
@@ -82,7 +82,7 @@ database, so the shards gain no test and about one second of migration.
 | Before a fill | `internal/proxy/artifact.go`, `metadata.go` (step 5a) |
 | At the serve point | `internal/signatures/gate/serve.go` (the fourth check), `internal/formathost/` serve wiring |
 | Documents | the filters of `internal/formats/npm`, `nuget`, `oci` (`PathsAllowed` joins the rules in `internal/formathost/host.go`), `ansible` (version list pages, `highest_version`); `internal/formats/deb` and `internal/formatdata/deb` (the virtual merge drops refused rows; a rules change enqueues `deb-index` of the virtual repositories) |
-| The refusal's shape | each format's `errors.go` (`WriteError`), kit check 22 in `internal/formats/formattest` |
+| The refusal's shape | each format's `errors.go` (`WriteError`), kit check 23 in `internal/formats/formattest` |
 | The virtual walk | `internal/repository/routing.go`, `internal/formathost/virtual_remotes.go`, each format's virtual handlers where they end the walk |
 | The listing | `internal/packages/view/` (no pattern hiding for a remote; `available` and `unavailableReason`), `internal/vuln/report/report.go` |
 | The mirror | `internal/mirror/` (scope and rules, the fingerprint), `internal/formathost/mirror_host.go` (admission) |
@@ -92,7 +92,24 @@ database, so the shards gain no test and about one second of migration.
 Contracts to the others: `remotecuration.Decider` (C's port, implemented here); the refusal's code and text; the listing's `delivery` state for R3
 and the screens.
 
-Tests (R-CUR-022): unit, the decision table and the comparator (about 1 s); kit check 22 for five formats (milliseconds each); integration,
+**As built** (2026-11-23, [Q-CUR-40](../spec/remote-curation.md#q-cur-40--a-refusals-count-is-summed-on-the-replica-and-written-every-five-seconds)
+to [Q-CUR-42](../spec/remote-curation.md#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit), which also
+lists what of R2 is not built):
+
+| File or directory | What |
+|---|---|
+| [rules](../../internal/remotecuration/rules/rules.go) (leaf) | the compiled `Set` (`Compile`, `Decide`, `Package`, `Fold`, `Fingerprint`, `KeepsAway`, `Blocks`, `Names`, `VersionRules`), the `Refusal` and its text, the journal's `Narrowing` |
+| [rules/store](../../internal/remotecuration/rules/store/store.go) (domain) | the rules' store (`Put`/`PutTx`, `Delete`/`DeleteTx`, `List`, `Canonical`), the revision, the change area, the events and `repository.narrowed`; [record.go](../../internal/remotecuration/rules/store/record.go): the record of a refusal (event, metric, request-list count) |
+| [delivery_rules.sql](../../internal/meta/postgres/queries/delivery_rules.sql) | the statements of the snapshot, the API, the replay and the record |
+| `internal/repository` | `remote.delivery`, `remote.mirror.include`, no patterns on a remote ([delivery.go](../../internal/repository/delivery.go): the set in the snapshot, `Decider`, `WithRules` for tests); the parts `rules` and `deliveryMode` and their replay ([journal_replay_delivery.go](../../internal/repository/journal_replay_delivery.go)); the search guard ([withheld.go](../../internal/repository/withheld.go)); scanner-trivy's product rule ([upstream_store.go](../../internal/repository/upstream_store.go)) |
+| [delivery.go](../../internal/formats/delivery.go) | what a format uses: `Delivery`, `Undelivered`, `DeliveryView`, `DocumentView`, `DocumentFingerprint`, `MemberDelivery`; `Host.RecordRefusal` called by `ServeRoute` |
+| `internal/formathost` | step 5a (`undelivered` in remote.go, a member's in virtual_remotes.go), the fourth check (`rulesRefusal` in signature_gate.go), the mirror's admission (mirror_host.go), `RecordRefusal` |
+| `internal/proxy`, `internal/signatures/gate`, `internal/virtual`, `internal/errs/member.go` | `Request.Undelivered`; `Serve.Rules`; the walk's first refusal |
+| each format's `delivery.go` | the documents and the merge of a virtual repository; OCI's manifest by digest; Debian's merge in `internal/formatdata/deb` |
+| [checks_delivery.go](../../internal/formats/formattest/checks_delivery.go) | kit check 23 |
+| [delivery_rules_api.go](../../internal/api/v1/delivery_rules_api.go), [wire_delivery_rules.go](../../internal/app/wire_delivery_rules.go) | the API and the area `delivery rules` |
+
+Tests (R-CUR-022): unit, the decision table and the comparator (about 1 s); kit check 23 for five formats (milliseconds each); integration,
 one case per format in its area (`TestR_CUR_003_…`, about 2 s each, 10 s in all), plus `TestR_CUR_002_…`, `TestR_CUR_004_…`,
 `TestR_CUR_005_…`, `TestR_CUR_006_…` and the mirror's `TestR_CUR_017_…` (about 10 s); the existing tests that set patterns on a remote
 are rewritten to rules in the same change (their count is listed in the commit). Data: the stubs' existing corpora. What a leg gains: the
@@ -107,9 +124,9 @@ unit job about 1 s, the integration shards about 20 s.
 | The formats | `internal/formats/{npm,nuget,oci,deb,ansible}/catalogue.go`; the presets' `CatalogueHosts` in `oci/format.go` and `npm/format.go`; the Debian parse in `internal/formatdata/deb/remote_store.go` (provides, short descriptions, `Description-md5`, and the long descriptions of `i18n/Translation-en` as an index of their own, Q-CUR-16) |
 | The verdicts of unstored versions | a port over `Evaluator.EvaluateMiss` in `internal/vuln/` |
 | The API | `internal/api/v1/upstream_catalogue_api.go`, `api/openapi.yaml` (`# >>> T-24 catalogue`) |
-| The kit | check 21 in `internal/formats/formattest` with each format's fixture of canned answers |
+| The kit | check 22 in `internal/formats/formattest` with each format's fixture of canned answers |
 
-Tests: unit, the engine with a fake format and upstream (about 1 s); kit check 21 for five formats (milliseconds each; canned answers of a
+Tests: unit, the engine with a fake format and upstream (about 1 s); kit check 22 for five formats (milliseconds each; canned answers of a
 few kilobytes in each format's fixture); integration, `TestR_CUR_008_…` and `TestR_CUR_009_…` (npm stub with a search route, about 5 s)
 and the Debian search (`TestR_DEB_036_…`, about 3 s). What a leg gains: the unit job about 1 s, the shards about 8 s.
 

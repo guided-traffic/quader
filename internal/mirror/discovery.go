@@ -11,6 +11,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -154,7 +155,8 @@ func (p *pass) heldStep(ctx context.Context, after string, first bool) (added in
 	return added, more, next, nil
 }
 
-// exactIncludes returns the include patterns without a wildcard as normalized, admitted names (R-REPO-051).
+// exactIncludes returns the scope's patterns without a wildcard as normalized, admitted names (R-REPO-051), and in mode onlyAllowed the
+// names of the delivery rules that allow, so an allow list is mirrored by naming it (remote-curation.md R-CUR-017).
 func (p *pass) exactIncludes(repo repository.Repository) []string {
 	include, _, err := patterns(repo)
 	if err != nil {
@@ -169,6 +171,13 @@ func (p *pass) exactIncludes(repo repository.Repository) []string {
 		}
 		if n, ok := p.e.o.NormalizeName(repo.Format, prefix); ok && admits(n) {
 			out = append(out, n)
+		}
+	}
+	if set := repo.Delivery(); set.Mode() == remotecuration.OnlyAllowed {
+		for _, n := range set.Names() {
+			if admits(n) && !slices.Contains(out, n) {
+				out = append(out, n)
+			}
 		}
 	}
 	return out

@@ -26,17 +26,38 @@ func mirrorCatalog() *catalog.Registry {
 // validateMirrorDoc validates a remote document of format with the include list include ("" for none).
 func validateMirrorDoc(t *testing.T, format, include, remote string) (Document, *validation) {
 	t.Helper()
-	body := `{"key":"m-remote","class":"remote","format":"` + format + `"`
-	if include != "" {
-		body += `,"includePatterns":` + include
-	}
-	body += `,"remote":` + remote + `}`
+	body := `{"key":"m-remote","class":"remote","format":"` + format + `","remote":` + withMirrorInclude(t, remote, include) + `}`
 	d, err := DecodeDocument([]byte(body))
 	if err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	_, v := validate(mirrorCatalog(), &d, true)
 	return d, v
+}
+
+// withMirrorInclude sets the mirror's scope, remote.mirror.include, into a remote section ("" leaves it out): a remote has no include
+// patterns (remote-curation.md R-CUR-002, R-CUR-017).
+func withMirrorInclude(t *testing.T, remote, include string) string {
+	t.Helper()
+	if include == "" {
+		return remote
+	}
+	var section map[string]any
+	if err := json.Unmarshal([]byte(remote), &section); err != nil {
+		t.Fatal(err)
+	}
+	mirror, _ := section["mirror"].(map[string]any)
+	if mirror == nil {
+		mirror = map[string]any{}
+	}
+	var list []string
+	if err := json.Unmarshal([]byte(include), &list); err != nil {
+		t.Fatal(err)
+	}
+	mirror["include"] = list
+	section["mirror"] = mirror
+	raw, _ := json.Marshal(section)
+	return string(raw)
 }
 
 func fieldCodes(v *validation) map[string]string {

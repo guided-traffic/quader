@@ -2,13 +2,18 @@ package formathost
 
 import (
 	"context"
+	"strings"
 
+	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/proxy"
+	curation "github.com/guided-traffic/quader/internal/remotecuration"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/virtual"
 )
@@ -79,7 +84,7 @@ var _ virtual.Remotes = (*vremotes)(nil)
 
 // request builds the engine's request for a call; the kind follows the format's
 // classification of the path.
-func (v *vremotes) request(rc virtual.RemoteCall) (proxy.Request, error) {
+func (v *vremotes) request(ctx context.Context, rc virtual.RemoteCall) (proxy.Request, error) {
 	rem, err := proxy.NewRemote(rc.Remote)
 	if err != nil {
 		return proxy.Request{}, errs.E(errs.Internal, errs.CodeInternal, "The member is not a usable remote repository.", errs.WithCause(err))
@@ -103,14 +108,40 @@ func (v *vremotes) request(rc virtual.RemoteCall) (proxy.Request, error) {
 		Remote: rem, Path: rc.Path, Variant: rc.Variant, Kind: kind, Package: pkg,
 		Adapter:      newAdapter(f, &repo, ref, v.o.Deps),
 		AlwaysVerify: f.Descriptor().VerifyAnnouncedDigests, MaxBytes: f.Descriptor().MaxDocumentBytes,
-		Populate: &callPopulate{d: v.o.Decider, rc: rc, info: info},
-		Caller:   proxy.CallerFacts{Principal: rc.Subject.ID, Endpoint: rc.Endpoint},
+		Populate:    &callPopulate{d: v.o.Decider, rc: rc, info: info},
+		Caller:      proxy.CallerFacts{Principal: rc.Subject.ID, Endpoint: rc.Endpoint},
+		Undelivered: memberUndelivered(ctx, rc, pkg, info, kind),
 	}, nil
+}
+
+// memberUndelivered is step 5a of a call to a remote member (R-CUR-003, R-CUR-004): the refusal of the member's delivery rules, which
+// the walk counts as a miss of that member and goes on (Q-CUR-8); its text names the member.
+func memberUndelivered(ctx context.Context, rc virtual.RemoteCall, pkg string, info formats.PathInfo, kind proxy.Kind) error {
+	set := rc.Remote.Delivery()
+	if set == nil || pkg == "" || rc.Subject.Kind == principal.KindSystem {
+		return nil
+	}
+	var d curation.Decision
+	if info.Version == "" {
+		d = set.Package(pkg)
+	} else {
+		d = set.Decide(pkg, info.Version)
+	}
+	if d.Delivered {
+		return nil
+	}
+	n, ver := set.Fold(pkg, info.Version)
+	rk := rules.KindDocument
+	if kind == proxy.Artifact {
+		rk = rules.KindArtifact
+	}
+	rf := &rules.Refusal{RepoID: rc.Remote.NumericID(), Repo: rc.Remote.Name, Name: n, Version: ver, Reason: d.Reason, Kind: rk, Path: rc.Path}
+	return rf.Err(strings.TrimSuffix(httpserver.InfoFrom(ctx).BaseURL, "/"))
 }
 
 // Cached implements [virtual.Remotes].
 func (v *vremotes) Cached(ctx context.Context, rc virtual.RemoteCall) (bool, error) {
-	rq, err := v.request(rc)
+	rq, err := v.request(ctx, rc)
 	if err != nil {
 		return false, err
 	}
@@ -130,7 +161,7 @@ func (v *vremotes) Metadata(ctx context.Context, rc virtual.RemoteCall) (*virtua
 	if v.o.Engine == nil {
 		return nil, errReadOnly()
 	}
-	rq, err := v.request(rc)
+	rq, err := v.request(ctx, rc)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +218,7 @@ func (v *vremotes) Probe(ctx context.Context, rc virtual.RemoteCall) (virtual.Pr
 	if v.o.Engine == nil {
 		return virtual.ProbeResult{}, errReadOnly()
 	}
-	rq, err := v.request(rc)
+	rq, err := v.request(ctx, rc)
 	if err != nil {
 		return virtual.ProbeResult{}, err
 	}

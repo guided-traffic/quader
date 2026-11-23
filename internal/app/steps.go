@@ -211,6 +211,7 @@ func wiringSteps() []step {
 		newStep(AreaSignatures, everyRole, (*App).wireSignatures),
 		newStep(AreaSigning, everyRole, (*App).wireSigning),
 		newStep(AreaMirror, everyRole, (*App).wireMirror),
+		newStep(AreaDeliveryRules, everyRole, (*App).wireDeliveryRules),
 		newStep(AreaFormats, everyRole, (*App).wireFormats),
 		newStep(AreaFiles, everyRole, (*App).wireFiles),
 		newStep(AreaDownloadLimits, everyRole, (*App).wireDownloadLimits),

@@ -9,7 +9,9 @@ package errs
 // IsMemberMiss reports whether a member's answer is a miss the walk names, "this member does not have it" for the caller: a 404 of
 // any code (a 404 says that nothing exists for the caller, R-AUTHZ-016), a read the caller may not make in the member (403 forbidden:
 // an unreadable member is skipped and never turns the answer into 403, R-AUTHZ-009 rules 2 and 8), or a fill of its cache the caller
-// may not make (403 populate_not_permitted, R-AUTHZ-008).
+// may not make (403 populate_not_permitted, R-AUTHZ-008), or a refusal of the member's delivery rules (403 not_allowed_in_repository,
+// remote-curation.md R-CUR-004, Q-CUR-8): another member may deliver it under its own rules. The walk keeps the first such refusal as its
+// answer when nothing serves the request and no member failed ([IsRuleRefusal]).
 func IsMemberMiss(err error) bool {
 	e, ok := As(err)
 	if !ok {
@@ -19,9 +21,17 @@ func IsMemberMiss(err error) bool {
 	case NotFound:
 		return true
 	case Forbidden:
-		return e.Code == CodeForbidden || e.Code == CodePopulateNotPermitted
+		return e.Code == CodeForbidden || e.Code == CodePopulateNotPermitted || e.Code == CodeNotAllowedInRepository
 	}
 	return false
+}
+
+// IsRuleRefusal reports whether a member's answer is the refusal of its delivery rules (403 not_allowed_in_repository): a miss of the
+// walk whose first one is the answer when nothing serves the request, before 404, because "not found" would hide the act that changes
+// the answer (R-REPO-019 step 7, Q-CUR-8).
+func IsRuleRefusal(err error) bool {
+	e, ok := As(err)
+	return ok && e.Kind == Forbidden && e.Code == CodeNotAllowedInRepository
 }
 
 // IsMemberFailure reports whether a member's answer is a failure the walk names, "this member could not be asked": its upstream could

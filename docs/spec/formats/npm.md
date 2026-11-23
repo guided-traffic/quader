@@ -2768,7 +2768,7 @@ from the protocol research of 2026-11-23 (the public registry's documentation an
 
 Acceptance criteria:
 
-- Unit (kit checks 21 and 22, milliseconds): the search, the scope level and the package call against the fixture's canned answers; a
+- Unit (kit checks 22 and 23, milliseconds): the search, the scope level and the package call against the fixture's canned answers; a
   refused `2.0.0` is absent from every document and `latest` moves to `1.9.0`.
 - End-to-end (the leg `npm`, about 10 s): with `version left-pad@1.1.3 allow` in mode `onlyAllowed`, `npm install left-pad@^1` installs
   1.1.3 from the stub's three versions, and `npm install left-pad@1.3.0` prints the refusal's text.

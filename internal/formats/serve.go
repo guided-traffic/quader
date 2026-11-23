@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver/content"
 	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // ServeMode says what a stored item is served for, and so how far ServeCheck may
@@ -87,6 +88,11 @@ func ServeRoute(f Format, w http.ResponseWriter, rq *Request, sameOrigin bool) {
 	if tw.wrote {
 		log.Error("a format route failed after its status line", "format", rq.Repo.Format, "route", rq.Route.Name, "error", err)
 		panic(http.ErrAbortHandler)
+	}
+	// A refusal of the delivery rules that reaches the client is recorded once, wherever it was decided (R-CUR-004): a member's
+	// refusal that a virtual repository's walk passed over is no answer and is not recorded.
+	if rf, ok := rules.RefusalOf(err); ok && rq.Host != nil {
+		rq.Host.RecordRefusal(rq.Context(), rq, rf)
 	}
 	renderError(f, tw, rq, err)
 }

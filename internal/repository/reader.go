@@ -241,6 +241,9 @@ func (r *SnapshotReader) load(ctx context.Context) (*snapshot, error) {
 	repos := make([]Repository, 0, len(rows))
 	for _, row := range rows {
 		repo, err := toRepository(row, sr.projects[row.ProjectID.String()], r.cat)
+		if err == nil {
+			err = withRules(&repo, sr.rules[row.ID], r.cat)
+		}
 		if err != nil {
 			r.log.Error("repository: stored configuration does not load; the repository is disabled", "name", repo.Name.String(), "error", err)
 		}
@@ -283,10 +286,14 @@ var errPresent = errors.New("repository: the key exists")
 func (r *SnapshotReader) lookup(ctx context.Context, name qname.Repo) (Repository, error) {
 	var row q.Repository
 	var facts map[int64]q.UpstreamRepository
+	var ruleRows []storedRule
 	loader := func(ctx context.Context) (struct{}, error) {
 		rows, err := readRows(ctx, r.run, func(qs *q.Queries) ([]q.Repository, error) {
 			rows, err := qs.GetRepositoryByName(ctx, q.GetRepositoryByNameParams{Project: name.Project, Key: name.Key})
-			if err != nil || len(rows) == 0 || !wellknown.IsProject(name.Project) {
+			if err != nil || len(rows) == 0 {
+				return rows, err
+			}
+			if ruleRows, err = rulesOfRepository(ctx, qs, rows[0].ID); err != nil || !wellknown.IsProject(name.Project) {
 				return rows, err
 			}
 			facts, err = upstreamFactsOf(ctx, qs, rows[0].ID)
@@ -338,6 +345,9 @@ func (r *SnapshotReader) lookup(ctx context.Context, name qname.Repo) (Repositor
 	// without its members here (they are rows of their own and the snapshot
 	// holds them), so it resolves nothing until the next snapshot: fail closed.
 	repo, err := toRepository(row, name.Project, r.cat)
+	if err == nil {
+		err = withRules(&repo, ruleRows, r.cat)
+	}
 	if err != nil {
 		r.log.Error("repository: stored configuration does not load; the repository is disabled", "name", name.String(), "error", err)
 	}

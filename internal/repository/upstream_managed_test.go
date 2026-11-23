@@ -83,8 +83,8 @@ func TestR_REPO_069_AMergePatchOfAWellKnownRepositoryChangesOnlyTheNarrowingSett
 		{"the document sent back as it was read", wellknown.KindPreset, `{}`, nil},
 		{
 			"the narrowing settings", wellknown.KindPreset,
-			`{"adminNotes":"x","includePatterns":["a*"],"excludePatterns":["@evil/*"],"vulnerabilities":{"enabled":true,"blockMalicious":true},
-			  "remote":{"cacheFillAction":"deploy","availability":{"mode":"offline"}}}`, nil,
+			`{"adminNotes":"x","vulnerabilities":{"enabled":true,"blockMalicious":true},
+			  "remote":{"cacheFillAction":"deploy","availability":{"mode":"offline"},"delivery":{"mode":"onlyAllowed"}}}`, nil,
 		},
 		{"the url", wellknown.KindPreset, `{"remote":{"url":"https://registry.example.com/"}}`, []string{"/remote/url"}},
 		{"the mode", wellknown.KindPreset, `{"remote":{"mode":"mirror"}}`, []string{"/remote/mode"}},
@@ -103,9 +103,9 @@ func TestR_REPO_069_AMergePatchOfAWellKnownRepositoryChangesOnlyTheNarrowingSett
 		{"the fetch of the upstream's signatures", wellknown.KindPreset, `{"signatures":{"fetch":false}}`, nil},
 		{"the signatures of a system repository", wellknown.KindSystem, `{"signatures":{"fetch":false}}`, []string{"/signatures"}},
 		{
-			"the include patterns and the scanning of a system repository", wellknown.KindSystem,
-			`{"includePatterns":["aquasec/*"],"vulnerabilities":{"enabled":true},"excludePatterns":["x"]}`,
-			[]string{"/includePatterns", "/vulnerabilities"},
+			"the delivery mode and the scanning of a system repository", wellknown.KindSystem,
+			`{"remote":{"delivery":{"mode":"allExceptBlocked"}},"vulnerabilities":{"enabled":true}}`,
+			[]string{"/remote/delivery", "/vulnerabilities"},
 		},
 	} {
 		t.Run("R-REPO-069 "+tc.name, func(t *testing.T) {

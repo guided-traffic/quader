@@ -121,11 +121,21 @@ func (m *MirrorHost) Admits(ctx context.Context, repo repository.Repository) (fu
 	}
 	byName := f.Descriptor().PatternSubject == formats.SubjectName
 	hasDocument := formats.RemoteCapabilities(formats.ID(repo.Format)).Names == nil
+	scope, err := mirrorScope(repo)
+	if err != nil {
+		return nil, err
+	}
+	set := repo.Delivery()
 	return func(name string) bool {
 		if name == "" {
 			return false
 		}
 		if byName && !repo.Admits(name, false) {
+			return false
+		}
+		// The mirror's scope and the delivery rules (remote-curation.md R-CUR-017): a name the scope does not cover, or of which the
+		// rules deliver no version, is never asked for.
+		if !scope(name) || !set.Package(name).Delivered {
 			return false
 		}
 		// A format whose upstream has no document per package (an APT archive, which answers the shadowing check through its NameServer)
@@ -205,7 +215,7 @@ func (m *MirrorHost) fillPath(ctx context.Context, repo repository.Repository, p
 		// The repository's include and exclude patterns hold for a background fill as for a client's fetch, which the dispatcher
 		// and Host.Authorize refuse before the engine is asked (R-REPO-005, R-REPO-065).
 		return filled{}, refused(mirror.RefusedPatterns, errs.E(errs.NotFound, errs.CodeNotFound,
-			"The include and exclude patterns of the repository do not admit "+p.Path+"."))
+			"The patterns or the delivery rules of the repository do not admit "+p.Path+"."))
 	}
 	preq, err := fetch.request(ctx, rq, p, "", proxy.Artifact)
 	if err != nil {
@@ -232,13 +242,53 @@ func (m *MirrorHost) fillPath(ctx context.Context, repo repository.Repository, p
 	return out, nil
 }
 
+// mirrorScope compiles remote.mirror.include (remote-curation.md R-CUR-017): a name is in scope when a pattern matches it; an empty
+// scope is everything the rules deliver. A stored pattern that does not compile was refused by the validation, so it is an error.
+func mirrorScope(repo repository.Repository) (func(string) bool, error) {
+	rs, _ := repo.Remote()
+	if len(rs.Mirror.Include) == 0 {
+		return func(string) bool { return true }, nil
+	}
+	ps := make([]*repository.Pattern, 0, len(rs.Mirror.Include))
+	for _, s := range rs.Mirror.Include {
+		p, err := repository.CompilePattern(repository.SubjectName, s)
+		if err != nil {
+			return nil, errs.E(errs.Internal, errs.CodeInternal, "A pattern of the mirror's scope does not compile.", errs.WithCause(err))
+		}
+		ps = append(ps, p)
+	}
+	return func(name string) bool {
+		for _, p := range ps {
+			if p.Match(name) {
+				return true
+			}
+		}
+		return false
+	}, nil
+}
+
 // admitted reports whether the repository's include and exclude patterns admit the artifact at p: its package name for a format whose
-// patterns match names, else its path (R-REPO-005).
+// patterns match names, else its path (R-REPO-005), and whether the delivery rules deliver its version: a pass of the mirror fetches
+// only what the rules deliver (remote-curation.md R-CUR-017).
 // A format whose items have a second spelling (an official image of Docker Hub, `library/nginx` stored, `nginx` typed and written in the
 // patterns, Q-OCI-129) is admitted when either spelling is, as the names a pass discovers are.
 func (m *MirrorHost) admitted(repo repository.Repository, p formats.Path) bool {
 	f, ok := m.h.o.Formats(repo.Format)
-	return ok && patternsAdmit(repo, f, p)
+	if !ok || !patternsAdmit(repo, f, p) {
+		return false
+	}
+	set := repo.Delivery()
+	if set == nil {
+		return true
+	}
+	info := f.Classify(p)
+	switch {
+	case info.Package == "":
+		return true
+	case info.Version == "":
+		return set.Package(info.Package).Delivered
+	}
+	return set.Decide(info.Package, info.Version).Delivered
 }
 
 // patternsAdmit reports whether the repository's include and exclude patterns admit the item at p, in either of its spellings.

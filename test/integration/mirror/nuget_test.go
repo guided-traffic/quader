@@ -81,7 +81,7 @@ func countPath(hits []hit, sub string) (n int) {
 }
 
 func TestR_REPO_051_NugetCatalogFeed(t *testing.T) {
-	r, stub := newNugetRig(t, nugetCorpus(), nugetstub.Mode{Catalog: true}, rigOptions{include: []string{"Acme.*"}})
+	r, stub := newNugetRig(t, nugetCorpus(), nugetstub.Mode{Catalog: true}, rigOptions{include: []string{"acme.*"}})
 	run, web := r.runner("runner"), r.web("web")
 
 	t0 := r.pass(run)
@@ -165,7 +165,7 @@ func TestR_REPO_051_NugetSearchListingIsTruncatedAndSaysSo(t *testing.T) {
 		p.AddVersion("1.0.0", nugetEpoch.Add(time.Duration(i)*time.Minute))
 		c.Add(p)
 	}
-	r, stub := newNugetRig(t, c, nugetstub.Mode{SearchSkipCap: 1000}, rigOptions{include: []string{"Acme.P000*"}})
+	r, stub := newNugetRig(t, c, nugetstub.Mode{SearchSkipCap: 1000}, rigOptions{include: []string{"acme.p000*"}})
 	run := r.runner("runner")
 	t0 := r.pass(run)
 	r.waitPass(t0, "full", "complete", passWithin)
@@ -198,7 +198,7 @@ func TestR_REPO_051_NugetSearchListingIsTruncatedAndSaysSo(t *testing.T) {
 
 func TestR_REPO_051_NugetExactIDsReadNoCatalogAndNoSearch(t *testing.T) {
 	r, stub := newNugetRig(t, nugetCorpus(), nugetstub.Mode{Catalog: true}, rigOptions{
-		include: []string{"Acme.A", "Acme.B"}, mirror: settings{"discovery": "names"},
+		include: []string{"acme.a", "acme.b"}, mirror: settings{"discovery": "names"},
 	})
 	run := r.runner("runner")
 	t0 := r.pass(run)

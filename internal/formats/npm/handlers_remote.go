@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/npm/document"
 	"github.com/guided-traffic/quader/internal/formats/npm/name"
 	"github.com/guided-traffic/quader/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
 // The documents of remote and virtual repositories (R-NPM-024, R-NPM-025, R-NPM-027,
@@ -84,9 +85,12 @@ func (f *Format) serveFull(ctx context.Context, rq *formats.Request, w http.Resp
 		variant += "#wiki=" + src.wikiFp // the README is wiki content: the answer is part of the key and of the validator
 	}
 	settings := fmt.Sprintf("%d/%t/%s", rq.Repo.Version, rep.cfg.AbbreviatedTime, src.content)
+	// The key and the validator name what filters the document: the endpoint's exposure and a remote's delivery rules (R-NPM-049,
+	// R-CUR-003), so a change of either is never answered with a rendition filtered by the old ones.
+	filter := formats.DocumentFingerprint(rq)
 	inputs := document.Inputs{
 		Repo: src.repoID, Variant: variant, BaseURL: links.Base(), Endpoint: rq.Endpoint.Name,
-		Exposure: rq.Endpoint.ExposureFingerprint, Settings: settings,
+		Exposure: filter, Settings: settings,
 	}
 	etag := inputs.ETag()
 	maxAge := int64(rep.cfg.DocumentMaxAge / time.Second)
@@ -108,7 +112,7 @@ func (f *Format) serveFull(ctx context.Context, rq *formats.Request, w http.Resp
 	gzip := document.AcceptsGzip(rq.Header.Get("Accept-Encoding"))
 	key := formats.RenditionKey{
 		Repo: rq.RepoRef(), Package: n.String(), Variant: variant, Encoding: encodingOf(gzip), BaseURL: links.Base(),
-		Endpoint: rq.Endpoint.Name, Exposure: rq.Endpoint.ExposureFingerprint, Settings: settings, RenderVersion: document.RenderVersion,
+		Endpoint: rq.Endpoint.Name, Exposure: filter, Settings: settings, RenderVersion: document.RenderVersion,
 	}
 	entry, hit := rq.Host.Renditions().Get(key)
 	if !hit && gzip {
@@ -196,9 +200,9 @@ func (f *Format) serveTags(ctx context.Context, w http.ResponseWriter, rq *forma
 	if err != nil {
 		return err
 	}
-	if view := viewOf(rq); view != nil {
+	if viewOf(rq) != nil || rulesViewOf(rq) != nil {
 		// The tags are read from the filtered document, because only that one knows where
-		// latest moved (R-NPM-048).
+		// latest moved (R-NPM-048, R-NPM-049).
 		p, err := f.exposedDocument(ctx, rq, n, full, "", "")
 		if err != nil {
 			return err
@@ -248,6 +252,13 @@ func (f *Format) remoteDocument(ctx context.Context, rq *formats.Request, w http
 	if err := rq.Host.Authorize(ctx, rq, documentTarget(n, "", formats.ActionRead)); err != nil {
 		return err
 	}
+	if version, ok := canonicalVersion(ref); ok && fm == formVersion && hiddenVersion(rq, n, version) == nil {
+		// The single-version document of a version the rules refuse answers their refusal before the stored document is read or
+		// the upstream asked (R-NPM-049, R-CUR-003 point 1); a version the endpoint hides stays the filter's 404.
+		if err := formats.Undelivered(rq, n.String(), version, rules.KindDocument); err != nil {
+			return err
+		}
+	}
 	src, err := f.remoteSource(ctx, rq, n, fm, ref)
 	if err != nil {
 		return err
@@ -280,6 +291,11 @@ func (f *Format) probeVersion(ctx context.Context, rq *formats.Request, n name.N
 		}
 	}
 	if hiddenVersion(rq, n, version) != nil {
+		return
+	}
+	if formats.Undelivered(rq, n.String(), version, rules.KindDocument) != nil {
+		// A dist-tag of the stored document that names a version the rules refuse: the filtered document moved it, so the version is
+		// not the one served, and a version that is not delivered is no probe (R-NPM-049).
 		return
 	}
 	rq.Host.Remote().Probed(ctx, rq, formats.Probe{Name: n.String(), Version: version, Files: []formats.Path{{Path: TarballPath(n, version)}}})
@@ -334,27 +350,46 @@ func (f *Format) nonLocalDocumentOf(ctx context.Context, rq *formats.Request, w 
 }
 
 // exposedDocument parses a full document for a response. On an endpoint with exposure
-// rules it is rewritten for the serving repository, filtered to what the endpoint
-// exposes of it (versions, time, tags, latest among the exposed releases, R-NPM-048,
-// H-295) and parsed again; nothing exposed is the 404 of a missing package.
+// rules, or of a remote repository with delivery rules, it is rewritten for the serving
+// repository, filtered to what the endpoint exposes of it and what the rules deliver
+// (versions, time, tags, latest among what is left, R-NPM-048, R-NPM-049, H-295) and
+// parsed again. Nothing exposed is the 404 of a missing package; nothing delivered of
+// what the endpoint exposes is the refusal of R-CUR-004. The endpoint filters first, so
+// a package it hides stays a 404 whatever the rules say.
 func (f *Format) exposedDocument(ctx context.Context, rq *formats.Request, n name.Name, full []byte, prefix, rev string) (*remote.Parsed, error) {
 	p, err := remote.Parse(full)
 	if err != nil {
 		return nil, err
 	}
-	view := viewOf(rq)
-	if view == nil {
+	view, delivery := viewOf(rq), rulesViewOf(rq)
+	if view == nil && delivery == nil {
 		return p, nil
 	}
-	rewritten, err := p.Full(n.String(), prefix, rev)
+	doc, err := p.Full(n.String(), prefix, rev)
 	if err != nil {
 		return nil, err
 	}
-	filtered, err := f.exposure.filterDocument(ctx, formats.Path{Path: n.String()}, rewritten, view)
-	if err != nil {
-		return nil, err
+	path := formats.Path{Path: n.String()}
+	if view != nil {
+		if doc, err = f.exposure.filterDocument(ctx, path, doc, view); err != nil {
+			return nil, err
+		}
 	}
-	return remote.Parse(filtered)
+	if delivery != nil {
+		if err := formats.Undelivered(rq, n.String(), "", rules.KindDocument); err != nil {
+			return nil, err
+		}
+		filtered, err := f.exposure.filterDocument(ctx, path, doc, delivery)
+		if errs.KindOf(err) == errs.NotFound {
+			// The package is delivered, yet none of its versions is: a version rule allows one the upstream does not hold.
+			return nil, noDeliveredVersion(rq, n.String())
+		}
+		if err != nil {
+			return nil, err
+		}
+		doc = filtered
+	}
+	return remote.Parse(doc)
 }
 
 // hiddenVersion is the 404 of a version the endpoint does not expose, decided before

@@ -207,7 +207,8 @@ func TestRemoteSettings(t *testing.T) {
 			`"blockUnexpectedContentTypes":true,"allowedContentTypes":[]},"availability":{"mode":"online","failureThreshold":5,"circuitOpenSeconds":300},` +
 			`"limits":{"maxArtifactBytes":null,"maxMetadataBytes":null,"maxConcurrentFetches":64},` +
 			`"mode":"pullThrough","mirror":{"paused":false,"intervalSeconds":3600,"fullPassIntervalSeconds":604800,"discovery":"auto",` +
-			`"concurrency":4,"maxVersionsPerPackage":0,"includePrereleases":true,"maxBytes":null},"downloadOnProbe":true}`
+			`"concurrency":4,"maxVersionsPerPackage":0,"includePrereleases":true,"maxBytes":null,"include":[]},"downloadOnProbe":true,` +
+			`"delivery":{"mode":"allExceptBlocked","examineOnRequest":true,"examinedRetentionDays":30}}`
 		if string(got.Document.Remote) != want {
 			t.Fatalf("remote =\n%s\nwant\n%s", got.Document.Remote, want)
 		}

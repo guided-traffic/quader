@@ -66,6 +66,12 @@ func (e *Engine) Artifact(ctx context.Context, rq Request, w http.ResponseWriter
 			return e.serveItem(ctx, rq, w, CacheStatus{Hit: true, TTL: -1}, it, true)
 		}
 	}
+	// Step 5a (R-CUR-003): an artifact that is not stored, or whose stored copy is lost, of a version the rules do not deliver is
+	// refused before anything is asked of the upstream; a stored one was decided at the serve point above.
+	if rq.Undelivered != nil {
+		e.m.lookup(rem.Repo.Name.String(), Artifact, resultMiss)
+		return rq.Undelivered
+	}
 	switch state {
 	case hitDamaged:
 		return e.refillArtifact(ctx, rq, w, r, it)

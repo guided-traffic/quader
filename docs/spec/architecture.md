@@ -2438,6 +2438,17 @@ nothing; `LiveVersions` returns the versions of a package at the revision of its
 that revision, so a document request that finds them asks no statement (R-ARCH-027); `HiddenFingerprint` names a set of hidden
 versions in the key and the validator of a rendering, "" for none.
 
+The delivery rules of a remote repository are the contract's own service over the snapshot ([remote-curation.md](remote-curation.md)
+R-CUR-003, ADR-277): `Delivery` returns the compiled rule set of the request's repository (`*rules.Set` of
+`internal/remotecuration/rules`), nil for a repository that delivers everything and for a read of the system (`SystemRead`), so a
+format pays nothing without rules; `Undelivered` is the refusal of a package's or a version's decision (`RefusalOf` builds it, 403
+`not_allowed_in_repository` with `Cache-Control: no-store`, the `rules.Refusal` its cause); `DeliveryView` is the rules as an
+`ExposureView`, `JoinViews` joins two views and `DocumentView` the endpoint's exposure with the rules (an endpoint with rules whose
+view is missing exposes nothing), and `DocumentFingerprint` names both in a rendition's key and validator. `MemberDelivery` returns
+the rules of a remote member of the request's virtual repository (`MemberRules`), and `ModeReason` the reason of a package refused
+whole whose own decision delivers it. `Host.RecordRefusal` is the core's record of a refusal that reaches the client, which
+`ServeRoute` calls (R-CUR-004). These are additions of services: the contract version stays 11 (R-ARCH-025).
+
 The blocks above are held equal to the code: `TestR_ARCH_008_TheWrittenContractEqualsTheCode`
 (`internal/formats/contract_spec_test.go`) parses the Go blocks of R-ARCH-008 and R-ARCH-009 and compares every type
 they declare (exported fields, interface methods, aliases), the methods the code attaches to it, the functions and
@@ -2603,7 +2614,20 @@ type Host interface {
 	Markup() Markup              // render Markdown and sanitize HTML under the README policy (ADR-196, R-ANS-039); NoMarkup until wired
 	Signatures() SignatureVerdicts // the verdicts a format asks before it serves a signature (signatures.md R-SIG-028); NoSignatureVerdicts until wired
 	Uploads() UploadSessions     // the multi-request upload sessions of R-STOR-011 (Q-OCI-12); every call answers not_implemented until they are built
+	// RecordRefusal records a refusal of a remote's delivery rules that reaches the client: the event, the metric and the count in
+	// the request list (remote-curation.md R-CUR-004). ServeRoute calls it once for the refusal a route answers; a format does not.
+	RecordRefusal(ctx context.Context, rq *Request, rf *rules.Refusal)
 }
+
+// MemberRules is the delivery rule set of a remote member of the request's virtual repository, which a format's merge filters that
+// member's part by (remote-curation.md R-CUR-003); MemberDelivery finds it, MemberRules.Refusal names the member in the refusal of a
+// merge its rules left empty.
+type MemberRules struct {
+	Ref RepoRef
+	Set *rules.Set
+}
+
+func (m *MemberRules) Refusal(rq *Request, name string) error
 
 // Ingestor.Link(ctx, rq, from SourceRef, Commit) (Committed, error) commits an item with the content of the item `from` names, with no
 // body (deploy by checksum, R-STOR-008): the mount of an OCI blob from another repository, the link step of a push through a virtual
@@ -2933,17 +2957,20 @@ own tests:
     subject and locator; committing a sample raises no version row whose lead item carries the signature; a format that declares none
     detects nothing over its content cases. It is never skipped.
 
-Checks 19 (the Bastion's facts, [bastion.md](bastion.md) R-BAS-058) and 20 (the routes whose clients check a digest) are specified on
-their pages. Two more are specified on 2026-11-23 and not built ([remote-curation.md](remote-curation.md) R-CUR-022), numbered 21 and 22
-unless a check lands before them, in which case they take the next free numbers:
+Checks 19 (the Bastion's facts, [bastion.md](bastion.md) R-BAS-058), 20 (the routes whose clients check a digest) and 21 (the package
+shapes, [bastion.md](bastion.md) R-BAS-086) are specified on their pages. Two more are specified on 2026-11-23
+([remote-curation.md](remote-curation.md) R-CUR-022); 21 was taken, so they are 22 (not built) and 23 (built, `CheckDelivery` in
+`internal/formats/formattest/checks_delivery.go`, [Q-CUR-42](remote-curation.md#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)):
 
-21. The upstream catalogue (R-CUR-007), for a format with the class remote: each declared call answers the fixture's fake upstream in
+22. The upstream catalogue (R-CUR-007), for a format with the class remote: each declared call answers the fixture's fake upstream in
     process with a page of names the format's rule accepts, a cursor that continues and an end; an undeclared call answers
     `ErrNotOffered`; an answer above the catalogue's bounds fails; no call reaches a host outside the upstream, its `extraHosts` and the
     declared catalogue hosts.
-22. The delivery rules (R-CUR-003, R-CUR-004), for a format with the class remote: against a host whose rule set refuses one version of
+23. The delivery rules (R-CUR-003, R-CUR-004), for a format with the class remote: against a host whose rule set refuses one version of
     the fixture's package, no document of the format lists that version, its file answers `403` with `Cache-Control: no-store` and the
-    code in the format's shape, and a package whose every version is refused answers that refusal at its document.
+    code (or the refusal's text) in the format's shape, and a package whose every version is refused answers that refusal at its
+    document. A document the remote passes unchanged because its upstream signs it (Debian's `InRelease`, Q-CUR-9) is a `Passthrough`
+    document of the fixture: it answers the upstream's bytes under both rules. A format without the class remote skips it with the reason.
 
 A check that cannot apply to a format is skipped in the format's test with a stated reason (generic
 has no routes, no clients and no package names); a skip without a reason fails the check, so a

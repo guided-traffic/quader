@@ -52,7 +52,7 @@ const (
 	rHub    = "oci-hub"    // the upstream is registry-1.docker.io (the stub answers as Docker Hub)
 	rNoCDN  = "oci-nocdn"  // the CDN host is not an extraHosts entry: a redirect is followed whatever extraHosts says (R-REPO-039)
 	rPrefix = "oci-prefix" // the upstream URL has a namespace prefix
-	rHubX   = "oci-hubx"   // Docker Hub with an exclude pattern for the name nginx
+	rHubX   = "oci-hubx"   // Docker Hub with the delivery rule "package library/nginx block" (R-CUR-002: what an exclude pattern said)
 )
 
 // renv is one installation with the repositories above, two stubs and a reader.
@@ -66,7 +66,6 @@ type renv struct {
 	reader    string
 	admin     string
 	mu        sync.Mutex
-	excl      map[string][]string
 	tokens    map[string]cachedToken
 }
 
@@ -84,7 +83,7 @@ func newEnv(t *testing.T, o options) *renv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := &renv{t: t, tokens: map[string]cachedToken{}, excl: map[string][]string{rHubX: {"nginx"}}}
+	e := &renv{t: t, tokens: map[string]cachedToken{}}
 	if e.stub, err = ocistub.New(o.stub); err != nil {
 		t.Fatal(err)
 	}
@@ -127,6 +126,8 @@ func newEnv(t *testing.T, o options) *renv {
 	e.repo(rHub, "https://"+hubRegistry+"/", "none", 300, host(hubRealm, true))
 	e.repo(rNoCDN, e.run.URL, "none", 300, host(ocistub.LoopbackRealmHost, false))
 	e.repo(rHubX, "https://"+hubRegistry+"/", "none", 300, host(hubRealm, true))
+	// The rules name an image by the name the cache knows, library/<n> on Docker Hub (R-OCI-038).
+	e.st.DeliveryRule(rHubX, testenv.PackageRule("library/nginx", "block"))
 	e.repo(rPrefix, strings.TrimSuffix(e.run.URL, "/")+"/acme", "none", 300, host(ocistub.LoopbackRealmHost, false))
 
 	rita, reader := e.st.User("rita"), e.st.User("reader")
@@ -160,11 +161,7 @@ func (e *renv) repo(key, upstream, authMode string, ttl int, extra ...map[string
 		remote["username"] = ocistub.DefaultUsername
 		remote["password"] = map[string]any{"secretRef": map[string]any{"env": secretEnv}}
 	}
-	body := map[string]any{"remote": remote}
-	if x := e.excl[key]; x != nil {
-		body["excludePatterns"] = x
-	}
-	doc, err := json.Marshal(body)
+	doc, err := json.Marshal(map[string]any{"remote": remote})
 	if err != nil {
 		e.t.Fatal(err)
 	}
