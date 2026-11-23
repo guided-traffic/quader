@@ -11,7 +11,7 @@ import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
 import { FakeSearchApi } from '../../api/testing/fakes-search';
 import { BrowserStorage } from '../../core/storage';
 import { spokenText } from '../../testing/axe';
-import { expectAccessible, renderScreen, settle, sleep, text } from '../../testing/screen';
+import { expectAccessible, renderScreen, settle, sleep, text, waitUntil } from '../../testing/screen';
 import { SearchField } from './search-field';
 import { SearchLayout } from './search-layout';
 
@@ -68,6 +68,19 @@ const groupNames = (root: HTMLElement): string[] =>
 /** What a screen reader says for each entry or item. */
 const said = (items: readonly Element[]): string[] => items.map((i) => spokenText(i));
 const status = (root: HTMLElement): string => text(root.querySelector('.search-status') ?? document.createElement('p'));
+
+/**
+ * Waits until the suggestions of the text typed last have answered: the list is no longer busy (`aria-busy`, from the text's change
+ * through the pause and the request). Not a time: a fixed 300 ms measured the host, not the field.
+ */
+async function answered(fixture: Parameters<typeof settle>[0], root: HTMLElement): Promise<void> {
+  await waitUntil(fixture, () => root.querySelector('[role="listbox"][aria-busy="true"]') === null, 'the answer of the suggestions');
+}
+
+/** Waits until the field has sent its `n`th request: for a request the fake holds, whose answer does not come. */
+async function requested(fixture: Parameters<typeof settle>[0], search: FakeSearchApi, n: number): Promise<void> {
+  await waitUntil(fixture, () => search.requests.length >= n, `request ${n} of the suggestions`);
+}
 
 async function open(fixture: Parameters<typeof settle>[0], root: HTMLElement): Promise<void> {
   input(root).focus();
@@ -180,7 +193,7 @@ describe('What the opened field offers (R-UI-096)', () => {
     // The entries of Security audit are places as every entry of the side bar is (Q-UI-1005).
     expect(said(options(root))).toEqual(['Projects', 'Repositories', 'Guides', 'Profile', 'Personal tokens', 'Security dashboard', 'Malware', 'Signatures', 'View all my projects']);
     typeText(root, 'security');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(groupNames(root)).toEqual(['Pages']);
     expect(said(options(root))).toEqual(['Security dashboard']);
     document.body.replaceChildren();
@@ -188,7 +201,7 @@ describe('What the opened field offers (R-UI-096)', () => {
     const plain = await render('sam');
     await open(plain.fixture, plain.root);
     typeText(plain.root, 'security');
-    await sleep(plain.fixture, 300);
+    await answered(plain.fixture, plain.root);
     expect(said(options(plain.root))).not.toContain('Security dashboard');
   });
 
@@ -238,7 +251,7 @@ describe('Live suggestions (R-UI-097)', () => {
     typeText(root, 'vend');
     await sleep(fixture, 50);
     expect(search.requests).toHaveLength(0);
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(search.requests.map((r) => [r.q, r.kinds?.join(','), r.limit])).toEqual([['vend', 'repository,package,project', 5]]);
     expect(groupNames(root)).toEqual(['Repositories']);
     const first = options(root)[0]!;
@@ -253,9 +266,9 @@ describe('Live suggestions (R-UI-097)', () => {
     search.hold = true;
     await open(fixture, root);
     typeText(root, 'npm');
-    await sleep(fixture, 300);
+    await requested(fixture, search, 1);
     typeText(root, 'npm-l');
-    await sleep(fixture, 300);
+    await requested(fixture, search, 2);
     expect(search.requests.map((r) => r.q)).toEqual(['npm', 'npm-l']);
     expect(search.requests[0]!.signal?.aborted).toBe(true);
     expect(status(root)).toBe('Searching…');
@@ -274,7 +287,7 @@ describe('Live suggestions (R-UI-097)', () => {
     });
     await open(fixture, root);
     typeText(root, 'users');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(groupNames(root)).toEqual(['Admin pages, Admin area', 'Users, Admin area', 'Groups, Admin area']);
     expect(said(options(root))).toEqual([
       'Users, Admin area',
@@ -293,7 +306,7 @@ describe('Live suggestions (R-UI-097)', () => {
     });
     await open(fixture, root);
     typeText(root, 'web');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(groupNames(root)).toEqual(['Repositories', 'Packages', 'Projects']);
     const repos = options(root.querySelector('[role="group"]')!);
     expect(repos).toHaveLength(6);
@@ -314,7 +327,7 @@ describe('Live suggestions (R-UI-097)', () => {
     });
     await open(fixture, root);
     typeText(root, 'scanner');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     const repos = options(root.querySelector('[role="group"]')!);
     expect(said(repos.slice(0, 2))).toEqual(['scanner-trivy · upstream, System', 'scanner-trivy · web']);
     expect(text(repos[0]!.querySelector('.badge')!)).toBe('System');
@@ -328,7 +341,7 @@ describe('Live suggestions (R-UI-097)', () => {
     [...document.querySelectorAll<HTMLElement>('.search-filter-menu [role="menuitemradio"]')][1]!.click();
     await settle(fixture);
     typeText(root, 'npm');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(search.requests.at(-1)).toMatchObject({ q: 'npm', kinds: ['repository'], limit: 10 });
   });
 
@@ -336,18 +349,20 @@ describe('Live suggestions (R-UI-097)', () => {
     const { root, fixture, search } = await render('sam');
     await open(fixture, root);
     typeText(root, 'zzz');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(status(root)).toBe('Nothing you may read matches “zzz”. Press Enter to search everything.');
     search.failure = new ApiError(429, { status: 429, code: 'rate_limited' }, null, 1);
     typeText(root, 'zzzz');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     expect(status(root)).toBe('Too many searches. Suggestions return in 1 s.');
     const sent = search.requests.length;
     typeText(root, 'zzzzz');
     await sleep(fixture, 400);
     expect(search.requests).toHaveLength(sent);
     search.failure = new ApiError(500, null, null);
-    await sleep(fixture, 900);
+    // the field sends again once Retry-After has passed, and its answer is the error
+    await waitUntil(fixture, () => search.requests.length > sent, 'the request after Retry-After');
+    await answered(fixture, root);
     expect(search.requests.length).toBe(sent + 1);
     expect(status(root)).toBe('Suggestions are not available.');
   });
@@ -369,7 +384,7 @@ describe('Live suggestions (R-UI-097)', () => {
     const { root, fixture } = await render('sam');
     await open(fixture, root);
     typeText(root, 'web');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     const field = input(root);
     expect(field.getAttribute('aria-expanded')).toBe('true');
     expect(field.getAttribute('aria-controls')).toBe('search-suggestions');
@@ -395,7 +410,7 @@ describe('Live suggestions (R-UI-097)', () => {
     expect(TestBed.inject(Router).url).toBe('/projects/web/repositories/npm-all');
     await open(fixture, root);
     typeText(root, 'web');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     press(root, 'Escape');
     await settle(fixture);
     expect(field.getAttribute('aria-expanded')).toBe('false');
@@ -416,7 +431,7 @@ describe('Live suggestions (R-UI-097)', () => {
     const { root, fixture } = await render('ada');
     await open(fixture, root);
     typeText(root, 'test');
-    await sleep(fixture, 300);
+    await answered(fixture, root);
     press(root, 'Enter');
     await settle(fixture);
     expect(TestBed.inject(Router).url).toBe('/search?q=test');
@@ -442,11 +457,11 @@ describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI
     const r = await render('sam');
     await open(r.fixture, r.root);
     typeText(r.root, 'npm');
-    await sleep(r.fixture, 300);
+    await answered(r.fixture, r.root);
     expect(said(options(r.root))).toEqual(['npm-local · web', 'npm-all · web', 'npm-vendor · web-frontend']);
     r.search.hold = true;
     typeText(r.root, 'npm-');
-    await sleep(r.fixture, 300);
+    await requested(r.fixture, r.search, 2);
     expect(status(r.root)).toBe('Searching…');
     return r;
   }

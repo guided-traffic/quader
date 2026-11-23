@@ -29064,10 +29064,10 @@
     <unit id="search.label">
       <notes>
         <note category="location">src/app/features/search/search-field.html:13,15</note>
-        <note category="location">src/app/features/search/search-field.html:172</note>
-        <note category="location">src/app/features/search/search-field.html:174</note>
-        <note category="location">src/app/features/search/search-field.html:186,187</note>
-        <note category="location">src/app/features/search/search-field.html:197</note>
+        <note category="location">src/app/features/search/search-field.html:180</note>
+        <note category="location">src/app/features/search/search-field.html:182</note>
+        <note category="location">src/app/features/search/search-field.html:194,195</note>
+        <note category="location">src/app/features/search/search-field.html:205</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -29076,7 +29076,7 @@
     </unit>
     <unit id="search.suggestions">
       <notes>
-        <note category="location">src/app/features/search/search-field.html:48,49</note>
+        <note category="location">src/app/features/search/search-field.html:54,55</note>
       </notes>
       <segment>
         <source>Suggestions</source>
@@ -29085,7 +29085,7 @@
     </unit>
     <unit id="search.close">
       <notes>
-        <note category="location">src/app/features/search/search-field.html:191,193</note>
+        <note category="location">src/app/features/search/search-field.html:199,201</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -29166,8 +29166,8 @@
     </unit>
     <unit id="search.limited">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:275</note>
-        <note category="location">src/app/features/search/search-field.ts:513</note>
+        <note category="location">src/app/features/search/search-field.ts:278</note>
+        <note category="location">src/app/features/search/search-field.ts:516</note>
       </notes>
       <segment>
         <source>Too many searches. Suggestions return in <ph id="0" equiv="seconds" disp="f.seconds"/> s.</source>
@@ -29176,8 +29176,8 @@
     </unit>
     <unit id="search.error">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:276</note>
-        <note category="location">src/app/features/search/search-field.ts:517</note>
+        <note category="location">src/app/features/search/search-field.ts:279</note>
+        <note category="location">src/app/features/search/search-field.ts:520</note>
       </notes>
       <segment>
         <source>Suggestions are not available.</source>
@@ -29186,7 +29186,7 @@
     </unit>
     <unit id="search.searching">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:277</note>
+        <note category="location">src/app/features/search/search-field.ts:280</note>
       </notes>
       <segment>
         <source>Searching…</source>
@@ -29195,7 +29195,7 @@
     </unit>
     <unit id="search.no-match">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:280</note>
+        <note category="location">src/app/features/search/search-field.ts:283</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”. Press Enter to search everything.</source>
@@ -29204,7 +29204,7 @@
     </unit>
     <unit id="search.announce-none">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:533</note>
+        <note category="location">src/app/features/search/search-field.ts:536</note>
       </notes>
       <segment>
         <source>No suggestions.</source>
@@ -29213,7 +29213,7 @@
     </unit>
     <unit id="search.announce-one">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:535</note>
+        <note category="location">src/app/features/search/search-field.ts:538</note>
       </notes>
       <segment>
         <source>1 suggestion.</source>
@@ -29222,7 +29222,7 @@
     </unit>
     <unit id="search.announce-many">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:536</note>
+        <note category="location">src/app/features/search/search-field.ts:539</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> suggestions.</source>
@@ -29231,7 +29231,7 @@
     </unit>
     <unit id="search.choose-user">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:572</note>
+        <note category="location">src/app/features/search/search-field.ts:575</note>
       </notes>
       <segment>
         <source>Choose a user from the list.</source>
@@ -29240,7 +29240,7 @@
     </unit>
     <unit id="search.choose-group">
       <notes>
-        <note category="location">src/app/features/search/search-field.ts:573</note>
+        <note category="location">src/app/features/search/search-field.ts:576</note>
       </notes>
       <segment>
         <source>Choose a group from the list.</source>

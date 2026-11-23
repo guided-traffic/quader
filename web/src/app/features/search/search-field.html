@@ -45,7 +45,15 @@
       @if (status(); as s) {
         <p class="search-status">{{ s }}</p>
       }
-      <div role="listbox" class="search-list" [id]="listId" i18n-aria-label="@@search.suggestions" aria-label="Suggestions">
+      <!-- aria-busy from the text's change until its suggestions answer: assistive technology waits for them, and so do the tests -->
+      <div
+        role="listbox"
+        class="search-list"
+        [id]="listId"
+        i18n-aria-label="@@search.suggestions"
+        aria-label="Suggestions"
+        [attr.aria-busy]="searching() ? 'true' : null"
+      >
         @for (g of indexed(); track g.group.id) {
           @if (g.group.heading) {
             <div

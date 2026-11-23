@@ -268,6 +268,9 @@ export class SearchField {
     return id !== null && this.open() ? optionDomId('search-option', id) : null;
   });
 
+  /** Live suggestions are on their way: from the text's change, through the pause and the request, until they answer or fail. */
+  protected readonly searching = computed(() => this.live() && this.pending());
+
   /** The quiet line above the list: searching, the 429, an error, or no match (R-UI-097). */
   protected readonly status = computed<string | null>(() => {
     if (!this.live()) return null;
