@@ -969,7 +969,10 @@ Priority: **P2** · Covers: PKG-DEB-021
   and records the verifying fingerprint where one verifies. A release no key of the new set verifies counts as expired, and its next revalidation is sent **without validators**
   (no `If-None-Match`, no `If-Modified-Since`: a HEAD whose answer says "moved", then the GET, Q-DEB-81), so the upstream answers
   with a body that `PrepareFill` verifies; an upstream 304 never marks a release verified. Nothing uses a release while its
-  `verified_by` is cleared and keys are set: a request for a file of its directory answers 502 `deb_upstream_signature_invalid`.
+  `verified_by` is cleared and keys are set: a request for a file of its directory answers 502 `deb_upstream_signature_invalid`, the
+  release documents `InRelease`, `Release` and `Release.gpg` included, whether the engine still holds a fresh copy or serves its stored
+  copy after a refused refresh (an `InRelease` is answered only while the stored record of its bytes carries a verifying fingerprint). A
+  by-hash file and a pdiff patch are content, addressed by the digest a release named, and are served as content (R-DEB-022).
   A release whose fetch or re-verification began under the old set and is recorded after the change committed is recorded under the
   set the recording transaction reads, under a share lock of the repository's row: the fill checks it again against that set when it
   differs, and refuses it as above when no key of it verifies; a re-verification whose signer left the set records nothing

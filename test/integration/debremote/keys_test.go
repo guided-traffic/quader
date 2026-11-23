@@ -181,9 +181,15 @@ func TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidato
 	if v := e.verifiedBy("kc-single"); v != "" {
 		t.Fatalf("verified_by = %s after the removal of the key that verified it", v)
 	}
-	// Nothing is served from the directory while its release is unverified.
+	// Nothing is served from the directory while its release is unverified: no index, and no release document either, though the stored
+	// InRelease is still fresh (R-DEB-020).
 	if a := e.get("kc-single", suitePath+packages+".gz"); a.Status == http.StatusOK {
 		t.Errorf("an index was served from an unverified directory")
+	}
+	for _, doc := range []string{"InRelease", "Release", "Release.gpg"} {
+		if a := e.get("kc-single", suitePath+doc); a.Status != http.StatusBadGateway || !strings.Contains(string(a.Body), "deb_upstream_signature_invalid") {
+			t.Errorf("%s of an unverified directory = %d %s, want 502 deb_upstream_signature_invalid", doc, a.Status, a.Body[:min(len(a.Body), 200)])
+		}
 	}
 	// The upstream now signs with the key b; the next revalidation, sent without validators, verifies the new body.
 	if err := e.stub.SetMode(debstub.Mode{SignWith: []string{"b"}}); err != nil {

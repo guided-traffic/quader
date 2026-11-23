@@ -157,6 +157,11 @@ func (f *Format) serveRelease(ctx context.Context, rq *formats.Request, w http.R
 		if err != nil {
 			return f.absentOnMissing(ctx, rq, st, rp, FileRelease, err)
 		}
+		if set.UpstreamKeys != "" {
+			if err := verifiedInRelease(ctx, st, rq.RepoRef().ID, rp.dir, v.sum); err != nil {
+				return err
+			}
+		}
 		return writeDoc(rq, w, v, body, "text/plain; charset=utf-8")
 	}
 	relV, relBody, err := f.metadata(ctx, rq, st, rp.dir, joinDir(rp.dir, FileRelease))
@@ -176,6 +181,24 @@ func (f *Format) serveRelease(ctx context.Context, rq *formats.Request, w http.R
 		return writeDoc(rq, w, sigV, sigBody, "application/pgp-signature")
 	}
 	return writeDoc(rq, w, relV, relBody, "text/plain; charset=utf-8")
+}
+
+// verifiedInRelease fails closed for an InRelease no key of the remote verifies (R-DEB-020): the copy the engine served is answered only
+// while the stored record of those same bytes carries a verifying fingerprint. A key change clears it, and the copy the engine still
+// holds (fresh, or served stale after a refused refresh) answers 502 deb_upstream_signature_invalid until a release verifies again, as
+// every other file of the directory does.
+func verifiedInRelease(ctx context.Context, st RemoteStore, repoID int64, dir string, sum [32]byte) error {
+	have, err := st.Releases(ctx, repoID, []string{dir})
+	if err != nil {
+		return err
+	}
+	for _, r := range have {
+		if r.Document == rows.DocInRelease && r.SHA256 == sum && r.VerifiedBy != "" {
+			return nil
+		}
+	}
+	return errs.E(errs.UpstreamFailed, errs.CodeDebUpstreamSignatureInvalid,
+		"No key of deb.upstreamKeys verifies the stored release of this directory; nothing is served from it until a release does.")
 }
 
 // absentOnMissing answers the 404 of a release document and, where the upstream has neither InRelease nor Release for a dists/

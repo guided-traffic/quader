@@ -67,8 +67,8 @@ far-future date from freezing the remote. Integration tests: `TestR_DEB_020_ARep
   the operator adds the certificate; nothing else changes.
 - **Removing a key.** The update clears `verified_by` of every release the removed key verified, in its own transaction, and enqueues
   the remote's `deb-index` job. The job verifies those releases again from the stored bytes (the cache view; no request to the upstream)
-  against the new set. A release no key of the new set verifies stays unverified: the files of its directory answer 502
-  `deb_upstream_signature_invalid` until a release verifies, its next revalidation is sent without validators, and an upstream 304 can
+  against the new set. A release no key of the new set verifies stays unverified: the files of its directory, `InRelease`, `Release` and
+  `Release.gpg` among them, answer 502 `deb_upstream_signature_invalid` until a release verifies, its next revalidation is sent without validators, and an upstream 304 can
   never mark it verified. A fetch that began before the removal and is stored after it is checked again against the set its
   transaction reads under a share lock of the repository's row, and the job records a re-verification only while its signer is in the
   set: a removed key never vouches for a release recorded after its removal
