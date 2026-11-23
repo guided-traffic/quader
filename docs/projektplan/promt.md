@@ -5379,6 +5379,22 @@ verdict "covered by check 13" was wrong for five tests; a deletion can need an e
 (the query budget's criterion named NuGet's virtual routes); the evidence tool reads requirement
 identifiers from the whole test name, subtests included, and a skipped test proves nothing. Loose ends it
 saw are in section 8.
+**In work since 05:15: the planner of the installation's cost** (the kit move's tenth package, one
+installation per area and class), started now that the first package has landed and its saving is
+measured. It is told to measure the cost of a test's own installation, which the first plan had inferred
+(one or two small areas, once, through the script); to weigh the shared installation against making the
+installation itself cheap without touching a test (a migrated template database that a test clones, a
+wait in the start that is longer than it must be) and against both, and to say so plainly if the cheap
+installation alone takes most of the cost, since the decision of 02:29 stood on an inferred number; to
+sort the areas' remaining tests by whether they can share an installation; and to order its packages
+against the kit move's second to ninth, which delete tests from the same files. A planner does not count
+against the four builders.
+**The timer's check at 05:14:** the release of the 05:01 push is out and the plan's commits went with it;
+the run of that push has no failed job (the four integration shards, the layout checks and four
+end-to-end legs run); the three builders (the handover's third package, the encryption's fourth and
+sixth) each changed files within the last quarter of an hour; the landing's gates of the handover's
+second package stand at seventeen of seventeen exit 0 before the lint and the integration areas. No
+builder is started beside the gates.
 **Package 3 of the encryption, the store and the sessions, reported at 02:36** (one commit of the type `feat`
 on the stack of four; its builder worked from 23:10; every gate exit 0, seventeen integration areas, but the
 `proxy` area, whose test of the fetch slots met a migration's timeout at a load of 35 to 76 and passes alone
