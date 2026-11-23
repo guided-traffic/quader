@@ -619,6 +619,14 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
+- **Seen by the builder of the kit move's first package on 2026-11-23 and left for the batch:** the rule
+  that a removal is refused whole when one of its files may not be deleted has no unit test (two integration
+  tests of npm and NuGet hold it); the headers of the first answer of a cache miss have no test at the
+  engine, NuGet's integration test alone catches the recorded defect; NuGet's and Ansible Galaxy's data
+  ports write the audit detail of an undetermined shadowing check and no test asserts it; the token API's
+  refusal of an upper-case path pattern is tested only through NuGet's integration test; the committed
+  evidence record holds no requirement of Ansible Galaxy at all although the checklist knows them (not
+  looked into); the query budget's environment still creates a virtual NuGet repository no case asks.
 - **The remote engine's test of the fetch slots failed once under load (2026-11-23, in a builder's run at a
   load of 35 to 76):** `TestFetchSlots` in the area `proxy` met a migration's timeout and a window of 2 s; alone
   at a load of 5 it passes in 10 s. **The lint's limit of ten minutes is tight with a cold cache beside
@@ -2323,6 +2331,42 @@ runs are in `git log`; this section holds the current state.
   two parts, one integration case with a plain connection and the query budget's case; migration 00110. An
   encrypted copy is not handed over by it. Builders with a test load: the encryption's package 3, the kit
   move's package 1, the repair of the four tests, the handover's package 2, and the landing's gates.
+  **Reported at 05:05** (one commit of the type `feat`; its builder worked from 03:25; every gate exit 0 at
+  the end, the lint over the whole repository on its final tree, the full unit run, the chart's tests and
+  twelve integration areas among them, ten through the new script). **Built:** the switch per
+  registration (migration 00110 with a change area of its own; `GET` shows it, `PATCH` takes it, `POST`
+  refuses it; the switch-off is journaled and replayed, the switch-on runs the connections' link checks
+  again), every replica's snapshot of the registrations whose switch is on, the recognition of the offer
+  (its header is taken off every request, recognized or not), the marking written in one place, and the
+  serve point's steps for a plain copy: the offer and the switch, an artifact, the content and the gates
+  on a decided state, the size, the admission, the copy, the credential and the signature, the issue. An
+  encrypted copy is passed over and streamed. A handover is counted like a link: the charge, one served
+  event with `delivery: handover`, the request log and two metrics. **The query budget holds: a
+  handed-over OCI blob costs one statement.** **A defect found and closed in passing:** a `null` for
+  `enabled` in a registration's `PATCH` was read as `false` and disabled the registration; a `null` of
+  either member now changes nothing. Decisions Q-BAS-285 (only the switch-off is in the classification of
+  the events without a feed entry, since the switch-on is not journaled) and Q-STOR-430 (the label
+  `bastion` joins the allowed labels of a metric: a registration's name, bounded by the registrations'
+  limit). No new gap. Fourteen conditions were each taken out once and a named test caught each; the
+  marking's own check of the offer was missed by the first pass and got a case of a forged recognition.
+  Its cost: the unit job about 0.9 s, the shards with `bastion` about 2 s, with `bastionreg` about 1 s, with
+  the query budget about 11.5 s; nothing in an end-to-end leg and nothing that grows with the number of
+  formats. **Not verified by it:** a real object store and the ingress's limit of a response header's
+  size; the web's lint and tests, since its worktree has no modules (it edited the web's generated client
+  of the API by hand and added two labels of audit events with their units). **Moved onto `main` by the
+  development agent at 05:08** (one conflict in the specification's decision blocks, both sides kept; the
+  web's client generated again is the builder's hand edit to the byte; the translation source extracted
+  again into the commit, location notes only), **and in the landing's gates since 05:08:** the full set
+  with the unit run and the lint, since the encryption's third package came under it, and ten
+  integration areas through the script (`bastion`, `bastionreg`, `bastioniface`, the query budget,
+  `files`, `blob`, `api`, `audit`, `postgres` and the change areas' test of `coordination`). Not rendered:
+  the two labels are two more lines of the audit filter's list. It is pushed after the run of the push
+  before it has finished its integration shards. **For the packages after it** (in the handover's
+  developer page under "What package 2 left"): only the class `handover` is a handover, and an answer to
+  an offer can still be the bytes; a fallback forward is counted again (H-1342); package 4 turns the
+  pass over encrypted copies into a second pass and writes the trace before the marking is noted;
+  package 5's screen of the Bastions needs the test link for encrypted connections too, which the
+  storage settings page offers for plain ones only.
 - **The repair of the four tests reported at 03:55** (one commit of the type `test`; its builder worked from
   03:16; every gate exit 0, the two integration areas among them). None of the four causes was the
   product's, and each repaired test fails when the product's behaviour is taken away. (1) The key
@@ -5316,6 +5360,25 @@ every test and its cover before it goes, since the plan was written from the tes
 asserts more than its cover, and to leave every requirement's evidence with a test that stays. Builders
 with a test load: the encryption's package 3, the links' package 3, the handover's package 1, the kit
 move's package 1, and the landing's gates.
+**The kit move's first package reported at 04:53** (one commit of the type `test`; its builder worked from
+02:32, most of an hour of it at the one lock; every gate exit 0, thirteen integration areas each once after
+the change). Twenty-one tests and four subtests go, one test is shortened, one unit test over every format
+is added (a raw deploy into a format's repository is refused), and the Debian test of an absent suite
+takes 4 s instead of 64 s with a repository of its own whose absent period is 2 s. **Measured on the
+machine: about 151 s less a push** (the plan had 81 s and 58 s for that test), by the shards 50, 31, 63 and
+8 s. **Six tests the plan had marked stay, because each holds the only evidence of something:** the check of
+a path with a package that does not match it, the refusal of a whole removal when one file may not be
+deleted, NuGet's rendition cache keyed by the hidden versions, the token API's refusal of an upper-case
+path pattern, the headers of the first answer of a miss (a recorded defect of NuGet's), and npm's audit
+detail of an undetermined shadowing check; one test is kept in part (the fills with Valkey stopped) and one
+for its requirement's evidence. No requirement lost its last test; the evidence's record is unchanged.
+**What it found about the plan, for the packages after it:** the kit's thirteenth check judges only the
+targets a format hands over (not that every written or removed file was asked, not merged documents of a
+virtual repository, not upload sessions, and it empties the rendition cache before each run), so the plan's
+verdict "covered by check 13" was wrong for five tests; a deletion can need an edit of the specification
+(the query budget's criterion named NuGet's virtual routes); the evidence tool reads requirement
+identifiers from the whole test name, subtests included, and a skipped test proves nothing. Loose ends it
+saw are in section 8.
 **Package 3 of the encryption, the store and the sessions, reported at 02:36** (one commit of the type `feat`
 on the stack of four; its builder worked from 23:10; every gate exit 0, seventeen integration areas, but the
 `proxy` area, whose test of the fetch slots met a migration's timeout at a load of 35 to 76 and passes alone
@@ -5356,7 +5419,25 @@ the development agent at 04:28 without a conflict** (over the handover's wire an
 build, the vet of the integration code, the generated code, the evidence and the links through, **and in
 the landing's gates since 04:29** in the lighter form, with the areas `uploads`, the query budget, `blob`,
 `files` and `backup`. It is pushed after the run of the push before it has finished its integration
-shards.
+shards. **Landed on 2026-11-23 at 05:01, in one push of three commits: the encryption's third package, the
+several integration stacks, and the kit move's first package.** The encryption's landing gates ran from
+04:29 to 04:52, twenty of them, each exit 0; the other two came on top without a conflict, and the build,
+the vet of the integration code, the touched unit tests, the workflows' check, the evidence with its count
+test and the links were checked on the three together, and the query budget's area ran on the three
+through the new script (211 s, exit 0). The run of the push before had every integration shard and
+end-to-end leg green and its layout checks still running when this push ended it. **The binary accepts
+`encrypted: true` from this release; the chart refuses it until package 6,** and until package 4 an encrypted
+copy is not scrubbed, repaired or backed up (H-1410). The first instance's env file was written again under
+its lock at 04:54 and carries the new variables; its containers ran through. The scripts that stood
+provisionally in the main checkout's working tree were taken out and came back with the merge in the same
+second. The three builders' worktrees and branches are removed. His UI's backend is started again on this
+state (ready at 05:02). Released at 05:13; the plan's commits of the minutes between waited for it.
+**In work since 05:03: package 6 of the encryption,** the offline tool (the objects of an encrypted
+connection read with an export of the keys and the key ring, without a database), the chart's acceptance
+of an encrypted connection with its refusals and the alert of an unknown key, what is left of the API, and
+every document an operator reads before switching encryption on. It lands after package 4, since the
+chart's acceptance makes an encrypted connection reachable and the jobs and the backup must handle one by
+then. Builders with a test load: the handover's packages 2 and 3, the encryption's packages 4 and 6.
 **In work since 04:29, on its commit: package 4 of the encryption, the jobs, the backup and the restore:**
 the reconciliation's four cases with a new data key between two encrypted connections, the scrub and the
 sweep reading the format, the backup that keeps an encrypted copy as stored under its key's name with the
