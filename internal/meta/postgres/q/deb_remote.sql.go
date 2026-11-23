@@ -970,6 +970,23 @@ func (q *Queries) DebRemoteUpsertRelease(ctx context.Context, arg DebRemoteUpser
 	return err
 }
 
+const debRemoteUpstreamKeysShared = `-- name: DebRemoteUpstreamKeysShared :one
+SELECT COALESCE(config -> 'deb' ->> 'upstreamKeys', '')::text AS upstream_keys
+  FROM repositories
+ WHERE id = $1::bigint
+   FOR SHARE
+`
+
+// deb.upstreamKeys of a remote repository under a share lock of its row (R-DEB-020, Q-DEB-133): a fill or a re-verification that is
+// about to record a verification waits for a change of the keys that is not committed yet and reads the keys it committed; a change
+// that starts later waits for the record and clears what it recorded.
+func (q *Queries) DebRemoteUpstreamKeysShared(ctx context.Context, repoID int64) (string, error) {
+	row := q.db.QueryRow(ctx, debRemoteUpstreamKeysShared, repoID)
+	var upstream_keys string
+	err := row.Scan(&upstream_keys)
+	return upstream_keys, err
+}
+
 const debRemoteVerify = `-- name: DebRemoteVerify :execrows
 UPDATE deb_remote_releases SET verified_by = $1::text
  WHERE repo_id = $2::bigint AND dir = $3::text AND document = $4::text

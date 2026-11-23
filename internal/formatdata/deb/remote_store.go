@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 // remoteStore is the group of the data port that holds the release documents, the files they list and the parsed index rows of the
@@ -199,6 +200,10 @@ func (s remoteStore) RecordAbsent(ctx context.Context, repoID int64, dir string)
 // RecordVerified records a release a signature verified after it was stored: the Release of a Release and Release.gpg pair, which is
 // verified when it is served (R-DEB-019), and a release a key change left unverified, which the remote's job verifies again from
 // its stored bytes (R-DEB-020, Q-DEB-42). It applies the rules of RecordRelease in a transaction of its own.
+//
+// The verification was made against keys read before this transaction; a change of the keys can have committed since (Q-DEB-133). The
+// keys are read again here under a share lock of the repository's row, and a signer that is no longer one of them is not recorded: the
+// decision says nothing was stored, and the release stays unverified for the job the change enqueued.
 func (s remoteStore) RecordVerified(ctx context.Context, in rows.ReleaseRecord) (rows.ReleaseDecision, error) {
 	var dec rows.ReleaseDecision
 	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
@@ -206,10 +211,45 @@ func (s remoteStore) RecordVerified(ctx context.Context, in rows.ReleaseRecord) 
 		if err != nil {
 			return err
 		}
+		keys, err := qs.DebRemoteUpstreamKeysShared(ctx, in.RepoID)
+		if err != nil {
+			return err
+		}
+		if !signerIsCurrent(keys, in.VerifiedBy) {
+			return nil
+		}
 		dec, err = s.record(ctx, tx, qs, in)
 		return err
 	})
 	return dec, err
+}
+
+// UpstreamKeys reads deb.upstreamKeys of a remote repository under a share lock of its row, in the caller's transaction (R-DEB-020,
+// Q-DEB-133): a change of the keys that has not committed is waited for, and one that starts later waits for the caller's commit.
+func (s remoteStore) UpstreamKeys(ctx context.Context, tx meta.Tx, repoID int64) (string, error) {
+	var keys string
+	err := s.g().read(ctx, tx, func(qs *q.Queries) (err error) {
+		keys, err = qs.DebRemoteUpstreamKeysShared(ctx, repoID)
+		return err
+	})
+	return strings.TrimSpace(keys), err
+}
+
+// signerIsCurrent reports whether a recorded verification still holds under a set of upstream keys: a release recorded without a signer
+// always does, one with a signer only while the signer's certificate is in the set (Q-DEB-133).
+func signerIsCurrent(keys, signer string) bool {
+	if signer == "" {
+		return true
+	}
+	keys = strings.TrimSpace(keys)
+	if keys == "" {
+		return false
+	}
+	certs, err := openpgp.ParseStoredCertificates([]byte(keys), openpgp.Limits{})
+	if err != nil {
+		return false
+	}
+	return slices.ContainsFunc(certs, func(c openpgp.Certificate) bool { return strings.EqualFold(c.Fingerprint, signer) })
 }
 
 // Release reads the stored release document that names a directory's index files: the InRelease when the upstream has one, else the

@@ -204,6 +204,36 @@ func TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidato
 	if v := e.verifiedBy("kc-single"); v != e.fingerprint("b") {
 		t.Errorf("verified_by = %q, want the fingerprint of b", v)
 	}
+
+	// Q-DEB-133: a fetch that began under [a] and is stored after the change to [b] committed is checked against [b]. The stub holds
+	// the release's answer for two seconds; the change is made while it is open. The fill refuses what only a signed, and records
+	// nothing: no removed key vouches for a release fetched across its removal.
+	t.Run("a fetch that spans the change", func(t *testing.T) {
+		keepA, _ := e.stub.Keyring("a")
+		e.createRemote("kc-inflight", string(keepA), 300)
+		if err := e.stub.SetMode(debstub.Mode{DelayMS: map[string]int{debstub.ClassRelease: 2000}}); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = e.stub.SetMode(debstub.Mode{}) })
+		e.stub.Reset()
+		answer := make(chan testenv.Answer, 1)
+		go func() { answer <- e.get("kc-inflight", suitePath+"InRelease") }()
+		testenv.WaitFor(t, "the release request to reach the stub", 30*time.Second, func() bool { return e.stub.Inflight().Open > 0 })
+		if st, raw := e.setKeys("kc-inflight", string(keepB)); st != http.StatusOK {
+			t.Fatalf("%d %s", st, raw)
+		}
+		if open := e.stub.Inflight().Open; open == 0 {
+			t.Fatal("the change of the keys answered after the stub had answered the release: the fetch did not span the change")
+		}
+		a := <-answer
+		if a.Status != http.StatusBadGateway || !strings.Contains(string(a.Body), "deb_upstream_signature_invalid") {
+			t.Errorf("the release fetched across the change = %d %s, want 502 deb_upstream_signature_invalid", a.Status, a.Body)
+		}
+		if n := e.st.Number(`SELECT count(*) FROM deb_remote_releases WHERE repo_id = $1 AND verified_by IS NOT NULL AND verified_by <> ''`,
+			e.repoID("kc-inflight")); n != 0 {
+			t.Errorf("%d releases recorded as verified by a key the change removed", n)
+		}
+	})
 }
 
 // The replay of the journaled removal takes the fingerprints out of the restored document again, and fails closed for a remote that

@@ -355,7 +355,9 @@ of `deb-index-refresh` enqueues it. The runtime is `RemoteJobs`; the composition
 **Repository rules** ([validate_deb.go](../../internal/repository/validate_deb.go), [members.go](../../internal/repository/members.go),
 [journal_replay.go](../../internal/repository/journal_replay.go), [keys_hooks.go](../../internal/repository/keys_hooks.go), [narrowed.go](../../internal/repository/narrowed.go)):
 keys are checked on save and their fingerprints derived; a mirror needs keys; a remote without keys cannot be a member and a member keeps its keys;
-an update that removes fingerprints runs the keys-removed hook (the data port clears `verified_by` and enqueues the re-verification) and journals
+an update that removes fingerprints runs the keys-removed hook (the data port clears `verified_by` and enqueues the re-verification); a fill
+and a re-verification record a release under the keys their transaction reads with `UpstreamKeys` (a share lock of the repository's row), so
+one that spans the change is checked again (`checkRelease` in `OnFill`, Q-DEB-133); the update journals
 `debUpstreamKeysRemoved` in `repository.narrowed`; the replay is step 8 and disables a mirror or member left without keys.
 
 **Dispatcher.** `deb <URL> ./` requests `<URL>/./InRelease`; the router has no redirect for it (`HandleUncleaned`), the dispatcher cleans the path after

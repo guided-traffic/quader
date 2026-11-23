@@ -69,8 +69,12 @@ far-future date from freezing the remote. Integration tests: `TestR_DEB_020_ARep
   the remote's `deb-index` job. The job verifies those releases again from the stored bytes (the cache view; no request to the upstream)
   against the new set. A release no key of the new set verifies stays unverified: the files of its directory answer 502
   `deb_upstream_signature_invalid` until a release verifies, its next revalidation is sent without validators, and an upstream 304 can
-  never mark it verified. Integration tests: `TestR_DEB_020_AReleaseAnotherKeyAlsoVerifiesIsVerifiedAgainByTheJobWithoutARequest`,
-  `TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidators`.
+  never mark it verified. A fetch that began before the removal and is stored after it is checked again against the set its
+  transaction reads under a share lock of the repository's row, and the job records a re-verification only while its signer is in the
+  set: a removed key never vouches for a release recorded after its removal
+  ([Q-DEB-133](../spec/formats/debian.md#q-deb-133--a-release-is-recorded-under-the-keys-its-recording-transaction-reads)). Integration
+  tests: `TestR_DEB_020_AReleaseAnotherKeyAlsoVerifiesIsVerifiedAgainByTheJobWithoutARequest`,
+  `TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidators` (with the step "a fetch that spans the change").
 - **Without keys** the release documents are stored unverified and the client verifies them
   ([H-623](../spec/formats/debian.md#h-623--a-pull-through-remote-without-upstream-keys-stores-what-its-upstream-sends)). Such a repository
   cannot be a mirror (422 `deb_upstream_keys_required`) or a member of a virtual repository (422 `deb_member_unverified`, also when an

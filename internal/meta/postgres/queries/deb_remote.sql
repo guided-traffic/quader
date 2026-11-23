@@ -28,6 +28,15 @@ SELECT dir, document, COALESCE(sha256, ''::bytea)::bytea AS sha256,
 -- Serializes the writers of one release directory: two fills of its release documents, or a fill and a re-verification.
 SELECT pg_advisory_xact_lock(hashtextextended('deb_remote_dir:' || sqlc.arg(repo_id)::bigint::text || ':' || sqlc.arg(dir)::text, 0));
 
+-- name: DebRemoteUpstreamKeysShared :one
+-- deb.upstreamKeys of a remote repository under a share lock of its row (R-DEB-020, Q-DEB-133): a fill or a re-verification that is
+-- about to record a verification waits for a change of the keys that is not committed yet and reads the keys it committed; a change
+-- that starts later waits for the record and clears what it recorded.
+SELECT COALESCE(config -> 'deb' ->> 'upstreamKeys', '')::text AS upstream_keys
+  FROM repositories
+ WHERE id = sqlc.arg(repo_id)::bigint
+   FOR SHARE;
+
 -- name: DebRemoteFloor :one
 -- The newest Date of any release verified for the directory (Q-DEB-42), the epoch when none was.
 SELECT to_char(COALESCE(max(floor_date), 'epoch'::timestamptz) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')::text AS floor_date, (max(floor_date) IS NOT NULL)::boolean AS has_floor

@@ -19,8 +19,12 @@ type RemoteStore interface {
 	// RecordAbsent records that the upstream has no such suite, in a transaction of its own (Q-DEB-41).
 	RecordAbsent(ctx context.Context, repoID int64, dir string) error
 	// RecordVerified records a release a signature verified after it was stored (a Release with its Release.gpg, a release a key
-	// change left unverified), in a transaction of its own and by the rules of RecordRelease.
+	// change left unverified), in a transaction of its own and by the rules of RecordRelease. A signer that is no key of the
+	// repository's set when the transaction reads it is not recorded (Q-DEB-133).
 	RecordVerified(ctx context.Context, in rows.ReleaseRecord) (rows.ReleaseDecision, error)
+	// UpstreamKeys reads deb.upstreamKeys of a remote repository in the fill's transaction, under a share lock of the repository's
+	// row: the keys a release is recorded under, whatever keys its fetch began with (R-DEB-020, Q-DEB-133).
+	UpstreamKeys(ctx context.Context, tx formats.Tx, repoID int64) (string, error)
 	// Release reads the stored release document that names a directory's index files; found is false when there is none.
 	Release(ctx context.Context, repoID int64, dir string) (r rows.Release, found bool, err error)
 	// Releases reads every stored document of the directories, 'absent' records included.

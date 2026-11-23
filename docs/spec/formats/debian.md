@@ -969,7 +969,12 @@ Priority: **P2** · Covers: PKG-DEB-021
   and records the verifying fingerprint where one verifies. A release no key of the new set verifies counts as expired, and its next revalidation is sent **without validators**
   (no `If-None-Match`, no `If-Modified-Since`: a HEAD whose answer says "moved", then the GET, Q-DEB-81), so the upstream answers
   with a body that `PrepareFill` verifies; an upstream 304 never marks a release verified. Nothing uses a release while its
-  `verified_by` is cleared and keys are set: a request for a file of its directory answers 502 `deb_upstream_signature_invalid`. The removal of fingerprints is journaled as a part of
+  `verified_by` is cleared and keys are set: a request for a file of its directory answers 502 `deb_upstream_signature_invalid`.
+  A release whose fetch or re-verification began under the old set and is recorded after the change committed is recorded under the
+  set the recording transaction reads, under a share lock of the repository's row: the fill checks it again against that set when it
+  differs, and refuses it as above when no key of it verifies; a re-verification whose signer left the set records nothing
+  ([Q-DEB-133](#q-deb-133--a-release-is-recorded-under-the-keys-its-recording-transaction-reads)). A removed key never vouches for a
+  release recorded after its removal. The removal of fingerprints is journaled as a part of
   `repository.narrowed` (`debUpstreamKeysRemoved`, R-REPO-061, Q-REPO-274), so a restore removes them again (R-DEB-032).
 - **Without keys** release documents are stored unverified and clients verify with their own keyrings (the bytes are the
   upstream's, R-DEB-019; [H-623](#h-623--a-pull-through-remote-without-upstream-keys-stores-what-its-upstream-sends)). Such a remote cannot be a mirror (422 `deb_upstream_keys_required` at `/deb/upstreamKeys` for
@@ -993,7 +998,8 @@ Acceptance criteria:
   Removing A from [A, B] while the stored release was verified by A and is also signed by B: the job re-verifies it from the stored
   bytes with B and the stub records no request; when it is signed by A alone, it stays unverified, the next request revalidates
   without validators and verifies the stub's newly signed release with B, and an upstream answer of 304 to a conditional request
-  would not have marked it verified. The journal holds `repository.narrowed` with `debUpstreamKeysRemoved`.
+  would not have marked it verified. The journal holds `repository.narrowed` with `debUpstreamKeysRemoved`. A fetch of the release
+  signed by A alone that the stub holds open while `upstreamKeys` changes from [A] to [B] answers 502 and records nothing.
 - With `floor_date` set by a verified release, the stub serving an older release signed by a key that stays in the set leaves the
   stored release served (or the directory failing closed while the stored one is unverified) and counts a rollback.
 - Debian 13's archive keyring (9 certificates, 75,839 bytes) is accepted as `upstreamKeys`.
@@ -3733,7 +3739,7 @@ Context: `TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged` failed in Test 
 | (b) Wait for the build job of the virtual repository that started after the change to end, then assert the suite once (chosen) | `failedWith` takes the database clock at the change (`mark`) and waits for a `deb-index` job with the key `index:<id>` that started after it and ended; the assertion (state `failed`, reason prefix, generation unchanged, the last index still served) is the one of before and runs at once | A slow runner makes the test late and not red; a build that ends with another result fails at once with that result; the bound (5 minutes) is the hang of a job that never ends | Reads the job table of the stack, as other tests of the integration tier do |
 | (c) Call `rebuild()` and poll | Trigger the build by hand | Looks explicit | A second build next to the one the change enqueued; the change's own path, which the test is about, is not the one that runs |
 
-**Choice:** (b), in `failedWith` and `buildAfter` ([members_test.go](../../../test/integration/debvirtual/members_test.go)); the rollback test (`member_rollback`) uses the same helper.
+**Choice:** (b), in `failedWith` and `buildAfter` ([members_test.go](../../../test/integration/debvirtual/members_test.go)); the rollback test (`member_rollback`) uses the same helper. Revised by [Q-DEB-134](#q-deb-134--a-test-that-waits-for-the-build-a-change-enqueued-waits-for-every-build-enqueued-before-the-change-answered): a build that started between the mark and the change's commit was accepted.
 
 **Rationale:** The event is the end of the job; the state the test asserts is its result. The development agent would revisit the choice if the job's retries (a failed attempt returns it to the queue) were to make a build that failed for another reason look unfinished: the 5-minute bound would then report the hang.
 
@@ -3804,6 +3810,68 @@ path is the probe of the member that serves it, and by the member path of the me
 probe of that member ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367): `handleVirtualPool` and `handleMember` in
 [handlers_virtual.go](../../../internal/formats/deb/handlers_virtual.go). Tests: `TestR_REPO_065_WhatAProbeOfAnAPTArchiveIs`,
 `TestQ_REPO_367_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository` in [probe_test.go](../../../internal/formats/deb/probe_test.go).
+
+### Q-DEB-133 · A release is recorded under the keys its recording transaction reads
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged` failed three times (Test and Release 44632375471 and 44715970992
+on 2026-11-20, 45140417183 on 2026-11-23): after the change of the member's keys from [A] to [B] the virtual repository's build
+merged the member's release and left the suite `current`. The logs of the second and third run show a fetch of the member's
+`InRelease` answered 200 and stored within milliseconds of the change (next to the re-verification the change enqueued), and the
+build's request for it was conditional and answered 304, and a conditional request is sent only for a copy that counts as verified. Reproduced on the old code, deterministically: the stub held the answer of `InRelease` for two
+seconds, the keys changed while it was open, and the fill stored the release signed by A alone with `verified_by` A and answered the
+client 200. The cause: `PrepareFill` verifies against the keys of the repository as the request read them when it began, and `OnFill`
+recorded that signer in a transaction that committed after the change had cleared `verified_by`. The remote's re-verification job
+(`RecordVerified`) had the same window between reading the keys and recording.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The recording transaction reads `deb.upstreamKeys` under a share lock of the repository's row; the fill checks the document again when they differ from the keys it was checked against, and a re-verification records nothing when its signer left the set (chosen) | The record follows the committed keys | A change that has not committed is waited for, one that starts later waits for the record and clears it; a release co-signed by a key that stays is recorded with that key; no change to the engine | One more read of the repository's row per stored release document, and a share lock held for the rest of the fill's transaction |
+| (b) Clear `verified_by` again after the commit of the change | A second pass | Small | A fill that commits after the second pass is the same defect, later |
+| (c) Hold every fill of the repository while its keys change | A lock across the upstream request | Exact | Holds a lock across the network; a slow upstream stalls the change |
+
+**Choice:** (a), in `OnFill` ([remote.go](../../../internal/formats/deb/remote.go)) with `checkRelease`, the port's `UpstreamKeys` and
+`RecordVerified` ([remote_store.go](../../../internal/formatdata/deb/remote_store.go)), the statement `DebRemoteUpstreamKeysShared`.
+
+**Rationale:** trust is a property of the bytes and the key set that is committed when the trust is recorded, not of the set a request
+saw when it began. The order of the locks is the change's: the repository's row first, then the release rows, so the two cannot wait
+on each other. The development agent would revisit the share lock if fills of release documents became frequent enough for the
+activity flush's update of the same row to stall them.
+
+**Applied in the spec:** R-DEB-020. Tests: `TestR_DEB_020_AFillIsRecordedUnderTheKeysItsTransactionReads`
+([remote_keychange_test.go](../../../internal/formats/deb/remote_keychange_test.go), unit), `TestQ_DEB_133_ASignerHoldsWhileItsKeyIsInTheSet`
+([remote_store_keys_test.go](../../../internal/formatdata/deb/remote_store_keys_test.go), unit), the step "a fetch that spans the
+change" of `TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidators`
+([keys_test.go](../../../test/integration/debremote/keys_test.go), integration).
+
+### Q-DEB-134 · A test that waits for the build a change enqueued waits for every build enqueued before the change answered
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Revises
+the wait of [Q-DEB-111](#q-deb-111--a-test-that-waits-for-a-failed-virtual-build-waits-for-the-build-job-not-for-a-period).
+
+Context: the wait of Q-DEB-111 took the database clock before the change and accepted the first build that started after it and
+ended. A build that waited under the repository's key and started between that mark and the commit of the change read the state
+before the change; the wait accepted it while the change's own build still ran. Read in the code of the queue: a change enqueues the
+build in its transaction, as a new job or by moving the build that waits under the key to now (Q-ARCH-384), so the build that answers a
+change can be a job created before the change, and a mark on `created_at` alone misses it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Take the mark after the change answered and wait until no build of the repository created before it is queued or running (chosen) | Every build that could hold a state before the change has ended, the change's own last | Holds for a new job and a moved one; a failure prints every build with its times | Also waits for an unrelated build that was queued before the change |
+| (b) Wait for a build created after a mark taken before the change | The change's new job | Simple | Waits for ever when the change moved a waiting build |
+| (c) Keep the first build that started after the mark | Q-DEB-111 | — | Accepts a build that read the state before the change |
+
+**Choice:** (a), `buildsEnded` and `builds` in [members_test.go](../../../test/integration/debvirtual/members_test.go), used by
+`failedWith` for `member_unverified` and `member_rollback`. The waits for a new generation (`published` with a generation above one
+read before the change) are not of this kind: a build that read the state before the change finds its inputs unchanged and publishes no
+generation (Q-DEB-65).
+
+**Rationale:** the event is the end of every build that may still decide the state; the change's own is the last of them. The development
+agent would revisit the choice if a test's repository had a build queued with a long delay that the change does not move.
+
+**Applied in the spec:** none. Tests: `TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`,
+`TestR_DEB_025_AReleaseOlderThanTheRecordedDateIsNotMerged`.
 
 ## What this does not cover
 

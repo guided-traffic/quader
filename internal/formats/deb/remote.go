@@ -194,6 +194,10 @@ type releaseFill struct {
 	sum      [32]byte
 	signer   string
 	keysSet  bool
+	// keys are the upstream keys the document was checked against, and body its bytes: OnFill checks it again when the keys its
+	// transaction reads are others (Q-DEB-133).
+	keys string
+	body []byte
 }
 
 // invalidRelease is the 502 of a release document that is not what it must be (R-DEB-019).
@@ -218,11 +222,23 @@ func (remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, p 
 	if err != nil {
 		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "The fetched document cannot be read.", errs.WithCause(err))
 	}
-	keys := SettingsOf(rc.Settings).UpstreamKeys
-	var certs []openpgp.Certificate
+	rf, err := checkRelease(rp, doc, strings.TrimSpace(SettingsOf(rc.Settings).UpstreamKeys))
+	if err != nil {
+		return formats.Prepared{}, err
+	}
+	return formats.Prepared{Data: rf}, nil
+}
+
+// checkRelease reads a release document of a directory and, with keys, verifies it and checks its suite (R-DEB-019, R-DEB-020): the
+// check of PrepareFill, and of OnFill again when the keys changed while the document was fetched (Q-DEB-133).
+func checkRelease(rp remotePath, doc []byte, keys string) (*releaseFill, error) {
+	var (
+		certs []openpgp.Certificate
+		err   error
+	)
 	if keys != "" {
 		if certs, err = openpgp.ParseStoredCertificates([]byte(keys), openpgp.Limits{}); err != nil {
-			return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "The upstream keys of the repository do not read.", errs.WithCause(err))
+			return nil, errs.E(errs.Internal, errs.CodeInternal, "The upstream keys of the repository do not read.", errs.WithCause(err))
 		}
 	}
 	now := time.Now()
@@ -236,7 +252,7 @@ func (remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, p 
 		rel, err = release.Parse(doc)
 	}
 	if err != nil {
-		return formats.Prepared{}, releaseError(err, len(certs) > 0)
+		return nil, releaseError(err, len(certs) > 0)
 	}
 	if len(certs) > 0 {
 		suite := ""
@@ -244,10 +260,12 @@ func (remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, p 
 			suite = suiteOf(rp.dir)
 		}
 		if err := rel.CheckSuite(suite, now); err != nil {
-			return formats.Prepared{}, releaseError(err, false)
+			return nil, releaseError(err, false)
 		}
 	}
-	return formats.Prepared{Data: &releaseFill{rel: rel, dir: rp.dir, doc: rp.doc, sum: sha256.Sum256(doc), signer: signer, keysSet: len(certs) > 0}}, nil
+	return &releaseFill{
+		rel: rel, dir: rp.dir, doc: rp.doc, sum: sha256.Sum256(doc), signer: signer, keysSet: len(certs) > 0, keys: keys, body: doc,
+	}, nil
 }
 
 // signatureReason is the field error that carries the label of a failed verification to the handler, which counts it and writes the
@@ -303,6 +321,17 @@ func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.Fil
 		// The fill the entry keeps (a later fetch is stored already) records nothing (R-REPO-026).
 		if !ev.StoredAt.IsZero() && ev.StoredAt.After(ev.FetchedAt) {
 			return formats.FillByFetchTime, nil
+		}
+		// The document was checked against the keys its request began with; a change of the keys may have committed since. The
+		// keys this transaction reads, under a share lock of the repository's row, are the ones it is recorded under (Q-DEB-133).
+		keys, err := st.UpstreamKeys(ctx, tx, ev.Repo.ID)
+		if err != nil {
+			return formats.FillByFetchTime, err
+		}
+		if keys != rf.keys {
+			if rf, err = checkRelease(rp, rf.body, keys); err != nil {
+				return formats.FillByFetchTime, err
+			}
 		}
 		if rf.rel.Date.After(ev.FetchedAt.Add(openpgp.ClockSkew)) {
 			return formats.FillByFetchTime, invalidRelease("its Date lies more than 10 minutes after the time of the database.", nil)
