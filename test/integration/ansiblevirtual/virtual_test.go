@@ -127,22 +127,6 @@ func TestR_ANS_022_ACollectionOnlyTheRemoteMemberHoldsIsInstalledFromItAndItsArc
 	}
 }
 
-func TestR_ANS_022_AClaimKeepsTheRemoteMembersNameAwayFromTheMerge(t *testing.T) {
-	e := newEnv(t, options{claim: "acme.*"})
-	if a, _ := e.publish(rLocal, e.writer, spec("acme", "mine", "1.0.0")); a.Status != http.StatusAccepted {
-		t.Fatalf("publish: %d %s", a.Status, a.Body)
-	}
-	if _, a := e.versions(rVirtual, "acme", "base", e.reader); a.Status != http.StatusNotFound {
-		t.Errorf("the remote's acme.base is offered although acme.* is claimed for the local member: %d %s", a.Status, a.Body)
-	}
-	if list, a := e.versions(rVirtual, "acme", "mine", e.reader); a.Status != http.StatusOK || list.Meta.Count != 1 {
-		t.Errorf("the local acme.mine: %d %s", a.Status, a.Body)
-	}
-	if _, a := e.versions(rVirtual, "other", "stuff", e.reader); a.Status != http.StatusOK {
-		t.Errorf("other.stuff is outside the claim: %d %s", a.Status, a.Body)
-	}
-}
-
 func TestR_ANS_024_APublishThroughTheVirtualRepositoryIsStoredInTheTargetAndPolledThroughTheVirtualAddress(t *testing.T) {
 	e := newEnv(t, options{})
 	a, archive := e.publish(rVirtual, e.writer, spec("mine", "tools", "1.0.0"))
@@ -208,27 +192,6 @@ func TestR_ANS_024_AFirstPublishOfANameARemoteMemberServesIsRefusedWithoutManage
 	// A name no remote member serves needs no manage.
 	if a, _ := e.publish(rVirtual, e.plain, spec("mine", "fresh", "1.0.0")); a.Status != http.StatusAccepted {
 		t.Errorf("a new name: %d %s", a.Status, a.Body)
-	}
-}
-
-func TestR_ANS_023_ACallerWhoMayOnlyReadTheLocalMemberSeesItsVersionsAndNoErrorForTheRemoteOne(t *testing.T) {
-	e := newEnv(t, options{})
-	if a, _ := e.publish(rLocal, e.writer, spec("acme", "tools", "9.0.0")); a.Status != http.StatusAccepted {
-		t.Fatalf("publish: %d %s", a.Status, a.Body)
-	}
-	list, a := e.versions(rVirtual, "acme", "tools", e.narrow)
-	if a.Status != http.StatusOK || strings.Join(list.versions(), ",") != "9.0.0" {
-		t.Fatalf("%d %s", a.Status, a.Body)
-	}
-	if contains(a, rGalaxy) {
-		t.Errorf("a document names a member: %s", a.Body)
-	}
-	if _, a := e.versions(rVirtual, "other", "stuff", e.narrow); a.Status != http.StatusNotFound {
-		t.Errorf("a collection only the unreadable member holds: %d %s", a.Status, a.Body)
-	}
-	// The member path stays reachable by its own grants only.
-	if a := e.get(rGalaxy, "v3/collections/other/stuff/versions/", e.narrow); a.Status == http.StatusOK {
-		t.Errorf("the remote member answered a caller without a grant: %d", a.Status)
 	}
 }
 
@@ -322,50 +285,5 @@ func TestR_ANS_022_ARoleIdNamesItsMemberAndTheVersionsAndTheArchiveFollowIt(t *t
 		if a.Status != http.StatusNotFound || !contains(a, `"default"`) {
 			t.Errorf("%s: %d %s", bad, a.Status, a.Body)
 		}
-	}
-}
-
-func TestR_AUTHZ_005_AVersionTheCallersPathGrantHidesIsInNoDocumentOfTheVirtualRepository(t *testing.T) {
-	e := newEnv(t, options{})
-	for _, v := range []string{"8.0.0", "9.0.0"} {
-		if a, _ := e.publish(rLocal, e.writer, spec("acme", "tools", v)); a.Status != http.StatusAccepted {
-			t.Fatalf("publish %s: %d %s", v, a.Status, a.Body)
-		}
-	}
-	all, _ := e.versions(rVirtual, "acme", "tools", e.reader)
-	list, a := e.versions(rVirtual, "acme", "tools", e.pathed)
-	if a.Status != http.StatusOK {
-		t.Fatalf("%d %s", a.Status, a.Body)
-	}
-	if has(list.versions(), "9.0.0") || !has(list.versions(), "8.0.0") || list.Meta.Count != all.Meta.Count-2 {
-		t.Errorf("the list of the narrowed caller is %v (count %d); the reader's is %v (count %d)", list.versions(), list.Meta.Count, all.versions(), all.Meta.Count)
-	}
-	// A local version: no version document, no archive, and the collection document names the newest version the caller may read.
-	if a := e.get(rVirtual, "v3/collections/acme/tools/versions/9.0.0/", e.pathed); a.Status != http.StatusNotFound {
-		t.Errorf("the version document of a hidden version: %d %s", a.Status, a.Body)
-	}
-	if a := e.get(rVirtual, "v3/artifacts/collections/acme-tools-9.0.0.tar.gz", e.pathed); a.Status != http.StatusNotFound && a.Status != http.StatusForbidden {
-		t.Errorf("the archive of a hidden version: %d", a.Status)
-	}
-	if a := e.get(rVirtual, "v3/collections/acme/tools/versions/8.0.0/", e.pathed); a.Status != http.StatusOK {
-		t.Errorf("a version the caller may read: %d %s", a.Status, a.Body)
-	}
-	var c struct {
-		Highest struct{ Version string } `json:"highest_version"`
-	}
-	ca := e.get(rVirtual, "v3/collections/acme/tools/", e.pathed)
-	if ca.Status != http.StatusOK || json.Unmarshal(ca.Body, &c) != nil || c.Highest.Version == "9.0.0" {
-		t.Errorf("collection document of the narrowed caller: %d %s", ca.Status, ca.Body)
-	}
-	// A remote version is hidden the same way, in the list of the same collection.
-	if has(list.versions(), e.hiddenRemote) || list.Meta.Count != all.Meta.Count-2 {
-		t.Errorf("the remote version %s is in the narrowed caller's list %v", e.hiddenRemote, list.versions())
-	}
-	if a := e.get(rVirtual, "v3/collections/acme/tools/versions/"+e.hiddenRemote+"/", e.pathed); a.Status != http.StatusNotFound {
-		t.Errorf("the version document of a hidden remote version: %d", a.Status)
-	}
-	// The reader still sees everything: the merged document is shared and the view is the caller's.
-	if !has(all.versions(), "9.0.0") || !has(all.versions(), e.hiddenRemote) {
-		t.Errorf("the reader lost a version: %v", all.versions())
 	}
 }

@@ -201,38 +201,6 @@ func TestR_OCI_005_RemovingTheDeployGrantStopsThePush(t *testing.T) {
 	}
 }
 
-// R-OCI-006 / W3-5: the per-image decision on /v2/ is the handlers': a token whose scope grants read for the image names team/*
-// only reads those, with the quader token presented directly.
-func TestPathScopedGrantsAreDecidedPerImageOnV2(t *testing.T) {
-	e := newEnv(t, nil)
-	if a := e.push(bearer(e.admin), "web/docker-local/team/app", "1", newImage("a")); a.Code != http.StatusCreated {
-		t.Fatalf("%d %s", a.Code, a.Body.String())
-	}
-	if a := e.push(bearer(e.admin), "web/docker-local/other/app", "1", newImage("b")); a.Code != http.StatusCreated {
-		t.Fatalf("%d %s", a.Code, a.Body.String())
-	}
-	get := func(tok, name string) int {
-		return e.send("default", req{method: "GET", path: "/v2/web/docker-local/" + name + "/manifests/1", auth: bearer(tok), header: map[string]string{"Accept": manifestType}}).Code
-	}
-	if c := get(e.scoped, "team/app"); c != http.StatusOK {
-		t.Fatalf("an image the scope names: %d", c)
-	}
-	if c := get(e.scoped, "other/app"); c == http.StatusOK {
-		t.Fatalf("an image the scope does not name was served")
-	}
-	// The same through a registry token the scoped caller obtained for both images: the token service grants only what the
-	// decision point allows, and the handler decides again.
-	rgt := e.mint("default", "", e.scoped, registrytoken.Grant{Entries: []registrytoken.Entry{
-		{Repo: local, Name: "team/app", Actions: registrytoken.Pull}, {Repo: local, Name: "other/app", Actions: registrytoken.Pull},
-	}}, false)
-	if c := get(rgt, "team/app"); c != http.StatusOK {
-		t.Fatalf("registry token, image in scope: %d", c)
-	}
-	if c := get(rgt, "other/app"); c == http.StatusOK {
-		t.Fatalf("registry token, image out of scope was served")
-	}
-}
-
 // R-OCI-017 through /v2/_catalog: the names the caller may read, from the data port's manifests, in byte order and in pages.
 func TestR_OCI_017_TheCatalogListsWhatTheCallerMayRead(t *testing.T) {
 	e := newEnv(t, nil)

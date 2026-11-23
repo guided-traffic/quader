@@ -157,19 +157,20 @@ func TestR_DEB_019_ASuiteTheUpstreamDoesNotHaveIsRecordedAbsent(t *testing.T) {
 	if err := e.stub.SetMode(debstub.Mode{NotFound: []string{"testing"}}); err != nil {
 		t.Fatal(err)
 	}
-	if a := e.get(rPlain, "dists/testing/InRelease"); a.Status != http.StatusNotFound {
+	if a := e.get(rAbsent, "dists/testing/InRelease"); a.Status != http.StatusNotFound {
 		t.Fatalf("%d %s", a.Status, a.Body)
 	}
-	id := e.repoID(rPlain)
+	id := e.repoID(rAbsent)
 	if n := e.st.Number(`SELECT count(*) FROM deb_remote_releases WHERE repo_id = $1 AND dir = 'dists/testing' AND document = 'absent'`, id); n != 1 {
 		t.Fatalf("absent records = %d", n)
 	}
-	// A later successful fetch deletes the record.
+	// A later successful fetch deletes the record. It comes once the negative entry of the 404 has expired, after the not-found period of
+	// the repository (2 s here, so that the test does not wait out the 60 s of the others).
 	if err := e.stub.SetMode(debstub.Mode{}); err != nil {
 		t.Fatal(err)
 	}
-	eventually(t, 90*time.Second, "the negative entry to expire", func() bool {
-		return e.get(rPlain, "dists/testing/InRelease").Status == http.StatusOK
+	eventually(t, 20*time.Second, "the negative entry of 2 s to expire", func() bool {
+		return e.get(rAbsent, "dists/testing/InRelease").Status == http.StatusOK
 	})
 	if n := e.st.Number(`SELECT count(*) FROM deb_remote_releases WHERE repo_id = $1 AND dir = 'dists/testing' AND document = 'absent'`, id); n != 0 {
 		t.Errorf("the absent record stays: %d", n)

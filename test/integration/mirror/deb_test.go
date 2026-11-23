@@ -314,27 +314,6 @@ func TestR_DEB_024_ASecondPassIsQuietAndANewGenerationIsStored(t *testing.T) {
 	}
 }
 
-// R-DEB-024, R-REPO-052: with maxBytes below the mirrored size the pass ends bound_reached, and a package it did not store still
-// installs by pull-through.
-func TestR_DEB_024_TheByteBoundEndsThePassAndAPackageNotStoredIsPulledThrough(t *testing.T) {
-	r := newDebRig(t, debOptions{mirror: settings{"maxBytes": 1 << 20}})
-	// The packages of the stub are a few hundred bytes: a bound of 1 MiB is not reached, so the bound is set below the size of a package
-	// by making the stub's files large is not possible; the bound counts the stored bytes of the pass, which the test lowers directly.
-	r.st.Exec(`UPDATE repositories SET config = jsonb_set(config, '{remote,mirror,maxBytes}', '1') WHERE key = $1`, repoKey)
-	one, _, web := r.workers()
-	t0 := r.pass(one)
-	r.waitPass(t0, "full", "bound_reached", passWithin)
-	files := r.listed("stable", "main", "amd64")
-	if len(r.items("pool/")) >= len(files) {
-		t.Fatalf("the pass stored every file under a bound of one byte: %v", r.items("pool/"))
-	}
-	for _, f := range files {
-		if len(r.install(web, f)) == 0 {
-			t.Errorf("%s did not install by pull-through", f)
-		}
-	}
-}
-
 // R-DEB-024, Q-DEB-32: the stub signing with a key that is not in the set fails the pass's discovery and stores nothing new.
 func TestR_DEB_024_AReleaseSignedByAnUnknownKeyFailsTheDiscoveryAndStoresNothing(t *testing.T) {
 	r := newDebRig(t, debOptions{mode: debstub.Mode{SignWith: []string{"b"}}})

@@ -1109,3 +1109,26 @@ profile on an arm64 workstation (Docker Desktop, 20 CPUs), run alone twice in a 
 
 The planner's estimate was about 100 s, 60 of them the release [J in R-BAS-060]. Not measured: the seconds on a runner of the `large` class, where the release and
 the pulls may take longer than on the workstation; the first run of the leg in CI shows them.
+
+## 10. Cases removed after the measurement: the formats' repeated integration tests, first step (2026-11-23)
+
+The first step of moving what the formats' integration areas repeat into the format contract's kit removes the integration tests whose
+behaviour an existing kit check, a shared area or a unit test already shows once, and adds no kit check. Each test was read against its
+cover before it went; a test that asserted something more stayed. Measured once, locally on the developer workstation (20 CPUs, load 4 to
+43 while other work ran), [V] from `go test -json`: the removed tests on the commit before the change, each area whole after it.
+
+| Area (shard) | Removed or shortened | Seconds the removed part took [V] | The area after [V] |
+|---|---|---:|---:|
+| `npm` (a) | the raw delete through `/files/` (check 9, `TestR_NPM_017_RawDeleteOfATarballUnpublishesTheVersion`), the re-decision at commit (`internal/formathost`, `transfer`), the raw deploy (the unit test below) | 6.3 | 399.6 |
+| `nuget` (a) | the raw delete and the raw deploy, three engine tests of R-NUGET-015 (`proxy`, NuGet's unit tests of its validator), the planner's two (`virtual`), the auditor (`packages`); R-NUGET-031 keeps its leg with Valkey stopped, where up to three fills commit NuGet's rows at once | 37.3 | 199.2 |
+| `mirror` (a) | the byte bound of Debian and of OCI (`TestR_REPO_052_*` of the same area) | 5.9 | 247.1 |
+| `registry` (b) | the per-image decision of a scoped token, the tag hidden in the package API (check 13, `path_grants_test.go`) | 5.0 | 57.2 |
+| `files` (b) | the path of an OCI session start (`TestR_AUTHZ_005_EveryDecisionOfAnUploadRouteNamesAPathOfThePackage`) | 1.3 | 106.0 |
+| `querybudget` (b) | the two `.nupkg` routes of a virtual repository in the statement count, NuGet's two cases of the concurrent cold requests (npm's virtual routes hold the walk) | 24.9 | 194.1 |
+| `ociremote` (c) | the negative cache of a tag (`proxy/TestNegativeCache`) | 2.1 | 173.1 |
+| `debremote` (c) | `TestR_DEB_019_ASuiteTheUpstreamDoesNotHaveIsRecordedAbsent` waits for a not-found period of 2 s instead of 60 s (64.3 s before, 3.8 after) | 60.4 | 77.4 |
+| `ansiblevirtual` (d) | the claim and the planner (`virtual`, Ansible's unit tests), the version hidden by a path grant (Ansible's unit test, `internal/authz`); the environment no longer makes the two callers they used | 8.1 | 25.5 |
+
+Per shard: a 49.5 s, b 31.2 s, c 62.6 s, d 8.1 s, 151 s in all. Added: one unit test, `TestR_STOR_007_NoFormatWithAProtocolOfItsOwnTakesARawDeploy`
+(`internal/formats/all`, milliseconds, no data), which holds the refusal of a raw deploy for every registered format. Not measured: the same on a
+runner; the seconds every `ansiblevirtual` test saves by the smaller environment.

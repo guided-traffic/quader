@@ -3264,7 +3264,9 @@ Context: a session has no blob yet, but the host decides `deploy` on every call 
 **Rationale:** the property is R-AUTHZ-005's; the document path is the one path every name has. [Q-OCI-140](#q-oci-140--every-oci-decision-and-claim-names-a-path-classify-places-in-the-image-the-tags-list-and-the-catalog-on-the-tags-list-document-referrers-on-the-subject-a-push-on-the-tag-or-the-manifest) names the same path for the lists, the claim of a push and the registry token's grant, so one grant on a name's paths decides the session, the lists and the token alike. The development agent would revisit it if a grant on the blob directory alone should start sessions.
 
 **Applied in the spec:** [R-OCI-006](#r-oci-006--permissions-per-operation). Code: `sessions.decide` in [uploads.go](../../../internal/formathost/uploads.go), `startSession`. Tests:
-`TestR_AUTHZ_005_ASessionStartIsDecidedOnAPathOfThePackage` (an exclude and an include pattern, three replicas), `TestADecisionThatRefusesComesBeforeTheOwnershipQuestion`.
+`TestR_AUTHZ_005_EveryDecisionOfAnUploadRouteNamesAPathOfThePackage` (the session start's decision names the name's document path, which
+Classify places in the image; the decision point's matching of include and exclude patterns on that path is `internal/authz`'s),
+`TestADecisionThatRefusesComesBeforeTheOwnershipQuestion`.
 
 ### Q-OCI-120 · The digest a tag announces is checked by a reader around the response body
 

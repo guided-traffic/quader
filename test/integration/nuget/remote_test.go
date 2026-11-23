@@ -37,40 +37,6 @@ const (
 	abstract   = "contoso.core.abstractions"
 )
 
-func TestR_NUGET_015_AColdFillAsksTheUpstreamOnceAndTheNextRequestsNone(t *testing.T) {
-	e := newRemoteEnv(t, remoteOptions{})
-	rep := e.start(1)[0]
-
-	a := e.get(rep, rRemote, "v3/flatcontainer/Newtonsoft.Json/index.json")
-	if a.Status != 200 {
-		t.Fatalf("%d %s", a.Status, a.Body)
-	}
-	if got := versionsOf(t, a); strings.Join(got, ",") != "13.0.1,13.0.3" {
-		t.Errorf("versions = %v", got)
-	}
-	if a.Header.Get("Cache-Status") == "" {
-		t.Error("no Cache-Status on a document of a remote repository")
-	}
-	for range 3 {
-		if b := e.get(rep, rRemote, "v3/flatcontainer/newtonsoft.json/index.json"); b.Status != 200 {
-			t.Fatalf("%d %s", b.Status, b.Body)
-		}
-	}
-	// The service index is the discovery document: one request, shared by every document.
-	c := e.stub.Counts()
-	if got := c.VersionLists(newtonsoft); got != 1 {
-		t.Errorf("%d version list requests for four requests inside the period, want 1", got)
-	}
-	if got := c.Requests("GET", "/v3/index.json"); got != 1 {
-		t.Errorf("%d service index requests, want 1", got)
-	}
-	// The resources are spread over two hosts: the index on the API host, the list on the other.
-	hosts := c.Hosts()
-	if len(hosts) != 2 {
-		t.Errorf("the upstream saw the hosts %v, want two", hosts)
-	}
-}
-
 func TestR_NUGET_015_RegistrationsAreRenderedOnTheServingRepository(t *testing.T) {
 	e := newRemoteEnv(t, remoteOptions{})
 	rep := e.start(1)[0]
@@ -281,64 +247,6 @@ func TestR_NUGET_015_APackageIsCachedWithItsRowsAndServedWhenTheUpstreamIsDown(t
 	s := e.get(rep, rRemote, "v3/search?q=newtonsoft")
 	if s.Status != 200 || !strings.Contains(string(s.Body), `"totalHits":1`) {
 		t.Errorf("search: %d %.300s", s.Status, s.Body)
-	}
-}
-
-func TestR_NUGET_015_StaleMetadataIsServedWhenTheUpstreamIsDownAndRefreshesWhenItIsBack(t *testing.T) {
-	e := newRemoteEnv(t, remoteOptions{})
-	rep := e.start(1)[0]
-	if a := e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json"); a.Status != 200 {
-		t.Fatalf("%d %s", a.Status, a.Body)
-	}
-	if err := e.stub.SetMode(nugetstub.Mode{Down: nugetstub.DownUnavailable}); err != nil {
-		t.Fatal(err)
-	}
-	// After the period the document is stale, and the upstream cannot be asked.
-	eventually(t, 20*time.Second, "a stale document is served", func() bool {
-		a := e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json")
-		return a.Status == 200 && strings.Contains(a.Header.Get("Cache-Status"), "stale")
-	})
-	// The upstream is back with a new version: the list follows within one period.
-	if err := e.stub.SetMode(nugetstub.Mode{}); err != nil {
-		t.Fatal(err)
-	}
-	if err := e.stub.Publish(nugetstub.NewtonsoftID, "13.0.4", nil); err != nil {
-		t.Fatal(err)
-	}
-	eventually(t, 20*time.Second, "the new version is listed", func() bool {
-		a := e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json")
-		return a.Status == 200 && strings.Contains(string(a.Body), "13.0.4")
-	})
-	// The registration follows the same way, with the version in it.
-	eventually(t, 20*time.Second, "the registration lists the new version", func() bool {
-		a := e.get(rep, rFast, "v3/registration-semver2/newtonsoft.json/13.0.4.json")
-		return a.Status == 200
-	})
-}
-
-func TestR_NUGET_015_ARefreshOfAnUnchangedDocumentIsAConditionalRequest(t *testing.T) {
-	e := newRemoteEnv(t, remoteOptions{})
-	rep := e.start(1)[0]
-	first := e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json")
-	if first.Status != 200 {
-		t.Fatalf("%d", first.Status)
-	}
-	etag := first.Header.Get("ETag")
-	eventually(t, 20*time.Second, "a conditional refresh reached the upstream", func() bool {
-		e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json")
-		return e.stub.Counts().ConditionalRequests(newtonsoft) >= 1
-	})
-	// The refresh found the document unchanged: the validator of the rendering did not move.
-	again := e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json")
-	if again.Header.Get("ETag") != etag {
-		t.Errorf("ETag changed from %s to %s for an unchanged document", etag, again.Header.Get("ETag"))
-	}
-	if cond := e.get(rep, rFast, "v3/flatcontainer/newtonsoft.json/index.json", "If-None-Match", etag); cond.Status != 304 {
-		t.Errorf("conditional request: %d, want 304", cond.Status)
-	}
-	head := e.st.Do(rep, "HEAD", "/api/nuget/it/"+rFast+"/v3/flatcontainer/newtonsoft.json/index.json", e.tokReader, nil)
-	if head.Status != 200 || len(head.Body) != 0 || head.Header.Get("Content-Length") != fmt.Sprint(len(again.Body)) {
-		t.Errorf("HEAD: %d, %d bytes, Content-Length %q", head.Status, len(head.Body), head.Header.Get("Content-Length"))
 	}
 }
 
@@ -729,58 +637,56 @@ func TestR_NUGET_003_ANonASCIIIDOnARemoteIsServedAndCached(t *testing.T) {
 	}
 }
 
+// TestR_NUGET_031_FiftyConcurrentRestoresOverThreeReplicasCauseBoundedUpstreamRequests: fifty concurrent restores over three
+// replicas with Valkey stopped, so that each replica fetches under its own single flight and up to three fills of one package commit
+// NuGet's rows of origin cache at once: every restore succeeds, each resource reaches the upstream at most once per replica, and one
+// row is left. That the flight is one across the replicas while Valkey runs is the engine's, tested once in the area proxy
+// (TestCollapse, TestDiscoveryDocument for the service index).
 func TestR_NUGET_031_FiftyConcurrentRestoresOverThreeReplicasCauseBoundedUpstreamRequests(t *testing.T) {
-	for _, valkey := range []bool{true, false} {
-		name, limit := "Valkey stopped", 3
-		if valkey {
-			name, limit = "Valkey running", 1
-		}
-		t.Run(name, func(t *testing.T) {
-			e := newRemoteEnv(t, remoteOptions{Valkey: valkey})
-			reps := e.start(3)
-			// A slow upstream makes the requests overlap, as a cold cache does.
-			if err := e.stub.SetMode(nugetstub.Mode{DelayMS: map[string]int{nugetstub.ClassNupkg: 600, nugetstub.ClassFlat: 300, nugetstub.ClassRegistration: 300}}); err != nil {
-				t.Fatal(err)
+	const limit = 3 // one fetch per replica
+	e := newRemoteEnv(t, remoteOptions{})
+	reps := e.start(3)
+	// A slow upstream makes the requests overlap, as a cold cache does.
+	if err := e.stub.SetMode(nugetstub.Mode{DelayMS: map[string]int{nugetstub.ClassNupkg: 600, nugetstub.ClassFlat: 300, nugetstub.ClassRegistration: 300}}); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	failures := make(chan string, 150)
+	for i := range 50 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for _, p := range []string{
+				"v3/flatcontainer/contoso.core.abstractions/index.json",
+				"v3/registration-semver2/contoso.core.abstractions/index.json",
+				nupkgPath("Contoso.Core.Abstractions", "1.0.0"),
+			} {
+				if a := e.get(reps[i%3], rRemote, p); a.Status != 200 {
+					failures <- fmt.Sprintf("%s: %d %s", p, a.Status, a.Body)
+				}
 			}
-			var wg sync.WaitGroup
-			failures := make(chan string, 150)
-			for i := range 50 {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					for _, p := range []string{
-						"v3/flatcontainer/contoso.core.abstractions/index.json",
-						"v3/registration-semver2/contoso.core.abstractions/index.json",
-						nupkgPath("Contoso.Core.Abstractions", "1.0.0"),
-					} {
-						if a := e.get(reps[i%3], rRemote, p); a.Status != 200 {
-							failures <- fmt.Sprintf("%s: %d %s", p, a.Status, a.Body)
-						}
-					}
-				}()
-			}
-			wg.Wait()
-			close(failures)
-			for f := range failures {
-				t.Error(f)
-			}
-			c := e.stub.Counts()
-			if got := c.Nupkg(abstract, "1.0.0"); got < 1 || got > limit {
-				t.Errorf("%d package requests for 50 restores, want at most %d", got, limit)
-			}
-			if got := c.VersionLists(abstract); got < 1 || got > limit {
-				t.Errorf("%d version list requests, want at most %d", got, limit)
-			}
-			if got := c.Registrations(abstract); got < 1 || got > limit {
-				t.Errorf("%d registration requests, want at most %d", got, limit)
-			}
-			if got := c.Requests("GET", "/v3/index.json"); got < 1 || got > limit {
-				t.Errorf("%d service index requests, want at most %d", got, limit)
-			}
-			if got := e.cacheRows(rRemote, abstract); got != 1 {
-				t.Errorf("%d rows, want one however many requests", got)
-			}
-		})
+		}()
+	}
+	wg.Wait()
+	close(failures)
+	for f := range failures {
+		t.Error(f)
+	}
+	c := e.stub.Counts()
+	if got := c.Nupkg(abstract, "1.0.0"); got < 1 || got > limit {
+		t.Errorf("%d package requests for 50 restores, want at most %d", got, limit)
+	}
+	if got := c.VersionLists(abstract); got < 1 || got > limit {
+		t.Errorf("%d version list requests, want at most %d", got, limit)
+	}
+	if got := c.Registrations(abstract); got < 1 || got > limit {
+		t.Errorf("%d registration requests, want at most %d", got, limit)
+	}
+	if got := c.Requests("GET", "/v3/index.json"); got < 1 || got > limit {
+		t.Errorf("%d service index requests, want at most %d", got, limit)
+	}
+	if got := e.cacheRows(rRemote, abstract); got != 1 {
+		t.Errorf("%d rows, want one however many requests", got)
 	}
 }
 

@@ -298,33 +298,6 @@ func TestR_REPO_005_NameExcludeOfAnNpmRepositoryUnderFiles(t *testing.T) {
 	})
 }
 
-// TestR_STOR_007_NoRawDeployIntoAnNpmRepository: /files/ takes no file and no folder into an
-// npm repository, before the body is read (R-STOR-007, R-API-025, Q-ARCH-223): a folder at a
-// version's tarball path would block the owner's publish of that version.
-func TestR_STOR_007_NoRawDeployIntoAnNpmRepository(t *testing.T) {
-	e := newEnv(t)
-	a := e.replica("web-a")
-	for _, path := range []string{"/files/it/npm-local/@acme/ui/-/ui-2.0.0.tgz/", "/files/it/npm-local/@acme/ui/-/ui-2.0.0.tgz", "/files/it/npm-local/readme.txt"} {
-		ans, err := rawPutTo(a.Addr("default"), path, e.tokB, strings.NewReader(""), 0, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if ans.Status != 409 || problemCode(t, ans) != "conflict" || !strings.Contains(string(ans.Body), "/api/npm/it/npm-local/") {
-			t.Fatalf("%s: %d %s", path, ans.Status, ans.Body)
-		}
-	}
-	t.Run("R-STOR-007 a refused upload sends no 100 Continue and reads no body", func(t *testing.T) {
-		ans := rawPut(t, a, "/files/it/npm-local/@acme/ui/-/ui-2.0.0.tgz", e.tokB, strings.NewReader(strings.Repeat("x", 1<<20)), 1<<20, true)
-		if ans.Status != 409 {
-			t.Fatalf("%d %s", ans.Status, ans.Body)
-		}
-	})
-	if n := e.st.Number(`SELECT count(*) FROM items i JOIN repositories r ON r.id = i.repo_id WHERE r.key = 'npm-local'`); n != 0 {
-		t.Fatalf("%d items stored", n)
-	}
-	e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "@acme/ui", Version: "2.0.0"})
-}
-
 // TestR_EP_014_FilesOnAnEndpointWithRules: on an endpoint whose surface holds files and
 // api, an npm tarball under /files/ and an item of the items API pass the ceiling with the
 // package and the version the format gives the path, so a version the rule hides is a

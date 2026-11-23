@@ -9,12 +9,13 @@ import (
 
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/npmstub"
-	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // R-REPO-026, R-ARCH-027: concurrent cold requests of one artifact through a virtual repository that has a remote member, on
 // several replicas, are all answered with the artifact and cost the upstream one request: a request that finds the cache entry
-// or the item half way through a fill joins the flight and is never answered with a refusal.
+// or the item half way through a fill joins the flight and is never answered with a refusal. The race is the engine's, the same
+// for every format (TestHitRace_ALookupBeforeACommitAndAnEntryAfterItIsServed in the area proxy reproduces it), so one format's
+// virtual repository shows it here.
 func TestR_ARCH_027_ConcurrentColdRequestsThroughAVirtualRepositoryAreAllServed(t *testing.T) {
 	e := newEnvWith(t, true)
 	reps := []*testenv.Replica{
@@ -22,20 +23,13 @@ func TestR_ARCH_027_ConcurrentColdRequestsThroughAVirtualRepositoryAreAllServed(
 		e.st.Start(t, testenv.ReplicaOptions{Name: "web-2"}),
 		e.st.Start(t, testenv.ReplicaOptions{Name: "web-3"}),
 	}
-	pkg, _ := nugetstub.Default().Get(nugetstub.NewtonsoftID)
-	ver := pkg.Versions[1].Version
 	cases := []struct {
 		name, path string
 		upstream   func() int
 	}{
 		{"npm virtual", npmTarballPath(rNPMVirt, e.pkg, e.ver), func() int { return e.npmStub.Counts().Tarballs(e.pkg) }},
-		{"nuget virtual", nupkgPath(rNuGetVrt, "Newtonsoft.Json", ver), func() int { return e.nugetStub.Counts().Nupkgs("newtonsoft.json") }},
-		{"nuget remote", nupkgPath(rNuGetRem, "Newtonsoft.Json", pkg.Versions[0].Version), func() int { return e.nugetStub.Counts().Nupkgs("newtonsoft.json") }},
 	}
 	// A slow upstream keeps the fill open while the others arrive: they find the flight, not a finished entry.
-	if err := e.nugetStub.SetMode(nugetstub.Mode{DelayMS: map[string]int{nugetstub.ClassNupkg: 1500}}); err != nil {
-		t.Fatal(err)
-	}
 	if err := e.npmStub.SetMode(npmstub.Mode{DelayMS: map[string]int{npmstub.KindTarball: 1500}}); err != nil {
 		t.Fatal(err)
 	}

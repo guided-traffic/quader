@@ -75,10 +75,11 @@ items operations' shared authorization step decides the same coordinate. So a gr
 exposure rule's apply to a tarball as to its package, and a repository's name patterns hide a package under `/files/` as on the
 npm protocol (`TestR_AUTHZ_005_FilesDecideNpmItemsOnTheirPackage`, `TestR_REPO_005_NameExcludeOfAnNpmRepositoryUnderFiles`).
 
-A deploy through `/files/` into a repository whose format has a protocol of its own (npm) is refused with `409 conflict`, file or
-folder alike, after the decision and before the body is read (`FilesSeam.RawDeploy`, Q-ARCH-223): nothing reaches such a repository
-beside its publish, so no raw folder can block the path of a version's tarball and no file can sit where no document lists it
-(`TestR_STOR_007_NoRawDeployIntoAnNpmRepository`). A delete of such content is a change of every package whose files it removes:
+A deploy through `/files/` into a repository whose format has a protocol of its own (every format but generic) is refused with
+`409 conflict`, file or folder alike, after the decision and before the body is read (`FilesSeam.RawDeploy`, Q-ARCH-223): nothing
+reaches such a repository beside its publish, so no raw folder can block the path of a version's tarball and no file can sit where
+no document lists it (`TestR_STOR_007_FilesRefusesRawDeploysIntoFormats` for the order before the body,
+`TestR_STOR_007_NoFormatWithAProtocolOfItsOwnTakesARawDeploy` for every registered format). A delete of such content is a change of every package whose files it removes:
 the generic layer hands the removed files to `FilesSeam.CheckRemoval` in the transaction that removes them or queues their job, and
 the package ownership of R-AUTHZ-018 is asked for each package under its row lock; one refusal refuses the whole delete
 (Q-AUTHZ-161, see [permissions.md](permissions.md)).

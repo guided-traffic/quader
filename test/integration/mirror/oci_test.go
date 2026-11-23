@@ -450,28 +450,6 @@ func TestR_OCI_026_ASecondPassCostsAHeadAndAMovedTagCostsAGet(t *testing.T) {
 	})
 }
 
-// R-OCI-026, R-REPO-052: with maxBytes below the image, the pass ends bound_reached and a client's pull of a layer the pass did not
-// store still succeeds by pull-through. The bound is written into the document directly, as the service refuses less than 1 MiB.
-func TestR_OCI_026_TheByteBoundEndsThePassAndAPullStillWorksByPullThrough(t *testing.T) {
-	r := newOCIRig(t, ociOptions{include: []string{"acme/a"}, mirror: settings{"maxBytes": 8000}, oci: map[string]any{"tags": []string{"latest"}}})
-	one, _, web := r.workers()
-	t0 := r.pass(one)
-	r.waitPass(t0, "full", "bound_reached", passWithin)
-
-	img := r.image("acme/a", "latest")
-	held, total := r.blobsStored("acme/a", img)
-	if held >= total {
-		t.Fatalf("all %d blobs are stored under a bound of 8000 bytes", total)
-	}
-	if n := r.number(`SELECT count(*) FROM mirror_pending WHERE repo_id = $1`, r.repoN); n != 1 {
-		t.Errorf("%d names pending, want acme/a", n)
-	}
-	r.pull(web, "acme/a", "latest")
-	if held2, _ := r.blobsStored("acme/a", img); held2 != total {
-		t.Errorf("the pull stored %d of %d blobs", held2, total)
-	}
-}
-
 // R-OCI-025, R-OCI-026, R-REPO-054: a Docker Hub mirror takes `nginx` as library/nginx; the pull quota's answer (429 with
 // RateLimit-Remaining 0;w=21600 and no Retry-After) is counted as quota_header and the pass goes on after the wait.
 func TestR_OCI_025_ADockerHubQuotaAnswerIsAQuotaHeaderRateLimitOfThePass(t *testing.T) {

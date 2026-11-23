@@ -235,22 +235,6 @@ func TestASchemaOneManifestIsNeverStored(t *testing.T) {
 	}
 }
 
-// Mechanism of R-OCI-022, not a proof of its criteria: it checks a request shape, a verification step or the memory of a miss;
-// the criteria are the 300 s revalidation, the read by digest without a request and the mismatched digest.
-func TestATagTheUpstreamDoesNotHaveIsRememberedForTheNotFoundPeriod(t *testing.T) {
-	e := newEnv(t, options{})
-	rep := e.start(1)[0]
-	for range 2 {
-		a := e.get(rep, rAnon, "library/alpine/manifests/nosuchtag")
-		if a.Status != http.StatusNotFound || !strings.Contains(string(a.Body), "MANIFEST_UNKNOWN") {
-			t.Fatalf("%d %s", a.Status, a.Body)
-		}
-	}
-	if got := e.stub.Counts().ManifestGets("library/alpine", "nosuchtag"); got != 1 {
-		t.Errorf("%d upstream requests for two pulls of a missing tag, want 1", got)
-	}
-}
-
 // Mechanism of R-OCI-023, not a proof of its criteria: it checks a redirect, a response type or a HEAD; the criteria are one
 // fetch per layer across three replicas and the CDN host receiving no credential.
 func TestAMultiPlatformImageIsPulledThroughWithItsChildrenAndEveryLayerOnce(t *testing.T) {

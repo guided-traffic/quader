@@ -341,37 +341,6 @@ func TestR_NUGET_007_UnlistRelistAndDeleteOverHTTP(t *testing.T) {
 	})
 }
 
-// TestR_NUGET_005_ARawDeleteOfThePackageIsAHardDelete: removing the .nupkg through /files/ removes
-// the version as a unit with its tombstone, whatever deleteMode says, and removing the generated
-// .nuspec alone is refused with 409 and changes nothing (Q-NUGET-13).
-func TestR_NUGET_005_ARawDeleteOfThePackageIsAHardDelete(t *testing.T) {
-	e := newWriteEnv(t)
-	a := e.replica("web-a")
-	pkg := nupkg(t, pkgSpec{id: "Acme.Widgets", version: "1.2.3"})
-	e.mustPush(a, "nuget-local", e.tokDev, pkg)
-	nuspec := "/files/it/nuget-local/acme.widgets/1.2.3/acme.widgets.nuspec"
-	file := "/files/it/nuget-local/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg"
-
-	if ans := e.st.Do(a, "DELETE", nuspec, e.tokAdmin, nil); ans.Status != 409 {
-		t.Fatalf("delete of the generated .nuspec: %d %s", ans.Status, ans.Body)
-	}
-	if e.files("nuget-local", "acme.widgets", "1.2.3") != 2 || e.versions("nuget-local", "acme.widgets") != 1 {
-		t.Fatal("the refused delete changed something")
-	}
-	if ans := e.st.Do(a, "DELETE", file, e.tokAdmin, nil); ans.Status/100 != 2 {
-		t.Fatalf("delete of the package: %d %s", ans.Status, ans.Body)
-	}
-	if e.versions("nuget-local", "acme.widgets") != 0 {
-		t.Error("the version stays")
-	}
-	if kind, sum := e.tombstone("nuget-local", "acme.widgets", "1.2.3"); kind != "removed" || sum != sha512hex(pkg) {
-		t.Errorf("tombstone %q %q", kind, sum)
-	}
-	if ans := e.push(a, "nuget-local", e.tokDev, pkg); ans.Status != 409 || code(t, ans) != "nuget_version_deleted" {
-		t.Errorf("push after the raw delete: %d %s", ans.Status, ans.Body)
-	}
-}
-
 // TestR_NUGET_006_ReservedTombstoneAdmitsOnlyItsBytes: a tombstone of kind reserved, as a restore's
 // replay writes it, refuses other bytes with nuget_version_reserved, admits the package whose
 // SHA-512 it holds and removes itself in that push's transaction; in a delete-mode repository the

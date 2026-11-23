@@ -38,9 +38,9 @@ Package files are never deleted by the mirror or its housekeeping; only by-hash 
 
 Integration tests: `TestR_DEB_024_APassStoresTheScopeAndTheMirrorServesWithTheStubStopped`,
 `TestR_DEB_024_TheVersionBoundKeepsTheNewestVersionOfEachNameAcrossTheSuites`, `TestR_DEB_024_ASecondPassIsQuietAndANewGenerationIsStored`,
-`TestR_DEB_024_TheByteBoundEndsThePassAndAPackageNotStoredIsPulledThrough`,
 `TestR_DEB_024_AReleaseSignedByAnUnknownKeyFailsTheDiscoveryAndStoresNothing`,
 `TestR_DEB_024_SourcesAreKeptOnRequestAndClientsInstallDuringThePass` in [test/integration/mirror](../../test/integration/mirror/deb_test.go).
+The byte bound is the same for every format and is tested once, by the `TestR_REPO_052_*` tests of the same area.
 
 ## What this does not cover
 

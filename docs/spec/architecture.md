@@ -5501,8 +5501,10 @@ Acceptance criteria:
 - The report of that run shows P-1 to P-17. A miss of a target in that run opens a regression issue.
 - The database budget per request is counted on the PostgreSQL log, per route (`test/integration/querybudget`,
   `TestR_ARCH_027_ADownloadCostsOneStatement`): an npm tarball of a local repository, its raw view, an npm tarball of a
-  remote repository (hit), the same of the local and the remote member of a virtual repository, and the same five for NuGet,
-  each with the statements it ran and the budget above.
+  remote repository (hit), the same of the local and the remote member of a virtual repository, and a `.nupkg` of a local and of
+  a remote repository (hit), each with the statements it ran and the budget above. The walk of a virtual repository is the same
+  for every format (Q-ARCH-290: each tier is its member's one lookup, with the facts of the member's format), so it is counted
+  once, with npm.
 
 ### R-ARCH-028 · Resource limits for untrusted package content
 Priority: **MVP** · Covers: quader-only
@@ -9388,7 +9390,8 @@ decide on the rows its own lookup read. Revisit when a profile of virtual artifa
 virtual repository has many members: then (b) for the local members only, whose rows share a table, is the next step.
 
 **Applied in the spec:** R-ARCH-027 (the database budget per request, the acceptance criterion). Code: `internal/formathost/virtual.go` (`tiers.RemoteCached`:
-`GateWith`). Tests: `TestR_ARCH_027_ADownloadCostsOneStatement` (the four virtual routes).
+`GateWith`). Tests: `TestR_ARCH_027_ADownloadCostsOneStatement` (the two virtual routes of npm; the measurement above counted NuGet's
+two as well, and the test keeps one format's walk since the tiers are the same for every format).
 
 ### Q-ARCH-291 · How does a download read the rows its serve check decides on, without a statement of its own?
 

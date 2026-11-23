@@ -161,8 +161,9 @@ the version is still named in the answer, after a control run with an unrelated 
 renders the unfiltered document (`lists-hidden-versions` and `filters-differently` in `TestR_ARCH_010_Defects`); the rule is
 mandatory for every format whose fixture places a path in a version, so a format without `VersionPather` fails it, and a fixture
 whose package documents name no stored version fails it as well (`versions-outside-rows`). OCI decides a tag in the package
-screens on its tag path (Q-AUTHZ-258, `TestR_AUTHZ_005_APathPatternOnATagHidesItFromThePackageAPI`); it has no vulnerability
-adapter, so no report lists a tag.
+screens on its tag path (Q-AUTHZ-258): check 13 judges OCI's `VersionPath` on the tags list of a pushed tag, and the package API's
+reading of a version path is the same for every format (`TestR_AUTHZ_005_AVersionPathPatternHidesTheVersionFromNPMDocuments`); it
+has no vulnerability adapter, so no report lists a tag.
 
 The code review and the penetration test of the change (2026-11-08) found four places the first round left, each now held by
 a test that was red before its fix: the revisioned `PUT` compared a body's versions with the unfiltered list (200 for a body
@@ -395,8 +396,8 @@ a `.nuspec`, a raw file) is refused like a missing one, every write with 403, an
 metadata read. The gate of a virtual repository is decided with the request's kind, so an artifact through a virtual
 repository stops at the gate. Exposure rules bind the auditor as every subject (R-EP-013). A token carries the capability only
 when its scope lists the system item `content:metadata-read`, and its repository part narrows it like a grant (R-AUTHZ-013).
-Tests: `TestQ_AUTHZ_172_AuditorReadsMetadataNeverArtifacts`, `TestQ_AUTHZ_172_AuditorReadsNpmMetadata`,
-`TestQ_AUTHZ_172_AuditorReadsNuGetMetadata`.
+Tests: `TestQ_AUTHZ_172_AuditorReadsMetadataNeverArtifacts`, `TestQ_AUTHZ_172_AuditorReadsNpmMetadata`; which of a format's
+paths are metadata and which are artifacts is its classification, held for every format by check 3 of R-ARCH-010.
 
 What the auditor learns is everything the metadata says: every repository key, every package name and version, the dist-tags
 and maintainers of an npm package, the dependencies of a NuGet version, the names, sizes and digests of raw files, internal
@@ -542,7 +543,8 @@ within the bound of R-AUTH-023.
 The re-check and the commit are two steps: a grant removed in the milliseconds between them does not stop the write. The
 same holds for a format's write: the host decides every write the request was allowed again on the index of the moment before
 the transaction opens, and the ownership check in it decides on that index (Q-ARCH-225,
-`TestR_AUTHZ_015_APublishIsDecidedAgainWhenItCommits` removes the grant of an npm publish while its body is arriving); a grant
+`TestR_AUTHZ_015_AFormatsWriteIsDecidedAgainWhenItCommits` in `internal/formathost`; the same removal while a body arrives is
+`TestR_AUTHZ_015_ADeployIsDecidedAgainWhenItCommits` through `/files/`); a grant
 removed between that decision and the commit does not stop it, and the credential is not authenticated again either.
 
 ### H-396 · A project administrator's policy write is decided on the replica's index

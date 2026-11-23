@@ -42,6 +42,7 @@ const (
 	rFlat     = "deb-flat"     // the flat directory binary/ of the stub
 	rFlatRoot = "deb-flatroot" // the flat directory that is the upstream URL itself
 	rRequire  = "deb-require"  // checksumPolicy require
+	rAbsent   = "deb-absent"   // no upstreamKeys, a not-found period of 2 s: an upstream 404 is asked again after 2 s
 )
 
 // scratchRepos is how many repositories of each kind (keyed, plain) newEnv makes for cases that need an empty cache.
@@ -91,6 +92,8 @@ func newEnv(t *testing.T) *denv {
 	e.repo(rFlat, "/flat/", "", 300, "verify-if-available")
 	e.repo(rFlatRoot, "/flatroot/", "", 300, "verify-if-available")
 	e.repo(rRequire, "/debian/", e.keyA, 300, "require")
+	e.st.Repository(rAbsent, "remote", "deb", strings.Replace(e.remoteDoc("/debian/", "", 300, "verify-if-available"),
+		`"notFoundTtlSeconds":60`, `"notFoundTtlSeconds":2`, 1))
 	// Repositories nothing has been fetched through, one per case that needs an empty cache.
 	for i := 1; i <= scratchRepos; i++ {
 		e.repo("deb-s"+strconv.Itoa(i), "/debian/", e.keyA, 300, "verify-if-available")

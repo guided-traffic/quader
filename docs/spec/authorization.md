@@ -905,7 +905,8 @@ Acceptance criteria:
   `TestR_NPM_016_APublishLeavesATagAtAVersionThePublisherMayNotReadWhereItIs`).
 - A `read` grant on the OCI repository `web/docker-local` with `paths.exclude: ["team/app/_tags/v2"]` hides the tag `v2` of
   `team/app` from the version list of the package API, as the tags list of `/v2/` leaves it out, and lists `v1`; a caller
-  without the pattern sees both (Q-AUTHZ-258, `TestR_AUTHZ_005_APathPatternOnATagHidesItFromThePackageAPI`).
+  without the pattern sees both (Q-AUTHZ-258; check 13 of R-ARCH-010 judges OCI's tag path on the tags list, and the package
+  API reads a version path alike for every format, `TestR_AUTHZ_005_AVersionPathPatternHidesTheVersionFromNPMDocuments`).
 - `curl -X PUT --data-binary @evil-1.0.0.tgz
   https://quader.example.com/files/web/npm-internal/@acme/ui/-/ui-9.9.9.tgz` with a tarball whose
   `package.json` names `@other/evil` answers 400 and stores nothing.
@@ -6532,8 +6533,10 @@ the kit knows when the interface is missing. The development agent would revisit
 **Applied:** [architecture.md](architecture.md) R-ARCH-010 (check 13, acceptance), R-AUTHZ-005, [formats/oci.md](formats/oci.md)
 (the package version). Code: `internal/formats/formattest/checks_authz.go` (`versionsHaveAFile`, the count of judged versions),
 `internal/formats/formattest/testformat/format.go` (`WithoutVersionPath`), `internal/formats/oci/paths.go` (`VersionPath`), the
-OCI fixture. Tests: `TestR_ARCH_010_Defects` (the format without `VersionPather`, `versions-outside-rows` for a fixture that judges no version), `TestR_ARCH_010_Conformance` of OCI,
-`TestR_AUTHZ_005_APathPatternOnATagHidesItFromThePackageAPI` (integration, red without OCI's `VersionPath`).
+OCI fixture. Tests: `TestR_ARCH_010_Defects` (the format without `VersionPather`, `versions-outside-rows` for a fixture that judges no version), `TestR_ARCH_010_Conformance` of OCI
+(red without OCI's `VersionPath`). The integration test that showed the tag hidden in OCI's package API was removed with the move of
+the formats' repeated integration tests into the kit: check 13 judges OCI's tag path, and the package API's side is the same for every
+format.
 
 ### Q-AUTHZ-260 · A job carries who asked, and reads what that subject holds for every batch
 

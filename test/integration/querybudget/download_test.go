@@ -107,7 +107,9 @@ func TestR_ARCH_027_ADownloadCostsOneStatement(t *testing.T) {
 	}
 
 	// budget is one statement per member the resolution of a virtual repository visits (Q-ARCH-290): the local member is
-	// asked first, so a file of the remote member costs the miss at the local one and the hit.
+	// asked first, so a file of the remote member costs the miss at the local one and the hit. The walk is the same for every
+	// format (each tier is its member's one lookup with the facts of the member's format), so npm's two virtual routes hold it;
+	// NuGet keeps its local route and its remote hit, where its own serve facts are read.
 	routes := []struct {
 		name, path string
 		budget     int
@@ -119,8 +121,6 @@ func TestR_ARCH_027_ADownloadCostsOneStatement(t *testing.T) {
 		{"an npm tarball of the remote member of a virtual repository", npmTarballPath(rNPMVirt, e.pkg, e.ver), 2},
 		{"a .nupkg of a local NuGet repository", nupkgPath(rNuGet, "Budget.Local", "1.0.0"), 1},
 		{"a .nupkg of a remote NuGet repository (hit)", nugetRemote, 1},
-		{"a .nupkg of the local member of a virtual NuGet repository", nupkgPath(rNuGetVrt, "Budget.Local", "1.0.0"), 1},
-		{"a .nupkg of the remote member of a virtual NuGet repository", nupkgPath(rNuGetVrt, "Newtonsoft.Json", nugetVer), 2},
 	}
 	for _, rt := range routes {
 		t.Run(rt.name, func(t *testing.T) {

@@ -265,20 +265,3 @@ func TestR_NUGET_001_OperationsThatAreNotBuiltAnswer501(t *testing.T) {
 		})
 	}
 }
-
-// TestR_NUGET_013_RawDeployIntoANuGetRepositoryAnswers409: /files/ takes nothing into a
-// repository whose format has a protocol of its own, so a raw .nupkg is refused before its body
-// is read, whatever the path (R-NUGET-005, Q-NUGET-13).
-func TestR_NUGET_013_RawDeployIntoANuGetRepositoryAnswers409(t *testing.T) {
-	e := newEnv(t)
-	a := e.replica("web-a")
-	for _, path := range []string{"acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg", "notes.txt", "acme.widgets/9.9.9/acme.widgets.9.9.9.nupkg"} {
-		ans := e.st.Do(a, "PUT", "/files/it/nuget-local/"+path, e.tokAdmin, []byte("not a package"))
-		if ans.Status != 409 || !strings.Contains(string(ans.Body), "/api/nuget/it/nuget-local/") {
-			t.Errorf("PUT /files/it/nuget-local/%s: %d %s", path, ans.Status, ans.Body)
-		}
-	}
-	if n := e.st.Number(`SELECT count(*) FROM items i JOIN repositories r ON r.id = i.repo_id WHERE r.key = 'nuget-local'`); n != 0 {
-		t.Errorf("%d items were stored", n)
-	}
-}

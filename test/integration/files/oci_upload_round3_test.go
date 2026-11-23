@@ -3,13 +3,8 @@
 package files
 
 import (
-	"bytes"
-	"fmt"
 	"net/http"
 	"testing"
-	"time"
-
-	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // ociPush pushes an image of one layer to the name as the user through the real routes: the config and the layer by monolithic uploads,
@@ -57,29 +52,4 @@ func TestR_OCI_006_ADeployerPushesANewImageAndIsRefusedOnAnOwnedName(t *testing.
 	}
 	// the owner is not refused
 	f.start(2, "writer", "oci-local", "owned/app")
-}
-
-// The decision of a session names a path of the package (Q-OCI-116): a grant or a pattern scoped by path refuses a session start where it refuses
-// the name, and allows it where it allows the name.
-func TestR_AUTHZ_005_ASessionStartIsDecidedOnAPathOfThePackage(t *testing.T) {
-	f := newUploadFixture(t)
-	r := f.replicas[0]
-	r.createRepository("oci-paths", map[string]any{"format": "oci"})
-	f.e.user("scoped")
-	f.e.user("teamonly")
-	f.e.grant(r, "paths-scoped", []string{"oci-paths"}, authz.PatternLists{Exclude: []string{"secret/**"}}, map[string][]string{"user:scoped": {"read", "deploy"}})
-	f.e.grant(r, "paths-team", []string{"oci-paths"}, authz.PatternLists{Include: []string{"team/**"}}, map[string][]string{"user:teamonly": {"read", "deploy"}})
-	start := func(i int, user, name string) response {
-		return f.do(i, user, http.MethodPost, "oci-paths/"+name+"/blobs/uploads/", nil)
-	}
-	for i, rep := range f.replicas {
-		waitFor(t, fmt.Sprintf("the path policies on replica %d", i), 15*time.Second, func() bool {
-			return rep.do("teamonly", http.MethodPost, apiPrefix+"oci-paths/team/probe/blobs/uploads/", bytes.NewReader(nil)).status == http.StatusAccepted &&
-				rep.do("scoped", http.MethodPost, apiPrefix+"oci-paths/team/probe/blobs/uploads/", bytes.NewReader(nil)).status == http.StatusAccepted
-		})
-		wantOCI(t, start(i, "scoped", "secret/app"), http.StatusForbidden, "DENIED")
-		wantOCI(t, start(i, "scoped", "team/app"), http.StatusAccepted, "")
-		wantOCI(t, start(i, "teamonly", "team/app"), http.StatusAccepted, "")
-		wantOCI(t, start(i, "teamonly", "other/app"), http.StatusForbidden, "DENIED")
-	}
 }

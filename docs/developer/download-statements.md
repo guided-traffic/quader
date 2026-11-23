@@ -20,6 +20,10 @@ database of its own stack, warms a path, sends 30 downloads to one replica and c
 | `.nupkg`, virtual repository, file in the local member | 3 (`GetLiveItem`, `NuGetServeState` x2) | 1 | 1 |
 | `.nupkg`, virtual repository, file in the remote member (local member first) | 3 (`GetLiveItem` x2, `ProxyEntryGet`) | 2 | 2 |
 
+The two `.nupkg` rows of a virtual repository are the measurement of [Q-ARCH-290](../spec/architecture.md#q-arch-290--what-does-a-download-of-a-file-of-a-virtual-repository-cost-in-statements);
+the test no longer counts them. A virtual repository's tiers are the same for every format (each is its member's one lookup with the facts of the
+member's format), so npm's two virtual rows hold the walk, and NuGet keeps its local and its remote row, where its own facts are read.
+
 The vulnerability scanning adds none: its block is a lateral join of the same statement ([vulnerabilities.md](vulnerabilities.md#the-download-policy)).
 At the scale of the performance run of R-VULN-028 (100,000 stored versions, 10,000 findings), V-5b counts the same in the replicas by request ID
 (`testenv.RequestTransactions`, [Q-VULN-98](../spec/vulnerability-scanning.md#q-vuln-98--v-5b-is-counted-in-the-replicas-by-request-not-from-the-databases-commit-counter)):

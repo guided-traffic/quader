@@ -40,7 +40,7 @@ const (
 	rLocalV  = "ans-localonly" // virtual: ans-local; deployment target ans-local
 )
 
-// venv is one installation with the repositories above, a stub, a reader, a writer and a caller who may read some members only.
+// venv is one installation with the repositories above, a stub, a reader, a writer and a writer without manage.
 type venv struct {
 	t    *testing.T
 	st   *testenv.Stack
@@ -49,13 +49,8 @@ type venv struct {
 	rep  *testenv.Replica
 
 	// reader reads everything, writer reads, deploys and manages the local member and the virtual repositories, plain does the same
-	// without manage (it meets the shadowing check), narrow reads the virtual repositories and the local member, not the remote one.
-	reader, writer, plain, narrow string
-	// pathed reads everything the others do, except that the archive of acme.tools 9.0.0 (a local version) and of the newest version the
-	// stub holds of it (a remote one) are hidden by a path pattern of its grant (R-AUTHZ-005).
-	pathed string
-	// hiddenRemote is the version of other.stuff the pattern of pathed hides.
-	hiddenRemote string
+	// without manage (it meets the shadowing check).
+	reader, writer, plain string
 }
 
 type options struct {
@@ -105,29 +100,16 @@ func newEnv(t *testing.T, o options) *venv {
 	if o.claim != "" {
 		e.st.Exec(`INSERT INTO namespace_claims (repo_id, pattern, source, scope) SELECT id, $1, 'manual', 'members' FROM repositories WHERE key = $2`, o.claim, rLocal)
 	}
-	rita, reader, writer, plain, narrow := e.st.User("rita"), e.st.User("reader"), e.st.User("writer"), e.st.User("plain"), e.st.User("narrow")
+	rita, reader, writer, plain := e.st.User("rita"), e.st.User("reader"), e.st.User("writer"), e.st.User("plain")
 	e.st.Bind("admin", rita)
 	e.reader, e.writer = e.st.Token(reader, scope.Default()), e.st.Token(writer, scope.Default())
-	e.plain, e.narrow = e.st.Token(plain, scope.Default()), e.st.Token(narrow, scope.Default())
+	e.plain = e.st.Token(plain, scope.Default())
 	all := []string{rLocal, rGalaxy, rVirtual, rReverse, rNoLocal, rLocalV}
 	e.st.Policy("ans-readers", []string{"read"}, all, reader)
 	e.st.Policy("ans-writers", []string{"read", "deploy", "delete", "manage"}, []string{rLocal, rVirtual, rReverse, rLocalV, rNoLocal}, writer)
 	e.st.Policy("ans-writers-read", []string{"read"}, []string{rGalaxy}, writer)
 	e.st.Policy("ans-plain", []string{"read", "deploy"}, []string{rLocal, rVirtual, rReverse, rLocalV}, plain)
 	e.st.Policy("ans-plain-read", []string{"read"}, []string{rGalaxy}, plain)
-	e.st.Policy("ans-narrow", []string{"read"}, []string{rVirtual, rLocal}, narrow)
-	pathed := e.st.User("pathed")
-	e.pathed = e.st.Token(pathed, scope.Default())
-	e.hiddenRemote = e.stubVersions("acme", "tools")[0].Version
-	pol := e.st.Text("INSERT INTO authz_policy (id, name) VALUES (gen_random_uuid(), 'ans-pathed') RETURNING id::text")
-	for i, key := range []string{rVirtual, rLocal, rGalaxy} {
-		e.st.Exec(`INSERT INTO authz_policy_selector (policy_id, ordinal, kind, repository_id)
-			SELECT $1::uuid, $2, 'key', r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = $3 AND r.key = $4`, pol, i, testenv.DefaultProject, key)
-	}
-	e.st.Exec("INSERT INTO authz_policy_entry (policy_id, principal_id, actions) VALUES ($1::uuid, $2::uuid, $3)", pol, pathed.ID, []string{"read"})
-	for _, path := range []string{"collections/acme/tools/acme-tools-9.0.0.tar.gz", "collections/acme/tools/acme-tools-" + e.hiddenRemote + ".tar.gz"} {
-		e.st.Exec("INSERT INTO authz_policy_pattern (policy_id, dimension, mode, pattern) VALUES ($1::uuid, 'path', 'exclude', $2)", pol, path)
-	}
 	e.rep = e.st.Start(t, testenv.ReplicaOptions{Name: "web-1", DialOverride: e.run.DialOverride()})
 	return e
 }

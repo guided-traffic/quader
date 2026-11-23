@@ -391,53 +391,6 @@ func TestR_NPM_017_UnpublishPackageAndPermissions(t *testing.T) {
 	})
 }
 
-// TestR_NPM_017_RawDeleteUnpublishes: a delete of the tarball through /files/ takes the
-// road of the unpublish: tombstone, tags, revision, the audit event (OnItemsRemoved).
-func TestR_NPM_017_RawDeleteUnpublishes(t *testing.T) {
-	e := newEnv(t)
-	a, b := e.replica("web-a"), e.replica("web-b")
-	e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "rawdel", Version: "1.0.0"})
-	e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "rawdel", Version: "1.1.0"})
-	seq := e.revSeq("npm-local", "rawdel")
-	if ans := e.st.Do(b, "DELETE", "/files/it/npm-local/rawdel/-/rawdel-1.1.0.tgz", e.tokA, nil); ans.Status/100 != 2 {
-		t.Fatalf("%d %s", ans.Status, ans.Body)
-	}
-	if e.revSeq("npm-local", "rawdel") <= seq {
-		t.Fatal("rev_seq did not rise")
-	}
-	d := document(t, e.get(a, "npm-local", "rawdel", e.tokA))
-	if !slices.Equal(versionNames(d), []string{"1.0.0"}) || tagsOfDoc(d)["latest"] != "1.0.0" {
-		t.Fatalf("%v %v", versionNames(d), tagsOfDoc(d))
-	}
-	if e.tombstones("npm-local", "rawdel") != 1 || e.events("npm.unpublish", "rawdel", "") != 1 || e.versions("npm-local", "rawdel") != 1 {
-		t.Fatalf("tombstones %d events %d", e.tombstones("npm-local", "rawdel"), e.events("npm.unpublish", "rawdel", ""))
-	}
-	if ans := e.publish(a, "npm-local", e.tokA, pkg{Name: "rawdel", Version: "1.1.0"}); ans.Status != 409 || code(t, ans) != "npm_version_unpublished" {
-		t.Fatalf("%d %s", ans.Status, ans.Body)
-	}
-	t.Run("R-AUTHZ-018 a deleter who does not own the name gets the route's 403 through /files/ and the items API", func(t *testing.T) {
-		// The generic layer asks the format seam the ownership question for the packages of
-		// the removed files, under the package row lock, before the first row goes (Q-AUTHZ-161).
-		e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "rawdel2", Version: "1.0.0"})
-		e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "rawdel2", Version: "1.1.0"})
-		for _, path := range []string{"/files/it/npm-local/rawdel2/-/rawdel2-1.1.0.tgz", "/api/v1/projects/it/repositories/npm-local/items?path=rawdel2/-/rawdel2-1.1.0.tgz"} {
-			ans := e.st.Do(b, "DELETE", path, e.tokB, nil)
-			if ans.Status != 403 || problemCode(t, ans) != "package_owned_by_other_owner" {
-				t.Fatalf("%s: %d %s", path, ans.Status, ans.Body)
-			}
-		}
-		if e.tombstones("npm-local", "rawdel2") != 0 || e.versions("npm-local", "rawdel2") != 2 || e.itemCount("npm-local", "rawdel2/-/rawdel2-1.1.0.tgz") != 1 {
-			t.Fatal("a refused delete removed something")
-		}
-		if ans := e.st.Do(b, "DELETE", "/api/v1/projects/it/repositories/npm-local/items?path=rawdel2/-/rawdel2-1.1.0.tgz", e.tokA, nil); ans.Status != 204 {
-			t.Fatalf("the owner through the items API: %d %s", ans.Status, ans.Body)
-		}
-		if e.tombstones("npm-local", "rawdel2") != 1 || e.versions("npm-local", "rawdel2") != 1 {
-			t.Fatal("the items API did not unpublish the version")
-		}
-	})
-}
-
 // TestR_NPM_047_WithheldVersionsAreNotServed: the state a restore's replay leaves
 // (R-NPM-047): a version that is stored and tombstoned with source 'journal' is in no
 // document, its tarball and its raw item are 404 on every replica, and the
