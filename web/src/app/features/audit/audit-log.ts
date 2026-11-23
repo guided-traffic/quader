@@ -29,6 +29,35 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { ADDRESS_MARKS, KEY_MARKS, PartsText, breakParts } from '../../shared/break-parts';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
+/**
+ * The kinds of resource the events name most (the `resource.type` of an event), offered by the filter's field; any other kind can be
+ * typed (Q-UI-998).
+ */
+const RESOURCE_KINDS: readonly string[] = [
+  'bastion',
+  'blob',
+  'ci_issuer',
+  'ci_mapping',
+  'exposure_rule',
+  'finding',
+  'group',
+  'package',
+  'permission_policy',
+  'project',
+  'repository',
+  'role_binding',
+  'service_account',
+  'settings',
+  'signature_anchor',
+  'signature_block',
+  'signing_identity',
+  'task',
+  'technical_token',
+  'token',
+  'user',
+  'vulnerability_source',
+];
+
 /** The page size of the table (the server default and a good fit for one screen). */
 export const AUDIT_PAGE_SIZE = 100;
 
@@ -81,6 +110,8 @@ export class AuditLog {
   readonly action = input<string | undefined>();
   readonly category = input<string | undefined>();
   readonly repository = input<string | undefined>();
+  readonly resourceType = input<string | undefined>();
+  readonly resourceId = input<string | undefined>();
   readonly outcome = input<string | undefined>();
   readonly event = input<string | undefined>();
   readonly utc = input<string | undefined>();
@@ -143,6 +174,8 @@ export class AuditLog {
       action: this.action(),
       category: this.category(),
       repository: this.repository(),
+      resourceType: this.resourceType(),
+      resourceId: this.resourceId(),
       outcome: this.outcome(),
     };
   });
@@ -153,6 +186,8 @@ export class AuditLog {
         this.action() ||
         this.category() ||
         this.repository() ||
+        this.resourceType() ||
+        this.resourceId() ||
         this.outcome() ||
         this.range()
       ),
@@ -170,6 +205,10 @@ export class AuditLog {
     if (category) out.push({ key: 'category', label: $localize`:@@audit.filter.category:Category`, value: this.categoryText(category) });
     const repository = this.repository();
     if (repository) out.push({ key: 'repository', label: $localize`:@@audit.filter.repository:Repository`, value: repository });
+    const resourceType = this.resourceType();
+    if (resourceType) out.push({ key: 'resourceType', label: $localize`:@@audit.filter.resource-type:Resource kind`, value: resourceType });
+    const resourceId = this.resourceId();
+    if (resourceId) out.push({ key: 'resourceId', label: $localize`:@@audit.filter.resource-id:Resource ID`, value: resourceId });
     const outcome = this.outcome();
     if (outcome) out.push({ key: 'outcome', label: $localize`:@@audit.col.outcome:Outcome`, value: this.outcomeText(outcome) });
     return out;
@@ -218,6 +257,8 @@ export class AuditLog {
       action: this.action() ?? '',
       category: this.category() ?? '',
       repository: this.repository() ?? '',
+      resourceType: this.resourceType() ?? '',
+      resourceId: this.resourceId() ?? '',
       outcome: this.outcome() ?? '',
       from: this.from() ?? '',
       to: this.to() ?? '',
@@ -260,6 +301,8 @@ export class AuditLog {
         action: d['action']?.trim() || null,
         category: d['category'] || null,
         repository: d['repository']?.trim() || null,
+        resourceType: d['resourceType']?.trim() || null,
+        resourceId: d['resourceId']?.trim() || null,
         outcome: d['outcome'] || null,
         event: null,
       },
@@ -301,6 +344,8 @@ export class AuditLog {
         action: null,
         category: null,
         repository: null,
+        resourceType: null,
+        resourceId: null,
         outcome: null,
         event: null,
       },
@@ -402,6 +447,9 @@ export class AuditLog {
   protected readonly copyTrace = $localize`:@@audit.copy-trace:Copy the trace ID`;
   protected readonly addressMarks = ADDRESS_MARKS;
   protected readonly copyDetails = $localize`:@@audit.copy-details:Copy the details`;
+  protected readonly copyResource = $localize`:@@audit.copy-resource:Copy the resource ID`;
+  /** The known kinds of a resource, the suggestions of the filter's field. */
+  protected readonly resourceKinds = RESOURCE_KINDS;
 }
 
 /** A `datetime-local` value in the browser's zone as an RFC 3339 instant; the fallback for an empty or bad value. */

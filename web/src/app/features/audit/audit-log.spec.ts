@@ -237,6 +237,20 @@ describe('Audit log', () => {
     expect(root.querySelector('tbody td.target .target-project quader-project-link')).toBeTruthy();
   });
 
+  it('Q-UI-998 the resource, its kind and its identifier, is a filter of the drawer, a chip, and reaches the API', async () => {
+    const { root, fixture, router } = await open();
+    const drawer = await openFilters(fixture, root);
+    type(drawer.querySelector<HTMLInputElement>('#a-resource-type')!, 'bastion');
+    type(drawer.querySelector<HTMLInputElement>('#a-resource-id')!, '0193b4a0-0000-7000-8000-00000000b001');
+    await settle(fixture);
+    await applyFilters(fixture);
+    const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
+    expect(extras.queryParams).toMatchObject({ resourceType: 'bastion', resourceId: '0193b4a0-0000-7000-8000-00000000b001', event: null });
+    const filtered = await open({ resourceType: 'bastion', resourceId: '0193b4a0-0000-7000-8000-00000000b001' });
+    expect(filtered.audit.filterCalls.at(-1)).toMatchObject({ resourceType: 'bastion', resourceId: '0193b4a0-0000-7000-8000-00000000b001' });
+    expect(chipTexts(filtered.root)).toEqual(['Resource kind: bastion', 'Resource ID: 0193b4a0-0000-7000-8000-00000000b001']);
+  });
+
   it('R-UI-037 the export links carry the current filter and both formats', async () => {
     const { root } = await open({ range: '1h', category: 'authz' });
     const links = [...root.querySelectorAll<HTMLAnchorElement>('a[download]')];

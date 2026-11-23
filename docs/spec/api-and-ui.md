@@ -5186,14 +5186,17 @@ Priority: **MVP** · Covers: OPS-023
   other its kind and its identifier on one line, [Q-UI-568](#q-ui-568--an-audit-target-the-entry-knows-by-name-shows-the-name-another-its-identifier-on-one-line);
   a repository's project by its mark and its name under it), outcome (a badge, **Success**, **Failure**, **Denied**,
   [Q-UI-564](#q-ui-564--a-status-word-starts-with-a-capital)); filters time range (presets and custom), actor, action, category,
-  repository, outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
+  repository, the resource (its kind and its identifier,
+  [Q-UI-998](#q-ui-998--the-audit-log-filters-by-the-resource-an-event-is-about-its-kind-and-its-identifier)),
+  outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
 - Detail panel with the full event and links to actor and target. It stands beside the log from 68 rem of content (1,440 px) and above
   it, at the log's width, where it is narrower; an event opened from the list takes the focus, so the page brings it into view (Q-UI-997).
   Where the panel is narrower than 25 rem (390 px) each fact's name stands above its value, so that the time of the event stays on one line
   ([Q-UI-972](#q-ui-972--a-narrow-audit-event-puts-each-facts-name-above-its-value)). The actor's kind and credential stand on a line
   under its name; the action's key under its name, or alone where the action has no name of its own, and a key breaks after a dot or an
-  underscore only, in the panel and in the row (Q-UI-567); the slash between a repository and its path belongs to the path. The details wrap their long lines in the panel, every
+  underscore only, in the panel and in the row (Q-UI-567); the slash between a repository and its path belongs to the path. The
+  resource is its kind and its identifier, which a copy button copies (Q-UI-998). The details wrap their long lines in the panel, every
   string longer than 200 characters shortened to its start and its length, and a copy button copies them whole
   ([Q-UI-995](#q-ui-995--a-document-shortens-a-long-string-to-its-start-and-its-length-and-copies-whole-a-code-block-scrolls-a-few-screens-at-most)).
 - Times in the user's locale with a UTC toggle (in the list the title of each relative time, in the panel the moment); export of the
@@ -22499,6 +22502,27 @@ an operator needs to compare moments across rows at a glance.
 
 **Applied in the spec:** R-UI-037. Code: [audit-log.html](../../web/src/app/features/audit/audit-log.html),
 [audit-log.scss](../../web/src/app/features/audit/audit-log.scss), `zone` of [time-ago.ts](../../web/src/app/shared/ui/time-ago.ts).
+
+### Q-UI-998 · The audit log filters by the resource an event is about, its kind and its identifier
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "The audit log's page cannot filter by a resource";
+the owner reviews it at the walkthrough.
+
+Context: the keys handed to one Bastion are the events `bastion.data_key.handed` whose resource is that registration; the API filters by
+`resourceType` and `resourceId`, the page did not, and the manual sent an administrator with several Bastions to the API. The page's
+other filters are fields of its drawer; an opened event links its actor and its repository to their pages, and no fact to a filter.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two fields of the drawer, **Resource kind** (with the kinds the events name most as suggestions) and **Resource ID**, chips beside **Filters** as the other filters; the opened event's resource shows its identifier with a copy button, as the event's own IDs (chosen) | The form of the drawer's fields | The filter in the form every other has; the identifier is copied where it is seen | Two fields for one filter |
+| (b) A link "Events of this resource" in the opened event | — | One click | No other fact of the event links to a filter: a second way to filter, for one field |
+| (c) Leave it to the API | — | Nothing to build | The finding stays |
+
+**Choice:** (a). **Rationale:** the filters of a list are its drawer's (Q-UI-420); a link of the event would be the page's only such
+link. The development agent would revisit (b) if the page gains filter links for its other facts.
+
+**Applied in the spec:** R-UI-037; [manual](../manual/admin/bastion.md) "Which keys a Bastion received". Code:
+[audit-log.ts](../../web/src/app/features/audit/audit-log.ts), [audit-api.ts](../../web/src/app/api/audit-api.ts).
 
 ## What this does not cover
 

@@ -88,6 +88,29 @@
     <label class="field-label" for="a-repository" i18n="@@audit.filter.repository">Repository</label>
     <input id="a-repository" class="text-input" autocomplete="off" spellcheck="false" [value]="draft()['repository']" (input)="setDraft('repository', $any($event.target).value)" />
   </div>
+  <!-- The resource an event is about, its kind and its identifier, as the API filters them (Q-UI-998): the keys handed to one Bastion
+       are the events of its registration. -->
+  <div class="field">
+    <label class="field-label" for="a-resource-type" i18n="@@audit.filter.resource-type">Resource kind</label>
+    <input
+      id="a-resource-type"
+      class="text-input"
+      autocomplete="off"
+      spellcheck="false"
+      list="a-resource-types"
+      [value]="draft()['resourceType']"
+      (input)="setDraft('resourceType', $any($event.target).value)"
+    />
+    <datalist id="a-resource-types">
+      @for (k of resourceKinds; track k) {
+        <option [value]="k"></option>
+      }
+    </datalist>
+  </div>
+  <div class="field">
+    <label class="field-label" for="a-resource-id" i18n="@@audit.filter.resource-id">Resource ID</label>
+    <input id="a-resource-id" class="text-input" autocomplete="off" spellcheck="false" [value]="draft()['resourceId']" (input)="setDraft('resourceId', $any($event.target).value)" />
+  </div>
   <div class="field">
     <label class="field-label" for="a-outcome" i18n="@@audit.filter.outcome">Outcome</label>
     <select id="a-outcome" class="select-input" (change)="setDraft('outcome', $any($event.target).value)">
@@ -252,10 +275,14 @@
               >@if (e.path) {<a [routerLink]="fileLink(e.repository, e.path)" translate="no">/{{ e.path }}</a>}
             </dd>
           }
-          @if (e.resource.type) {
+          @if (e.resource.type; as kind) {
+            <!-- The resource: its kind and its identifier to copy, as the event's own IDs, for the filter by resource (Q-UI-998). -->
             <dt i18n="@@audit.detail.resource">Resource</dt>
-            <dd translate="no">
-              {{ e.resource.type }}{{ e.resource.id ? ' ' + e.resource.id : '' }}
+            <dd>
+              <code translate="no">{{ kind }}{{ e.resource.id ? ' ' + e.resource.id : '' }}</code>
+              @if (e.resource.id; as id) {
+                <quader-copy-button class="on-line" [value]="id" [label]="copyResource" />
+              }
             </dd>
           }
           <dt i18n="@@audit.col.source">Source address</dt>

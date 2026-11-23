@@ -15,6 +15,9 @@ export interface AuditFilters {
   readonly action?: string;
   readonly category?: string;
   readonly repository?: string;
+  /** The kind of the resource an event is about (`bastion`, `repository`), and its identifier (Q-UI-998). */
+  readonly resourceType?: string;
+  readonly resourceId?: string;
   readonly outcome?: string;
 }
 

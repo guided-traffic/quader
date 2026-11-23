@@ -50079,5 +50079,23 @@
         <target>Details kopieren</target>
       </segment>
     </unit>
+    <unit id="audit.copy-resource">
+      <segment>
+        <source>Copy the resource ID</source>
+        <target>Ressourcen-ID kopieren</target>
+      </segment>
+    </unit>
+    <unit id="audit.filter.resource-id">
+      <segment>
+        <source>Resource ID</source>
+        <target>Ressourcen-ID</target>
+      </segment>
+    </unit>
+    <unit id="audit.filter.resource-type">
+      <segment>
+        <source>Resource kind</source>
+        <target>Ressourcenart</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

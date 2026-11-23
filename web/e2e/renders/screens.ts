@@ -181,6 +181,12 @@ const securityChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByRole('checkbox', { name: 'Critical', exact: true }).check();
 };
 
+/** The audit log filtered by a resource, its kind and its identifier (Q-UI-998): the events of the advisory sync's task. */
+const auditResource = async (drawer: Locator): Promise<void> => {
+  await drawer.getByLabel('Resource kind', { exact: true }).fill('task');
+  await drawer.getByLabel('Resource ID', { exact: true }).fill('vuln-sync-osv');
+};
+
 /** The users with two filters set. */
 const userChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByLabel('Status').selectOption('active');
@@ -2636,7 +2642,7 @@ export const screens: readonly Screen[] = [
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
   // At 1,280 px too: the log scrolled sideways there (its Source address column).
-  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen(), widths: [1280], tables: 'quader-audit-log quader-data-table' },
+  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen(auditResource), widths: [1280], tables: 'quader-audit-log quader-data-table' },
   // One event opened: its time on one line at 390 px, the copy buttons of its IDs on their lines (R-UI-037).
   { id: 'admin-audit-event', path: '/ui/admin/audit', kinds: admins, walk: auditEvent, widths: [1280], tables: 'quader-audit-log quader-data-table' },
   // The traces of data keys handed to a Bastion (storage.md R-STOR-096), answered in the browser: the list and one opened.
