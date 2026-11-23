@@ -399,6 +399,8 @@ const (
 	CodeTooManyRules = "too_many_rules"
 	// CodeInvalidVersion: a version the repository's format cannot read (422, R-CUR-006).
 	CodeInvalidVersion = "invalid_version"
+	// CodeInvalidName: a package name the repository's format refuses, in a delivery rule (422, R-CUR-006).
+	CodeInvalidName = "invalid_name"
 	// CodeCatalogueNotOffered: a catalogue call the upstream of the repository does not answer, such as a search where it has none
 	// (400, R-CUR-009).
 	CodeCatalogueNotOffered = "catalogue_not_offered"
@@ -1026,6 +1028,7 @@ var registry = []CodeInfo{
 	{CodeNotAllowedInRepository, Forbidden, "Not allowed in this repository", "The delivery rules of the remote repository do not deliver this package or version: a rule blocks it, or the repository delivers only what is allowed. The answer's text says where to ask for it; a person who may set the repository's rules can allow it."},
 	{CodeTooManyRules, Unprocessable, "Too many rules", "The repository holds the most delivery rules it may (proxy.delivery.max_rules), or 100 section rules. Remove rules, or allow a section instead of many packages."},
 	{CodeInvalidVersion, Unprocessable, "Invalid version", "The version is not one the repository's format can read. Write it as the format's clients name it; a range is not a version."},
+	{CodeInvalidName, Unprocessable, "Invalid name", "The name is not a package name of the repository's format. Write it as the format's clients name it; a pattern belongs in a section rule."},
 	{CodeCatalogueNotOffered, Invalid, "Not offered by the upstream", "The upstream of this remote repository does not answer this call of the catalogue, for example a search where it has none. Look the package up by its exact name."},
 	{CodeCatalogueNotFound, NotFound, "Not found upstream", "The upstream of this remote repository does not have a package of this name. Check the name's spelling as the format writes it."},
 	{CodeCatalogueBudgetExhausted, RateLimited, "Catalogue budget used up", "The upstream catalogue's requests of this repository or of this person within the last minute reached their bound, or the upstream rate limits Quader. Try again after the Retry-After period; an answer from the catalogue's cache costs nothing."},
