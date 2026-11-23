@@ -2336,6 +2336,13 @@ runs are in `git log`; this section holds the current state.
   load is 93 on 20 cores,** several builders' lint and unit runs at once; nothing further is started, and
   a failure of a timing test in these minutes is read as the machine's first. No push is in the pipeline.
   His installation and its Bastion run the newest release, ready.
+- **The timer's check at 02:14:** the gates of the Bastion's P3 and the links' second package together exit
+  0 up to the ninth of twelve integration areas; **four runs wait at the integration stack's one lock**
+  (the landing's gates, package F, and two builders), which is what holds the landings tonight, as section
+  12 A says of it; the load is 3. The Bastion's P4 waits behind this landing, built and gated by its
+  builder. Package F, the encryption's package 3 and the links' package 3 are active within three minutes;
+  the planner of the kit move is at work. No push is in the pipeline. His installation and its Bastion run
+  the newest release, ready.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
