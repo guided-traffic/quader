@@ -1620,6 +1620,8 @@ the sixteen criteria use and leave the rest to F1.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entries in the decision log: [ADR-078](../decisions.md#adr-078--restores-keep-metadata-and-blobs-consistent-by-ordering-not-by-coordination), [ADR-094](../decisions.md#adr-094--a-configurable-backup-job-writes-consistent-backups-to-s3).
+
 Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice moves from (a) to the new option (e). Quader's own backup create and restore are MVP (INV-19), R-HA-023 and R-HA-025 are MVP (Q-HA-19), and the revocation journal R-HA-054 with R-AUTHZ-031's entries is MVP (Q-HA-9). The exception that put P1 requirements into M5 is gone, and the journal is no longer the first work after the beta. The owner constraint excludes (b). The spec pages applied (c) and (d); (e) adds when the work starts, and (f) was added and rejected.
 
 R-HA-052 (MVP) runs two restore drills: the point-in-time drill of R-HA-025 and the drill that

@@ -6955,6 +6955,8 @@ content is never rendered as part of Quader's origin.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
+
 Context: read in the clients' source on 2026-11-22: Go's HTTP client keeps `Authorization` on a redirect to the same host or a subdomain
 of it, and containerd and Podman do not strip it; an object store refuses a signed link that arrives with a credential (`400`). Quader
 answers on the hosts of its base URLs, its endpoints' host sets, their wildcard hosts and the host names its endpoints bind
@@ -8121,6 +8123,8 @@ before every batch, and stop at a batch in which nothing moved; a backlog is the
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-162](../decisions.md#adr-162--the-upload-session-service-is-a-domain-package-under-the-host-and-a-staged-blob-commits-through-the-commit-protocol-with-a-server-side-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `quader_oci_upload_sessions_total{outcome}`, as R-OCI-034 wrote it | The OCI handlers count what they see | The name the OCI page already has | They see neither the sessions the collection run expires nor those the service aborts (a size limit, a damaged tail); the counter would need the service to call the format, or the format to count what it cannot see |
@@ -8137,6 +8141,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-162](../decisions.md#adr-162--the-upload-session-service-is-a-domain-package-under-the-host-and-a-staged-blob-commits-through-the-commit-protocol-with-a-server-side-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One tail, rewritten by every request (the first cut) | A request reads the whole recorded tail back, appends its bytes and writes a new tail | Few objects | A client that sends one byte per request makes the replica read and write up to a part (16 MiB) and hold it in the spool each time: about 10^7 times the request's bytes, for a few cents of its own; a stalled second byte holds the spool |
@@ -8152,6 +8158,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-STOR-175 · A part upload is sent under a freshly renewed claim and ends before its lease does
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-162](../decisions.md#adr-162--the-upload-session-service-is-a-domain-package-under-the-host-and-a-staged-blob-commits-through-the-commit-protocol-with-a-server-side-copy).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8540,6 +8548,8 @@ timeouts, by adding the one key to the element.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The list order for both (chosen) | The first writable connection takes an upload, reads try the copies in that order | One rule an operator reads off the list; no setting | A connection cannot be first for reads and last for writes |
@@ -8554,6 +8564,8 @@ moves no data, so a wrong order costs a rollout.
 ### Q-STOR-222 · What may differ between providers is a key of the connection, the rest is shared
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: providers differ in checksum defaults, conditional writes and `DeleteObjects` (the research of 2026-11-22: the AWS SDK's
 default checksums are the likeliest break with S3-compatible stores; the software behind the owner's provider refuses the checksum
@@ -8572,6 +8584,8 @@ connection's because its cost is the provider's egress.
 ### Q-STOR-223 · A provisioner's Secret reaches a connection through files named by the element
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: today the chart maps a provisioner's Secret keys `bucketKey`, `regionKey` and `endpointKey` to the environment variables
 `QUADER_STORAGE_S3_BUCKET` and so on ([deploy/helm/quader/templates/_endpoints.tpl](../../deploy/helm/quader/templates/_endpoints.tpl)).
@@ -8595,6 +8609,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 properties are fixed once it holds data is the owner's (2026-11-22, decision 7). That a new database on an old bucket meets the marker is an
 open question for the owner (his installation is a playground he resets), specified meanwhile with (a).
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: the owner fixed "the properties"; which ones decide where and how data lies is the planner's reading. An endpoint changes for
 legitimate reasons (a renamed host, an internal and an external address of one store), and then the data is the same.
 
@@ -8615,6 +8631,8 @@ on one location, a drain of one); the price is an object per connection. The pla
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. An open question for
 the owner, specified meanwhile with (a).
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Detached: replicas start, its copies are not read, blobs only it holds answer `503`, an alert fires, putting the element back restores everything; `forget-connection` gives it up (chosen) | Availability first, nothing destroyed | A provider that is gone does not block a rollout; a mistake is undone by the next rollout | A blob only that connection held is unavailable until the element is back or the connection is forgotten |
@@ -8629,6 +8647,8 @@ consequence visible. Recommendation to the owner: (a).
 ### Q-STOR-226 · A row per copy without a foreign key to blobs, and the blob's content state derived from its copies
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: `blobs` holds no location and one `content_status` per blob ([00002_storage_core.sql](../../internal/meta/postgres/migrations/00002_storage_core.sql));
 a "no such object" marks the blob `missing` installation-wide ([internal/blob/download.go](../../internal/blob/download.go) `markMissing`).
@@ -8648,6 +8668,8 @@ foreign key is impossible by the reference rule.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `present`, `missing`, `corrupt`, `deleting`; `verified_at` set by an enforced payload checksum on write or a full read that matched (chosen) | A gap is the absence of a row | A drain and the scrub know which copies were shown whole; a server-side copy's weaker evidence is visible | Whether a store enforces the checksum is established, not assumed (R-STOR-035) |
@@ -8661,6 +8683,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-228 · A queue for what happens and a pass for what was missed
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8679,6 +8703,8 @@ during a fill.
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That an upload is done
 when one connection holds it is the owner's (decision 8).
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) First writable in list order; a transient failure or an open circuit retries on the next within the request (chosen) | The spool still holds the bytes | A provider's outage costs no client a retry | A request may take two writes' time |
@@ -8692,6 +8718,8 @@ when one connection holds it is the owner's (decision 8).
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. The minimum as a
 detail setting is the owner's (decision 8).
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `storage.replication.min_copies` in the file configuration, default 1; fewer successful writes answer `503` (chosen) | Infrastructure beside the connections | One place with the list it counts; GitOps | A change is a rollout |
@@ -8703,6 +8731,8 @@ detail setting is the owner's (decision 8).
 ### Q-STOR-231 · A session stays on its connection and answers 503 while it is unreachable
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: a session's multipart upload exists in one store only ([00054_upload_sessions.sql](../../internal/meta/postgres/migrations/00054_upload_sessions.sql)
 `s3_upload_id`), and its finalize is a server-side copy inside that store ([internal/blob/staged.go](../../internal/blob/staged.go)).
@@ -8720,6 +8750,8 @@ The owner's paper said: if its connection fails, the client starts again.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Before the first byte only; after it, abort as today and let the client's retry or resume take the next copy (chosen) | One copy per response | Every byte of a response comes from one object; a digest mismatch blames one copy | A cut response costs the client a resume |
@@ -8733,6 +8765,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Stamp `verified_at` when it is older than 24 hours (chosen) | At most one write per copy and day | Hot blobs are scrubbed by their downloads; the scrub reads less | A write on the download path once a day per copy |
@@ -8744,6 +8778,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-234 · A server-side copy counts as present and is the scrub's first work, a drain needs a verified one
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8759,6 +8795,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-235 · The reconciliation is one exclusive job per installation
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8776,6 +8814,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the old
 connection goes is the owner's (decision 7); that Quader deletes its copies is an open question for the owner, specified meanwhile with (a).
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The drain deletes each copy on the draining connection beside a present copy on every other connection, one verified within its period and confirmed by `HeadObject` just before (chosen) | Quader removes what it put there; journal and marker stay | Switching encryption on (stage 2) leaves no plaintext behind; the same bucket under another prefix is not paid twice | Objects are deleted from a bucket; an operator who wanted a frozen copy must not drain |
@@ -8792,6 +8832,8 @@ the owner: (a).
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: an open circuit ends a collection run today ([internal/blob/gc.go](../../internal/blob/gc.go) `stopsRun`), and an upload of
 the same content waits for the `deleting` row (R-STOR-005).
 
@@ -8807,6 +8849,8 @@ the same content waits for the `deleting` row (R-STOR-005).
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Adopt an object of a live blob without a copy row (unverified); claim an orphan with a `deleting` blob row whose other digests are zero bytes (chosen) | One protocol for every object found | A crashed reconciliation, a commit's lost round and a point-in-time restore lose no copy; the commit protocol sees the claim | A `deleting` row with placeholder digests |
@@ -8819,6 +8863,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. The scrub as a full
 read in a period is the owner's (decision 10, option a over c).
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-027 had a weekly existence check and a deep check every 90 days, neither built.
 
@@ -8833,6 +8879,8 @@ Context: R-STOR-027 had a weekly existence check and a deep check every 90 days,
 ### Q-STOR-240 · The scrub's evidence becomes true by moving the tests that name it for another part
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-027 is in [implemented.txt](../coverage/implemented.txt) while the scrub is not built
 ([docs/developer/blob-store.md](../developer/blob-store.md) says so); the tests that name it test the lost content of a remote
@@ -8850,6 +8898,8 @@ repository and the operator check.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Ship to every connection with `drain: false`; delete the outbox row when each holds it; the journal pass copies older entries to a new connection (chosen) | The journal survives the loss of any one provider | A restore after a provider's loss still replays | A table of shipped marks; an unreachable connection keeps rows |
@@ -8861,6 +8911,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-242 · A replica is first ready when one connection passed and no connection has a configuration error
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: Q-STOR-1 holds a replica back until the start check passed, so a broken configuration never replaces working pods. With two
 connections, a pod that starts during one provider's outage (17.5 hours in July 2026 at the owner's provider) should serve from the
@@ -8878,6 +8930,8 @@ other.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Same names, label `connection` (chosen) | `quader_storage_s3_circuit_open{connection}` | Dashboards keep working with a `sum`/`min`; the label is bounded (eight) | The rules change their aggregation |
@@ -8889,6 +8943,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the wrapped data
 key lies in the object's metadata is the owner's (decision 2, option e), for stage 2.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: the interface has no metadata anywhere ([internal/blob/objects.go](../../internal/blob/objects.go)); six checks compare a stored
 object's size with the plain size of the row (the research of 2026-11-22: commit, download, recheck, verify, backup, restore).
@@ -8904,6 +8960,8 @@ object's size with the plain size of the row (the research of 2026-11-22: commit
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `Store.Servable(digest)` with the read order and each connection's `Encrypted()`, its link check and a guarded `Presign` (chosen) | One answer for the read and the link | A link never names a copy a read would skip | The guard's presign passes the breaker check now |
@@ -8914,6 +8972,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-246 · Every behaviour once at the cheapest tier, no end-to-end leg
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8926,6 +8986,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Eight (chosen) | A bound | Bounds the label, the clients per replica and every blob's copies | An arbitrary number |
@@ -8936,6 +8998,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-248 · The start check establishes what a connection supports and refuses or degrades by a stated rule
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: the owner's provider documents neither conditional writes, nor checksum headers, nor a copy with new metadata; the software
 behind it documents conditional writes as unsupported (refused with `501` or accepted and ignored) and the newer SDK's checksum trailer as
@@ -8972,6 +9036,8 @@ show is the same content, and what eventual delete consistency can show is a cop
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: the specification says nothing about the blobs an installation holds when it takes the migration of the connections (00106).
 The owner's installation and the development stacks hold data. The migration knows that there was one connection, which the element
 without an id names (`default`, R-STOR-050), but neither its bucket nor its prefix, and every reader takes an object's name from its copy row
@@ -8996,6 +9062,8 @@ release, when migrations of data become a duty of their own.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-050 rule 2 reads `bucket_file`, `region_file` and `endpoint_file` "once at start", and rule 4 refuses two connections at one
 location. `quader admin config validate` and a render check of the chart load the configuration where the provisioner's Secret is not
 mounted.
@@ -9010,6 +9078,8 @@ mounted.
 ### Q-STOR-252 · The first readiness waits for each connection's first answer
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-060 makes a replica ready once the start check passed on one connection without `drain: true` and no such connection has
 a configuration error. A connection that failed transiently at that moment may show a configuration error later.
@@ -9032,6 +9102,8 @@ already held the first readiness.
 Status: **Decided by the builder** — selected from the options below; the owner reviews it. It changes a sentence of R-STOR-053, which
 said `ON CONFLICT DO NOTHING` for the copy rows of a round that turns out a deduplication hit.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The copy row of an object this commit wrote becomes `present`: inserted, or a `missing`, `corrupt` or `present` row overwritten; a row in state `deleting` is left to collection (chosen) | The write is evidence about the object | A copy marked missing while this commit wrote the object again is not queued for a repair it does not need | — |
@@ -9042,6 +9114,8 @@ said `ON CONFLICT DO NOTHING` for the copy rows of a round that turns out a dedu
 ### Q-STOR-254 · The names the start check and the reads give their findings
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-035 records a server-side copy from each other connection "per pair" without a name, R-STOR-055 counts
 `quader_storage_reads_fallen_over_total{connection,reason}` without listing the reasons, and R-STOR-035 lets `quader admin storage
@@ -9058,6 +9132,8 @@ check` report results without an exit code.
 ### Q-STOR-255 · A streamed copy holds one part in memory: one request up to a part, ranged reads into a multipart upload above it
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-056 pipes "a `GetObject` of the source (ranged parts above the multipart threshold)" into `PutObject` or the target's
 multipart upload. The store's interface takes a seekable body for a single request, because a retry sends it again, and the payload
@@ -9081,6 +9157,8 @@ that the multipart shape of blobs between one part and the threshold matters.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-056 records a copy under `SELECT … FOR SHARE`, as the commit locks a blob. R-STOR-052 says that the statement that changes a
 copy recomputes the blob's content state in the same transaction, which needs the lock the marks take (`FOR NO KEY UPDATE`, Q-STOR-226): a
 copy whose source was marked between the read and the record would otherwise leave a blob `corrupt` beside a present copy. R-STOR-052 counts
@@ -9097,6 +9175,8 @@ copy whose source was marked between the read and the record would otherwise lea
 ### Q-STOR-257 · The pass queues a gap only where another connection holds the blob, starts hourly or at once while a connection fills, and keeps its position in a row of its own
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-052 calls a connection without a row for a blob a gap; a row in state `missing` or `corrupt` is the same lack, and a blob
 that no connection holds present has no source, so queuing it would fail at every back-off. R-STOR-056 does not say when a new full pass
@@ -9123,6 +9203,8 @@ of an active connection mattered within the hour.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-056 counts `quader_storage_reconcile_failures_total{connection,reason}` without naming the reasons; it deletes a queue row
 whose blob is not live, whose target is no target or holds a present copy, and is silent on a row whose blob no connection holds present
 (a copy marked missing on the one connection there is, R-STOR-055) and on a target whose circuit opens while its copies of a batch run
@@ -9140,6 +9222,8 @@ whose blob is not live, whose target is no target or holds a present copy, and i
 ### Q-STOR-259 · The drain walks every copy it has not claimed, reads the survivors again under the blob's lock, finishes its own claims, and a draining connection is no longer filled
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-056 walks D's present copies, confirms the verified survivor with `HeadObject`, locks the blob `FOR SHARE`, sets D's row
 `deleting`, deletes under the hand-over deadline, then the row. It is silent on D's `missing` and `corrupt` copies (D holds no copy only once
@@ -9161,6 +9245,8 @@ only of a blob it claimed (R-STOR-057).
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-057 releases a copy whose connection's circuit is open, so that an upload of the same content does not wait for another
 provider's outage (Q-STOR-237). It names no exception for the case in which no connection is writable, which is every outage of the one
 connection of a plain installation (the owner's has one, on an object gateway of his provider).
@@ -9180,6 +9266,8 @@ writable: no late delete can come of it. The builder would revisit this if a sto
 ### Q-STOR-261 · Under the deletion pause the sweep walks on, adopting and marking, and a resume starts where it stopped deleting
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-026 says both that a sweep under the deletion pause "deletes nothing and ends with `result.paused: true`, and a later run
 resumes at the checkpoint" and that "adoptions and marks are not deletions and continue"; its resume rule names only jobs that ended
@@ -9201,6 +9289,8 @@ revisit this when a pause is shown to last so long that the repeated listing mat
 ### Q-STOR-262 · The sweep acts on evidence a listing alone does not give
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: one provider applies overwrites and deletes with a delay (R-STOR-035 A3, Q-STOR-249), so a listing can show an object whose
 delete was acknowledged; the owner's object gateway documents queued deletes. R-STOR-026 adopts an object of a live blob on every
@@ -9226,6 +9316,8 @@ Status: **Decided by the builder** — selected from the options below; the owne
 [Q-STOR-172](#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own),
 which said the pass moves into the sweep once it exists.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The orphan sweep's staging step, after each connection's 256 prefixes: multipart uploads below the whole prefix older than `multipart_max_age` aborted, objects of sessions over, unknown or pinned to another connection and leftover probes older than `session_max_age` deleted, counted in `stagingDeleted`; the job's checkpoint is the progress, the page limit and the `system_state` cursor go (chosen) | One pass per connection | Every connection's staging area has a remover; the multipart uploads of a commit's crashed blob write below `sha256/` are aborted too; one checkpoint | A drain during the step repeats the step |
@@ -9237,6 +9329,8 @@ the session step keeps the rows ([gc_uploads.go](../../internal/blob/gc_uploads.
 ### Q-STOR-264 · A session starts on the first writable connection without asking the store, and moves at its first write while it has written nothing
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-054 pins a session to "the first writable connection when the session starts" and moves one that has written nothing
 "at its first write"; it does not say what a start does while no connection is writable. A start costs a row and nothing in the bucket
@@ -9253,6 +9347,8 @@ Context: R-STOR-054 pins a session to "the first writable connection when the se
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it. It changes a sentence of R-STOR-027,
 which gave the repair to the reconciliation, and adds `quader_storage_scrub_repairs_total`.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: the owner's decision 10 says the scrub "replaces a damaged copy from another connection". One store of the owner's research has no
 upload checksum of its own and one applies overwrites and deletes with a delay (Q-STOR-249); no guarantee may rest on a conditional write.
@@ -9295,6 +9391,8 @@ verified and the blob follows; one still gone or damaged has its `checked_at` mo
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-027 names `quader_storage_scrub_overdue_copies{connection}` and the alert `QuaderStorageScrubBehind` (`> 0` for 6 hours,
 R-HA-045) without saying when a copy is overdue or who exports the gauge. In a steady state about a 720th of a connection's copies becomes due
 every hour and is read by the next hourly run, so the copies merely past their period are never zero for long on a large connection.
@@ -9316,6 +9414,8 @@ grace if an installation's period is set near its 24-hour minimum, where a day o
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-027 names the permission `storage.read`, which [operations-and-observability.md](operations-and-observability.md) lists as a
 proposed name; the capability catalog of [authorization.md](authorization.md) R-AUTHZ-010 has no such capability, and `system.read` there is
 the capability `settings:read`. The recheck "sets the states by what it finds" without saying what a copy already marked becomes, and it runs
@@ -9334,6 +9434,8 @@ on an `api` replica inside a request.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it. It changes a sentence of
 [backup-and-restore.md](backup-and-restore.md) R-BAK-030, which spoke of "that connection's entry of `--credentials-file`".
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: `restore-versions` lists and deletes object versions on every connection of its run, with a credential the runtime one lacks
 (R-HA-023). Package D built the command per connection on a base where the file of `--credentials-file` held one credential
@@ -9359,6 +9461,8 @@ has, with the meaning that file has everywhere, and it needs a versioning login 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-058 calls a blob lost "when none of its copies is there with its size", but a run asks only the present copies on the
 connections of its configuration (or the one named), and a check may go unanswered. Its exit codes say nothing of a store that refuses one
 connection's checks.
@@ -9374,6 +9478,8 @@ connection's checks.
 ### Q-STOR-270 · A shipper run leaves out a connection that failed and walks on past the rows that wait for it
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-059 says that an unreachable connection delays only its own copy. The shipper of one connection stopped at its first
 failure and read the outbox from its start at every run; with a row that waits for one connection, a run that reads from the start reads
@@ -9396,6 +9502,8 @@ recorded failures of a long outage drowned other job failures.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-STOR-059 says the replay reads every "reachable" connection of the source, and R-HA-054 that a journal that cannot be listed is
 a journal not known to be complete. With several connections both hold at once: every entry lies on every connection without drain.
 
@@ -9413,6 +9521,8 @@ revisit this if the replay's output proved too easy to overlook.
 ### Q-STOR-275 · A download takes its blob's copies from its item lookup
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-STOR-055 has a read take the blob's present copies in an order; the first build read them with a statement of their own
 (`BlobCopies`) before it asked the object store. [architecture.md](architecture.md) R-ARCH-027 allows a local download one statement,
@@ -9461,6 +9571,8 @@ reads of small files dominating.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: Quader sends every part with a payload checksum computed before the request and lets the SDK retry a part by seeking its body back
 (R-STOR-006, [transfer.go](../../internal/blob/transfer.go) `wholeChecksum`); with random nonces per sealing, a retry would send other bytes
 than the checksum describes unless the ciphertext is kept.
@@ -9479,6 +9591,8 @@ seed comes with every plaintext the writer did not already seal.
 ### Q-STOR-302 · An object ends with a final segment that carries its length and its SHA-256
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: the proxy ends an object with a trailer at index `2^64 − 1` (length and CRC32C) and marks no last segment; the formats that got
 truncation right mark the last segment (research, topic B.4). An upload session learns that a part is the last only at its finalize, after
@@ -9499,6 +9613,8 @@ the part was sealed and sent.
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That the wrap lies once
 at the object, bound to the digest, under the connection's storage key, is the owner's (2026-11-22, decision 2 (e)).
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: on a connection with keyed names the object's name does not tell the digest; a reader with a database knows it from the copy row,
 the offline tool without one does not. The proxy's wrap binds nothing (its additional data is a constant) and uses the key directly.
 
@@ -9516,6 +9632,8 @@ record self-describing for the one reader without a database.
 ### Q-STOR-304 · A commitment to the data key in the record, checked before the first segment
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: AES-GCM is not key-committing: a ciphertext can be made to open under two keys into two valid files (Albertini and others, 2020/1456).
 The proxy addresses it nowhere. In this stage every copy has its own data key and only Quader makes wraps; the handover of decision 12 (b) and
@@ -9536,6 +9654,8 @@ one body carries several records, which no path of this stage creates.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `L ≤ 2^42` (chosen) | At most `2^26` data segments, stored at most 4,399,925,559,364 bytes | Below the 5 TiB an S3 object can hold; far above `storage.upload.max_size` (10 GiB by default) and a multipart upload of 10,000 parts of 16 MiB (156 GiB) | A limit of its own to state |
@@ -9548,6 +9668,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-306 · An encrypted connection needs metadata, and without a copy that replaces it the finalize streams
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: stage 1's start check records `capabilities.metadata` and `capabilities.copyReplacesMetadata` (R-STOR-035). The software behind the
 owner's provider documents a copy with new metadata; his own installation's object gateway (Ceph, in his cluster) was not researched; nothing
@@ -9566,6 +9688,8 @@ was run against either.
 ### Q-STOR-307 · A session's data key is sealed in its row and its tails are sealed under a key of their own
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: a session's requests reach any replica (INV-18); its row keeps the hash state between them
 ([00054_upload_sessions.sql](../../internal/meta/postgres/migrations/00054_upload_sessions.sql)); its tails are objects of their own, read
@@ -9586,6 +9710,8 @@ back by the next request (R-STOR-011).
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. That switching encryption
 on or off is a new connection which the reconciliation fills is the owner's (2026-11-22, decision 7). **An open question for the owner**,
 specified meanwhile with (a).
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: between two encrypted connections the reconciliation can carry the data key (copy the ciphertext, wrap the key again under the other
 storage key, server-side within one endpoint) or write new bytes. The answer to a leaked storage key is a new connection filled with new data
@@ -9610,6 +9736,8 @@ generation with an export command, is the owner's (2026-11-22, decision 15 (a));
 ([Q-STOR-402](#q-stor-402--a-destroyed-key-keeps-its-row-loses-its-sealed-value-and-names-its-time)). *Superseded in place on 2026-11-22:
 decided by the planner in the owner's absence, put to the owner as an open question (whether leaving a provider shall destroy its keys),
 specified meanwhile with (a).*
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: the working paper said in passing that whoever leaves a provider deletes its storage key, and what stays there becomes unreadable.
 Noncurrent versions of a bucket and the pool of a backup hold objects wrapped by that key (R-BAK-031). A backup's pool is shared, keyed by
@@ -9639,6 +9767,8 @@ R-STOR-082, R-STOR-087 to R-STOR-090; backup-and-restore.md R-BAK-031, R-BAK-032
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Opened at start, kept for the replica's life, refreshed by the change area `storage_keys` and by a read of an unknown identifier at most every 10 s per connection (chosen) | No query per read | A new generation reaches every replica within the change areas' bound; a replica that is late reads the rows when it meets the new identifier | Keys in memory for the replica's life (H-1309) |
@@ -9656,6 +9786,8 @@ change, so "for the replica's life" ends there.*
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Fall over, mark nothing, count it, alert critical after 10 minutes (chosen) | A missing key is a configuration fault | The scrub and the reconciliation never overwrite an object that the export's import could still open | A damaged identifier inside a genuine record is not repaired until someone looks |
@@ -9670,6 +9802,8 @@ is not unknown; it is `destroyed_key`, which marks the copy, because that key ne
 ### Q-STOR-312 · The export is one document of sealed rows and the import adds missing rows
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -9686,6 +9820,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. Keyed names on an encrypted
 connection, on by default and fixed, are the owner's (decision 5 (a) with his note, read and decided by the development agent on 2026-11-22).
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `keyed/<m0m1>/<m2m3>/<m>`, `m = HMAC-SHA-256(name key, FMT ‖ " name" ‖ digest)`, a random name key per connection kept like a storage key (chosen) | Another family, the same fan-out | A keyed name never passes for a digest; the orphan sweep tells the families apart | One more key per connection |
@@ -9700,6 +9836,8 @@ connection, on by default and fixed, are the owner's (decision 5 (a) with his no
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One `HeadObject` and an unwrap for an object without a copy row; adopt or claim by the unwrapped digest; report an unreadable one (chosen) | The record is the map | Exactly the stage-1 rules, with the digest from the record | One request per object without a row (rare: a crashed write, a restore) |
@@ -9713,6 +9851,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-315 · The journal, the probes and the marker stay plain on an encrypted connection
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -9729,6 +9869,8 @@ a key from the database it replaces would break the one case it is for.
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. An offline tool is the owner's
 (decision 1 (a)).
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `quader admin storage offline` with `list`, `get`, `verify` and `pull`, from a connection element or a directory written by `pull` (chosen) | One binary | The same codec as the server; no database, no Valkey | A directory copied by another tool without its metadata cannot be read (H-1303) |
@@ -9743,6 +9885,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One ranged `GetObject` of the window's segments, the final segment with them at the end; the record comes with the answer (chosen) | As many requests as today | No `HEAD`; every byte released is authenticated | Over-reads up to two segments |
@@ -9756,6 +9900,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `sealed_segments` in the row, raised in the claim transaction, refused past `2^31` (chosen) | A hard bound | Keeps one key below the NIST bound however often a client sends a part again | One column and one addition per request |
@@ -9768,6 +9914,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-319 · Every behaviour of the encryption once at the cheapest tier, and its fuzz targets in the nightly
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: the repository's rule that tests stay runnable (owner, 2026-11-20). No fuzz job runs in the nightly today; the fuzz legs of npm and
 NuGet run only on a dispatch with `closing=true` ([release.yml](../../.github/workflows/release.yml)).
@@ -9871,6 +10019,8 @@ connection" relies on not to happen.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: R-STOR-085 says the import inserts the rows that are missing and keeps the rows that are equal; the table holds one active storage
 key per connection. A database restored to a point before generation `n + 1` was drawn has generation `n` active, while the export lists `n`
 retired and `n + 1` active: inserting `n + 1` as the file says conflicts, and the state of the equal row `n` differs between the two.
@@ -9890,6 +10040,8 @@ no part in the rule, so the highest generation that is not destroyed is active.*
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: R-STOR-083 draws the keys when a replica first records an encrypted connection, refuses over a used location, and loads the rows
 after the start check. Open were the place in the start, what a store that cannot be listed does to it, and what a draining connection and a
 missing name key get.
@@ -9908,6 +10060,8 @@ first start. **Applied in the spec:** R-STOR-083; code: `Ensure` of [draw.go](..
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: R-STOR-083 and R-STOR-096 ask for an architecture test that fails for a call of `CopyDataKey` from any package but `internal/blob`
 and `internal/downloadlinks`. The rules of `internal/archtest` read either the import graph (`go list`) or typed syntax (`LoadTyped`, seconds
 per run).
@@ -9924,6 +10078,8 @@ per run).
 ### Q-STOR-328 · A new generation needs a key ring that opens the generation it retires
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: `quader admin storage keys new-generation` seals the new key with the command's key ring. A command run with a ring the replicas do
 not hold (another installation's files, a wrong `active_key_id`) would seal a key no replica opens: every replica that learns of it fails to
@@ -9973,6 +10129,8 @@ are there. Q-STOR-320 left `CopyDataKey` without a caller and asked this planner
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Of the copies a read would try now, the first on a connection that is not encrypted, else the first on an encrypted one (chosen) | A data key leaves only where no plain copy can serve | The owner's "the data key where the blob lies on an encrypted connection", read narrowly | The Bastion may read from a provider later in the list than the main installation would |
@@ -10012,6 +10170,8 @@ paced ([bastion.md](bastion.md) R-BAS-059); only its cold fills were paced, by t
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `bastion.data_key.handed`, transactional, in a transaction of its own before the answer, whatever `audit.record_downloads` says; a failed insert streams the download (chosen) | No key leaves without its record | The trail lists which keys each Bastion holds | One insert per handover of an encrypted copy |
@@ -10023,6 +10183,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-STOR-345 · A repository's opt-out of links does not reach a handover
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -10257,6 +10419,8 @@ ring no longer has still restores the other connections. **Applied in the spec:*
 Status: **Decided by the development agent** (package 7, at its build) — selected from the options below; the owner sees it when it is
 built.
 
+Its entry in the decision log: [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable).
+
 Context: R-STOR-100's first case reads "`backup.enabled` is false in the command's configuration". `backup.enabled` is a value of the chart
 (it renders the CronJob), not a key of Quader's configuration; the chart requires `config.backup.target.bucket` with it, and every backup
 command needs the bucket. The runs record their target in two forms: a create `s3://<bucket>/<prefix> (<endpoint or aws>)`, a delete and a
@@ -10314,6 +10478,8 @@ writer's read landed (Q-SIG-240): the trace is written by the decision, before t
 
 Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
+
 Context: R-STOR-074 lets "every replica serving downloads" run the link check at its start and when the switch is turned on, and the
 settings' answer names per connection whether it can serve links on the replica that answers, which is an `api` replica. The check writes
 one probe, signs one link and fetches it per connection; a store that is unreachable at that moment gives no answer.
@@ -10331,6 +10497,8 @@ take a connection out of links. **Applied in the spec:** R-STOR-074 (as built), 
 
 Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
+
 Context: R-STOR-074 has a replica log a connection it finds unable once per change, with the reason and the host. Most installations do not
 use links, and an encrypted connection, or a store reached over `http` inside the cluster, is unable for links by design.
 
@@ -10344,6 +10512,8 @@ use links, and an encrypted connection, or a store reached over `http` inside th
 ### Q-STOR-353 · The cases of package 2 write the switch through the store, and the end-to-end cases are named after their legs' sets
 
 Status: **Decided by the development agent** (package 2 of the signed links) — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
 
 Context: the integration case of R-STOR-014 and the end-to-end cases of R-STOR-074 switch the delivery on through `PATCH
 /api/v1/download-links/settings`, which package 3 builds after package 2. The end-to-end sets select their tests by name prefix
@@ -10575,6 +10745,8 @@ segment and, where it hashes, the SHA-256 have passed.
 Status: **Decided by the development agent** during the build of R-STOR-095 (package 2 of the handover) — selected from the options
 below; the owner sees it when it is built.
 
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
 Context: R-STOR-095 names `quader_storage_download_handovers_total{bastion, kind}`. R-OPS-007 permits only the labels of its table, and
 the registry of `internal/observability` refuses any other when a family is registered. The main installation's
 `quader_bastion_interface_requests_total` and `quader_bastion_forwarded_requests_total` carry the label `bastion` already, registered
@@ -10594,6 +10766,8 @@ beside that check on the same registry (bastion.md R-BAS-008), with the registra
 
 Status: **Decided by the builder** (package 4) — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: R-STOR-087 had the reconciliation read a source "into its spool" and write the spool to an encrypted connection, and R-STOR-080
 named the streams of the reconciliation and of a restore among the writes "from a spool". The scrub's repair writes into an encrypted
 connection as well and holds no spool; the restore Job has none configured. The writer encrypts a section of plaintext as it is read, twice
@@ -10611,6 +10785,8 @@ where a payload checksum is taken, and the SDK's retry seeks back in it (Q-STOR-
 
 Status: **Decided by the builder** (package 4) — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: R-STOR-087 read steps 1 to 3 of the record of an object below `keyed/` that has no copy row and applied stage 1's rules by the
 digest; below `sha256/` of an encrypted connection without keyed names it opened the record only for an adoption. Q-STOR-314's rule is that
 the sweep never deletes an object without a readable record. Steps 4 and 5 compare with a copy row the object does not have.
@@ -10626,6 +10802,8 @@ the sweep never deletes an object without a readable record. Steps 4 and 5 compa
 ### Q-STOR-442 · The operator check opens a record's steps 1 to 6 and reports unknown_key as a finding record
 
 Status: **Decided by the builder** (package 4) — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: R-STOR-087 asked the operator check for a finding `record` when steps 1 to 5 fail. The check holds the copy row and the blob row,
 so `blobcrypt.Open` runs steps 1 to 6 at the cost of one comparison more. An unknown key is no damage (Q-STOR-311), but the copy cannot be read
@@ -10711,6 +10889,8 @@ R-STOR-095; [architecture.md](architecture.md) R-ARCH-027's budget line; code: [
 ### Q-STOR-471 · The link is signed before the data key is taken
 
 Status: **Decided by the builder** (package 4 of the handover) — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
 Context: R-STOR-095 numbers the data key (step 8) before the credential and the signature (step 9). Both must hold, so the order changes
 only which reason a download that fails both counts, how long the key lives, and whether a download that streams for its signature took a

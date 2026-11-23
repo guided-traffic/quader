@@ -3791,6 +3791,8 @@ Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 
 Status: **Decided by the owner on 2026-11-21** — option (b), as recommended.
 
+Its entry in the decision log: [ADR-227](../decisions.md#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Only in the UI and the API | | One place; changes act at once | Not declarative |
@@ -3827,6 +3829,8 @@ Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 
 Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Quader fetches in the background what the format defines, once an artifact is stored through a remote (chosen) | | The badge is right even if no client asked; mirror passes take signatures | For OCI up to three small requests more per image; how Docker Hub counts them was not checked then |
@@ -3839,6 +3843,8 @@ Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 
 Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Valid if valid when made; a timestamp or a log entry proves the time, else Quader's receipt; no CRL or OCSP; the administrator can block a signer (chosen) | | Old signatures do not tip over because a certificate expired since; works without internet; a block acts at once | Quader can show "verified" where a client without a timestamp refuses after expiry; the details name the expiry |
@@ -3850,6 +3856,8 @@ Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 ### Q-SIG-8 · Generic files
 
 Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
+
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3939,6 +3947,8 @@ Status: **Decided by the owner on 2026-11-21** — option (a), as recommended.
 Status: **Decided by the owner on 2026-11-21** — option (a), with his note: "Alle 3 Wege sollen von dir gebaut und betrieben werden." What
 "betrieben" covers beyond Quader is asked back to him by the main session.
 
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
+
 | Option | What it means |
 |---|---|
 | (a) The company's own Sigstore: its certificate authority issues a certificate per job (chosen) | the Sigstore identity anchor against an own trust root |
@@ -3983,6 +3993,8 @@ in the spec:** this page; [README.md](README.md) (the page index).
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The integrity verdict per (object, subject) for the installation; attachments per repository; trust per scope (chosen) | `signatures`, `signature_attachments`, `signature_trust` | A signature is read once however many repositories hold it; a reader sees only what its repositories carry; an anchor change touches only trust rows | Three tables |
@@ -3997,6 +4009,8 @@ describe. **Applied in the spec:** R-SIG-003, R-SIG-004, R-SIG-008.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It refines INV-4
 ([README.md](README.md#design-invariants)).
+
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4054,6 +4068,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-227](../decisions.md#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The addressed repository's project; through a virtual repository its project's anchors judge every member's content, `upstream`'s included (chosen) | | A team that reads public images through its virtual repository sees them judged by its anchors; the gate of stage 3 decides at the addressed repository, as the malware gate does | A project's anchors reach content of `upstream` |
@@ -4078,6 +4094,8 @@ installation holds more than a handful of identities against one own root. **App
 ### Q-SIG-28 · The verifiers are four libraries in process
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4113,6 +4131,8 @@ in the spec:** R-SIG-007, R-SIG-017, R-SIG-029.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-227](../decisions.md#adr-227--trust-anchors-of-four-kinds-in-three-scopes-and-the-administrator-decides-whether-project-owners-add-their-own).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A chain to the anchor at the signature's time with `codeSigning`; the subject restriction as a detail (chosen) | | A TLS certificate of the same CA signs nothing; Notation, NuGet and Fulcio certificates carry `codeSigning` | A company CA that issues signing certificates without the use needs it added |
@@ -4147,6 +4167,8 @@ spec:** R-SIG-024; [formats/oci.md](formats/oci.md) R-OCI-016.
 ### Q-SIG-33 · What the background fetch asks for, when and how much
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4232,6 +4254,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-SIG-40 · The origin of an upload is a snapshot at the item
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact).
 
 Context, verified: a CI token's principal is its mapping; the job's claims live in the issuance record, deleted a year after the token
 expired.
@@ -4706,6 +4730,8 @@ the spec:** R-SIG-061, R-SIG-077.
 
 Status: Decided by the development agent; **confirmed by the owner on 2026-11-22**.
 
+Its entry in the decision log: [ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed).
+
 Context: the shipped anchor `sigstore-public` trusts every identity of the public Sigstore (R-SIG-017), where anyone with an e-mail address or
 a CI job of a public forge can sign; npm's provenance is verified against it. The owner's words: "only artifacts with a verified signature,
 optionally of chosen anchors".
@@ -4739,6 +4765,8 @@ again, as its material can be edited in place anyway (R-SIG-034). **Applied in t
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
 owner's decision Q-SIG-1 ("the icon stands for what proves the publisher's origin; a registry's signature is in the details").
 
+Its entry in the decision log: [ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The roles `publisher` and `provenance`, the badge's; never a registry's signature alone, never an attestation, never Quader's own (chosen) | | The gate passes what the icon shows; npm's and nuget.org's registry signatures are on every package of those registries and would pass everything a remote of them stores | A NuGet package that only nuget.org signed is refused |
@@ -4752,6 +4780,8 @@ anchor: Quader signs everything it receives (R-SIG-044), so its statement would 
 ### Q-SIG-79 · The gate acts at download for every format, not at upload
 
 Status: Decided by the development agent; **confirmed by the owner on 2026-11-22**.
+
+Its entry in the decision log: [ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed).
 
 Context, per format: OCI's signatures are pushed after the image (cosign and Notation name the pushed digest); a generic file's signature is a
 file of its own and an Ansible version's arrives through the management API (R-SIG-031); only npm's provenance (in the publish) and NuGet's
@@ -4783,6 +4813,8 @@ carries no badge (R-SIG-009), and a Debian remote stores only releases its upstr
 ### Q-SIG-81 · The format names what the gate judges, and the contract rises by one
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

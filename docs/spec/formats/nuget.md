@@ -5061,6 +5061,8 @@ API), [architecture.md](../architecture.md) Q-ARCH-270 (amended). Code: `changeP
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-151](../../decisions.md#adr-151--a-remote-repository-can-mirror-its-upstream-in-the-background).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `Catalog/3.0.0` where the service index lists it, else the search resource, else exact IDs (chosen) | The documented resources in the order of their completeness | The catalog is complete and incremental by design; the search covers private sources without a catalog; exact IDs always work | The first catalog pass of nuget.org reads the whole catalog, whatever the patterns |
@@ -5526,6 +5528,8 @@ Test: `TestR_AUTHZ_005_ANuGetWriteIsDecidedOnEveryFileItWritesOrRemoves`.
 ### Q-NUGET-122 · A repository that is not public challenges, and the README route is a wiki route
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

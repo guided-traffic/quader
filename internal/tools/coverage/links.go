@@ -46,10 +46,7 @@ func headingAnchors(lines []string, visible []int) map[string]bool {
 		if m == nil {
 			continue
 		}
-		text := closingHash.ReplaceAllString(m[2], "")
-		text = headingLink.ReplaceAllString(text, "$1")
-		text = htmlTag.ReplaceAllString(text, "")
-		base := slug(strings.TrimSpace(emphasisMark.Replace(text)))
+		base := headingSlug(m[2])
 		a := base
 		if n := used[base]; n > 0 {
 			a = fmt.Sprintf("%s-%d", base, n)
@@ -58,6 +55,15 @@ func headingAnchors(lines []string, visible []int) map[string]bool {
 		anchors[a] = true
 	}
 	return anchors
+}
+
+// headingSlug is the anchor of a heading's text (the part after the hashes) before the -n suffix of a repeated heading:
+// links, HTML tags, emphasis and code marks are dropped as the Markdown hosts drop them.
+func headingSlug(text string) string {
+	text = closingHash.ReplaceAllString(text, "")
+	text = headingLink.ReplaceAllString(text, "$1")
+	text = htmlTag.ReplaceAllString(text, "")
+	return slug(strings.TrimSpace(emphasisMark.Replace(text)))
 }
 
 func collectMarkdown(root string) ([]*mdFile, error) {

@@ -9403,6 +9403,8 @@ R-BAK-014 gives the API the run records only, and `quader backup list` reads the
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-057](../decisions.md#adr-057--a-compiled-grant-index-per-replica-consistent-through-an-epoch-failing-closed).
+
 Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, backup and storage-class constraints: the choice moves from (c) to the new option (e). Under random distribution, [authorization.md](authorization.md) Q-AUTHZ-12 gave grant changes a request header, `Quader-Authz-Min-Epoch`, which is option (b) restricted to the `authz` area; this page registers both headers and the codes `invalid_header`, `authz_epoch_unknown` and `authz_stale`, and a client that changed grants no longer has to wait for the bound.
 
 Requests reach `web` replicas at random (INV-12), and each replica answers package and file requests from an in-process repository snapshot that learns of changes through the change log ([architecture.md](architecture.md) R-ARCH-018): within milliseconds with Valkey, within the poll interval without it. A script that creates a repository through one replica and publishes to it in the next step can reach a replica that does not know the repository yet. npm answers that `404` with a failure, because its fetch layer retries `408`, `420`, `429` and `5xx` only (`make-fetch-happen`, `lib/remote.js`, checked 2026-10-28).
@@ -13970,6 +13972,8 @@ drops Inter's licence (Q-UI-144). The development agent revisits (c) if an owner
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A radio group of Private, Internal, Public, each with GitLab's icon (a lock, a shield, a globe) and one muted sentence; an option that cannot be chosen is disabled with its reason (chosen) | The control of the owner's GitLab "Visibility level"; the style guide's rule for three exclusive choices | The reader sees all three and what each means; a disabled option says why; the same control on four screens | Takes vertical space |
@@ -13988,6 +13992,8 @@ exactly this control. The development agent records no revisit condition.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A confirmation dialog that lists the repositories above the new level (chosen) | The list from the project's repositories; the answer's `lowered` in the success message | The administrator sees the cascade before it happens; the cascade is not undone by raising again | A dialog more |
@@ -14003,6 +14009,8 @@ development agent records no revisit condition.
 ### Q-UI-230 · A level is shown as an icon before a name, as GitLab shows it
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -14020,6 +14028,8 @@ records no revisit condition.
 ### Q-UI-231 · A repository sets artifacts and wiki in one block of its Access tab, and the wizard sets the artifacts
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -14042,6 +14052,8 @@ one block with one save stays.
 ### Q-UI-232 · The external flag is a checkbox in place on the user page, and a badge in the list
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -15865,6 +15877,8 @@ Context and options are those of [Q-OPS-208](operations-and-observability.md#q-o
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `x-quader-part: wiki` on the operation, read into `Operation.Part` (chosen) | As `x-quader-maintenance` (Q-API-246) | The document says which operations serve wiki content; the shared step and a test can read it; the T-19 operations name it the same way | One more extension |
@@ -15880,6 +15894,8 @@ agent records no revisit condition.
 ### Q-API-248 · The project's level has an operation of its own, a repository's levels are a member of its document
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -21284,6 +21300,8 @@ Context: the owner put the switch in the admin area. The group **Settings** has 
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
+
 Context: "A default is a value in the field" and "a field is as wide as its expected input" (the repository's working rules, R-UI-085).
 The minimum size is bytes in the API; people think of it in MiB.
 
@@ -21297,6 +21315,8 @@ The minimum size is bytes in the API; people think of it in MiB.
 ### Q-UI-952 · The test is a link the administrator opens from a client of his network
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
 
 Context: the product's rule for remote repositories is a test of the connection where the upstream is entered. Here the question is
 whether the clients reach the object store at the public address, and the clients' network is not Quader's: a public address in front
@@ -21317,6 +21337,8 @@ R-UI-200.
 Status: **Superseded on 2026-11-22 by [Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)**: a speed limit no longer keeps a caller from links, so there is
 nothing to name. It was decided by the planner in the owner's absence; the text below is kept as it was decided.
 
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
+
 Context: a caller with a pace figure gets no link (usage-and-limits.md Q-LIM-97), and every built-in profile but Unlimited has one, so
 an administrator who switches links on may see almost no link.
 
@@ -21330,6 +21352,8 @@ an administrator who switches links on may see almost no link.
 ### Q-UI-954 · When no connection can serve a link, the page says why and the switch stays usable
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-242](../decisions.md#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing).
 
 Context: every connection can be encrypted, or each can have a reason of storage.md R-STOR-074; a reason can be temporary (an address to
 correct, a link check that failed on a store's bad day).
@@ -21402,6 +21426,8 @@ status names the formats; Q-LIM-99 asked for one sentence about speed limits bes
 
 Status: **Decided by the development agent** during the build of the handover's surface (package 5 of
 [developer/bastion-handover.md](../developer/bastion-handover.md)) — selected from the options below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
 Context: storage.md R-STOR-096 offers the test link for an encrypted connection, so that an administrator tests from a Bastion's network
 the address a handover names; the API takes and tests it, and a save stores its address (R-STOR-014 checks every connection's). The page
@@ -21476,6 +21502,8 @@ Status: **Decided by the builder** in the join of the handover's data keys (pack
 sees it when it is built. It amends [Q-UI-958](#q-ui-958--an-encrypted-connection-has-its-address-and-its-test-link-for-a-bastion-and-says-what-it-serves-today),
 whose field said that "for now" a Bastion gets such files through the main installation and showed only the sentence `encrypted` under it.
 
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
 Context: since package 4 a Bastion whose direct reads are on reads a file of an encrypted connection from the object store with a link and
 that file's key ([storage.md](storage.md) R-STOR-095), where no plain copy can serve. No client ever gets a link to an encrypted connection
 (R-STOR-088), so the reasons of its clients' links (`reasons`, a store that ignores an override among them) still say nothing about it;
@@ -21497,6 +21525,8 @@ true before and is now. **Applied in the spec:** R-UI-200 (its texts); code: `fi
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner: "Funde
 gehen in Security-Dashboard" ([malware-scanning.md](malware-scanning.md) Q-MAL-5).
+
+Its entry in the decision log: [ADR-220](../decisions.md#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -21800,6 +21830,8 @@ sits is the owner's ("Ein Admin kann in den Upstream-Repos ClamAV-Definition-Upd
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The package screens of every repository, fed by the format's view adapter: three databases, their versions, the metadata in the version's page and Files tab (chosen) | No screen of its own | Every reader knows the screens; nothing in the UI knows the format but the words it gets | The members table is a section the package screens show only for this format's metadata |
@@ -22031,6 +22063,8 @@ shows the connections and does not change them is the owner's (2026-11-22, decis
 ### Q-UI-931 · A connection is one row with its state in words and two figures
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

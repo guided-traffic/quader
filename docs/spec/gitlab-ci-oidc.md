@@ -4824,6 +4824,8 @@ selector gains a form that has no instance spelling (then (b)).
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-158](../decisions.md#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers).
+
 Context: the comparators of R-CI-020 read `maxTtlSeconds: 0` as a bound of 0, which "is not larger" than 3600, while the write paths
 store a bound of 0 or less as `NULL` and read it back as unbounded: a forged `ci.issuer.updated` or `ci.mapping.updated` with
 `"maxTtlSeconds": 0` removed the bound. A negative `clockSkewSeconds` passed as "not larger" and moved the restore cut-off of R-CI-018

@@ -1516,6 +1516,8 @@ identification by listener; [ADR-128](../decisions.md#adr-128--endpoints-one-lis
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Everything in the file | Endpoints and their rules in `quader.yaml` | One place; GitOps | Every change of what customers see is a rolling restart; replicas disagree during the rollout; no audit trail and no ETag per change |
@@ -1539,6 +1541,8 @@ places endpoints in the file and exposure rules in PostgreSQL.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Always the main `web` pods | Every listener on every `web` pod | No extra pods | External load competes with internal load; every pod opens the internal listener |
@@ -1561,6 +1565,8 @@ cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-062 makes endpoint pools MVP.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `404`, identical to a missing resource; writes `403` `endpoint_read_only` | The rule of R-AUTHZ-016 for refused reads | No existence oracle: a customer cannot list the names of internal packages by probing; clients treat it as "not there" | Troubleshooting needs `check-exposure` |
@@ -1582,6 +1588,8 @@ gains both rows.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) As on the default endpoint | The subject's populate action decides (R-AUTHZ-008) | Customers always get the newest upstream metadata | Customers decide what Quader downloads, spend the upstream's rate limits, and can probe upstreams through Quader |
@@ -1601,6 +1609,8 @@ if the owner's customers depend on upstream packages that internal traffic never
 ### Q-EP-6 · How far wildcard hosts and host-root bindings go
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Superseded in part by [Q-EP-76](#q-ep-76--a-host-root-binds-a-repository-by-project-and-key-and-the-label-binding-goes): the wildcard label binds no repository, and a host-root binding names `<projectKey>/<repoKey>`.
+
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
 
 The owner suspected that some registries cannot work without a wildcard host. The analysis in
 [Host roots and wildcard hosts](#host-roots-and-wildcard-hosts) shows that no MVP format needs one,
@@ -1628,6 +1638,8 @@ Q-HA-4 now point at endpoint bindings for the subdomain mode and the dedicated r
 ### Q-EP-7 · Endpoints in the beta
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
 
 The owner was asked whether multiple endpoints belong in the beta. Until he answers or objects at the
 walkthrough, the choice below stands.
@@ -1691,6 +1703,8 @@ partner upload case.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The same as the default endpoint | Sessions, PATs, SATs, CI tokens, anonymous per R-AUTH-037 | No configuration | Every employee token works from outside; a leaked customer token works inside |
@@ -1730,6 +1744,8 @@ then add an optional member list to a rule.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) No: exposure binds every subject, `content:bypass` included | The ceiling is checked before the bypass | The endpoint is a property of the network path, not of the person; an administrator credential used from outside cannot see more than the endpoint shows | An administrator checks content through the default endpoint |
@@ -1766,6 +1782,8 @@ when a customer portal is requested.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-quaders-listeners-included).
+
 Context: the TLS families name the material of every listener, the endpoint listeners included, and the request families already
 carry an `endpoint` label.
 
@@ -1787,6 +1805,8 @@ alert must select one endpoint across kinds of material.
 ### Q-EP-15 · Which forwarded host counts on an endpoint
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -2511,6 +2531,8 @@ example.
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-158](../decisions.md#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers).
+
 Context: R-EP-020 names what an entry carries (rule ID, endpoint, name, repository ID) and R-HA-054 the outcomes, but not which of
 the four finds the rule, nor what a deletion of a rule the restored database does not hold reports. R-BAK-024 asks a resumed replay
 to report its applied entries as `already in effect` on the second pass; the update rule of R-HA-054 alone would report an update
@@ -2535,6 +2557,8 @@ repositories (Q-EP-18), which would make the repository ID a mutable field.
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-158](../decisions.md#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers).
+
 Context: a journal object is untrusted input (R-HA-054); an update entry of a rule that the restored database holds may still carry a
 before- or after-state the comparator cannot read: a member it does not know, a missing member, another type, an invalid pattern or a
 range the format refuses. Q-HA-142 reports an object that does not decode as `skipped`; this is an object that decodes and names its
@@ -2555,6 +2579,8 @@ agent would revisit this if a later release changes the state's members, which w
 ### Q-EP-79 · The exposure comparator proves no range or glob containment, and the two criteria that assumed it are restated
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-158](../decisions.md#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers).
 
 Context: rule 4 of R-EP-020 accepts a range only when it is equal or `current` has none, and rule 3 compares patterns without glob
 containment. Two acceptance criteria assumed more: narrowing `acme-sdk` from `">=2.0.0"` to `">=2.1.0"` was to be `applied`, and
@@ -2628,6 +2654,8 @@ the grant side (Q-AUTHZ-255).
 ### Q-EP-86 · An endpoint's anonymous flag is the door, the levels are the content, and `internal` is not bound to an endpoint
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 Context: the visibility levels of [authorization.md](authorization.md) R-AUTHZ-033 replace the anonymous switch. An endpoint already
 says whether requests without a credential are admitted (`auth.anonymous`), and further endpoints carry exposure rules.

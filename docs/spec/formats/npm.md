@@ -4721,6 +4721,8 @@ change.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-151](../../decisions.md#adr-151--a-remote-repository-can-mirror-its-upstream-in-the-background).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `_all_docs` key ranges for a full pass and `_changes` for incremental ones on the public registry; exact names and held packages elsewhere (chosen) | What the replication service offers since 2025 | A prefix-bounded mirror lists only its prefixes; an incremental pass costs one request per 10,000 changes; nothing undocumented is used | Upstreams other than the public registry discover only the names an operator gives and the packages clients pulled |
@@ -5142,6 +5144,8 @@ version from a caller who cannot see it, and here the tag was readable when the 
 ### Q-NPM-87 · A caller who may not read the wiki gets the full document without `readme` and `readmeFilename`
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

@@ -487,6 +487,8 @@ the spec:** R-CLAMAV-002, R-CLAMAV-007.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 Context: `daily.cvd` at the endpoint is a different file after every update; the format contract's `Download` is "immutable bytes for a
 path" ([developer/formats.md](../../developer/formats.md#what-a-bastion-needs-of-a-format)), and a `Download` route is admitted by the byte
 figures and held by the kit to `429` and `403`.
@@ -502,6 +504,8 @@ figures and held by the kit to `429` and `403`.
 ### Q-CLAMAV-3 · A refusal is 404 or 503, never 403 or 429
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -528,6 +532,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The database task reads the container's tar after its header's signature verified, under the bounds of `untrusted` (chosen) | Members from the container's own signed index, line counts | What the owner asked for, every piece of metadata; the parsed bytes are the publisher's, which the signature proves before a byte of the tar is read | The worker, which holds the installation's secrets, decompresses a signed archive of up to 90 MB a few times a day |
@@ -540,6 +546,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Whole containers, the setup names `PrivateMirror` (chosen) | No DNS record, no patches | What ClamAV's guide of private mirrors names for a mirror kept by `freshclam`; nothing Quader does not have is asked | A client fetches a whole `daily.cvd` (about 22 MiB) per new version, from the company's own installation |
@@ -551,6 +559,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It sets aside
 the first plan of a case in the end-to-end set `vuln`.
+
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
 
 Context: a stock `freshclam` checks the signature of every container it fetches against ClamAV's own key; the only containers that pass are
 the publisher's, about 110 MiB, which no test may download (Q-MAL-90). The set of the profile `vuln` is unsigned (`.cud`), which the endpoint
@@ -568,6 +578,8 @@ does not serve as a `.cvd`, and a `.cvd` the tests could write is refused by `fr
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It is the
 default the owner was told on 2026-11-21 before he left.
+
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
 
 Context: the owner's installations put HAProxy Ingress in front of `api` and `packages`; it ends the client's TLS and speaks TLS to
 Quader (`ingress.backendTLS`), so a client's certificate never reaches Quader today. Read in HAProxy Ingress's documentation of its
@@ -593,6 +605,8 @@ this if an installation cannot give the endpoint a host of its own.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It keeps the
 default the owner was told: a valid certificate counts as a reader of the level internal, with no principal.
 
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The certificate subject: no principal, decided by a fixed rule, `read` of a repository that admits certificate readers at `internal` and `public`, not at `private` (chosen) | One subject kind and one rule in the decision point, like the system subjects | Nothing to administer per installation of ClamAV: the CA is the list of who is in; it cannot read anything else, whatever an administrator binds or whatever other repository is `internal`; `private` keeps its meaning, members only | A ClamAV installation cannot read a `private` repository by its certificate (a token of a member's service account does); all certificates of a CA are alike |
@@ -607,6 +621,8 @@ default the owner was told: a valid certificate counts as a reader of the level 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `tls.client_ca_file` of the endpoint, one PEM bundle of one or more CAs from the chart's `tls.clientCaSecret`, read by the listener's reloader (chosen) | TLS material like every other | Built today (`httpserver.NewListenerTLS` reads the bundle through the reloader); rotates without a restart (R-ARCH-035); its expiry is a metric; the operator, who owns the company's PKI, holds it | An administrator of Quader cannot change it from a screen |
@@ -618,6 +634,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-CLAMAV-11 · A missing, expired or foreign certificate is refused in the handshake
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
 
 Context: `freshclam` treats a failed connection and a `401` as a failed attempt and a `403` as a cool-down of 24 hours (R-CLAMAV-005).
 
@@ -633,6 +651,8 @@ Context: `freshclam` treats a failed connection and a `401` as a failed attempt 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The subject as the usage store's subject and the request log's `principal`, the serial as the credential, the issuer in the request log (chosen) | A subject kind `certificate` | A renewed certificate keeps its holder's budget and history, as a user keeps them across tokens; the record names a host in words an operator recognises | Two CAs that issue the same subject share one budget; a subject longer than 255 bytes is cut |
@@ -645,6 +665,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-CLAMAV-13 · The admission is a key of the endpoint and a fact of the repository, built for upstream/clamav only
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-225](../../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

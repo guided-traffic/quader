@@ -405,7 +405,10 @@ acceptance criteria.
   options table, the choice, the rationale (including the condition under which the development
   agent would revisit the choice), and what the choice changed in the spec. A decision that changes
   an invariant says so and lists the edit to this page as a cross-page consequence. A question
-  raised later goes into the same section and is decided in the same form.
+  raised later goes into the same section and is decided in the same form. The index in
+  [decisions.md](../decisions.md#decisions-by-the-development-agent) is generated from these blocks by
+  `go run ./internal/tools/coverage`: its row repeats the title, the status line's value, the first sentence of the
+  choice and the ADRs the block names, so anything a row should say is written in the block.
 
   ```markdown
   ### Q-<AREA>-<n> · <title>

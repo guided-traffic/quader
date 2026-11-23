@@ -1997,6 +1997,8 @@ installation must hold its keys in an HSM.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Revised
 after the review of 2026-11-08, which found the first wording ("version 4 Ed25519") ambiguous and its likely reading unreadable.
 
+Its entry in the decision log: [ADR-171](../../decisions.md#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-quader-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Public-key algorithm 22 (EdDSALegacy) over Ed25519, version 4 keys and signatures, SHA-512 (chosen) | The Ed25519 form GnuPG has read since 2.1 | The module's keys and signatures verified on `sqv` 1.3.0 and on `gpgv` 2.2.27, 2.2.40, 2.4.4 and 2.4.7, single and co-signed; small and fast | The module writes algorithm 27 by default, so the generator must ask for 22 explicitly; signatures carry a random salt notation of the module and are not deterministic |

@@ -5579,6 +5579,8 @@ counter). No other spec page names `sourceAddress` (checked on 2026-10-28).
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-039](../decisions.md#adr-039--egress-address-checks-after-dns-resolution-for-every-remote-connection).
+
 An audit found two ways past the CIDR rules: an IPv6 address with a zone is in no prefix, so no deny rule sees it, and an
 address in the NAT64 prefix can stand for an internal IPv4 address that the deny list protects.
 
@@ -9206,6 +9208,8 @@ the defaults, and the path dedupe if a format's plan lists one path in two versi
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 Context: `requireAuthentication` challenged anonymous requests where `anonymous` held `read` (PKG-NUGET-016: a NuGet client sends
 its credentials only after a 401, so reads on an open repository were anonymous). With the levels of
 [authorization.md](authorization.md) R-AUTHZ-033 a repository is either `public`, and then read without a credential, or not, and
@@ -10205,6 +10209,8 @@ owner's decision of 2026-11-21 that ClamAV's definitions become a repository of 
 ### Q-REPO-414 · "ClamAV definition updates" is a switch of its own, off by default, and the level is private while it is off
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

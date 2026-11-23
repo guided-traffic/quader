@@ -2,7 +2,9 @@
 
 The coverage pages in [docs/coverage/](../coverage/README.md) are generated from the feature catalog
 and the specification by one Go program, [internal/tools/coverage](../../internal/tools/coverage/main.go)
-(roadmap WP0.9, exit criterion E0.8). It uses only the standard library. The rules it enforces and
+(roadmap WP0.9, exit criterion E0.8). The same program writes the
+[index of decided questions](../decisions.md#decisions-by-the-development-agent) in `docs/decisions.md`
+([below](#the-index-of-decided-questions)). It uses only the standard library. The rules it enforces and
 the numbers it produces are described for readers in
 [How the numbers are produced](../coverage/README.md#how-the-numbers-are-produced); this page is
 for people who change or run it.
@@ -11,8 +13,8 @@ for people who change or run it.
 
 | Command | What it does | Exit code |
 |---|---|---|
-| `go run ./internal/tools/coverage` | Regenerates [checklist.md](../coverage/checklist.md), the four marked blocks of [coverage/README.md](../coverage/README.md) and [implemented.txt](../coverage/implemented.txt). Implementation status comes from the committed `implemented.txt`. | 0, or 1 on a rule violation |
-| `go run ./internal/tools/coverage -check` | Writes nothing. Fails when a generated file differs from what would be generated. This is the `git diff --exit-code` of E0.8 without needing git. | 0, 1 rule violation, 2 stale file |
+| `go run ./internal/tools/coverage` | Regenerates [checklist.md](../coverage/checklist.md), the four marked blocks of [coverage/README.md](../coverage/README.md), [implemented.txt](../coverage/implemented.txt) and the index of decided questions in [decisions.md](../decisions.md#decisions-by-the-development-agent). Implementation status comes from the committed `implemented.txt`. | 0, or 1 on a rule violation |
+| `go run ./internal/tools/coverage -check` | Writes nothing. Fails when a generated file differs from what would be generated, and names each question whose row in the index is missing, has no block or no longer matches its block. This is the `git diff --exit-code` of E0.8 without needing git. | 0, 1 rule violation, 2 stale file |
 | `go run ./internal/tools/coverage -tests <report>` | Reads test reports, recomputes the implemented requirements, rewrites `implemented.txt` and everything rendered from it. | as above |
 | `go run ./internal/tools/coverage -check -tests <report>` | Writes nothing; also fails when `implemented.txt` differs from the reports, in either direction. A local comparison; CI uses `-claims`. | as above |
 | `go run ./internal/tools/coverage -claims -tests <report> [-carried <report>]` | The CI form on `main`: writes `implemented.txt` and everything rendered from it from the reports, prints the requirements proven for the first time, and fails when the committed `implemented.txt` lists a requirement the reports do not prove (it then writes nothing). A requirement that only a failing test in a `-carried` report takes away is written out of the record and listed as withdrawn, and does not fail ([Q-ROAD-12](../coverage/roadmap.md#q-road-12--a-failing-test-in-the-report-of-an-earlier-run-withdraws-the-requirement-and-does-not-fail-the-evidence-job)). | 0, 1 rule violation, 3 unproven claim |
@@ -38,7 +40,8 @@ references, the implemented counts and every heading it skipped inside a code fe
 |---|---|
 | `docs/features/**/*.md` | `### <ID> · <Title>` with `Priority: **<P>**` directly below. Page order follows the page table of [features/README.md](../features/README.md). |
 | `docs/spec/**/*.md` | `### R-… · <Title>` with `Priority: **<P>** · Covers: <ID>, …` or `Covers: quader-only` directly below. |
-| `docs/**/*.md` except `features/` | `### Q-… · …` and `### H-<n> · …` headings, for the uniqueness check only. |
+| `docs/**/*.md` except `features/` | `### Q-… · …` and `### H-<n> · …` headings, for the uniqueness check; each `Q-` heading with its block for the index of decided questions. |
+| `docs/decisions.md` | The hand-written page around the marker pair `<!-- coverage-gen:begin decisions -->` and `<!-- coverage-gen:end decisions -->`, kept untouched; its entries `### ADR-<n> · …` for the index's ADR column. |
 | `docs/coverage/implemented.txt` | The requirements with passing evidence, as of the last `-tests` run. |
 | `docs/coverage/README.md` | The prose around the marker pairs `<!-- coverage-gen:begin NAME -->` and `<!-- coverage-gen:end NAME -->`, kept untouched. |
 
@@ -51,7 +54,8 @@ The program exits with 1 and prints every problem (not only the first) for:
 - a duplicate catalog ID, requirement ID, `Q-` ID or `H-` number;
 - an unclosed code fence;
 - a test name that carries a requirement ID no spec page defines;
-- a missing marker pair, an audience page without entries.
+- a missing marker pair, an audience page without entries;
+- a row of the index of decided questions (`| [Q-…](…) |`) in `docs/decisions.md` outside its marker pair.
 
 Lines inside fenced code blocks are ignored by all of these, which is why the format example in
 [spec/README.md](../spec/README.md) can reuse `R-NPM-012`. Each fixture for a rule is a small docs
@@ -192,6 +196,41 @@ Decided by the owner (2026-11-07), on the development agent's proposal.
 
 Since Q-ARCH-457 the second half of the chosen row does not hold: no release commits the record ([above](#the-committed-record-since-the-minimal-gate)).
 
+## The index of decided questions
+
+The part of [decisions.md](../decisions.md#decisions-by-the-development-agent) between the marker pair of the block
+`decisions` is generated, in the same run as the coverage pages ([decisions.go](../../internal/tools/coverage/decisions.go)).
+It is not a flag of its own: a builder already runs `go run ./internal/tools/coverage` (or `make coverage`), CI's
+`-check` already compares every generated file, and a conflict in the generated part after a rebase is resolved by that
+one command on the rebased tree, whichever file the conflict is in.
+
+- **One row per block.** Every `### Q-<AREA>-<n> · <title>` heading outside a code fence on a page below `docs/`, except
+  the catalog, gets one row: the ID linked to the heading, the title, the status, the choice and the ADRs.
+- **Order.** One section `### Q-<AREA>` per area, the areas in byte order, the rows by number (`Q-UI-9` before
+  `Q-UI-10`); a section of more than 15 rows is collapsed in `<details>`. Two runs give the same bytes.
+- **Status.** The value of the block's `Status:` line: its bold part with the words that continue it (`**Superseded** by
+  [Q-…]`), or without a bold part the text before its first dash or sentence end; `—` for a block without a status line.
+- **Choice.** The first sentence of the block's `**Choice:**` paragraph, up to its end or the next bold label such as
+  `**Rationale:**`. When that sentence names only option letters (`(b).`, `(b) and (iii).`), the row shows those options'
+  first cells from the block's options table, without `(chosen)`. Without a choice line, a status line that names the
+  option (`— option (a), as recommended`) is read the same way, and else the options row marked `(chosen)`; `—` when the
+  block has none of these (a table of several decisions, a superseded question).
+- **ADR.** Every `ADR-<n>` the block names, and every entry of the hand-written part whose text names the question, linked
+  to the entry, in number order; `—` for none. A block that belongs to an entry and is not named by it says so in a line
+  of its own (`Its entry in the decision log: [ADR-…](…).`).
+- **Links.** A relative link of the block is rewritten to resolve from `docs/decisions.md`; a link into `decisions.md`
+  becomes its anchor. Inline code is left as it is, and a pipe is escaped.
+
+What a row says comes from the block only: a correction, a later revision or an ADR that belongs to a question is written
+on the question's page, and the next run carries it into the row. `-check` prints, before the stale file, one line per
+differing row (at most 20, then a count), for example:
+
+```text
+docs/decisions.md: Q-SIG-145 (docs/spec/signatures.md:5632) has no row in the index of decided questions
+docs/decisions.md: the index is generated: run `go run ./internal/tools/coverage` and commit the result
+stale: docs/decisions.md (run the generator and commit the result)
+```
+
 ## Format changes against the interim script
 
 The output is byte-identical to the interim Python script's, with two intended differences.
@@ -217,7 +256,8 @@ hosts do (`#same`, `#same-1`), and does not descend into `node_modules`, `.git` 
 | [evidence.go](../../internal/tools/coverage/evidence.go) | Test reports, ID extraction from test names, `implemented.txt`. |
 | [render.go](../../internal/tools/coverage/render.go) | `checklist.md`. |
 | [readme.go](../../internal/tools/coverage/readme.go) | The four marked blocks of `coverage/README.md`, the audience page lists. |
-| [links.go](../../internal/tools/coverage/links.go) | The `-links` mode. |
+| [links.go](../../internal/tools/coverage/links.go) | The `-links` mode, heading anchors. |
+| [decisions.go](../../internal/tools/coverage/decisions.go) | The index of decided questions in `decisions.md` and the rows `-check` names. |
 
 To change the audience page lists, edit `audiences()` in `readme.go`; the generator fails when a
 listed page has no entries.

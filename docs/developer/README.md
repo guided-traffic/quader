@@ -290,7 +290,7 @@ rules are in [coverage.md](coverage.md).
 | Priority | Every catalog entry and requirement | `MVP`, `P1`, `P2`, `Later`, `Out of scope`; rubric in [features/README.md](../features/README.md#priority-rubric) |
 | `INV-n` | [spec/README.md](../spec/README.md#design-invariants) | Design invariants |
 | `R-<AREA>-nnn` | [docs/spec/](../spec/README.md), one prefix per page (page table there) | `### R-<AREA>-nnn · <Title>`, then `Priority: **<P>** · Covers: <catalog IDs>` or `Covers: quader-only` |
-| `Q-<AREA>-n` | `## Decisions` of each spec page | Status line, options table, the development agent's choice, rationale with a revisit condition, and what the choice changed; format in [spec/README.md](../spec/README.md#requirement-format) |
+| `Q-<AREA>-n` | `## Decisions` of each spec page | Status line, options table, the development agent's choice, rationale with a revisit condition, and what the choice changed; format in [spec/README.md](../spec/README.md#requirement-format); listed in the generated index of [decisions.md](../decisions.md#decisions-by-the-development-agent) |
 | `H-n` | `## What this does not cover` of the one page that records the gap: the spec page for a gap the specification owns, the security page of its mechanism for a gap docs/security owns; the security page of the mechanism links a spec-owned gap under its number | Unique across all spec and security pages; see [security/README.md](../security/README.md#form) |
 
 Next free number for a prefix (examples for `RMT`, `R-REPO` and `H`):
@@ -317,7 +317,10 @@ For a spec requirement: take the next free number in the page's prefix, write th
 `Priority:` line, state the normative text with MUST, SHOULD and MAY, and put any open question under
 `## Decisions` in the block format of [spec/README.md](../spec/README.md#requirement-format). A security gap goes
 under `## What this does not cover` as `H-<n>`, numbered across all spec and security pages. Then regenerate the
-coverage checklist with `make coverage` and check the links with `go run ./internal/tools/coverage -links`.
+coverage checklist and the index of decided questions in [decisions.md](../decisions.md#decisions-by-the-development-agent)
+with `go run ./internal/tools/coverage` (`make coverage`) and check the links with `go run ./internal/tools/coverage -links`.
+A decision is written in its block only, never as a row of the index: the run writes the row from the block, and after a
+rebase it resolves a conflict in the index ([coverage.md](coverage.md#the-index-of-decided-questions)).
 
 ## Conventions
 

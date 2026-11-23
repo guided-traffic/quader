@@ -6231,6 +6231,8 @@ covers the first step.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A runtime setting `newUsersExternal` of the authentication settings, default `false` (chosen) | GitLab's "new users set to external" | An installation whose identity provider serves partners closes the window between a first login and the administrator's flag; small | One more setting |
@@ -6249,6 +6251,8 @@ GitLab's internal-users email pattern is needed, which would be a second input o
 ### Q-AUTH-232 · The default endpoint's `auth.anonymous` is the operator's ceiling of public content, and the runtime switch goes
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

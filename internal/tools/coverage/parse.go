@@ -65,10 +65,11 @@ type page struct {
 // corpus is everything read from docs/features and docs/spec plus the
 // problems found while reading it.
 type corpus struct {
-	Pages  map[string]*page
-	Reqs   []requirement
-	Fenced []string // headings skipped inside code fences
-	Errors []string
+	Pages     map[string]*page
+	Reqs      []requirement
+	Questions []question // the decided questions of every page below docs except the catalog, in walk order
+	Fenced    []string   // headings skipped inside code fences
+	Errors    []string
 }
 
 func (c *corpus) errorf(format string, args ...any) {
@@ -260,7 +261,8 @@ func parseSpec(docs string, c *corpus) error {
 // checkQuestionsAndGaps scans every page below docs for decided questions
 // (### Q-<AREA>-<n> · …) and security gaps (### H-<n> · …) and reports
 // duplicates. The lines come from all pages, since a Q- heading lives on spec
-// pages and on the roadmap, an H- heading on spec and security pages.
+// pages and on the roadmap, an H- heading on spec and security pages. Each
+// question is kept with its block for the index of docs/decisions.md.
 func checkQuestionsAndGaps(docs string, c *corpus) error {
 	files, err := markdownFiles(docs)
 	if err != nil {
@@ -280,10 +282,14 @@ func checkQuestionsAndGaps(docs string, c *corpus) error {
 		if !strings.HasPrefix(rel, "spec/") { // spec pages report their own fences
 			c.Errors = append(c.Errors, scratch.Errors...)
 		}
-		for _, idx := range visible {
+		for vi, idx := range visible {
 			var id string
 			if m := qHeading.FindStringSubmatch(lines[idx]); m != nil {
 				id = m[1]
+				c.Questions = append(c.Questions, question{
+					ID: id, Heading: strings.TrimPrefix(lines[idx], "### "), Page: rel, Line: idx + 1,
+					Body: lines[idx+1 : blockEnd(lines, visible[vi+1:])],
+				})
 			} else if m := hHeading.FindStringSubmatch(lines[idx]); m != nil {
 				id = m[1]
 			} else {

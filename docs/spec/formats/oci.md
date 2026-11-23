@@ -2820,6 +2820,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-164](../../decisions.md#adr-164--the-oci-push-path-is-one-transaction-with-its-reference-check-under-row-locks-and-the-formats-data-port-reads-items).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The first manifest that reaches a name, by digest or by tag, creates the package row, claims the name and runs the shadowing check while the name holds no live version; a tag is the only thing that makes a version; a moved tag is a change by an owner or a writer and never a claim (chosen) | The ownership rule and the shadowing check see the name when it first appears | The children of a multi-platform image are pushed by digest before any tag exists; without this the name would be unprotected until the tag | A push by digest to an unclaimed name claims it for the pusher, as the first tag would have |
@@ -2920,6 +2922,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-168](../../decisions.md#adr-168--the-oci-data-port-reads-and-removes-for-the-deletion-the-sweep-and-the-replay).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `docker login` and `podman login` name `<host>/<projectKey>/<repoKey>` (`SetupData.ImagePrefix`), the token is read from standard input, a reader without a credential gets the interactive login, and the Kubernetes pull secret (`kubectl create secret generic --type=kubernetes.io/dockerconfigjson`, the file on standard input) is a configure snippet of the Docker client with the same prefix as its server (chosen) | One spelling for the login, the pull and the push | No template function and no new `SetupData` field; Kubernetes matches a secret to the images below its server | The login names a path, which Docker keys by host |
@@ -2935,6 +2939,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-OCI-75 · The store's catalog page lists the image names that hold a manifest, per repository
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-168](../../decisions.md#adr-168--the-oci-data-port-reads-and-removes-for-the-deletion-the-sweep-and-the-replay).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3364,6 +3370,8 @@ which an older registry may not have filtered by `artifactType`.
 
 Status: **Superseded by [Q-OCI-125](#q-oci-125--extrahosts-do-not-gate-redirects-so-the-docker-hub-defaults-list-the-realm-only)** (decided by the development agent; the owner reviews it at the walkthrough). The check of the redirect host stands; listing it does not.
 
+Its entry in the decision log: [ADR-176](../../decisions.md#adr-176--the-oci-remote-adapter-works-inside-the-contract-and-adds-a-catalog-fact-and-an-optional-interface).
+
 Context: R-OCI-021 proposes the hosts Docker Hub redirects blob downloads to, to be confirmed before the default ships.
 
 | Option | What it means | For | Against |
@@ -3584,6 +3592,8 @@ document (`members`, `from`) and is what the kit's fixture reads back.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-180](../../decisions.md#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target).
+
 Context: R-OCI-027 says union. A tag the caller may read in one member and not in another, and a tag the virtual repository's own exposure hides, must not appear.
 
 | Option | What it means | For | Against |
@@ -3606,6 +3616,8 @@ after `last`, so the first page of the union is the first page of the members' u
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-180](../../decisions.md#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target).
+
 Context: R-REPO-019 step 7 lets a virtual repository answer 404 only if every consulted member said "not found".
 
 | Option | What it means | For | Against |
@@ -3624,6 +3636,8 @@ Context: R-REPO-019 step 7 lets a virtual repository answer 404 only if every co
 ### Q-OCI-164 · The link step reads the virtual repository by name and links an index's manifests after their blobs
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-180](../../decisions.md#adr-180--the-oci-write-routes-serve-the-class-virtual-and-the-handler-resolves-the-deployment-target).
 
 Context: R-OCI-028 links every blob or manifest a pushed manifest names that the target lacks, from the member that holds it, before the reference check.
 
@@ -4143,6 +4157,8 @@ spelling. The remedy is to list both, or a pattern that matches both (`*busybox`
 ### Q-OCI-102 · The pull check on a mount's source is made by the enforcement point and answers as an unreadable source
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-173](../../decisions.md#adr-173--the-registry-root-is-one-pattern-one-handler-and-one-match).
 
 Context: R-OCI-006 says the source of a cross-repository mount needs `pull` on the source name. A registry token's grant is a ceiling
 that only the enforcement point (`registry.Enforcer`) can read; the format may not import it. R-OCI-012 says a source the caller may

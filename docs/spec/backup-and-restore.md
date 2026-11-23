@@ -2449,6 +2449,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-157](../decisions.md#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A function in the restore that runs every fix-up | One file lists jobs, keyspace, revisions, usage counters, mirror state | Simple | Every later page that adds derived state edits the restore; the npm and NuGet remote-cache purge, the mirror state and the storage recount belong to other pages' owners |
@@ -2522,21 +2524,12 @@ A conditional create sends `If-None-Match: *` (PutObject, CompleteMultipartUploa
 
 **Applied:** R-BAK-002, R-BAK-015, R-BAK-026; `internal/blob/s3/target*.go`, `internal/backup/target/targettest/conformance.go`, `test/integration/backup/target_adapter_test.go`, `docs/developer/backup.md`, `docs/security/backup-and-restore.md`.
 
-### Q-BAK-31 · The restore uses one database connection
 ### Q-BAK-28 · `quader backup list --json` is flat: `schemaStep` and `keyIds` stand at the top of each entry
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Two: the migration runner's session and a load connection | The text of R-BAK-005 | The load transaction is on a connection that never held a lock | Two sessions to drain on `SIGTERM`; the migration lock and the load would be two sessions of one process, so a kill between them could leave one of them alive for a moment |
-| (b) One session connection for the lock, the runner, the load, the fix-ups and the finish (chosen) | `postgres.RestoreSession` | The lock lives exactly as long as the one connection, so a killed process releases it with its socket; the budget of R-HA-016 is met with room | Every phase of the restore is serialised on one connection, which they are anyway |
-
-**Choice:** (b). `COPY FROM`, the temporary tables and the advisory lock are all session state; a pooled second connection would add nothing.
-**Rationale:** The restore never runs two statements at once, so a second connection can only add a way to leak the lock. Revisit when the load is parallelised per table.
-**Applied:** R-BAK-005 (connection count), R-BAK-021 step 1; `internal/meta/postgres/migrate_restore.go`.
-
-### Q-BAK-32 · The load stages the audit table and the tables with a CycleBreak column in temporary tables
 | (a) Mirror the manifest | `schema.step`, `secrets.keyIds` nested as in `manifest.json` | The acceptance criteria of R-BAK-018 and R-BAK-028 already say `schema.step` and `secrets.keyIds` | A listing line is a summary, not a manifest; `backup.Listing` (the contract every consumer built against) is already flat; the incomplete entries would carry empty objects |
 | (b) Flat summary: `schemaStep`, `keyIds`, `incarnation`, `options`, `encryption` beside `backupId` and `complete` (chosen) | `backup.Listing` as it is | One shape for the CLI and the Go callers; fields that do not exist for an incomplete directory are omitted | The two acceptance criteria are reworded |
 
@@ -2552,14 +2545,6 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Read the file twice | A first pass over `audit_event` finds the time range, the second copies | No temporary storage | Two downloads and two decompressions of the largest table; the timestamp text depends on the exporting session's settings |
-| (b) Copy into a temporary table, let PostgreSQL read the range, insert from it (chosen) | `COPY` into `_restore_stage_<table>`, `audit_create_partitions(min, max)`, `INSERT ... OVERRIDING SYSTEM VALUE SELECT`; a CycleBreak table keeps its stage until every table is loaded, then `UPDATE ... FROM` matched on the primary key | PostgreSQL parses the timestamps; one download; the same path serves both cases | Temporary disk space of the size of the staged table for the length of the transaction |
-
-**Choice:** (b). Only `audit_event` and the tables with a registered CycleBreak (`package_versions.lead_item_id`, `principal.created_by`) take this path; the others are copied directly.
-**Rationale:** The cycle partner of a table may load before or after it, so the column can only be filled once every table exists. Revisit when a staged table is too large for the temporary tablespace.
-**Applied:** R-BAK-004, R-BAK-021 step 4; `internal/meta/postgres/backup_load.go`, `internal/archtest/sqlrules.go` (the restore files may create temporary tables and assemble statements from catalog names).
-
-### Q-BAK-33 · A restore writes nothing to the target; a missing schema fails check 4
 | (a) Give verify phases | Map checking onto `copying` and `finalizing` | The UI shows movement | The states are the phases of a create run (R-BAK-009); a verify showing `copying` would make a reader think blobs move |
 | (b) One state, progress by lease renewal (chosen) | The row is `operation = 'verify'`, state `starting` until it ends `completed` (also with findings) or `failed`; its `result` is the report (`verified`, `findings`), so `quader_backup_last_verify_findings` is the number of findings | No new states; the index ignores verify | A long deep verify reads "starting" in the run list |
 
@@ -2579,14 +2564,6 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Probe the target with a `PutObject` and `DeleteObject` as the text says | The restore credential needs write access to the target | Matches the wording | A restore Job whose target credential is read-only (the better practice, R-BAK-015) fails check 7 |
-| (b) `HeadObject` on the target, `PutObject` and `DeleteObject` of `_probe/<pod>` on the blob store only (chosen) | The target is only read; the probe object is where the restore writes | The restore needs no write privilege on the backups | A target whose reads work and whose writes would not is not detected, and the restore does not need them |
-
-**Choice:** (b). A schema that does not exist fails check 4 with the statement that creates it (R-HA-014), because creating it is a write before step 2.
-**Rationale:** The restore is the one command that must work when little else does, so it asks the target for the least. Revisit if a restore ever writes to the target.
-**Applied:** R-BAK-020 checks 4 and 7.
-
-### Q-BAK-34 · The journal and the blob store enter the restore as ports; the verification merges two sorted streams
 | (a) Trust the lists | Merge the lists as they are and delete what they lack | One download per list | A list that is truncated at a line boundary or replaced would delete live pool objects of a retained backup; the damage is found by the next restore |
 | (b) Prove the lists first (chosen) | Before the first delete request every retained backup's list is downloaded and hashed against `blobs.sha256`, and the entry count at the end of the merge must equal `blobs.referenced` | Silent truncation cannot reach the delete request; the cost is a second read of lists that are about 40 bytes per blob compressed | Two reads of every list per sweep |
 
@@ -2596,7 +2573,46 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Applied:** R-BAK-016, R-BAK-017; `internal/backup/retention/sweep.go`, `stage.go`, `marker.go`; `backup.Result.PoolSweptAt`.
 
-### Q-BAK-36 · The backups screen refreshes as one load on the status screen's interval, and keeps pages the user has loaded
+### Q-BAK-31 · The restore uses one database connection
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two: the migration runner's session and a load connection | The text of R-BAK-005 | The load transaction is on a connection that never held a lock | Two sessions to drain on `SIGTERM`; the migration lock and the load would be two sessions of one process, so a kill between them could leave one of them alive for a moment |
+| (b) One session connection for the lock, the runner, the load, the fix-ups and the finish (chosen) | `postgres.RestoreSession` | The lock lives exactly as long as the one connection, so a killed process releases it with its socket; the budget of R-HA-016 is met with room | Every phase of the restore is serialised on one connection, which they are anyway |
+
+**Choice:** (b). `COPY FROM`, the temporary tables and the advisory lock are all session state; a pooled second connection would add nothing.
+**Rationale:** The restore never runs two statements at once, so a second connection can only add a way to leak the lock. Revisit when the load is parallelised per table.
+**Applied:** R-BAK-005 (connection count), R-BAK-021 step 1; `internal/meta/postgres/migrate_restore.go`.
+
+### Q-BAK-32 · The load stages the audit table and the tables with a CycleBreak column in temporary tables
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read the file twice | A first pass over `audit_event` finds the time range, the second copies | No temporary storage | Two downloads and two decompressions of the largest table; the timestamp text depends on the exporting session's settings |
+| (b) Copy into a temporary table, let PostgreSQL read the range, insert from it (chosen) | `COPY` into `_restore_stage_<table>`, `audit_create_partitions(min, max)`, `INSERT ... OVERRIDING SYSTEM VALUE SELECT`; a CycleBreak table keeps its stage until every table is loaded, then `UPDATE ... FROM` matched on the primary key | PostgreSQL parses the timestamps; one download; the same path serves both cases | Temporary disk space of the size of the staged table for the length of the transaction |
+
+**Choice:** (b). Only `audit_event` and the tables with a registered CycleBreak (`package_versions.lead_item_id`, `principal.created_by`) take this path; the others are copied directly.
+**Rationale:** The cycle partner of a table may load before or after it, so the column can only be filled once every table exists. Revisit when a staged table is too large for the temporary tablespace.
+**Applied:** R-BAK-004, R-BAK-021 step 4; `internal/meta/postgres/backup_load.go`, `internal/archtest/sqlrules.go` (the restore files may create temporary tables and assemble statements from catalog names).
+
+### Q-BAK-33 · A restore writes nothing to the target; a missing schema fails check 4
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Probe the target with a `PutObject` and `DeleteObject` as the text says | The restore credential needs write access to the target | Matches the wording | A restore Job whose target credential is read-only (the better practice, R-BAK-015) fails check 7 |
+| (b) `HeadObject` on the target, `PutObject` and `DeleteObject` of `_probe/<pod>` on the blob store only (chosen) | The target is only read; the probe object is where the restore writes | The restore needs no write privilege on the backups | A target whose reads work and whose writes would not is not detected, and the restore does not need them |
+
+**Choice:** (b). A schema that does not exist fails check 4 with the statement that creates it (R-HA-014), because creating it is a write before step 2.
+**Rationale:** The restore is the one command that must work when little else does, so it asks the target for the least. Revisit if a restore ever writes to the target.
+**Applied:** R-BAK-020 checks 4 and 7.
+
+### Q-BAK-34 · The journal and the blob store enter the restore as ports; the verification merges two sorted streams
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -2608,6 +2624,13 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (b). `restoreJournal` in `cmd/quader/backup_restore.go` is the one place the journal work package replaces.
 **Rationale:** The checks and the resumption rules are the part of a restore that must not regress, and they are testable only against fakes. Revisit when a second implementation of a port appears.
 **Applied:** R-BAK-020 check 8, R-BAK-021 step 8, R-BAK-024; `internal/backup/restore`, `cmd/quader/backup_restore.go`.
+
+### Q-BAK-36 · The backups screen refreshes as one load on the status screen's interval, and keeps pages the user has loaded
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
 | (a) The screen's own faster interval while a run is active | 2 to 5 s polling of the summary and the active run | The blob count moves visibly | A second interval and pause rule beside the status screen's (R-UI-038); a running create changes its progress at the heartbeat, which is seconds apart anyway |
 | (b) The status screen's interval and pause control; the summary and the active run are fetched together, and the first page of the list is reloaded unless the user has loaded further pages (chosen) | One `load` returns the summary and, when `active` is set, `GET /system/backups/{runId}` for its `progress`; "Refresh now" does the same | One rule for every status screen (R-UI-048 names it); the status and the progress of the active run never disagree; a list the user has paged into is not thrown away | A run is up to one interval behind; a user who wants it faster presses "Refresh now" |
 | (c) Server-sent events | The API pushes progress | No polling | A streaming endpoint for a screen an administrator opens rarely; every replica would need the run's progress (R-API-050 reads PostgreSQL only) |
@@ -3042,6 +3065,8 @@ other copy, not only last within their group.* **Applied in the spec:** R-BAK-00
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The restore writes into the first connection; its fix-up records the copies; the reconciliation fills the others after the workers start (chosen) | One write per blob in the restore | The restore takes as long as with one store; the replicas serve sooner | Until the reconciliation caught up, the restored blobs lie on one connection |
@@ -3106,6 +3131,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-BAK-030 said the run takes "the copies of the snapshot's `blob_copies`". The snapshot ends with the export, while the copy of
 a first backup runs for hours after it; copies change meanwhile: the reconciliation adds them, a read or the scrub marks one `missing`, a
 drain deletes the copy of a draining connection (which takes no backup hold, R-STOR-056). A pin keeps the blob from collection
@@ -3126,6 +3153,8 @@ snapshot and the copies of now. The development agent would revisit this if a pa
 ### Q-BAK-71 · A blob whose copies all failed, and one only because its connection did not answer, ends the run temporarily
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-BAK-030 names a `404`, a size and a digest as the reasons to take the next copy, and is silent about a connection that does
 not answer. A provider's outage lasted 17.5 hours (storage.md R-STOR-055); a blob committed in the minute before it lies on that
@@ -3148,6 +3177,8 @@ the reconciliation's window left blobs on one connection for long enough to bloc
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-BAK-030 sets `verified_at` per blob: the restore's time when it was streamed and hashed, `NULL` after a server-side copy. The
 fix-up runs in step 6, after the load of step 4 truncated every table, possibly in another pod than step 3 (a resumed restore); a list of
 millions of digests does not fit the Job's memory and has no table that survives the load.
@@ -3168,6 +3199,8 @@ development agent would revisit this if mixed restores turned out to be common.
 ### Q-BAK-73 · The credentials file of a journal reader is a list of elements keyed by the connection
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: `--journal-credentials-file` and `--credentials-file` held one credential with the keys of `storage.s3.credentials`. R-BAK-030
 asks for one credential per source connection and names no form.
@@ -3207,6 +3240,8 @@ Context: [storage.md](storage.md) Q-STOR-309 (b) destroys a retired connection's
 
 Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
 
+Its entry in the decision log: [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable).
+
 Context: with two names per digest (Q-BAK-74) the next run's inheritance, the sweep, `verify` and the restore must know which object a
 backup lists. The list is written today during the merge inside the snapshot, before the copies decide which copy, and so which key, a blob
 gets.
@@ -3238,6 +3273,8 @@ when no other is present, so that a backup never records a sound blob as damaged
 
 Status: **Decided by the builder** (package 4 of the encryption) — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable).
+
 Context: R-BAK-032 keeps a re-pooled entry's inherited pool object in the final list when no copy can be read, and writes `+` for every
 digest of the to-copy set into the provisional list. The final list resolves `+` from the pins alone; the copy pages through the pins and
 must tell a re-pooled entry (keep the inherited object, never damaged) from a new one (damaged, or the run ends temporarily).
@@ -3253,6 +3290,8 @@ must tell a re-pooled entry (keep the inherited object, never damaged) from a ne
 ### Q-BAK-81 · The re-pool's second condition is the copy's own read of the present copies
 
 Status: **Decided by the builder** (package 4 of the encryption) — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable).
 
 Context: R-BAK-032 put an inherited entry into the to-copy set when its key's connection departs and "the snapshot's `blob_copies` holds a
 `present` copy of the blob on" a connection that stays. The merge streams the referenced set on the snapshot's connection; a second stream of
@@ -3271,6 +3310,8 @@ of [copy.go](../../internal/backup/create/copy.go).
 
 Status: **Decided by the builder** (package 4 of the encryption) — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
+
 Context: R-BAK-031 has the restore Job draw the keys of an encrypted first connection whose id the backup holds none of, before the first
 write. Step 3 writes before step 4's load truncates and reloads every table, `storage_keys` among them; a restore resumed after step 3 must
 write and name under the same keys, or the objects it wrote cannot be opened by the restored installation.
@@ -3287,6 +3328,8 @@ write and name under the same keys, or the objects it wrote cannot be opened by 
 ### Q-BAK-83 · A deep verification without the key ring reads an encrypted pool object's record from its head
 
 Status: **Decided by the builder** (package 4 of the encryption) — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring).
 
 Context: R-BAK-031 had `verify --deep` download a pool object with a record and check its record, its key against the backup's
 `storage_keys` and its size, without a key. Each of these is in the `HeadObject` the check sends anyway; without a key the bytes prove nothing.

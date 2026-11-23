@@ -6282,6 +6282,8 @@ R-AUTHZ-007 (the path of every row), R-AUTHZ-023; [architecture.md](architecture
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-169](../decisions.md#adr-169--the-catalog-carries-the-package-document-path-and-the-conformance-kit-holds-every-format-to-the-paths-it-authorizes).
+
 Context: the second penetration test of F-82 (2026-11-08). After Q-AUTHZ-250 the endpoint ceiling met the path of every
 protocol request, but the view a format filters its documents with (`ExposureView.Package`, `Version`, `Tag`) and
 `POST /api/v1/endpoints/{endpoint}/check-exposure` evaluated a package without a path. On an npm repository an exposure
@@ -6701,6 +6703,8 @@ Q-AUTHZ-3 is superseded.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Stored levels, the default copied at create (chosen) | Each project and each repository holds its levels; the installation's default is read once, when the object is created | As GitLab: a project's visibility is its own; what a request reads is one column; a change of the default never opens an existing object | Changing the default does not change existing objects (by design) |
@@ -6719,6 +6723,8 @@ one; a bulk action would come before an inherit value.
 ### Q-AUTHZ-265 · A repository is never more open than its project, and lowering a project lowers its repositories
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6741,6 +6747,8 @@ R-REPO-060.
 ### Q-AUTHZ-266 · The wiki of a repository is never more open than its artifacts
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6849,6 +6857,8 @@ R-NUGET-024, [formats/oci.md](formats/oci.md), [formats/debian.md](formats/debia
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Route: refusal of a read; document: members absent; UI: tab absent (chosen) | R-AUTHZ-034's table | A client that reads the document keeps working (npm prints nothing for a missing `readme`); a wiki route answers like a missing one, so it tells nothing; a client without credentials gets the 401 it can answer | The caller is not told why there is no README |
@@ -6889,6 +6899,8 @@ this if a format needs a part that is neither artifacts nor wiki.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A read by a level is a read everywhere (chosen) | Repository lists, the package API, search, counts, vulnerability findings, setup snippets | What a caller can download it can also find; one rule | An internal user's repository list grows with every internal repository |
@@ -6906,6 +6918,8 @@ filter stays one SQL predicate per repository (Q-API-165). The development agent
 ### Q-AUTHZ-274 · A virtual repository has levels of its own, and the anonymous subject still needs every member public
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6925,6 +6939,8 @@ members turns out to be a common wish, which would need namespace claims that th
 ### Q-AUTHZ-275 · A level reaches every replica through the grant index, the external flag through the principal cache
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6961,6 +6977,8 @@ database when several writers exist. The development agent records no revisit co
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Listed and readable for its audience; the members list stays with members and `projects:read` (chosen) | `GET /api/v1/projects` lists visible projects without a role; `membership=true` lists only the caller's | An internal user who is a member of nothing still finds the internal projects whose content it reads; no user enumeration for the whole organization | A non-member does not see who maintains a project |
@@ -6978,6 +6996,8 @@ it. The development agent would revisit this if the owner wants GitLab's member 
 ### Q-AUTHZ-278 · A public remote repository is filled by anonymous callers, and the write that opens it warns
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
 
 | Option | What it means | For | Against |
 |---|---|---|---|

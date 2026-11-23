@@ -7762,6 +7762,8 @@ without an issuer or a Secret per kind instead of without the one Secret.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-129](../decisions.md#adr-129--the-owners-kubernetes-operators-are-the-standard-stack).
+
 Two settings weaken the Sentinel trust without being plaintext: a Sentinel without a password, and data nodes verified
 against the system roots without a CA file. The chart defaults to both (its Valkey Sentinel Secret and its Valkey CA
 Secret are empty), and the owner's operator cannot yet provide a Sentinel password.
@@ -7879,6 +7881,8 @@ of its arrival.
 
 Status: **Decided by the owner on 2026-11-01** — option (e). It replaces the development agent's choice (a), which made the
 leg `npm-ha` the longest job of Test and Release (48 minutes, 22 of them the pod crash).
+
+Its entry in the decision log: [ADR-130](../decisions.md#adr-130--the-organisations-ci-and-release-standard).
 
 **Amended by the owner later on 2026-11-01:** the legs under faults leave the per-change pipeline altogether. Performance,
 failover and similar long tests run occasionally: locally (`make e2e SET=failover|npm-ha|npm-ha-crash|npm-ha-soak`) and in a
@@ -8050,6 +8054,8 @@ The development agent would revisit this when R-NPM-022 is built and a supported
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 **Ended** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): no Quader release precedes the cut, so the chart has no upgrade
 path across it; `web.enabled`, `web.routed`, the guard and R-HA-064 are removed.
+
+Its entry in the decision log: [ADR-013](../decisions.md#adr-013--one-binary-roles-split-from-the-start-identical-replicas-per-role-inv-2).
 
 Context: R-HA-020 promises a zero-downtime upgrade from the previous minor; Q-ARCH-295 keeps the role `web` as the bridge.
 Helm applies a release in one pass and does not wait for a new pod before it repoints the edge and deletes a removed
@@ -8243,6 +8249,8 @@ as its own package.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-155](../decisions.md#adr-155--three-roles-api-packages-and-worker-variants-are-pools).
+
 Context: R-HA-030 names `QUADER_JOBS_QUEUES` and `QUADER_JOBS_EXCLUDE_QUEUES`; the configuration loader reads a list-valued key from
 its environment variable as one JSON (or YAML flow) list and refuses a bare `index` or `index,vuln`
 ([architecture.md](architecture.md) R-ARCH-016, Q-ARCH-304).
@@ -8262,6 +8270,8 @@ one pool lists one, and no variable otherwise, so a queue a later release adds i
 ### Q-HA-83 · Which Services and ports a path pool takes for the further endpoints
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-155](../decisions.md#adr-155--three-roles-api-packages-and-worker-variants-are-pools).
 
 Context: R-EP-002 lets a process in a pool that no endpoint names (a path pool) serve the endpoints without a pool, like the main
 Deployment of its role. R-HA-062 routes a path pool's `paths` inside the host of the default endpoint. A further endpoint is
@@ -8283,6 +8293,8 @@ are wanted on an endpoint; then (c) with a per-endpoint pool Service.
 ### Q-HA-84 · What a pool inherits from its role
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-155](../decisions.md#adr-155--three-roles-api-packages-and-worker-variants-are-pools).
 
 Context: R-HA-062 says a pool takes "the keys of its role as overrides"; R-HA-032 gives a pool "an autoscaler of its own from its overrides".
 
@@ -11679,6 +11691,8 @@ owner's decision [Q-HA-345](#q-ha-345--every-kind-of-pod-has-a-tls-pair-and-a-na
 every kind of pod has a pair of its own, which the chart issues; `scanner.tls.secretName` and `tls.secretName` are gone. Kept as the record of
 what was decided before.
 
+Its entries in the decision log: [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret), [ADR-215](../decisions.md#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues).
+
 Context: the owner's rule is that every link inside the chart speaks TLS and that certificates rotate without a restart. The chart's pair is
 the one the edge trusts for the backends (R-HA-037).
 
@@ -11721,6 +11735,8 @@ and covers a detection too (64 MiB, less than an analysis). The database has a v
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `<fullname>-scanner` and `<fullname>-packages-scan`, always `ClusterIP` (chosen) | Two Services that no value exposes | `service.type: LoadBalancer` on the client Services cannot put the scan listener on the internet; the selectors are exact | Two more objects |
@@ -11736,6 +11752,8 @@ a further role calls the scanner.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The pods of the pool that lists `vuln`, else of `<fullname>-worker` (chosen) | The chart knows which Deployment claims the queue | Least privilege: the workers that never run the scan job cannot reach the scanner | A change of the pools changes the rule (in the same apply) |
@@ -11749,6 +11767,8 @@ job needs the scanner.
 ### Q-HA-321 · The shared extras of the chart do not reach the scanner
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret).
 
 Context: `extraEnv`, `extraEnvFrom`, `extraVolumes`, `extraVolumeMounts`, `initContainers` and `sidecars` apply to every Deployment, and an
 operator puts credentials into them (a Secret as `extraEnvFrom`, a token file as a volume).
@@ -12496,6 +12516,8 @@ ADR-225 (which reads ADR-223's pattern as `<purpose>-<function>-<tool>`).
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The one replica is
 the owner's ("Default reicht uns 1 replica").
 
+Its entry in the decision log: [ADR-225](../decisions.md#adr-225--the-clamav-updater-is-a-deployment-of-its-own-and-clamavs-definitions-are-a-repository-format).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `replicaCount: 1` by default, exempt from `highAvailability.enforce`, `strategy: Recreate`, no disruption budget, no autoscaler (chosen) | One fetcher at any time | ClamAV's guidance of one fetcher per network; a rollout never runs two; nothing waits for the updater, so its minute of absence costs nothing | During a rollout or a drain the worker's runs record `updater_unavailable` for that minute |
@@ -12738,6 +12760,8 @@ store; `secrets.oidc[]` already keys a list of Secrets by the provider's `id` (R
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `QuaderObjectStoreUnreachable` critical for every connection down, `QuaderObjectStoreConnectionUnreachable` warning for one of several (chosen) | Severity by what clients feel | One provider's outage with another serving is not a page at night; the total outage is | Two alerts where there was one |
@@ -12748,6 +12772,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 ### Q-HA-392 · A connection at the recovery site is the second way to a second site
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-HA-026 fills the recovery site's bucket by the store's one-way replication. The owner's provider lists the replication
 operations but documents neither targets nor behaviour (a research of 2026-11-22), and several connections now copy blobs themselves.
@@ -12762,6 +12788,8 @@ operations but documents neither targets nor behaviour (a research of 2026-11-22
 ### Q-HA-393 · The replication backlog alert leaves a filling connection out by a gauge of its own
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: R-HA-045's row of `QuaderStorageReplicationBacklog` fires "for a connection that is not `filling`", but no metric of
 [storage.md](storage.md) R-STOR-060 says which connection is filling; the state is derived from `storage_connections.filled_at`
@@ -12784,6 +12812,8 @@ the rule tests; the gauge itself: [internal/blob/reconcile/metrics.go](../../int
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: R-HA-072 listed "an element without `id`" among the refusals, and R-HA-029's row read the same; [storage.md](storage.md)
 R-STOR-050 says that an element without `id` is `default`, that at most one may leave it out, and gives `[{bucket: quader-blobs}]` as the
 plain path. A list in the values replaces the default list whole, so an operator's element has no `id` unless it is written.
@@ -12799,6 +12829,8 @@ plain path. A list in the values replaces the default list whole, so an operator
 ### Q-HA-395 · The values of the one store are refused by the templates with the keys that took their place
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: an upgrade may carry `config.storage.s3`, `secrets.s3`, `secrets.s3CA`, `secrets.backupSource` or `secrets.journalReader`.
 `secrets` is `additionalProperties: false`, so without a declaration Helm's schema check refuses `secrets.s3` first with "additional
@@ -12822,6 +12854,8 @@ in the target form of R-HA-072 (option (c)'s form, which this interim held back 
 refusal is [Q-HA-399](#q-ha-399--a-static-journal-reader-is-required-for-every-connection-without-drain). The interim helpers
 `quader.backupConnection` and `quader.journalConnection` are gone. An installation's values did not change.
 
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
+
 Context: the backup and the journal replay of the binary read the first connection of `storage.connections` today: the backup takes
 `backup.source.separate_credentials` and `backup.source.credentials` for it (`FirstClient` in
 [internal/config/storage_connections.go](../../internal/config/storage_connections.go), `backup_create.go`), and the credentials file of
@@ -12843,6 +12877,8 @@ part of package E, which follows this one. The entry fields `backupSource` and `
 ### Q-HA-397 · The schema checks an element against the keys of R-STOR-050
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: `config` is passed to the binary and is open in the chart's schema except for the keys the chart reads; the binary refuses an
 unknown key at start. An element of `config.storage.connections` is the part of `config` an operator writes most often, with keys that
@@ -12875,6 +12911,8 @@ entry, and an entry's `existingSecret` that no field reads: an element without `
 ### Q-HA-399 · A static journal reader is required for every connection without drain
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
 Context: with `journalCredentials.source: static` the interim form required the `journalReader` of the first connection (Q-HA-396). The
 journal goes to every connection without `drain: true` (storage.md R-STOR-059), and the replay reads each; a connection that the

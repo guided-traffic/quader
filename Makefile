@@ -471,7 +471,7 @@ s3-conformance: ## S3 conformance tests (R-STOR-035) against the Silo of silo-up
 	  .github/scripts/s3-conformance.sh "Silo"
 
 .PHONY: coverage
-coverage: ## Regenerate the requirement coverage checklist from the committed evidence record
+coverage: ## Regenerate the requirement coverage checklist from the committed evidence record, and the index of decided questions in docs/decisions.md
 	go run ./internal/tools/coverage
 
 # Merges the profiles of one run (unit and each integration line) into the combined coverage of

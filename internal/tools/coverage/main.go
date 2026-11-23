@@ -1,7 +1,8 @@
 // Command coverage generates the coverage pages of docs/coverage from the
-// feature catalog (docs/features) and the specification (docs/spec), enforces
-// the rules of those pages, learns the implementation status from test
-// reports (Q-ROAD-4) and checks the relative links and anchors of the
+// feature catalog (docs/features) and the specification (docs/spec), and the
+// index of decided questions in docs/decisions.md from the questions' blocks,
+// enforces the rules of those pages, learns the implementation status from
+// test reports (Q-ROAD-4) and checks the relative links and anchors of the
 // repository's Markdown. See docs/developer/coverage.md.
 package main
 
@@ -221,8 +222,18 @@ func runGenerate(opts options, stdin io.Reader, stdout, stderr io.Writer) int {
 	if err != nil {
 		return fail(stderr, []string{err.Error()})
 	}
+	decisionsPath := filepath.Join(docs, "decisions.md")
+	decisionsOld, err := os.ReadFile(decisionsPath) //nolint:gosec // G304: fixed path below the repository root given on the command line
+	if err != nil {
+		return fail(stderr, []string{"docs/decisions.md does not exist; it holds the prose around the generated index of decided questions"})
+	}
+	decisions, errs := renderDecisions(c.Questions, string(decisionsOld))
+	if len(errs) > 0 {
+		return fail(stderr, errs)
+	}
 	targets[filepath.Join(docs, "coverage", "checklist.md")] = checklist
 	targets[readmePath] = readme
+	targets[decisionsPath] = decisions
 	if _, ok := targets[implPath]; !ok {
 		targets[implPath] = renderImplemented(implemented)
 	}
@@ -235,19 +246,12 @@ func runGenerate(opts options, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	sort.Strings(paths)
 	if opts.Check {
-		stale := 0
-		for _, p := range paths {
-			old, err := os.ReadFile(p) //nolint:gosec // G304: path below the repository root given on the command line
-			if err != nil || string(old) != targets[p] {
-				rel, _ := filepath.Rel(opts.Repo, p)
-				fmt.Fprintf(stderr, "stale: %s (run the generator and commit the result)\n", filepath.ToSlash(rel))
-				stale++
+		return checkTargets(opts.Repo, paths, targets, func(p, old string) []string {
+			if p != decisionsPath {
+				return nil
 			}
-		}
-		if stale > 0 {
-			return exitStale
-		}
-		return exitOK
+			return indexDiff(c.Questions, old, targets[p])
+		}, stderr)
 	}
 	for _, p := range paths {
 		//nolint:gosec // G306: generated documentation is committed and must be world-readable like the other docs
@@ -257,6 +261,28 @@ func runGenerate(opts options, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 		rel, _ := filepath.Rel(opts.Repo, p)
 		fmt.Fprintf(stdout, "wrote %s (%s bytes)\n", filepath.ToSlash(rel), num(len(targets[p])))
+	}
+	return exitOK
+}
+
+// checkTargets compares each generated file with the committed one and names the stale ones; explain adds the lines that say
+// what differs in a file, where the generator can tell.
+func checkTargets(repo string, paths []string, targets map[string]string, explain func(path, old string) []string, stderr io.Writer) int {
+	stale := 0
+	for _, p := range paths {
+		old, err := os.ReadFile(p) //nolint:gosec // G304: path below the repository root given on the command line
+		if err == nil && string(old) == targets[p] {
+			continue
+		}
+		for _, l := range explain(p, string(old)) {
+			fmt.Fprintln(stderr, l)
+		}
+		rel, _ := filepath.Rel(repo, p)
+		fmt.Fprintf(stderr, "stale: %s (run the generator and commit the result)\n", filepath.ToSlash(rel))
+		stale++
+	}
+	if stale > 0 {
+		return exitStale
 	}
 	return exitOK
 }

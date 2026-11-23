@@ -4475,6 +4475,8 @@ revisit condition.
 
 Status: **Decided by the owner on 2026-10-31** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Read-only (chosen) | Publishes, unpublishes and tag writes are refused in the protocol's shape and point at the main installation | An internet-facing instance takes no content | Publishers use the main installation |
@@ -4490,6 +4492,8 @@ installation." The development agent records no revisit condition.
 ### Q-BAS-3 · The Bastion's credential is a token issued by an administrator of the main installation
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4509,6 +4513,8 @@ agent records no revisit condition.
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The main endpoint (chosen) | The Bastion talks to the default endpoint of the main installation | One endpoint to secure; the Bastion is the outside entry point | The default endpoint's exposure applies to Bastion callers |
@@ -4525,6 +4531,8 @@ customer endpoint of the earlier plans." The development agent records no revisi
 ### Q-BAS-5 · A second Helm chart `quader-bastion`
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4544,6 +4552,8 @@ agent records no revisit condition.
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The token's right (chosen) | A caller reads through the Bastion exactly what its token may read on the main installation | One permission model; nothing to release separately | Permissions alone decide what outsiders see |
@@ -4560,6 +4570,8 @@ agent records no revisit condition.
 ### Q-BAS-7 · The Bastion fetches with the caller's token, and its own token reads no package
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4579,6 +4591,8 @@ checked; it reads no package." The development agent records no revisit conditio
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A configurable period plus a feed polled every few seconds (chosen) | Revocations and narrowings within seconds, widenings within the period | Few checks, fast revocation | A feed to build on the main installation |
@@ -4596,6 +4610,8 @@ seconds; widening a right may take the period." The development agent records no
 ### Q-BAS-9 · The main installation unreachable: grace period, 503 for unseen tokens, then nothing
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4637,6 +4653,8 @@ records no revisit condition.
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Optional Valkey for shared state (chosen) | Block list, counters, fetch coordination and answers shared; without it per replica | Small installs need no Valkey; large ones share | Two modes to test |
@@ -4657,6 +4675,8 @@ README.md.
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) As on the main installation, with absorption (chosen) | Anonymous exactly when the main installation allows it; a negative cache, a budget and stricter limits | Public content stays public; floods stay at the Bastion | Anonymous floods cost the Bastion |
@@ -4675,6 +4695,8 @@ and stricter per-address limits for requests without a credential." The developm
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Batches to the main installation's audit (chosen) | Who, what, when, address, origin Bastion; buffered while unreachable | One audit trail for every download | Events can be lost to a full buffer (counted) |
@@ -4692,6 +4714,8 @@ agent records no revisit condition.
 ### Q-BAS-14 · No web interface at the Bastion
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 Context: the earlier plan bullet "same authentication as the main installation … and the same login" is narrowed by this
 decision to tokens.
@@ -4712,6 +4736,8 @@ session, no UI." The development agent records no revisit condition.
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Only chart values (chosen) | Every value in the chart; a change is a rollout | GitOps; nothing to administer in a DMZ | A change waits for a rollout |
@@ -4728,6 +4754,8 @@ revisit condition.
 ### Q-BAS-16 · Blocking in two stages
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4748,6 +4776,8 @@ provider's, not the Bastion's." The development agent records no revisit conditi
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The same paths, rendered by the main installation for the Bastion's host (chosen) | No repository list; forwarded host; `trusted_proxies` and `additional_base_urls` at the main installation | No format knowledge at the Bastion | Two settings at the main installation |
@@ -4765,6 +4795,8 @@ no format knowledge." The development agent records no revisit condition.
 ### Q-BAS-18 · Metadata: shared for confirmed full readers, filtered documents per caller
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4788,6 +4820,8 @@ revisit condition.
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) By hand with an overlap, reloaded without a restart (chosen) | Second token, GitOps, old one revoked; metric and warning | No write right to Secrets in the DMZ | A yearly manual step |
@@ -4805,6 +4839,8 @@ days). The Bastion holds no right to write Secrets or to issue tokens." The deve
 ### Q-BAS-20 · The Bastion interface has a version of its own, equal on both sides
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
+
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4845,6 +4881,8 @@ agent records no revisit condition.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The role `bastion` of the one image (chosen) | `quader serve --role bastion`, with a configuration schema of its own | INV-1 and INV-2 as they are; the Bastion reuses the TLS reloader, limiters, verifying reader, Valkey client and request log; one release | The image carries code the role never enables |
@@ -4883,6 +4921,8 @@ table of R-AUTHZ-002; [ADR-144](../decisions.md#adr-144--the-bastion-token-is-a-
 ### Q-BAS-24 · Bastion registrations are managed with the endpoint capabilities
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-144](../decisions.md#adr-144--the-bastion-token-is-a-type-of-its-own-and-the-interface-a-version-of-its-own).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5012,6 +5052,8 @@ if `grants` entries become frequent enough to raise check traffic measurably; th
 ### Q-BAS-31 · Cached artifacts are revalidated after a period
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-143](../decisions.md#adr-143--the-bastion-decides-through-the-main-installations-own-routes-and-answers-it-keeps-briefly).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -7436,6 +7478,8 @@ external drops what the Bastion keeps for it (`user.external_changed`, R-BAS-015
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `full` needs the wiki as well; a caller who reads the artifacts in full but not the wiki is `partial` (chosen) | R-BAS-012 | The promise "every response is the same for every `full` subject" holds, since npm's full document differs by the wiki | An anonymous caller of a repository with `public` artifacts and a non-public wiki gets per-caller documents (shared among anonymous callers anyway, R-BAS-019) |
@@ -7700,6 +7744,8 @@ on beyond its grant.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Below `/v2/` the Bastion's own answers carry `Docker-Distribution-API-Version` and the distribution's error body, the Quader code in `detail` (chosen) | A renderer per family | What R-OCI-003 promises of every answer below `/v2/`; clients print a message they understand | A second shape in the Bastion, by family |
@@ -7760,6 +7806,8 @@ Bastion is exactly that.
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 Context: a document is held in memory up to 64 MiB and passed through above it, without the caller's `Range`
 ([forward.go](../../internal/bastion/engine/forward.go) lines 21 and 386 to 395). A ClamAV container is a document (Q-CLAMAV-2), and
 R-CLAMAV-006 says a run of the three files fetches about 110 MiB; whether `main.cvd` alone passes 64 MiB was not measured here.
@@ -7775,6 +7823,8 @@ R-CLAMAV-006 says a run of the three files fetches about 110 MiB; whether `main.
 ### Q-BAS-174 · Debian: the release documents are documents of the metadata period, and by-hash keeps an apt update consistent
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: an `apt update` reads an `InRelease` and then the indexes it names. A Bastion that holds an `InRelease` of an older generation
 must not hand out indexes that disagree with it. Every release Quader writes announces by-hash (R-DEB-011), the main installation keeps
@@ -7808,6 +7858,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 Status: **Decided by the planner in the owner's absence** — selected from the options below. **Put to the owner as a question on
 2026-11-22** (he decided the certificates on 2026-11-21, Q-REPO-415); the recommendation (a) is built in meanwhile.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 Context: the certificate subject exists only on an endpoint whose TLS ends at Quader (Q-CLAMAV-8); a Bastion's TLS ends at the Bastion,
 and its forward reaches the default endpoint, which admits no certificates (R-CLAMAV-010).
 
@@ -7822,6 +7874,8 @@ and its forward reaches the default endpoint, which admits no certificates (R-CL
 ### Q-BAS-177 · A Bastion reports a hit as a download when the main installation counted its fill as one
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: the Bastion reports every artifact it serves from its cache (R-BAS-039). For images the main installation counts the `GET` of a
 tag, a document, as the download of the version (formats/oci.md Q-OCI-222), so a warm `docker pull` through a Bastion would leave the
@@ -7872,6 +7926,8 @@ rule is that a decision taken at one format holds for every format (2026-11-19).
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it. The rule is the
 owner's of 2026-11-20 ("Tests stay runnable", in the repository's working rules).
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Unit and kit for every behaviour, one integration replay per format with Bastion behaviour of its own, one e2e case in the set `oci`, real clients measured once before landing (chosen) | R-BAS-060 | About 10 s of integration and 100 s of one e2e leg; the set `bastion` loads no further client | The behaviour of apt, `ansible-galaxy` and `freshclam` through a Bastion is held by replays, and by a measurement once |
@@ -7910,6 +7966,8 @@ import the catalog.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 Context: R-BAS-058 asks for "canonical header names"; the example of R-BAS-057 spelled `Docker-Distribution-API-Version` and
 `OCI-Filters-Applied`, which net/http writes and compares as `Docker-Distribution-Api-Version` and `Oci-Filters-Applied`. HTTP field
 names compare without regard to case.
@@ -7927,6 +7985,8 @@ names compare without regard to case.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 Context: R-BAS-057's `boundPrefixes` are "the literal bound-host patterns the format declares (R-EP-006)". No format declares any in
 the code: the dispatcher reads the registry root's binding from `catalog.Facts.RegistryRoot` (`Dispatcher.BoundRepository` in
 [registry_target.go](../../internal/api/dispatch/registry_target.go)), and no other format has a bound host.
@@ -7942,6 +8002,8 @@ the code: the dispatcher reads the registry root's binding from `catalog.Facts.R
 ### Q-BAS-184 · Kit check 19 judges what a Bastion keeps, and a route is exempt from two duties only, with a reason
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: R-BAS-058 lists the duties; open were the answers they judge, whether a document without a validator fails, and the form of
 an exemption ("listed in the fixture with its reason"). The check run over the seven formats found five document routes without an
@@ -8011,6 +8073,8 @@ and counts after the body).
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 Context: the chain's authentication stage does not evaluate the credential of `/v2/_token`; the token service presents it itself
 (R-OCI-004, `Stage.AuthenticateTokenRequest`). The marking's subject is the caller the chain's stage accepted, which for every token
 request is the anonymous caller. The Bastion records the subject of every marked response as the answer for the credential it sent
@@ -8028,6 +8092,8 @@ request is the anonymous caller. The Bastion records the subject of every marked
 ### Q-BAS-188 · The bound repository is named as the match of /v2/ reads the binding
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: R-BAS-057 names `boundRepository` "the qualified name the default endpoint's `host_roots` binds the Bastion's host to", and the
 Bastion classifies a path matching "a bound-host prefix of that repository's format" as that repository. The handshake does not name the
@@ -8049,6 +8115,8 @@ in [wire_bastion.go](../../internal/app/wire_bastion.go), `TestQ_BAS_170_TheHand
 ### Q-BAS-189 · The core routes below /v2/ tell the marking their kind only for the methods they answer
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: R-BAS-051 makes the token service a `Volatile` read (a read route that takes a body for `POST`) and the catalog a `Volatile`
 read. The marking answers the probe of any read route that takes a body `204` with `Quader-Bastion-Route: read-with-body`, whatever the
@@ -8102,6 +8170,8 @@ only for a binding to a repository that does not exist or is not of the format, 
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 Context: the main installation's challenge below `/v2/` names the scope its route needs (`scope="repository:<image>:pull"`, R-OCI-004);
 the image name is read by the format's grammar, which a Bastion does not hold (Q-BAS-17). The Bastion answers a `401` of its own below
 `/v2/` for the version check without a credential, a malformed registry token and one past its reported expiry (R-BAS-051, R-BAS-052).
@@ -8121,6 +8191,8 @@ Status: **Decided by the builder** — selected from the options below; the owne
 last 64 KiB" until the commit, while its criterion asked a range of 1 KiB to receive its first byte before the fill ends: both cannot hold
 for a range shorter than the tail.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The rule: the last 64 KiB of the range stay back while the fill runs, so a range of at most 64 KiB is served whole after the commit; the criterion uses a range of 128 KiB (chosen) | `bytes=0-131071` of a running fill gets its first 64 KiB at once and the rest after the commit | No byte of a range reaches the caller as a complete answer before it is verified, whatever its length | `freshclam`'s check of 512 bytes on a cold container waits for the container's fill, as every ranged miss did before |
@@ -8132,6 +8204,8 @@ for a range shorter than the tail.
 ### Q-BAS-198 · The Bastion caps a registry token's shape and reads insufficient_scope itself
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: R-BAS-052 caps the read shape of a registry token at `partial` at the main installation's marking and check, and has the marking
 say who a `401 insufficient_scope` was for. Both are the main installation's side.
@@ -8152,6 +8226,8 @@ in [registry.go](../../internal/bastion/engine/registry.go)).
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A table that fails `iface.HandshakeFormats.Validate` (an ID twice, two registry roots, a status other than 429 or 503, a replay header outside the rules) is a broken answer: the handshake fails and the replica is unreachable (chosen) | Like a body that does not decode | The request flow acts on the table (which headers a cached answer replays, which status a refusal takes); a broken table is a defect of the main installation that shows at once | A defect of one format's facts makes the replica unreachable for every format |
@@ -8164,6 +8240,8 @@ spec:** R-BAS-057; code: `Link.handshake` in [link.go](../../internal/bastion/li
 ### Q-BAS-200 · A caller follows a running document fill only on a full shape
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: a shared document above the memory bound is filled through the spool (Q-BAS-173), and its waiters could follow it as the waiters
 of an artifact fill do (R-BAS-054). A document is shared only with full readers (R-BAS-023); a partial reader's version is filtered.
@@ -8185,6 +8263,8 @@ a reader of the whole repository (kit check 21, R-BAS-086). The fill keeps the r
 Status: **Decided by the builder** — selected from the options below; the owner reviews it. The criteria of R-BAS-050 to R-BAS-054 named the
 fake main installation `maintest` for the engine's unit tests.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The engine's tests run over `fakeMain` of the engine's tests, which every engine test of the role uses, and the link's over `maintest` with its format table and bound repository (chosen) | The double answers byte by byte what a case needs | A body in 16 KiB steps behind a gate, a request count per kind, no TLS per test: the engine's tests stay at about 5 s | `maintest`'s TLS path is not under these cases; the role's scenario and the integration suite are |
@@ -8196,6 +8276,8 @@ fake main installation `maintest` for the engine's unit tests.
 ### Q-BAS-202 · A registry token's expiry is the one the main installation reported, remembered per replica
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 Context: R-BAS-052 refuses a request with a registry token past "the expiry the Bastion holds" without a request and without a count.
 
@@ -8248,6 +8330,8 @@ forwards from (`bastions.trusted_proxies`) and to list its base URL and the Serv
 Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-060 names one release with the volume
 backend, one replica and no Valkey, and asks for it as cheap as it can be.
 
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `bastion.sh install oci`: one replica, the volume backend on an emptyDir, no Valkey, no PodDisruptionBudget, `minReadySeconds: 0`, the namespace holding only the dev CA and the edge certificate; the case installs it beside the build and push of its image and uninstalls it at its end (chosen) | `deploy/dev/oci-bastion.yaml`, `oci-bastion-chart.yaml` | Ready about 5 s after the install started (measured): no claim to provision, no minimum ready time; every run installs the release as CI does | A second Bastion layout in `deploy/dev` beside the two of the set `bastion` |
@@ -8262,6 +8346,8 @@ in:** R-BAS-060.
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it. R-BAS-060 names the clients of the case and
 not how it tells that a warm pull came from the Bastion's cache, nor whether the pod must run its image.
+
+Its entry in the decision log: [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8306,6 +8392,8 @@ Context: the Bastion has no database and no key ring (R-BAS-001); the main insta
 ### Q-BAS-211 · With a cache key, every object of the cache store is encrypted or sealed and named without a digest
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-245](../decisions.md#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart).
 
 Context: the cache store holds artifact bytes, documents, signed entries (whose names are a hash of the cache key, so of the request path),
 access markers named by the content address, and the audit spool of download events (R-BAS-030, R-BAS-039).
@@ -8365,6 +8453,8 @@ on the pod's temporary volume" in the clear. The volume backend spooled its fill
 a rename ([Q-BAS-131](#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)), which
 leaves the plaintext of each fill on the cache volume, a persistent one with `cacheVolume.type: persistent`, and that of an interrupted fill
 until a later start removes it.
+
+Its entry in the decision log: [ADR-245](../decisions.md#adr-245--the-bastions-cache-is-encrypted-in-the-stored-format-under-one-key-from-its-chart).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8453,6 +8543,8 @@ installation ran many Bastions.
 ### Q-BAS-233 · Only artifacts the Bastion keeps are handed over
 
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
 Context: the Bastion keeps an artifact under its content address within `max_object_bytes` and the spool (R-BAS-021, R-BAS-030); a document is
 shared or private by the caller's shape (R-BAS-023), and a private one is kept in memory only.
@@ -8674,6 +8766,8 @@ usable, so step 5 holds through the collapse as well (`TestR_BAS_085_NoRoundTrip
 
 Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
 
+Its entry in the decision log: [ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Record `full` only when the token's unverified grant names (repository, package) with pull, checked when the answer is recorded (chosen) | `iface.RegistryTokenGrant` reads the claim `g` without verifying it | A defect at the main installation cannot open other images (the pattern of Q-BAS-198); trusting the unverified grant can only lower what is read; two opaque strings are compared, so no path grammar | The interface reads one more member of the token service's claims; a test with the real encoder holds the two together |
@@ -8691,6 +8785,8 @@ subject, names another image or repository, or lacks the pull bit gives `partial
 
 Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
 
+Its entry in the decision log: [ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The shared LRU of `max_entries`; no count per credential (chosen) | Package answers are one more kind in the bound every answer shares | Answers per pull fall from about 14 to about 3; the miss limit bounds the rate | One credential can evict others' answers, as it can today with URL answers |
@@ -8702,6 +8798,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-BAS-248 · Package answers renew by use
 
 Status: **Decided by the development agent** — selected from the options below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8793,6 +8891,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-BAS-255 · A check's package that breaks a rule answers 422, as the check's other field errors
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+
+Its entry in the decision log: [ADR-254](../decisions.md#adr-254--read-shapes-per-package-at-a-bastion-a-registry-token-is-full-on-the-images-of-its-grant).
 
 Context: R-BAS-083 asked for `400` with a field error at `/packages/<i>`. The check's other request rules (an address that is none, the
 count of `repositories`, a credential longer than any) already answer with a field error, and the main installation's problem answers give
@@ -8957,6 +9057,8 @@ the main installation (R-BAS-075), never in a failed download. **Applied in the 
 Status: **Decided by the development agent** during the build of R-BAS-071 (package 2 of the handover) — selected from the options below;
 the owner sees it when it is built.
 
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
 Context: R-BAS-071 says that both events of the switch are listed in `noFeedEntry` with their reason. That list holds the journaled events
 that yield no entry of the feed (R-BAS-015): the feed reads journaled events only, and `TestR_BAS_015_EveryJournaledEventIsClassified`
 refuses an event in the list that is not journaled, so that no stale or mistyped entry hides there. `bastion.handover.enabled` is not
@@ -9061,6 +9163,8 @@ kept (R-BAS-051).
 Status: **Decided by the development agent** during the build of R-BAS-071's screen (package 5 of the handover) — selected from the
 options below; the owner sees it when it is built.
 
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
+
 Context: R-BAS-071 says that while the switch is on "the card lists each connection with whether it can serve a handover and its reason
 where not". The owner's rule "simple by default, details on demand" (the repository's working rules, R-UI-067) wants the plain path to be
 the switch and its sentence; which connections a Bastion reads from matters to an administrator when one of them cannot be read. The
@@ -9084,6 +9188,8 @@ plain connection is among the lines: for an encrypted one nothing on that page c
 
 Status: **Decided by the development agent** during the build of R-BAS-071's screen (package 5 of the handover) — selected from the
 options below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
 Context: R-BAS-071's sentence reads "Large files go from the object store to this Bastion by a link per file, and for an encrypted store
 with that file's key; the main installation decides and counts every download as before." Package 4 (the data keys) is not built: the main
@@ -9113,6 +9219,8 @@ Status: **Decided by the builder** in the join of the handover's data keys (pack
 [developer/bastion-handover.md](../developer/bastion-handover.md)) with its surface (package 5) — selected from the options below; the owner
 sees it when it is built. It ends
 [Q-BAS-296](#q-bas-296--until-the-data-keys-are-handed-the-cards-sentence-names-no-key-and-an-encrypted-connection-has-its-line).
+
+Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
 Context: since package 4 the main installation hands a Bastion a copy on an encrypted connection with that copy's data key, where no plain
 copy can serve and the connection can serve a handover ([storage.md](storage.md) R-STOR-095, R-STOR-096). The settings' answer decides

@@ -6769,6 +6769,8 @@ for example one that must process each day's data.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-077](../decisions.md#adr-077--singleton-work-under-advisory-lock-leases-with-fencing).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) No token: writes on the lease's own session (chosen) | Every state change of a singleton runs on the session that holds the lease advisory lock; if the session dies, the lock and the write fail together ([ha-and-helm.md](ha-and-helm.md) R-HA-006) | The fence is the database's own lock on the connection that writes; nothing to hand out or compare | The fence works only where the session is kept, so the session host must be direct or session-mode |
@@ -6860,6 +6862,8 @@ before `TrimSpace` because a random key may begin or end with a white-space byte
 ### Q-ARCH-35 · Which forwarded header family does the edge rewrite?
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
 
 A client can send both `X-Forwarded-For` and `Forwarded`; the edge writes one of them. An audit of the first design
 found that the address resolver preferred `Forwarded` and fell back to `X-Forwarded-For`, so a client could choose the
@@ -7287,6 +7291,8 @@ Context: the table of R-ARCH-018 lists `claims`, `cache_invalidation` and `upstr
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-022](../decisions.md#adr-022--pull-through-proxy-semantics-inv-11).
+
 Context: R-ARCH-033 has the holder publish `stored` or `failed` and has `Wait` return "when the holder publishes an outcome, when the lock is gone, or when ctx ends", without saying what `Wait` returns in each case, what `stored` means for an upstream `404` that became a negative entry, or how the leader's `traceparent` travels.
 
 | Option | What it means | For | Against |
@@ -7309,6 +7315,8 @@ Context: R-ARCH-033 has the holder publish `stored` or `failed` and has `Wait` r
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-022](../decisions.md#adr-022--pull-through-proxy-semantics-inv-11).
+
 Context: R-ARCH-033 has the hold extend its lock every third of the TTL while the fetch runs, and has `Acquire` and `Wait` return `ErrUnavailable` "when the breaker is open or a call fails". Open points: who drives the extension, what a failed extension means, how long a hold may live, which errors are `ErrUnavailable`, and whether the in-process single-flight group lives in `internal/cluster`.
 
 | Option | What it means | For | Against |
@@ -7330,6 +7338,8 @@ Context: R-ARCH-033 has the hold extend its lock every third of the TTL while th
 ### Q-ARCH-197 · The negative store checks the form of an entry; the proxy judges its validity
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-022](../decisions.md#adr-022--pull-through-proxy-semantics-inv-11).
 
 Context: R-REPO-028 has readers validate an entry (`c` within the repository's current `notFoundTtlSeconds`, no later invalidation covering the path), delete a malformed one, and keep a bounded L1 in front of Valkey. `internal/cluster` knows neither the repository's period, nor the path (the key holds a hash), nor the invalidations.
 
@@ -10798,6 +10808,8 @@ entry are as current as the item. The development agent would revisit it if a th
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
+Its entry in the decision log: [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote).
+
 Context: a `.deb` is an `ar` archive whose control archive is compressed with gzip, xz or Zstandard (R-DEB-007), and an upstream's index
 may be xz (R-DEB-023). R-ARCH-028 gives every untrusted input one bounded reader in `internal/formats/untrusted`.
 
@@ -10816,6 +10828,8 @@ may be xz (R-DEB-023). R-ARCH-028 gives every untrusted input one bounded reader
 ### Q-ARCH-383 · The Debian rule libraries are leaves
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote).
 
 Context: the deb822 parser and writer, the package archive reader, dpkg's version order and the index renderers are used by the format
 (edge), by its data port and its jobs (domain), and by the virtual merge. Layers allow a lower layer to import only lower ones
@@ -11618,6 +11632,8 @@ would revisit this if the scanner needs a shared state, which ADR-212 rules out.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the scanner
 pulls through `/v2/` on `packages` is the owner's.
 
+Its entry in the decision log: [ADR-213](../decisions.md#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A scan listener `:8082` with an endpoint `scan` that accepts scan tokens only (chosen) | A second listener on the main `packages` pods, behind a Service of its own | The edge's settings on `:8080` (host allowlist, token types, anonymous rule, mutual TLS toward the edge, rate class, slots) never decide the scanner's pull, and a scan token works nowhere else | A listener, a Service and a policy rule more; `endpoints.md` gains a reserved name |
@@ -11638,6 +11654,8 @@ pair by the owner's decision [Q-HA-345](ha-and-helm.md#q-ha-345--every-kind-of-p
 (2026-11-20), which takes (b): a pair per kind of pod, issued by the chart, with the names checked on each link (Q-ARCH-552). The listener's
 pair stays the identity, and the `ca.crt` of the pod's own Secret the trust anchor. Kept as the record of what was decided before.
 
+Its entries in the decision log: [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret), [ADR-215](../decisions.md#adr-215--every-kind-of-pod-has-a-tls-pair-and-a-name-of-its-own-which-the-chart-issues).
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The listener's pair as the identity, `ca.crt` of the chart's Secret as the one trust anchor `server.internal_tls.ca_file` (chosen) | Mutual TLS with what every installation has | No new secret; the reloader of R-ARCH-035 covers it; a peer without the CA's certificate is refused before HTTP | The certificate must allow client authentication; every holder of the pair is a valid peer |
@@ -11653,6 +11671,8 @@ this if a link must tell the calling role from another holder of the pair, which
 ### Q-ARCH-530 · The scanner ends every other process of its container when no analysis runs
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-212](../decisions.md#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret).
 
 Context: the analyser runs in a process group of its own that is killed with the call. A process that the analyser starts and that leaves
 the group (`setsid`) survives that kill, and could wait in the pod for the next image and its token, or change the next analysis's result.
