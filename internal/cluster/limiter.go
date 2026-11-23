@@ -55,6 +55,18 @@ type Verdict struct {
 	// Window is the window of the policy, burst divided by rate (at least 1 s).
 	Window time.Duration
 	Mode   Mode
+
+	// back is what [Limiter.GiveBack] undoes: the units an admitted take counted on its own, nil where nothing can be given
+	// back (a refusal, or a take that was counted together with other windows and is all or nothing).
+	back *takeBack
+}
+
+// takeBack is where an admitted take counted its units: a window in Valkey, or the token bucket of the replica.
+type takeBack struct {
+	w      WindowTake
+	bucket string
+	units  int
+	local  bool
 }
 
 // windowStore is the counter storage of the cluster scope. *Valkey is the
@@ -63,6 +75,8 @@ type windowStore interface {
 	// take counts n units in the current window if the estimate with them stays within limit, and returns the counters
 	// without them and whether they were counted.
 	take(ctx context.Context, w WindowTake, n int64) (st WindowState, err error)
+	// giveBack subtracts n units an admitted take counted from the current window, never below 0 (Q-LIM-110).
+	giveBack(ctx context.Context, w WindowTake, n int64) error
 	// hit counts one event whatever the limit and returns the counters with it.
 	hit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (cur, prev int64, err error)
 	read(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (cur, prev int64, err error)
@@ -75,6 +89,10 @@ type valkeyWindows struct{ v *Valkey }
 
 func (w valkeyWindows) take(ctx context.Context, win WindowTake, n int64) (WindowState, error) {
 	return w.v.windowTake(ctx, win, n)
+}
+
+func (w valkeyWindows) giveBack(ctx context.Context, win WindowTake, n int64) error {
+	return w.v.windowGiveBack(ctx, win, n)
 }
 
 func (w valkeyWindows) hit(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (int64, int64, error) {
@@ -339,7 +357,11 @@ func (l *Limiter) TakeNAt(ctx context.Context, bucket string, n int, at time.Tim
 		st, err := l.set.store.take(ctx, w, int64(n))
 		if err == nil {
 			l.inFallback.Store(false)
-			return l.record(l.windowVerdict(st, w.Elapsed, n))
+			v := l.windowVerdict(st, w.Elapsed, n)
+			if v.Allowed {
+				v.back = &takeBack{w: w, units: n}
+			}
+			return l.record(v)
 		}
 		l.set.store.degraded()
 	} else if l.set.store != nil {
@@ -362,7 +384,8 @@ func (l *Limiter) windowTake(bucket string, at time.Time) WindowTake {
 // class of R-API-016 is decided with the request windows of the download limits, R-LIM-017, and counted only when every
 // window of the take admits the request), and returns the function that decides once the batch ran, from the take's result
 // or, when the batch failed or Valkey cannot be used, from the replica's share. A limiter of replica scope decides at once and
-// adds nothing.
+// adds nothing. A verdict decided in the take gives nothing back ([Limiter.GiveBack]): the take is all or nothing; one decided
+// on the replica's share does, for a request the take's other windows refused there.
 func (l *Limiter) BatchTake(op *LimitOp, bucket string, at time.Time) func(res LimitResult, err error) Verdict {
 	now := l.set.now()
 	if at.IsZero() || at.After(now) {
@@ -386,6 +409,43 @@ func (l *Limiter) BatchTake(op *LimitOp, bucket string, at time.Time) func(res L
 		l.inFallback.Store(true)
 		return l.record(l.takeLocal(bucket, now, l.share(), 1, ModeFallback))
 	}
+}
+
+// GiveBack undoes a take the limiter admitted on its own, for a request that a check after it refused (R-ARCH-034, Q-LIM-61,
+// Q-LIM-110): an endpoint's class of R-EP-015 runs before stage 7, so a request stage 7 refuses is given back to it. In Valkey
+// one round trip subtracts the units from the window they were counted in (never below 0, never in a window that has ended);
+// on the replica's token bucket its tokens are returned. A refused verdict, and one decided in a take with other windows,
+// give nothing back. A give-back that does not reach Valkey leaves the units counted until their window ends.
+func (l *Limiter) GiveBack(ctx context.Context, v Verdict) {
+	b := v.back
+	if b == nil || !v.Allowed {
+		return
+	}
+	if b.local {
+		l.refundLocal(b.bucket, b.units)
+		return
+	}
+	if l.set.store == nil {
+		return
+	}
+	if err := l.set.store.giveBack(context.WithoutCancel(ctx), b.w, int64(b.units)); err != nil {
+		l.set.store.degraded()
+	}
+}
+
+// refundLocal returns units tokens to the replica's bucket of key, at most to its capacity.
+func (l *Limiter) refundLocal(key string, units int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	b, ok := l.buckets[l.bucketKey(key)]
+	if !ok {
+		return
+	}
+	n := 1
+	if l.scope != ScopeReplica {
+		n = l.share()
+	}
+	b.tokens = math.Min(float64(max(1, l.burst/n)), b.tokens+float64(units))
 }
 
 // windowVerdict applies the sliding-window rule to what a take found: the request of units is admitted when previous x
@@ -451,6 +511,7 @@ func (l *Limiter) takeLocal(key string, now time.Time, n, units int, mode Mode) 
 	if u := float64(units); b.tokens >= u {
 		b.tokens -= u
 		v.Allowed = true
+		v.back = &takeBack{bucket: key, units: units, local: true}
 	} else {
 		v.RetryAfter = wholeSeconds(time.Duration((u - b.tokens) / rate * float64(time.Second)))
 	}

@@ -54,6 +54,19 @@ func (m *memWindows) take(_ context.Context, w WindowTake, n int64) (WindowState
 	return s, nil
 }
 
+// giveBack is the give-back of valkey_take.go on the map: never below 0.
+func (m *memWindows) giveBack(_ context.Context, w WindowTake, n int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.calls++
+	if m.fail {
+		return errors.New("boom")
+	}
+	k := m.key(w.Figure, w.Bucket, w.Index)
+	m.counts[k] = max(0, m.counts[k]-n)
+	return nil
+}
+
 func (m *memWindows) read(_ context.Context, l, b string, idx int64, _ time.Duration) (int64, int64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -262,6 +275,44 @@ func TestLimiterCluster(t *testing.T) {
 			if strings.Contains(k, "example") || strings.Contains(k, "auth.") {
 				t.Errorf("key %q holds a raw name", k)
 			}
+		}
+	})
+}
+
+// Q-LIM-110: a take a limiter admitted on its own is given back when a check after it refuses the request, in Valkey and on the
+// replica's bucket; a refusal gives nothing back, and neither does a verdict decided in a take with other windows.
+func TestLimiterGiveBack(t *testing.T) {
+	for _, down := range []bool{false, true} {
+		st, clk := newMemWindows(), newLimClock()
+		st.down = down
+		l := replica(t, st, clk, 1, nil).NewLimiter("endpoint_ext", ScopeCluster, 1, 1)
+		v := l.Take(t.Context(), "tok")
+		if !v.Allowed {
+			t.Fatalf("down %v: the first request was refused", down)
+		}
+		refused := l.Take(t.Context(), "tok")
+		if refused.Allowed {
+			t.Fatalf("down %v: a second request within the burst of one was admitted", down)
+		}
+		l.GiveBack(t.Context(), refused)
+		if l.Take(t.Context(), "tok").Allowed {
+			t.Fatalf("down %v: a refusal gave something back", down)
+		}
+		l.GiveBack(t.Context(), v)
+		if !l.Take(t.Context(), "tok").Allowed {
+			t.Fatalf("down %v: the request given back still fills the burst", down)
+		}
+	}
+	t.Run("a verdict of a take shared with other windows gives nothing back", func(t *testing.T) {
+		st, clk := newMemWindows(), newLimClock()
+		l := replica(t, st, clk, 1, nil).NewLimiter("api_package_write", ScopeCluster, 1, 1)
+		var op LimitOp
+		decide := l.BatchTake(&op, "tok", time.Time{})
+		res := LimitResult{Admitted: true, Windows: []WindowState{{Fits: true}}}
+		st.counts[st.key(op.Windows[0].Figure, op.Windows[0].Bucket, op.Windows[0].Index)] = 1 // what the take counted
+		l.GiveBack(t.Context(), decide(res, nil))
+		if l.Take(t.Context(), "tok").Allowed {
+			t.Fatal("a verdict of a shared take gave its unit back")
 		}
 	})
 }

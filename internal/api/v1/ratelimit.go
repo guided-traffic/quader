@@ -200,6 +200,7 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 				next.ServeHTTP(w, r)
 				return
 			}
+			giveBackEndpointClass(r.Context())
 			c.limited.Inc()
 			httpserver.Problem(w, r, classRefusal(v))
 		})
@@ -275,6 +276,9 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 				v := decide(res, err)
 				setRateLimitFields(w, c, name, v)
 				if v.Allowed {
+					if err != nil && !res.Admitted {
+						c.l.GiveBack(ctx, v) // on the replica's share the request windows or the block refused it after the class
+					}
 					return nil
 				}
 				c.limited.Inc()
@@ -285,6 +289,7 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 	st := s.o.Limits.Check(ctx, charge, received, check)
 	httplimit.SetPolicies(w.Header(), st.Policies)
 	if st.Err != nil {
+		giveBackEndpointClass(ctx)
 		httplimit.SetRefusalPolicy(w.Header(), charge)
 		httplimit.Log(ctx, charge)
 		s.o.Limits.Finish(charge)

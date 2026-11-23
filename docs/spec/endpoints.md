@@ -1089,6 +1089,10 @@ Priority: **MVP** · Covers: BEYOND-030
   address of R-ARCH-006). An endpoint's `rate_limit_class` names one; empty means none.
 - The endpoint limiter runs at middleware step 7 of R-ARCH-005 for every request on the endpoint,
   package protocols included, before the classes of R-API-016 and R-AUTH-038, which still apply.
+  A request it admits and the stage after it refuses (a class of R-API-016; on a protocol path a request figure or the block of the
+  download limits) is given back to the class, so the class counts the requests stage 7 lets on and a client that retries after a
+  429 of stage 7 does not fill its endpoint budget ([usage-and-limits.md](usage-and-limits.md#q-lim-110--an-upstream-request-step-9a-refuses-is-counted-nowhere-and-a-request-stage-7-refuses-is-given-back-to-the-endpoints-class)
+  Q-LIM-110, `TestR_EP_015_ARequestStage7RefusesIsGivenBackToTheEndpointsClass`).
 - On a protocol path the download limits of [usage-and-limits.md](usage-and-limits.md) apply as well: a request must fit the
   endpoint's class **and** its subject's budget and the remote's ceiling; neither replaces the other (R-LIM-005). The endpoint's class
   keys on the token ID, the limits on the subject (a user with all its tokens), so the two count different things.

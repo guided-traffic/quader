@@ -49,6 +49,10 @@ const (
 	// request windows' check of stage 7 (R-LIM-017, Q-LIM-57) and a limiter's take (R-ARCH-034): a refused request is not
 	// counted. Valkey runs it as one script (valkey_take.go).
 	OpTake
+	// OpGiveBack undoes an admitted OpTake of the same Windows and N: it subtracts N from the current counter of every window
+	// that is not a Peek, never below 0 and never in a counter that has expired. A check of the request's step that decided
+	// after the take refused the request (a parallel download at step 9a, Q-LIM-110). It runs in the same script as the take.
+	OpGiveBack
 	// OpMarkerGet reads a block marker (GET).
 	OpMarkerGet
 	// OpMarkerSet sets a block marker if none is set (SET NX EX).
@@ -76,7 +80,7 @@ type LimitOp struct {
 	// Window is the window of a counter; Index the window's index (whole windows since the Unix epoch).
 	Window time.Duration
 	Index  int64
-	// N is what OpWindowAdd and OpTake add, at least 1.
+	// N is what OpWindowAdd and OpTake add and OpGiveBack takes back, at least 1.
 	N int64
 	// Member, Until and Now are the lease's name, its end and the time leases that ended before are dropped.
 	Member string
@@ -265,7 +269,7 @@ func (v *Valkey) runLimits(ctx context.Context, b *LimitBatch) ([]LimitResult, e
 
 // queueLimitOp queues the commands of one operation.
 func (v *Valkey) queueLimitOp(c valkey.Client, i int, op LimitOp, queue func(op int, role uint8, cmd valkey.Completed)) error {
-	if op.Kind == OpTake {
+	if op.Kind == OpTake || op.Kind == OpGiveBack {
 		keys, args, err := v.takeArgs(op)
 		if err != nil {
 			return err
@@ -427,6 +431,9 @@ func (m *MemoryLimits) run(op LimitOp, now time.Time) LimitResult {
 	switch op.Kind {
 	case OpTake:
 		r = m.take(op, now)
+	case OpGiveBack:
+		m.giveBack(op, now)
+		r.Admitted = true
 	case OpWindowAdd:
 		k := memWindowKey(op, op.Index)
 		c, ok := m.windows[k]

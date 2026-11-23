@@ -63,6 +63,55 @@ func TestR_LIM_017_TheTakeLoadsItsScriptAgainAfterTheServerLostIt(t *testing.T) 
 	}
 }
 
+// TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing: the script of the take, with the least-privilege ACL of the
+// stack, checks a window that is only peeked without adding to it, and the give-back takes an admitted take's units back from its
+// window, never below 0: step 9a's uncached bytes and an upstream request a parallel lease refused (R-LIM-022), an endpoint's class
+// after stage 7 refused (R-EP-015). Milliseconds.
+func TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing(t *testing.T) {
+	c := newClient(t, stackConfig(t, 2*time.Second))
+	waitAvailable(t, c)
+	counters := cluster.NewLimitCounters(c.Valkey)
+	idx, el := cluster.WindowIndex(time.Now(), time.Hour)
+	bucket := cluster.LimitBucket("it:" + randHex(6))
+	up := cluster.WindowTake{Figure: "up", Bucket: bucket, Window: time.Hour, Index: idx, Elapsed: el, Limit: 1}
+	bytes := cluster.WindowTake{Figure: "uh", Bucket: bucket, Window: time.Hour, Index: idx, Elapsed: el, Limit: 1, Peek: true}
+	run := func(kind cluster.LimitOpKind) cluster.LimitResult {
+		t.Helper()
+		var b cluster.LimitBatch
+		b.Add(cluster.LimitOp{Kind: kind, Windows: []cluster.WindowTake{up, bytes}, N: 1})
+		res, err := counters.Run(t.Context(), &b)
+		if err != nil {
+			t.Fatalf("%v: %v", kind, err)
+		}
+		return res[0]
+	}
+	if r := run(cluster.OpTake); !r.Admitted || r.Windows[1].Cur != 0 {
+		t.Fatalf("the first take: %+v", r)
+	}
+	if r := run(cluster.OpTake); r.Admitted || r.Windows[0].Cur != 1 || r.Windows[1].Cur != 0 {
+		t.Fatalf("a take beyond the upstream figure, the peeked window untouched: %+v", r)
+	}
+	run(cluster.OpGiveBack)
+	run(cluster.OpGiveBack) // never below 0
+	if r := run(cluster.OpTake); !r.Admitted || r.Windows[0].Cur != 0 {
+		t.Fatalf("the take after the give-back: %+v", r)
+	}
+
+	ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: c.Valkey})
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := ls.NewLimiter("it.give_back_"+randHex(4), cluster.ScopeCluster, 1, 1)
+	v := l.Take(t.Context(), "a")
+	if !v.Allowed || v.Mode != cluster.ModeCluster || l.Take(t.Context(), "a").Allowed {
+		t.Fatalf("a limiter's burst of one: %+v", v)
+	}
+	l.GiveBack(t.Context(), v)
+	if v := l.Take(t.Context(), "a"); !v.Allowed {
+		t.Fatalf("the take after the limiter gave its unit back: %+v", v)
+	}
+}
+
 // TestR_BAS_016_ABatchIsChargedItsEventsInValkey: TakeNAt counts n units in one take, with the least-privilege ACL of
 // the stack, against the shared window, so two replicas of the main installation together admit a registration's events
 // up to the burst and refuse the batch that does not fit, with a Retry-After (R-ARCH-030, R-ARCH-034, Q-BAS-117).

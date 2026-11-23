@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/netip"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -561,6 +562,123 @@ func TestR_LIM_022_StepNineA(t *testing.T) {
 		}
 		if err := r.e.MayFetch(ctx, r.e.System(21), 21, true); err != nil {
 			t.Fatal(err)
+		}
+	})
+}
+
+// R-LIM-022, Q-LIM-110 (decision 19 of the owner, Q-LIM-57, carried to step 9a): an upstream request step 9a refuses is counted
+// nowhere, not in the budget key's window, not in the ceiling's, not in the usage store: a caller that retries is admitted again
+// after the Retry-After of its refusal, and a refusal by one budget leaves the other untouched. One the parallel lease refuses
+// after the figures admitted it is given back.
+func TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere(t *testing.T) {
+	ctx := context.Background()
+	two := BuiltinProfiles()[ProfileAnonymous]
+	two[UpstreamRequestsPerHour] = 2
+	fetch := func(r *rig, addr string, repo int64) error {
+		c := r.e.Begin(anonCaller(addr), qname.Repo{})
+		defer r.e.Finish(c)
+		return r.e.MayFetch(ctx, c, repo, false)
+	}
+	t.Run("a caller that retries is admitted once the window has room, and the usage store counts what went upstream", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, two)
+		for i := range 2 {
+			if err := fetch(r, "198.51.100.40", 5); err != nil {
+				t.Fatalf("upstream request %d: %v", i, err)
+			}
+		}
+		for range 6 { // hammering in between changes nothing
+			if err := fetch(r, "198.51.100.40", 5); codeOf(err) != CodeUpstreamLimitReached {
+				t.Fatalf("a refused retry: %v", err)
+			}
+		}
+		// Half into the next hour the two of this hour weigh one: room for one more. Six refusals counted would weigh four.
+		r.clk.add(90 * time.Minute)
+		if err := fetch(r, "198.51.100.40", 5); err != nil {
+			t.Fatalf("refused half into the next hour: %v", err)
+		}
+		r.e.Flush(ctx)
+		if _, _, _, _, up, _ := r.usage.sum(); up != 3 {
+			t.Fatalf("the usage store counts %d upstream requests, want the 3 admitted", up)
+		}
+	})
+	t.Run("a request the ceiling refuses leaves the caller's own window untouched", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, two) // the anonymous ceiling of repository 21 is 3 an hour
+		for i := range 3 {
+			if err := fetch(r, "203.0.113."+strconv.Itoa(10+i), 21); err != nil {
+				t.Fatalf("ceiling request %d: %v", i, err)
+			}
+		}
+		for range 4 {
+			if err := fetch(r, "203.0.113.50", 21); codeOf(err) != CodeUpstreamLimitReached {
+				t.Fatalf("beyond the ceiling: %v", err)
+			}
+		}
+		for i := range 2 {
+			if err := fetch(r, "203.0.113.50", 5); err != nil {
+				t.Fatalf("the refused caller's own upstream request %d at another remote: %v", i, err)
+			}
+		}
+	})
+	t.Run("a request the caller's own figure refuses leaves the ceiling untouched", func(t *testing.T) {
+		r := newRig(t, ModeEnforce, two)
+		for range 2 {
+			if err := fetch(r, "203.0.113.60", 5); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for range 4 {
+			if err := fetch(r, "203.0.113.60", 21); codeOf(err) != CodeUpstreamLimitReached {
+				t.Fatalf("beyond the caller's own figure: %v", err)
+			}
+		}
+		for i := range 3 {
+			if err := fetch(r, "203.0.113."+strconv.Itoa(70+i), 21); err != nil {
+				t.Fatalf("another caller's request %d within the ceiling: %v", i, err)
+			}
+		}
+	})
+	t.Run("a download the parallel lease refuses gives its upstream request back, in Valkey and on the replica's share", func(t *testing.T) {
+		one := two
+		one[ParallelDownloads] = 1
+		for _, down := range []bool{false, true} {
+			f := one
+			if down {
+				f[UpstreamRequestsPerHour] = 4 // a share of 2 on each of 2 replicas
+			}
+			r := newRig(t, ModeEnforce, f)
+			r.store.down.Store(down)
+			first := r.e.Begin(anonCaller("198.51.100.41"), qname.Repo{})
+			if err := r.e.MayFetch(ctx, first, 5, true); err != nil {
+				t.Fatal(err)
+			}
+			for range 3 {
+				c := r.e.Begin(anonCaller("198.51.100.41"), qname.Repo{})
+				if err := r.e.MayFetch(ctx, c, 5, true); codeOf(err) != CodeTooManyParallelDownloads {
+					t.Fatalf("down %v, a second download beside the first: %v", down, err)
+				}
+				r.e.Finish(c)
+			}
+			r.e.Finish(first)
+			r.e.Flush(ctx)
+			if err := fetch(r, "198.51.100.41", 5); err != nil {
+				t.Fatalf("down %v, the second upstream request of the hour after three refused downloads: %v", down, err)
+			}
+			r.e.Flush(ctx)
+			if _, _, _, _, up, _ := r.usage.sum(); up != 2 {
+				t.Fatalf("down %v, the usage store counts %d upstream requests, want the 2 that went upstream", down, up)
+			}
+		}
+	})
+	t.Run("in audit the request goes upstream and is counted where it went, its would-limit recorded", func(t *testing.T) {
+		r := newRig(t, ModeAudit, two)
+		for i := range 4 {
+			if err := fetch(r, "198.51.100.42", 5); err != nil {
+				t.Fatalf("audit, upstream request %d: %v", i, err)
+			}
+		}
+		r.e.Flush(ctx)
+		if _, _, _, _, up, ev := r.usage.sum(); up != 4 || ev["audit:upstreamRequestsPerHour"] != 2 {
+			t.Fatalf("audit: %d upstream requests, events %v; want 4 and two would-limits", up, ev)
 		}
 	})
 }

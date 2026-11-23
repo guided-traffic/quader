@@ -3,12 +3,16 @@ package v1
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 func TestR_EP_015_EndpointRateLimitClass(t *testing.T) {
@@ -96,6 +100,7 @@ func TestR_EP_015_EndpointRateLimitClass(t *testing.T) {
 		}
 	})
 	t.Run("R-EP-015 without Valkey the share divides by the replicas that serve the endpoint", func(t *testing.T) {
+		defer func() { n = 1 }()
 		n = 3
 		admitted := 0
 		for range 10 {
@@ -105,6 +110,115 @@ func TestR_EP_015_EndpointRateLimitClass(t *testing.T) {
 		}
 		if admitted != 1 {
 			t.Fatalf("%d admitted with a burst of 3 shared by 3 replicas, want 1", admitted)
+		}
+	})
+}
+
+// R-EP-015, Q-LIM-110: a request the endpoint's class admits and stage 7 refuses after it (the request figure of the download
+// limits on a protocol path, a class of R-API-016 on the management API) is given back to the class: the class counts what stage 7
+// lets on, and a client that retries after the 429 of stage 7 does not fill the endpoint's budget. The class's clock does not
+// move, so its bucket refills nothing: what it admits at the end is what was given back.
+func TestR_EP_015_ARequestStage7RefusesIsGivenBackToTheEndpointsClass(t *testing.T) {
+	fixed := time.Date(2026, 11, 23, 10, 0, 0, 0, time.UTC)
+	user := func(*http.Request) (httpserver.Principal, error) {
+		return httpserver.Principal{ID: "u-a", Name: "a", Kind: httpserver.KindUser, Credential: httpserver.Credential{Method: httpserver.MethodBearer, TokenID: "a"}}, nil
+	}
+	chain := func(t *testing.T, o RateLimitOptions) (http.Handler, func(time.Duration)) {
+		t.Helper()
+		epSet, err := cluster.NewLimiterSet(cluster.LimiterOptions{Now: func() time.Time { return fixed }})
+		if err != nil {
+			t.Fatal(err)
+		}
+		class := config.EndpointRateLimit{RequestsPerSecond: 1, Burst: 2, Key: "principal"}
+		ep := NewEndpointRateLimit(EndpointRateLimitOptions{
+			Endpoint: "customers", Class: "ext", Limit: class,
+			Limiter: epSet.NewLimiter(EndpointLimiterName("ext"), cluster.ScopeCluster, class.RequestsPerSecond, class.Burst),
+		})
+		apiClock := fixed
+		apiSet, err := cluster.NewLimiterSet(cluster.LimiterOptions{Now: func() time.Time { return apiClock }})
+		if err != nil {
+			t.Fatal(err)
+		}
+		o.Limiters = apiSet
+		stage, err := NewRateLimit(o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		router := httpserver.NewClientRouter()
+		router.HandleFunc("GET /api/npm/{rest...}", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) })
+		router.HandleFunc("GET /api/v1/{rest...}", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) })
+		res, err := httpserver.NewResolver(nil, "https://packages.example.com", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		h := httpserver.Chain{
+			Router: router, Resolver: res, Authenticate: user,
+			RateLimit: func(next http.Handler) http.Handler { return ep(EdgeStage(nil, stage)(next)) },
+		}.Handler()
+		return h, func(d time.Duration) { apiClock = apiClock.Add(d) }
+	}
+	get := func(h http.Handler, path string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", path, nil)
+		r.RemoteAddr = "198.51.100.1:40000"
+		h.ServeHTTP(rec, r)
+		return rec
+	}
+	refusedBy := func(t *testing.T, rec *httptest.ResponseRecorder, what, policy string) {
+		t.Helper()
+		policies := strings.Join(rec.Header().Values("RateLimit-Policy"), ", ")
+		if rec.Code != 429 || !strings.Contains(policies, policy) {
+			t.Fatalf("%s: %d %q %s, want 429 with the policy %s", what, rec.Code, policies, rec.Body, policy)
+		}
+	}
+
+	t.Run("on a protocol path the download limits' request figure refuses after the class", func(t *testing.T) {
+		// One request an hour at web/npm-a, nothing at web/npm-b; the class counts the token's requests at both.
+		var tight limits.Figures
+		tight[limits.RequestsPerHour] = 1
+		webA := qname.Repo{Project: "web", Key: "npm-a"}
+		x := limits.NewIndex(limits.Snapshot{
+			Profiles: []limits.Profile{{ID: "p-tight", Key: "tight", Name: "tight", Figures: tight}},
+			Rules: []limits.Rule{{
+				ID: "r-users", WhoKind: limits.WhoEvery, WhoRef: limits.EveryUser, Profile: "tight",
+				Place: limits.Place{Kind: limits.PlaceRepository, Repo: webA, RepoID: 1, ProjectKey: "web", ProjectID: "proj-web"},
+			}},
+			Settings: limits.Settings{Mode: limits.ModeEnforce, BlockSeconds: 900, Version: 1},
+		})
+		eng := limits.NewEngine(limits.Options{
+			Store: cluster.NewMemoryLimits(), Index: func() *limits.Index { return x }, Replica: "r1", LeaseTTL: time.Minute,
+			Share: func() int { return 1 },
+		})
+		h, _ := chain(t, RateLimitOptions{Limits: eng})
+		if rec := get(h, "/api/npm/web/npm-a/x"); rec.Code != 200 {
+			t.Fatalf("the first request: %d %s", rec.Code, rec.Body)
+		}
+		for i := range 4 {
+			refusedBy(t, get(h, "/api/npm/web/npm-a/x"), "retry "+strconv.Itoa(i+1)+" at web/npm-a", `"requests-hour"`)
+		}
+		if rec := get(h, "/api/npm/web/npm-b/x"); rec.Code != 200 {
+			t.Fatalf("at web/npm-b, with one of the class's two places used: %d %q %s", rec.Code, rec.Header().Values("RateLimit-Policy"), rec.Body)
+		}
+		refusedBy(t, get(h, "/api/npm/web/npm-b/x"), "the third request the class admitted", `"endpoint:ext"`)
+	})
+	t.Run("on the management API a class of R-API-016 refuses after the endpoint's class", func(t *testing.T) {
+		h, advance := chain(t, RateLimitOptions{Config: config.APIRateLimits{
+			Enabled:   true,
+			Read:      config.APIRateLimitRead{RequestsPerSecond: 1, Burst: 1},
+			Write:     config.APIRateLimitWrite{RequestsPerSecond: 1, Burst: 1},
+			Anonymous: config.APIRateLimitAnonymous{RequestsPerSecond: 1, Burst: 1},
+
+			PackageWrite: config.APIRateLimitPackageWrite{RequestsPerSecond: 1, Burst: 1},
+		}})
+		if rec := get(h, "/api/v1/repositories"); rec.Code != 200 {
+			t.Fatalf("the first request: %d %s", rec.Code, rec.Body)
+		}
+		for i := range 4 {
+			refusedBy(t, get(h, "/api/v1/repositories"), "retry "+strconv.Itoa(i+1)+" within the read class's second", `"read"`)
+		}
+		advance(time.Second)
+		if rec := get(h, "/api/v1/repositories"); rec.Code != 200 {
+			t.Fatalf("a second later, with one of the class's two places used: %d %q %s", rec.Code, rec.Header().Get("RateLimit-Policy"), rec.Body)
 		}
 	})
 }

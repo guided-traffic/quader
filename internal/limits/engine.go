@@ -774,8 +774,10 @@ func (e *Engine) sentUnsent(ds []unsentDrop) {
 
 // MayFetch is step 9a of R-REPO-025 (R-LIM-022): the request would contact the upstream of the remote repository repoID; the
 // budget key needs room in upstreamRequestsPerHour and uncachedBytesPerHour, and the remote's ceiling of the caller's class
-// room in both of its figures. The upstream request is counted before the decision, for the budget key and the ceiling. An
-// artifact GET also takes the parallel lease. A nil charge (a background request, a replica without the limits) passes.
+// room in both of its figures. An artifact GET also takes the parallel lease. The figures are decided and the upstream request
+// counted in one take, for the budget key and the ceiling, so an upstream request a figure refuses is counted nowhere; one the
+// parallel lease refuses after the take admitted it is given back (Q-LIM-110). A nil charge (a background request, a replica
+// without the limits) passes.
 func (e *Engine) MayFetch(ctx context.Context, c *Charge, repoID int64, artifactGet bool) error {
 	if c == nil || c.Subject.Kind == KindSystem {
 		return nil
@@ -788,27 +790,39 @@ func (e *Engine) MayFetch(ctx context.Context, c *Charge, repoID int64, artifact
 	}
 	ceil, hasCeil := x.Ceiling(repoID, class)
 	now := e.now()
-	var b cluster.LimitBatch
-	bucket := cluster.LimitBucket(c.Key)
 	hIdx, el := cluster.WindowIndex(now, hour)
-	upOp, uhOp, cUpOp, cUhOp, parOp := -1, -1, -1, -1, -1
-	if f[UpstreamRequestsPerHour] > 0 {
-		upOp = b.Add(cluster.LimitOp{Kind: cluster.OpWindowAdd, Figure: ctrUpstreamHour, Bucket: bucket, Window: hour, Index: hIdx, N: 1})
+	take := cluster.LimitOp{Kind: cluster.OpTake, N: 1}
+	var chks []fetchCheck
+	add := func(key string, fig Figure, limit int64, ceiling bool) {
+		ctr, peek := ctrUpstreamHour, false
+		if fig == UncachedBytesPerHour {
+			ctr, peek = ctrUncachedHour, true // the bytes are counted where they are read; the request needs room in them
+		}
+		take.Windows = append(take.Windows, cluster.WindowTake{
+			Figure: ctr, Bucket: cluster.LimitBucket(key), Window: hour, Index: hIdx, Elapsed: el, Limit: limit, Peek: peek,
+		})
+		chks = append(chks, fetchCheck{i: len(take.Windows) - 1, fig: fig, limit: limit, ceiling: ceiling})
 	}
-	if f[UncachedBytesPerHour] > 0 {
-		uhOp = b.Add(cluster.LimitOp{Kind: cluster.OpWindowRead, Figure: ctrUncachedHour, Bucket: bucket, Window: hour, Index: hIdx})
+	for _, fig := range []Figure{UpstreamRequestsPerHour, UncachedBytesPerHour} {
+		if f[fig] > 0 {
+			add(c.Key, fig, f[fig], false)
+		}
 	}
 	if hasCeil {
-		cb := cluster.LimitBucket(ceil.Key())
 		if ceil.UpstreamRequestsPerHour > 0 {
-			cUpOp = b.Add(cluster.LimitOp{Kind: cluster.OpWindowAdd, Figure: ctrUpstreamHour, Bucket: cb, Window: hour, Index: hIdx, N: 1})
+			add(ceil.Key(), UpstreamRequestsPerHour, ceil.UpstreamRequestsPerHour, true)
 		}
 		if ceil.UncachedBytesPerHour > 0 {
-			cUhOp = b.Add(cluster.LimitOp{Kind: cluster.OpWindowRead, Figure: ctrUncachedHour, Bucket: cb, Window: hour, Index: hIdx})
+			add(ceil.Key(), UncachedBytesPerHour, ceil.UncachedBytesPerHour, true)
 		}
 		c.mu.Lock()
 		c.ceiling = ceil.Key()
 		c.mu.Unlock()
+	}
+	var b cluster.LimitBatch
+	takeOp, parOp := -1, -1
+	if len(take.Windows) > 0 {
+		takeOp = b.Add(take)
 	}
 	if artifactGet && !c.bg && f[ParallelDownloads] > 0 {
 		c.download.Store(true)
@@ -819,49 +833,60 @@ func (e *Engine) MayFetch(ctx context.Context, c *Charge, repoID int64, artifact
 			parOp = e.addLease(&b, c, now)
 		}
 	}
-	e.m.upstream(c.Subject.Kind)
-	c.upstreamCounted.Add(1)
 	res, local, err := e.run(ctx, &b)
 	if err != nil {
 		return err
 	}
-	enforce := c.Mode == ModeEnforce
-	type chk struct {
-		op      int
-		fig     Figure
-		limit   int64
-		ceiling bool
+	if takeOp >= 0 {
+		if err := e.decideFetch(ctx, c, res[takeOp], chks, class, el, local); err != nil {
+			return err
+		}
 	}
-	for _, k := range []chk{
-		{upOp, UpstreamRequestsPerHour, f[UpstreamRequestsPerHour], false},
-		{uhOp, UncachedBytesPerHour, f[UncachedBytesPerHour], false},
-		{cUpOp, UpstreamRequestsPerHour, ceil.UpstreamRequestsPerHour, true},
-		{cUhOp, UncachedBytesPerHour, ceil.UncachedBytesPerHour, true},
-	} {
-		if k.op < 0 {
-			continue
+	if parOp >= 0 {
+		if err := e.parallel(ctx, c, res[parOp].Count, local); err != nil {
+			if takeOp >= 0 && res[takeOp].Admitted {
+				e.giveBack(ctx, b.Ops[takeOp], local)
+			}
+			return err
 		}
-		r := res[k.op]
-		lim := e.scaled(k.limit, local)
-		est := cluster.Estimate(r.Cur, r.Prev, el)
-		over := est > float64(lim)
-		if k.fig == UncachedBytesPerHour {
-			over = est >= float64(lim)
-		}
+	}
+	// Only an upstream request that goes on is one (R-LIM-006): the usage store and the metric learn it now.
+	e.m.upstream(c.Subject.Kind)
+	c.upstreamCounted.Add(1)
+	return nil
+}
+
+// fetchCheck is one figure of step 9a: its window's index in the take, its limit, and whether it is the remote's ceiling.
+type fetchCheck struct {
+	i       int
+	fig     Figure
+	limit   int64
+	ceiling bool
+}
+
+// decideFetch decides the figures of step 9a from what the take found in each window: the first that has no room refuses the
+// request in enforce; in audit every one is recorded as would_limit and the request goes on.
+func (e *Engine) decideFetch(ctx context.Context, c *Charge, r cluster.LimitResult, chks []fetchCheck, class CeilingClass, el float64,
+	local bool,
+) error {
+	enforce := c.Mode == ModeEnforce
+	for _, k := range chks {
+		s := r.Windows[k.i]
 		name := k.fig.String()
 		if k.ceiling {
 			name = "ceiling." + ceilingAPIName(class)
 		}
-		if !over {
+		if s.Fits {
 			e.m.decision(name, c.Mode, "admitted")
 			continue
 		}
 		e.decided(c, name, enforce)
 		if enforce {
 			e.dropLease(ctx, c)
+			lim := e.scaled(k.limit, local)
 			rf := refusal{
 				code: CodeUpstreamLimitReached, figure: k.fig.String(), limit: k.limit, window: hour, place: c.Resolution.Place,
-				retry: cluster.RoomAfter(r.Cur, r.Prev, el, hour, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+				retry: cluster.RoomAfter(s.Cur, s.Prev, el, hour, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
 			}
 			if k.ceiling {
 				rf.ceiling = class
@@ -869,10 +894,21 @@ func (e *Engine) MayFetch(ctx context.Context, c *Charge, repoID int64, artifact
 			return &BudgetError{Err: e.refuse(c, rf, lim)}
 		}
 	}
-	if parOp >= 0 {
-		return e.parallel(ctx, c, res[parOp].Count, local)
-	}
 	return nil
+}
+
+// giveBack undoes an admitted take whose request a later check of the same step refused (Q-LIM-110): on the replica's share at
+// once, in Valkey by one more round trip, which takes back what the take added unless its window has ended. A give-back that
+// does not reach Valkey leaves the unit counted until its window ends.
+func (e *Engine) giveBack(ctx context.Context, op cluster.LimitOp, local bool) {
+	if local || e.o.Store == nil {
+		e.local.Return(op)
+		return
+	}
+	op.Kind = cluster.OpGiveBack
+	var b cluster.LimitBatch
+	b.Add(op)
+	_, _ = e.o.Store.Run(context.WithoutCancel(ctx), &b)
 }
 
 func ceilingAPIName(c CeilingClass) string {

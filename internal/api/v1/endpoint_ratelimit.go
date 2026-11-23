@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,7 +17,9 @@ import (
 // stage 7 for every request on the endpoint, package protocols included, before
 // the classes of R-API-016 and R-AUTH-038, which still apply. The bucket key
 // holds the endpoint name, so two endpoints that share a class have separate
-// budgets.
+// budgets. A request the stage after it refuses (a class of R-API-016, the
+// request windows or the block of the download limits) is given back to the
+// class (Q-LIM-110).
 
 // EndpointLimiterName is the limiter of a class: endpoint_<class>, with the
 // hyphens of a class name as underscores, because a limiter name is lower-case
@@ -57,12 +60,29 @@ func NewEndpointRateLimit(o EndpointRateLimitOptions) func(http.Handler) http.Ha
 			rw.Header().Add("RateLimit-Policy", p)
 			rw.Header().Add("RateLimit", `"`+class+`";r=`+strconv.Itoa(v.Remaining)+";t="+strconv.FormatInt(t, 10))
 			if v.Allowed {
-				next.ServeHTTP(rw, r)
+				next.ServeHTTP(rw, r.WithContext(context.WithValue(r.Context(), endpointTakeKey{}, endpointTake{o.Limiter, v})))
 				return
 			}
 			httpserver.Problem(rw, r, errs.E(errs.RateLimited, errs.CodeRateLimited,
 				"Too many requests on this endpoint; retry after the period in the Retry-After header.", errs.WithRetryAfter(v.RetryAfter)))
 		})
+	}
+}
+
+// endpointTake is what the endpoint's class admitted for the request, so that stage 7 can give it back.
+type endpointTake struct {
+	l *cluster.Limiter
+	v cluster.Verdict
+}
+
+type endpointTakeKey struct{}
+
+// giveBackEndpointClass gives the request back to the endpoint's class that admitted it, when stage 7 refuses it after the class
+// (Q-LIM-110): the class counts the requests stage 7 lets on, as the request windows do, and a client that retries after a 429
+// of stage 7 does not fill the endpoint's budget. Without a class nothing happens.
+func giveBackEndpointClass(ctx context.Context) {
+	if t, ok := ctx.Value(endpointTakeKey{}).(endpointTake); ok {
+		t.l.GiveBack(ctx, t.v)
 	}
 }
 

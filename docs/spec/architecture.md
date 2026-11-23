@@ -4497,7 +4497,10 @@ The owning pages define the limit classes, their bucket keys and their values
     every request window, as the fallback's token bucket has always had it): a caller that keeps sending
     gets the configured rate and no more, and the `Retry-After` of a refusal is the time after which its
     next request fits. A take that shares its round trip with the request windows of the download limits
-    (`BatchTake`, the class of R-API-016 at stage 7) counts the request in every window or in none.
+    (`BatchTake`, the class of R-API-016 at stage 7) counts the request in every window or in none. A
+    take that a check after it refuses is given back (`GiveBack`: the endpoint's class of R-EP-015 when
+    stage 7 refuses the request; usage-and-limits.md Q-LIM-110), by the same script in Valkey and as
+    tokens on the replica's bucket.
   - The Bastion's limits reach the same rule without a script, with counters of refusals, because the
     Bastion's Valkey user may run none ([bastion.md](bastion.md) Q-BAS-127).
 - **Count-only form.** Some limits count failures, not requests: a request is checked before it

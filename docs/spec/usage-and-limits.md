@@ -808,8 +808,8 @@ read on a request ([Q-LIM-10](#q-lim-10--the-enforcing-counters-live-in-valkey-t
 |---|---|---|---|
 | Requests per second and per hour of a budget key | Valkey, sliding window (R-ARCH-034 arithmetic) | the take: one script (`EVALSHA`) that runs `GET`, `INCRBY`, `EXPIRE NX` | at stage 7, in the same step as the decision, and only when the request is admitted |
 | Cached bytes per hour, bytes per day of a budget key | Valkey, sliding window in bytes | `GET` at the check; `INCRBY` at the flush | at the flush after the bytes were written |
-| Uncached bytes per hour of a budget key and of a ceiling | Valkey, sliding window in bytes | `GET` at step 9a; `INCRBY` at the flush | at the flush after the bytes were read |
-| Upstream requests per hour of a budget key and of a ceiling | Valkey, sliding window | `INCR`, `EXPIRE NX`, `GET` | before the decision, at step 9a |
+| Uncached bytes per hour of a budget key and of a ceiling | Valkey, sliding window in bytes | `GET` in the take of step 9a; `INCRBY` at the flush | at the flush after the bytes were read |
+| Upstream requests per hour of a budget key and of a ceiling | Valkey, sliding window | the take of step 9a (the script of stage 7); a give-back after a parallel lease refused (Q-LIM-110) | at step 9a, in the same step as the decision, and only when the upstream request is admitted |
 | Parallel downloads of a budget key | Valkey, a sorted set of leases | `ZADD`, `ZREMRANGEBYSCORE`, `ZCARD`, `ZREM` | at the start and the end of a download |
 | Refused requests per hour of a budget key, and its block | Valkey, sliding window and a marker | `INCRBY` at the flush; `SET NX EX`, `GET`, `DELIFEQ` | at the flush; the block at the flush that passes the limit |
 | Bytes per second (pacing) | the replica's memory, with the cluster's count of the key's downloads | `ZCARD` in the flush | continuously |
@@ -850,7 +850,10 @@ fits, if nothing else uses the room (R-LIM-020). The script is sent as `EVALSHA`
 costs one round trip; a server that does not hold it (a restarted primary, a replica that a failover promoted: Valkey keeps scripts
 neither on disk nor on its replicas) answers `NOSCRIPT` and does nothing, and the take is sent once more with the script's body
 (`EVAL`), which loads it: one more round trip, once per replica after such an event. The script runs only `GET`, `INCRBY` and
-`EXPIRE` on the keys it is given, under the ACL of the Valkey user.
+`EXPIRE` on the keys it is given, under the ACL of the Valkey user. Step 9a takes the same way
+([Q-LIM-110](#q-lim-110--an-upstream-request-step-9a-refuses-is-counted-nowhere-and-a-request-stage-7-refuses-is-given-back-to-the-endpoints-class)):
+its upstream request windows and the uncached byte windows it only checks are one take, and an upstream request the parallel lease
+refuses after the take admitted it is given back by the same script.
 
 The least-privilege command list of [architecture.md](architecture.md) R-ARCH-031 gains `INCRBY`, `ZADD`, `ZREM`,
 `ZREMRANGEBYSCORE`, `ZCARD`, `EVALSHA` and `EVAL`; the example ACL rule, the development profile's Valkey (`deploy/dev/valkey.yaml`)
@@ -990,7 +993,9 @@ R-REPO-025 gains a step between 9 and 10:
 > 9a. The request would contact the upstream (an artifact miss, a document that is absent, expired or invalidated, a `HEAD` the
 > engine forwards, a forwarded search): the caller's budget key must have room in `upstreamRequestsPerHour` and
 > `uncachedBytesPerHour`, and the remote's ceiling of the caller's class room in both of its figures. The upstream request is
-> counted here, for the budget key and the ceiling, before the decision. Without room: an existing expired document is served
+> counted here, for the budget key and the ceiling, in the same step as the decision and only when it is admitted: an upstream
+> request a figure or the parallel lease refuses is counted nowhere ([Q-LIM-110](#q-lim-110--an-upstream-request-step-9a-refuses-is-counted-nowhere-and-a-request-stage-7-refuses-is-given-back-to-the-endpoints-class)).
+> Without room: an existing expired document is served
 > stale within `cache.maxStaleSeconds` (R-REPO-029) without contacting the upstream; otherwise 429 `upstream_limit_reached`. No
 > negative entry is written, the circuit is not touched.
 
@@ -1012,6 +1017,10 @@ Acceptance criteria:
   within `maxStaleSeconds`, and 429 `upstream_limit_reached` for an uncached blob; the upstream stub records no request.
 - With the anonymous ceiling used up, a second anonymous address with an untouched budget gets the same 429; a signed-in user is
   served from the upstream.
+- A caller at `upstreamRequestsPerHour` 2 that retries a refused miss six times is admitted once the window has room for one more
+  request; a request the ceiling refuses leaves the caller's own window untouched, one the caller's figure refuses the ceiling's, and
+  a download the parallel lease refuses gives its upstream request back, in Valkey and on the replica's share
+  (`TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere`).
 
 ### R-LIM-023 · Slowing a download down
 Priority: **MVP** · Covers: BEYOND-030
@@ -2776,8 +2785,10 @@ keeps its counters of refusals (Q-BAS-127), the same rule without a script, beca
 
 **Consequence for the fallback while Valkey is unreachable** (R-LIM-019, Q-LIM-12): a limiter's token bucket already took nothing on a
 refusal; the figures' local windows run the same take under the replica's lock, at the replica's share; the class in the take of stage
-7 decides on its own bucket, and a request it refuses after the local windows took it is given back to them. Between two limiters
-that run in two steps (the endpoint's class before stage 7, then the take) a request the second refuses still counts in the first.
+7 decides on its own bucket, and a request it refuses after the local windows took it is given back to them; a request the local
+windows or the block refuse after the class took it is given back to the class. Between two limiters that run in two steps (the
+endpoint's class before stage 7, then the take) a request the second refuses is given back to the first
+([Q-LIM-110](#q-lim-110--an-upstream-request-step-9a-refuses-is-counted-nowhere-and-a-request-stage-7-refuses-is-given-back-to-the-endpoints-class)).
 
 **Rationale:** one rule is the simpler product, and the old rule was the only place where a limiter's cluster mode and its fallback
 disagreed. The development agent would revisit this if a class of the management API needs a penalty for callers that ignore
@@ -3012,6 +3023,47 @@ would revisit it when a link's transfer turns out to hurt the object store's own
 same rule (storage.md Q-STOR-343). Code: no figure is read by the decision ([download_links.go](../../internal/formathost/download_links.go));
 the charge is `limits.Charge.ChargeLink` ([links.go](../../internal/limits/links.go)).
 
+### Q-LIM-110 · An upstream request step 9a refuses is counted nowhere, and a request stage 7 refuses is given back to the endpoint's class
+
+Status: **That a refused request does not count is the owner's decision 19 (Q-LIM-57), carried on 2026-11-23 to step 9a and to the
+endpoint's class of R-EP-015**, which it had not named; how it is built is **decided by the development agent** — selected from the
+options below; the owner reviews it at the walkthrough.
+
+Context: two places still counted a request before the step that refused it. Step 9a added the upstream request to the windows of the
+budget key and of the ceiling (`INCR`) and decided after, so a caller that retried a refused miss kept its upstream window full, a
+refusal by the ceiling filled the caller's own window and the other way round, and the usage store recorded upstream requests that
+never reached the upstream. And the endpoint's class runs before stage 7 on its own: a request it admits and stage 7 refuses (a
+request figure, the block, a class of R-API-016) stayed in the class's window, so a client that retried after a 429 of stage 7 filled
+its endpoint budget too. Decision 19's reason holds for both: a waiting client must be admitted again.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Step 9a decides and counts in one take, the script of stage 7: the upstream request windows take the request, the uncached byte windows are only checked (they must have room and are not added to); an upstream request the parallel lease refuses after the take admitted it is given back by the same script. The endpoint's class keeps its own step and is given back the request stage 7 refuses (chosen) | Exact for 9a in its one round trip; one more round trip only for a request the endpoint's class admitted and stage 7 refused, or a download the parallel lease refused at 9a | The step that decides counts, as at stage 7; the endpoint's class still sees every request of the endpoint (a preflight, a path of no family, a role without the management API), which stage 7 never does | A refused request on an endpoint with a class costs a second round trip; between the class's take and its give-back another request of the same token may meet a fuller window, for the time of stage 7's round trip |
+| (b) The endpoint's class joins the take of stage 7 as `package_write` does | One step for the class too | No give-back, no second round trip | The class must then also decide, on a path of its own, every request stage 7 does not reach (CORS answers a preflight before stage 7, an endpoint whose role serves no management API has no stage 7): two code paths that each must decide every request once; in `audit` the take adds nothing when a request window is full, so the class would let a caller over its figure through unbounded |
+| (c) Refusals counted apart and subtracted at the flush | No new operation | No change to the order of the stages | A `Retry-After` up to a flush interval short, the variant the owner turned down for the request windows |
+
+**Choice:** (a). The give-back (`OpGiveBack`) runs in the script of the take: it subtracts the units from each current counter that
+still holds them, never below 0 and never in a counter that has expired, and skips a window that was only checked. On the replica's
+share the take and the give-back run on its memory (`MemoryLimits.Return`); a class's token bucket is refunded. A request a later stage
+refuses (the decision point, a 404, the remote engine's queue or circuit after 9a admitted the fetch) stays counted, as at stage 7: what
+counts is decided by the step that counts it (H-1600 names the cost of that for a circuit that is open).
+
+**Rationale:** decision 19 is a rule about the caller, not about one window, so it holds wherever a refusal counted. The take of 9a costs
+nothing more than the transaction it replaces; the endpoint's class stays the one check every request of the endpoint meets, which is
+its purpose (S-4), and pays its second round trip only on refusals. The development agent would revisit (b) if refusals on endpoints with
+a class turn out to be the bulk of their requests.
+
+**Applied in the spec:** R-LIM-017, R-LIM-022, Q-LIM-61; [endpoints.md](endpoints.md) R-EP-015; [architecture.md](architecture.md)
+R-ARCH-034. Code: `Engine.MayFetch`, `Engine.giveBack` in [engine.go](../../internal/limits/engine.go); `OpGiveBack`, `WindowTake.Peek` in
+[valkey_limits.go](../../internal/cluster/valkey_limits.go) and [valkey_take.go](../../internal/cluster/valkey_take.go);
+`Limiter.GiveBack` in [limiter.go](../../internal/cluster/limiter.go); `giveBackEndpointClass` in
+[endpoint_ratelimit.go](../../internal/api/v1/endpoint_ratelimit.go), called from [ratelimit.go](../../internal/api/v1/ratelimit.go).
+Tests: `TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere` in [engine_test.go](../../internal/limits/engine_test.go),
+`TestR_EP_015_ARequestStage7RefusesIsGivenBackToTheEndpointsClass` in
+[endpoint_ratelimit_test.go](../../internal/api/v1/endpoint_ratelimit_test.go), `TestLimiterGiveBack` in
+[limiter_test.go](../../internal/cluster/limiter_test.go), and the script against the stack's Valkey in
+`TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing` ([units_test.go](../../test/integration/valkey/units_test.go)).
+
 ## What this does not cover
 
 - The protocol gaps for the owner: [Gaps of the protocols](#gaps-of-the-protocols).
@@ -3043,3 +3095,13 @@ Component: the key family `lim` (R-LIM-017). Subject: every mechanism in Valkey 
 Live in both modes, since Audit counts too. What makes it real: requests from very many anonymous prefixes create keys of up to 48
 hours' life; with `maxmemory-policy allkeys-lru` Valkey evicts the least recently used keys of every family, which costs duplicate
 upstream fetches (INV-11), not correctness.
+
+### H-1600 · An upstream request step 9a admitted counts also when the remote engine then sends nothing
+
+Component: step 9a and the remote engine after it (R-LIM-022, Q-LIM-110; [proxy/fetch.go](../../internal/proxy/fetch.go) `fetcher.run`,
+`fetcher.inSlot`, [query.go](../../internal/proxy/query.go), [artifact.go](../../internal/proxy/artifact.go) `head`). Subject: every
+budget key and ceiling with `upstreamRequestsPerHour`. Live in `enforce` and `audit`. What makes it real: 9a counts the upstream request
+when it admits it, before the fetch takes its slot and asks the circuit; a fetch the queue times out
+(`proxy.queue_timeout_seconds`) or the open circuit answers as assumed offline sends nothing upstream, and its upstream request stays
+counted. A client that retries against a remote whose upstream is down spends its upstream budget without reaching the upstream, and
+finds it used up when the upstream is back.

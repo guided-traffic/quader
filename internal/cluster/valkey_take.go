@@ -19,15 +19,36 @@ import (
 // request stays one. The script reads only the keys it is given, runs only GET, INCRBY and EXPIRE, which the ACL of
 // R-ARCH-031 grants, and is replicated to the replicas by its effects.
 //
+// A window that is only checked (WindowTake.Peek: the uncached bytes of step 9a, R-LIM-022) must have room left, an estimate
+// below its limit, and is not added to. The same script gives an admitted take back ([OpGiveBack], Q-LIM-110): a check of the
+// request's step that decided after the take refused it, so the request leaves no unit in any window.
+//
 // KEYS: the block marker (when ARGV[3] is 1), then the current and the previous counter of each window.
-// ARGV: the units n, now in Unix milliseconds, 1 or 0 for the marker, then per window its limit, the elapsed part of the
-// window (0 to 1) and the counter's time to live in seconds.
-// Reply: {admitted 1 or 0, the marker or nil, then per window cur, prev, fits 1 or 0}, cur and prev without the units.
+// ARGV: the units n, now in Unix milliseconds, the mode (0 a take, 1 a take that reads the marker, 2 a give-back), then per
+// window its limit, the elapsed part of the window (0 to 1), the counter's time to live in seconds and 1 for a window that is
+// only checked, else 0.
+// Reply: {admitted 1 or 0, the marker or nil, then per window cur, prev, fits 1 or 0}, cur and prev without the units. A
+// give-back subtracts n from each current counter that still holds it (never below 0, never a counter that has expired) and
+// answers {1, nil, then per window cur, 0, 1}.
 const takeScript = `local n = tonumber(ARGV[1])
 local now = tonumber(ARGV[2])
 local ok = 1
 local k = 1
 local mark = false
+if ARGV[3] == '2' then
+  local out = {1, false}
+  local a = 4
+  while KEYS[k] do
+    local cur = tonumber(redis.call('GET', KEYS[k]) or '0')
+    if ARGV[a + 3] ~= '1' and cur > 0 then redis.call('INCRBY', KEYS[k], -math.min(n, cur)) end
+    out[#out + 1] = cur
+    out[#out + 1] = 0
+    out[#out + 1] = 1
+    k = k + 2
+    a = a + 4
+  end
+  return out
+end
 if ARGV[3] == '1' then
   mark = redis.call('GET', KEYS[1])
   if mark then
@@ -42,14 +63,19 @@ local w = {}
 while KEYS[k] do
   local cur = tonumber(redis.call('GET', KEYS[k]) or '0')
   local prev = tonumber(redis.call('GET', KEYS[k + 1]) or '0')
+  local est = prev * (1 - tonumber(ARGV[a + 1])) + cur
   local fit = 0
-  if prev * (1 - tonumber(ARGV[a + 1])) + cur + n <= tonumber(ARGV[a]) then fit = 1 else ok = 0 end
+  if ARGV[a + 3] == '1' then
+    if est < tonumber(ARGV[a]) then fit = 1 else ok = 0 end
+  else
+    if est + n <= tonumber(ARGV[a]) then fit = 1 else ok = 0 end
+    w[#w + 1] = {KEYS[k], ARGV[a + 2]}
+  end
   out[#out + 1] = cur
   out[#out + 1] = prev
   out[#out + 1] = fit
-  w[#w + 1] = {KEYS[k], ARGV[a + 2]}
   k = k + 2
-  a = a + 3
+  a = a + 4
 end
 if ok == 1 then
   for _, c in ipairs(w) do
@@ -80,6 +106,9 @@ type WindowTake struct {
 	// units included, may reach.
 	Elapsed float64
 	Limit   int64
+	// Peek checks the window without adding to it: it fits while its estimate is below Limit (a byte figure that a request
+	// must have room in before it starts, R-LIM-022).
+	Peek bool
 }
 
 // WindowState is what a take found in one window: the current and the previous counter without the take's units, and whether
@@ -102,7 +131,9 @@ func (v *Valkey) takeKey(w WindowTake, idx int64) (Key, error) {
 // takeArgs are the keys and the arguments of the script for a take.
 func (v *Valkey) takeArgs(op LimitOp) (keys, args []string, err error) {
 	marker := "0"
-	if op.Marker {
+	if op.Kind == OpGiveBack {
+		marker = "2"
+	} else if op.Marker {
 		k, err := v.limKey(LimitOp{Kind: OpMarkerGet, Bucket: op.Bucket}, false)
 		if err != nil {
 			return nil, nil, err
@@ -120,8 +151,12 @@ func (v *Valkey) takeArgs(op LimitOp) (keys, args []string, err error) {
 			return nil, nil, err
 		}
 		keys = append(keys, cur.name, prev.name)
+		peek := "0"
+		if w.Peek {
+			peek = "1"
+		}
 		args = append(args, strconv.FormatInt(w.Limit, 10), strconv.FormatFloat(w.Elapsed, 'f', -1, 64),
-			strconv.FormatInt(ceilSeconds(cur.ttl), 10))
+			strconv.FormatInt(ceilSeconds(cur.ttl), 10), peek)
 	}
 	return keys, args, nil
 }
@@ -213,7 +248,12 @@ func (m *MemoryLimits) take(op LimitOp, now time.Time) LimitResult {
 	for _, w := range op.Windows {
 		cw := LimitOp{Figure: w.Figure, Bucket: w.Bucket}
 		s := WindowState{Cur: m.counter(memWindowKey(cw, w.Index), now), Prev: m.counter(memWindowKey(cw, w.Index-1), now)}
-		s.Fits = float64(s.Prev)*(1-w.Elapsed)+float64(s.Cur)+float64(n) <= float64(w.Limit)
+		est := float64(s.Prev)*(1-w.Elapsed) + float64(s.Cur)
+		if w.Peek {
+			s.Fits = est < float64(w.Limit)
+		} else {
+			s.Fits = est+float64(n) <= float64(w.Limit)
+		}
 		ok = ok && s.Fits
 		r.Windows = append(r.Windows, s)
 	}
@@ -222,6 +262,9 @@ func (m *MemoryLimits) take(op LimitOp, now time.Time) LimitResult {
 	}
 	r.Admitted = true
 	for _, w := range op.Windows {
+		if w.Peek {
+			continue
+		}
 		k := memWindowKey(LimitOp{Figure: w.Figure, Bucket: w.Bucket}, w.Index)
 		c, found := m.windows[k]
 		if !found || now.After(c.expires) {
@@ -233,13 +276,21 @@ func (m *MemoryLimits) take(op LimitOp, now time.Time) LimitResult {
 	return r
 }
 
-// Return gives back what an admitted take counted: the replica's fallback undoes the take of a request that a check decided
-// after it refused (the class of R-API-016 on its own share, R-LIM-019).
+// Return gives back what an admitted take counted, as [OpGiveBack] does: the replica's fallback undoes the take of a request
+// that a check decided after it refused (the class of R-API-016 on its own share, R-LIM-019; a parallel download step 9a
+// refused after its upstream request was taken, Q-LIM-110).
 func (m *MemoryLimits) Return(op LimitOp) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	now := m.now()
+	m.giveBack(op, m.now())
+}
+
+// giveBack is the give-back in the replica's memory. The caller holds m.mu.
+func (m *MemoryLimits) giveBack(op LimitOp, now time.Time) {
 	for _, w := range op.Windows {
+		if w.Peek {
+			continue
+		}
 		if c, ok := m.windows[memWindowKey(LimitOp{Figure: w.Figure, Bucket: w.Bucket}, w.Index)]; ok && !now.After(c.expires) {
 			c.v = max(0, c.v-max(1, op.N))
 		}

@@ -133,6 +133,8 @@ func (bareStore) take(context.Context, WindowTake, int64) (WindowState, error) {
 	return WindowState{Fits: true}, nil
 }
 
+func (bareStore) giveBack(context.Context, WindowTake, int64) error { return nil }
+
 func (bareStore) read(context.Context, string, string, int64, time.Duration) (int64, int64, error) {
 	return 0, 0, nil
 }

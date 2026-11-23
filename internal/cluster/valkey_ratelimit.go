@@ -83,6 +83,15 @@ func (v *Valkey) windowTake(ctx context.Context, w WindowTake, n int64) (WindowS
 	return res[0].Windows[0], nil
 }
 
+// windowGiveBack is [Limiter.GiveBack] in Valkey: one round trip that runs the give-back of valkey_take.go on the window a take
+// counted n units in.
+func (v *Valkey) windowGiveBack(ctx context.Context, w WindowTake, n int64) error {
+	var b LimitBatch
+	b.Add(LimitOp{Kind: OpGiveBack, Windows: []WindowTake{w}, N: max(1, n)})
+	_, err := v.runLimits(ctx, &b)
+	return err
+}
+
 // windowRead is the check of the count-only form: a GET of the current and of
 // the previous window's key, without INCR.
 func (v *Valkey) windowRead(ctx context.Context, limiter, bucket string, idx int64, ttl time.Duration) (cur, prev int64, err error) {
