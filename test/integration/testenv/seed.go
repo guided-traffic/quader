@@ -127,13 +127,25 @@ func (s *Stack) Member(project string, p Person, role string) {
 
 // Policy creates a global permission policy that grants actions on the repositories
 // named by key (a bare key of the default project, or "<project>/<key>") to the principals.
+//
+// It fails the test on what would make the policy select nothing: no repository, or a key that names no repository (a bare key
+// of a repository of another project, a call before the repository exists). Until 2026-11-23 such a key inserted no selector
+// without a word, and a test that expected a refusal could pass for that reason alone. A policy without actions or members is
+// one a CI mapping grants through (ci, limits) and stays allowed.
 func (s *Stack) Policy(name string, actions []string, repositories []string, members ...Person) {
 	s.tb.Helper()
+	if len(repositories) == 0 {
+		s.tb.Fatalf("policy %s names no repository; a policy without a selector grants nothing", name)
+	}
 	id := s.Text("INSERT INTO authz_policy (id, name) VALUES (gen_random_uuid(), $1) RETURNING id::text", name)
 	for i, key := range repositories {
 		project, k := splitName(key)
-		s.Exec(`INSERT INTO authz_policy_selector (policy_id, ordinal, kind, repository_id)
-			SELECT $1::uuid, $2, 'key', r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = $3 AND r.key = $4`, id, i, project, k)
+		n := s.Number(`WITH ins AS (INSERT INTO authz_policy_selector (policy_id, ordinal, kind, repository_id)
+			SELECT $1::uuid, $2, 'key', r.id FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = $3 AND r.key = $4
+			RETURNING 1) SELECT count(*) FROM ins`, id, i, project, k)
+		if n != 1 {
+			s.tb.Fatalf("policy %s: no repository %s in the project %s (the key %q); create it first, or name its project", name, k, project, key)
+		}
 	}
 	for _, m := range members {
 		s.Exec("INSERT INTO authz_policy_entry (policy_id, principal_id, actions) VALUES ($1::uuid, $2::uuid, $3)", id, m.ID, actions)
