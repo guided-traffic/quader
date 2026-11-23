@@ -2299,7 +2299,13 @@ runs are in `git log`; this section holds the current state.
   into the commit), **and in the landing's gates since 03:24:** the full set and the Bastion's five areas
   with `api`. It is pushed after the run of the push before it has finished its integration shards; the
   two sides will speak different versions for some seconds on his cluster again. Its builder's worktree
-  and branch are removed.
+  and branch are removed. **Landed on 2026-11-23 at 04:16, with the repair of the four tests, in one push
+  of two commits:** the landing's gates ran from 03:24 to 04:14, twenty-three of them, each exit 0, of which
+  the last two integration areas stood seventeen minutes at the lock; the repair came on top with its
+  builder's gates on the same code, and the build, the vet of the integration code, the three touched
+  packages' tests, the evidence and the links were checked on the two together. The run of the release
+  before had ended at 04:05 with every job green. His UI's backend is started again on this state.
+  Released at 04:29; the plan's commits of the minutes between waited for it.
 - **In work since 03:25, on its commit: package 2 of the handover,** the main installation's side for plain
   copies: the registration's switch with its API, events and journal's replay, the conditions of the
   handover beside the link's at the serve point (after the gates and the admission; it does not read the
@@ -5278,6 +5284,30 @@ with `blob` and `uploads` about 0.8 s and 1.3 s. **Not verified:** any store but
 throughput of a large blob's finalize; the query budget with an encrypted connection. **It moves onto the
 landing's top since 02:36,** over the links (an encrypted connection serves no link: one case to show it)
 and the surface (what it writes into the rows is what the connections' API shows).
+**It reported again at 04:27, on the state after the links' third package:** every gate exit 0 on that
+base, the lint over the whole repository and eight integration areas among them, the backup's last. **A
+conflict no merge showed:** its guard on an encrypted connection's client did not forward a method the
+links had added for the link check, so that check had no client to fetch with; found by reading, and the
+links' own case fails without the forwarding. The case asked for is there: a blob whose only copy lies on an
+encrypted connection is declined for a link and streamed, with links switched on. The connections' API
+shows what the package writes: the keyed names from the connection's row, the copies per storage key, and
+the stored bytes of an encrypted connection as the format stores them (three blobs of a kibibyte, 3,360
+bytes), checked against PostgreSQL. The error codes are recounted from the code, 314; the README's figure
+had been stale before. **Asked of it and answered: the links' test link on an encrypted connection writes
+its plain probe of 44 bytes there,** as the specification says of it (a Bastion reads such a connection by
+a link, the probe holds nothing of an artifact); the development agent leaves it so. **Moved onto `main` by
+the development agent at 04:28 without a conflict** (over the handover's wire and the tests' repair), the
+build, the vet of the integration code, the generated code, the evidence and the links through, **and in
+the landing's gates since 04:29** in the lighter form, with the areas `uploads`, the query budget, `blob`,
+`files` and `backup`. It is pushed after the run of the push before it has finished its integration
+shards.
+**In work since 04:29, on its commit: package 4 of the encryption, the jobs, the backup and the restore:**
+the reconciliation's four cases with a new data key between two encrypted connections, the scrub and the
+sweep reading the format, the backup that keeps an encrypted copy as stored under its key's name with the
+pool's record and the re-pool that the key destruction's specification put into this package, the verify
+with and without the key ring, the restore that draws keys; it closes the gap that an encrypted copy is
+not scrubbed, repaired or backed up. Builders with a test load: the kit move's package 1, the handover's
+package 2, the second stack, this one, and the landing's gates.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
