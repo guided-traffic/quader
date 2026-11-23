@@ -2338,6 +2338,30 @@ runs are in `git log`; this section holds the current state.
   changed; the proof with two areas at once on two instances, one of them an area that acts on the stack as
   a whole. Builders with a test load: the encryption's package 3, the kit move's package 1, the handover's
   package 2, this one, and the landing's gates.
+- **The several integration stacks reported at 04:30** (one commit of the type `test`, on the top of `main`;
+  its builder worked from 03:56; every gate exit 0, the scripts clean under shellcheck). An instance is a
+  number from 1 to 9: the first is exactly today's (the compose configuration's hashes of all nine
+  containers are the same before and after, so nothing is recreated and the pipeline's path does not
+  change), instance n has containers `quader-it<n>-*`, its state under `.dev/integration-<n>`, a lock of its
+  own and every port moved by (n-1)*100, which meets no port of the repository's other profiles.
+  `test/integration/run.sh <packages>` finds the main checkout's instances that are up, takes the first whose
+  lock is free or whichever frees first, loads its env file and runs the tests; an instance can be pinned;
+  the former lock line and the script exclude each other on the first instance. **Why a stack takes one run
+  at a time, read from the areas:** forced failovers and a pause of writes in the one Valkey, changes of
+  its access rules, the statement count from the PostgreSQL container's log, which names no database, a
+  server-wide role under a fixed name, the shared limits of connections and volumes. **Three places reached
+  the stack other than by its env file** and are changed: the statements' reader named the first instance's
+  container, one test a fixed Sentinel port, the certificate rotation's script its containers and ports.
+  **The proof:** the Valkey area on the first instance and the query budget on a second ran at once and
+  both passed (they overlapped for about 36 s, since the first waited 55 s for the lock); eight failovers in
+  the first instance's Sentinel log and none in the second's, 8,726 statement lines in the second's
+  PostgreSQL log and none in the first's; every container's start time unchanged. One stack takes about
+  1.8 GiB; three are recommended for this machine, a judgement and not a measurement. **Not verified:** the
+  Linux path with `flock`; an instance started from the main checkout. **After its landing the development
+  agent runs the stack's start once for the first instance under its lock,** which writes the new variable
+  of the PostgreSQL container's name into its env file (the query budget and the vulnerability block's
+  area need it once they stand on the new code), **and starts a second and a third instance.** It lands
+  with the encryption's third package; the rule for a builder's brief changes with it (section 3).
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
