@@ -5802,6 +5802,22 @@ run under an emptied AWS environment, the chart, the web gates, the pinned lint 
 `ci`, `bastion`, since the key destruction had not been gated on a landing stack and now stands on the
 template database with a migration step of its own. The push waits for these and for the layout checks
 of the run before it, which two pushes of this night cut off.
+**08:36, the handover's data keys are built and sent back to join** (one commit on the base of 07:26, its
+gates exit 0, the areas `bastion`, `bastioniface`, `bastionreg`, `audit`, `blob`, `querybudget`): a copy on
+an encrypted connection is handed to a Bastion with that copy's own data key, taken after the link is
+signed (Q-STOR-471), by one `HeadObject` on the copy row the request already read (Q-STOR-470), destroyed
+right after the value is encoded, and the trace `bastion.data_key.handed` is committed before the value is
+noted (Q-STOR-472); a failure of the key or of the trace streams the bytes (reasons `key`, `trace`). Two
+statements per handed encrypted blob (measured once with the query budget's harness). New gap H-1490 (the
+encoded value is a string the process cannot erase); H-1340 and H-1341 are live where the switch is on
+and an encrypted connection is read. Its builder named what it makes false, and that is why it does not
+land as it is: the card's line that an encrypted connection's files come through the main installation
+(Q-BAS-296), three units of the storage settings, the manual's sentences in `bastion.md`,
+`download-links.md` and `configuration.md`. Since 08:38 it joins on the stack above: those places say
+what runs, rendered and looked at in both languages; a unit case of a destroyed storage key (the forward
+streams with reason `key`, no trace); the translation source extracted; its case run on the cloned
+template. Not verified by it: a format's route with a key to a real Bastion (its case reads below
+`/files/`), any provider's store, the ingress's header limit with the larger value.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
