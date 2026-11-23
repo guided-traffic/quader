@@ -65,6 +65,44 @@ describe('Settings schema model', () => {
     expect(audit.children[4]).toMatchObject({ integer: true, fallback: 2 });
   });
 
+  it('R-NPM-038 Q-UI-970 a local npm repository is not offered forwarding: no mode Forward, no Provider URL, no Timeout; remote and virtual are', () => {
+    // npm's audit member as internal/formats/npm/settings.schema.json declares it.
+    const npm = {
+      type: 'object',
+      properties: {
+        audit: {
+          title: 'Security audit',
+          type: 'object',
+          properties: {
+            mode: {
+              title: 'Mode',
+              type: 'string',
+              enum: ['local', 'forward', 'disabled'],
+              'x-quader-enum-titles': { local: "From Quader's advisory data", forward: 'Forward to an advisory service', disabled: 'Off' },
+              'x-quader-enum-classes': { forward: ['remote', 'virtual'] },
+            },
+            providerURL: { title: 'Provider URL', type: ['string', 'null'], format: 'uri', default: null, 'x-quader-classes': ['remote', 'virtual'] },
+            timeout: { title: 'Timeout', type: 'string', default: '30s', 'x-quader-classes': ['remote', 'virtual'] },
+            maxBodySize: { title: 'Largest audit request', type: 'string', default: '1MiB' },
+          },
+        },
+      },
+    } as SettingSchema;
+    const audit = (cls: string) => {
+      const group = settingNodes(npm, cls, 'npm')[0];
+      if (group?.kind !== 'group') throw new Error('audit is no group');
+      return group.children;
+    };
+    const local = audit('local');
+    expect(local.map((n) => n.label)).toEqual(['Mode', 'Largest audit request']);
+    expect(local[0]).toMatchObject({ options: ['local', 'disabled'], labels: ["From Quader's advisory data", 'Off'] });
+    for (const cls of ['remote', 'virtual']) {
+      const children = audit(cls);
+      expect(children.map((n) => n.label)).toEqual(['Mode', 'Provider URL', 'Timeout', 'Largest audit request']);
+      expect(children[0]).toMatchObject({ options: ['local', 'forward', 'disabled'] });
+    }
+  });
+
   it('R-UI-021 a format without a schema, and an object whose members all belong to other classes, render nothing', () => {
     expect(settingNodes(null, 'local', 'generic')).toEqual([]);
     const onlyRemote = {

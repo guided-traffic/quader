@@ -8242,8 +8242,10 @@ import the format contract (edge). The management API refused a member named aft
 
 **Choice:** (a), with `github.com/santhosh-tekuri/jsonschema/v6`: the library `kin-openapi` already pulls in at the version `go.mod` pins, so the repository gains no second schema dependency
 (it is a direct requirement now, one version). The schema is compiled at `Register`, which panics on a schema that does not compile, whose root is no object, or whose root does not set
-`additionalProperties: false` (a misspelt setting would be dropped silently, R-REPO-008). A property may carry `x-quader-classes`, the classes it applies to: the service reports a setting of another
-class as `not_applicable`, the way R-REPO-004 treats the class sections. A violation is a field error at `/<format>/<json pointer>`, `invalid_value`; the list answers 422 `validation_failed`.
+`additionalProperties: false` (a misspelt setting would be dropped silently, R-REPO-008). A property may carry `x-quader-classes`, the classes it applies to, at any depth of the
+schema (npm's `audit.providerURL` applies to remote and virtual repositories only): the service reports a setting of another class as `not_applicable`, the way R-REPO-004 treats the
+class sections. A property with an `enum` may carry `x-quader-enum-classes`, the classes a value applies to (npm's `audit.mode` `forward`, which needs an upstream): the service reports
+that value for another class as `not_applicable`, and the settings form does not offer it ([api-and-ui.md](api-and-ui.md) Q-UI-970). A violation is a field error at `/<format>/<json pointer>`, `invalid_value`; the list answers 422 `validation_failed`.
 `GET /api/v1/formats` serves the schema as `settingsSchema` (null for a format without settings). A property with an `enum` carries `x-quader-enum-titles`, the label of each value
 that the settings form shows; validation ignores it ([api-and-ui.md](api-and-ui.md) R-UI-088, Q-UI-79).
 

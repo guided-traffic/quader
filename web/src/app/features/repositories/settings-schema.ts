@@ -18,8 +18,13 @@ export interface SettingSchema {
   readonly items?: SettingSchema;
   readonly properties?: Readonly<Record<string, SettingSchema>>;
   readonly required?: readonly string[];
-  /** The repository classes a member applies to; absent means every class. */
+  /** The repository classes a member applies to, at any depth; absent means every class its parent applies to. */
   readonly 'x-quader-classes'?: readonly string[];
+  /**
+   * The repository classes a value of `enum` applies to, keyed by the value as text; a value without an entry applies to every class.
+   * npm's audit mode `forward` needs an upstream, so a local repository is not offered it (Q-UI-970).
+   */
+  readonly 'x-quader-enum-classes'?: Readonly<Record<string, readonly string[]>>;
   /** The label of each value of `enum`, keyed by the value as text (R-UI-088); a value without one is shown as it is written. */
   readonly 'x-quader-enum-titles'?: Readonly<Record<string, string>>;
 }
@@ -170,7 +175,12 @@ function node(
   };
   const fallback = s.default;
   if (Array.isArray(s.enum)) {
-    return { ...base, kind: 'choice', options: s.enum, labels: labelsOf(s, s.enum), fallback };
+    const byValue = isObject(s['x-quader-enum-classes']) ? s['x-quader-enum-classes'] : {};
+    const options = s.enum.filter((o) => {
+      const classes = byValue[shownValue(o)];
+      return !Array.isArray(classes) || classes.includes(cls);
+    });
+    return { ...base, kind: 'choice', options, labels: labelsOf(s, options), fallback };
   }
   switch (typeOf(s)) {
     case 'object': {

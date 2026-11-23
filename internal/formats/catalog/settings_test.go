@@ -12,7 +12,15 @@ const testSchema = `{
   "properties": {
     "guard":    {"type": "boolean", "x-quader-classes": ["local"]},
     "strategy": {"type": "string", "enum": ["a", "b"], "x-quader-classes": ["virtual"]},
-    "limit":    {"type": "integer", "minimum": 1}
+    "limit":    {"type": "integer", "minimum": 1},
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode":     {"type": "string", "enum": ["local", "forward"], "x-quader-enum-classes": {"forward": ["remote", "virtual"]}},
+        "provider": {"type": "string", "x-quader-classes": ["remote", "virtual"]}
+      }
+    }
   }
 }`
 
@@ -73,6 +81,25 @@ func TestSettingsSchema(t *testing.T) {
 			t.Fatalf("violations: %q", got)
 		}
 	})
+	t.Run("R-REPO-004 a nested member and a value of an enum of another class are not applicable", func(t *testing.T) {
+		vs := e.ValidateSettings(Local, []byte(`{"audit": {"mode": "forward", "provider": "https://a.example"}}`))
+		if got := strings.Join(pointers(vs), ", "); got != "/audit/mode not_applicable, /audit/provider not_applicable" {
+			t.Fatalf("violations: %q", got)
+		}
+		for _, v := range vs {
+			if !strings.Contains(v.Detail, "remote and virtual") {
+				t.Errorf("the detail does not name the classes: %+v", v)
+			}
+		}
+		for _, class := range []Class{Remote, Virtual} {
+			if vs := e.ValidateSettings(class, []byte(`{"audit": {"mode": "forward", "provider": "https://a.example"}}`)); len(vs) != 0 {
+				t.Errorf("%s: violations %v", class, vs)
+			}
+		}
+		if vs := e.ValidateSettings(Local, []byte(`{"audit": {"mode": "local"}}`)); len(vs) != 0 {
+			t.Errorf("a value of every class is refused: %v", vs)
+		}
+	})
 	t.Run("R-ARCH-008 content that is no object is refused", func(t *testing.T) {
 		for _, raw := range []string{`[1]`, `"x"`, `{`} {
 			if vs := e.ValidateSettings(Local, []byte(raw)); len(vs) == 0 {
@@ -98,12 +125,14 @@ func TestSettingsSchema(t *testing.T) {
 
 func TestSettingsSchemaRegistration(t *testing.T) {
 	for name, schema := range map[string]string{
-		"not json":                 `{`,
-		"not an object schema":     `{"type": "string"}`,
-		"unknown members allowed":  `{"type": "object", "properties": {}}`,
-		"does not compile":         `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "nope"}}}`,
-		"a class that is none":     `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string", "x-quader-classes": ["cloud"]}}}`,
-		"additionalProperties yes": `{"type": "object", "additionalProperties": true}`,
+		"not json":                     `{`,
+		"not an object schema":         `{"type": "string"}`,
+		"unknown members allowed":      `{"type": "object", "properties": {}}`,
+		"does not compile":             `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "nope"}}}`,
+		"a class that is none":         `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string", "x-quader-classes": ["cloud"]}}}`,
+		"a nested class that is none":  `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "object", "properties": {"b": {"type": "string", "x-quader-classes": ["cloud"]}}}}}`,
+		"a value's class that is none": `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string", "enum": ["x"], "x-quader-enum-classes": {"x": ["cloud"]}}}}`,
+		"additionalProperties yes":     `{"type": "object", "additionalProperties": true}`,
 	} {
 		t.Run("R-ARCH-008 a settings schema that is "+name+" panics at registration", func(t *testing.T) {
 			defer func() {

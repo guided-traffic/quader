@@ -22237,6 +22237,29 @@ development agent sees no case for revisiting this.
 [malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html),
 [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts).
 
+### Q-UI-970 · npm's forwarding is offered on remote and virtual repositories only, by the schema
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "The creation form of a local npm repository offers
+Security audit's Forward to an advisory service with Provider URL and Timeout"; the owner reviews it at the walkthrough.
+
+Context: a local repository has no upstream; the server answers its mode `forward` as `disabled` and ignores `providerURL` and `timeout`
+(R-NPM-038, `auditModeOf`). The schema named classes for top-level members only, so the form offered all three to a local repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The schema says it: `x-quader-classes` at any depth (`audit.providerURL`, `audit.timeout`), and `x-quader-enum-classes` for a value (`audit.mode` `forward`); the form leaves out what does not apply, the server refuses it as `not_applicable` (chosen) | R-ARCH-008 | One source for the form and the server; a script cannot store a setting the repository ignores; any format can use it | A document that set them on a local repository is refused at its next write |
+| (b) The form knows npm's audit | A rule in the UI | Small | A format's knowledge in the screen, for this format only |
+| (c) Leave it, and say in the description that a local repository ignores it | — | Nothing to build | The form still offers what has no effect |
+
+**Choice:** (a).
+
+**Rationale:** the settings schema is the one place where a format says what applies to which class (Q-ARCH-229). The development agent
+sees no case for revisiting this.
+
+**Applied in the spec:** [architecture.md](architecture.md) R-ARCH-008, [formats/npm.md](formats/npm.md) R-NPM-038. Code:
+[settings.go](../../internal/formats/catalog/settings.go), [settings.schema.json](../../internal/formats/npm/settings.schema.json),
+[settings-schema.ts](../../web/src/app/features/repositories/settings-schema.ts).
+
 ### Q-UI-972 · A narrow audit event puts each fact's name above its value
 
 Status: **Decided by the development agent** on 2026-11-23, closing the open finding "An opened audit event at 390 px breaks its Time

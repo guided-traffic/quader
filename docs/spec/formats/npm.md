@@ -1999,6 +1999,10 @@ names, each with a list of versions:
   `repositories:read-config`, H-303): no credential ever travels in it.
 - A virtual repository forwards through its first remote member in resolution order (priority
   members first, R-REPO-022) that is enabled and whose mode is `forward`, whoever asks (Q-NPM-62).
+- A local repository has no upstream to forward to: its document takes neither the mode `forward` nor `providerURL` and
+  `timeout`, which the schema names for remote and virtual repositories (`x-quader-classes`, `x-quader-enum-classes`,
+  [architecture.md](../architecture.md) R-ARCH-008); a create or an update that sets one is refused with the field error
+  `not_applicable`, and its settings form does not offer them ([api-and-ui.md](../api-and-ui.md) Q-UI-970).
 - Mode `disabled`, every local repository, a virtual repository without a forwarding member, a
   remote that may not contact its upstream (offline, its own mode or `proxy.global_offline`,
   R-REPO-030, R-REPO-031), the cache view `<repoKey>~cache`, and an endpoint that does not fill caches

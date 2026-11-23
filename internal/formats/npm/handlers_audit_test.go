@@ -483,6 +483,20 @@ func TestR_NPM_038_SettingsSchemaAndDefaults(t *testing.T) {
 			t.Errorf("audit local on %s: %+v", class, vs)
 		}
 	}
+	// Forwarding needs an upstream: a local repository takes neither the mode forward nor the forward's provider and timeout, which it
+	// would ignore (R-NPM-038), so its form does not offer them; its request size applies to every class.
+	for _, bad := range []string{`{"audit":{"mode":"forward"}}`, `{"audit":{"providerURL":"https://advisories.example.org/"}}`, `{"audit":{"timeout":"30s"}}`} {
+		vs := e.ValidateSettings(catalog.Local, []byte(bad))
+		if len(vs) != 1 || vs[0].Code != catalog.SettingNotApplicable {
+			t.Errorf("%s on a local repository: %+v", bad, vs)
+		}
+		if vs := e.ValidateSettings(catalog.Virtual, []byte(bad)); len(vs) != 0 {
+			t.Errorf("%s on a virtual repository: %+v", bad, vs)
+		}
+	}
+	if vs := e.ValidateSettings(catalog.Local, []byte(`{"audit":{"mode":"disabled","maxBodySize":"2MiB"}}`)); len(vs) != 0 {
+		t.Errorf("a local repository's audit: %+v", vs)
+	}
 
 	d := settingsOf(nil).Audit
 	if d.Mode != "" || d.Provider != nil || d.Timeout != 30*time.Second || d.MaxBodySize != 1<<20 {
