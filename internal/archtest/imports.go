@@ -207,6 +207,9 @@ func formatAllowed() []string {
 		// The OpenPGP library of the Debian format, a leaf: the remote class verifies the signatures of its upstream's release
 		// documents (R-DEB-020, Q-ARCH-383).
 		"internal/openpgp",
+		// The vocabulary of the curation of a remote and its compiled delivery rules, leaves: a format filters its documents by the rules
+		// of the request's repository and refuses a package they do not deliver (remote-curation.md R-CUR-003, Q-CUR-41).
+		"internal/remotecuration", "internal/remotecuration/rules",
 	}
 }
 

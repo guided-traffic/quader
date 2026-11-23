@@ -77,8 +77,13 @@ func TestLayers(t *testing.T) {
 			pkg("internal/formatdata/npm", "internal/meta", "internal/meta/postgres/q"),
 		}))
 	})
-	t.Run("R-CUR-007 internal/remotecuration is a domain package beside internal/mirror", func(t *testing.T) {
-		for _, p := range []string{"internal/remotecuration", "internal/remotecuration/rules", "internal/remotecuration/queue"} {
+	t.Run("R-CUR-007 Q-CUR-41 the vocabulary and the compiled rules of internal/remotecuration are leaves, its machinery domain", func(t *testing.T) {
+		for _, p := range []string{"internal/remotecuration", "internal/remotecuration/rules"} {
+			if l, ok := layerOf(p); !ok || l != layerLeaf {
+				t.Errorf("%s: layer %v (found %v), want leaf", p, l, ok)
+			}
+		}
+		for _, p := range []string{"internal/remotecuration/rules/store", "internal/remotecuration/queue", "internal/remotecuration/catalogue"} {
 			if l, ok := layerOf(p); !ok || l != layerDomain {
 				t.Errorf("%s: layer %v (found %v), want domain", p, l, ok)
 			}
