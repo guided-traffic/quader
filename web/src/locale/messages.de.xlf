@@ -22456,15 +22456,6 @@
         <target>Installieren von</target>
       </segment>
     </unit>
-    <unit id="pkg.help.sha256">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:571</note>
-      </notes>
-      <segment>
-        <source>The checksum of the file&apos;s content. Compare it with the output of sha256sum on the downloaded file.</source>
-        <target>Die Prüfsumme des Dateiinhalts. Vergleichen Sie sie mit der Ausgabe von sha256sum für die heruntergeladene Datei.</target>
-      </segment>
-    </unit>
     <unit id="pkg.file.malware">
       <notes>
         <note category="location">src/app/features/packages/package-version.ts:338</note>

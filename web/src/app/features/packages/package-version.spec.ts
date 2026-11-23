@@ -142,7 +142,10 @@ describe('The page of a version (R-UI-111)', () => {
 
   it('R-UI-007 R-API-029 Q-UI-106 the Files tab shows the SHA-256 with a copy button and a Download link on the contentUrl of the file', async () => {
     const r = await open({ tab: 'files' });
-    expect(text(r.root)).toContain('0'.repeat(56) + '5be0c1d2');
+    // Q-UI-1002: the first twelve characters under the path, the whole hash as their title and on the copy button.
+    const hash = r.root.querySelector('.file-hash code')!;
+    expect(text(hash)).toBe('0'.repeat(12));
+    expect(hash.getAttribute('title')).toBe('0'.repeat(56) + '5be0c1d2');
     expect(r.root.querySelector('.version-tabs quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy SHA-256');
     const download = [...r.root.querySelectorAll('a')].find((a) => a.textContent?.trim() === 'Download')!;
     expect(download.getAttribute('href')).toBe('/api/v1/projects/web/repositories/npm-local/content/@team-a/ui/-/ui-1.4.0.tgz');
@@ -298,8 +301,9 @@ describe('The page of a version (R-UI-111)', () => {
     it('R-OCI-031 the Files tab lists the tag item, whose checksum is the manifest digest', async () => {
       const r = await image({ version: '1.1.0', tab: 'files' });
       const rows = cells(r);
-      expect(rows.map((c) => c[0])).toEqual(['team/app/_tags/1.1.0']);
-      expect(rows[0]?.[2]).toContain('a4d64'.padEnd(64, 'f'));
+      expect(rows).toHaveLength(1);
+      expect([...r.root.querySelectorAll('.version-tabs table tbody th .file-path')].map((e) => text(e))).toEqual(['team/app/_tags/1.1.0']);
+      expect(r.root.querySelector('.file-hash code')?.getAttribute('title')).toContain('a4d64'.padEnd(64, 'f'));
     });
 
     it('R-OCI-031 Details shows the digest, media type, artifact type and size of the tag', async () => {

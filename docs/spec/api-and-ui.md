@@ -7130,8 +7130,9 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
 - **Install** (R-UI-009) at the page's width, before the tabs.
 - **Tabs** (`tab`): **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is not N/A; for the format `ansible`
-  **Documentation** and **Contents** (R-UI-060, R-UI-062); **README** (R-UI-008, when `hasReadme`); **Files** (path, size,
-  SHA-256 with its copy button, download); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
+  **Documentation** and **Contents** (R-UI-060, R-UI-062); **README** (R-UI-008, when `hasReadme`); **Files** (path with its size and
+  its SHA-256's first twelve characters and copy button under it, the malware scan, the signature, download;
+  [Q-UI-1002](#q-ui-1002--a-versions-files-keep-their-table-the-size-and-the-hash-stand-under-the-path)); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
   type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's control
   fields, an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
   each a link to its page, with its class and when it was published there); **Vulnerabilities** after Details for a version that
@@ -22575,6 +22576,24 @@ Context: a project's settings hold their rules in the settings' column, 688 px a
 | (b) Narrower columns | — | The note a column | A caller's long name stacks the list again |
 
 **Choice:** (a). **Applied in the spec:** R-UI-179 of this page. Code: [limit-rules.ts](../../web/src/app/features/limits/limit-rules.ts).
+
+### Q-UI-1002 · A version's files keep their table: the size and the hash stand under the path
+
+Status: **Decided by the development agent** on 2026-11-23, closing point 7 of the open finding "Seen by the builder of the screens'
+first round on its renders" by the rule of Q-UI-969; the owner reviews it at the walkthrough.
+
+Context: a version's **Files** had **File**, **Size**, **SHA-256** (the whole hash cut at 24 characters and its copy button), **Malware
+scan** and **Signature** (12 rem each) and **Download**: an OCI image's one file stood as a block at 1,024 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Under the path its size and its hash as its first twelve characters (the style guide's form of a hash) with its copy button; **Malware scan** and **Signature** at 9 rem: 700 px (chosen) | Q-UI-969's rule | A table at 1,440 and 1,024 px for every format | The size is no column at its end |
+| (b) The columns as they were | — | — | Blocks at 1,024 px |
+
+**Choice:** (a). The column **Download** of a file that offers none stays empty, as an action cell of a row without an action: no column of
+dashes (point 6 of the same finding, the trust anchors' **Remove** likewise). **Applied in the spec:** R-UI-111. Code:
+[package-version.html](../../web/src/app/features/packages/package-version.html),
+[anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts).
 
 ## What this does not cover
 

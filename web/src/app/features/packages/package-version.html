@@ -191,16 +191,23 @@
               }
             }
             @case ('files') {
-              <quader-data-table [caption]="tableCaptionFiles" [columns]="fileColumns()" [empty]="d.files.length === 0">
+              <quader-data-table class="version-files" [caption]="tableCaptionFiles" [columns]="fileColumns()" [empty]="d.files.length === 0">
                 @for (f of d.files; track f.path) {
                   <tr>
-                    <th scope="row" class="wrap-name file-path" translate="no">{{ f.path }}</th>
-                    <td class="num nowrap" [attr.title]="f.sizeBytes + ' B'">{{ size(f.sizeBytes) }}</td>
-                    <!-- The hash and its copy button on one line: at 1,024 px the button went under the hash. -->
-                    <td class="nowrap">
-                      <code class="ellipsis" translate="no" [attr.title]="f.sha256">{{ f.sha256 }}</code>
-                      <quader-copy-button [value]="f.sha256" [label]="copySha" />
-                    </td>
+                    <th scope="row" class="wrap-name">
+                      <span class="file-path" translate="no">{{ f.path }}</span>
+                      <!-- The size and the hash under the path, each on a line of its own (Q-UI-1002): the hash's first twelve
+                           characters, the whole as its title and on its copy button, which stands on the middle of the hash's line
+                           (R-UI-175). -->
+                      <span class="secondary" [attr.title]="f.sizeBytes + ' B'">{{ size(f.sizeBytes) }}</span>
+                      <span class="secondary file-hash"
+                        ><span
+                          ><ng-container i18n="@@pkg.file.sha256">SHA-256</ng-container>&ngsp;<code translate="no" [attr.title]="f.sha256">{{
+                            shortSha(f.sha256)
+                          }}</code></span
+                        ><quader-copy-button [value]="f.sha256" [label]="copySha"
+                      /></span>
+                    </th>
                     @if (malwareShown()) {
                       <td class="malware-cell">
                         @if (f.malware; as m) {
@@ -231,12 +238,11 @@
                     @if (downloadable()) {
                       <td>
                         <!-- A file the malware scan's gate or a repository's signature gate refuses offers no download; its fact says
-                             why (Q-UI-882, R-SIG-074). Nor does a file of a system repository or a disabled one (Q-UI-898, Q-UI-965). -->
+                             why (Q-UI-882, R-SIG-074). Nor does a file of a system repository or a disabled one (Q-UI-898, Q-UI-965).
+                             Its cell stays empty, as a row's action cell without an action does: no column of dashes. -->
                         @if (
-                          f.malware?.refused === true || f.signatures?.refused === true || inSystemRepository(f) || inDisabledRepository(f)
+                          !(f.malware?.refused === true || f.signatures?.refused === true || inSystemRepository(f) || inDisabledRepository(f))
                         ) {
-                          <quader-no-value />
-                        } @else {
                           <a class="btn btn-tertiary" [href]="f.contentUrl" download quaderDownload i18n="@@pkg.file.download-link">Download</a>
                         }
                       </td>

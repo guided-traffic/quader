@@ -2391,7 +2391,7 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-disabled', path: ver(P, npmPackage, '1.1.0'), kinds: ['plain'], walk: disabledVersion },
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
-  { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all },
+  { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all, tables: 'quader-data-table.version-files' },
   // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
@@ -2434,10 +2434,10 @@ export const screens: readonly Screen[] = [
     kinds: ['plain'],
     walk: malwareFiles,
   },
-  { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions },
+  { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions, tables: 'quader-data-table.version-files' },
   // The signatures at a version, an image and a file (R-SIG-035, R-SIG-024, R-SIG-010): what a plain user meets; the same for every kind.
   { id: 'package-version-signatures', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`, kinds: ['plain'], walk: signatureVersions },
-  { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'] },
+  { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'], tables: 'quader-data-table.version-files' },
   { id: 'package-version-signatures-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: signatureImages },
   // A repository's gate at a version, an image and a file (R-SIG-074): what a plain user meets, and the release for an administrator.
   { id: 'package-version-signature-refused', path: `${ver(P, manyVersionsPackage, signedVersions.none)}?tab=files`, kinds: ['plain', 'admin'], walk: refusedVersionWalk },

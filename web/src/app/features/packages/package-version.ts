@@ -454,15 +454,12 @@ export class PackageVersionPage {
   }
 
   protected readonly fileColumns = computed<readonly TableColumn[]>(() => [
+    // One form at 1,440 and 1,024 px whatever the files hold (Q-UI-1002, the rule of Q-UI-969): a file's size and its SHA-256 stand under
+    // its path, the hash as its first twelve characters with the whole as its title and its copy button; the malware scan and the
+    // signature keep their columns. Blocks only at 390 px.
     { id: 'path', label: $localize`:@@pkg.file.path:File`, width: '12rem' },
-    { id: 'size', label: $localize`:@@pkg.file.size:Size`, numeric: true },
-    {
-      id: 'sha256',
-      label: $localize`:@@pkg.file.sha256:SHA-256`,
-      help: $localize`:@@pkg.help.sha256:The checksum of the file's content. Compare it with the output of sha256sum on the downloaded file.`,
-    },
-    ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '12rem' }] : []),
-    ...(this.signatureShown() ? [{ id: 'signature', label: $localize`:@@pkg.file.signature:Signature`, width: '12rem' }] : []),
+    ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '9rem' }] : []),
+    ...(this.signatureShown() ? [{ id: 'signature', label: $localize`:@@pkg.file.signature:Signature`, width: '9rem' }] : []),
     ...(this.downloadable() ? [{ id: 'download', label: $localize`:@@pkg.file.download:Download`, hideLabel: true }] : []),
   ]);
   /**
@@ -508,6 +505,10 @@ export class PackageVersionPage {
   protected readonly tableCaptionFiles = $localize`:@@pkg.file.caption:Files of this version`;
   protected readonly tableCaptionRepositories = $localize`:@@pkg.repo.caption:Repositories that hold this version`;
   protected readonly copySha = $localize`:@@pkg.file.copy-sha:Copy SHA-256`;
+  /** A hash's first twelve characters, the form a list shows it in (the style guide's rule of a hash). */
+  protected shortSha(sha: string): string {
+    return sha.slice(0, 12);
+  }
   protected readonly classLabels: Record<string, string> = {
     local: $localize`:@@repo.class.local:Local`,
     remote: $localize`:@@repo.class.remote:Remote`,

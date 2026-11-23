@@ -116,6 +116,19 @@ dl.digests {
   overflow-wrap: anywhere;
 }
 
+// A file's hash under its path (Q-UI-1002): one flex line of the muted text, on whose middle the copy button stands, its margins
+// taking it to the line's height (R-UI-175); in running text the monospace hash made the line taller than the button's line.
+.file-hash {
+  display: flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+
+  > quader-copy-button {
+    flex: none;
+    margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2);
+  }
+}
+
 // A platform's media type is one identifier of 45 characters: it stays on one line in the table, and breaks inside itself only in the
 // stacked rows of a narrow screen, where it pushed the row 5 px out of the panel (W-24, the platforms of a remote index).
 .quader-data-table.stacked td.media-type {

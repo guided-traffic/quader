@@ -75,14 +75,14 @@ export interface AnchorRowControls {
               }
             </td>
           }
+          <!-- A row without Remove leaves its action cell empty, as every list does for a row with nothing to do: the en dash of a
+               missing value made a column of dashes beside the shipped anchors. -->
           @if (anyRemove()) {
             <td class="actions">
               @if (c.remove) {
                 <button class="btn btn-tertiary" type="button" [disabled]="busy().has(a.id)" (click)="remove.emit(a)">
                   <ng-container i18n="@@sig.anchor.remove">Remove</ng-container><span class="visually-hidden">&ngsp;{{ a.title }}</span>
                 </button>
-              } @else {
-                <quader-no-value />
               }
             </td>
           }
