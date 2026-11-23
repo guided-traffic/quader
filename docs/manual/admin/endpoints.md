@@ -137,6 +137,9 @@ endpoints:
   certificate**, with the technical tokens' kind default of the download limits), its serial in `client_cert_serial` and as the
   credential, its issuer in `client_cert_issuer`. A refused handshake leaves only a `TLS handshake error` line in the process log.
   Behind a passthrough the request log names the Ingress controller's address, not the ClamAV host's.
+- **A ClamAV inside the cluster** names the host of `baseUrl` as well. The endpoint's hosts are that host and its `hosts`, and any other
+  name, such as the Service `<fullname>-ep-clamav.<namespace>.svc`, answers `421`; to use the Service, list its name in `hosts` and in the
+  certificate of `tls.existingSecret`.
 
 The page of `clamav` lists the endpoint's address in its fold **Visibility** under "With a client certificate:", and the client setup
 shows the certificate's way ([Connecting a package client](../user/client-setup.md#update-clamav-from-quader)).

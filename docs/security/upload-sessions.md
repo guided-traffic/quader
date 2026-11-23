@@ -164,9 +164,11 @@ The digest under which the blob is stored is the one the session computed over t
 store as they arrived; the copy to the content address moves the staging object, the multipart object `data` or, for a blob of less than one
 part, its single tail segment or the merge of its segments, by a request to the store and checks only its size. A principal that can write
 the bucket (the case of [H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks))
-and replaces that object between its completion and the copy makes Quader store other bytes under the digest of the original; the scrub
-(R-STOR-027) finds the mismatch later, and a download verifies the digest before it releases the last bytes (R-STOR-013). The window is the
-time between the two steps, normally seconds and as long as a finalize that was cut waits for its retry. Live today for every session; it
+and replaces that object between its completion and the copy makes Quader store other bytes under the digest of the original. The copy is
+recorded present and not verified, and the scrub (R-STOR-027) reads the copies never verified before any other of its connection
+([blob_scrub.sql](../../internal/meta/postgres/queries/blob_scrub.sql)), so its next runs find the mismatch before they read any copy
+verified earlier, and replace the copy from another connection where one holds the blob; a download verifies the digest before it releases the last bytes (R-STOR-013). The
+window of the replacement is the time between the two steps, normally seconds and as long as a finalize that was cut waits for its retry. Live today for every session; it
 needs write access to the bucket, which already breaks every other integrity guarantee of the blob store.
 
 ### H-592 · The sessions of anonymous callers are one principal's: they share each other's sessions and one cap

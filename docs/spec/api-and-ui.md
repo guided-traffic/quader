@@ -19840,9 +19840,6 @@ check `row-actions` found two) and never a menu of one entry.
 **Choice:** (a). **Applied in the spec:** R-UI-177, R-UI-179. Code: [limit-rules.ts](../../web/src/app/features/limits/limit-rules.ts),
 [limits-projects-tab.ts](../../web/src/app/features/limits/limits-projects-tab.ts).
 
-## What this does not cover
-
-
 ### Q-UI-759 · A technical token's limit opens its rule dialog, and the row keeps Rotate and Revoke
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

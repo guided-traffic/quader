@@ -248,6 +248,11 @@ malware scan uses, and its **Set up client** page shows the guide of `freshclam`
   serve the version in use, and reloads `clamd`; with a token, curl reads the header from standard input; with a certificate, it names
   `--cert`, `--key` and `--cacert`.
 
+A ClamAV inside the cluster that runs Quader names the address of the guide too, the installation's address or the endpoint's: a
+further endpoint, such as one for client certificates, answers `421` for every host it does not list, and so does the installation's
+address once an administrator has set up a further endpoint. To use another name, such as a Service's in-cluster name, ask an
+administrator to add it to the endpoint's hosts ([Endpoints](../admin/endpoints.md#host-check-and-421)).
+
 ## Install through a Bastion
 
 An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The Quader Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages and pull the same images from the same repositories, named by the same project and repository keys, for every format; only the address differs.

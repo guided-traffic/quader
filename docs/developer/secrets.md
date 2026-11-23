@@ -33,9 +33,11 @@ of this package.
 
 `ring.Status()` returns the key IDs, the active ID and which keys are loaded. `ring.StatusWithCounts(ctx, counter)`
 adds the sealed values per key ID over every registered column; the PostgreSQL layer implements
-`ValueCounter`. A key ID that values reference but the ring lacks is listed with `loaded: false`. Both the
-future `quader admin secrets status` and `GET /api/v1/system/encryption` (M1) call these; neither may add key
-material, fingerprints, ciphertext or plaintext. `KeyRing` implements `String` and `LogValue` with key IDs only.
+`ValueCounter`. A key ID that values reference but the ring lacks is listed with `loaded: false`.
+`GET /api/v1/system/encryption` ([encryption_api.go](../../internal/api/v1/encryption_api.go)) and the start-up check
+(`verifyKeyRingCanaries` in [wire_api.go](../../internal/app/wire_api.go)) call `StatusWithCounts`; neither adds key
+material, fingerprints, ciphertext or plaintext. The command `quader admin secrets status` that R-ARCH-021 names beside
+the API is not built. `KeyRing` implements `String` and `LogValue` with key IDs only.
 
 ## Envelope
 
@@ -111,16 +113,23 @@ re-encryption (R-ARCH-021, R-HA-027):
 | 3 | `POST /api/v1/system/tasks/secrets-reencrypt/run`: reseals every value not under the active key, idempotent | |
 | 4 | when the status shows no values under the old ID, remove its file and roll out | |
 
-Steps 1 to 4 of the API are M1 work; this package provides `Reseal` (`NeedsReseal`) and `Status`. The test
+The API's side of the steps is built ([encryption_api.go](../../internal/api/v1/encryption_api.go)): the answer of step 1
+holds every live replica's key IDs from the replica registry, the sealed counts per key and `ringsCompatible`, and the
+trigger of step 3 refuses with `409 key_ring_incompatible` while a live replica's ring lacks a key that another replica
+seals with or a stored value references. This package provides `Reseal` (`NeedsReseal`) and `Status`. The test
 `TestRotation` runs the four steps against real key files.
 
 ## Canary and key mismatch
 
 For each key ID, `secret_key_canary` holds a known plaintext sealed with that key. `ring.SealCanary(keyID)`
 produces the row, `ring.CheckCanary(keyID, value)` verifies it, and `ring.RequireKeys("database", ids)` returns
-`key ring does not match database: missing key <id>` (a `*MismatchError`; `"backup"` for a restore). The
-table, the start-up check and the restore check are M1 and backup work; they call these functions. The
-canary column is not in the registry of user secrets, so it never counts as a sealed value.
+`key ring does not match database: missing key <id>` (a `*MismatchError`; `"backup"` for a restore). The table is
+`secret_key_canary` ([tables_m1.go](../../internal/meta/postgres/tables_m1.go)). At start-up `verifyKeyRingCanaries`
+([wire_api.go](../../internal/app/wire_api.go)) requires every key that a stored value references, checks the canary of
+every key the ring holds and writes the canary of a key that has none; the restore checks the backup's keys and canaries
+([checks.go](../../internal/backup/restore/checks.go)) and the restored database's ([restore.go](../../internal/backup/restore/restore.go)),
+and `GET /api/v1/system/encryption` reports each canary's state. The canary column is not in the registry of user
+secrets, so it never counts as a sealed value.
 
 ## Fingerprints
 
@@ -130,7 +139,7 @@ changes once.
 
 ## What is deliberately not here
 
-- The `secret_key_canary` table, the start-up canary check and the replica-registry publication of key IDs
-  (need PostgreSQL; M1).
-- The `secrets-reencrypt` task and the `ringsCompatible` computation (need the job queue and the registry; M1).
-- Key files are read once at `Load`; there is no live reload.
+- Key files are read once at `Load`; there is no live reload. A key reaches the pods with a roll-out: the chart's pod
+  annotation `checksum/encryption-keys` covers the list `secrets.encryption.keys`
+  ([_deployment.tpl](../../deploy/helm/quader/templates/_deployment.tpl)), so adding or removing a key file rolls the pods,
+  and the steps of [Rotation](#rotation) are roll-outs.
