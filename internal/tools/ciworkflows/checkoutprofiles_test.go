@@ -1,6 +1,7 @@
 package ciworkflows
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,7 +87,8 @@ func (r profileRepo) sh(t *testing.T, dir string, env []string, script string) s
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	err := cmd.Run()
 	code := 0
-	if ee, ok := err.(*exec.ExitError); ok {
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
 		code = ee.ExitCode()
 	} else if err != nil {
 		t.Fatal(err)

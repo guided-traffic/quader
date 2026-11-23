@@ -1,6 +1,7 @@
 package ciworkflows
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,7 +33,8 @@ func runNightlyGuard(t *testing.T, runs, jobs string, fail bool) (int, string) {
 	}
 	out, err := cmd.CombinedOutput()
 	code := 0
-	if ee, ok := err.(*exec.ExitError); ok {
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
 		code = ee.ExitCode()
 	} else if err != nil {
 		t.Fatal(err)
