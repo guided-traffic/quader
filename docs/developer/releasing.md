@@ -17,7 +17,7 @@ first stable release:
 | A minimal set of jobs gates Semantic Release | The static checks, unit, web, chart, image, the scans, `workflows`, `coverage` and `release-tooling`; the list is the `needs` of the job `semantic-release` in [release.yml](../../.github/workflows/release.yml) | [Q-ARCH-457](../spec/architecture.md#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release) |
 | `integration`, `s3-conformance`, every `e2e` leg and the UI layout checks gate nothing | They still run (a format's e2e leg when the push changed its paths, below) and do not hold a release ([Q-ARCH-510](../spec/architecture.md#q-arch-510--the-layout-checks-of-the-ui-run-on-every-push-in-test-and-release-and-gate-no-release-until-the-first-stable-release) for `ui-layout`, which joins the gate with the first stable release). A red one is still worked on: its cause is found and fixed, also after the release is out (owner, 2026-11-10). The tests that matter for a change run locally | Q-ARCH-457 |
 | A release can carry a defect those legs found | The price of the rule; it is accepted while Quader has no users | Q-ARCH-457 |
-| The coverage badge and the evidence record stand still | Their jobs need the legs that no longer gate, so a release commits neither: the badge says 83.8 % of 2026-11-09, and the record of the last release commit, 0.34.1, has moved only by hand since ([coverage.md](coverage.md#the-committed-record-since-the-minimal-gate)) | Q-ARCH-457 |
+| The coverage badge and the evidence record follow the release without holding it | Their jobs need the legs that no longer gate, so the release never waits for them: the job Semantic Release publishes, after the release, the newest record and badge that a completed run of the released commit or an ancestor wrote, onto the branch `coverage`; `main` holds neither and gets no commit from the pipeline. A record is written by every run whose unit, Angular, chart and integration tiers passed, whatever became of its kind legs; a leg without a whole report of its own is carried from the nearest earlier commit, at most a week old ([coverage.md](coverage.md#the-record-on-the-branch-coverage)) | [Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither) |
 | Nothing runs against published artifacts | Tests belong before a release, where a failure can still change the outcome | [Q-HA-281](../spec/ha-and-helm.md#q-ha-281--tests-run-before-a-release-not-after-it) |
 | The tools are limited, not the pods | Both workflows set `GOMAXPROCS`, `NG_BUILD_MAX_WORKERS` and `VITEST_MAX_WORKERS` to 8. The pods keep their requests and have no CPU limit, so without this every tool would start 32 threads on a shared node | owner, 2026-11-10 |
 | Names of jobs and steps say what they do | No requirement codes, no tool versions, no "on kind"; an e2e job is `e2e (<set>)` | owner, 2026-11-10 |
@@ -126,10 +126,10 @@ which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-
 | workflow files (actionlint) | `actionlint` (pinned `ACTIONLINT_VERSION`) | every file of `.github/workflows`, with [.github/actionlint.yaml](../../.github/actionlint.yaml) |
 | compatibility with the latest release | `make compat-check` | the OpenAPI document against the latest `v0.*` release with the pinned oasdiff (`--fail-on ERR`), the migration files: only additions that continue the numbering, and no change of a migration that `main` has committed (the history of `main`); needs the history and the tags (`fetch-depth: 0`, `fetch-tags: true`); see [Compatibility](#compatibility). Switched off until the first stable release (`if: false`, not among the needs of Semantic Release; [the switches](#switched-off-until-the-first-stable-release)) |
 | coverage generator (links and rules) | `go run ./internal/tools/coverage -check`, then `-links` | the generated pages match their rules; every relative link and anchor resolves |
-| coverage evidence (implemented.txt) | `go run ./internal/tools/coverage -claims -tests …` over the unit, Angular, chart, integration and kind-leg reports of this run, and `-carried` over the newest report of each kind leg without one (Q-ROAD-11) | [implemented.txt](../coverage/implemented.txt) claims no requirement the reports do not prove; writes the record and the pages rendered from it, lists the requirements proven for the first time in the job summary and uploads the files as `coverage-evidence` (14 days), which no release takes until the first stable release (Q-ARCH-457); needs `unit`, `web`, the `integration` shards, `chart`, `image` and the kind legs, runs when none of them failed or was cancelled (a leg the change did not start is skipped and does not stop it; its newest report is carried), and holds `actions: read` for the reports of earlier runs; a failing test in such a report withdraws its requirement from the record without failing the job (Q-ROAD-12) |
-| Combined Coverage Report | `make coverage-report` | merges the unit and integration profiles; the job summary and the badge `coverage-badge` |
+| coverage evidence (implemented.txt) | [tools/fetch-e2e-reports.sh](../../tools/fetch-e2e-reports.sh), then `go run ./internal/tools/coverage -tests …` over the unit, Angular, chart and integration reports and the whole kind-leg reports of this run, `-carried` over the report of each kind leg without one, made for the nearest commit, this one or an ancestor, at most a week old (Q-ROAD-11), and `-previous` over the record on the branch `coverage` | writes the record (`implemented.txt`) and the pages rendered from it from the reports and nothing else, lists in the job summary what it adds to and drops from the branch's record with the reasons, and uploads the files as `coverage-evidence` (14 days), which a later run's Semantic Release publishes onto the branch `coverage`; needs `unit`, `web`, the `integration` shards, `chart` and the kind legs, runs when the four tiers passed, whatever became of the legs (a skipped, red or cancelled leg's report is used when whole, else carried), checks out the whole history and holds `actions: read` for the reports of earlier runs; fails on a test name with an ID the specification does not define and on a cut report, never on what the record drops ([Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)) |
+| Combined Coverage Report | `make coverage-report` | merges the unit and integration profiles; the job summary and the badge as the artifact `coverage-badge`, which a later run's Semantic Release publishes onto the branch `coverage` |
 | Release Tooling | `make test-release-tooling` | `npm ci`, `npm audit signatures`, and [hack/verify-release-tooling.mjs](../../hack/verify-release-tooling.mjs), which renders release notes with the installed plugins |
-| Semantic Release | – | needs the static checks, unit, web, chart, image, the scans, `workflows`, `coverage` and `release-tooling`; the integration, S3 conformance and kind legs and the two coverage jobs that need them still run and do not gate it until the first stable release (Q-ARCH-457); runs only on a push to `main`; publishes the release ([release flow](#release-flow)). A gating job that failed or was cancelled at its limit skips it; re-running the failed jobs of the run runs it after them ([when a gating job hung](#when-a-gating-job-failed-on-the-network)) |
+| Semantic Release | – | needs the static checks, unit, web, chart, image, the scans, `workflows`, `coverage` and `release-tooling`; the integration, S3 conformance and kind legs and the two coverage jobs that need them still run and do not gate it until the first stable release (Q-ARCH-457); runs only on a push to `main`; publishes the release ([release flow](#release-flow)), then the newest evidence record and coverage badge onto the branch `coverage` ([tools/publish-coverage-record.sh](../../tools/publish-coverage-record.sh), a step that cannot fail the job; Q-ARCH-811); holds `contents: read` and `actions: read`, and the App's token for the tag, the release and the branch's push. A gating job that failed or was cancelled at its limit skips it; re-running the failed jobs of the run runs it after them ([when a gating job hung](#when-a-gating-job-failed-on-the-network)) |
 
 A kind leg that fails keeps its cluster state as the artifact `e2e-cluster-state-<set>` (14 days): per namespace the pods, their
 descriptions and the events, and the logs of every pod of `quader` and of the edge (`ingress-controller`) whole, with the kubelet's
@@ -537,16 +537,15 @@ The unit tier and each integration line write a profile to `.out/coverage`: `uni
 `integration-<line>.out`, with `-covermode=atomic -coverpkg=./...`, so each counts for every package
 it reaches. [`test/coverage/report.sh`](../../test/coverage/report.sh) merges them: a block counts once,
 covered when any profile covered it. It writes `coverage.txt` (`go tool cover -func`), `summary.md`
-for the job summary, and [`coverage.json`](../../.github/badges/coverage.json) (the README badge; green
-from 80 %, brightgreen from 90 %, yellow from 70 %, orange from 60 %, red below). Semantic Release
-committed the badge with the release until Q-ARCH-457; the badge is not updated by a release until the first stable release.
+for the job summary, and `coverage.json` (the README badge; green from 80 %, brightgreen from 90 %, yellow
+from 70 %, orange from 60 %, red below), uploaded as `coverage-badge`. The job Semantic Release of a later run publishes it onto the
+branch `coverage` as `.github/badges/coverage.json`, which the README's badge reads; `main` holds no badge
+([Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)).
 
 The requirement evidence of [docs/coverage](../coverage/README.md) is a different thing: the
 `coverage evidence` job writes `implemented.txt`, `checklist.md` and the generated blocks of the coverage README from the
-test reports of the run. Since Q-ARCH-457 no release commits them, so the committed evidence stands still until the first stable release. The rule is
-that nobody refreshes them by hand; commits have added IDs by hand since all the same ([coverage.md](coverage.md#the-committed-record-since-the-minimal-gate)).
-The job fails only when the committed record claims a requirement that no passing test of the run names
-([coverage.md](coverage.md#how-ci-feeds-it)).
+test reports, and the same publish puts them onto the branch `coverage`. Nobody writes them by hand, and `main` holds no record: the
+generator refuses one in the tree ([coverage.md](coverage.md#the-record-on-the-branch-coverage)).
 
 ### Cyclomatic complexity
 
@@ -961,15 +960,24 @@ tooling pinned in [package.json](../../package.json) and [package-lock.json](../
 2. Once every job of a push run on `main` passed, the job Semantic Release takes a token of the
    organisation's GitHub App (`permission-contents: write`), runs `npm ci` and `npm audit signatures`,
    runs `npx semantic-release`: the
-   version from the commits since the last tag, the notes, the tag `v<version>` and the GitHub release. Until Q-ARCH-457
-   it also committed the badge and the evidence record as `chore(release): <version> [skip ci]` with the notes in its body
-   and tagged that commit; since then the job changes neither file, `@semantic-release/git` finds nothing to commit, and the
-   tag is on the run's own commit (the last release commit is 0.34.1 of 2026-11-10).
+   version from the commits since the last tag, the notes, the tag `v<version>` on the run's own commit and the GitHub release.
+   Until Q-ARCH-457 it also committed the badge and the evidence record as `chore(release): <version> [skip ci]` and tagged that
+   commit (the last one is 0.34.1 of 2026-11-10); the release commits nothing to `main` (no `@semantic-release/git` since
+   Q-ARCH-811).
 3. The release's `published` event starts [the release pipeline](#the-release-pipeline), because the
    App's token made the release: one made with `GITHUB_TOKEN` starts no workflow.
+4. The job then publishes the newest evidence record and coverage badge onto the branch `coverage`
+   ([tools/publish-coverage-record.sh](../../tools/publish-coverage-record.sh),
+   [Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)):
+   each from the completed push run of Test and Release whose commit is the released one or its nearest ancestor that wrote it, in a
+   commit `chore(coverage): the evidence record of <commit> and the coverage badge of <commit> [skip ci]` whose parents are the
+   branch's head and the record's commit, pushed without force. It runs on every push run that reaches the job, a release or not; it
+   publishes only what is newer than the branch holds; a missing or older record, an API that does not answer or a push refused three
+   times leaves the branch as it is with a line in the log, and the step cannot fail the job (`continue-on-error`). The job's own
+   `GITHUB_TOKEN` (`actions: read`) lists the runs and downloads the artifacts; the push uses the App's token of the checkout.
 
-A release that commits nothing moves no branch: only the tag is new. If a release commits files again, it moves `main`, and
-`git pull --rebase` comes before the next push.
+A release moves no branch but `coverage`: only the tag is new on `main`'s history, so a landing from a local checkout needs nothing
+beyond what it did before (fetch and rebase onto `origin/main` before the push); no pipeline commit appears on `main` to be rebased over.
 
 **Releases stay on major version 0** until the owner decides on 1.0 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)).
 
@@ -1064,6 +1072,10 @@ The pipeline uses three secrets of the organisation, which reach this repository
 
 One setting is the owner's to make: the `gh-pages` branch that holds the chart repository, which GitHub
 Pages serves at `https://guided-traffic.github.io/quader/`.
+
+The branch `coverage`, which holds the evidence record and the coverage badge, needs no setting: the first publish of the job Semantic
+Release creates it with the App's token. A ruleset that keeps the App from creating or pushing it shows as a refused push in that step's
+log, and the release goes out all the same.
 
 ## Not in place yet
 

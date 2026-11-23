@@ -1,7 +1,7 @@
 # Quader
 
 [![Build Status](https://github.com/guided-traffic/quader/actions/workflows/release.yml/badge.svg)](https://github.com/guided-traffic/quader/actions)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/guided-traffic/quader/main/.github/badges/coverage.json)](https://github.com/guided-traffic/quader)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/guided-traffic/quader/coverage/.github/badges/coverage.json)](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md)
 [![Go Report Card](https://goreportcard.com/badge/github.com/guided-traffic/quader)](https://goreportcard.com/report/github.com/guided-traffic/quader)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -947,7 +947,7 @@ Registrations at start-up, in `internal/app/wire_*.go` and in the packages that 
 | [docs/spec/vulnerability-scanning.md](docs/spec/vulnerability-scanning.md) | Target design of the scanning: R-VULN-001 to R-VULN-032 (R-VULN-030 to R-VULN-032 are P1 and not built) and the decisions `Q-VULN-<n>` |
 | [SECURITY.md](SECURITY.md) | How to report a vulnerability, the supported versions and the pointer to the known gaps |
 | [docs/spec/](docs/spec/README.md) | Target design: owner constraints, invariants `INV-1` to `INV-20`, requirements `R-<AREA>-nnn`, open gaps `H-<n>` |
-| [docs/coverage/](docs/coverage/README.md) | Which catalog entries the spec covers, and which requirements have passing tests |
+| [docs/coverage/](docs/coverage/README.md) | Which catalog entries the spec covers; which requirements have passing tests is the evidence record the pipeline writes onto the branch [`coverage`](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md) |
 | [docs/coverage/roadmap.md](docs/coverage/roadmap.md) | Milestones, exit criteria, the open decisions for the owner's walkthrough, and the next milestones |
 | [docs/decisions.md](docs/decisions.md) | Architecture decision records |
 | [docs/features/](docs/features/README.md) | The feature catalog that the spec covers |

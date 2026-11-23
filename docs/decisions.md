@@ -9127,10 +9127,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-272 questions on [spec/architecture.md](spec/architecture.md).
+273 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 272 questions</summary>
+<summary>Q-ARCH: 273 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9406,6 +9406,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-650](spec/architecture.md#q-arch-650--every-statement-of-an-http-request-ends-after-the-requests-bound-set-local-in-a-transaction-a-deadline-on-a-single-read) | Every statement of an HTTP request ends after the request's bound: SET LOCAL in a transaction, a deadline on a single read | Decided by the development agent | (a), with the bound a configuration key, `database.request_statement_timeout` (5s by default, at least 100 ms, at most `database.session.statement_timeout`). | — |
 | [Q-ARCH-700](spec/architecture.md#q-arch-700--a-statement-budget-counts-the-statements-that-ran-with-the-requests-id-not-the-databases-log-of-a-window) | A statement budget counts the statements that ran with the request's ID, not the database's log of a window | Decided by the development agent | (a), in `perRequestAs` and `perRequest` of [download_test.go](../test/integration/querybudget/download_test.go) and the replicas of `env.start`. | — |
 | [Q-ARCH-702](spec/architecture.md#q-arch-702--a-test-waits-for-the-state-it-stands-for-and-does-not-depend-on-the-hosts-speed) | A test waits for the state it stands for and does not depend on the host's speed | Decided by the development agent | (a) Per test, the cause removed: a stopped or advanced clock where the test's own clock decides; the product's default, or a generous value with its reason beside it, for a bound the test does not stand for; a wait for the event; a clone of the template for a component area's database | — |
+| [Q-ARCH-811](spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither) | The pipeline writes the evidence record and the coverage badge onto the branch `coverage`; `main` holds neither | Decided by the development agent | (c), with the record whole as set out above, and (b) for a test that holds a refusal. | — |
 
 </details>
 

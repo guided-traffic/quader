@@ -3353,29 +3353,31 @@ jobs:
       - name: Relative links and anchors
         run: go run ./internal/tools/coverage -links
 
-  # The evidence record (docs/developer/coverage.md#how-ci-feeds-it): the generator writes implemented.txt and the pages
-  # rendered from it from the test reports of this run, and fails only when the committed list claims a requirement the
-  # reports do not prove. Requirements proven for the first time are listed in the job summary; the written files are the artifact
-  # coverage-evidence, which no release takes since Q-ARCH-457 (docs/developer/coverage.md#the-committed-record-since-the-minimal-gate).
-  # The reports are those of every
-  # tier: unit, Angular, chart, integration and the kind legs of this run, and for each kind leg without a report here the newest
-  # one of that leg on main, from this workflow or from the nightly (Q-ROAD-11). The job waits for the kind legs, so it ends
-  # when they do. A leg the change does not start (job e2e-scope) is a skipped job; the condition lets the job run past it, as it
-  # ran past the green, empty legs before, and keeps it from running when a job it needs failed or was cancelled. It needs the job
-  # image as well, so that a failed image, which skips every kind leg, does not read as a run of skipped legs.
+  # The evidence record (docs/developer/coverage.md#how-ci-feeds-it, Q-ARCH-811): the generator writes implemented.txt and the
+  # pages rendered from it from the test reports, and nothing else; the files are the artifact coverage-evidence, which the job
+  # Semantic Release of a later run publishes onto the branch coverage. The job summary lists what the record adds to and drops
+  # from the one on that branch, each with its reason. The reports are those of every tier: unit, Angular, chart and integration
+  # of this run, which must have passed (they run on every push, so the next run brings them), the kind legs of this run whose
+  # report is whole (green or red: a failing test vetoes its requirement), and for each kind leg without one the report made for
+  # the nearest commit, this one or an ancestor, from this workflow or from the nightly, at most a week old
+  # (tools/fetch-e2e-reports.sh). The job waits for the kind legs and runs whatever became of them; it needs no job image: a
+  # failed image skips every leg, and each is then carried like a leg the change did not start.
   coverage-evidence:
     name: coverage evidence (implemented.txt)
-    needs: [unit, web, integration, chart, image, e2e, e2e-npm, e2e-nuget, e2e-oci, e2e-deb, e2e-ansible, e2e-ci, e2e-bastion, e2e-vuln]
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    needs: [unit, web, integration, chart, e2e, e2e-npm, e2e-nuget, e2e-oci, e2e-deb, e2e-ansible, e2e-ci, e2e-bastion, e2e-vuln]
+    if: ${{ !cancelled() && needs.unit.result == 'success' && needs.web.result == 'success' && needs.integration.result == 'success' && needs.chart.result == 'success' }}
     runs-on: self-hosted
     timeout-minutes: 15
     permissions:
       contents: read
-      actions: read  # the reports of the kind legs that did not run in this run (tools/fetch-e2e-reports.sh)
+      actions: read  # the reports of earlier runs (tools/fetch-e2e-reports.sh)
     steps:
+      # The whole history: a carried report is chosen by its commit's place before this one, and the summary compares with the
+      # record on the branch coverage.
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Go
@@ -3422,9 +3424,10 @@ jobs:
           ls -l .out/reports/*/*.json .out/reports/*/*.xml
           if compgen -G ".out/reports-e2e/*/*.json" >/dev/null; then ls -l .out/reports-e2e/*/*.json; fi
 
-      # Q-ROAD-11: for every kind leg without a report in this run, the newest report of that leg on main, from Test and Release or
-      # from the nightly. Their failing tests veto like the ones of this run.
-      - name: The newest reports of the kind legs that did not run in this run
+      # Q-ROAD-11, Q-ARCH-811: a report of this run that is not whole is set aside; for every kind leg without a whole report here,
+      # the report made for the nearest commit, this one or an ancestor, from Test and Release or from the nightly, at most a week
+      # old. Their failing tests veto like the ones of this run.
+      - name: The reports of the kind legs that have no whole report in this run
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -3432,21 +3435,31 @@ jobs:
           mkdir -p .out/reports-e2e
           tools/fetch-e2e-reports.sh .out/reports-e2e .out/reports-carried | tee .out/carried.txt
 
-      - name: Rules, no claim without a passing test, and the evidence record written from the reports
+      # The record is what the reports prove; it fails on a test name with an ID the specification does not define and on a cut
+      # report, never on what it adds or drops (main holds no record to compare, Q-ARCH-811).
+      - name: The evidence record written from the reports
         run: |
           set -euo pipefail
           args=()
-          for f in .out/reports/*/*.json .out/reports/*/*.xml .out/reports-e2e/*/*.json; do args+=(-tests "$f"); done
+          for f in .out/reports/*/*.json .out/reports/*/*.xml; do args+=(-tests "$f"); done
+          for f in .out/reports-e2e/*/*.json; do
+            [ -e "$f" ] && args+=(-tests "$f")
+          done
           for f in .out/reports-carried/*/*.json; do
             [ -e "$f" ] && args+=(-carried "$f")
           done
+          if git show origin/coverage:docs/coverage/implemented.txt > .out/previous.txt 2>/dev/null; then
+            args+=(-previous .out/previous.txt)
+          else
+            echo "the branch coverage holds no record yet; nothing to compare with"
+          fi
           rc=0
-          go run ./internal/tools/coverage -claims "${args[@]}" > .out/evidence.txt || rc=$?
+          go run ./internal/tools/coverage "${args[@]}" > .out/evidence.txt || rc=$?
           cat .out/evidence.txt
           {
             echo '### Requirement evidence'
             echo '```'
-            grep -E '^(implemented:|newly proven:|withdrawn by|  R-)' .out/evidence.txt || true
+            grep -E '^(tests:|implemented:|newly proven:|no longer proven:|  R-)' .out/evidence.txt || true
             echo '```'
             echo '### Reports of earlier runs'
             echo '```'
@@ -3467,7 +3480,7 @@ jobs:
           retention-days: 14
 
   # The unit and integration profiles merged (make coverage-report): the job summary, and the README's badge as the artifact
-  # coverage-badge, which no release commits since Q-ARCH-457.
+  # coverage-badge, which the job Semantic Release of a later run publishes onto the branch coverage (Q-ARCH-811).
   coverage-report:
     name: Combined Coverage Report
     needs: [unit, integration]
@@ -3569,13 +3582,18 @@ jobs:
   # docs/developer/releasing.md). Until the first stable release only the jobs below gate it (owner, 2026-11-10, Q-ARCH-457): the
   # integration and kind legs, and the coverage jobs that need them, still run on every push and do not hold a release back.
   # `compat` is out of these needs while that job is switched off (Q-ARCH-340): a skipped need would skip the release. It goes back in, after
-  # `workflows`, when the job is switched on.
+  # `workflows`, when the job is switched on. After the release the job publishes the newest evidence record and coverage badge
+  # that a completed run of this commit or an ancestor wrote onto the branch coverage (Q-ARCH-811); it waits for neither, and
+  # main gets no commit from it.
   semantic-release:
     name: Semantic Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [versions, lint, gosec, govulncheck, cyclomatic-complexity, generate, nuget-vectors, build-no-node, unit, web, malware-scan, chart, image, sbom-generator, container-scan, workflows, coverage, release-tooling]
     runs-on: self-hosted
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read  # the record and the badge of earlier runs (tools/publish-coverage-record.sh); the push uses the App's token
     steps:
       # The GitHub App of the organisation, scoped to this repository; the token expires after an hour
       # and is revoked at the end of the job. Not GITHUB_TOKEN: a release created with it would not
@@ -3586,7 +3604,7 @@ jobs:
         with:
           client-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          permission-contents: write  # tag, release, @semantic-release/git commit
+          permission-contents: write  # tag, release, and the push of the branch coverage
 
       - name: Checkout
         uses: actions/checkout@v7
@@ -3618,3 +3636,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: npx semantic-release
+
+      # After the release, never before it: a missing, older or unreadable record and a push that is refused three times leave
+      # the branch as it is and say so in the log; nothing here holds or fails the release (continue-on-error for a defect of
+      # the script itself). The push uses the App's token that the checkout stored; the API calls the job's own token.
+      - name: Install the tools the record's publish uses
+        timeout-minutes: 9
+        continue-on-error: true
+        run: .github/scripts/apt-install.sh jq unzip
+
+      - name: The newest evidence record and coverage badge onto the branch coverage
+        timeout-minutes: 10
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: tools/publish-coverage-record.sh

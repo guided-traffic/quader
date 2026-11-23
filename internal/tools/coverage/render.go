@@ -99,7 +99,16 @@ func renderChecklist(m *model) string {
 		"[README.md](README.md#how-the-numbers-are-produced).",
 		"",
 	}
-	if anyImpl {
+	switch {
+	case !m.record:
+		out = append(out,
+			"**Status.** This checklist shows what the specification covers. Which requirements are implemented is in the",
+			"evidence record the pipeline writes from the test reports onto the branch `"+recordBranch+"`, with this checklist",
+			"rendered from it ([checklist.md there]("+recordPage+"checklist.md)). *specified*: at least one spec",
+			"requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority",
+			"*Out of scope*, open is the intended end state.",
+		)
+	case anyImpl:
 		out = append(out,
 			fmt.Sprintf("**Status.** %s of %s spec requirements are implemented: a passing test names them and no",
 				num(m.implementedReqs()), num(len(m.Reqs))),
@@ -108,7 +117,7 @@ func renderChecklist(m *model) string {
 			"requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no",
 			"requirement does. For entries with priority *Out of scope*, open is the intended end state.",
 		)
-	} else {
+	default:
 		out = append(out,
 			"**Status.** Nothing is implemented. *specified*: at least one spec requirement lists the feature",
 			"in its `Covers:` line. *open*: no requirement does. For entries with priority *Out of scope*,",

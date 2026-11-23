@@ -95,9 +95,18 @@ func blockHeadline(m *model) []string {
 		}
 	}
 	nImpl := m.countImplemented(feats)
-	kind := "measured from passing tests that name requirements (Q-ROAD-4)"
+	implemented := []string{
+		"**Implemented**", fmt.Sprintf("**%s** (%d of %s catalog features)", pct(nImpl, len(feats)), nImpl, num(len(feats))),
+		"measured from passing tests that name requirements (Q-ROAD-4)",
+	}
+	if !m.record {
+		implemented = []string{
+			"**Implemented**", fmt.Sprintf("in the evidence record on the branch `%s` ([this page there](%sREADME.md))", recordBranch, recordPage),
+			"measured by the pipeline from passing tests that name requirements (Q-ROAD-4, Q-ARCH-811)",
+		}
+	}
 	rows := [][]string{
-		{"**Implemented**", fmt.Sprintf("**%s** (%d of %s catalog features)", pct(nImpl, len(feats)), nImpl, num(len(feats))), kind},
+		implemented,
 		{
 			"**MVP features covered by spec requirements**",
 			fmt.Sprintf("**%s** (%d of %d)", pct(m.countSpecified(mvp), len(mvp)), m.countSpecified(mvp), len(mvp)),
@@ -143,18 +152,22 @@ func blockPriority(m *model) []string {
 	var rows [][]string
 	row := func(label string, fs []feature) []string {
 		s := m.countSpecified(fs)
-		return []string{
-			label, num(len(fs)), num(s), num(len(fs) - s), pct(s, len(fs)),
-			num(m.pulledByMVP(fs)), num(m.countImplemented(fs)),
+		r := []string{label, num(len(fs)), num(s), num(len(fs) - s), pct(s, len(fs)), num(m.pulledByMVP(fs))}
+		if m.record {
+			r = append(r, num(m.countImplemented(fs)))
 		}
+		return r
 	}
 	for _, pr := range priorities() {
 		rows = append(rows, row("**"+pr+"**", m.onlyPriority(pr)))
 	}
 	rows = append(rows, row("**Total**", m.Features))
-	return table(
-		[]string{"Priority", "Features", "Specified", "Open", "Specified share", "Covered by an MVP requirement", "Implemented"},
-		rows, []string{"---", "---:", "---:", "---:", "---:", "---:", "---:"})
+	hdr := []string{"Priority", "Features", "Specified", "Open", "Specified share", "Covered by an MVP requirement"}
+	align := []string{"---", "---:", "---:", "---:", "---:", "---:"}
+	if m.record {
+		hdr, align = append(hdr, "Implemented"), append(align, "---:")
+	}
+	return table(hdr, rows, align)
 }
 
 func pageRows(m *model, pages []*page) [][]string {
@@ -230,21 +243,27 @@ func blockAudiences(m *model) []string {
 		if topText == "" {
 			topText = "none"
 		}
-		rows = append(rows, []string{
+		r := []string{
 			"**" + a.Name + "**",
 			fmt.Sprintf("%d of %d specified, %d open (%s)", ms, mvp, mvp-ms, pct(ms, mvp)),
 			fmt.Sprintf("%d of %d specified, %d open (%s)", bs, both, both-bs, pct(bs, both)),
-			num(m.countImplemented(feats, audiencePriorities()...)),
-			topText,
-		})
+		}
+		if m.record {
+			r = append(r, num(m.countImplemented(feats, audiencePriorities()...)))
+		}
+		rows = append(rows, append(r, topText))
 		var links []string
 		for _, rel := range a.Pages {
 			links = append(links, fmt.Sprintf("[%s](../features/%s)", rel, rel))
 		}
 		defs = append(defs, []string{"**" + a.Name + "**", a.Who, list(links, ", ")})
 	}
-	out := table([]string{"Audience", "MVP entries", "MVP and P1 entries", "Implemented", "Most open entries (MVP and P1)"},
-		rows, []string{"---", "---", "---", "---:", "---"})
+	hdr := []string{"Audience", "MVP entries", "MVP and P1 entries"}
+	align := []string{"---", "---", "---"}
+	if m.record {
+		hdr, align = append(hdr, "Implemented"), append(align, "---:")
+	}
+	out := table(append(hdr, "Most open entries (MVP and P1)"), rows, append(align, "---"))
 	out = append(out, "", "Pages counted per audience:", "")
 	out = append(out, table([]string{"Audience", "Who", "Catalog pages counted"}, defs, nil)...)
 	var uncounted []*page

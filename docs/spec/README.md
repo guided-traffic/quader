@@ -1,7 +1,8 @@
 # Quader specification
 
-Status: built in large part. Each page's status line says what of it is built and what is not;
-[docs/coverage/implemented.txt](../coverage/implemented.txt) lists the requirements whose tests pass, and lags the code.
+Status: built in large part. Each page's status line says what of it is built and what is not; the evidence record on the branch
+`coverage` lists the requirements whose tests pass ([docs/coverage](../coverage/README.md) says where it is and how the pipeline
+writes it).
 
 This directory is Quader's target design: what Quader will do and how, requirement by
 requirement. Each requirement names the catalog features it covers (`Covers:` line, IDs from

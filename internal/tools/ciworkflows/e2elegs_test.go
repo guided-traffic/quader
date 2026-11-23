@@ -418,10 +418,15 @@ func TestTheE2ELegsTakeTheirRunFromTheDecision(t *testing.T) {
 			}
 		}
 	}
+	// The evidence runs past a skipped, failed or cancelled leg (Q-ARCH-811): its condition names the result of no leg.
 	evidence := w.Jobs["coverage-evidence"]
-	for _, part := range []string{"!cancelled()", "'failure'", "'cancelled'"} {
-		if !strings.Contains(evidence.If, part) {
-			t.Errorf("coverage-evidence runs if %q, which lacks %q: a skipped leg would skip it", evidence.If, part)
+	if !strings.Contains(evidence.If, "!cancelled()") {
+		t.Errorf("coverage-evidence runs if %q, which lacks !cancelled(): a skipped leg would skip it", evidence.If)
+	}
+	for _, leg := range append([]string{""}, e2eLegs...) {
+		name := strings.TrimSuffix("e2e-"+leg, "-")
+		if strings.Contains(evidence.If, "needs."+name+".") {
+			t.Errorf("coverage-evidence runs if %q, which asks for the result of %s: a red leg would cost the record", evidence.If, name)
 		}
 	}
 	needs := needsOf("semantic-release", w.Jobs["semantic-release"])

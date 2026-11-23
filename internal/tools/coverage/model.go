@@ -27,10 +27,14 @@ type model struct {
 	Reqs        []requirement
 	coveredBy   map[string][]requirement
 	implemented map[string]bool // requirement IDs with passing evidence
+	// record is false where no evidence record is rendered (main, Q-ARCH-811): the pages then show the specification's coverage
+	// and point to the record on the branch coverage instead of counting implemented entries.
+	record bool
 }
 
+// newModel builds the model; a nil implemented means no record (main's pages), an empty one a record that proves nothing.
 func newModel(c *corpus, order []string, implemented map[string]bool) *model {
-	m := &model{Reqs: c.Reqs, coveredBy: map[string][]requirement{}, implemented: implemented}
+	m := &model{Reqs: c.Reqs, coveredBy: map[string][]requirement{}, implemented: implemented, record: implemented != nil}
 	for _, rel := range order {
 		p := c.Pages[rel]
 		m.Pages = append(m.Pages, p)

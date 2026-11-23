@@ -836,7 +836,7 @@ applies to the npm and NuGet parts of this phase.
   0.33 GiB within their targets; V-4, V-5b, V-7b and V-8 not, F-43); the nightly run 41748522448 reports them on the CI runner, where
   V-1 did not finish within 40 min (F-43)
 - 🟢 E4b.9: every MVP requirement of the page has a passing test that names it: R-VULN-001 to R-VULN-021 and R-VULN-024 to
-  R-VULN-027 in the unit, integration and chart reports ([implemented.txt](../coverage/implemented.txt)); R-VULN-022, R-VULN-023 and
+  R-VULN-027 in the unit, integration and chart reports (the evidence record, `implemented.txt`); R-VULN-022, R-VULN-023 and
   R-VULN-029 in the end-to-end set `vuln` (journeys and the acceptance suite, which the coverage generator does not read, as for
   R-BAS-049); R-VULN-028 in the nightly run `vuln-perf`
 

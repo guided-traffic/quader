@@ -11146,6 +11146,10 @@ Context: Semantic Release needed all 31 jobs of a run. One intermittent leg held
 
 **Applied:** `.github/workflows/release.yml`; [releasing.md](../developer/releasing.md).
 
+Since 2026-11-23 the consequence for the badge and the record no longer holds: the release job publishes the newest ones that earlier runs
+wrote onto the branch `coverage`, without waiting for them and without a commit to `main`
+([Q-ARCH-811](#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)).
+
 ### Q-ARCH-594 · A run of `main` is never cancelled or replaced by a newer push; only the run at the tip releases
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11182,6 +11186,110 @@ landing show it. Revisit when actionlint knows `queue`, or when overlapping runs
 **Applied in the spec:** none (CI wiring). Code: [release.yml](../../.github/workflows/release.yml) (`concurrency`); test
 `TestARunOfMainIsNeverCancelledByAnother` ([concurrency_test.go](../../internal/tools/ciworkflows/concurrency_test.go)). Elsewhere:
 [releasing.md](../developer/releasing.md#when-no-release-comes), [coverage.md](../developer/coverage.md#how-ci-feeds-it).
+
+### Q-ARCH-811 · The pipeline writes the evidence record and the coverage badge onto the branch `coverage`; `main` holds neither
+
+Status: **Decided by the development agent** (2026-11-23) — selected from the options below; the owner reviews it at the walkthrough. It
+changes the second half of the owner's decision of 2026-11-07 ([coverage.md](../developer/coverage.md#why-ci-writes-the-record): "CI writes
+the record, Semantic Release commits it; the check fails only on an unproven claim"): CI still writes the record, the release job now
+publishes it onto a branch of its own instead of committing it to `main`, and no check fails on a claim, because `main` holds none. Refines
+[Q-ARCH-457](#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release),
+[Q-ROAD-11](../coverage/roadmap.md#q-road-11--the-evidence-record-reads-the-reports-of-every-test-tier) and
+[Q-ROAD-12](../coverage/roadmap.md#q-road-12--a-failing-test-in-the-report-of-an-earlier-run-withdraws-the-requirement-and-does-not-fail-the-evidence-job).
+
+Context: since the minimal gate of Q-ARCH-457 (2026-11-10) no release committed the evidence record (`docs/coverage/implemented.txt`,
+`checklist.md`, the generated blocks of the coverage README) or the coverage badge. Read on 2026-11-23: the badge said 83.8 % of
+2026-11-09; the committed record was that of release 0.34.1, moved since by hand in eleven commits, and held 657 requirements, the record the
+pipeline wrote in Test and Release 45133371730 1,059. The committed record held no requirement of Ansible Galaxy (its specification landed
+on 2026-11-10, its tests after the last release commit; the pipeline's record of run 45159763759 holds 42 of its 47) and none of the
+signatures (70 of 78 in that record). The job `coverage evidence` ran only when no leg it needed was red: of seven completed runs of `main`
+read that day (45133371730 to 45185325770), three had no record because `e2e (access-long)` or `e2e (vuln)` was red. `tools/fetch-e2e-reports.sh`
+took the newest report of a leg by the artifact's creation time: run 45159763759 (commit fc3ccd15f) carried the vulnerability report of run
+45160021052, a later commit's. And a test that names a requirement to assert that the route refuses it counted as evidence for it: the
+record listed R-NPM-037 (search), R-NPM-018 (deprecate) and R-NPM-021 (login), whose scenarios of the npm client matrix hold the refusal of
+R-NPM-043, and R-UI-039 (webhooks), which the journey of the exposure rule named by an old number.
+
+Landings push stacks of commits to `main` several times an hour, and semantic-release publishes nothing from a commit that `main` has moved
+past (Q-ARCH-594).
+
+**Where the record and the badge go**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The release commits them to `main` again (`@semantic-release/git`, as before Q-ARCH-457) | `chore(release): <version> [skip ci]` on `main`, the tag on it | One place; the pages on `main` show the status | The plugin pushes before the tag: a landing pushed in between rejects that push and fails the release. Every release moves `main`, so a landing that fetched before it is rejected, about once per release; a landing that changed the specification conflicts in `checklist.md` and the README blocks |
+| (b) A step after the release commits them on top of the tip of `main`, retried | Never fails the release | No failed release | A `[skip ci]` commit on top of a push whose run is still going makes that run's semantic-release find `main` ahead and publish nothing; the rejections and conflicts of (a) stay; the pages must be rendered again on the tip's tree in the release job |
+| (c) A branch of their own, `coverage`, written by the release job (chosen) | Each publish is one commit whose tree is the record's commit with the four files and whose parents are the branch's head and that commit; `main` gets no commit from the pipeline | No landing is rejected and no release is lost by it; no conflict in the generated pages; the branch is browsable with every relative link; a hand edit on `main` is refused by the generator itself | The pages on `main` show the specification's coverage only and point to the branch; the badge's URL moves; the first publish creates the branch |
+| (d) As (c), written by the evidence job at the end of every run | The freshest record | One run sooner | A credential that can push in a job that runs after every leg and on pull requests too; the release job holds one already |
+
+**From which run a record is whole**
+
+A record is the set of requirements that a passing test of the reports names and no failing test names (Q-ROAD-5), from:
+
+1. the reports of unit, Angular, chart and the four integration shards of the run itself. These run on every push; the job writes a record
+   only when all of them passed, so that no record rests on a cut report of a tier that every later run brings again;
+2. for each kind leg, the run's own report when it is whole, green or red: a failing test vetoes its requirement, as Q-ROAD-12 lets a
+   failing carried report do. A report is whole when every package it started also ended (`go test -json`'s `start` and the package's
+   `pass`, `fail` or `skip`); a report of a leg stopped while a package ran is set aside and the leg counts as not run;
+3. for each kind leg without a whole report in the run, the report made for the nearest commit, the run's own or its nearest ancestor on
+   `main`, whichever workflow wrote it (a leg of Test and Release a push started, or the nightly, which runs every format's set). Not the
+   newest by creation time: a newer commit's report is never carried into an older commit's record. A candidate comes from a completed,
+   not cancelled run of this repository started by a push, a schedule or a dispatch;
+4. a carried report counts for at most a week after its run started (`QUADER_E2E_REPORT_MAX_AGE_HOURS`, 168). The nightly runs every
+   leg daily, so a leg's report is normally less than two days old; a week leaves room for nightlies lost in a row and for the legs that
+   run on a dispatch alone (`upgrade-release`, the closing legs), and the job summary names every leg whose reports are all older.
+
+So a requirement cannot stay implemented for ever on the report of a test that no longer exists: a deleted test's requirement leaves
+the record with the next run of its leg (a day, by the nightly), and at the latest when the newest report of that leg is a week old.
+The job runs past a skipped, failed or cancelled leg (it needs no leg's result), so every run whose four always-run tiers pass writes a
+record; the summary compares it with the branch's and gives each dropped requirement its reason. Nothing fails on a dropped
+requirement: the record is a function of the reports and nobody edits it, so a failure would stall it with no one able to repair it.
+The generator still fails on a test name with an ID the specification does not define and on a cut report.
+
+**A test that holds a refusal**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Name convention only: such a test names the refusal's requirement (R-NPM-043) and the unbuilt one in words | No tool change | Nothing to learn | Nothing tells a mistake from intent; the case comes back with every format whose P1 route answers a refusal |
+| (b) A marker after the ID: `R-NPM-037-unbuilt`, `TestR_NPM_037_unbuilt_…` (chosen) | The generator reads the marked ID as "held as not built": the test proves the IDs it names plainly (the refusal's requirement), and a passing one keeps the marked requirement out of the record; a failing one says nothing about it (the refusal may be gone because the requirement was built); a marked ID the specification does not define fails like any unknown ID | The intent is in the name, checked against the specification; a requirement cannot be implemented while a passing test says it is not built | One more word in the naming rule |
+| (c) A list of unbuilt requirements in the spec or the tool | The record subtracts the list | Central | A second record by hand, the drift Q-ROAD-4 rejects |
+
+The old `-claims` mode compared the committed record with the reports and failed on a claim the reports did not prove; it never knew
+what a test asserts, so it could not tell a refusal from the requirement either, and it goes with the committed record.
+
+**The commit on the branch.** Subject `chore(coverage): the evidence record of <commit> and the coverage badge of <commit> [skip ci]`
+(no workflow runs on a push to `coverage`; the marker keeps one from starting if a trigger is ever widened); trailers `Record-Commit`,
+`Record-Run`, `Badge-Commit`, `Badge-Run` and `Released-Commit`; files `docs/coverage/implemented.txt`, `docs/coverage/checklist.md` and
+`docs/coverage/README.md` from the artifact `coverage-evidence` and `.github/badges/coverage.json` from `coverage-badge`, on the tree of the
+record's commit. The job Semantic Release publishes after `npx semantic-release`, on every push run that reaches it: the record and the badge
+of the completed push run of release.yml whose commit is the released one or its nearest ancestor that has each (the release's own run is
+still going and has neither, so the record is usually one push behind the release). It publishes only what is newer than what the branch
+holds, by ancestry, so an older run's job never moves the branch back. The push is never forced; refused because another job pushed first,
+it is decided again on the new head, three times at most, then given up with a warning for the next release. A missing or older record, an
+unreadable artifact and an API that does not answer leave the branch as it is and say so in the log; the step cannot fail the job
+(`continue-on-error`).
+
+**Token.** The push needs `contents: write` on the repository, which the App's token of the job already holds for the tag and the release
+(`permission-contents: write`, and no other permission); a token cannot be limited to one branch, so the branch adds no reach the job did
+not have. The job's own `GITHUB_TOKEN` gets `actions: read` beside `contents: read`, to list the runs and download the two artifacts. A
+pull request's run, a fork's and a run of a commit beside `main` are never a source.
+
+**A hand edit.** `main` holds neither `docs/coverage/implemented.txt` nor `.github/badges/coverage.json`, and the generator refuses a tree
+that holds either (exit 1, in the plain run and in `-check`, so the gating job `coverage` fails); the pipeline's commits never reach
+`main`, so the check needs no author or subject to tell them from a builder's.
+
+**Choice:** (c), with the record whole as set out above, and (b) for a test that holds a refusal. **Rationale:** (c) removes the
+pipeline from `main` altogether, so neither a landing nor a release can lose to the record, and a hand edit is refused by the tool every
+builder runs. The development agent revisits it when the owner wants the implementation status on `main`'s pages again; the price is the race of option (b) of the first
+table, which then needs a release that commits before it tags.
+
+**Applied in the spec:** none (CI wiring and the coverage generator). Code: [release.yml](../../.github/workflows/release.yml)
+(`coverage-evidence`, `semantic-release`), [.releaserc.json](../../.releaserc.json) (no `@semantic-release/git`),
+[fetch-e2e-reports.sh](../../tools/fetch-e2e-reports.sh), [publish-coverage-record.sh](../../tools/publish-coverage-record.sh),
+[internal/tools/coverage](../../internal/tools/coverage/main.go). Tests: `TestFetchE2EReportsChoosesByCommit`,
+`TestPublishCoverageRecordFromTheNearestRun`, `TestTheRecordIsPublishedAfterTheReleaseAndHoldsNothing`
+([coveragerecord_test.go](../../internal/tools/ciworkflows/coveragerecord_test.go)), and the `Q-ARCH-811` cases of
+[coverage_test.go](../../internal/tools/coverage/coverage_test.go). Elsewhere: [coverage.md](../developer/coverage.md#the-record-on-the-branch-coverage),
+[releasing.md](../developer/releasing.md#release-flow), [the coverage page](../coverage/README.md#how-the-numbers-are-produced).
 
 ### Q-ARCH-446 · A response to a request whose body is unread is sent first, then the body is read and discarded within a bound
 

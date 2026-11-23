@@ -19,10 +19,19 @@ import (
 
 const (
 	exitOK    = 0
-	exitData  = 1 // rule violation, bad input, broken link
+	exitData  = 1 // rule violation, bad input, broken link, a record or a badge on main
 	exitStale = 2 // -check: a committed file differs from the regenerated one
-	exitClaim = 3 // -claims: implemented.txt lists a requirement the reports do not prove
 	exitUsage = 64
+)
+
+// The evidence record and the coverage badge are written by the pipeline onto the branch recordBranch and never committed to
+// main (Q-ARCH-811). Without -tests the generator renders main's pages without an implementation status and refuses a tree that
+// holds either file.
+const (
+	recordBranch = "coverage"
+	recordPage   = "https://github.com/guided-traffic/quader/blob/" + recordBranch + "/docs/coverage/"
+	recordRel    = "docs/coverage/implemented.txt"
+	badgeRel     = ".github/badges/coverage.json"
 )
 
 type stringList []string
@@ -31,14 +40,15 @@ func (s *stringList) String() string     { return strings.Join(*s, ",") }
 func (s *stringList) Set(v string) error { *s = append(*s, v); return nil }
 
 type options struct {
-	Repo   string
-	Check  bool
-	Claims bool
-	Links  bool
-	Tests  []string
-	// Carried are reports of earlier runs of legs that did not run in this one (Q-ROAD-11). They count as evidence like Tests; a
-	// requirement that only they withdraw with a failing test is written out of implemented.txt and is not an unproven claim.
+	Repo  string
+	Check bool
+	Links bool
+	Tests []string
+	// Carried are reports of earlier runs of legs that did not run in this one (Q-ROAD-11). They prove and veto like Tests; the
+	// output names a requirement that only their failing test keeps out of the record.
 	Carried []string
+	// Previous is the record the pipeline published last (on the branch coverage); the output lists what this record adds and drops.
+	Previous string
 }
 
 func main() {
@@ -52,16 +62,14 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	opts := options{}
 	fs.StringVar(&opts.Repo, "repo", "", "repository root (default: nearest parent directory holding go.mod)")
 	fs.BoolVar(&opts.Check, "check", false, "write nothing; exit 2 when a generated file differs from what would be generated")
-	fs.BoolVar(&opts.Claims, "claims", false, "with -tests, the CI form: write the generated files from the reports; exit 3 when the committed "+
-		"implemented.txt lists a requirement the reports do not prove")
 	fs.BoolVar(&opts.Links, "links", false, "check the relative links and anchors of every Markdown file instead of generating")
 	fs.Var(&tests, "tests", "test report with requirement IDs in test names: `go test -json` stream or JUnit XML; "+
-		"'-' reads stdin; repeatable, further file arguments count too")
-	fs.Var(&carried, "carried", "like -tests, for a report of an earlier run of a leg that did not run in this one; a requirement that "+
-		"such a report alone withdraws with a failing test is written out of implemented.txt and reported, and does not fail -claims; "+
-		"repeatable, needs -tests")
+		"'-' reads stdin; repeatable, further file arguments count too; writes the evidence record from the reports (the pipeline's form)")
+	fs.Var(&carried, "carried", "like -tests, for a report of an earlier run of a leg that did not run in this one; repeatable, needs -tests")
+	fs.StringVar(&opts.Previous, "previous", "", "with -tests, the record published last: list the requirements this record adds and drops")
 	fs.Usage = func() {
-		fmt.Fprintf(stderr, "usage: coverage [-repo dir] [-check | -claims] [-tests report]... [-carried report]... [report...]\n"+
+		fmt.Fprintf(stderr, "usage: coverage [-repo dir] [-check]\n"+
+			"       coverage [-repo dir] -tests report... [-carried report]... [-previous implemented.txt] [report...]\n"+
 			"       coverage [-repo dir] -links\n\n")
 		fs.PrintDefaults()
 	}
@@ -82,18 +90,18 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		opts.Repo = root
 	}
 	if opts.Links {
-		if len(opts.Tests) > 0 || len(opts.Carried) > 0 || opts.Check || opts.Claims {
-			fmt.Fprintln(stderr, "coverage: -links does not combine with -check, -claims, -tests or -carried")
+		if len(opts.Tests) > 0 || len(opts.Carried) > 0 || opts.Previous != "" || opts.Check {
+			fmt.Fprintln(stderr, "coverage: -links does not combine with -check, -tests, -carried or -previous")
 			return exitUsage
 		}
 		return runLinks(opts.Repo, stdout, stderr)
 	}
-	if opts.Claims && (opts.Check || len(opts.Tests) == 0) {
-		fmt.Fprintln(stderr, "coverage: -claims needs -tests and does not combine with -check")
+	if opts.Check && len(opts.Tests) > 0 {
+		fmt.Fprintln(stderr, "coverage: -check does not combine with -tests: main holds no record to compare with (Q-ARCH-811)")
 		return exitUsage
 	}
-	if len(opts.Carried) > 0 && len(opts.Tests) == 0 {
-		fmt.Fprintln(stderr, "coverage: -carried needs -tests")
+	if (len(opts.Carried) > 0 || opts.Previous != "") && len(opts.Tests) == 0 {
+		fmt.Fprintln(stderr, "coverage: -carried and -previous need -tests")
 		return exitUsage
 	}
 	return runGenerate(opts, stdin, stdout, stderr)
@@ -155,43 +163,22 @@ func runGenerate(opts options, stdin io.Reader, stdout, stderr io.Writer) int {
 		known[r.ID] = true
 	}
 
-	implPath := filepath.Join(opts.Repo, "docs", "coverage", "implemented.txt")
-	committed, err := readImplemented(implPath, known)
-	if err != nil {
-		return fail(stderr, []string{err.Error()})
-	}
-	implemented := committed
+	implPath := filepath.Join(opts.Repo, filepath.FromSlash(recordRel))
 	targets := map[string]string{}
+	// set stays nil without -tests: main's pages are rendered without an implementation status (Q-ARCH-811).
+	var set map[string]bool
 	if len(opts.Tests) > 0 {
-		fromRun, fromEarlier := newEvidence(), newEvidence()
-		for _, path := range opts.Tests {
-			if err := fromRun.readFile(path, stdin); err != nil {
-				return fail(stderr, []string{err.Error()})
-			}
+		ids, code := recordFromReports(opts, known, stdin, stdout, stderr)
+		if code != exitOK {
+			return code
 		}
-		for _, path := range opts.Carried {
-			if err := fromEarlier.readFile(path, stdin); err != nil {
-				return fail(stderr, []string{err.Error()})
-			}
-		}
-		ev := merged(fromRun, fromEarlier)
-		ids, unknown := ev.implemented(known)
-		if len(unknown) > 0 {
-			return fail(stderr, []string{"test names carry requirement IDs that no spec page defines: " + strings.Join(unknown, ", ")})
-		}
-		implemented = ids
 		targets[implPath] = renderImplemented(ids)
-		fmt.Fprintf(stdout, "tests: %d results read, %d requirements with passing evidence, %d with a failing test\n",
-			ev.Tests, len(ids), len(ev.Failed))
-		if opts.Claims {
-			if code := checkClaims(committed, ids, withdrawnByEarlier(fromRun, fromEarlier), stdout, stderr); code != exitOK {
-				return code
-			}
+		set = map[string]bool{}
+		for _, id := range ids {
+			set[id] = true
 		}
-	}
-	set := map[string]bool{}
-	for _, id := range implemented {
-		set[id] = true
+	} else if errs := heldByTheBranch(opts.Repo); len(errs) > 0 {
+		return fail(stderr, errs)
 	}
 
 	order := pageOrder(filepath.Join(docs, "features"), c.Pages)
@@ -234,9 +221,6 @@ func runGenerate(opts options, stdin io.Reader, stdout, stderr io.Writer) int {
 	targets[filepath.Join(docs, "coverage", "checklist.md")] = checklist
 	targets[readmePath] = readme
 	targets[decisionsPath] = decisions
-	if _, ok := targets[implPath]; !ok {
-		targets[implPath] = renderImplemented(implemented)
-	}
 
 	printSummary(stdout, m, c)
 
@@ -287,35 +271,62 @@ func checkTargets(repo string, paths []string, targets map[string]string, explai
 	return exitOK
 }
 
-// checkClaims is the CI form of the evidence check: the committed list may lag behind the reports (a requirement proven for
-// the first time is written by this run and committed with the release), but it must not claim a requirement the reports no
-// longer prove (a test that named it was removed, renamed or skipped). A claim that only a failing test of an earlier run's
-// report takes away is no such case: the veto rule withdraws it from the written record and the output says so (Q-ROAD-11).
-func checkClaims(committed, proven []string, withdrawnByEarlier map[string]bool, stdout, stderr io.Writer) int {
-	added := missingFrom(proven, committed)
-	var unproven, withdrawn []string
-	for _, id := range missingFrom(committed, proven) {
-		if withdrawnByEarlier[id] {
-			withdrawn = append(withdrawn, id)
-		} else {
-			unproven = append(unproven, id)
+// recordFromReports is the pipeline's form (Q-ARCH-811): the record is what the reports prove, and nothing else. A test that names
+// an ID the specification does not define fails it; with -previous it lists the requirements the record adds and the ones it
+// drops, each with the reason, and fails on neither: no committed list is compared, because main holds none.
+func recordFromReports(opts options, known map[string]bool, stdin io.Reader, stdout, stderr io.Writer) ([]string, int) {
+	fromRun, fromEarlier := newEvidence(), newEvidence()
+	for _, path := range opts.Tests {
+		if err := fromRun.readFile(path, stdin); err != nil {
+			return nil, fail(stderr, []string{err.Error()})
 		}
 	}
+	for _, path := range opts.Carried {
+		if err := fromEarlier.readFile(path, stdin); err != nil {
+			return nil, fail(stderr, []string{err.Error()})
+		}
+	}
+	ev := merged(fromRun, fromEarlier)
+	ids, unknown := ev.implemented(known)
+	if len(unknown) > 0 {
+		return nil, fail(stderr, []string{"test names carry requirement IDs that no spec page defines: " + strings.Join(unknown, ", ")})
+	}
+	fmt.Fprintf(stdout, "tests: %d results read, %d requirements with passing evidence, %d with a failing test, %d held as not built\n",
+		ev.Tests, len(ids), len(ev.Failed), len(ev.Unbuilt))
+	if opts.Previous == "" {
+		return ids, exitOK
+	}
+	data, err := os.ReadFile(opts.Previous) //nolint:gosec // G304: a record named on the tool's command line
+	if err != nil {
+		return nil, fail(stderr, []string{"-previous: " + err.Error()})
+	}
+	previous, err := parseImplemented(string(data))
+	if err != nil {
+		return nil, fail(stderr, []string{"-previous " + opts.Previous + ": " + err.Error()})
+	}
+	added, dropped := missingFrom(ids, previous), missingFrom(previous, ids)
 	fmt.Fprintf(stdout, "newly proven: %d\n", len(added))
 	for _, id := range added {
 		fmt.Fprintf(stdout, "  %s\n", id)
 	}
-	fmt.Fprintf(stdout, "withdrawn by a failing test of an earlier run: %d\n", len(withdrawn))
-	for _, id := range withdrawn {
-		fmt.Fprintf(stdout, "  %s\n", id)
+	fmt.Fprintf(stdout, "no longer proven: %d\n", len(dropped))
+	for _, id := range dropped {
+		fmt.Fprintf(stdout, "  %s: %s\n", id, whyNotProven(id, known, fromRun, fromEarlier))
 	}
-	if len(unproven) == 0 {
-		return exitOK
+	return ids, exitOK
+}
+
+// heldByTheBranch names the record and the badge when the tree holds them: the pipeline writes both onto the branch coverage and
+// main holds neither (Q-ARCH-811), so a change that adds or edits either is refused, whoever made it.
+func heldByTheBranch(repo string) []string {
+	var errs []string
+	for _, rel := range []string{recordRel, badgeRel} {
+		if _, err := os.Stat(filepath.Join(repo, filepath.FromSlash(rel))); err == nil {
+			errs = append(errs, fmt.Sprintf("%s is in the tree: the pipeline writes the evidence record and the coverage badge onto the "+
+				"branch %s, and main holds neither (Q-ARCH-811); remove the file", rel, recordBranch))
+		}
 	}
-	fmt.Fprintf(stderr, "docs/coverage/implemented.txt claims %d requirements that no passing test of the reports names: %s\n"+
-		"(a test that named one was removed, renamed or skipped; if that was meant, take the ID out of implemented.txt and run the generator)\n",
-		len(unproven), strings.Join(unproven, ", "))
-	return exitClaim
+	return errs
 }
 
 // missingFrom returns the IDs of a that b does not hold, in the order of a.
@@ -331,28 +342,6 @@ func missingFrom(a, b []string) []string {
 		}
 	}
 	return out
-}
-
-// readImplemented reads docs/coverage/implemented.txt; a missing file is an
-// empty list. Every ID in it must be a requirement.
-func readImplemented(path string, known map[string]bool) ([]string, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // G304: path below the repository root given on the command line
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	ids, err := parseImplemented(string(data))
-	if err != nil {
-		return nil, fmt.Errorf("docs/coverage/implemented.txt: %w", err)
-	}
-	for _, id := range ids {
-		if !known[id] {
-			return nil, fmt.Errorf("docs/coverage/implemented.txt: %s is not a requirement of the spec", id)
-		}
-	}
-	return ids, nil
 }
 
 func printSummary(w io.Writer, m *model, c *corpus) {
@@ -383,8 +372,12 @@ func printSummary(w io.Writer, m *model, c *corpus) {
 		cov = append(cov, fmt.Sprintf("%s %d/%d", p, m.countSpecified(m.Features, p), m.countAll(m.Features, p)))
 	}
 	fmt.Fprintf(w, "coverage: %d specified, %d open; %s\n", m.countSpecified(m.Features), m.countOpen(m.Features), strings.Join(cov, "; "))
-	fmt.Fprintf(w, "implemented: %d of %d requirements, %d of %d features\n",
-		m.implementedReqs(), len(m.Reqs), m.countImplemented(m.Features), len(m.Features))
+	if m.record {
+		fmt.Fprintf(w, "implemented: %d of %d requirements, %d of %d features\n",
+			m.implementedReqs(), len(m.Reqs), m.countImplemented(m.Features), len(m.Features))
+	} else {
+		fmt.Fprintf(w, "implemented: not rendered here; the pipeline's record is on the branch %s\n", recordBranch)
+	}
 	fmt.Fprintf(w, "headings skipped inside code fences: %d\n", len(c.Fenced))
 	for _, l := range c.Fenced {
 		fmt.Fprintf(w, "  %s\n", l)

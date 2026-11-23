@@ -1162,7 +1162,7 @@ populate rule of R-AUTHZ-008 and R-AUTHZ-026. The catalog entries API-082 to API
   In CI: the set `mirror` green per change in Test and Release run 42116230650 (the time ratio logged, Q-REPO-197); the dispatched
   nightly run 42126196109 green in `mirror` with `QUADER_PERF_GATE=1` (99 % of the best install without the pass) and in
   `mirror-long` (the drain).
-- E6b.7: [implemented.txt](implemented.txt) lists R-REPO-050 to R-REPO-059 from the unit, chart and integration reports of the
+- E6b.7: the evidence record (`implemented.txt`) lists R-REPO-050 to R-REPO-059 from the unit, chart and integration reports of the
   closing commit.
 
 **Work packages** ([architecture.md](../spec/architecture.md) Q-ARCH-288, [developer/mirror.md](../developer/mirror.md)).
@@ -1764,6 +1764,10 @@ Status: **Decided by the development agent** — selected from the options below
 [coverage.md](../developer/coverage.md#why-ci-writes-the-record)). The veto reaches the reports of earlier runs too; what it takes from the
 record because of such a report does not fail the job
 ([Q-ROAD-12](#q-road-12--a-failing-test-in-the-report-of-an-earlier-run-withdraws-the-requirement-and-does-not-fail-the-evidence-job)).
+Since 2026-11-23 the record is no longer committed to `main`: the job writes it with `-tests … -carried … -previous …`, which fails on nothing
+the record adds or drops, the release job publishes it onto the branch `coverage`, and a passing test that names an ID with the marker
+`-unbuilt` keeps it out of the record
+([Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)).
 
 **Rationale:** Q-ROAD-4 ties status to evidence; this block says what counts as evidence. A veto makes a failing test
 visible in the status, not only in CI. The development agent would revisit the veto if flaky tests keep requirements
@@ -1920,7 +1924,10 @@ may run none of them) or run in another workflow (`performance.yml`, nightly). T
 **Choice:** (b). The job `coverage-evidence` now waits for the kind legs of its own run and for the Angular job
 ([Q-ROAD-13](#q-road-13--the-angular-reports-are-evidence)), so their reports are downloaded with the others. The report artifacts of the
 kind legs live 30 days, so a nightly that runs daily always leaves one per leg. A leg that never produced a report stays absent: the
-requirements only it proves are not proven, and `-claims` says so (exit 3) when the committed record still claims them.
+requirements only it proves are not proven, and `-claims` says so (exit 3) when the committed record still claims them. Revised on
+2026-11-23 by [Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither):
+the carried report is the one made for the nearest commit, this one or an ancestor, not the newest by creation time; a carried report
+counts for a week; a report that is not whole is passed over; and nothing fails on what the record drops.
 
 **Rationale:** E5.6 is about evidence, not about when a leg ran. Carrying the newest report of each leg is the smallest change that makes the
 record independent of the path filter, and it keeps the property of Q-ROAD-5 that a requirement is never claimed on the strength of a failing or
@@ -1947,7 +1954,10 @@ the reports do not prove, so a red nightly leg would hold every release until it
 | (c) Carried reports are read for proof only, their failures are ignored | A red leg changes nothing | No flicker | The record claims a requirement whose newest test is red: the failure Q-ROAD-5 rejects |
 
 **Choice:** (b). A claim that no report proves and no failing test contradicts (the test was removed or renamed, or the artifact expired) is
-still exit 3.
+still exit 3. Revised on 2026-11-23 by
+[Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither):
+`main` holds no committed record, so there is no claim to fail on; a failing test of this run vetoes like a carried one, and the job
+summary names each requirement the record drops with its reason.
 
 **Rationale:** The record states the newest evidence; whether a red long leg holds a release is the release rule's business, and that rule is the
 owner's. The development agent revisits this when the owner wants a red nightly leg to hold the release: the change is one flag in the

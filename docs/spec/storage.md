@@ -8890,7 +8890,7 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 
 Its entry in the decision log: [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy).
 
-Context: R-STOR-027 is in [implemented.txt](../coverage/implemented.txt) while the scrub is not built
+Context: R-STOR-027 is in the evidence record (`implemented.txt`) while the scrub is not built
 ([docs/developer/blob-store.md](../developer/blob-store.md) says so); the tests that name it test the lost content of a remote
 repository and the operator check.
 

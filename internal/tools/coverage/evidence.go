@@ -20,11 +20,46 @@ import (
 type evidence struct {
 	Passed map[string]bool
 	Failed map[string]bool
-	Tests  int // test results read, with or without an ID
+	// Unbuilt are the requirements a passing test holds as not built: it names them with the marker `-unbuilt` (`_unbuilt` in a
+	// Go function name) because it asserts the refusal that stands in for them (Q-ARCH-811). Such a test proves the refusal's own
+	// requirement, never the marked one, and it keeps the marked one out of the record.
+	Unbuilt map[string]bool
+	Tests   int // test results read, with or without an ID
 }
 
 func newEvidence() *evidence {
-	return &evidence{Passed: map[string]bool{}, Failed: map[string]bool{}}
+	return &evidence{Passed: map[string]bool{}, Failed: map[string]bool{}, Unbuilt: map[string]bool{}}
+}
+
+// unbuiltMarker follows a requirement ID that a test names because it holds the refusal of a requirement that is not built.
+const unbuiltMarker = "unbuilt"
+
+var (
+	unbuiltHyphen     = regexp.MustCompile(`R-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]+-` + unbuiltMarker)
+	unbuiltUnderscore = regexp.MustCompile(`R_[A-Z][A-Z0-9]*_[0-9]+_` + unbuiltMarker)
+)
+
+// unbuiltIn returns the requirement IDs a test name marks as not built: `R-NPM-037-unbuilt` or, in a Go function name,
+// `TestR_NPM_037_unbuilt_SearchIsRefused`. The marked ID follows the standalone rule of idsIn, and the marker ends at a character
+// that is no letter, digit or hyphen.
+func unbuiltIn(name string) []string {
+	var out []string
+	add := func(loc []int, startOK bool, sep string) {
+		if !startOK || loc[1] < len(name) && idChar(name[loc[1]]) {
+			return
+		}
+		id := strings.ReplaceAll(strings.TrimSuffix(name[loc[0]:loc[1]], sep+unbuiltMarker), "_", "-")
+		if !contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	for _, loc := range unbuiltHyphen.FindAllStringIndex(name, -1) {
+		add(loc, loc[0] == 0 || !idChar(name[loc[0]-1]), "-")
+	}
+	for _, loc := range unbuiltUnderscore.FindAllStringIndex(name, -1) {
+		add(loc, startsUnderscoreID(name, loc[0]), "_")
+	}
+	return out
 }
 
 var requirementID = regexp.MustCompile(`R-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]+`)
@@ -84,6 +119,9 @@ func idsIn(name string) []string {
 		if !startsUnderscoreID(name, loc[0]) || loc[1] < len(name) && idChar(name[loc[1]]) {
 			continue
 		}
+		if strings.HasPrefix(name[loc[1]:], "_"+unbuiltMarker) {
+			continue // marked as not built (unbuiltIn); the hyphen form is left out by the standalone rule already
+		}
 		if id := strings.ReplaceAll(name[loc[0]:loc[1]], "_", "-"); !contains(out, id) {
 			out = append(out, id)
 		}
@@ -99,6 +137,12 @@ func (e *evidence) record(name string, outcome string) {
 			e.Passed[id] = true
 		case "fail":
 			e.Failed[id] = true
+		}
+	}
+	// A failing refusal test says nothing about the marked requirement: the refusal may have gone because it was built.
+	if outcome == "pass" {
+		for _, id := range unbuiltIn(name) {
+			e.Unbuilt[id] = true
 		}
 	}
 }
@@ -140,11 +184,15 @@ type goTestEvent struct {
 
 // readGoJSON reads a `go test -json` stream. Lines that are not JSON objects
 // (build output mixed into the stream) are skipped; a stream without a single
-// event is an error, so a wrong file cannot pass as "no evidence".
+// event is an error, so a wrong file cannot pass as "no evidence". A stream in
+// which a package started and never ended is cut (its job was stopped while the
+// package ran, Q-ARCH-811) and is an error too: the tests it did not reach would
+// leave the record without a test having said anything about them.
 func (e *evidence) readGoJSON(data []byte) error {
 	sc := bufio.NewScanner(bytes.NewReader(data))
 	sc.Buffer(make([]byte, 0, 1<<20), 64<<20)
 	events := 0
+	open := map[string]bool{}
 	for sc.Scan() {
 		line := bytes.TrimSpace(sc.Bytes())
 		if len(line) == 0 || line[0] != '{' {
@@ -156,6 +204,12 @@ func (e *evidence) readGoJSON(data []byte) error {
 		}
 		events++
 		if ev.Test == "" {
+			switch ev.Action {
+			case "start":
+				open[ev.Package] = true
+			case "pass", "fail", "skip":
+				delete(open, ev.Package)
+			}
 			continue
 		}
 		switch ev.Action {
@@ -170,6 +224,14 @@ func (e *evidence) readGoJSON(data []byte) error {
 	}
 	if events == 0 {
 		return errors.New("no go test -json events found")
+	}
+	if len(open) > 0 {
+		pkgs := make([]string, 0, len(open))
+		for p := range open {
+			pkgs = append(pkgs, p)
+		}
+		sort.Strings(pkgs)
+		return fmt.Errorf("the report is cut: %s started and did not end (the job was stopped while it ran)", strings.Join(pkgs, ", "))
 	}
 	return nil
 }
@@ -233,12 +295,15 @@ func (e *evidence) implemented(known map[string]bool) (ids []string, unknown []s
 	for id := range e.Failed {
 		seen[id] = true
 	}
+	for id := range e.Unbuilt {
+		seen[id] = true
+	}
 	for id := range seen {
 		if !known[id] {
 			unknown = append(unknown, id)
 			continue
 		}
-		if e.Passed[id] && !e.Failed[id] {
+		if e.Passed[id] && !e.Failed[id] && !e.Unbuilt[id] {
 			ids = append(ids, id)
 		}
 	}
@@ -290,19 +355,27 @@ func merged(a, b *evidence) *evidence {
 		for id := range e.Failed {
 			out.Failed[id] = true
 		}
+		for id := range e.Unbuilt {
+			out.Unbuilt[id] = true
+		}
 	}
 	return out
 }
 
-// withdrawnByEarlier returns the requirements that only the reports of earlier runs veto: a failing test there names them and no
-// failing test of this run does. Withdrawing such a requirement from the record is the veto rule at work; it is not an unproven
-// claim of this run (Q-ROAD-11).
-func withdrawnByEarlier(run, earlier *evidence) map[string]bool {
-	out := map[string]bool{}
-	for id := range earlier.Failed {
-		if !run.Failed[id] {
-			out[id] = true
-		}
+// whyNotProven says why a requirement of the previous record is not in this one: a failing test of this run's reports or of a
+// carried report vetoes it (Q-ROAD-5, Q-ROAD-12), it is no requirement of the specification any more, or no report names it in a
+// passing test (the test was removed, renamed or skipped, or the leg that ran it has no report young enough to carry, Q-ARCH-811).
+func whyNotProven(id string, known map[string]bool, run, earlier *evidence) string {
+	switch {
+	case !known[id]:
+		return "no requirement of the specification any more"
+	case run.Failed[id]:
+		return "a failing test of this run names it"
+	case earlier.Failed[id]:
+		return "a failing test of a carried report names it"
+	case run.Unbuilt[id] || earlier.Unbuilt[id]:
+		return "a passing test holds its refusal (" + unbuiltMarker + ")"
+	default:
+		return "no report names it in a passing test"
 	}
-	return out
 }

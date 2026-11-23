@@ -23,6 +23,8 @@ type step struct {
 	Env            map[string]string `yaml:"env"`
 	Run            string            `yaml:"run"`
 	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
+	// ContinueOnError is the raw value of continue-on-error (true or an expression).
+	ContinueOnError string `yaml:"continue-on-error"`
 }
 
 type job struct {

@@ -297,6 +297,70 @@ func TestEvidence(t *testing.T) {
 			t.Fatal("expected an error")
 		}
 	})
+	t.Run("Q-ARCH-811 a test that holds a refusal marks the requirement unbuilt: it proves the refusal's requirement and keeps the marked one out", func(t *testing.T) {
+		ev := newEvidence()
+		stream := `{"Action":"pass","Package":"p","Test":"TestM/search_R-WID-001-unbuilt_R-WID-002"}` + "\n" +
+			`{"Action":"pass","Package":"p","Test":"TestR_WID_003_unbuilt_DeprecateIsRefused"}` + "\n" +
+			`{"Action":"pass","Package":"p","Test":"TestOther/R-WID-001_and_R-WID-003_pass_elsewhere"}` + "\n"
+		if err := ev.readFile("-", strings.NewReader(stream)); err != nil {
+			t.Fatal(err)
+		}
+		ids, unknown := ev.implemented(known)
+		if len(unknown) != 0 || strings.Join(ids, ",") != "R-WID-002" {
+			t.Fatalf("got %v (unknown %v), want only R-WID-002: R-WID-001 and R-WID-003 are held as not built", ids, unknown)
+		}
+		if !ev.Unbuilt["R-WID-001"] || !ev.Unbuilt["R-WID-003"] {
+			t.Errorf("unbuilt: %v, want R-WID-001 and R-WID-003", ev.Unbuilt)
+		}
+		failing := newEvidence()
+		if err := failing.readFile("-", strings.NewReader(`{"Action":"fail","Package":"p","Test":"TestM/R-WID-001-unbuilt"}`+"\n"+
+			`{"Action":"pass","Package":"p","Test":"TestN/R-WID-001_built"}`+"\n")); err != nil {
+			t.Fatal(err)
+		}
+		if ids, _ := failing.implemented(known); strings.Join(ids, ",") != "R-WID-001" {
+			t.Errorf("a failing refusal test vetoed %v; it says nothing about the requirement it marks", ids)
+		}
+		typo := newEvidence()
+		if err := typo.readFile("-", strings.NewReader(`{"Action":"pass","Package":"p","Test":"TestM/R-WID-777-unbuilt"}`+"\n")); err != nil {
+			t.Fatal(err)
+		}
+		if _, unknown := typo.implemented(known); strings.Join(unknown, ",") != "R-WID-777" {
+			t.Errorf("unknown: %v, want the marked R-WID-777", unknown)
+		}
+		for name, want := range map[string]string{
+			"TestM/R-WID-001-unbuilt":                   "R-WID-001",
+			"TestR_WID_001_unbuilt":                     "R-WID-001",
+			"TestM/R-WID-001-unbuiltx":                  "",
+			"TestM/PR-WID-001-unbuilt":                  "",
+			"TestM/R-WID-001-unbuilt/R-WID-002-unbuilt": "R-WID-001,R-WID-002",
+		} {
+			if got := strings.Join(unbuiltIn(name), ","); got != want {
+				t.Errorf("unbuiltIn(%q) = %q, want %q", name, got, want)
+			}
+			if ids := idsIn(name); len(ids) != 0 {
+				t.Errorf("idsIn(%q) = %v; a marked ID is no evidence", name, ids)
+			}
+		}
+	})
+	t.Run("Q-ARCH-811 a package that started and did not end makes the report cut, one that ended in any way does not", func(t *testing.T) {
+		cases := map[string]string{
+			"two packages, one cut": `{"Action":"start","Package":"a"}` + "\n" + `{"Action":"start","Package":"b"}` + "\n" +
+				`{"Action":"pass","Package":"a","Test":"TestA/R-WID-001_ok"}` + "\n" + `{"Action":"pass","Package":"a"}` + "\n",
+			"a package that never ends": `{"Action":"start","Package":"b"}` + "\n",
+		}
+		for name, stream := range cases {
+			err := newEvidence().readFile("-", strings.NewReader(stream))
+			if err == nil || !strings.Contains(err.Error(), "the report is cut: b started and did not end") {
+				t.Errorf("%s: %v, want the report named cut at package b", name, err)
+			}
+		}
+		whole := `{"Action":"start","Package":"a"}` + "\n" + `{"Action":"start","Package":"b"}` + "\n" +
+			`{"Action":"start","Package":"c"}` + "\n" + `{"Action":"pass","Package":"a"}` + "\n" +
+			`{"Action":"fail","Package":"b"}` + "\n" + `{"Action":"skip","Package":"c"}` + "\n"
+		if err := newEvidence().readFile("-", strings.NewReader(whole)); err != nil {
+			t.Errorf("a report whose packages passed, failed and were skipped: %v", err)
+		}
+	})
 	t.Run("Q-ROAD-4 standard input is read for -", func(t *testing.T) {
 		ev := newEvidence()
 		if err := ev.readFile("-", strings.NewReader(`{"Action":"pass","Package":"p","Test":"TestX/R-WID-002_ok"}`+"\n")); err != nil {
@@ -406,6 +470,18 @@ func TestCommandWithTestReports(t *testing.T) {
 		}
 		return p
 	}
+	recorded := func(t *testing.T, repo string) string {
+		t.Helper()
+		data, err := os.ReadFile(filepath.Join(repo, "docs", "coverage", "implemented.txt"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids, err := parseImplemented(string(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Join(ids, ",")
+	}
 
 	t.Run("E0.8 go test -json stream marks exactly the passing requirement implemented", func(t *testing.T) {
 		repo := setup(t)
@@ -414,13 +490,8 @@ func TestCommandWithTestReports(t *testing.T) {
 		if code := run([]string{"-repo", repo, "-tests", report}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
 			t.Fatalf("exit %d:\n%s", code, stderr.String())
 		}
-		data, err := os.ReadFile(filepath.Join(repo, "docs", "coverage", "implemented.txt"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		ids, err := parseImplemented(string(data))
-		if err != nil || strings.Join(ids, ",") != "R-ARCH-002" {
-			t.Fatalf("implemented.txt lists %v (%v), want exactly R-ARCH-002", ids, err)
+		if got := recorded(t, repo); got != "R-ARCH-002" {
+			t.Fatalf("implemented.txt lists %v, want exactly R-ARCH-002", got)
 		}
 		checklist, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "checklist.md"))
 		if !strings.Contains(string(checklist), "[R-ARCH-002](../spec/architecture.md) (implemented)") {
@@ -429,22 +500,10 @@ func TestCommandWithTestReports(t *testing.T) {
 		if strings.Contains(string(checklist), "[R-ARCH-003](../spec/architecture.md) (implemented)") {
 			t.Errorf("checklist marks the failing R-ARCH-003 as implemented")
 		}
-
-		t.Run("Q-ROAD-4 -check with the same reports passes, with a changed report it is stale", func(t *testing.T) {
-			var o, e bytes.Buffer
-			if code := run([]string{"-repo", repo, "-check", "-tests", report}, strings.NewReader(""), &o, &e); code != exitOK {
-				t.Fatalf("exit %d:\n%s", code, e.String())
-			}
-			none := write(t, t.TempDir(), `{"Action":"pass","Package":"p","Test":"TestA/plain"}`+"\n")
-			o.Reset()
-			e.Reset()
-			if code := run([]string{"-repo", repo, "-check", "-tests", none}, strings.NewReader(""), &o, &e); code != exitStale {
-				t.Fatalf("exit %d, want %d:\n%s", code, exitStale, e.String())
-			}
-			if !strings.Contains(e.String(), "stale: docs/coverage/implemented.txt") {
-				t.Errorf("stderr: %s", e.String())
-			}
-		})
+		readme, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "README.md"))
+		if !strings.Contains(string(readme), "| Covered by an MVP requirement | Implemented |") {
+			t.Errorf("the README of the record has no column Implemented")
+		}
 	})
 	t.Run("Q-ROAD-4 a test naming an unknown requirement fails the command", func(t *testing.T) {
 		repo := setup(t)
@@ -468,104 +527,111 @@ func TestCommandWithTestReports(t *testing.T) {
 			t.Errorf("implemented.txt:\n%s", data)
 		}
 	})
-	t.Run("Q-ROAD-4 -claims writes newly proven requirements and passes", func(t *testing.T) {
+	t.Run("Q-ARCH-811 -previous lists what the record adds and drops, with the reason, and fails on neither", func(t *testing.T) {
 		repo := setup(t)
-		if err := os.WriteFile(filepath.Join(repo, "docs", "coverage", "implemented.txt"), []byte(""), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		report := write(t, t.TempDir(), stream)
-		var stdout, stderr bytes.Buffer
-		if code := run([]string{"-repo", repo, "-claims", "-tests", report}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
-			t.Fatalf("exit %d:\n%s", code, stderr.String())
-		}
-		if !strings.Contains(stdout.String(), "newly proven: 1\n  R-ARCH-002\n") {
-			t.Errorf("stdout does not list R-ARCH-002 as newly proven:\n%s", stdout.String())
-		}
-		data, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "implemented.txt"))
-		if ids, err := parseImplemented(string(data)); err != nil || strings.Join(ids, ",") != "R-ARCH-002" {
-			t.Fatalf("implemented.txt lists %v (%v), want exactly R-ARCH-002", ids, err)
-		}
-	})
-	t.Run("Q-ROAD-4 -claims fails on a committed requirement the reports do not prove and writes nothing", func(t *testing.T) {
-		repo := setup(t)
-		impl := filepath.Join(repo, "docs", "coverage", "implemented.txt")
-		if err := os.WriteFile(impl, []byte("R-ARCH-002\nR-ARCH-003\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		report := write(t, t.TempDir(), stream)
-		var stdout, stderr bytes.Buffer
-		if code := run([]string{"-repo", repo, "-claims", "-tests", report}, strings.NewReader(""), &stdout, &stderr); code != exitClaim {
-			t.Fatalf("exit %d, want %d:\n%s", code, exitClaim, stderr.String())
-		}
-		if !strings.Contains(stderr.String(), "R-ARCH-003") || strings.Contains(stderr.String(), "R-ARCH-002,") {
-			t.Errorf("stderr does not name exactly R-ARCH-003:\n%s", stderr.String())
-		}
-		if data, _ := os.ReadFile(impl); string(data) != "R-ARCH-002\nR-ARCH-003\n" {
-			t.Errorf("implemented.txt was rewritten:\n%s", data)
-		}
-	})
-	t.Run("Q-ROAD-11 a failing test in a carried report withdraws the requirement without failing -claims", func(t *testing.T) {
-		repo := setup(t)
-		impl := filepath.Join(repo, "docs", "coverage", "implemented.txt")
-		if err := os.WriteFile(impl, []byte("R-ARCH-002\nR-ARCH-003\n"), 0o644); err != nil {
+		previous := filepath.Join(t.TempDir(), "implemented.txt")
+		// R-ARCH-002 stays; R-ARCH-003 fails in this run; R-ARCH-004 fails in a carried report; R-ARCH-005 is named by no report;
+		// R-NOPE-001 is no requirement any more; R-ARCH-006 is new.
+		if err := os.WriteFile(previous, []byte("# the record of the branch\nR-ARCH-002\nR-ARCH-003\nR-ARCH-004\nR-ARCH-005\nR-NOPE-001\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		run1 := write(t, t.TempDir(), `{"Action":"pass","Package":"p","Test":"TestA/R-ARCH-002_passes"}`+"\n"+
-			`{"Action":"pass","Package":"p","Test":"TestA/R-ARCH-003_passes"}`+"\n")
-		earlier := write(t, t.TempDir(), `{"Action":"fail","Package":"p","Test":"TestB/R-ARCH-003_fails"}`+"\n")
+			`{"Action":"fail","Package":"p","Test":"TestA/R-ARCH-003_fails"}`+"\n"+
+			`{"Action":"pass","Package":"p","Test":"TestA/R-ARCH-004_passes"}`+"\n"+
+			`{"Action":"pass","Package":"p","Test":"TestA/R-ARCH-006_passes"}`+"\n")
+		earlier := write(t, t.TempDir(), `{"Action":"fail","Package":"p","Test":"TestB/R-ARCH-004_fails"}`+"\n")
 		var stdout, stderr bytes.Buffer
-		if code := run([]string{"-repo", repo, "-claims", "-tests", run1, "-carried", earlier}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
+		code := run([]string{"-repo", repo, "-tests", run1, "-carried", earlier, "-previous", previous}, strings.NewReader(""), &stdout, &stderr)
+		if code != exitOK {
 			t.Fatalf("exit %d:\n%s", code, stderr.String())
 		}
-		if !strings.Contains(stdout.String(), "withdrawn by a failing test of an earlier run: 1\n  R-ARCH-003\n") {
-			t.Errorf("stdout does not list R-ARCH-003 as withdrawn:\n%s", stdout.String())
+		for _, want := range []string{
+			"newly proven: 1\n  R-ARCH-006\n",
+			"no longer proven: 4\n",
+			"  R-ARCH-003: a failing test of this run names it\n",
+			"  R-ARCH-004: a failing test of a carried report names it\n",
+			"  R-ARCH-005: no report names it in a passing test\n",
+			"  R-NOPE-001: no requirement of the specification any more\n",
+		} {
+			if !strings.Contains(stdout.String(), want) {
+				t.Errorf("stdout lacks %q:\n%s", want, stdout.String())
+			}
 		}
-		data, _ := os.ReadFile(impl)
-		if ids, err := parseImplemented(string(data)); err != nil || strings.Join(ids, ",") != "R-ARCH-002" {
-			t.Fatalf("implemented.txt lists %v (%v), want exactly R-ARCH-002", ids, err)
+		if got := recorded(t, repo); got != "R-ARCH-002,R-ARCH-006" {
+			t.Errorf("implemented.txt lists %v, want R-ARCH-002 and R-ARCH-006", got)
 		}
 	})
-	t.Run("Q-ROAD-11 a failing test of this run still fails -claims, and a carried pass proves a requirement", func(t *testing.T) {
+	t.Run("Q-ARCH-811 a cut report fails the command and writes nothing", func(t *testing.T) {
 		repo := setup(t)
-		impl := filepath.Join(repo, "docs", "coverage", "implemented.txt")
-		if err := os.WriteFile(impl, []byte("R-ARCH-002\nR-ARCH-003\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		failing := write(t, t.TempDir(), `{"Action":"fail","Package":"p","Test":"TestA/R-ARCH-003_fails"}`+"\n")
-		earlier := write(t, t.TempDir(), `{"Action":"pass","Package":"p","Test":"TestB/R-ARCH-002_passes"}`+"\n"+
-			`{"Action":"pass","Package":"p","Test":"TestB/R-ARCH-003_passes"}`+"\n")
+		cut := write(t, t.TempDir(), `{"Action":"start","Package":"p"}`+"\n"+
+			`{"Action":"run","Package":"p","Test":"TestA/R-ARCH-002_passes"}`+"\n"+
+			`{"Action":"pass","Package":"p","Test":"TestA/R-ARCH-002_passes"}`+"\n")
 		var stdout, stderr bytes.Buffer
-		if code := run([]string{"-repo", repo, "-claims", "-tests", failing, "-carried", earlier}, strings.NewReader(""), &stdout, &stderr); code != exitClaim {
-			t.Fatalf("exit %d, want %d:\n%s", code, exitClaim, stderr.String())
+		if code := run([]string{"-repo", repo, "-tests", cut}, strings.NewReader(""), &stdout, &stderr); code != exitData {
+			t.Fatalf("exit %d, want %d:\n%s", code, exitData, stderr.String())
 		}
-		if !strings.Contains(stderr.String(), "R-ARCH-003") || strings.Contains(stderr.String(), "R-ARCH-002") {
-			t.Errorf("stderr does not name exactly R-ARCH-003:\n%s", stderr.String())
+		if !strings.Contains(stderr.String(), "the report is cut: p started and did not end") {
+			t.Errorf("stderr: %s", stderr.String())
+		}
+		if _, err := os.Stat(filepath.Join(repo, "docs", "coverage", "implemented.txt")); err == nil {
+			t.Error("a record was written from a cut report")
 		}
 	})
-	t.Run("Q-ROAD-11 -carried needs -tests and does not combine with -links", func(t *testing.T) {
+	t.Run("Q-ARCH-811 the flags of the record need -tests, and -check does not combine with it", func(t *testing.T) {
 		repo := setup(t)
-		for _, args := range [][]string{{"-carried", "x.json"}, {"-carried", "x.json", "-links"}} {
+		for _, args := range [][]string{
+			{"-carried", "x.json"},
+			{"-previous", "x.txt"},
+			{"-carried", "x.json", "-links"},
+			{"-check", "-tests", "x.json"},
+			{"-tests", "x.json", "-links"},
+			{"-claims", "-tests", "x.json"},
+		} {
 			if code := run(append([]string{"-repo", repo}, args...), strings.NewReader(""), io.Discard, io.Discard); code != exitUsage {
 				t.Errorf("%v: exit %d, want %d", args, code, exitUsage)
 			}
 		}
 	})
-	t.Run("Q-ROAD-4 -claims needs -tests and does not combine with -check or -links", func(t *testing.T) {
-		repo := setup(t)
-		for _, args := range [][]string{{"-claims"}, {"-claims", "-check", "-tests", "x.json"}, {"-claims", "-links"}} {
-			if code := run(append([]string{"-repo", repo}, args...), strings.NewReader(""), io.Discard, io.Discard); code != exitUsage {
-				t.Errorf("%v: exit %d, want %d", args, code, exitUsage)
+	t.Run("Q-ARCH-811 a tree that holds the record or the badge is refused by the generator and by -check", func(t *testing.T) {
+		for _, rel := range []string{recordRel, badgeRel} {
+			repo := setup(t)
+			p := filepath.Join(repo, filepath.FromSlash(rel))
+			if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(p, []byte("R-ARCH-002\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			for _, args := range [][]string{{}, {"-check"}} {
+				var stderr bytes.Buffer
+				if code := run(append([]string{"-repo", repo}, args...), strings.NewReader(""), io.Discard, &stderr); code != exitData {
+					t.Errorf("%s %v: exit %d, want %d:\n%s", rel, args, code, exitData, stderr.String())
+				}
+				if !strings.Contains(stderr.String(), rel+" is in the tree") {
+					t.Errorf("%s %v: stderr does not name the file:\n%s", rel, args, stderr.String())
+				}
 			}
 		}
 	})
-	t.Run("Q-ROAD-4 a requirement implemented in the committed list must exist", func(t *testing.T) {
+	t.Run("Q-ARCH-811 without a record the pages show what the specification covers and point to the branch", func(t *testing.T) {
 		repo := setup(t)
-		if err := os.WriteFile(filepath.Join(repo, "docs", "coverage", "implemented.txt"), []byte("R-NOPE-001\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
 		var stdout, stderr bytes.Buffer
-		if code := run([]string{"-repo", repo, "-check"}, strings.NewReader(""), &stdout, io.Discard); code != exitData {
+		if code := run([]string{"-repo", repo}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
 			t.Fatalf("exit %d:\n%s", code, stderr.String())
+		}
+		checklist, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "checklist.md"))
+		readme, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "README.md"))
+		if strings.Contains(string(checklist), "(implemented)") || strings.Contains(string(checklist), "Nothing is implemented") {
+			t.Error("the checklist of main claims an implementation status")
+		}
+		if !strings.Contains(string(checklist), "("+recordPage+"checklist.md)") {
+			t.Error("the checklist of main does not link the checklist of the record")
+		}
+		if strings.Contains(string(readme), "| Implemented |") || !strings.Contains(string(readme), "on the branch `coverage`") {
+			t.Error("the README of main counts implemented entries or does not point to the record")
+		}
+		if _, err := os.Stat(filepath.Join(repo, "docs", "coverage", "implemented.txt")); err == nil {
+			t.Error("the generator wrote a record without reports")
 		}
 	})
 }

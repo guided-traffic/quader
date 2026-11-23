@@ -17,7 +17,7 @@ regenerated.
 <!-- coverage-gen:begin headline -->
 | Number | Value | Kind |
 |---|---|---|
-| **Implemented** | **22.6%** (506 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
+| **Implemented** | in the evidence record on the branch `coverage` ([this page there](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md)) | measured by the pipeline from passing tests that name requirements (Q-ROAD-4, Q-ARCH-811) |
 | **MVP features covered by spec requirements** | **100%** (395 of 395) | measured from `Covers:` lines |
 | P1 features covered by spec requirements | 67.9% (349 of 514) | measured from `Covers:` lines |
 | In-scope features covered (MVP, P1, P2, Later) | 37.1% (805 of 2,167) | measured from `Covers:` lines |
@@ -49,14 +49,14 @@ see [Honesty notes](#honesty-notes).
 ### By priority
 
 <!-- coverage-gen:begin priority -->
-| Priority | Features | Specified | Open | Specified share | Covered by an MVP requirement | Implemented |
-|---|---:|---:|---:|---:|---:|---:|
-| **MVP** | 395 | 395 | 0 | 100% | 395 | 353 |
-| **P1** | 514 | 349 | 165 | 67.9% | 68 | 118 |
-| **P2** | 884 | 59 | 825 | 6.7% | 12 | 34 |
-| **Later** | 374 | 2 | 372 | 0.5% | 0 | 1 |
-| **Out of scope** | 72 | 0 | 72 | 0% | 0 | 0 |
-| **Total** | 2,239 | 805 | 1,434 | 36.0% | 475 | 506 |
+| Priority | Features | Specified | Open | Specified share | Covered by an MVP requirement |
+|---|---:|---:|---:|---:|---:|
+| **MVP** | 395 | 395 | 0 | 100% | 395 |
+| **P1** | 514 | 349 | 165 | 67.9% | 68 |
+| **P2** | 884 | 59 | 825 | 6.7% | 12 |
+| **Later** | 374 | 2 | 372 | 0.5% | 0 |
+| **Out of scope** | 72 | 0 | 72 | 0% | 0 |
+| **Total** | 2,239 | 805 | 1,434 | 36.0% | 475 |
 <!-- coverage-gen:end priority -->
 
 The column *Covered by an MVP requirement* shows where the spec pulls work forward: 55 P1 features
@@ -185,11 +185,11 @@ audience counts the MVP and P1 entries of a fixed list of catalog pages, shown b
 table.
 
 <!-- coverage-gen:begin audiences -->
-| Audience | MVP entries | MVP and P1 entries | Implemented | Most open entries (MVP and P1) |
-|---|---|---|---:|---|
-| **npm-only team** | 211 of 211 specified, 0 open (100%) | 322 of 370 specified, 48 open (87.0%) | 235 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
-| **.NET team** | 209 of 209 specified, 0 open (100%) | 312 of 360 specified, 48 open (86.7%) | 229 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
-| **platform/ops team** | 269 of 269 specified, 0 open (100%) | 448 of 468 specified, 20 open (95.7%) | 293 | Repositories 9; Operations, monitoring and configuration 4; High availability and deployment 3 |
+| Audience | MVP entries | MVP and P1 entries | Most open entries (MVP and P1) |
+|---|---|---|---|
+| **npm-only team** | 211 of 211 specified, 0 open (100%) | 322 of 370 specified, 48 open (87.0%) | Search and query language 21; Builds and CI integration 15; Repositories 9 |
+| **.NET team** | 209 of 209 specified, 0 open (100%) | 312 of 360 specified, 48 open (86.7%) | Search and query language 21; Builds and CI integration 15; Repositories 9 |
+| **platform/ops team** | 269 of 269 specified, 0 open (100%) | 448 of 468 specified, 20 open (95.7%) | Repositories 9; Operations, monitoring and configuration 4; High availability and deployment 3 |
 
 Pages counted per audience:
 
@@ -266,9 +266,13 @@ What the open entries are, on 2026-10-29:
      implemented. A feature that is partly built stays *specified*.
 
    The generator reads the evidence from test reports (`-tests`) and records the result in
-   [implemented.txt](implemented.txt), one requirement ID per line. A failing test that names a
-   requirement vetoes it. On 2026-10-29 the list is empty, because the repository holds no test
-   that names a requirement.
+   `implemented.txt`, one requirement ID per line. A failing test that names a requirement vetoes
+   it, and so does a passing test that names it with the marker `-unbuilt` (it holds the refusal
+   that stands in for a requirement not built yet). Only the pipeline writes the record: the
+   release job publishes it, with this page and the checklist rendered from it, onto the branch
+   `coverage` ([this page there](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md),
+   [Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)).
+   On `main` the tables show what the specification covers and no implementation status.
 4. **Shares.** Plain counts: each feature counts once, whatever its size. The in-scope share
    leaves out *Out of scope* entries.
 5. **Audiences.** For each audience: the MVP and P1 entries of the pages in its row of the
@@ -282,18 +286,21 @@ What the open entries are, on 2026-10-29:
    - an unclosed code fence;
    - a missing marker pair in this file;
    - an audience page without entries;
-   - a test name that carries a requirement ID no spec page defines, or an ID in
-     `implemented.txt` that no spec page defines.
+   - a test name that carries a requirement ID no spec page defines, or a test report that was
+     cut (a package started and did not end);
+   - without test reports, an `implemented.txt` or a coverage badge in the tree: `main` holds
+     neither.
 
    When it runs, the generator prints the counts per priority for the catalog and the spec, the
-   number of `Covers:` references, the implemented counts and every heading it skipped inside a
-   code fence.
-7. **Output.** It writes all of [checklist.md](checklist.md), [implemented.txt](implemented.txt),
-   and only the four marked blocks of this file.
+   number of `Covers:` references, the implemented counts where it renders a record, and every
+   heading it skipped inside a code fence.
+7. **Output.** It writes all of [checklist.md](checklist.md) and only the four marked blocks of
+   this file, and with test reports `implemented.txt` as well.
 
 **The generator.** It is the Go program `internal/tools/coverage`, run with
 `go run ./internal/tools/coverage`. `-check` compares without writing and exits
-2 when a committed file is stale, `-tests <report>` learns the implementation status, and `-links`
+2 when a committed file is stale, `-tests <report>` writes the record from the reports (the
+pipeline's form), and `-links`
 checks the relative links and anchors of every Markdown file. The modes, the test naming rule
 and the report formats are in
 [docs/developer/coverage.md](../developer/coverage.md).
