@@ -11722,7 +11722,9 @@ shared packages under `internal/` and `cmd/` whose name carries the format's nam
 images and e2e tests, and the few paths that are its alone (OCI's registry root and token service, Debian's OpenPGP, NuGet's vectors,
 Ansible's browser journey). Two shared files are judged per changed line: a line of release.yml belongs to its job (a leg's job starts
 the leg; the header, `image` and `e2e-scope` are shared; every other job starts no leg), a line of `tools/versions.env` to the pin it
-sets (a format's client pins are that format's). The paths that start no format leg are those no format leg builds, deploys or reads
+sets (a format's client pins are that format's; the analyser's and ClamAV's images, `TRIVY_IMAGE` and `CLAMAV_IMAGE`, are the leg
+`vuln`'s, whose set loads both into kind, since 2026-11-23 and G3-16 of that day's triage: before, they were shared and started npm and not
+`vuln`). The paths that start no format leg are those no format leg builds, deploys or reads
 (the documentation but the manual, Go test files outside `test/e2e`, `test/integration`, the developer tools, the doubles of other sets,
 the Bastion's chart, the UI development profile, the other workflows, the configuration of jobs without a cluster). The legs `bastion`
 and `vuln` keep their own lists; two patterns of the vuln list never matched a file and stand as the paths they meant. A test runs the

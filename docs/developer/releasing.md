@@ -170,7 +170,7 @@ do), and a decision that failed or wrote nothing runs the leg.
 | `e2e (npm)` | npm's own paths, or shared code (every path that is no format's alone, not on the list of paths that start no format leg and not under `web/`) |
 | `e2e (nuget)`, `e2e (oci)`, `e2e (deb)`, `e2e (ansible)` | that format's own paths |
 | `e2e (bastion)` | the Bastion's list, as the job had it: `internal/bastion`, `internal/bastionmain`, `deploy/helm/quader-bastion`, `docs/spec/bastion.md`, its e2e profile, suite and browser journey; and its own job in release.yml |
-| `e2e (vuln)` | the scanning's list, as the job had it (the scanning, the parts of npm and NuGet that answer an audit, `internal/formathost`, `internal/items`, `internal/files`, `internal/proxy`, its queries and API, its test advisory source and profile, `deploy/dev/e2e.sh`, the NuGet clients, its screens and journeys, its spec); and its own job in release.yml. Two patterns of the old list never matched a file (`queries/vuln_` anchored at the root, `internal/api/v1/vuln_api`); they stand as the paths they meant |
+| `e2e (vuln)` | the scanning's list, as the job had it (the scanning, the parts of npm and NuGet that answer an audit, `internal/formathost`, `internal/items`, `internal/files`, `internal/proxy`, its queries and API, its test advisory source and profile, `deploy/dev/e2e.sh`, the NuGet clients, its screens and journeys, its spec); its own job in release.yml; and the pins `TRIVY_IMAGE` and `CLAMAV_IMAGE` of `tools/versions.env`, whose images the set loads into kind (no other leg runs them). Two patterns of the old list never matched a file (`queries/vuln_` anchored at the root, `internal/api/v1/vuln_api`); they stand as the paths they meant |
 | `e2e (push)`, `e2e (access-long)`, `e2e (ci)` | every change, not decided here |
 
 A pull request is decided like a push, by the same lists: a dependency bot's pull requests then take the legs their change concerns and
@@ -204,7 +204,7 @@ that is on no format's list and not in the list below, so a path that is on no l
 manifests) but the formats' stubs and clients, test/e2e's harness (`env_test.go`, `m1_env_test.go`, `mirror_env_test.go`,
 `limits_clients_env_test.go`, every e2e test of no format, `cmd/driver`, `k6/`, `clients/fwd`, `Dockerfile`), the other stubs under `test/`,
 `.github/actions/` and `.github/scripts/`, the `Makefile`, the `Containerfile`, `go.mod` and `go.sum`, `perf/` but NuGet's, `tools/` but NuGet's
-vectors, the pins of `tools/versions.env` that are no format's, the manual under `docs/manual/` (it is embedded in the binary), and in
+vectors, the pins of `tools/versions.env` that are no format's and not the analyser's or ClamAV's image (those start `vuln`), the manual under `docs/manual/` (it is embedded in the binary), and in
 release.yml the header and the jobs `image` (the legs load its image) and `e2e-scope`.
 
 **No format leg** (`no_format_leg` and `web_no_format_leg`; for each, no format leg builds, deploys or reads it): `web/` but the paths on
@@ -232,7 +232,7 @@ test (none), a format's file in a shared package (that format), the forwarder of
 Ansible's journey (ansible), two formats (both), a file moved out of a format (npm and that format), the Bastion's code (npm and bastion),
 the Bastion's chart (bastion), `deploy/dev/e2e.sh` (npm and vuln), the scanning's queries (npm and vuln), a line of the OCI job, the comment
 above the Debian job, a line of the unit job, the header and a line of the Bastion job of release.yml (oci, deb, none, npm, bastion), an OCI
-client pin and a pin every leg uses (oci, npm); as pull requests: only a format's paths (that format), only shared code (npm), only
+client pin, a pin every leg uses, the analyser's and ClamAV's image pins (oci, npm, vuln, vuln); as pull requests: only a format's paths (that format), only shared code (npm), only
 documentation (none), a bump of `go.mod` (npm), a bump of one client pin (oci), a bump of `actions/checkout` in release.yml (every leg), a
 change of `performance.yml` alone (none), and a pull request whose base branch moved on (its own change only, from the merge base); and a
 dispatch, a pull request whose base is not in the clone, a first push, a push without `before`, a `before` and a head that are not in the

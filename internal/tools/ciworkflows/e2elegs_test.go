@@ -240,6 +240,13 @@ func TestE2ELegsOfAPush(t *testing.T) {
 		{"versions.env: a pin every leg uses", map[string]string{
 			"tools/versions.env": regexp.MustCompile(`(?m)^KIND_VERSION=.*$`).ReplaceAllString(pins, "KIND_VERSION=v0.0.0"),
 		}, []string{"npm"}},
+		// The set vuln loads the analyser's and ClamAV's images into kind; no other leg runs them (G3-16).
+		{"versions.env: the analyser's image", map[string]string{
+			"tools/versions.env": regexp.MustCompile(`(?m)^TRIVY_IMAGE=.*$`).ReplaceAllString(pins, "TRIVY_IMAGE=docker.io/aquasec/trivy:0"),
+		}, []string{"vuln"}},
+		{"versions.env: ClamAV's image", map[string]string{
+			"tools/versions.env": regexp.MustCompile(`(?m)^CLAMAV_IMAGE=.*$`).ReplaceAllString(pins, "CLAMAV_IMAGE=docker.io/clamav/clamav-debian:0"),
+		}, []string{"vuln"}},
 	} {
 		head := r.change(t, c.edit)
 		res := r.run(t, "push", r.base, head)

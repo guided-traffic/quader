@@ -261,9 +261,11 @@ workflow_job_owner() {
 }
 
 # The owner of a pin of tools/versions.env: the pins of a format's client images (and of NuGet's golden vectors) are that
-# format's, every other pin is shared.
+# format's; the analyser's and ClamAV's images are the leg vuln's, whose set loads both into kind and runs the image and the
+# malware scanning with them (deploy/dev/values-vuln.yaml), and no other leg's; every other pin is shared.
 pin_owner() {
   case $1 in
+    TRIVY_IMAGE|CLAMAV_IMAGE) echo vuln ;;
     E2E_CLIENTS_*) echo npm ;;
     E2E_NUGETCLIENTS_*|NUGETVECTORS_*|NUGET_VERSIONING_*) echo nuget ;;
     E2E_OCICLIENTS_*) echo oci ;;
