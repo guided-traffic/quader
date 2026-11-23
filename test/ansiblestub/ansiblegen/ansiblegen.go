@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"sort"
 	"time"
 )
@@ -40,6 +41,10 @@ type Spec struct {
 	// Extra adds files (path to content) to the archive; the stub's digest modes use it to make a second, different archive of
 	// the same version.
 	Extra map[string]string
+	// Links adds symbolic links (path to the target as the link spells it, relative to its directory), written the way
+	// ansible-galaxy collection build writes a link whose target stays inside the collection: a symlink entry, listed in FILES.json as
+	// a file with the digest of its target, which must be a file of the archive.
+	Links map[string]string
 }
 
 // Archive is a generated collection archive.
@@ -73,6 +78,7 @@ type file struct {
 	name string
 	data []byte
 	dir  bool
+	link string
 }
 
 // Files returns the members of the archive without MANIFEST.json and FILES.json, directories first, in path order.
@@ -90,6 +96,13 @@ func (s Spec) files() []file {
 		files[k] = v
 	}
 	dirs := map[string]bool{}
+	for name := range s.Links {
+		for i := 0; i < len(name); i++ {
+			if name[i] == '/' {
+				dirs[name[:i]] = true
+			}
+		}
+	}
 	for name := range files {
 		for i := 0; i < len(name); i++ {
 			if name[i] == '/' {
@@ -103,6 +116,10 @@ func (s Spec) files() []file {
 	}
 	for n, c := range files {
 		out = append(out, file{name: n, data: []byte(c)})
+	}
+	for n, target := range s.Links {
+		// The data of a link is its target's content: what FILES.json lists for it; the tar entry carries no content.
+		out = append(out, file{name: n, data: []byte(files[path.Join(path.Dir(n), target)]), link: target})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
 	return out
@@ -170,10 +187,14 @@ func Collection(s Spec) (Archive, error) {
 	tw := tar.NewWriter(zw)
 	write := func(f file) error {
 		h := &tar.Header{Name: f.name, ModTime: ModTime, Uname: "root", Gname: "root", Format: tar.FormatUSTAR}
-		if f.dir {
+		switch {
+		case f.link != "":
+			h.Typeflag, h.Mode, h.Linkname = tar.TypeSymlink, 0o777, f.link
+			return tw.WriteHeader(h)
+		case f.dir:
 			h.Typeflag, h.Mode = tar.TypeDir, 0o755
 			h.Name += "/"
-		} else {
+		default:
 			h.Typeflag, h.Mode, h.Size = tar.TypeReg, 0o644, int64(len(f.data))
 		}
 		if err := tw.WriteHeader(h); err != nil {

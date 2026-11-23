@@ -31,7 +31,8 @@ const (
 	maxNameTotal = 16 << 20
 )
 
-// Entry is an archive entry a reader hands out: a regular file or a directory.
+// Entry is an archive entry a reader hands out: a regular file, a directory or, when the reader was made with [ContainedSymlinks], a
+// symbolic link whose target stays inside the archive.
 type Entry struct {
 	// Name is the name as the archive spells it.
 	Name string
@@ -39,12 +40,47 @@ type Entry struct {
 	Size int64
 	// Dir is true for a directory.
 	Dir bool
+	// Link is true for a symbolic link. A link has no content: Read, Stream and ReadEntry answer as for a directory, and the reader
+	// never opens what it points at.
+	Link bool
+	// Target is the path a link points at, resolved against the link's own directory and cleaned: a relative path of the archive
+	// ("." is its root). Empty for any other entry.
+	Target string
+	// Linkname is the target as the link spells it, for a format that checks the steps of the resolution and not only its end.
+	Linkname string
+}
+
+// TarOption changes what a [TarReader] admits. The bounds are not options: they are the [Limits].
+type TarOption func(*TarReader)
+
+// ContainedSymlinks admits a symbolic link whose target, resolved against the link's own directory, is relative and stays inside the
+// archive (Q-ANS-91, R-ARCH-028). It is the rule of a format whose own client writes such links and checks them so on extraction; a link
+// with an absolute target or one that leaves the archive stays refused, and so does every hard link. The reader never follows a link: it
+// hands the entry out with its [Entry.Target], and a link counts against Limits.Entries like any entry.
+func ContainedSymlinks() TarOption { return func(t *TarReader) { t.symlinks = true } }
+
+// maxLinkHops bounds the resolution of a chain of links by [ResolveLink], as an operating system bounds a chain of symbolic links.
+const maxLinkHops = 40
+
+// ResolveLink resolves name through the links of an archive (name to [Entry.Target]) to the name of an entry that is no link: the
+// lookup a client's extraction makes, done on names and never by reading what a link points at. ok is false for a chain longer than
+// 40 links or one that loops.
+func ResolveLink(links map[string]string, name string) (string, bool) {
+	for range maxLinkHops {
+		target, isLink := links[name]
+		if !isLink {
+			return name, true
+		}
+		name = target
+	}
+	return "", false
 }
 
 // TarReader reads a gzip-compressed tar archive within the limits of R-ARCH-028.
 // It refuses what two readers could resolve differently: a name used twice (a
-// directory's trailing slash does not make a second name), a link, a device, a
-// sparse file and data after the archive's end. It never writes anything: an
+// directory's trailing slash does not make a second name), a link (a contained
+// symbolic link only when [ContainedSymlinks] admits it), a device, a sparse file
+// and data after the archive's end. It never writes anything: an
 // entry name is a label, not a file-system path.
 type TarReader struct {
 	ctx context.Context
@@ -57,12 +93,13 @@ type TarReader struct {
 	br  *bufio.Reader
 	tr  *tar.Reader
 
-	started bool
-	done    bool
-	entries int
-	regular int
-	names   map[string]struct{}
-	nameTot int64
+	started  bool
+	done     bool
+	symlinks bool
+	entries  int
+	regular  int
+	names    map[string]struct{}
+	nameTot  int64
 
 	declared int64 // sum of the declared sizes of regular files
 	read     int64 // bytes handed out by Read, all entries
@@ -73,8 +110,12 @@ type TarReader struct {
 
 // NewTarGz reads the tar.gz archive in r. Nothing is read before the first Next.
 // ctx carries the deadline (Limits.Context).
-func NewTarGz(ctx context.Context, r io.Reader, l Limits) *TarReader {
-	return newTarGz(ctx, r, effective(l))
+func NewTarGz(ctx context.Context, r io.Reader, l Limits, opts ...TarOption) *TarReader {
+	t := newTarGz(ctx, r, effective(l))
+	for _, o := range opts {
+		o(t)
+	}
+	return t
 }
 
 func newTarGz(ctx context.Context, r io.Reader, l Limits) *TarReader {
@@ -134,12 +175,21 @@ func (t *TarReader) admit(h *tar.Header) (Entry, error) {
 		return Entry{}, TooLarge(fmt.Sprintf("the archive holds more than %d entries", t.l.Entries))
 	}
 	var dir bool
+	var target string
 	switch h.Typeflag {
 	case tar.TypeReg:
 	case tar.TypeDir:
 		dir = true
-	case tar.TypeSymlink, tar.TypeLink:
-		return Entry{}, Refused(fmt.Sprintf("entry %q is a link", shorten(h.Name)))
+	case tar.TypeSymlink:
+		if !t.symlinks {
+			return Entry{}, Refused(fmt.Sprintf("entry %q is a link", shorten(h.Name)))
+		}
+		var err error
+		if target, err = containedTarget(h.Name, h.Linkname); err != nil {
+			return Entry{}, err
+		}
+	case tar.TypeLink:
+		return Entry{}, Refused(fmt.Sprintf("entry %q is a hard link", shorten(h.Name)))
 	default:
 		return Entry{}, Refused(fmt.Sprintf("entry %q has an unsupported type (%q)", shorten(h.Name), string(h.Typeflag)))
 	}
@@ -162,6 +212,9 @@ func (t *TarReader) admit(h *tar.Header) (Entry, error) {
 	if h.Size < 0 {
 		return Entry{}, Refused(fmt.Sprintf("entry %q has a negative size", shorten(h.Name)))
 	}
+	if target != "" {
+		return Entry{Name: h.Name, Link: true, Target: target, Linkname: h.Linkname}, nil
+	}
 	if !dir {
 		t.regular++
 		if t.declared += h.Size; t.declared > t.l.StreamBytes || t.declared < 0 {
@@ -171,11 +224,28 @@ func (t *TarReader) admit(h *tar.Header) (Entry, error) {
 	return Entry{Name: h.Name, Size: h.Size, Dir: dir}, nil
 }
 
+// containedTarget resolves the target of a symbolic link against the link's own directory and refuses a target that is empty,
+// absolute or leaves the archive, naming the entry: the check ansible-core's extraction makes (_is_child_path with the link's name).
+func containedTarget(name, linkname string) (string, error) {
+	switch {
+	case linkname == "" || len(linkname) > MaxNameBytes || strings.ContainsRune(linkname, 0):
+		return "", Refused(fmt.Sprintf("entry %q is a link without a usable target", shorten(name)))
+	case strings.HasPrefix(linkname, "/"):
+		return "", Refused(fmt.Sprintf("entry %q is a link to the absolute path %q", shorten(name), shorten(linkname)))
+	}
+	dir := path.Dir(path.Clean(strings.TrimPrefix(strings.TrimSuffix(name, "/"), "./")))
+	target := path.Join(dir, linkname)
+	if target == ".." || strings.HasPrefix(target, "../") || strings.HasPrefix(target, "/") {
+		return "", Refused(fmt.Sprintf("entry %q is a link to %q, which leaves the archive", shorten(name), shorten(linkname)))
+	}
+	return target, nil
+}
+
 // Read reads the content of the current entry. The bytes count against
 // Limits.UncompressedBytes, and an entry that shows a compression ratio above
 // Limits.Ratio fails with TooLarge.
 func (t *TarReader) Read(p []byte) (int, error) {
-	if t.cur == nil || t.cur.Dir {
+	if t.cur == nil || t.cur.Dir || t.cur.Link {
 		return 0, io.EOF
 	}
 	n, err := t.tr.Read(p)
@@ -198,7 +268,7 @@ func (t *TarReader) Read(p []byte) (int, error) {
 // Limits.UncompressedBytes, which bounds what is read into memory; the compression ratio of the entry is checked as Read does.
 // It returns the bytes copied.
 func (t *TarReader) Stream(dst io.Writer) (int64, error) {
-	if t.cur == nil || t.cur.Dir {
+	if t.cur == nil || t.cur.Dir || t.cur.Link {
 		return 0, Refused("the current entry has no content")
 	}
 	buf := make([]byte, 32<<10)
@@ -229,7 +299,7 @@ func (t *TarReader) Stream(dst io.Writer) (int64, error) {
 // it, or above what remains of Limits.UncompressedBytes, fails before a byte is
 // read.
 func (t *TarReader) ReadEntry(max int64) ([]byte, error) {
-	if t.cur == nil || t.cur.Dir {
+	if t.cur == nil || t.cur.Dir || t.cur.Link {
 		return nil, Refused("the current entry has no content")
 	}
 	if max <= 0 {

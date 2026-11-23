@@ -198,6 +198,13 @@ func (s *Server) collections() []*collectionDef {
 // AddVersion makes the upstream publish a version: of a collection that exists, or a new collection. The version must be a
 // semantic version the collection does not have yet.
 func (s *Server) AddVersion(fullName, version string) error {
+	return s.AddLinkedVersion(fullName, version, nil)
+}
+
+// AddLinkedVersion is AddVersion with symbolic links in the version's archive: path to the target as the link spells it, written as
+// ansible-galaxy collection build writes a link that stays inside the collection (ansiblegen.Spec.Links). The targets are files of the
+// generated archive (README.md, meta/runtime.yml, plugins/README.md, roles/hello/tasks/main.yml, ...).
+func (s *Server) AddLinkedVersion(fullName, version string, links map[string]string) error {
 	ns, name, ok := strings.Cut(fullName, ".")
 	if !ok || !validFullName(fullName) {
 		return fmt.Errorf("collection %q: want <namespace>.<name>", fullName)
@@ -226,7 +233,7 @@ func (s *Server) AddVersion(fullName, version string) error {
 	for _, v := range c.versions {
 		seq = max(seq, v.seq+1)
 	}
-	c.versions = append(c.versions, &versionDef{version: version, requiresAnsible: ">=2.14.0", seq: seq})
+	c.versions = append(c.versions, &versionDef{version: version, requiresAnsible: ">=2.14.0", seq: seq, links: links})
 	sort.SliceStable(c.versions, func(i, j int) bool { return compareVersions(c.versions[i].version, c.versions[j].version) < 0 })
 	if idx >= 0 {
 		s.cols[idx] = c

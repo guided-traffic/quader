@@ -432,8 +432,14 @@ Priority: **P1** · Covers: PKG-ANSIBLE-006
 `Inspect` reads the uploaded archive as untrusted content (R-ARCH-028) and decides identity and the stored metadata. The kit's helper
 for gzip-compressed tar archives (`formattest.InspectTarGz`) is the crafted-input harness (R-ANS-031).
 
-- **Structure.** A gzip-compressed tar with `MANIFEST.json` and `FILES.json` at its root (a leading `./` is accepted). Entry types
-  other than regular files and directories (links, devices, hard links) are refused; names with `..`, an absolute name or a name
+- **Structure.** A gzip-compressed tar with `MANIFEST.json` and `FILES.json` at its root (a leading `./` is accepted). Regular files,
+  directories and symbolic links whose target stays inside the archive are admitted; any other entry (a hard link, a device) is refused,
+  and so is a symbolic link whose target is absolute or, resolved against the link's own directory, leaves the archive, one whose
+  resolution passes through another link, and an entry below a link, each with a sentence that names the entry (Q-ANS-91). A link is
+  never followed: every read of the archive (`MANIFEST.json`, `FILES.json`, `meta/runtime.yml`, the README, the sources and files the
+  documentation reads) reads regular entries only, and a path reached only through a link is absent. `FILES.json` lists a link as
+  `ansible-galaxy collection build` writes it, a file with the digest of its target, and that digest is compared with the target's. A
+  link counts against the entries' bound like any entry; the stored archive is served byte for byte. Names with `..`, an absolute name or a name
   that leaves the archive are refused; the number of entries, the total expanded size, the size of one entry and the compression ratio
   are bounded by `untrusted.Limits` (the format tightens the defaults, R-ANS-031). The archive is never extracted to disk.
 - **`MANIFEST.json`** (at most 1 MiB): `collection_info{namespace,name,version,authors,readme,tags,description,license,license_file,
@@ -459,8 +465,11 @@ for gzip-compressed tar archives (`formattest.InspectTarGz`) is the crafted-inpu
 
 Acceptance criteria:
 
-- An archive with a symlink member, a member `../x`, a `FILES.json` whose digest differs from `file_manifest_file`, or an unlisted
-  member: publish ends in a failed task, each with its own message; the repository holds nothing.
+- An archive with a symlink member whose target is absolute or leaves the archive, a hard link, a member `../x`, a `FILES.json` whose
+  digest differs from `file_manifest_file`, or an unlisted member: publish ends in a failed task, each with its own message; the repository
+  holds nothing.
+- An archive with a symbolic link beside its target, listed in `FILES.json` with the target's digest (as `ansible.posix` 2.2.2 holds ten),
+  is accepted through a publish and through a remote, and its archive is served unchanged.
 - An archive built by `ansible-galaxy collection build` of the ansible-core 2.17.14 and 2.21.6 images is accepted.
 - The identity inside the archive and the file name differing (`acme-tools-1.0.0.tar.gz` holding `acme.other`) is a failed task.
 
@@ -1641,7 +1650,7 @@ the remote row, from the stub's collection (`webserver`).
 
 | Row | What the real client does | What the browser journey checks |
 |---|---|---|
-| **local** | `ansible-galaxy collection publish` to a local repository; `ansible-galaxy collection install` of it; `GET docs-blob/` with the client's own token | On the package page: the Documentation tab with the tree (Modules 2, Plugins, Roles 1), the README first, a module page with its parameter table and example, the search narrowing the tree and keeping the counts, the Contents tab, the Import log tab with the publish |
+| **local** | `ansible-galaxy collection publish` to a local repository; `ansible-galaxy collection install` of it; `GET docs-blob/` with the client's own token | On the package page: the Documentation tab with the tree (Documentation 2: the README and the `docs/` file; Modules 1: `ping_host`), the README first, a module page with its parameter table and example, the search narrowing the tree and keeping the counts, the Contents tab, the Import log tab with the publish |
 | **remote** | `ansible-galaxy collection install` through a remote repository over the stub (the real client; the stub serves `docs-blob/`); `GET docs-blob/` of the remote | After the job ran: the same tabs from the upstream's document; the stub's README with a script tag shows without it |
 | **virtual** | `ansible-galaxy collection install` through a virtual repository over the two; `GET docs-blob/` of the virtual repository | The same tabs on the virtual repository's package page, from the winner |
 | **wiki** | A user who may read the artifacts and not the wiki installs the collection with the real client | The package page has no Documentation or Contents tab; `docs-blob/` answers as R-AUTHZ-034 decides. Built by the package that builds T-18's check, in this row |
@@ -3034,17 +3043,61 @@ archive, and a `HEAD` of a role's archive the probe of the member its id names (
 `TestR_REPO_065_WhatAProbeOfTheGalaxyIs`, `TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/ansible/probe_test.go).
 
+### Q-ANS-91 · A symbolic link that stays inside a collection is admitted and never followed
+
+Status: **Decided by the coordinator of the run** (2026-11-23: admitted where it stays inside the collection, never followed); the details
+by the development agent. The owner reviews it at the walkthrough. Closes H-1620, which is removed.
+
+Context: the read of the public Galaxy on 2026-11-23 ([ansible-remote.md](../../developer/ansible-remote.md#a-read-of-the-public-galaxy-2026-11-23-a-measurement))
+found that `ansible.posix` 2.2.2, one of the most used collections, could not be fetched through a remote: its archive holds ten symbolic
+links below `tests/utils/shippable/`, and the reader refused every link. What the client does, read on 2026-11-23 in the source of
+ansible-core 2.21.6 and 2.17.14 inside the repository's client images (`ansible/galaxy/collection/__init__.py`): the build
+(`_build_collection_tar`) writes a symbolic link (`SYMTYPE`) for a file or directory whose real path stays inside the collection, with a
+target relative to the link's directory, and lists it in `FILES.json` as a `file` with the SHA-256 of its target (or a `dir`); it writes
+no hard link. The install (`_extract_tar_file`, `_extract_tar_dir`) creates such a link after `_is_child_path` with the link's name: the
+target, joined to the link's directory and normalized, must stay below the collection's directory; it reads a link's content through
+`tarfile.extractfile`, which is the target's, to check the listed digest. `ansible-galaxy role install` (`ansible/galaxy/role.py`)
+extracts regular files and symbolic links whose name and target stay inside the role's directory.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An option of the core's tar reader admits a symbolic link whose target, resolved against its directory, is relative and stays inside the archive; the format keeps it as a name and its target and reads regular entries only; `FILES.json`'s digest of a link is compared with its target's (chosen) | `untrusted.ContainedSymlinks`, `Entry.Link`, `Entry.Target`, `untrusted.ResolveLink`; `ReadArchive`, `ReadFile`, `checkRoleArchive`, the signature check of R-SIG-031 | What the client builds and installs, Quader stores; nothing is ever read through a link; the bounds stay the core's | One more rule in the reader, switched on per format |
+| (b) Refuse every link, as before | Nothing to change | Simplest | Collections the client builds and installs every day cannot be published or fetched |
+| (c) Follow a link and read its target as the file | Like an extraction | The documentation would list a linked module | A reader that resolves names through links is the path to a file Quader never meant to read; two readers could disagree |
+
+**Choice:** (a), with two rules the client's lexical check does not make and its build never needs: a target whose resolution passes
+through another link before its last step, and an entry below a link, are refused (the rule of npm's
+[Q-NPM-55](npm.md#q-npm-55--a-link-target-may-not-pass-through-another-link)); a hard link stays refused, as the build writes none. The
+reader is the core's for every format (R-ARCH-028, R-ANS-031); only the Ansible Galaxy format switches the option on, for its local, remote
+and virtual classes alike (the virtual class reads through its members). For the other formats:
+
+| Format | Does Quader's reader meet link entries | What the client does | Change |
+|---|---|---|---|
+| npm | Yes, in the package tarball, with npm's own reader (`internal/formats/npm/tarball`), which already admits a contained link and refuses a chain (R-NPM-007, Q-NPM-18, Q-NPM-55) | pacote skips link entries on install (R-NPM-007, verified in npm 11.17.0's sources on 2026-10-28) | none |
+| NuGet | The `.nupkg` is a zip; NuGet's reader (`internal/formats/nuget/nupkg`) does not look at an entry's mode, and the signature reader (`untrusted.NewZip`) refuses an entry marked as a link | `dotnet pack` and `nuget pack` write files, and NuGet's extraction writes every entry as a file: not read in their sources here | none: no client of the format writes a link entry |
+| Debian | No: only the control archive is read, with `archive/tar`, and only `control` must be a regular file; the data archive, where packages hold their links, is never decompressed (R-DEB-034) | dpkg installs the links of the data archive | none |
+| OCI | No: layers are stored by digest and never opened by Quader; the image scan's analyser reads them in its own unit (R-VULN) | the engines extract layers with their links | none |
+| generic | No: a file is stored as it is and never opened | — | none |
+
+**Rationale:** the format follows its client: what the client builds and admits on extraction, Quader stores and serves unchanged; what it
+refuses, Quader refuses with a sentence that names the entry. Quader never needs a link's target, because the digest of the target is the
+digest of a regular entry it reads in its own right. The client's own containment check protects the machine that installs; Quader adds that
+it serves nothing whose links could leave the collection by the lexical rule. The development agent would revisit the extra rules if a
+collection the client built were refused by them.
+
+**Applied in the spec:** R-ANS-010. Code: `ContainedSymlinks`, `containedTarget` and `ResolveLink` in
+[tar.go](../../../internal/formats/untrusted/tar.go); `ReadArchive`, `checkFiles`, `checkLinkSteps` in
+[archive.go](../../../internal/formats/ansible/collection/archive.go); `ReadFile` in [file.go](../../../internal/formats/ansible/collection/file.go);
+`checkRoleArchive` in [remote_fill.go](../../../internal/formats/ansible/remote_fill.go); `filesMatch` in
+[ansible.go](../../../internal/signatures/scheme/openpgp/ansible.go). Tests: `TestQ_ANS_91_*` in
+[tar_links_test.go](../../../internal/formats/untrusted/tar_links_test.go),
+[archive_links_test.go](../../../internal/formats/ansible/collection/archive_links_test.go),
+[remote_role_links_test.go](../../../internal/formats/ansible/remote_role_links_test.go),
+[publish_links_test.go](../../../internal/formats/ansible/publish_links_test.go) (unit), `TestR_SIG_031_ALinkOfACollectionIsCheckedByItsTargetsDigest`,
+and the integration cases in [ansiblelocal/links_test.go](../../../test/integration/ansiblelocal/links_test.go) and
+[ansibleremote/links_test.go](../../../test/integration/ansibleremote/links_test.go).
+
 ## What this does not cover
-
-### H-1620 · A collection whose archive holds a symbolic link is refused, also through a remote
-
-The archive reader refuses every entry that is no regular file or directory (R-ANS-010, R-ARCH-028), so a collection whose archive holds a
-symbolic link is refused at publish and in the fill of a remote, which answers 502 `upstream_failed` for its archive. Live, and real today:
-`ansible.posix` 2.2.2 on the public Galaxy carries ten links below `tests/utils/shippable/` and cannot be installed through a remote
-repository (read on 2026-11-23, [ansible-remote.md](../../developer/ansible-remote.md#a-read-of-the-public-galaxy-2026-11-23-a-measurement)).
-The links of that archive point at files beside them, inside the collection; which links the client's own build writes was not checked.
-Whether Quader admits links whose target stays inside the collection, and how the reader then keeps two readers from resolving them
-differently (R-ARCH-028), is not decided.
 
 ### H-839 · A remote's signatures are verified and shown, and refuse nothing
 

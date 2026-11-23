@@ -643,7 +643,10 @@ the declared sizes) and what a streaming pass may decompress without keeping con
 reader enforces them itself, because the shared zip reader can only tighten the defaults of
 R-ARCH-028 (Q-NUGET-23). The compression ratio is checked for the entries read into memory. Entries read into memory (the `.nuspec`,
 the embedded files of R-NUGET-024) stay within the limits of
-[architecture.md](../architecture.md) R-ARCH-028, which a format can only tighten.
+[architecture.md](../architecture.md) R-ARCH-028, which a format can only tighten. A zip entry marked as a symbolic link is not admitted
+by the shared zip reader; no client of the format writes one (`dotnet pack` and `nuget pack` write files), so the option of the tar reader
+that admits a contained link ([ansible.md](ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed)
+Q-ANS-91) has no counterpart here.
 
 Acceptance criteria:
 

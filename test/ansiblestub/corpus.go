@@ -18,6 +18,8 @@ type versionDef struct {
 	requiresAnsible string
 	deps            map[string]string
 	signed          bool
+	// links are the symbolic links of the version's archive (ansiblegen.Spec.Links).
+	links map[string]string
 	// seq orders the creation times: version n was created n days after the start of the corpus.
 	seq int
 }
@@ -185,7 +187,7 @@ func (c *archiveCache) collection(def *collectionDef, v *versionDef, kind archiv
 	if a, ok := c.items[key]; ok {
 		return a, nil
 	}
-	spec := ansiblegen.Spec{Namespace: def.ns, Name: def.name, Version: v.version, Dependencies: v.deps, RequiresAnsible: v.requiresAnsible}
+	spec := ansiblegen.Spec{Namespace: def.ns, Name: def.name, Version: v.version, Dependencies: v.deps, RequiresAnsible: v.requiresAnsible, Links: v.links}
 	switch kind {
 	case kindVariant:
 		spec.Extra = map[string]string{"variant.txt": "the second archive of this version\n"}

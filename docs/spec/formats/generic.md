@@ -196,7 +196,10 @@ address, `Repr-Digest`, a single byte range, `If-Range`, conditional requests) a
 - `GET` on a folder returns the directory index (R-STOR-017, P1) and, before it exists, 404; a
   folder is never served as an archive in the MVP.
 - Download of a single entry from inside an archive, and of a folder as an archive, are not part of
-  the MVP (the catalog entries ART-014 and ART-015 are not specified yet).
+  the MVP (the catalog entries ART-014 and ART-015 are not specified yet). The format opens no archive it
+  stores, so the symbolic links an archive holds are never met (the option of
+  [ansible.md](ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed)
+  Q-ANS-91 is not needed); the entry download, when it is specified, decides its own rule.
 - The client's parallel multi-part download relies on `Range` on every generic download path, which
   R-STOR-012 guarantees on every replica; it holds for files served from a remote repository's cache
   as well (R-GENERIC-009).

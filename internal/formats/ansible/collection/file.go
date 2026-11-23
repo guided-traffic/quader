@@ -15,7 +15,7 @@ import (
 func ReadFile(ctx context.Context, r io.Reader, lim untrusted.Limits, name string, max int64) (data []byte, found bool, err error) {
 	ctx, cancel := lim.Context(ctx)
 	defer cancel()
-	tr := untrusted.NewTarGz(ctx, r, lim)
+	tr := untrusted.NewTarGz(ctx, r, lim, untrusted.ContainedSymlinks())
 	for {
 		e, err := tr.Next()
 		if err != nil {
@@ -24,8 +24,8 @@ func ReadFile(ctx context.Context, r io.Reader, lim untrusted.Limits, name strin
 			}
 			return nil, false, fromStream(err)
 		}
-		if e.Dir {
-			continue
+		if e.Dir || e.Link {
+			continue // a member reached only through a link is absent: nothing is read through one (Q-ANS-91)
 		}
 		if n, cerr := cleanName(e.Name); cerr != nil || n != name {
 			continue

@@ -814,6 +814,9 @@ Every manifest, pushed or fetched, is untrusted input (R-ARCH-028):
   count towards the bytes. A bound that is crossed is 413 `SIZE_INVALID`, a document the parser will not read 400 `MANIFEST_INVALID`.
 - Every digest in a descriptor is validated by the grammar of R-OCI-002 before it is used as a path segment; nothing of a
   manifest is ever used as a file-system path.
+- A layer is stored by its digest and never opened by Quader, so the symbolic links a layer holds are never met by its readers; the image
+  scan's analyser reads layers in its own unit (Q-ANS-91 of [ansible.md](ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed)
+  needs no counterpart here).
 - A fetched manifest is accepted only when its SHA-256 equals the digest it was asked by, or the `Docker-Content-Digest` the
   upstream announced for a tag; otherwise the fill answers 502 and stores nothing (R-REPO-041,
   [Q-OCI-120](#q-oci-120--the-digest-a-tag-announces-is-checked-by-a-reader-around-the-response-body)).

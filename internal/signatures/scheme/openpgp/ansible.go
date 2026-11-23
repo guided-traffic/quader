@@ -43,10 +43,12 @@ type collectionFile struct {
 	SHA256       string `json:"chksum_sha256"`
 }
 
-// collection is what one pass over a collection archive keeps: the two documents and the SHA-256 of every other file.
+// collection is what one pass over a collection archive keeps: the two documents, the SHA-256 of every other file and the targets of its
+// links, which are names and are never read through (formats/ansible.md Q-ANS-91).
 type collection struct {
 	manifest, files []byte
 	sums            map[string]string
+	links           map[string]string
 }
 
 // ansibleManifest reads the collection archive once, checks FILES.json against MANIFEST.json and every file against FILES.json, and
@@ -73,27 +75,45 @@ func ansibleManifest(ctx context.Context, in scheme.Input) ([]byte, error) {
 	if err := decodeJSON(c.files, in.Limits, &f); err != nil {
 		return nil, err
 	}
-	if err := filesMatch(f, c.sums); err != nil {
+	if err := filesMatch(f, c.sums, c.links); err != nil {
 		return nil, err
 	}
 	return c.manifest, nil
 }
 
-// filesMatch checks every file FILES.json names against the archive, and that the archive holds no file FILES.json does not name.
-func filesMatch(f collectionFiles, sums map[string]string) error {
+// filesMatch checks every file FILES.json names against the archive, and that the archive holds no file FILES.json does not name. A
+// file that is a link is named with the digest of its target, as ansible-galaxy collection build lists it, and the target's digest is
+// the one compared; the targets stay in the archive's count of files, since FILES.json names them too.
+func filesMatch(f collectionFiles, sums, links map[string]string) error {
+	matched := map[string]bool{}
 	for _, e := range f.Files {
 		if e.Type != "file" {
 			continue
 		}
 		name := trimEntry(e.Name)
-		got, ok := sums[name]
+		at := name
+		if _, isLink := links[name]; isLink {
+			target, ok := untrusted.ResolveLink(links, name)
+			if !ok {
+				return pki.Invalid(signatures.ReasonDigestMismatch, "the link %q names no file of the archive", name)
+			}
+			at = target
+			delete(links, name)
+		} else {
+			matched[name] = true
+		}
+		got, ok := sums[at]
 		if !ok || !strings.EqualFold(e.ChecksumType, "sha256") || !strings.EqualFold(got, e.SHA256) {
 			return pki.Invalid(signatures.ReasonDigestMismatch, "the file %q is not the one FILES.json names", name)
 		}
-		delete(sums, name)
 	}
 	for name := range sums {
-		return pki.Invalid(signatures.ReasonDigestMismatch, "the archive holds %q, which FILES.json does not name", name)
+		if !matched[name] {
+			return pki.Invalid(signatures.ReasonDigestMismatch, "the archive holds %q, which FILES.json does not name", name)
+		}
+	}
+	for name := range links {
+		return pki.Invalid(signatures.ReasonDigestMismatch, "the archive holds the link %q, which FILES.json does not name", name)
 	}
 	return nil
 }
@@ -131,8 +151,9 @@ func readCollection(ctx context.Context, in scheme.Input) (*collection, error) {
 		return nil, pki.Transient(err)
 	}
 	defer r.Close()
-	tr := untrusted.NewTarGz(ctx, r, untrusted.Limits{StreamBytes: in.Limits.MaxContentSize, UncompressedBytes: maxManifest + maxFiles})
-	c := &collection{sums: map[string]string{}}
+	tr := untrusted.NewTarGz(ctx, r, untrusted.Limits{StreamBytes: in.Limits.MaxContentSize, UncompressedBytes: maxManifest + maxFiles},
+		untrusted.ContainedSymlinks())
+	c := &collection{sums: map[string]string{}, links: map[string]string{}}
 	for {
 		e, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -142,6 +163,10 @@ func readCollection(ctx context.Context, in scheme.Input) (*collection, error) {
 			return nil, archiveError(ctx, err)
 		}
 		if e.Dir {
+			continue
+		}
+		if e.Link {
+			c.links[trimEntry(e.Name)] = e.Target
 			continue
 		}
 		if err := c.add(tr, trimEntry(e.Name)); err != nil {

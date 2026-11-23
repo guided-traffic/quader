@@ -2,7 +2,9 @@
 // `ansible-galaxy collection install` downloads (R-ANS-010, R-ANS-031). The archive is untrusted input: it is read as a bounded stream
 // through internal/formats/untrusted, never extracted, and accepted only when it is internally consistent: MANIFEST.json names its
 // collection and the digest of FILES.json, FILES.json lists every file of the archive with its digest, and nothing is in the archive
-// that FILES.json does not list. The client's `collection verify` has something to verify against then.
+// that FILES.json does not list. The client's `collection verify` has something to verify against then. A symbolic link whose target
+// stays inside the archive is admitted, as the client's own build writes it and its install admits it, and is never read through
+// (Q-ANS-91).
 //
 // It is a leaf: it imports the standard library, the YAML module (for one scalar of meta/runtime.yml), internal/errs and
 // internal/formats/untrusted.
@@ -48,7 +50,7 @@ const (
 // (R-ANS-009).
 const (
 	// ReasonUnreadable: the content is no gzip-compressed tar archive, or holds a structure no reader should be asked to resolve (a
-	// link, a device, a repeated name, data after the end).
+	// hard link, a symbolic link with an absolute target or one that leaves the archive, a device, a repeated name, data after the end).
 	ReasonUnreadable = "unreadable_archive"
 	// ReasonBound: a bound was crossed (entries, bytes, a document, the compression ratio).
 	ReasonBound = "bound_exceeded"
@@ -159,11 +161,14 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 	}
 	ctx, cancel := lim.Context(ctx)
 	defer cancel()
-	tr := untrusted.NewTarGz(ctx, r, lim)
+	tr := untrusted.NewTarGz(ctx, r, lim, untrusted.ContainedSymlinks())
 	var (
 		manifest, files, runtime []byte
 		haveRuntime              bool
 		members                  = map[string]string{} // file name to the hex digest of its content
+		links                    = map[string]string{} // link name to its resolved target; never read through (Q-ANS-91)
+		spelled                  = map[string]string{} // link name to its target as the link spells it
+		names                    []string              // every entry name, for the rule that nothing lies below a link
 	)
 	for {
 		e, err := tr.Next()
@@ -183,6 +188,13 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 		}
 		if name == "" {
 			return nil, refuse(ReasonUnsafeName, "an entry has no name")
+		}
+		names = append(names, name)
+		if e.Link {
+			// A contained link is kept as a name and its target; nothing is read through it, so a document, the README or a
+			// source reached only through a link is absent to the reader, as it is to the tap (Q-ANS-91).
+			links[name], spelled[name] = e.Target, e.Linkname
+			continue
 		}
 		switch name {
 		case ManifestName:
@@ -219,6 +231,9 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 			return nil, fromStream(err)
 		}
 	}
+	if err := checkLinkSteps(links, spelled, names); err != nil {
+		return nil, err
+	}
 	switch {
 	case manifest == nil:
 		return nil, refuse(ReasonMissingManifest, "the archive has no %s at its root", ManifestName)
@@ -230,7 +245,7 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 		return nil, err
 	}
 	a.Manifest = manifest
-	if err := checkFiles(files, members, lim); err != nil {
+	if err := checkFiles(files, members, links, lim); err != nil {
 		return nil, err
 	}
 	a.Files = len(members) - 1 // FILES.json is one of the members; MANIFEST.json is not hashed
@@ -249,6 +264,46 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 		}
 	}
 	return a, nil
+}
+
+// checkLinkSteps refuses what a lexical check of a link's target cannot vouch for once the links are made on a file system: a target
+// whose resolution passes through another link before its last step (a link "a" to "sub/l/../.." with "sub/l" a link to ".." cleans
+// to the root and leaves it on a disk), and an entry that lies below a link. ansible-galaxy collection build writes neither: it
+// resolves a target to the file it names and does not walk into a linked directory (Q-ANS-91, the rule of npm's Q-NPM-55).
+func checkLinkSteps(links, spelled map[string]string, names []string) error {
+	if len(links) == 0 {
+		return nil
+	}
+	for name, target := range spelled {
+		var at []string
+		if dir := path.Dir(name); dir != "." {
+			at = strings.Split(dir, "/")
+		}
+		steps := strings.Split(target, "/")
+		for i, step := range steps {
+			switch step {
+			case "", ".":
+				continue
+			case "..":
+				if len(at) > 0 {
+					at = at[:len(at)-1]
+				}
+				continue
+			}
+			at = append(at, step)
+			if _, isLink := links[strings.Join(at, "/")]; isLink && i < len(steps)-1 {
+				return refuse(ReasonUnreadable, "the link %q is resolved through the link %q", short(name), short(strings.Join(at, "/")))
+			}
+		}
+	}
+	for _, n := range names {
+		for d := path.Dir(n); d != "."; d = path.Dir(d) {
+			if _, isLink := links[d]; isLink {
+				return refuse(ReasonUnreadable, "the entry %q lies below the link %q", short(n), short(d))
+			}
+		}
+	}
+	return nil
 }
 
 func digest(b []byte) string {
@@ -407,7 +462,9 @@ type filesDoc struct {
 }
 
 // checkFiles holds FILES.json against the archive: every listed file is a member with the listed digest, and every member is listed.
-func checkFiles(doc []byte, members map[string]string, lim untrusted.Limits) error {
+// A file that is a link is listed with the digest of the file it points at, as ansible-galaxy collection build writes it: the target is
+// found among the members by its name, and its digest, taken when the target itself was read, is compared (Q-ANS-91).
+func checkFiles(doc []byte, members, links map[string]string, lim untrusted.Limits) error {
 	var f filesDoc
 	if err := untrusted.UnmarshalJSON(doc, lim, &f); err != nil {
 		if untrusted.IsTooLarge(err) {
@@ -432,6 +489,12 @@ func checkFiles(doc []byte, members map[string]string, lim untrusted.Limits) err
 				return refuse(ReasonFilesInvalid, "%s lists the file %q without a sha256 digest", FilesName, short(e.Name))
 			}
 			have, ok := members[name]
+			if _, isLink := links[name]; isLink {
+				target, resolved := untrusted.ResolveLink(links, name)
+				if have, ok = members[target]; !resolved || !ok {
+					return refuse(ReasonMemberMissing, "%s lists %q, a link to %q, which is no file of the archive", FilesName, short(e.Name), short(links[name]))
+				}
+			}
 			switch {
 			case !ok || name == FilesName:
 				return refuse(ReasonMemberMissing, "%s lists the file %q, which the archive does not hold", FilesName, short(e.Name))
@@ -445,6 +508,11 @@ func checkFiles(doc []byte, members map[string]string, lim untrusted.Limits) err
 	var unlisted []string
 	for name := range members {
 		if name != FilesName && !listed[name] {
+			unlisted = append(unlisted, name)
+		}
+	}
+	for name := range links {
+		if !listed[name] {
 			unlisted = append(unlisted, name)
 		}
 	}

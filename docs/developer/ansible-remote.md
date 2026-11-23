@@ -104,8 +104,12 @@ collection install ansible.posix`:
 
 The documents read as the shapes recorded on 2026-11-10 say. The archive did not install: ansible.posix 2.2.2 carries ten symbolic links
 below `tests/utils/shippable/` (read with `tar -tvz` from the same file fetched directly, whose SHA-256 is the announced one), and the reader
-refuses every link entry (R-ANS-010). That is the gap
-[H-1620](../spec/formats/ansible.md#h-1620--a-collection-whose-archive-holds-a-symbolic-link-is-refused-also-through-a-remote).
+refused every link entry. That was the gap H-1620, closed by
+[Q-ANS-91](../spec/formats/ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed).
+
+**The read after the change** (the same remote, collection and version, the reader of Q-ANS-91, 2026-11-23 at 11:12 UTC): the four
+documents read as above, and `GET v3/artifacts/collections/ansible-posix-2.2.2.tar.gz` answered **200** with 166,545 bytes whose SHA-256
+is `00a58c5d…3b82b`, the digest the version document announced (Cache-Status `fwd=uri-miss; fwd-status=200; stored`).
 
 ## The counting stub
 

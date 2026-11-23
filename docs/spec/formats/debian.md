@@ -1556,7 +1556,7 @@ format reads it through `internal/formats/untrusted` with these bounds, which on
 
 | Input | Bounds |
 |---|---|
-| `.deb` archive (`untrusted.NewAr`) | at most 8 members, names of at most 16 bytes, member sizes that add up to the body; the data archive is skipped, never decompressed |
+| `.deb` archive (`untrusted.NewAr`) | at most 8 members, names of at most 16 bytes, member sizes that add up to the body; the data archive is skipped, never decompressed, so its symbolic links, which packages hold as a matter of course, are never met (the option of [ansible.md](ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed) Q-ANS-91 is not needed) |
 | Control archive | 16 MiB compressed, 64 MiB decompressed, 1,000 entries, a ratio of 100:1, `control` at most 1 MiB, no link in place of `control` |
 | deb822 paragraphs (control, `Release`, `Packages`, `Sources`) | 512 fields per paragraph, 1 MiB per field, field names and continuation lines as R-DEB-007 |
 | Release documents | 16 MiB, 100,000 checksum lines; one cleartext message; a `Hash` armor header, when present, matches its signatures |

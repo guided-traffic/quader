@@ -32,13 +32,24 @@ text of the error and nothing of the request.
 ## The archive
 
 An uploaded archive is untrusted until the reader has accepted it ([collection](../../internal/formats/ansible/collection/archive.go), R-ANS-010,
-R-ANS-031). It is read once, as a stream, never extracted: names with `..`, absolute names and backslashes, links, devices, sparse files, repeated names and
-data after the archive's end are refused; the entry count, the inflated bytes, the compression ratio of every entry and the size of the three documents it
+R-ANS-031). It is read once, as a stream, never extracted: names with `..`, absolute names and backslashes, hard links, devices, sparse files, repeated
+names and data after the archive's end are refused; the entry count, the inflated bytes, the compression ratio of every entry and the size of the three documents it
 keeps are bounded, and the reader ends with the context's deadline. The archive must be consistent: `MANIFEST.json` names the digest of `FILES.json`,
 `FILES.json` lists every file with its digest and no file of the archive is missing from it or unlisted. `meta/runtime.yml` is decoded into a node tree and
 walked for one scalar: an anchor, an alias, a tag, a merge key or more than 1,000 nodes ignore the field, and nothing of it is ever decoded into Go
 values. A refusal is a failed import task the client prints and stores nothing; a publish that fails before the inspection (a missing credential, a wrong
 `sha256`, a body over the limit) is an HTTP error.
+
+**Symbolic links** ([Q-ANS-91](../spec/formats/ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed)).
+`ansible-galaxy collection build` writes a symbolic link for a file or directory that stays inside the collection, and collections on the public Galaxy
+hold them (`ansible.posix` 2.2.2 holds ten). Quader admits a link whose target, resolved against the link's own directory, is relative and stays inside
+the archive, and refuses, naming the entry, a link to an absolute path, one that leaves the archive, one resolved through another link and an entry below
+a link. What an administrator should know: Quader stores and serves such an archive unchanged, through a publish and through a remote, and **never follows
+a link itself**: every read it makes of an archive (the two documents, `meta/runtime.yml`, the README, the documentation's sources, the signature check)
+reads regular entries only, and a path reached only through a link is absent to it. The links take effect only when a client extracts the archive, and
+there the client's own containment check is what protects the machine that installs: ansible-core refuses a link whose target leaves the collection's
+directory (read in ansible-core 2.17.14 and 2.21.6). A client older than that check, or another tool that extracts the archive without one, is outside
+what Quader can protect.
 
 **The identity is the archive's.** The name and the version are read from `MANIFEST.json` and checked against the grammar of R-ANS-002 (lower case, a
 semantic version); the permission on the name, its ownership and the shadowing check of a first publish are decided on that identity before the commit and

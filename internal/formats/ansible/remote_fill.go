@@ -3,8 +3,10 @@ package ansible
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -143,12 +145,16 @@ func (a remoteAdapter) putManifest(ctx context.Context, tx formats.Tx, c formats
 	})
 }
 
-// checkRoleArchive reads a role archive to its end within the bounds of R-ANS-031: a gzip-compressed tar archive without a link, a
-// duplicate name, a bomb or data after its end.
+// checkRoleArchive reads a role archive to its end within the bounds of R-ANS-031: a gzip-compressed tar archive without a hard link, a
+// duplicate name, a bomb or data after its end. A symbolic link is admitted when its target stays inside the role's directory, the first
+// segment of its name, which is the check ansible-galaxy role install makes before it extracts one (Q-ANS-91); the link is not followed.
 func checkRoleArchive(ctx context.Context, body io.Reader, lim untrusted.Limits) error {
 	ctx, cancel := lim.Context(ctx)
 	defer cancel()
-	tr := untrusted.NewTarGz(ctx, body, lim)
+	tr := untrusted.NewTarGz(ctx, body, lim, untrusted.ContainedSymlinks())
+	refused := func(err error) error {
+		return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that Quader refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
+	}
 	for {
 		e, err := tr.Next()
 		if errors.Is(err, io.EOF) && !untrusted.IsRefused(err) && !untrusted.IsTooLarge(err) {
@@ -156,16 +162,22 @@ func checkRoleArchive(ctx context.Context, body io.Reader, lim untrusted.Limits)
 		}
 		if err != nil {
 			if untrusted.IsRefused(err) || untrusted.IsTooLarge(err) {
-				return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that Quader refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
+				return refused(err)
 			}
 			return err
+		}
+		if e.Link {
+			if top, _, _ := strings.Cut(strings.TrimPrefix(e.Name, "./"), "/"); e.Target != top && !strings.HasPrefix(e.Target, top+"/") {
+				return refused(untrusted.Refused(fmt.Sprintf("entry %q is a link that leaves the role's directory %q", e.Name, top)))
+			}
+			continue
 		}
 		if e.Dir {
 			continue
 		}
 		if _, err := tr.Stream(io.Discard); err != nil {
 			if untrusted.IsRefused(err) || untrusted.IsTooLarge(err) {
-				return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that Quader refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
+				return refused(err)
 			}
 			return err
 		}

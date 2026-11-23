@@ -8836,10 +8836,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-79 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+80 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 79 questions</summary>
+<summary>Q-ANS: 80 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -8922,6 +8922,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-78](spec/formats/ansible.md#q-ans-78--a-remote-version-is-listed-when-its-archive-is-cached-not-when-its-version-document-is-filled) | A remote version is listed when its archive is cached, not when its version document is filled | Decided by the development agent | (a) The row is written by the commit of the archive's fill | — |
 | [Q-ANS-79](spec/formats/ansible.md#q-ans-79--the-eviction-of-a-cached-archive-removes-the-generic-version-as-the-core-does-and-leaves-the-formats-documentation-rows) | The eviction of a cached archive removes the generic version as the core does and leaves the format's documentation rows | Decided by the development agent | (a) The core's removal of the item and its version stands; the documentation rows stay until the repository or the cache is purged (H-900) | — |
 | [Q-ANS-80](spec/formats/ansible.md#q-ans-80--the-version-document-and-a-head-of-an-archive-are-probes) | The version document and a HEAD of an archive are probes | Decided by the development agent | (a) The version document (`GET` and `HEAD`) and a `HEAD` of a collection's or a role's archive; the content is the archive | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) |
+| [Q-ANS-91](spec/formats/ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed) | A symbolic link that stays inside a collection is admitted and never followed | Decided by the coordinator of the run | (a), with two rules the client's lexical check does not make and its build never needs: a target whose resolution passes through another link before its last step, and an entry below a link, are refused (the rule of npm's [Q-NPM-55](spec/formats/npm.md#q-npm-55--a-link-target-may-not-pass-through-another-link)); a hard link stays refused, as the build writes none. | — |
 
 </details>
 

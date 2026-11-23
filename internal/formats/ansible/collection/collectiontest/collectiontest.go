@@ -25,6 +25,10 @@ type Spec struct {
 	Dependencies map[string]string
 	// Files are the regular files besides the generated documents: name to content. A "meta/runtime.yml" here is the runtime file.
 	Files map[string]string
+	// Links are symbolic links: name to the target as the link spells it, relative to the link's directory. ansible-galaxy collection
+	// build writes such a link for a file whose target stays inside the collection and lists it in FILES.json as a file with the digest
+	// of its target, which must be one of Files.
+	Links map[string]string
 }
 
 // Entry is one entry of the tar stream.
@@ -65,6 +69,9 @@ func Entries(s Spec) []Entry {
 	for n := range s.Files {
 		names = append(names, n)
 	}
+	for n := range s.Links {
+		names = append(names, n)
+	}
 	sort.Strings(names)
 	dirs := map[string]bool{}
 	var body []Entry
@@ -83,6 +90,12 @@ func Entries(s Spec) []Entry {
 		if dirs[n] {
 			listed = append(listed, fileEntry{Name: n, FType: "dir", Format: 1})
 			body = append(body, Entry{Name: n, Dir: true})
+			continue
+		}
+		if link, ok := s.Links[n]; ok {
+			h := Sum([]byte(s.Files[path.Join(path.Dir(n), link)]))
+			listed = append(listed, fileEntry{Name: n, FType: "file", ChksumType: &sha, ChksumSHA256: &h, Format: 1})
+			body = append(body, Entry{Name: n, Type: tar.TypeSymlink, Link: link})
 			continue
 		}
 		c := []byte(s.Files[n])
