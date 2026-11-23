@@ -176,7 +176,14 @@ break-glass login (`wireLogin`, which calls the provisioner and takes the limite
 authentication stage (`wireAuth`), the endpoints' rate-limit classes and last the API stage. A replica refuses to
 open its client listener when one of the areas it serves is missing (`requireServing`), and a step refuses a nil
 input by name, so a misconfigured replica stops at start-up instead of answering 503 on a route. The authentication
-stage and the decision point exist before the listener opens; no M0 stand-in remains. `audit.Freeze()` runs in
+stage and the decision point exist before the listener opens. One piece of M0 remains, as a development bridge:
+`system.bootstrap_anonymous_read` lets a `GET` or `HEAD` below `/api/v1/` pass the authentication stage without a credential
+(`publicRoute` in [wire_identity.go](../../internal/app/wire_identity.go)), and `bridgeAccess` ([access.go](../../internal/app/access.go))
+answers `settings:read` for an anonymous caller of the system information and the replica list alone, on the default endpoint
+while it admits anonymous requests; every other operation goes to the decision point. The configuration check refuses the switch
+while the base URL of any endpoint is an `https` origin other than localhost ([finalize.go](../../internal/config/finalize.go)), and a
+replica that has it on logs a warning at start ([warnings.go](../../internal/app/warnings.go)).
+`audit.Freeze()` runs in
 `freezeRegistries`.
 
 ## Error codes

@@ -5102,11 +5102,11 @@ components.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Every package registers, the second reuses | The help texts must be identical | No shared object | A help text edited in one place breaks start-up in the other |
-| (b) The identity area owns the families (chosen) | `principal.Metrics` is built once per replica (`App.authMetrics`); the session store and the login take it as an option and count with its methods | One registration, one help text; a nil value counts nothing | The login packages import `principal` for the metrics, which they import anyway |
+| (b) The identity area owns the families (chosen) | `principal.Metrics` is built once per replica (the identity area's `metrics`); the session store and the login take it as an option and count with its methods | One registration, one help text; a nil value counts nothing | The login packages import `principal` for the metrics, which they import anyway |
 
-**Choice:** (b). The wiring is split in two steps around the identity area: `wireSessions` (the session store) runs before
-`wireIdentity`, which passes it to the stage; `wireLogin` (the OIDC and break-glass login) runs after it and takes
-`a.m1.provisioner` and the limiter `auth.flow_starts`. The change payload of a session end is `principal.Change` (Q-AUTH-22).
+**Choice:** (b). The wiring is split in two steps after the identity area, which builds the metrics: `wireSessions` (the session
+store) runs after `wireIdentity` and before `wireAuth`, which passes the store to the stage; `wireLogin` (the OIDC and break-glass
+login) runs after it and takes the identity area's provisioner and the limiter `auth.flow_starts`. The change payload of a session end is `principal.Change` (Q-AUTH-22).
 
 **Rationale:** the identity area registers the families first on every replica, and an option that is a pointer to its type
 keeps the unit tests of both packages free of a registry. The development agent would revisit the split if a third area needs

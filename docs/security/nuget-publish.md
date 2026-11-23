@@ -112,7 +112,7 @@ principal name. The cache fill of a remote repository is no push and records non
 
 The gaps of the spec pages whose mechanism this page describes:
 
-- [H-36](../spec/formats/nuget.md#h-36--a-packages-signature-does-not-decide-whether-it-is-stored-or-served): a package's signature does not decide whether it is stored or served; today it is not verified ([signatures.md](../spec/signatures.md) R-SIG-029 specifies the verification).
+- [H-36](../spec/formats/nuget.md#h-36--a-packages-signature-does-not-decide-whether-it-is-stored-or-served): a package's signature does not decide whether it is stored or served: it is verified and shown ([signatures.md](../spec/signatures.md) R-SIG-029), and only a repository whose signature gate is on refuses by it.
 - [H-50](../spec/formats/nuget.md#h-50--a-restore-revives-nuget-versions-deleted-after-the-backups-snapshot-and-can-free-lost-version-numbers): a restore revives NuGet versions deleted after the backup's snapshot and can free lost version numbers.
 
 ### H-333 · Unlisting is not a withdrawal: a holder of `deploy` relists

@@ -1,7 +1,11 @@
 # Debian and Ubuntu APT repositories
 
 Status: specification — built (phase T-17, closed; FULL.md block D row "Debian / APT repositories"): local, remote (modes `pullThrough` and `mirror`) and virtual repositories for
-`apt` and `apt-get` on Debian and Ubuntu; what stays is in [Deferred](#deferred) and in the gaps below
+`apt` and `apt-get` on Debian and Ubuntu; what stays is in [Deferred](#deferred) and in the gaps below. Not built:
+[R-DEB-036](#r-deb-036--the-upstream-catalogue-and-the-delivery-rules-of-a-debian-remote), the upstream catalogue and the delivery
+rules of a Debian remote (a package of T-24, [remote-curation.md](../remote-curation.md)); of it only the tables are laid, by migration
+[00114](../../../internal/meta/postgres/migrations/00114_remote_curation.sql), and the parse that fills them, the search and the rules
+are not built
 
 This page specifies how Quader serves APT repositories: the format `deb` for local, remote and virtual repositories in the
 Debian repository format; how a local repository takes `.deb` uploads and lists them in suites and components; how Quader

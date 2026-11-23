@@ -32,7 +32,7 @@ The member editor of the UI (R-UI-022, a tab of the repository screen) patches `
 | [claims.go](../../internal/repository/claims.go) | `ClaimPattern` (the two admitted forms, specificity, overlap), the claim index (`claimIndex`), and the API service: `Service.Claims`, `Service.PutClaims`, the audit event |
 | [routing.go](../../internal/repository/routing.go) | `Routing`: `Route`, `RemoteRefused`, `CoveredByOwnClaim`, `ClaimsFor`, `ExposureSet`, `AutoClaim` |
 | [claims_api.go](../../internal/api/v1/claims_api.go) | `GET` and `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/claims` |
-| [app/wire_virtual.go](../../internal/app/wire_virtual.go) | builds `Routing` after the repository snapshot; `wireRepository` calls it, the result is `a.m1.routing` |
+| [app/wire_virtual.go](../../internal/app/wire_virtual.go) | `wireVirtual`, the step after `wireRepository`: builds `Routing` on the repository area's snapshot reader; the result is `virtualArea.routing` |
 
 ## Where the data lives
 
@@ -74,7 +74,8 @@ change within `cluster.epoch_poll_interval` (tested with two in-process replicas
 ## Routing API for the virtual engine
 
 `Routing` is built by `repository.NewRouting(RoutingOptions{Runner, Reader *SnapshotReader, Catalog, Caches, Notifier, Recorder, RemoteRefusal func() bool, SafetyTTL, Log})`.
-In the app it is `a.m1.routing` (read under `a.mu`); it is nil on a replica without PostgreSQL. Every method is caller
+In the app it is `virtualArea.routing`: `wireFormats` and `wireVirtualEngine` take the area as a typed input, and the Debian
+virtual class reads it with `part[virtualArea](a.parts)`; the shell profile, which has no PostgreSQL, builds no virtual area. Every method is caller
 independent: stored configuration only, never a permission.
 
 ```go

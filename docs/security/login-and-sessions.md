@@ -57,7 +57,7 @@ lock or a rotation reaches every replica.
   and `POST /auth/local/login` take one count of the limiter `auth.flow_starts` per client address
   (`auth.rate_limit.starts_per_address` per minute) and answer 429 with `Retry-After` above it. The limiter is the cluster
   limiter set's, counted in Valkey and falling back to per-replica shares while Valkey is away
-  (`wireFailureLimiter`, [wire_api.go](../../internal/app/wire_api.go)); a refused request still counts, so an address that keeps
+  (`wireLimits`, [wire_api.go](../../internal/app/wire_api.go)); a refused request still counts, so an address that keeps
   sending stays refused. `auth.rate_limit.max_pending_flows` unexpired flow rows answer 503 `too_many_pending_logins`; the count
   is read from PostgreSQL at most every 5 s per replica.
 - **Callback**, in the order of R-AUTH-006: the flow row is deleted and returned in one statement that commits before any

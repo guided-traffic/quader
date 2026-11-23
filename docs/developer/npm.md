@@ -1,12 +1,18 @@
 # npm format
 
 The npm registry format ([spec/formats/npm.md](../spec/formats/npm.md)). This page grows with the format: each work package adds
-its section. Built today: the format itself (routes, classification, error shape, setup snippets), the local repository end to end
+its section. Built: the format itself (routes, classification, error shape, setup snippets), the local repository end to end
 (publish, the package documents and their validators, tarball downloads, dist-tags, unpublish, whoami and ping, the serve-time check and the
-removal hooks), the remote and virtual classes with the merge, the data port and its PostgreSQL implementation, the leaf libraries every part builds on, and the exposure adapter with the
-filter of documents on endpoints with rules (R-NPM-048), the format's settings as the `npm` member of the repository document
-(Q-NPM-59), the security audit through remote and virtual repositories (R-NPM-038), and the guide of every npm variant (R-NPM-041, R-UI-049). Not built: deprecate (R-NPM-018, P1): a `PUT` of a document without an attachment answers 404 `not_found`, the answer
-R-NPM-043 gives an unimplemented `PUT`.
+removal hooks), the remote class with its mirror ([mirror.md](mirror.md)) and the virtual class with the merge, the data port and its
+PostgreSQL implementation, the leaf libraries every part builds on, the exposure adapter with the filter of documents on endpoints with
+rules (R-NPM-048), the format's settings as the `npm` member of the repository document (Q-NPM-59), the security audit in mode `local`
+from Quader's own advisory data and in mode `forward` through remote and virtual repositories (R-NPM-038, R-VULN-017), the keys and
+attestations endpoints with Quader's registry signatures of local versions ([Signatures](#signatures-signaturesmd-r-sig-028)), the
+record of a remote fill's version ([Remote fills record the version](#remote-fills-record-the-version)), and the guide of every npm
+variant (R-NPM-041, R-UI-049). Not built: deprecate (R-NPM-018, P1): a `PUT` of a document without an attachment answers 404
+`not_found`, the answer R-NPM-043 gives an unimplemented `PUT`; and the endpoints R-NPM-043 defers, the search `-/v1/search` (R-NPM-037)
+among them, which answer 404 to a `GET`, `PUT` or `DELETE` and 501 to a `POST` (`handleDeferred` in
+[routes.go](../../internal/formats/npm/routes.go)).
 
 ## Package layout
 

@@ -597,8 +597,8 @@ to the class `read` under its token whatever the method. Read [bastion.md](basti
 
 ## Rate limits, CORS and response headers
 
-The chain's stage 7 is `v1.EdgeStage(CORS, rate limit)` built in [wire_api.go](../../internal/app/wire_api.go) and set as
-`a.m1.rateLimit`. Order: the security headers of R-API-017 on every `/api/v1/` answer (`Cache-Control: no-store` unless the
+The chain's stage 7 is `v1.EdgeStage(CORS, rate limit)` built by `wireAPI` in [wire_api.go](../../internal/app/wire_api.go) and returned as
+`apiArea.rateLimit` ([areas.go](../../internal/app/areas.go)). Order: the security headers of R-API-017 on every `/api/v1/` answer (`Cache-Control: no-store` unless the
 handler sets another, `Content-Security-Policy`, `Referrer-Policy`; `X-Content-Type-Options` and `X-Request-Id` come from the
 chain), then CORS, then the limiter, so a preflight is answered before it counts. The preflight of an allowed origin is
 answered earlier still, by `Chain.Preflight` (`v1.Preflight`, between the address stage and authentication): a browser sends

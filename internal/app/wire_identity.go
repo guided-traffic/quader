@@ -323,9 +323,10 @@ func (a *App) authStage() authArea {
 func clientAddr(r *http.Request) netip.Addr { return httpserver.InfoFrom(r.Context()).Client }
 
 // publicRoute tells the stage which requests match a management API operation
-// that is declared public. The system.bootstrap_anonymous_read bridge of the M0
-// authorization stand-in also lets a read of the management API reach it
-// without a credential; the authorization area replaces both.
+// that is declared public. The development bridge system.bootstrap_anonymous_read
+// also lets a GET or HEAD below /api/v1/ pass without a credential; the decision
+// point still decides the operation, and bridgeAccess (access.go) opens only the
+// system information and the replica list to an anonymous caller.
 func (a *App) publicRoute(rt *endpointRuntime) func(*http.Request) bool {
 	bridge := a.cfg.System.BootstrapAnonymousRead
 	return func(r *http.Request) bool {

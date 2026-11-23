@@ -6,7 +6,7 @@ import "time"
 // R-OPS-004).
 type System struct {
 	PublicVersion          bool          `yaml:"public_version" default:"false" doc:"Expose the version to unauthenticated callers."`
-	BootstrapAnonymousRead bool          `yaml:"bootstrap_anonymous_read" default:"false" doc:"Until authentication ships, nobody holds system.read: true lets anonymous callers read /api/v1/system/info and /system/replicas. For the dev profile; removed with the identity work."`
+	BootstrapAnonymousRead bool          `yaml:"bootstrap_anonymous_read" default:"false" doc:"Development only: true lets anonymous callers read /api/v1/system/info and /api/v1/system/replicas on the default endpoint while it admits anonymous requests. Refused while the base URL of an endpoint is an https origin other than localhost."`
 	HeartbeatInterval      time.Duration `yaml:"heartbeat_interval" default:"10s" validate:"min=1s"`
 	HeartbeatStaleAfter    time.Duration `yaml:"heartbeat_stale_after" default:"30s" validate:"min=1s"`
 }

@@ -13,9 +13,8 @@ const area = {
 } satisfies Record<string, CrumbSpec>;
 
 /**
- * The route map of R-UI-003 for the M1 screens. Every area is lazy (R-ARCH-004); the screens that
- * a later work package builds are placeholders with their final path and title. `/login` and
- * `/logged-out` need no session and stand alone, without the shell (`data.bare`, Q-UI-125).
+ * The route map of R-UI-003. Every area is lazy (R-ARCH-004); no route leads to a placeholder.
+ * `/login` and `/logged-out` need no session and stand alone, without the shell (`data.bare`, Q-UI-125).
  * Everything else sits behind `authGuard`, which only shapes navigation: the API decides (R-UI-005).
  */
 export const routes: Routes = [

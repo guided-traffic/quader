@@ -4970,7 +4970,7 @@
       "properties": {
         "bootstrap_anonymous_read": {
           "default": false,
-          "description": "Until authentication ships, nobody holds system.read: true lets anonymous callers read /api/v1/system/info and /system/replicas. For the dev profile; removed with the identity work.",
+          "description": "Development only: true lets anonymous callers read /api/v1/system/info and /api/v1/system/replicas on the default endpoint while it admits anonymous requests. Refused while the base URL of an endpoint is an https origin other than localhost.",
           "type": "boolean",
           "x-quader-env": "QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ"
         },

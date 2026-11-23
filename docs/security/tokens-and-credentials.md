@@ -130,7 +130,7 @@ the row (`ON DELETE CASCADE`).
 
 The failed-credential throttle counts every rejected credential per client address (`auth.rate_limit.failures_per_address`
 per minute, the address after the trusted-proxy rule), cluster-wide: the counter is the limiter `auth.credential_failures` of
-the cluster limiter set, registered by `wireFailureLimiter` ([wire_api.go](../../internal/app/wire_api.go)) and counted in
+the cluster limiter set, registered by `wireLimits` ([wire_api.go](../../internal/app/wire_api.go)) and counted in
 Valkey. It is consulted only for a credential that is not in the replica's
 cache. In throttled mode a credential validated from PostgreSQL on any replica within `auth.rate_limit.recent_token_window`
 carries a Valkey marker (`tokseen:v1:<hash of the secret hash>`, constant value, mandatory expiry) and is still validated;

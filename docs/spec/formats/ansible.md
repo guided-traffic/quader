@@ -1786,7 +1786,7 @@ Acceptance criteria:
 | Catalog ID or topic | Priority | Note |
 |---|---|---|
 | Deletion by the Galaxy API (`DELETE` of a collection or a version), namespaces (`v3/namespaces/`), collection deprecation, `move`/`copy` between repositories of the Galaxy API | P2 | `ansible-galaxy` does not call them; deletion is the management API's |
-| Signing: Quader-held keys, uploaded signatures, server-side signature verification of a remote's signatures | P2 | H-839; the protocol is ready (`signatures[]`) |
+| Signing with Quader-held keys | P2 | Quader does not sign local collections ([signatures.md](../signatures.md) Q-SIG-68); uploaded signatures and the verification of a remote's signatures are built ([signatures.md](../signatures.md) R-SIG-031), and only the gate of stage 3 refuses by them (H-839) |
 | Vulnerability evaluation of collections | P2 | H-841; needs an advisory source |
 | Exposure rules for the format | P2 | Q-ANS-25; the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050 (MVP; built) |
 | Git and URL roles through a proxy; role publish | P2 | Not offered by design (R-ANS-014) |
@@ -3140,10 +3140,12 @@ and the integration cases in [ansiblelocal/links_test.go](../../../test/integrat
 
 ### H-839 · A remote's signatures are verified and shown, and refuse nothing
 
-A remote version document's `signatures[]` reach the client unchanged (R-ANS-013). Today Quader does not verify them; once
-[signatures.md](../signatures.md) R-SIG-031 is built it verifies and shows them, and a bad or missing signature at the upstream is
-still served until the gate per repository of stage 3: only a client with `--keyring` refuses it. Live today for every remote that serves
-signed versions; real for a fleet whose clients do not set a keyring (the default of `ansible-galaxy`).
+A remote version document's `signatures[]` reach the client unchanged (R-ANS-013). Quader verifies and shows them
+([signatures.md](../signatures.md) R-SIG-031), and a bad or missing signature at the upstream is still served unless the repository's
+signature gate of stage 3 is on ([signatures.md](../signatures.md) R-SIG-061 to R-SIG-078; a detail setting, off by default), which
+refuses such an archive and its version document with `403 signature_not_verified`; otherwise only a client with `--keyring` refuses it.
+Live today for every remote that serves signed versions and has the gate off; real for a fleet whose clients do not set a keyring (the
+default of `ansible-galaxy`).
 
 ### H-840 · A role archive has no announced digest and the source is not byte-stable
 

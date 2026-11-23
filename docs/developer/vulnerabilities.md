@@ -3,9 +3,16 @@
 Status: the vulnerability scanning of beta phase 6 (M4b) is built and integrated: the contracts below (the shared types and packages, the ports, the format contract's addition, the
 schema, the configuration, the capability, the errors, the audit events, the metrics, the OpenAPI document) are implemented by the seven work packages A to G (the sections
 [A](#a--advisory-data-r-vuln-003-to-r-vuln-008-the-sync-half-of-r-vuln-024-r-vuln-026-and-r-vuln-027) to [G](#g--operations)), the UI binds the API, and the integration tier runs the whole
-flow with no fake behind a port ([test/integration/vulnflow](../../test/integration/vulnflow)). Left to the end-to-end wave and the nightly: the browser journeys and the client runs (`npm audit`, `pnpm audit`,
-`yarn npm audit`, `dotnet restore`), the drain of a node during a full sync, and the performance scenarios of R-VULN-028. The specification is
-[spec/vulnerability-scanning.md](../spec/vulnerability-scanning.md) (R-VULN-001 to R-VULN-029; R-VULN-030 to R-VULN-032 are P1 and not built), the
+flow with no fake behind a port ([test/integration/vulnflow](../../test/integration/vulnflow)). The end-to-end tier is built too ([H](#h--end-to-end-r-vuln-029)):
+the browser journeys and the client runs (`npm audit`, `pnpm audit`, `yarn npm audit`, `dotnet restore`) in the set `vuln`, the drain of a
+node during a full sync, the failure suite and the restore drill in the set `vuln-long`, and the performance scenarios of R-VULN-028 in the
+nightly job `vuln-perf` ([performance.yml](../../.github/workflows/performance.yml)). The package formats with the vulnerability adapter
+are npm and NuGet; Debian, Ansible Galaxy and every other format without it show `not_covered`, and generic repositories are never
+evaluated (R-VULN-001). Container images are scanned by what they hold, in the pods of the unit `vuln-scanner-trivy`
+([Container images](#container-images-r-vuln-033-to-r-vuln-037-r-vuln-041-to-r-vuln-043-r-vuln-048-r-vuln-049), R-VULN-033 to
+R-VULN-037, R-VULN-041 to R-VULN-046, R-VULN-048, R-VULN-049), and a version's grade with its count of fixable findings is built
+([R-VULN-038 to R-VULN-040](#the-grade-of-a-version-r-vuln-038-r-vuln-039)).
+The specification is [spec/vulnerability-scanning.md](../spec/vulnerability-scanning.md) (R-VULN-030 to R-VULN-032 are P1 and not built), the
 roadmap entry [M4b](../coverage/roadmap.md#m4b--vulnerability-scanning), the plan [projektplan/BETA.md](../projektplan/BETA.md). The decisions
 behind the contracts are [Q-VULN-23 to Q-VULN-27](../spec/vulnerability-scanning.md#q-vuln-23--the-package-layout-of-the-scanning-and-the-leaf-move-of-the-untrusted-content-limits)
 and [ADR-150](../decisions.md#adr-150--the-format-contract-gains-the-optional-vulnerability-adapter).

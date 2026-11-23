@@ -70,6 +70,10 @@ repository adds are [oci-remote.md](oci-remote.md) and [oci-virtual.md](oci-virt
   layers of another name of the same repository by digest, even when the blob store holds the same bytes once.
 - Ranges, the validators and download integrity are the item store's (R-STOR-012, R-STOR-013): a blob whose stored bytes do not match
   their SHA-256 ends the response.
+- A blob `GET` that meets the [conditions](../spec/storage.md#r-stor-070--the-conditions-of-one-download-in-the-order-of-the-serve-point)
+  of the delivery by signed links is answered `307` to a link of the object store, and its bytes are then checked by the client against
+  the digest in its path, not by Quader ([download-links.md](download-links.md)); every other blob download goes through a replica.
+  H-601 (every blob was streamed through a replica while the delivery by signed links was not built) is closed.
 
 ## Tests
 
@@ -85,9 +89,6 @@ repository adds are [oci-remote.md](oci-remote.md) and [oci-virtual.md](oci-virt
 
 - [H-600](../spec/formats/oci.md#h-600--the-sizes-a-manifest-declares-are-not-compared-with-the-stored-blobs): the sizes a manifest
   declares are the pusher's claims, not compared with the stored blobs, and the package screen sums them.
-- [H-601](../spec/formats/oci.md#h-601--blob-downloads-are-streamed-and-never-redirected-to-the-object-store): a blob download goes
-  through a replica unless the installation's delivery by signed links is on and the download meets
-  [its conditions](../spec/storage.md#r-stor-070--the-conditions-of-one-download-in-the-order-of-the-serve-point).
 - [H-602](../spec/formats/oci.md#h-602--the-first-push-of-a-name-by-digest-can-claim-the-name-for-a-caller-that-never-pushes-a-tag): a
   push by digest claims an unclaimed name for a holder of `deploy` that never pushes a tag.
 - [H-604](../spec/formats/oci.md#h-604--the-shadowing-check-is-asked-once-per-push-until-the-name-has-a-tag): each child push of a fresh

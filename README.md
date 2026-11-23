@@ -33,10 +33,10 @@
 > pull-through and mirror of an APT archive whose release is checked against the archive's keys, and virtual repositories that merge
 > verified member indexes and sign them again; its end-to-end rows run the real APT of Debian 13 and 12 and Ubuntu 24.04 and 22.04
 > ([Debian](docs/developer/deb.md)). The HA hardening of phase 7 is built except what the status of
-> [ha-and-helm.md](docs/spec/ha-and-helm.md) names. Built since and not yet listed here: the Quader Bastion, the Ansible Galaxy and
-> ClamAV definitions formats, malware scanning, signatures on artifacts, download limits, several object-store connections with their
-> encryption and the delivery by signed links; the status line of each page of [docs/spec/](docs/spec/README.md) names what is not
-> built. `v0.1.0` is the last release made before the switch to
+> [ha-and-helm.md](docs/spec/ha-and-helm.md) names. Built since: the Quader Bastion, the Ansible Galaxy and ClamAV definitions
+> formats, malware scanning, signatures on artifacts, download limits, several object-store connections with their encryption and the
+> delivery by signed links ([Key Features](#-key-features)); the status line of each page of [docs/spec/](docs/spec/README.md) names
+> what is not built. `v0.1.0` is the last release made before the switch to
 > the organisation's CI and release standard; it was published to `ghcr.io`. Releases from now on are cut by Semantic Release from
 > the conventional commits on `main`, and published to Docker Hub and to the chart repository ([releasing](docs/developer/releasing.md)).
 
@@ -183,15 +183,26 @@ Built (M5, the backup lane; [spec](docs/spec/backup-and-restore.md), [contracts]
 - 🩹 **Platform restores.** After a point-in-time restore of PostgreSQL by the platform, `quader admin post-restore --restored-to <t>` (the chart's `postRestore` hook Job) puts running jobs back in the queue, gives the installation a new keyspace and replays the journal from `t`; `quader admin backup check` and the daily task `backup-check` verify the platform protection that `backup.recovery_window` and `backup.object_versioning` declare.
 - 📈 **Run visibility.** The Backups screen under System status, `GET /api/v1/system/backups` with the summary and its overdue mark, the `quader_backup_*` and `quader_revocation_journal_*` metric families and the backup alerts of the chart's PrometheusRule. See [Backups](docs/manual/admin/operations.md#backups).
 
+Built since (the Bastion, Ansible Galaxy, malware scanning, signatures, download limits, the object store):
+
+- 🏰 **Quader Bastion.** A second, internet-facing deployment of the same image (`quader serve --role bastion`, chart `quader-bastion`) without PostgreSQL and without a UI: external parties read the main installation's content in every format with the main installation's own tokens, which the Bastion checks by asking the main installation and never copies; it keeps what it served in a cache of its own bucket or of a local volume per replica, blocks abuse in two stages with an optional Valkey, and can read a released blob directly from the object store by a link and a data key handed over per blob. See [Bastion](docs/developer/bastion.md), [Bastion security](docs/security/bastion.md) and the [manual](docs/manual/admin/bastion.md).
+- 📦 **Ansible Galaxy repositories.** `ansible-galaxy` against `/api/ansible/<projectKey>/<repoKey>/` with `Authorization: Token`: local repositories that publish collections with import tasks, tombstones and the signatures a client posts; remote repositories of a Galaxy server with its mirror and the hub's token exchange, and roles from GitHub by translation; virtual repositories over both; the documentation of a version. See [Ansible Galaxy](docs/developer/ansible.md) and the [manual](docs/manual/user/ansible-collections.md).
+- 🦠 **Malware scanning of every artifact.** Every stored blob is scanned with ClamAV in the pods of `malware-scanner-clamav`, which hold no secret of the installation and read one blob at a time through a token of the worker; the verdict is one per digest for the whole installation, an infected file is refused in every format (`malware.enabled`, on by default), and the switch **Only checked artifacts can be downloaded** (off by default) refuses what is not checked yet. The signatures come from `malware-updater-freshclam`, are verified before they are stored in the repository `upstream/clamav`, and can be served to the company's own ClamAV installations. See [malware scanning](docs/spec/malware-scanning.md), [malware security](docs/security/malware-scanning.md) and [ClamAV definitions](docs/security/clamav-definitions.md).
+- ✍️ **Signatures on artifacts.** The signatures of every format are detected, read, verified against trust anchors (shipped, the installation's, the Helm values' and, where an administrator allows it, a project's) and shown at the artifact, and served to each client the way its protocol expects; Quader signs with one identity per installation (npm's registry signatures of local packages and a receipt attestation of every artifact); a repository's detail setting lets only artifacts with a verified signature be downloaded. See [signatures](docs/spec/signatures.md), [artifact signatures](docs/security/artifact-signatures.md) and the [manual](docs/manual/admin/signatures.md).
+- 🚦 **Download limits and usage.** Profiles of figures (requests, bytes from the cache and from the upstream, upstream requests, parallel downloads, a day's volume, refused requests) assigned to a user, a group, a technical token, a CI project, an address or every caller of a kind, at the instance, a project or a repository; ceilings of a remote for all anonymous and all signed-in callers; counters across replicas; the mode Audit or Enforce (Enforce by default); and an overview of what every caller downloads. See [usage and limits](docs/developer/usage-and-limits.md), [security](docs/security/usage-and-limits.md) and the [manual](docs/manual/admin/download-limits.md).
+- 🔐 **Encrypted object-store connections.** `encrypted: true` on an element of `storage.connections` keeps that connection's blobs in Quader's own format, AES-256-GCM in 64 KiB segments under a data key per object, wrapped by a storage key of the connection that the stored-secret key ring seals, so the provider sees ciphertext only; the scrub, the reconciliation, the backup, the restore and the Bastion's cache handle it, and `quader admin storage offline` reads such a bucket without Quader. See [stored-content encryption](docs/developer/stored-content-encryption.md) and [stored-content keys](docs/security/stored-content-keys.md).
+- 🔗 **Delivery by signed links.** With the installation's switch on (off by default), a download a client checks by its digest (OCI blobs, npm tarballs, Ansible collection archives) is answered `307` to a short-lived signed link of the object store instead of passing through a replica; a repository can opt out. See [download links](docs/developer/download-links.md) and [security](docs/security/download-links.md).
+
 Not built yet (see the [roadmap](docs/coverage/roadmap.md)): the symbol server of NuGet; the P1 parts of vulnerability scanning
 (exploit-probability enrichment, time-limited dismissals, vulnerabilities in NuGet registrations: R-VULN-030 to R-VULN-032) and the
 pass-through of an upstream's NuGet vulnerability information (`vulnerabilityInfo: upstream`, R-NUGET-023); the P1 parts of the
 backup (client-side encryption of the database files, R-BAK-027, and a restore onto an existing blob store, R-BAK-025); what the
-status of [ha-and-helm.md](docs/spec/ha-and-helm.md) names; remote and virtual repositories for the generic format; the UI screens of
-search, trash, builds and webhooks; for OCI the exposure adapter (an endpoint with exposure rules serves no container images),
-retention of untagged manifests and mirroring of referrers other than an image's signatures and attestations; for Debian the nightly
-set `deb-long`,
-uploads of source packages, snapshots of a suite, and a trigger of a virtual repository's build on a change of claims (H-725).
+status of [ha-and-helm.md](docs/spec/ha-and-helm.md) names; remote and virtual repositories for the generic format; a search over
+files, and the UI screens of trash, builds and webhooks; the exposure adapter of OCI, Debian and Ansible Galaxy (an endpoint with
+exposure rules serves none of their repositories); the curation of remote repositories (the upstream catalogue, the delivery rules,
+downloads ahead of a client: [remote curation](docs/spec/remote-curation.md), of which the tables are laid); for OCI retention of
+untagged manifests and mirroring of referrers other than an image's signatures and attestations; for Debian uploads of source
+packages, snapshots of a suite, and a trigger of a virtual repository's build on a change of claims (H-725).
 
 ## 📛 Naming conventions
 

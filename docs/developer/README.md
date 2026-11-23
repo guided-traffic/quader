@@ -2,15 +2,19 @@
 
 Status: phases 1 to 6 are built: the foundation (M0), the access core (M1), the npm registry (M2), the NuGet registry (M3), projects, the GitLab CI OIDC federation,
 the Quader Bastion and the vulnerability scanning (M4b). The repository holds the Go binary,
-its configuration, the database and cache layers, the S3 blob layer, the system and management APIs, the ops
+its configuration, the database and cache layers, the S3 blob layer on one to eight object-store connections with their encryption
+([blob-store.md](blob-store.md), [stored-content-encryption.md](stored-content-encryption.md)) and the delivery by signed links
+([download-links.md](download-links.md)), the system and management APIs, the ops
 endpoints, the OIDC login and the break-glass account, the tokens, the permission policies and the grant index,
-the endpoints and exposure rules, the generic repository format with raw transfer under `/files/`, the npm and NuGet formats with their local, remote (pull-through proxy) and virtual repositories, the OCI (Docker) registry below `/v2/` with its token service, upload sessions, local, remote, mirror and virtual classes ([oci.md](oci.md)), the audit
+the endpoints and exposure rules, the generic repository format with raw transfer under `/files/`, the npm and NuGet formats with their local, remote (pull-through proxy) and virtual repositories, the OCI (Docker) registry below `/v2/` with its token service, upload sessions, local, remote, mirror and virtual classes ([oci.md](oci.md)),
+the Debian (APT) format ([deb.md](deb.md)), the Ansible Galaxy format ([ansible.md](ansible.md)), the ClamAV definitions format ([clamav.md](clamav.md)), the audit
 trail, the Angular admin UI with the package screens, client setup and the in-app manual, the Helm chart, the local development profile on kind, the integration, end-to-end
-and chart tests, and the CI workflows. The vulnerability scanning (the advisory mirror, the findings and their triage, the download block, the client audits, the report) is integrated
-and its flow is tested end to end at the integration tier ([vulnerabilities.md](vulnerabilities.md), [test/integration/vulnflow](../../test/integration/vulnflow)); its browser journeys and client runs are the
-end-to-end wave's. The backup lane is built (phase 7, [backup.md](backup.md)): its contracts and the operations `create`, `list`, `verify`,
-`delete`, `prune`, `restore` and `admin post-restore`. Everything marked *planned* below is the target design in
-[docs/spec/](../spec/README.md).
+and chart tests, and the CI workflows. The vulnerability scanning (the advisory mirror, the findings and their triage, the download block, the client audits, the report, the
+scanning of container images) is built with its end-to-end sets ([vulnerabilities.md](vulnerabilities.md)); so are the malware scanning ([malware.md](malware.md)), the
+signatures on artifacts ([signatures.md](signatures.md)) and the download limits with the usage overview ([usage-and-limits.md](usage-and-limits.md)).
+The backup lane is built (phase 7, [backup.md](backup.md)): its contracts and the operations `create`, `list`, `verify`,
+`delete`, `prune`, `restore` and `admin post-restore`. What is not built stands in the status line of each page of
+[docs/spec/](../spec/README.md) and at the head of the page here that describes it.
 
 ## What to have in your head first
 
@@ -23,11 +27,14 @@ end-to-end wave's. The backup lane is built (phase 7, [backup.md](backup.md)): i
   the high-availability and scale constraints of 2026-10-28 ([spec/README.md](../spec/README.md#owner-constraints)).
 - **Invariants `INV-1` to `INV-20` bind every spec page.** A page may refine an invariant but must not
   contradict it ([spec/README.md](../spec/README.md#design-invariants)).
-- **Roles, one binary** ([R-ARCH-001](../spec/architecture.md)). `web` answers HTTP and never claims a job or
-  holds a lease. `worker` claims jobs, holds leases and serves only the ops listener. `all` combines both
-  for a local run outside the chart. `bastion` is the read-only cache of phase 5b with a configuration tree of its own and
-  no PostgreSQL ([bastion.md](bastion.md)). `scanner` analyses container images for the worker and holds no secret of the
-  database, the object store, Valkey or the key ring ([vulnerabilities.md](vulnerabilities.md#the-role-scanner)). `backup` is a command
+- **Roles, one binary** ([R-ARCH-001](../spec/architecture.md), [process.go](../../internal/config/process.go)). `api` serves the UI,
+  the management API and the CI exchange and holds the sessions and login secrets; `packages` serves the package protocols and
+  `/files/` with tokens only; neither claims a job or holds a lease. `worker` claims jobs, holds leases and serves only the ops
+  listener. `web` is `api` and `packages` in one process and `all` every role but the Bastion, both for development and tests and
+  never rendered by the chart. `bastion` is the read-only cache of phase 5b with a configuration tree of its own and
+  no PostgreSQL ([bastion.md](bastion.md)). `scanner` wraps one third-party tool for the worker, chosen by `process.scanner_kind`
+  (`trivy`, `trivy-db`, `clamav`, `freshclam`), and holds no secret of the database, the object store, Valkey or the key ring
+  ([vulnerabilities.md](vulnerabilities.md#the-role-scanner), [malware.md](malware.md)). `backup` is a command
   of the binary, not a serving role ([backup.md](backup.md)).
 - **PostgreSQL decides, Valkey accelerates.** State whose loss would corrupt data lives in PostgreSQL,
   including every mutual exclusion whose failure would corrupt data. Valkey holds shared ephemeral state and

@@ -656,6 +656,10 @@ and its CI job `e2e-deb` (WP10), the UI (WP11), the documentation (WP12) and the
 
 Not built, or not proven:
 
+- The upstream catalogue and the delivery rules of a Debian remote (R-DEB-036, a package of T-24,
+  [remote-curation.md](remote-curation.md)): migration [00114](../../internal/meta/postgres/migrations/00114_remote_curation.sql) lays
+  the columns `provides`, `description` and `description_md5` of `deb_remote_entries` and the table `deb_remote_descriptions`; the parse
+  that fills them, the search, **Read the index** and the rules are not built, and nothing writes those columns yet.
 - The virtual class has no trigger on a change of claims (Q-DEB-65, [H-725](../security/deb-virtual.md#h-725--a-change-of-claims-reaches-the-merged-index-at-the-next-check-not-at-once))
   and enqueues its build after a member's publication has committed, not in it (H-726). `member_expired` and the dropping of a member's recorded
   `Date` are integration cases of `debvirtual` besides their unit rules: a member whose stored copy was evicted and whose upstream serves a

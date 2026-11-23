@@ -502,7 +502,9 @@ Priority: **P1** · Covers: PKG-DOCKER-017, PKG-OCI-006
   ([storage.md](../storage.md) R-STOR-014), a `GET` of a blob that meets the conditions of R-STOR-070 is answered `307` to a link of
   the object store: the route `oci.blob.get` declares that the clients check the digest in its path (R-STOR-071), and the links' host is
   no host of Quader nor below one, so the image clients written in Go do not carry their `Authorization` to it (R-STOR-072). A `HEAD`
-  and a manifest are always answered by Quader.
+  and a manifest are always answered by Quader. H-601 (every blob was streamed through a replica while the delivery by signed links was
+  not built) is closed: the route declares `blobClientDigest` ([routes.go](../../../internal/formats/oci/routes.go)), and a download
+  that does not meet the conditions of R-STOR-070 is streamed as before.
 - Download integrity (R-STOR-013) applies: a blob whose stored bytes do not match their SHA-256 ends the response.
 
 Acceptance criteria:
@@ -4108,13 +4110,6 @@ is foreign and not required to be stored (R-OCI-013 step 4), so an index can be 
 out, and it stays out when the child is pushed afterwards, because nothing rewrites the index's row. The `sizeBytes` of the tag is then
 smaller than the sum of the platform table, which reads the child's own size once the child exists. Live today; real for a pusher of an
 index with a foreign child and an unusual push order. A child pushed before the index is counted.
-
-### H-601 · Blob downloads are streamed and never redirected to the object store
-
-R-OCI-010 says that a blob `GET` is answered `307` to a signed link of the object store while the installation's switch is on
-([storage.md](../storage.md) R-STOR-014, R-STOR-070). The delivery by signed links is specified and not built, so every blob goes through
-the replica. Live today; real for large layers, which occupy a replica's connection and bandwidth for the whole transfer. Once it is
-built, a caller with a pace figure, a request through a Bastion, a range and a blob below the minimum size are still streamed by design.
 
 ### H-602 · The first push of a name by digest can claim the name for a caller that never pushes a tag
 

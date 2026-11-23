@@ -18,7 +18,7 @@ This page lists what this version of Quader does not do, and the known weak spot
 
 ## Vulnerability scanning
 
-- Quader matches the stored versions of npm and NuGet repositories against the public advisory data it mirrors ([Advisory sources](vulnerability-sources.md)). It matches by package identity and does not analyse package content: dependencies bundled inside a tarball and assemblies inside a `.nupkg` are not scanned. Container images are read by an analyser instead ([Container images](vulnerability-sources.md#container-images)). Debian repositories take no part in the scanning.
+- Quader matches the stored versions of npm and NuGet repositories against the public advisory data it mirrors ([Advisory sources](vulnerability-sources.md)). It matches by package identity and does not analyse package content: dependencies bundled inside a tarball and assemblies inside a `.nupkg` are not scanned. Container images are read by an analyser instead ([Container images](vulnerability-sources.md#container-images)). Debian and Ansible Galaxy repositories take no part in the scanning.
 - `npm audit`, `pnpm audit` and `yarn npm audit` (pnpm 11 and later, Yarn 4) are answered from Quader's own advisory data on local, remote and virtual npm repositories while the repository's audit mode is `local`, which is the default while vulnerability scanning is on; Quader sends nothing out. In mode `forward`, remote and virtual repositories forward the audit to the remote's upstream or to its configured provider and pass the answer on unchanged. The cache view of a remote and endpoints with exposure rules answer `501`; endpoints without cache fill are answered in mode `local` and are `501` in mode `forward`.
 - Names that the installation treats as internal (a namespace claim of a local repository covers them) are withheld from the audit in mode `local` and reported as clean, so a public advisory of a package that shares an internal name is not applied to it. npm prints a notice about withheld names; pnpm and Yarn do not. In mode `forward`, names the remote has never fetched are withheld as well; install through Quader before you audit, and watch `quader_npm_audit_names_withheld_total`.
 - NuGet repositories of every class list the vulnerability information in their service index once the NuGet advisory data has been imported; a restore that audits packages (`NuGetAudit`) then reports advisories from Quader's data. Until then the resource is not listed and the restore skips the audit silently.
@@ -100,7 +100,7 @@ This page lists what this version of Quader does not do, and the known weak spot
 - Exposure rules are tied to an endpoint name; an endpoint configured under an old name takes over the old rules.
 - npm package documents on an endpoint with rules keep their real `time.created`, `time.modified` and `Last-Modified`, so customers can tell that a package changed.
 - A rule on a virtual repository also covers packages of members added later.
-- An endpoint with exposure rules (`exposure: rules`) does not serve container images or Debian repositories: the OCI and Debian formats have no exposure adapter yet. Registry and APT clients use an endpoint with `exposure: all`.
+- An endpoint with exposure rules (`exposure: rules`) does not serve container images, Debian repositories or Ansible Galaxy repositories: the OCI, Debian and Ansible Galaxy formats have no exposure adapter yet. Registry, APT and `ansible-galaxy` clients use an endpoint with `exposure: all`.
 
 ## Remote repositories
 

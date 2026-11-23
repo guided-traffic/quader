@@ -1,6 +1,12 @@
 # Generic format
 
-Status: specification — local class implemented in milestone M1; remote and virtual classes not implemented
+Status: the local class is built (milestone M1: R-GENERIC-001 to R-GENERIC-008 and R-GENERIC-016; the format registers the class
+`local` alone, [generic.go](../../../internal/formats/generic/generic.go)). Not built: the remote class (R-GENERIC-009) and the virtual
+class (R-GENERIC-010); of R-GENERIC-011, the copy and move of items (the management API has no item copy or move operation), while its
+first rule, that a generic repository refuses nothing on format grounds, is R-GENERIC-004's and built; R-GENERIC-012, which waits for a
+second layout and until then has only the value `generic`; R-GENERIC-013, which needs the remote class; and the search by pattern and
+property, the copy, move and delete by pattern of R-GENERIC-015. R-GENERIC-014 asks for nothing beyond the local class's `PUT` and `GET`
+and has no test of its own.
 
 This page specifies the generic format: repositories that store files of any kind at paths the
 client chooses, without package metadata, an index or a client protocol beyond plain HTTP `PUT`,

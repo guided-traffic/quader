@@ -172,7 +172,7 @@ How the pieces fit:
 ### The source of an event
 
 [audit_source.go](../../internal/api/v1/audit_source.go) (`WithRequestSource`) wraps the recorder at the composition root
-(`startAudit` sets `a.m1.recorder` to the wrapper). An event recorded with a request context gets the client address, the trace
+(`wireAudit` in [wire_audit.go](../../internal/app/wire_audit.go) returns the wrapper as `auditArea.rec`). An event recorded with a request context gets the client address, the trace
 ID, user agent and the endpoint when its producer left them empty, so a domain package never passes the request down (Q-OPS-49). The source comes from `httpserver.SourceFrom(ctx)` (the chain keeps the User-Agent in `RequestInfo`); the actor of a request comes from `v1.ActorFrom(httpserver.Principal)`, which fills the token ID and the authentication method, and a principal ID in an actor passes `principal.IDOrEmpty` (Q-OPS-152). The deduplication
 of an anonymous refusal keys on that address, and the filter `traceId` finds an event by the `X-Request-Id` the client received.
 
@@ -181,8 +181,8 @@ of an anonymous refusal keys on that address, and the filter `traceId` finds an 
 | Where | What | Code |
 |---|---|---|
 | `quader migrate up` | writes `audit.retention_days` into `audit_policy` when it differs, then calls `audit_maintain_partitions()` | `postgres.syncAuditPolicy`, `MigrateOptions.AuditRetentionDays` |
-| start-up step 4 (`bootstrap`) | `Store.Prepare`: reconcile the retention (warn, naming `quader migrate`, when the runtime role may not write it), call the function, require the current and next month's partitions; retries with backoff while it fails, so the replica stays unready | `App.startAudit` |
-| the `audit-retention` task | calls `Store.Maintain` daily (`a.m1.auditStore`) | registered by the jobs area (R-OPS-019) |
+| start-up step 4 (`bootstrap`) | `Store.Prepare`: reconcile the retention (warn, naming `quader migrate`, when the runtime role may not write it), call the function, require the current and next month's partitions; retries with backoff while it fails, so the replica stays unready | `App.wireAudit` |
+| the `audit-retention` task | calls `Store.Maintain` daily (`a.auditStore`) | `App.registerAuditJobs` (R-OPS-019) |
 | a restore | `audit_create_partitions(from, to)` as the schema owner | the restore Job (M5) |
 
 ## How an area adds an event type
@@ -202,7 +202,12 @@ of an anonymous refusal keys on that address, and the filter `traceId` finds an 
    (R-OPS-016 acceptance), and for a flagged type one `revocation_outbox` row with the event's `id`. Use `audit.Nop{}` in unit tests that
    do not look at the event, or a fake `Recorder` that keeps the events.
 
-The composition root holds the recorder as `a.m1.recorder` (set at step 4) and the store as `a.m1.auditStore`.
+The composition root holds the recorder and the store as the audit area's result, `auditArea{rec, store}`
+([areas.go](../../internal/app/areas.go)), built at step 4; a later step takes the area as a typed input (`wireBlob`, `wireInfra`) or
+reads it with `part[auditArea](a.parts)`, and the handlers get the recorder from `App.auditRecorder` ([wire_api.go](../../internal/app/wire_api.go)),
+which reads the copy `wireInfra` keeps (`infra.rec`) and answers `audit.Nop{}` on a process without PostgreSQL, where no audit area
+is wired. The job handler reads the store through the late value `a.auditStore`, because the job registry is frozen before the area
+is wired.
 
 ## Tests
 

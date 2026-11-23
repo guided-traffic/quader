@@ -6,12 +6,14 @@ packages, the schema, the scheme `Token` of the authentication stage and the dat
 [formats/ansible.md](../spec/formats/ansible.md); the decision for the contract is
 [ADR-191](../decisions.md#adr-191--the-format-contract-gains-the-route-flag-for-the-galaxy-token-scheme-and-the-hub-token-exchange-is-an-optional-interface-of-the-remote-adapter).
 
-What is built today is the **skeleton, the leaves and the local class**: the format registers with its route table, the grammars, the classification of
-paths, the Galaxy error shape, the settings schema and the data port with its tables; the local class publishes, serves the three read operations and the
-download, records the import tasks, deletes with tombstones and replays them, reindexes, sweeps old tasks and reads its rows for the package screens; the
-scheme `Token` is in the authentication stage. The remote class ([ansible-remote.md](ansible-remote.md)), the virtual class
-([ansible-virtual.md](ansible-virtual.md)), the setup, the guide and the screens are built too; a route of a class that has no handler answers
-501 `ansible_not_implemented`. [What is built and what is not](#what-is-built-and-what-is-not) says which.
+Built: all three classes. The format registers with its route table, the grammars, the classification of paths, the Galaxy error shape,
+the settings schema and the data port with its tables; the scheme `Token` is in the authentication stage. The local class (this page)
+publishes, serves the read operations and the download, records the import tasks, deletes with tombstones and replays them, reindexes,
+sweeps old tasks, takes the signatures a client posts and reads its rows for the package screens. The remote class with its mirror and the
+hub exchange ([ansible-remote.md](ansible-remote.md)), the virtual class ([ansible-virtual.md](ansible-virtual.md)), a version's
+documentation ([ansible-docs.md](ansible-docs.md)), the setup, the guide, the screens and the end-to-end set are built too. Every class
+registers a handler for every route it serves; the 501 `ansible_not_implemented` of a route without one is the safety net of a new class
+and no route answers it today. [What is built and what is not](#what-is-built-and-what-is-not) names what is left.
 
 ## What has to be in your head first
 
@@ -20,7 +22,7 @@ scheme `Token` is in the authentication stage. The remote class ([ansible-remote
 - **Collections are the stored artifact; roles exist by translation** on remote and virtual repositories only (Q-ANS-6). A local repository
   lists `v3` alone in its discovery document and has no `v1` API; a request below `v1/` answers 404 in the `v1` shape with the sentence that
   says why ([errors.go](../../internal/formats/ansible/errors.go)).
-- **The route table is complete and frozen** ([routes.go](../../internal/formats/ansible/routes.go)): ten routes, each with the classes that
+- **The route table is complete and frozen** ([routes.go](../../internal/formats/ansible/routes.go)): eleven routes, each with the classes that
   serve it. The table grows with the classes registered by `class_*.go` files (a route none of whose classes is registered is left out), and
   a route that several classes serve is one route whose handler decides by class: `Match` does not know the class (Q-DEB-45). A handler is
   registered by class and route name ([handlers.go](../../internal/formats/ansible/handlers.go)); one that no file registered answers 501.
@@ -82,6 +84,7 @@ internal/config/ansible.go     # the ansible: section
 | `ansible.collection.get` | `GET v3/collections/{ns}/{name}/` | Metadata | read | all |
 | `ansible.versions.list` | `GET v3/collections/{ns}/{name}/versions/` | Metadata | read | all |
 | `ansible.version.get` | `GET v3/collections/{ns}/{name}/versions/{version}/` | Metadata | read | all |
+| `ansible.version.docs` | `GET v3/collections/{ns}/{name}/versions/{version}/docs-blob/` | Metadata | read of the wiki ([ansible-docs.md](ansible-docs.md)) | all |
 | `ansible.artifact.get` | `GET v3/artifacts/collections/{file}` | Download | read | all |
 | `ansible.collection.publish` | `POST v3/artifacts/collections/` | Upload | deploy | local, virtual |
 | `ansible.import.get` | `GET v3/imports/collections/{id}/` | Metadata | read | local, virtual |

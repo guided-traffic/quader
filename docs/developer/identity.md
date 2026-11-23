@@ -187,12 +187,13 @@ unchanged), so a fill that raced a revocation serves one request and is not cach
 - Every rejection of a presented credential is counted (malformed, unknown, revoked, expired); a disabled owner and a
   storage failure are not. The throttle trips at the budget, not above it (Q-AUTH-20): 300 failures per minute mean 300
   validations.
-- `auth.LocalLimiter` is the per-replica implementation with the sliding-window arithmetic and the share
-  `burst ÷ live replicas` that the cluster limiter falls back to while Valkey is unavailable. A replica with a client
-  listener gets the cluster limiter at `a.m1.failureLimiter` (`wireFailureLimiter`); `wireIdentity` uses `LocalLimiter`
-  alone only on a process without one.
+- `auth.LocalLimiter` is a per-replica implementation with the sliding-window arithmetic and the share
+  `burst ÷ live replicas`; the unit and integration tests build their stages on it, and the app does not wire it. A replica with
+  a client listener gets the cluster limiter `auth.credential_failures` as `limitsArea.failures` (`wireLimits` in
+  [wire_api.go](../../internal/app/wire_api.go)), which counts in its own memory with that share while Valkey is unavailable, and
+  `wireAuth` hands it to the stage. A process without a client listener has no authentication stage.
 - Not here: the break-glass lockout (login), and the device-code limiter. The flow-start limit of the unauthenticated
-  login routes is `a.m1.flowStarts`, registered next to the failure limiter and used by the login
+  login routes is `limitsArea.flowStarts`, registered next to the failure limiter and used by the login
   ([login.md](login.md#seams-to-the-other-areas)) and the revocation by value; both callers pass the bucket through
   `auth.AddressBucket`, which maps an IPv6 address to its `/64` (Q-AUTH-90).
 
@@ -246,17 +247,18 @@ Tests: `TestR_AUTH_041_UserUpdatedEntriesAreReadStrictly`, `TestR_AUTH_041_Group
 
 ## Wiring and what other areas connect
 
-`wireIdentity` runs at the identity marker of step 8 and fills `a.m1.principals`, `principalManager`, `provisioner`,
-`tokens`, `authSettings` and `authenticator`. What it takes from, and gives to, the other areas:
+`wireIdentity` is the step of the area `identity` ([steps.go](../../internal/app/steps.go)) and returns the `identityArea`
+([areas.go](../../internal/app/areas.go)): `metrics`, `principals`, `manager`, `provisioner`, `tokens` and `settings`. The
+authentication stage is the auth area's (`wireAuth`, `authArea.stage`). What it takes from, and gives to, the other areas:
 
 | Point | File | Connected to |
 |---|---|---|
-| Audit recorder | `wire_api.go` `auditRecorder` | `a.m1.recorder` of step 4, a discarding recorder on a process without PostgreSQL |
-| `a.m1.sessions` (`session.Validator`) | `m1.go` | login: `wireSessions` runs before `wireIdentity`; a nil store stays a nil interface (a worker has none) |
-| `a.m1.failureLimiter`, `a.m1.flowStarts` | `m1.go` | `wireFailureLimiter`: `cluster.LimiterSet.NewLimiter("auth.credential_failures", …)` and `"auth.flow_starts"` |
+| Audit recorder | `wire_api.go` `auditRecorder` | `infra.rec`, the audit area's recorder of step 4 ([audit.md](audit.md#the-source-of-an-event)), `audit.Nop{}` on a process without PostgreSQL |
+| `sessionsArea.store` (`session.Validator`) | `wire_login.go` `wireSessions` | login: `wireSessions` runs after `wireIdentity` and before `wireAuth`; a role without the sessions area (`packages`, `worker`) has no store, and `wireAuth` keeps the nil store a nil interface |
+| `limitsArea.failures`, `limitsArea.flowStarts` | `wire_api.go` `wireLimits` | `cluster.LimiterSet.NewLimiter("auth.credential_failures", …)` and `"auth.flow_starts"` |
 | `BreakGlassName` | `wire_identity.go` | `auth.break_glass.username`, the reserved username of the provisioner and the manager |
-| `Provisioner` | `a.m1.provisioner` | login: `wireLogin` hands it to the OIDC service, whose callback calls `SignIn` |
-| `principal.Metrics` | `wire_identity.go` `authMetrics` | one instance per replica; the session store and the login count into the same families |
+| `Provisioner` | `identityArea.provisioner` | login: `wireLogin` hands it to the OIDC service, whose callback calls `SignIn` |
+| `principal.Metrics` | `wire_identity.go` `identityArea.metrics` | one instance per replica; the session store and the login count into the same families |
 | `principal.AdminBinder` | `authz.Service.BindAdmin` | only `quader admin service-account create --admin` ([admin_identity.go](../../cmd/quader/admin_identity.go)); the running manager has none, no API operation binds a role on creation (Q-AUTH-47) |
 | `v1.AuthServices` | `App.authServices` ([wire_identity.go](../../internal/app/wire_identity.go)) | the manager, the token service, the settings store, the session store, the login and the limiter `auth.flow_starts` that `startClient` passes to every endpoint's `v1.Options.Auth`; a component the replica lacks stays nil and its operations answer 503 |
 

@@ -528,8 +528,8 @@ summary arrives inside the writer's window and is counted as one repeat.
 ## Wiring
 
 `App.wireAuthz` (step 8, between the identity and files markers) builds the `Engine` over `authz.NewPostgresSource`, the
-replica's `cluster.Changes`, the authz and audit configuration and starts it as a component. It sets `a.m1.authorizer` and
-`a.m1.authzEngine`. There is no anonymous switch input any more (R-AUTH-037); `App.publicContent` asks the installed index whether some artifacts are `public`. A replica without PostgreSQL wires nothing, and nobody holds a permission.
+replica's `cluster.Changes`, the authz and audit configuration and starts it as a component. It returns the engine as
+`authzArea.engine` ([areas.go](../../internal/app/areas.go)); the request paths read it through `App.decider()`. There is no anonymous switch input any more (R-AUTH-037); `App.publicContent` asks the installed index whether some artifacts are `public`. A replica without PostgreSQL wires nothing, and nobody holds a permission.
 `App.access()` returns `bridgeAccess`: the engine behind the dev-profile bridge of `system.bootstrap_anonymous_read`
 (Q-AUTHZ-16), which opens the system information and the replica list only; `endpointStage` puts the request path into the
 context for it (Q-AUTHZ-71).
@@ -550,8 +550,10 @@ selector on the repository), so the ETag of the policy changes with it; a princi
 Q-AUTHZ-132). A new write that touches `authz_*` tables or their foreign keys belongs in the completeness test
 `TestR_AUTHZ_028_IdentityAndRepositoryWritesAdvanceTheEpoch`.
 
-`wireAuthz` also builds the `authz.Service` when the identity and repository wiring ran (`a.m1.principals`,
-`a.m1.repositories`) and sets `a.m1.authzService`; `startClient` hands it and the engine to the handlers as `v1.AuthzServices`.
+`wireAuthz` takes the identity area's principal store (`identityArea.principals`) and the repository area's reader
+(`repositoryArea.reader`) as typed inputs, refuses to start without them, and also builds the `authz.Service` (`authzArea.service`);
+`App.authzServices` hands it, the engine, the ownership, project and visibility services to the handlers as `v1.AuthzServices`,
+which `startClient` passes to every endpoint.
 `*authz.Service` is the `principal.AdminBinder` of `service-account create --admin` (R-AUTH-015, `BindAdmin`): the command that
 creates a service account with `--admin` builds its own manager and passes the service. The repository service is built with
 `authz.NewSettingsHook`, `NewExposureHook` and `NewPolicyHook` in `wireRepository`. Its `Formats` is the format catalog
