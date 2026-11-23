@@ -22663,7 +22663,9 @@ and the setting of the scanner, and its section **Signature database** "None yet
 ### Q-UI-1004 · A page names a person without a principal's syntax
 
 Status: **Decided by the development agent** on 2026-11-23 for point 11 of the open finding "Seen by the builder of the screens' first
-round on its renders", as far as nothing new is decided; the owner reviews it at the walkthrough, and option (a) waits for his word.
+round on its renders", as far as nothing new is decided; the owner reviews it at the walkthrough. **Settled by
+[Q-UI-1006](#q-ui-1006--every-page-names-a-principal-by-the-username-and-every-other-kind-with-its-kind-as-a-word)**: option (c) is the
+rule of every page.
 
 Context: a file's page said "Created … by user:priya", and **Last downloader** `user:priya`; the malware and the signature pages name the
 same reference "priya" (`principalName`). The pages that list people name a person by the display name with the `@username` under it,
@@ -22676,7 +22678,7 @@ from answers that carry both; an item's answer carries the reference alone (`Sta
 | (b) The page resolves the references through a lookup | A new operation | No answer changes | A call per name and a permission for a lookup of anyone |
 | (c) The username without the kind, "priya", as the malware and signature pages do, the reference as the title (chosen, for now) | `principalName` | No new decision; one form across the pages | The username, not the name |
 
-**Choice:** (c) on a file's page now; (a) is the recommendation and waits for the owner's word on who may read a display name.
+**Choice:** (c) on a file's page; Q-UI-1006 makes it the rule of every page.
 
 **Applied in the spec:** R-UI-010. Code: `person` of
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts).
@@ -22707,6 +22709,31 @@ settings of the malware scanning and of the signatures lead to them by their nam
 **Applied in the spec:** R-UI-158, the route table; [malware-scanning.md](malware-scanning.md) R-MAL-025; [signatures.md](signatures.md)
 R-SIG-038. Code: `security-audit` of [navigation.ts](../../web/src/app/core/navigation.ts),
 [security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts), `currentRoute` of [app.ts](../../web/src/app/app.ts).
+
+### Q-UI-1006 · Every page names a principal by the username, and every other kind with its kind as a word
+
+Status: **Decided by the development agent** on 2026-11-23, settling option (a) of
+[Q-UI-1004](#q-ui-1004--a-page-names-a-person-without-a-principals-syntax) that waited; the owner reviews it at the walkthrough.
+
+Context: the pages print who did something from a principal's reference (`user:priya`, `sa:ci-build`, `group:gh-ops`): a file's creator
+and last downloader, a release of the malware or the signature gate, a role binding's principal and granter, a lifted block of the
+download limits, the general settings' read-only mode, a signing key's upload, the storage settings' last change. Some printed the
+reference as it is, some stripped `user:` and left every other kind in its syntax. An answer carries the reference alone; the people
+lists carry display names because their readers may read the members.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each answer that names a principal carries its display name too | One resolver of the server | A person named as the member lists name people | Every reader of the object, an anonymous reader of a public repository too, learns the names of who wrote it: who may read a person's name changes |
+| (b) The page resolves references through a lookup | A new operation | No answer changes | A call per name, and a lookup of anyone's name for every reader |
+| (c) One helper for every page: a user by the username without the kind ("by priya"), a service account, a group, a Bastion and a CI job with their kind as a word ("service account ci-build", "Servicekonto ci-build"); the reference stays the title (chosen) | `personName` | No new decision about who may read what; one form on every page; nothing printed in a reference's syntax | The username, not the display name |
+
+**Choice:** (c). `check-rules.mjs` refuses a template that interpolates a principal's field (`releasedBy`, `grantedBy`, `lastDownloader`,
+a stamp's `by` and the like) without the helper.
+
+**Rationale:** who may read a person's name is unchanged, which (a) and (b) would change; the username is what the person signs in
+with and what a search for a person matches. The development agent would revisit (a) if the owner wants display names on these pages.
+
+**Applied in the spec:** R-UI-010. Code: [person-name.ts](../../web/src/app/shared/person-name.ts).
 
 ### Q-UI-1031 · The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's
 

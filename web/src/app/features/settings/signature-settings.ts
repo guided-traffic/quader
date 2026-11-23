@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -10,7 +11,6 @@ import { Needs } from '../../shared/access/needs';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
-import { principalName } from '../../shared/malware/malware-words';
 import { asApiError } from '../../shared/paged-resource';
 import { AnchorDialog, AnchorDialogData } from '../../shared/signatures/anchor-dialog';
 import { AnchorRowControls, AnchorTable } from '../../shared/signatures/anchor-table';
@@ -128,7 +128,7 @@ export class SignatureSettingsPage {
   protected readonly projectControls = (): AnchorRowControls => ({ toggle: false, remove: this.canWrite() });
 
   protected readonly promise = signaturePromise();
-  protected readonly principal = principalName;
+  protected readonly principal = personName;
   protected readonly blockKind = blockKindWords;
   protected readonly anchorsCaption = $localize`:@@sig.settings.anchors-caption:Trust anchors of the installation`;
   protected readonly projectCaption = $localize`:@@sig.settings.project-caption:Trust anchors of the projects`;

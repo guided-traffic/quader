@@ -1,3 +1,4 @@
+import { personName } from '../../../shared/person-name';
 import { DocumentBlock } from '../../../shared/document-block';
 import { Component, computed, inject, input, output, resource, signal } from '@angular/core';
 import { FilesApi, Item } from '../../../api/files-api';
@@ -8,7 +9,6 @@ import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { MalwareStatusView } from '../../../shared/malware/malware-status';
-import { principalName } from '../../../shared/malware/malware-words';
 import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
 import { systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
@@ -291,7 +291,7 @@ export class RepositoryFile {
    * Who created, changed or last downloaded the file, named as the other pages name a person (`priya`), never in a principal's syntax
    * (`user:priya`); the reference is the title (Q-UI-1004).
    */
-  protected readonly person = principalName;
+  protected readonly person = personName;
   protected readonly curl = computed(() => `curl -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(this.item().itemUrl)}`);
   /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {

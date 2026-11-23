@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { Component, LOCALE_ID, computed, inject, resource, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
@@ -20,7 +21,6 @@ import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { linkCheckClause } from '../../shared/link-check';
-import { principalName } from '../../shared/malware/malware-words';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Disclosure } from '../../shared/ui/disclosure';
@@ -244,7 +244,7 @@ export class StorageSettingsPage {
   });
   protected readonly dirty = computed(() => Object.keys(this.patch()).length > 0 || this.minSizeError() !== null || this.linkLifeError() !== null);
 
-  protected readonly principal = principalName;
+  protected readonly principal = personName;
   private readonly addressInvalidText = $localize`:@@links.address.invalid:Enter an https address without a path, such as https://objects.example.com.`;
 
   constructor() {

@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ApiError } from '../../api/problem';
 import {
@@ -71,6 +72,9 @@ const MAINTENANCE_MESSAGE_MAX = 500;
   `,
 })
 export class GeneralSettings {
+  /** A principal's reference as a page names a person (Q-UI-1006). */
+  protected readonly person = personName;
+
   private readonly api = inject(SystemApi);
   private readonly notifier = inject(Notifier);
   private readonly confirm = inject(Confirm);

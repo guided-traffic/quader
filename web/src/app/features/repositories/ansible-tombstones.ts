@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { DatePipe } from '@angular/common';
 import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { AnsibleApi, AnsibleTombstone } from '../../api/ansible-api';
@@ -42,7 +43,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
             <td translate="no">{{ t.version }}</td>
             <td><code translate="no" [attr.title]="t.sha256">{{ t.sha256.slice(0, 12) }}</code></td>
             <td><time [attr.datetime]="t.deletedAt">{{ t.deletedAt | date: 'medium' }}</time></td>
-            <td translate="no">{{ t.deletedBy }}</td>
+            <td translate="no" [attr.title]="t.deletedBy">{{ person(t.deletedBy) }}</td>
             <td>
               @if (canManage()) {
                 <!-- The row's one action is its quiet word (R-UI-163). -->
@@ -67,6 +68,9 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
   `,
 })
 export class AnsibleTombstones {
+  /** A principal's reference as a page names a person (Q-UI-1006). */
+  protected readonly person = personName;
+
   private readonly api = inject(AnsibleApi);
   private readonly confirm = inject(Confirm);
   private readonly notifier = inject(Notifier);

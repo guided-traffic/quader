@@ -1,7 +1,7 @@
+import { personName } from '../person-name';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, resource, signal } from '@angular/core';
 import { ApiError } from '../../api/problem';
 import { SignatureEntry, SignatureGateRefusedReason, SignatureGateView, SignaturesApi } from '../../api/signatures-api';
-import { principalName } from '../malware/malware-words';
 import { ErrorNotice } from '../error-notice';
 import { asApiError, valueOf } from '../paged-resource';
 import { TimeAgo } from '../ui/time-ago';
@@ -205,7 +205,7 @@ export class SignatureGate {
 
   protected readonly busy = signal(false);
   protected readonly actionError = signal<ApiError | null>(null);
-  protected readonly principal = principalName;
+  protected readonly principal = personName;
   protected readonly scopeWords = anchorScopeWords;
   protected readonly sentence = gateReasonSentence;
   protected readonly label = $localize`:@@sig.gate.label:Signature check of this repository`;

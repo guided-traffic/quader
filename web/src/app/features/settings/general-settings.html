@@ -187,7 +187,7 @@
             <ng-container i18n="@@general.mode.since">Since</ng-container>&ngsp;<time [attr.datetime]="m.since">{{ m.since }}</time>
           }
           @if (m.by) {
-            <ng-container i18n="@@general.mode.by">by</ng-container>&ngsp;<span translate="no">{{ m.by }}</span>.
+            <ng-container i18n="@@general.mode.by">by</ng-container>&ngsp;<span translate="no" [attr.title]="m.by">{{ person(m.by) }}</span>.
           }
         } @else {
           <span class="ok">

@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, inject, signal } from '@angular/core';
 import { LimitBlock, LimitsApi } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
@@ -58,7 +59,7 @@ export function blockActive(b: LimitBlock, now = Date.now()): boolean {
           <td>
             @if (b.liftedAt; as at) {
               <span class="ended">
-                <ng-container i18n="@@limits.blocks.lifted-by">Lifted by {{ b.liftedBy ?? '–' }}</ng-container>
+                <ng-container i18n="@@limits.blocks.lifted-by">Lifted by {{ person(b.liftedBy) }}</ng-container>
                 <quader-time-ago [at]="at" absolute="title" />
               </span>
             } @else {
@@ -88,6 +89,9 @@ export function blockActive(b: LimitBlock, now = Date.now()): boolean {
   `,
 })
 export class LimitsBlocksTab {
+  /** A principal's reference as a page names a person (Q-UI-1006). */
+  protected readonly person = personName;
+
   private readonly api = inject(LimitsApi);
   private readonly session = inject(SessionStore);
   private readonly confirmer = inject(Confirm);

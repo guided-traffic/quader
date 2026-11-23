@@ -245,7 +245,7 @@ describe('The files of a repository', () => {
     details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
     await settle(fixture);
     expect(text(details)).toContain('SHA-1');
-    expect(text(details)).toContain('ci:acme/web');
+    expect(text(details)).toContain('CI job of acme/web');
     const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
     expect(commands).toHaveLength(2);
     for (const c of commands) expect(c).toContain('-H "Authorization: Bearer $QUADER_TOKEN"');

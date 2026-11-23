@@ -11676,7 +11676,7 @@
     <unit id="limits.rules.col-actions">
       <notes>
         <note category="location">src/app/features/limits/limit-rules.ts:144</note>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:107</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:111</note>
         <note category="location">src/app/features/limits/limits-profiles-tab.ts:138</note>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:150</note>
       </notes>
@@ -11734,7 +11734,7 @@
     </unit>
     <unit id="limits.blocks.refused-of">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:18</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:19</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="refused" disp="formatCount(b.refused, locale)"/> of <ph id="1" equiv="limit" disp="formatCount(b.limit, locale)"/> per hour</source>
@@ -11742,7 +11742,7 @@
     </unit>
     <unit id="limits.blocks.show-ended">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:38,39</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:39,40</note>
       </notes>
       <segment>
         <source>Show ended blocks</source>
@@ -11750,7 +11750,7 @@
     </unit>
     <unit id="limits.blocks.caption">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:43</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:44</note>
       </notes>
       <segment>
         <source>Blocks</source>
@@ -11758,7 +11758,7 @@
     </unit>
     <unit id="limits.blocks.empty">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:50,51</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:51,52</note>
       </notes>
       <segment>
         <source>Nothing is blocked.</source>
@@ -11766,15 +11766,15 @@
     </unit>
     <unit id="limits.blocks.lifted-by">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:61,62</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:62,63</note>
       </notes>
       <segment>
-        <source>Lifted by <ph id="0" equiv="INTERPOLATION" disp="{{ b.liftedBy ?? &apos;–&apos; }}"/></source>
+        <source>Lifted by <ph id="0" equiv="INTERPOLATION" disp="{{ person(b.liftedBy) }}"/></source>
       </segment>
     </unit>
     <unit id="limits.blocks.lift">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:73,74</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:74,75</note>
       </notes>
       <segment>
         <source>Lift</source>
@@ -11782,7 +11782,7 @@
     </unit>
     <unit id="limits.blocks.col-caller">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:102</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:106</note>
       </notes>
       <segment>
         <source>Caller</source>
@@ -11790,7 +11790,7 @@
     </unit>
     <unit id="limits.blocks.col-place">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:103</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:107</note>
       </notes>
       <segment>
         <source>Place</source>
@@ -11798,7 +11798,7 @@
     </unit>
     <unit id="limits.blocks.col-started">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:104</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:108</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -11806,7 +11806,7 @@
     </unit>
     <unit id="limits.blocks.col-ends">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:105</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:109</note>
       </notes>
       <segment>
         <source>Ends</source>
@@ -11814,7 +11814,7 @@
     </unit>
     <unit id="limits.blocks.col-refused">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:106</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:110</note>
       </notes>
       <segment>
         <source>Refused requests</source>
@@ -11822,7 +11822,7 @@
     </unit>
     <unit id="limits.blocks.lift-title">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:149</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:153</note>
         <note category="location">src/app/features/usage/usage-detail.ts:258</note>
       </notes>
       <segment>
@@ -11831,7 +11831,7 @@
     </unit>
     <unit id="limits.blocks.lift-text">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:150</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:154</note>
         <note category="location">src/app/features/usage/usage-detail.ts:259</note>
       </notes>
       <segment>
@@ -11840,7 +11840,7 @@
     </unit>
     <unit id="limits.blocks.lift-confirm">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:151</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:155</note>
         <note category="location">src/app/features/usage/usage-detail.ts:260</note>
       </notes>
       <segment>
@@ -11849,7 +11849,7 @@
     </unit>
     <unit id="limits.blocks.lifted">
       <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:157</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:161</note>
         <note category="location">src/app/features/usage/usage-detail.ts:265</note>
       </notes>
       <segment>
@@ -18705,7 +18705,7 @@
     </unit>
     <unit id="ansible.tombstones.heading">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:21,22</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:22,23</note>
       </notes>
       <segment>
         <source>Tombstones</source>
@@ -18713,7 +18713,7 @@
     </unit>
     <unit id="ansible.tombstones.intro">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:23,26</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:24,27</note>
       </notes>
       <segment>
         <source> A deleted version leaves a tombstone, and its number cannot be published again. Clear the tombstone to allow a new publish of that version number with other bytes. </source>
@@ -18721,7 +18721,7 @@
     </unit>
     <unit id="ansible.tombstones.clear">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:50,51</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:51,52</note>
       </notes>
       <segment>
         <source>Clear</source>
@@ -18729,7 +18729,7 @@
     </unit>
     <unit id="ansible.tombstones.caption">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:82</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:86</note>
       </notes>
       <segment>
         <source>Tombstones of this repository</source>
@@ -18737,7 +18737,7 @@
     </unit>
     <unit id="ansible.tombstones.empty">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:83</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:87</note>
       </notes>
       <segment>
         <source>No version has been deleted, so no number is blocked.</source>
@@ -18745,7 +18745,7 @@
     </unit>
     <unit id="ansible.tombstones.col.collection">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:85</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:89</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -18753,7 +18753,7 @@
     </unit>
     <unit id="ansible.tombstones.col.version">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:86</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:90</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -18761,7 +18761,7 @@
     </unit>
     <unit id="ansible.tombstones.col.sha256">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:89</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:93</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -18769,7 +18769,7 @@
     </unit>
     <unit id="ansible.tombstones.help.sha256">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:90</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:94</note>
       </notes>
       <segment>
         <source>The first digits of the SHA-256 of the archive that was deleted. Hover to read all of it.</source>
@@ -18777,7 +18777,7 @@
     </unit>
     <unit id="ansible.tombstones.col.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:92</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:96</note>
       </notes>
       <segment>
         <source>Deleted</source>
@@ -18785,7 +18785,7 @@
     </unit>
     <unit id="ansible.tombstones.col.by">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:93</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:97</note>
       </notes>
       <segment>
         <source>Deleted by</source>
@@ -18793,7 +18793,7 @@
     </unit>
     <unit id="ansible.tombstones.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:94</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:98</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -18801,7 +18801,7 @@
     </unit>
     <unit id="ansible.tombstones.clear.title">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:111</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:115</note>
       </notes>
       <segment>
         <source>Clear the tombstone of <ph id="0" equiv="collection" disp="t.name"/> <ph id="1" equiv="version" disp="t.version"/></source>
@@ -18809,7 +18809,7 @@
     </unit>
     <unit id="ansible.tombstones.clear.line">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:113</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:117</note>
       </notes>
       <segment>
         <source>The number can then be published again with other bytes. Clients and caches that have seen the deleted version may still hold the old archive.</source>
@@ -18817,7 +18817,7 @@
     </unit>
     <unit id="ansible.tombstones.clear.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:115</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:119</note>
       </notes>
       <segment>
         <source>Clear tombstone</source>
@@ -18825,7 +18825,7 @@
     </unit>
     <unit id="ansible.tombstones.cleared">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:122</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:126</note>
       </notes>
       <segment>
         <source>The tombstone was cleared.</source>
@@ -24943,7 +24943,7 @@
     </unit>
     <unit id="roles.principal">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:72</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:76</note>
       </notes>
       <segment>
         <source>Principal</source>
@@ -24951,7 +24951,7 @@
     </unit>
     <unit id="roles.granted-at">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:73</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:77</note>
       </notes>
       <segment>
         <source>Granted</source>
@@ -24959,7 +24959,7 @@
     </unit>
     <unit id="roles.granted-by">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:74</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:78</note>
       </notes>
       <segment>
         <source>Granted by</source>
@@ -24967,7 +24967,7 @@
     </unit>
     <unit id="roles.source">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:75</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:79</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -24975,7 +24975,7 @@
     </unit>
     <unit id="roles.actions">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:76</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:80</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -24983,7 +24983,7 @@
     </unit>
     <unit id="roles.holders-caption">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:79</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:83</note>
       </notes>
       <segment>
         <source>Principals that hold the role <ph id="0" equiv="role" disp="role"/></source>
@@ -24991,7 +24991,7 @@
     </unit>
     <unit id="roles.bound">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:140</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:144</note>
       </notes>
       <segment>
         <source>Role bound.</source>
@@ -24999,7 +24999,7 @@
     </unit>
     <unit id="roles.unbind-title">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:145</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:149</note>
       </notes>
       <segment>
         <source>Unbind this role?</source>
@@ -25007,7 +25007,7 @@
     </unit>
     <unit id="roles.unbind-text">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:146</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:150</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="role" disp="b.role"/> will no longer apply to <ph id="1" equiv="principal" disp="b.principal"/>.</source>
@@ -25015,7 +25015,7 @@
     </unit>
     <unit id="roles.unbind">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:147</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:151</note>
       </notes>
       <segment>
         <source>Unbind</source>
@@ -25023,7 +25023,7 @@
     </unit>
     <unit id="roles.unbound">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:150</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:154</note>
       </notes>
       <segment>
         <source>Role unbound.</source>
@@ -26988,7 +26988,7 @@
     </unit>
     <unit id="general.visibility.default-restricted">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:126</note>
+        <note category="location">src/app/features/settings/general-settings.ts:130</note>
       </notes>
       <segment>
         <source>A restricted level cannot be the default.</source>
@@ -26996,7 +26996,7 @@
     </unit>
     <unit id="general.visibility.restrict-default">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:132</note>
+        <note category="location">src/app/features/settings/general-settings.ts:136</note>
       </notes>
       <segment>
         <source>This is the default project visibility, which cannot be restricted.</source>
@@ -27004,7 +27004,7 @@
     </unit>
     <unit id="general.visibility.summary-internal">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:139</note>
+        <note category="location">src/app/features/settings/general-settings.ts:143</note>
       </notes>
       <segment>
         <source>New projects are internal.</source>
@@ -27012,7 +27012,7 @@
     </unit>
     <unit id="general.visibility.summary-public">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:142</note>
+        <note category="location">src/app/features/settings/general-settings.ts:146</note>
       </notes>
       <segment>
         <source>New projects are public.</source>
@@ -27020,7 +27020,7 @@
     </unit>
     <unit id="general.visibility.summary-private">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:145</note>
+        <note category="location">src/app/features/settings/general-settings.ts:149</note>
       </notes>
       <segment>
         <source>New projects are private.</source>
@@ -27028,7 +27028,7 @@
     </unit>
     <unit id="general.visibility.summary-restricted">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:150</note>
+        <note category="location">src/app/features/settings/general-settings.ts:154</note>
       </notes>
       <segment>
         <source>Restricted to administrators: <ph id="0" equiv="levels" disp="names"/>.</source>
@@ -27036,7 +27036,7 @@
     </unit>
     <unit id="general.mode.summary-on">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:157</note>
+        <note category="location">src/app/features/settings/general-settings.ts:161</note>
       </notes>
       <segment>
         <source>Read-only mode is on: every write is refused.</source>
@@ -27044,7 +27044,7 @@
     </unit>
     <unit id="general.mode.summary-off">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:158</note>
+        <note category="location">src/app/features/settings/general-settings.ts:162</note>
       </notes>
       <segment>
         <source>Refuse every write during a migration or an incident.</source>
@@ -27052,7 +27052,7 @@
     </unit>
     <unit id="general.banner.severity.info">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:162</note>
+        <note category="location">src/app/features/settings/general-settings.ts:166</note>
       </notes>
       <segment>
         <source>Notice</source>
@@ -27060,7 +27060,7 @@
     </unit>
     <unit id="general.banner.severity.warning">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:163</note>
+        <note category="location">src/app/features/settings/general-settings.ts:167</note>
       </notes>
       <segment>
         <source>Warning</source>
@@ -27068,7 +27068,7 @@
     </unit>
     <unit id="general.banner.severity.critical">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:164</note>
+        <note category="location">src/app/features/settings/general-settings.ts:168</note>
       </notes>
       <segment>
         <source>Critical</source>
@@ -27076,7 +27076,7 @@
     </unit>
     <unit id="general.base-url.config">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:198</note>
+        <note category="location">src/app/features/settings/general-settings.ts:202</note>
       </notes>
       <segment>
         <source>Set in the configuration file (server.base_url).</source>
@@ -27084,7 +27084,7 @@
     </unit>
     <unit id="general.base-url.request">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:199</note>
+        <note category="location">src/app/features/settings/general-settings.ts:203</note>
       </notes>
       <segment>
         <source>Derived from the request, because server.base_url is not set. This is for development only.</source>
@@ -27092,7 +27092,7 @@
     </unit>
     <unit id="general.banner.message-hint">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:202</note>
+        <note category="location">src/app/features/settings/general-settings.ts:206</note>
       </notes>
       <segment>
         <source>Plain text. A link is written [text](https://example.com). Other links stay text. At most <ph id="0" equiv="max" disp="MESSAGE_MAX"/> characters.</source>
@@ -27100,7 +27100,7 @@
     </unit>
     <unit id="general.mode.message-hint">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:203</note>
+        <note category="location">src/app/features/settings/general-settings.ts:207</note>
       </notes>
       <segment>
         <source>Shown to every user and sent with every refused write. At most <ph id="0" equiv="max" disp="MAINTENANCE_MESSAGE_MAX"/> characters.</source>
@@ -27108,7 +27108,7 @@
     </unit>
     <unit id="general.visibility.saved">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:250</note>
+        <note category="location">src/app/features/settings/general-settings.ts:254</note>
       </notes>
       <segment>
         <source>Visibility settings saved.</source>
@@ -27116,7 +27116,7 @@
     </unit>
     <unit id="general.banner.saved">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:307</note>
+        <note category="location">src/app/features/settings/general-settings.ts:311</note>
       </notes>
       <segment>
         <source>Banner saved.</source>
@@ -27124,7 +27124,7 @@
     </unit>
     <unit id="general.mode.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:336</note>
+        <note category="location">src/app/features/settings/general-settings.ts:340</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode is on.</source>
@@ -27132,7 +27132,7 @@
     </unit>
     <unit id="general.mode.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:337</note>
+        <note category="location">src/app/features/settings/general-settings.ts:341</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode is off.</source>
@@ -27140,7 +27140,7 @@
     </unit>
     <unit id="general.mode.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:348</note>
+        <note category="location">src/app/features/settings/general-settings.ts:352</note>
       </notes>
       <segment>
         <source>Switch to read-only maintenance mode?</source>
@@ -27148,7 +27148,7 @@
     </unit>
     <unit id="general.mode.confirm-1">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:350</note>
+        <note category="location">src/app/features/settings/general-settings.ts:354</note>
       </notes>
       <segment>
         <source>Every user&apos;s writes are refused with 503 until you switch the mode off again: publishing, pushing, deleting and every change of the configuration.</source>
@@ -27156,7 +27156,7 @@
     </unit>
     <unit id="general.mode.confirm-2">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:351</note>
+        <note category="location">src/app/features/settings/general-settings.ts:355</note>
       </notes>
       <segment>
         <source>Downloads, sign-in, creating and revoking tokens, and this switch keep working.</source>
@@ -27164,7 +27164,7 @@
     </unit>
     <unit id="general.mode.confirm">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:353</note>
+        <note category="location">src/app/features/settings/general-settings.ts:357</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -27333,7 +27333,7 @@
     <unit id="malware.rescan.confirm">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:101,104</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:258</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:259</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -27470,7 +27470,7 @@
     </unit>
     <unit id="malware.db.error.missing">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:29</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:30</note>
       </notes>
       <segment>
         <source>No signature database was found.</source>
@@ -27478,7 +27478,7 @@
     </unit>
     <unit id="malware.db.error.invalid">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:31</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:32</note>
       </notes>
       <segment>
         <source>A file of the signature database was refused.</source>
@@ -27486,7 +27486,7 @@
     </unit>
     <unit id="malware.db.error.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:33</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:34</note>
       </notes>
       <segment>
         <source>The repository the configuration names cannot hold the database.</source>
@@ -27494,7 +27494,7 @@
     </unit>
     <unit id="malware.db.error.store">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:35</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:36</note>
       </notes>
       <segment>
         <source>A file of the signature database could not be stored.</source>
@@ -27502,7 +27502,7 @@
     </unit>
     <unit id="malware.db.error.other">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:37</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:38</note>
       </notes>
       <segment>
         <source>The last update of the signature database failed.</source>
@@ -27510,7 +27510,7 @@
     </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:191</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:192</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -27518,7 +27518,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:201</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:202</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -27526,7 +27526,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:203</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:204</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -27534,7 +27534,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:213</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:214</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -27542,7 +27542,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:214</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:215</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -27550,7 +27550,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:254</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:255</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -27558,7 +27558,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:256</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:257</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -27566,7 +27566,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:266</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:267</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
@@ -37485,7 +37485,7 @@
     <unit id="malware.filter.state">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:32</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:181</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:182</note>
       </notes>
       <segment>
         <source>State</source>
@@ -37495,7 +37495,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:39,40</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:40</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:188</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:189</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -37512,7 +37512,7 @@
     <unit id="malware.filter.released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:189</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:190</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -37521,7 +37521,7 @@
     <unit id="malware.filter.not-released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:43,45</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:189</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:190</note>
       </notes>
       <segment>
         <source>Not released</source>
@@ -37531,7 +37531,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,47</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:47</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:193</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:194</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:71,72</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:72</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:216</note>
@@ -37573,7 +37573,7 @@
     <unit id="malware.database-of">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:112</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:54</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:55</note>
       </notes>
       <segment>
         <source>ClamAV database of</source>
@@ -37582,7 +37582,7 @@
     <unit id="malware.state.released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:122,124</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:108</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:109</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -37592,7 +37592,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:125</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:110</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:41,42</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:42,43</note>
       </notes>
       <segment>
         <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(r.releasedBy) }}"/></source>
@@ -37632,7 +37632,7 @@
     </unit>
     <unit id="malware.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:198</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:199</note>
       </notes>
       <segment>
         <source>Search by path or signature</source>
@@ -37640,7 +37640,7 @@
     </unit>
     <unit id="malware.list.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:199</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:200</note>
       </notes>
       <segment>
         <source>Malware finds</source>
@@ -37648,7 +37648,7 @@
     </unit>
     <unit id="malware.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:200</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:201</note>
       </notes>
       <segment>
         <source>No find matches the filters.</source>
@@ -37656,7 +37656,7 @@
     </unit>
     <unit id="malware.list.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:204</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:205</note>
       </notes>
       <segment>
         <source>No malware found.</source>
@@ -37664,7 +37664,7 @@
     </unit>
     <unit id="malware.list.empty-dated">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:206</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:207</note>
       </notes>
       <segment>
         <source>No malware found. The signature database in use is ClamAV&apos;s of <ph id="0" equiv="date" disp="date"/>.</source>
@@ -37672,7 +37672,7 @@
     </unit>
     <unit id="malware.col.file">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:212</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:213</note>
       </notes>
       <segment>
         <source>File</source>
@@ -37680,7 +37680,7 @@
     </unit>
     <unit id="malware.col.verdict">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:214</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:215</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -37688,7 +37688,7 @@
     </unit>
     <unit id="malware.col.actions">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:215</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:216</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:278</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:303</note>
       </notes>
@@ -37698,7 +37698,7 @@
     </unit>
     <unit id="malware.row.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:243</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:244</note>
       </notes>
       <segment>
         <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
@@ -37706,8 +37706,8 @@
     </unit>
     <unit id="malware.withdraw">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:266</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:331</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:267</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:332</note>
       </notes>
       <segment>
         <source>Withdraw release</source>
@@ -37715,7 +37715,7 @@
     </unit>
     <unit id="malware.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:266</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:267</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -37723,7 +37723,7 @@
     </unit>
     <unit id="malware.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:322</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:323</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
@@ -37731,7 +37731,7 @@
     </unit>
     <unit id="malware.withdraw.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:328</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:329</note>
       </notes>
       <segment>
         <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
@@ -37739,7 +37739,7 @@
     </unit>
     <unit id="malware.withdraw.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:329</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:330</note>
       </notes>
       <segment>
         <source>Every repository that holds these bytes refuses them again from the next download.</source>
@@ -37747,7 +37747,7 @@
     </unit>
     <unit id="malware.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:336</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:337</note>
       </notes>
       <segment>
         <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
@@ -41328,7 +41328,7 @@
     </unit>
     <unit id="malware.released-signature">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:46</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:47</note>
       </notes>
       <segment>
         <source>found:</source>
@@ -41336,7 +41336,7 @@
     </unit>
     <unit id="malware.in-part">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:63</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:64</note>
       </notes>
       <segment>
         <source>in</source>
@@ -41344,7 +41344,7 @@
     </unit>
     <unit id="malware.refused">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:74,76</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:75,77</note>
       </notes>
       <segment>
         <source>Downloads are refused.</source>
@@ -41447,14 +41447,6 @@
         <source>every scan failed</source>
       </segment>
     </unit>
-    <unit id="malware.someone">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:65</note>
-      </notes>
-      <segment>
-        <source>someone</source>
-      </segment>
-    </unit>
     <unit id="notice.dismiss">
       <notes>
         <note category="location">src/app/shared/notices.ts:24,25</note>
@@ -41469,6 +41461,46 @@
       </notes>
       <segment>
         <source> Dismiss </source>
+      </segment>
+    </unit>
+    <unit id="person.someone">
+      <notes>
+        <note category="location">src/app/shared/person-name.ts:8</note>
+      </notes>
+      <segment>
+        <source>someone</source>
+      </segment>
+    </unit>
+    <unit id="person.service-account">
+      <notes>
+        <note category="location">src/app/shared/person-name.ts:18</note>
+      </notes>
+      <segment>
+        <source>service account <ph id="0" equiv="name" disp="name"/></source>
+      </segment>
+    </unit>
+    <unit id="person.group">
+      <notes>
+        <note category="location">src/app/shared/person-name.ts:20</note>
+      </notes>
+      <segment>
+        <source>group <ph id="0" equiv="name" disp="name"/></source>
+      </segment>
+    </unit>
+    <unit id="person.bastion">
+      <notes>
+        <note category="location">src/app/shared/person-name.ts:22</note>
+      </notes>
+      <segment>
+        <source>Bastion <ph id="0" equiv="name" disp="name"/></source>
+      </segment>
+    </unit>
+    <unit id="person.ci">
+      <notes>
+        <note category="location">src/app/shared/person-name.ts:24</note>
+      </notes>
+      <segment>
+        <source>CI job of <ph id="0" equiv="name" disp="name"/></source>
       </segment>
     </unit>
     <unit id="scanners.reason.database">

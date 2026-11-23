@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -12,7 +13,6 @@ import {
   SignaturesApi,
 } from '../../api/signatures-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { principalName } from '../../shared/malware/malware-words';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { GateActions } from '../../shared/signatures/gate-releases';
 import { gateReasonWord } from '../../shared/signatures/gate-words';
@@ -239,7 +239,7 @@ export class SignatureRefusals {
   protected readonly actionError = signal<ApiError | null>(null);
   protected readonly reasons = SIGNATURE_GATE_REASONS;
   protected readonly reasonWord = gateReasonWord;
-  protected readonly principal = principalName;
+  protected readonly principal = personName;
   protected readonly artifact = refusalArtifact;
   protected readonly canRelease = computed(() => this.actions.canRelease());
 

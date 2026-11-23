@@ -2207,15 +2207,6 @@
         <target>jede Prüfung ist fehlgeschlagen</target>
       </segment>
     </unit>
-    <unit id="malware.someone">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:65</note>
-      </notes>
-      <segment>
-        <source>someone</source>
-        <target>jemandem</target>
-      </segment>
-    </unit>
     <unit id="files.api.download">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-file.ts:141,142</note>
@@ -38490,8 +38481,8 @@
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:61,62</note>
       </notes>
       <segment>
-        <source>Lifted by <ph id="0" equiv="INTERPOLATION" disp="{{ b.liftedBy ?? &apos;–&apos; }}"/></source>
-        <target>Aufgehoben von <ph id="0" equiv="INTERPOLATION" disp="{{ b.liftedBy ?? &apos;–&apos; }}"/></target>
+        <source>Lifted by <ph id="0" equiv="INTERPOLATION" disp="{{ person(b.liftedBy) }}"/></source>
+        <target>Aufgehoben von <ph id="0" equiv="INTERPOLATION" disp="{{ person(b.liftedBy) }}"/></target>
       </segment>
     </unit>
     <unit id="limits.blocks.lift">
@@ -50087,6 +50078,36 @@
       <segment>
         <source>Signatures</source>
         <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="person.someone">
+      <segment>
+        <source>someone</source>
+        <target>jemandem</target>
+      </segment>
+    </unit>
+    <unit id="person.service-account">
+      <segment>
+        <source>service account <ph id="0" equiv="name" disp="name"/></source>
+        <target>Servicekonto <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="person.group">
+      <segment>
+        <source>group <ph id="0" equiv="name" disp="name"/></source>
+        <target>Gruppe <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="person.bastion">
+      <segment>
+        <source>Bastion <ph id="0" equiv="name" disp="name"/></source>
+        <target>Bastion <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="person.ci">
+      <segment>
+        <source>CI job of <ph id="0" equiv="name" disp="name"/></source>
+        <target>CI-Job von <ph id="0" equiv="name" disp="name"/></target>
       </segment>
     </unit>
   </file>

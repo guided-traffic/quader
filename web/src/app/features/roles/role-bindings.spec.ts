@@ -85,8 +85,8 @@ describe('System roles (R-UI-024)', () => {
     });
     const admin = root.querySelectorAll('section.card')[0] as HTMLElement;
     const rows = Array.from(admin.querySelectorAll('tbody tr')) as HTMLElement[];
-    const declared = rows.find((r) => text(r).includes('group:gh-wds18-k8s-main-admins'))!;
-    const made = rows.find((r) => text(r).includes('group:platform'))!;
+    const declared = rows.find((r) => text(r).includes('group gh-wds18-k8s-main-admins'))!;
+    const made = rows.find((r) => text(r).includes('group platform'))!;
     expect(text(declared)).toContain('Configuration');
     expect(text(declared)).toContain('Managed in the configuration');
     expect(declared.querySelector('button')).toBeNull();

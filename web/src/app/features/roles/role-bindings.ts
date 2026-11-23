@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Role, RoleBinding, RoleName, RolesApi } from '../../api/authz-api';
@@ -48,6 +49,9 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
   `,
 })
 export class RoleBindings {
+  /** A principal's reference as a page names a person (Q-UI-1006). */
+  protected readonly person = personName;
+
   private readonly api = inject(RolesApi);
   private readonly confirmer = inject(Confirm);
   private readonly notifier = inject(Notifier);

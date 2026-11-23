@@ -1,3 +1,4 @@
+import { personName } from '../../shared/person-name';
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -11,7 +12,6 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { CopyButton } from '../../shared/copy-button';
 import { DraftStore } from '../../shared/drafts';
 import { ErrorNotice } from '../../shared/error-notice';
-import { principalName } from '../../shared/malware/malware-words';
 import { asApiError } from '../../shared/paged-resource';
 import {
   groupedDigest,
@@ -176,7 +176,7 @@ export class SigningIdentitySection {
 
   protected readonly chainUrl = SIGNING_CHAIN_URL;
   protected readonly rootUrl = SIGNING_TRUSTED_ROOT_URL;
-  protected readonly principal = principalName;
+  protected readonly principal = personName;
   protected readonly grouped = groupedDigest;
   protected readonly stateText = signingStateText;
   protected readonly sourceText = signingSourceText;

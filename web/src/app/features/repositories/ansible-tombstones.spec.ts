@@ -30,7 +30,8 @@ describe('Ansible tombstones', () => {
     expect(text(first)).toContain('1.0.0');
     expect(text(first)).toContain('d3499c000000');
     expect(first.querySelector('code')?.getAttribute('title')).toBe(tombstone().sha256);
-    expect(text(first)).toContain('user:alice');
+    expect(text(first)).toContain('alice');
+    expect(text(first)).not.toContain('user:alice');
     await expectAccessible(r.root);
   });
 
