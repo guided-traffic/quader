@@ -4886,6 +4886,8 @@ Priority: **MVP** · Covers: UI-041, TOK-026
   owner, state, expiring before, unused since; revoke single and selected
   with confirmation. An active token with `admin: true` whose owner does not hold the administrator role says that its
   administrator rights are inactive (`Token.ownerIsAdmin`, [Q-UI-221](#q-ui-221--the-token-administration-marks-administrator-tokens-whose-owner-no-longer-holds-the-role)).
+  A caller without `identities:read` is not told the owner's role, and the row then says nothing about it
+  ([Q-AUTH-428](identity-and-authentication.md#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself)).
 - CI tokens come from `/api/v1/ci/issuances` with job context (project, pipeline, job, mapping) and
   "Revoke matching" by project or pipeline.
 - "Revoke by value": a field to paste a leaked token; the value is sent once to

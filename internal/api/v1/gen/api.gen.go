@@ -12896,8 +12896,8 @@ type ServiceAccount struct {
 	Description string                   `json:"description"`
 	Id          openapi_types.UUID       `json:"id"`
 
-	// IsAdmin Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024).
-	IsAdmin bool                `json:"isAdmin"`
+	// IsAdmin Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024). Present only for a caller who holds `identities:read`; absent for an Owner of the project who reads its accounts without it (Q-AUTH-428).
+	IsAdmin *bool               `json:"isAdmin,omitempty"`
 	Level   ServiceAccountLevel `json:"level"`
 
 	// Name The name within its place; the stored name is `<project>/<name>` for a project's account and `<project>/<repository>/<name>` for a repository's.
@@ -14590,8 +14590,10 @@ type Token struct {
 
 	// OwnerIsAdmin Whether the owner holds the administrator role now (Q-AUTH-209). A token with `scope.admin` exercises administrator power
 	// only while this is `true`, and has no administrator rights while it is `false` (R-AUTH-024); the answer does not change
-	// what the token may do, it states what the role is at the time of the read.
-	OwnerIsAdmin     bool       `json:"ownerIsAdmin"`
+	// what the token may do, it states what the role is at the time of the read. Present only for a caller who holds
+	// `identities:read` and on the caller's own tokens; absent for anyone else, such as a holder of `tokens:read` alone
+	// (Q-AUTH-428).
+	OwnerIsAdmin     *bool      `json:"ownerIsAdmin,omitempty"`
 	RevocationReason *string    `json:"revocationReason"`
 	RevokedAt        *time.Time `json:"revokedAt"`
 

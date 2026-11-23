@@ -38,14 +38,17 @@ describe('Token administration (R-UI-030)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-221 Q-AUTH-209 the list of other people\'s tokens says which administrator tokens have inactive rights', async () => {
+  it('Q-UI-221 Q-AUTH-209 Q-AUTH-428 the list of other people\'s tokens says which administrator tokens have inactive rights, and nothing where the role is not shown', async () => {
     const adminScope = { inherit: true, admin: true, repositories: [], system: [] };
+    const hidden = sampleToken({ id: 't4', description: 'role not shown', scope: adminScope });
+    delete hidden.ownerIsAdmin;
     const { root } = await renderScreen(TokenAdmin, {
       setup: (api) => {
         (api(TokensApi) as FakeTokensApi).tokenList = [
           sampleToken({ id: 't1', description: 'lost the role', scope: adminScope, ownerIsAdmin: false }),
           sampleToken({ id: 't2', description: 'still admin', scope: adminScope, ownerIsAdmin: true }),
           sampleToken({ id: 't3', description: 'plain', ownerIsAdmin: false }),
+          hidden,
         ];
       },
     });
@@ -53,6 +56,9 @@ describe('Token administration (R-UI-030)', () => {
     expect(text(rows[0]!)).toContain('Administrator rights inactive: the owner is no administrator now');
     expect(text(rows[1]!)).not.toContain('Administrator rights inactive');
     expect(text(rows[2]!)).not.toContain('Administrator rights inactive');
+    // Q-AUTH-428: a caller without identities:read gets no ownerIsAdmin, and the row says nothing about the role.
+    expect(text(rows[3]!)).toContain('role not shown');
+    expect(text(rows[3]!)).not.toContain('Administrator rights inactive');
     expect(await seriousViolations(root)).toEqual([]);
   });
 

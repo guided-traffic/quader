@@ -158,7 +158,7 @@ export class TechnicalTokens {
    * Administrator rights are offered for the token of an instance-wide account that holds the role itself, to a caller who holds
    * it: for any other account the choice would take effect nowhere (Q-UI-220).
    */
-  protected readonly offerAdmin = computed(() => this.isAdmin() && this.account().level === 'instance' && this.account().isAdmin);
+  protected readonly offerAdmin = computed(() => this.isAdmin() && this.account().level === 'instance' && this.account().isAdmin === true);
   protected readonly canRevoke = computed(() => this.session.has('tokens:revoke') || this.owner());
   /** Reads the limits: `limits:read`, or an Owner of the account's project (R-LIM-029, R-API-082). */
   private readonly canReadLimits = computed(() => this.session.has('limits:read') || this.owner());

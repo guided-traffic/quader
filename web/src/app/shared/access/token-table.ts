@@ -219,10 +219,11 @@ export class TokenTable {
   /**
    * An admin token whose owner does not hold the role has no administrator rights until the owner holds it (R-AUTH-024). The
    * record states the owner's role at the time of the read (`ownerIsAdmin`, Q-AUTH-209), so every list shows it, also the token
-   * administration's list of other people's tokens (Q-UI-221).
+   * administration's list of other people's tokens (Q-UI-221). A caller who may not learn the owner's role gets no
+   * `ownerIsAdmin` (Q-AUTH-428), and the row then says nothing about it: an absent role is not a lost one.
    */
   protected adminInactive(t: Token): boolean {
-    return t.state === 'active' && t.scope.admin === true && !t.ownerIsAdmin;
+    return t.state === 'active' && t.scope.admin === true && t.ownerIsAdmin === false;
   }
 
   protected summary(t: Token): string {

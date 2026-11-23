@@ -308,6 +308,13 @@ caller through a token whose scope does not inherit only that token's line among
 pinning test is `TestR_AUTHZ_026_OwnerServiceAccountsAndTokens` (the list for another account is the caller's own, the administrator's
 list is the account's alone, and another account's token answers 404 to the project Owner).
 
+**Who learns an owner's administrator role.** A token answer carries `ownerIsAdmin` and a service account answer `isAdmin` only for a
+caller who holds `identities:read`, whose user list shows the role anyway, and `ownerIsAdmin` also on the caller's own tokens; a
+holder of `tokens:read` alone, or an Owner of a project reading its accounts, gets neither field
+([Q-AUTH-428](../spec/identity-and-authentication.md#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself);
+`seesAdminRole` and `ownerRoles` in [tokens_api.go](../../internal/api/v1/tokens_api.go)). An authorization state that cannot answer
+leaves the field out. Pinned by `TestR_AUTH_028_TheOwnersRoleIsShownOnlyWithIdentitiesRead`.
+
 A project service account has no group, no role and only its project's policies, so what its token can reach is what the project's policies grant it
 ([Q-AUTHZ-175](../spec/authorization.md#q-authz-175--a-project-service-account-is-granted-by-its-projects-policies-only)).
 A repository's service account has no group, no role and no policy: its rights are the actions stored with it on its own

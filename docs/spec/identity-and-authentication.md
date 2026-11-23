@@ -1758,6 +1758,8 @@ account or to its groups, never from placeholder users.
   most `max_technical_tokens_per_account` in all.
 - The record states `isAdmin`: whether the account holds the administrator role now, by a binding on the account; always `false`
   for a project's account ([Q-AUTH-209](#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role)).
+  The field is present only for a caller who holds `identities:read`
+  ([Q-AUTH-428](#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself)).
 
 **Instance-wide service accounts** are created, changed, disabled, enabled and deleted, and their technical tokens issued, only by
 administrators of Quader (`identities:write`; tokens also by owners from P1; Q-AUTHZ-209).
@@ -2669,9 +2671,11 @@ Acceptance criteria:
 ### R-AUTH-028 · Listing and inspecting tokens
 Priority: **MVP** · Covers: TOK-026, TOK-027, TOK-028, ADMAPI-043, ADMAPI-044
 
-Every token record states `ownerIsAdmin`: whether the owner holds the administrator role at the time of the read
+A token record states `ownerIsAdmin`: whether the owner holds the administrator role at the time of the read
 ([Q-AUTH-209](#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role)). A token with `scope.admin` is
-inactive as an administrator's while it is `false`.
+inactive as an administrator's while it is `false`. The field is present for a caller who holds `identities:read` and on the caller's
+own tokens, and absent for anyone else, such as a holder of `tokens:read` alone
+([Q-AUTH-428](#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself)).
 
 **List:** `GET /api/v1/tokens`, with these filters:
 
@@ -6144,6 +6148,8 @@ Context: a finding of `TestHAFaults_PostgresOutage` (nightly runs 42677190569 an
 ### Q-AUTH-209 · A token and a service account state whether the owner holds the administrator role
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Amended by [Q-AUTH-428](#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself):**
+the two fields are present only for a caller who holds `identities:read`, and `ownerIsAdmin` also on the caller's own tokens.
 
 Context: a token with `admin: true` carries administrator power only while its owner holds the role (R-AUTH-024, R-AUTHZ-010), so a token can be inactive without any change to the token. The profile knew this for the caller's own tokens by asking the session for the caller's role; the token administration lists other people's tokens and the form of a service account's token has to know the account's role (Q-UI-213, "Not covered"). Neither could answer from what the API sent.
 
@@ -6155,9 +6161,48 @@ Context: a token with `admin: true` carries administrator power only while its o
 
 **Choice:** (a). `ownerIsAdmin` is present on every token read (list, single, current) and is `true` for a token whose owner holds the role, whatever the token's scope says; `isAdmin` is present on every service account and is `false` for a project's account, which holds no system role (R-AUTHZ-026). A token is not revoked when its owner loses the role (Q-UI-213); the field is what lets a screen say so. **Rationale:** the fact is derived from the bindings in one query, as `isAdmin` of a user already is (R-AUTH-016), and stored nowhere. The development agent would revisit it if a page of tokens makes the extra query measurable, or if a role can be held by anything other than a binding on the principal, a group of it or the break-glass account.
 
-**Security note:** a holder of `tokens:read` learns which token owners are administrators; a holder of `identities:read` already learned it from the user list. See [H-836](#h-836--tokensread-shows-which-owners-are-administrators).
+**Security note:** who is shown the fact is narrowed by [Q-AUTH-428](#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself): a holder of `tokens:read` alone no longer learns which token owners are administrators.
 
 **Applied in the spec:** R-AUTH-020, R-AUTH-028, [openapi.yaml](../../api/openapi.yaml) (`Token`, `ServiceAccount`). Code: `Manager.AdminHolders` and the query `IdentityAdminHolderIDs` ([identity.sql](../../internal/meta/postgres/queries/identity.sql)), `ownerAdmins` in [tokens_api.go](../../internal/api/v1/tokens_api.go). Tests: `TestQ_AUTH_209_TheRecordsStateWhetherTheOwnerIsAnAdministrator` in [admin_state_test.go](../../test/integration/identity/admin_state_test.go).
+
+### Q-AUTH-428 · The administrator role of a token owner or a service account is shown only to a holder of `identities:read` and to the owner itself
+
+Status: **Decided by the development agent** (the rule for other callers' records was set by the coordinator of the findings run of
+2026-11-23; the owner's own tokens are the development agent's addition). It closes the gap H-836, which this page listed under
+"What this does not cover" until then.
+
+Context: [Q-AUTH-209](#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role) put `ownerIsAdmin`
+on every token answer and `isAdmin` on every service account answer, for every caller who may read the record. The records reach
+three kinds of caller: a holder of `tokens:read`, who reads every token (R-AUTH-028); an Owner of a project, who reads the tokens and
+the records of the project's accounts (Q-AUTHZ-177, R-AUTH-046); and the owner of a token. The system roles that hold `tokens:read`
+(administrator, security administrator, auditor; [roles.go](../../internal/authz/roles.go)) also hold `identities:read`, whose user list
+shows `isAdmin` and `adminVia` anyway (R-AUTH-016). A custom role with `tokens:read` and without `identities:read` learned from the
+token list which users and service accounts are administrators: a fact its role was not given.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Both fields only for a holder of `identities:read`; `ownerIsAdmin` also on the caller's own tokens (chosen) | One question per answer, `identities:read` at the decision point; the owner's own tokens keep the field | Nothing is shown that the caller's role does not already show; the profile still marks an administrator token whose owner lost the role | The fields become optional; a screen must tell "absent" from `false` |
+| (b) Both fields only for a holder of `identities:read`, the own tokens too | The same question for every record | One rule without an exception | A user who lost the administrator role no longer sees on the profile that its administrator token is inactive, although the session tells it its own roles |
+| (c) Keep the fields for every reader, documented as a gap | Nothing changes | No change of the API | A custom role learns more than it holds |
+
+**Choice:** (a). `Token.ownerIsAdmin` is present when the caller holds `identities:read`, or when the token's owner is the caller; it
+is absent otherwise. `ServiceAccount.isAdmin` is present when the caller holds `identities:read` and absent otherwise: the only other
+reader of an account is an Owner of its project, and a project's or a repository's account holds no system role (R-AUTHZ-026), so the
+field said `false` there and loses nothing. An authorization state that cannot answer the question leaves the field out. A screen
+treats an absent field as "not known": the token lists mark an administrator token as inactive only when `ownerIsAdmin` is `false`.
+
+**Rationale:** the fact is the user list's, so the capability that reads the user list decides who learns it; a second capability
+for one boolean would be a role nobody asks for. The own record is no disclosure, since the session states the caller's own roles.
+The development agent would revisit it if a role can hold `identities:read` without seeing the user list, or if a project's account
+could hold a system role.
+
+**Applied in the spec:** R-AUTH-020, R-AUTH-028, [api-and-ui.md](api-and-ui.md) (the token administration), [openapi.yaml](../../api/openapi.yaml)
+(`Token.ownerIsAdmin`, `ServiceAccount.isAdmin` leave `required`); [tokens-and-credentials.md](../security/tokens-and-credentials.md);
+H-836 is closed. Code: `seesAdminRole` and `ownerRoles` in [tokens_api.go](../../internal/api/v1/tokens_api.go), `toServiceAccount` in
+[groups_api.go](../../internal/api/v1/groups_api.go), `adminInactive` in [token-table.ts](../../web/src/app/shared/access/token-table.ts).
+Tests: `TestR_AUTH_028_TheOwnersRoleIsShownOnlyWithIdentitiesRead` and `TestR_AUTH_020_AServiceAccountStatesItsRoleOnlyWithIdentitiesRead`
+in [tokens_admin_fact_test.go](../../internal/api/v1/tokens_admin_fact_test.go); the token administration's spec in
+[token-admin.spec.ts](../../web/src/app/features/tokens/token-admin.spec.ts).
 
 ### Q-AUTH-230 · The external flag is an attribute of the user, set by an administrator and resolved with the user's status and groups
 
@@ -6679,10 +6724,6 @@ they write. Code: [events_login.go](../../internal/audit/events_login.go), `Unlo
 [breakglass.go](../../internal/auth/oidc/breakglass.go); the API's description of `POST /api/v1/users/{username}/unlock`.
 
 ## What this does not cover
-
-### H-836 · `tokens:read` shows which owners are administrators
-
-A caller who holds `tokens:read` and not `identities:read` can tell from `ownerIsAdmin` and `isAdmin` ([Q-AUTH-209](#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role)) which owners of tokens, and which service accounts, hold the administrator role. The fact is no secret from an administrator or a holder of `identities:read` (the user list carries `isAdmin` and `adminVia`), and the system roles that hold `tokens:read` (administrator, security administrator and auditor, [roles.go](../../internal/authz/roles.go)) also hold `identities:read`. A custom role that holds `tokens:read` alone discloses it. The record states no group name or reason, only the fact.
 
 ### H-15 · Consent phishing of command-line browser login
 

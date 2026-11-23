@@ -249,12 +249,16 @@ func (s *Server) PatchGroupMembers(w http.ResponseWriter, r *http.Request, name 
 // ---- service accounts -------------------------------------------------------------------------------------
 
 // toServiceAccount renders an account of any level (R-AUTH-020, R-AUTH-046): the name within its place, its reference and
-// level, and for a repository's account the repository and its actions (R-AUTHZ-039).
-func toServiceAccount(a principal.ServiceAccount) gen.ServiceAccount {
+// level, and for a repository's account the repository and its actions (R-AUTHZ-039). showRole says whether the caller may
+// learn the account's administrator role (seesAdminRole, Q-AUTH-428); without it isAdmin is left out.
+func toServiceAccount(a principal.ServiceAccount, showRole bool) gen.ServiceAccount {
 	out := gen.ServiceAccount{
 		Id: uuidOf(a.ID), Name: a.LocalName(), Reference: a.Reference(), Level: gen.ServiceAccountLevel(a.Level()), Description: a.Description,
 		Status: gen.ServiceAccountStatus(a.Status), CreatedAt: utc(a.CreatedAt), Project: optString(a.Project), Repository: optString(a.Repository),
-		IsAdmin: a.IsAdmin, TechnicalTokens: int(a.TechnicalTokens), Version: a.Revision,
+		TechnicalTokens: int(a.TechnicalTokens), Version: a.Revision,
+	}
+	if showRole {
+		out.IsAdmin = &a.IsAdmin
 	}
 	if a.Repository != "" {
 		acts := make([]gen.ServiceAccountActions, 0, len(a.Actions))
@@ -302,8 +306,9 @@ func (s *Server) ListServiceAccounts(w http.ResponseWriter, r *http.Request, _ g
 		failIdentity(w, r, err)
 		return
 	}
+	role := s.seesAdminRole(r.Context())
 	page := NewPage(lq, rows, func(a principal.ServiceAccount) []string { return []string{a.Name} })
-	WritePage(w, r, MapPage(page, toServiceAccount))
+	WritePage(w, r, MapPage(page, func(a principal.ServiceAccount) gen.ServiceAccount { return toServiceAccount(a, role) }))
 }
 
 // CreateServiceAccount implements POST /api/v1/service-accounts (R-AUTH-020).
@@ -326,7 +331,7 @@ func (s *Server) CreateServiceAccount(w http.ResponseWriter, r *http.Request, _ 
 		if err != nil {
 			return Outcome{}, identityErr(err)
 		}
-		return Outcome{Status: http.StatusCreated, Body: toServiceAccount(a), Header: map[string]string{"Location": location(r, "/api/v1/service-accounts/"+a.Name)}}, nil
+		return Outcome{Status: http.StatusCreated, Body: toServiceAccount(a, s.seesAdminRole(r.Context())), Header: map[string]string{"Location": location(r, "/api/v1/service-accounts/"+a.Name)}}, nil
 	}})
 	if err != nil {
 		failIdentity(w, r, err)
@@ -347,7 +352,7 @@ func (s *Server) GetServiceAccount(w http.ResponseWriter, r *http.Request, name 
 		return
 	}
 	SetETag(w, a.Revision, "")
-	writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+	writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 }
 
 // serviceAccountPatchBody is a merge patch of a service account.
@@ -408,7 +413,7 @@ func (s *Server) UpdateServiceAccount(w http.ResponseWriter, r *http.Request, na
 			return
 		}
 		SetETag(w, a.Revision, "")
-		writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+		writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 		return
 	}
 	a, err := s.o.Auth.Manager.UpdateServiceAccount(r.Context(), s.caller(r), name, *desc, expectedRevision(pre))
@@ -417,7 +422,7 @@ func (s *Server) UpdateServiceAccount(w http.ResponseWriter, r *http.Request, na
 		return
 	}
 	SetETag(w, a.Revision, "")
-	writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+	writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 }
 
 // DeleteServiceAccount implements DELETE /api/v1/service-accounts/{name}.

@@ -41,8 +41,9 @@ func (s *Server) ListProjectServiceAccounts(w http.ResponseWriter, r *http.Reque
 		failIdentity(w, r, err)
 		return
 	}
+	role := s.seesAdminRole(r.Context())
 	page := NewPage(lq, rows, func(a principal.ServiceAccount) []string { return []string{a.Name} })
-	WritePage(w, r, MapPage(page, toServiceAccount))
+	WritePage(w, r, MapPage(page, func(a principal.ServiceAccount) gen.ServiceAccount { return toServiceAccount(a, role) }))
 }
 
 // CreateProjectServiceAccount implements POST /api/v1/projects/{projectKey}/service-accounts.
@@ -65,7 +66,7 @@ func (s *Server) CreateProjectServiceAccount(w http.ResponseWriter, r *http.Requ
 		if err != nil {
 			return Outcome{}, identityErr(err)
 		}
-		return Outcome{Status: http.StatusCreated, Body: toServiceAccount(a), Header: map[string]string{
+		return Outcome{Status: http.StatusCreated, Body: toServiceAccount(a, s.seesAdminRole(r.Context())), Header: map[string]string{
 			"Location": location(r, "/api/v1/projects/"+projectKey+"/service-accounts/"+in.Name),
 		}}, nil
 	}})
@@ -88,7 +89,7 @@ func (s *Server) GetProjectServiceAccount(w http.ResponseWriter, r *http.Request
 		return
 	}
 	SetETag(w, a.Revision, "")
-	writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+	writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 }
 
 // UpdateProjectServiceAccount implements PATCH /api/v1/projects/{projectKey}/service-accounts/{name}.
@@ -128,7 +129,7 @@ func (s *Server) UpdateProjectServiceAccount(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		SetETag(w, a.Revision, "")
-		writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+		writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 		return
 	}
 	a, err := s.o.Auth.Manager.UpdateProjectServiceAccount(r.Context(), s.caller(r), o, *desc, expectedRevision(pre))
@@ -137,7 +138,7 @@ func (s *Server) UpdateProjectServiceAccount(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	SetETag(w, a.Revision, "")
-	writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+	writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 }
 
 // DeleteProjectServiceAccount implements DELETE /api/v1/projects/{projectKey}/service-accounts/{name}.

@@ -71,7 +71,8 @@ func toOwner(o token.Owner) gen.TokenOwner {
 // configuration (nil: every name is configured): the endpoint names the token is
 // bound to that no configured endpoint carries are listed as unknownEndpoints,
 // because the token is valid on none of them (R-EP-011).
-func (s *Server) toToken(r token.Record, ownerIsAdmin bool) gen.Token {
+// ownerIsAdmin is the owner's role, or nil where the caller may not learn it (ownerRoles).
+func (s *Server) toToken(r token.Record, ownerIsAdmin *bool) gen.Token {
 	out := gen.Token{
 		UnknownEndpoints: s.unknownEndpoints(r.Scope.Endpoints), OwnerIsAdmin: ownerIsAdmin,
 		Id: uuidOf(r.ID), Type: gen.TokenType(r.Type), Hint: r.Hint, Owner: toOwner(r.Owner), Description: r.Description,
@@ -96,27 +97,50 @@ func (s *Server) toToken(r token.Record, ownerIsAdmin bool) gen.Token {
 	return out
 }
 
-// ownerAdmins says which owners of the records hold the administrator role now (Q-AUTH-209), in one query. The answer is the
-// state at the time of the read; the token's own power is decided at every use (R-AUTHZ-010).
-func (s *Server) ownerAdmins(ctx context.Context, recs ...token.Record) (map[string]bool, error) {
+// seesAdminRole reports whether the caller may learn who holds the administrator role: a holder of identities:read, to whom
+// the user list shows it anyway (R-AUTH-016, Q-AUTH-428). An authorization state that cannot answer counts as no, which
+// leaves the fact out.
+func (s *Server) seesAdminRole(ctx context.Context) bool {
+	held, err := s.holds(ctx, "identities:read")
+	return err == nil && held
+}
+
+// ownerRoles says, for each record, whether its owner holds the administrator role now (Q-AUTH-209), asked in one query.
+// The answer is nil for a record whose owner's role the caller may not learn: the caller holds no identities:read and the
+// token is not its own (Q-AUTH-428). It is the state at the time of the read; the token's own power is decided at every use
+// (R-AUTHZ-010).
+func (s *Server) ownerRoles(ctx context.Context, recs ...token.Record) (func(token.Record) *bool, error) {
+	all := s.seesAdminRole(ctx)
+	self := principal.IDOrEmpty(httpserver.PrincipalFrom(ctx).ID)
+	shown := func(r token.Record) bool { return r.Owner.ID != "" && (all || r.Owner.ID == self) }
 	ids := make([]string, 0, len(recs))
 	seen := make(map[string]bool, len(recs))
 	for _, r := range recs {
-		if r.Owner.ID != "" && !seen[r.Owner.ID] {
+		if shown(r) && !seen[r.Owner.ID] {
 			seen[r.Owner.ID] = true
 			ids = append(ids, r.Owner.ID)
 		}
 	}
-	return s.o.Auth.Manager.AdminHolders(ctx, ids)
+	admins, err := s.o.Auth.Manager.AdminHolders(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return func(r token.Record) *bool {
+		if !shown(r) {
+			return nil
+		}
+		v := admins[r.Owner.ID]
+		return &v
+	}, nil
 }
 
-// tokenWithOwnerRole renders one record with the role of its owner.
+// tokenWithOwnerRole renders one record with the role of its owner where the caller may learn it.
 func (s *Server) tokenWithOwnerRole(ctx context.Context, rec token.Record) (gen.Token, error) {
-	admins, err := s.ownerAdmins(ctx, rec)
+	role, err := s.ownerRoles(ctx, rec)
 	if err != nil {
 		return gen.Token{}, err
 	}
-	return s.toToken(rec, admins[rec.Owner.ID]), nil
+	return s.toToken(rec, role(rec)), nil
 }
 
 func (s *Server) unknownEndpoints(bound []string) []string {
@@ -398,13 +422,13 @@ func (s *Server) ListTokens(w http.ResponseWriter, r *http.Request, _ gen.ListTo
 			return
 		}
 	}
-	admins, err := s.ownerAdmins(ctx, rows...)
+	role, err := s.ownerRoles(ctx, rows...)
 	if err != nil {
 		failIdentity(w, r, err)
 		return
 	}
 	page := NewPage(lq, rows, func(t token.Record) []string { return []string{t.ID} })
-	WritePage(w, r, MapPage(page, func(t token.Record) gen.Token { return s.toToken(t, admins[t.Owner.ID]) }))
+	WritePage(w, r, MapPage(page, func(t token.Record) gen.Token { return s.toToken(t, role(t)) }))
 }
 
 // listOwner resolves the owner filter of the token list. A caller without

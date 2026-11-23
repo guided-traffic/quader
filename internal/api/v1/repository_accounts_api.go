@@ -55,8 +55,9 @@ func (s *Server) ListRepositoryServiceAccounts(w http.ResponseWriter, r *http.Re
 		failIdentity(w, r, err)
 		return
 	}
+	role := s.seesAdminRole(r.Context())
 	page := NewPage(lq, rows, func(a principal.ServiceAccount) []string { return []string{a.Name} })
-	WritePage(w, r, MapPage(page, toServiceAccount))
+	WritePage(w, r, MapPage(page, func(a principal.ServiceAccount) gen.ServiceAccount { return toServiceAccount(a, role) }))
 }
 
 // CreateRepositoryServiceAccount implements POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts.
@@ -81,7 +82,7 @@ func (s *Server) CreateRepositoryServiceAccount(w http.ResponseWriter, r *http.R
 		if err != nil {
 			return Outcome{}, identityErr(err)
 		}
-		return Outcome{Status: http.StatusCreated, Body: toServiceAccount(a), Header: map[string]string{
+		return Outcome{Status: http.StatusCreated, Body: toServiceAccount(a, s.seesAdminRole(r.Context())), Header: map[string]string{
 			"Location": location(r, "/api/v1/projects/"+projectKey+"/repositories/"+repoKey+"/service-accounts/"+url.PathEscape(in.Name)),
 		}}, nil
 	}})
@@ -104,7 +105,7 @@ func (s *Server) GetRepositoryServiceAccount(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	SetETag(w, a.Revision, "")
-	writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+	writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 }
 
 // patchActions reads the actions of a merge patch of a repository's account: absent is unchanged, null or an empty list is
@@ -163,7 +164,7 @@ func (s *Server) UpdateRepositoryServiceAccount(w http.ResponseWriter, r *http.R
 			return
 		}
 		SetETag(w, a.Revision, "")
-		writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+		writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 		return
 	}
 	a, err := s.o.Auth.Manager.UpdateRepositoryServiceAccount(r.Context(), s.caller(r), ra, ch, expectedRevision(pre))
@@ -172,7 +173,7 @@ func (s *Server) UpdateRepositoryServiceAccount(w http.ResponseWriter, r *http.R
 		return
 	}
 	SetETag(w, a.Revision, "")
-	writeJSON(w, r, http.StatusOK, toServiceAccount(a))
+	writeJSON(w, r, http.StatusOK, toServiceAccount(a, s.seesAdminRole(r.Context())))
 }
 
 // DeleteRepositoryServiceAccount implements DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}.

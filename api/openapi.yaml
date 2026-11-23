@@ -22285,14 +22285,14 @@ components:
       description: |
         A service account (R-AUTH-020, R-AUTH-046) of the instance, a project or a repository. `name` is the name within its place:
         unique among the accounts of the repository, of the project, or among the instance-wide accounts (Q-AUTHZ-209).
-      required: [id, name, reference, level, description, status, createdAt, project, repository, actions, isAdmin, technicalTokens, version]
+      required: [id, name, reference, level, description, status, createdAt, project, repository, actions, technicalTokens, version]
       properties:
         id:
           type: string
           format: uuid
         isAdmin:
           type: boolean
-          description: Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024).
+          description: Whether the account holds the administrator role now, by a binding on the account (Q-AUTH-209). Always `false` for an account of a project or a repository, which holds no system role (R-AUTHZ-026). A token of the account carries administrator power only with `scope.admin` and only while this is `true` (R-AUTH-024). Present only for a caller who holds `identities:read`; absent for an Owner of the project who reads its accounts without it (Q-AUTH-428).
         name:
           type: string
           description: The name within its place; the stored name is `<project>/<name>` for a project's account and `<project>/<repository>/<name>` for a repository's.
@@ -22709,7 +22709,7 @@ components:
     Token:
       type: object
       description: A token as a list or an inspection shows it (R-AUTH-028). Neither the value nor its hash is part of it.
-      required: [id, type, hint, owner, ownerIsAdmin, description, scope, unknownEndpoints, createdAt, createdBy, createdVia, expiresAt,
+      required: [id, type, hint, owner, description, scope, unknownEndpoints, createdAt, createdBy, createdVia, expiresAt,
                  lastUsedAt, lastUsedAddr, state, revokedAt, revokedBy, revocationReason, rotatedFrom, selfRotatable, ciContext,
                  technicalToken]
       properties:
@@ -22729,7 +22729,9 @@ components:
           description: |
             Whether the owner holds the administrator role now (Q-AUTH-209). A token with `scope.admin` exercises administrator power
             only while this is `true`, and has no administrator rights while it is `false` (R-AUTH-024); the answer does not change
-            what the token may do, it states what the role is at the time of the read.
+            what the token may do, it states what the role is at the time of the read. Present only for a caller who holds
+            `identities:read` and on the caller's own tokens; absent for anyone else, such as a holder of `tokens:read` alone
+            (Q-AUTH-428).
         description:
           type: string
         scope:
