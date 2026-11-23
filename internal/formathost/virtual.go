@@ -26,6 +26,7 @@ import (
 type VirtualEngine interface {
 	Plan(ctx context.Context, c virtual.Caller, v repository.Repository, d virtual.Descriptor) (*virtual.Plan, error)
 	Artifact(ctx context.Context, c virtual.Caller, p *virtual.Plan, t virtual.Tiers, w http.ResponseWriter) error
+	Stored(ctx context.Context, p *virtual.Plan, t virtual.Tiers) (virtual.Hit, bool, error)
 	Metadata(ctx context.Context, c virtual.Caller, p *virtual.Plan, m virtual.Merger) (*virtual.Merged, error)
 	DeployTarget(v repository.Repository) (repository.Repository, error)
 	ShadowCheck(ctx context.Context, c virtual.Caller, local repository.Repository, name, docPath string) (virtual.ShadowOutcome, error)
@@ -93,6 +94,25 @@ func (r *resolver) Artifact(ctx context.Context, rq *formats.Request, p formats.
 		return err
 	}
 	return r.e.Artifact(ctx, c, plan, tiers{rq: rq, p: p, f: f}, w)
+}
+
+// Check implements [formats.Resolver]: the engine's walk of the stored tiers, whose first hit is checked as its download would be and not
+// served (Q-SIG-241).
+func (r *resolver) Check(ctx context.Context, rq *formats.Request, p formats.Path, info formats.PathInfo) error {
+	f, _, err := r.adapter(rq)
+	if err != nil {
+		return err
+	}
+	c := callerOf(rq)
+	plan, err := r.e.Plan(ctx, c, *rq.Repo, descriptorOf(rq, p, info, ""))
+	if err != nil {
+		return err
+	}
+	hit, ok, err := r.e.Stored(ctx, plan, tiers{rq: rq, p: p, f: f, check: true})
+	if err != nil || !ok {
+		return err
+	}
+	return hit(nil)
 }
 
 // Metadata implements [formats.Resolver].
@@ -248,6 +268,8 @@ type tiers struct {
 	rq *formats.Request
 	p  formats.Path
 	f  formats.Format
+	// check makes a hit decide the checks of the item's download instead of serving it (resolver.Check).
+	check bool
 }
 
 var _ virtual.Tiers = tiers{}
@@ -259,6 +281,9 @@ func (t tiers) forMember(m virtual.Member) (*formats.Request, error) {
 }
 
 func (t tiers) serve(ctx context.Context, m virtual.Member, it formats.Item) virtual.Hit {
+	if t.check {
+		return func(http.ResponseWriter) error { return t.rq.Host.Items().Check(ctx, t.rq, it) }
+	}
 	return func(w http.ResponseWriter) error {
 		t.through(ctx, m)
 		return t.rq.Host.Items().Serve(ctx, t.rq, w, it, formats.ServeStored)

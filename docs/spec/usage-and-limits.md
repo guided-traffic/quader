@@ -1799,7 +1799,7 @@ holds every client's line.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) As specified | The body carries the reason; the user reads it on the profile's Usage tab (R-UI-185) | Nothing to build | The client's own output says nothing |
-| (b) NuGet: a warning header | Each refusal on a NuGet route also carries the reason in the header the NuGet clients print as a warning (`X-NuGet-Warning`; that the clients print it was not verified in this repository) | The message reaches `dotnet restore`'s output | NuGet only; must be verified per client version |
+| (b) NuGet: a warning header | Each refusal on a NuGet route also carries the reason in the header the NuGet clients print as a warning (`X-NuGet-Warning`; measured on 2026-11-23 with `dotnet restore` of the .NET SDK 10.0.403, which prints it as `warning : <reason>` before each attempt's status line, and sent since then for the answers of the download checks, [signatures.md](signatures.md) Q-SIG-241, not for the limits' 429) | The message reaches `dotnet restore`'s output | NuGet only; nuget.exe and the older SDKs not measured; printed once per attempt |
 | (c) A reason phrase over HTTP/1.1 | A server that writes its own reason phrase | Reaches APT on HTTP/1.1 | Not possible over HTTP/2; Go's server does not offer it |
 
 ### Gap 2 · The upstream counts differently from Quader

@@ -1277,11 +1277,14 @@ Acceptance criteria:
   countersignature over another signature value (`signature_mismatch`); the same signatures with every signer, the timestamp authority's
   included, named by its subject key identifier (a leaf without the extension by the SHA-1 of its key), also in BER with indefinite lengths,
   and one whose key identifier names no certificate of the signature (`chain_broken`). Built.
-- Unit (the same package, milliseconds, the real tools' signatures of the measurement as fixtures in `testdata/`, 31 KiB together): the
-  package `dotnet nuget sign` of the .NET SDK 10.0.403 signed with a throwaway CA reads `valid`, `publisher`, `author`; the `.signature.p7s`
-  of `Microsoft.Extensions.Primitives` 8.0.0 as nuget.org serves it: Microsoft's author signature and nuget.org's repository countersignature
-  each find their certificate by its key, build and check their chain (nuget.org's ends at a root signed with SHA-1), verify, and carry one
-  verified timestamp of DigiCert, and the whole check of each part reaches the package's hash. Built.
+- Unit (the same package, milliseconds, the real tools' signatures as fixtures in `testdata/`, 35 KiB together): two toy packages
+  `dotnet nuget sign` of the .NET SDK 10.0.403 signed on 2026-11-23 with leaves of a throwaway root, one naming its signer by its key and one
+  (a leaf without the key identifier extension) by issuer and serial number, each read `valid`, `publisher`, `author`, and `invalid` with one
+  byte of the signature value changed (`signature_mismatch`) or an entry added after the signing (`digest_mismatch`); in `trust` both are
+  internal under their root and untrusted without it; the `.signature.p7s` of `Microsoft.Extensions.Primitives` 8.0.0 as nuget.org serves
+  it: Microsoft's author signature and nuget.org's repository countersignature each find their certificate by its key, build and check their
+  chain (nuget.org's ends at a root signed with SHA-1), verify, and carry one verified timestamp of DigiCert, and the whole check of each part
+  reaches the package's hash. Built.
 - Integration (area `signatures`, `TestR_SIG_029_…`, about 2 s): a package signed by the company CA pushed to a local NuGet repository reads
   `internal` under the company CA's anchor and its bytes are served unchanged.
 
@@ -2956,6 +2959,14 @@ Priority: **P1** · Covers: BEYOND-019
   scanning today (`refuseBlockedImage` in [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go),
   [remote_handlers.go](../../internal/formats/oci/remote_handlers.go) and [virtual_read.go](../../internal/formats/oci/virtual_read.go)).
   Each request is judged once.
+- **A document a client reads before the artifact, and whose error text it shows while it shows only the status of the artifact's**
+  ([Q-SIG-241](#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal)): Ansible Galaxy's version document,
+  which `ansible-galaxy` reads before the archive, answers what the archive's download would answer. The format asks the three checks of
+  R-SIG-069 of the stored archive without serving it (`ItemStore.Check`; through a virtual repository `Resolver.Check`, which walks the
+  stored tiers of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-019 step 6 and fetches nothing), and answers their refusal or
+  pending answer in its own error shape; the archive's download decides again. An archive no repository of the request stores yet (a remote's
+  first download) is judged at its download only
+  ([H-1541](#h-1541--ansible-galaxy-shows-only-the-status-of-a-refusal-of-an-archive-that-no-repository-stored-before)).
 - **A writer reads to sign** ([Q-SIG-211](#q-sig-211--a-writer-of-the-repository-reads-through-the-gate-where-the-formats-signing-tools-read-the-artifact)):
   where a format's signing tools read the artifact from the repository before they push its signature, which is OCI (`cosign sign`
   `GET`s, `notation sign` `HEAD`s the manifest, by tag and by digest), a principal that may write (`deploy`) to the repository reads it
@@ -3175,17 +3186,22 @@ as it writes the malware gate's and the vulnerability block's:
 
 | Format | `signature_not_verified` | `signature_check_pending` |
 |---|---|---|
-| npm | `403`, `{"error": <text>, "message": <text>, "code": "signature_not_verified"}`; npm prints `E403` and the text | `503` with `Retry-After`; npm retries |
-| NuGet | `403`, one line `signature_not_verified: <text>` | `503` with `Retry-After`; the client retries and reads it |
-| OCI | `403`, `{"errors": [{"code": "DENIED", "message": <text>, "detail": null}]}`; Docker 29 prints `error from registry: <text>`, the kubelet `denied: <text>` | `503`, `{"errors": [{"code": "UNAVAILABLE", …}]}` with `Retry-After`; Docker asks by `HEAD`, retries it once and shows no text |
-| Ansible Galaxy | `403`, `{"errors": [{"status": "403", "code": "signature_not_verified", "title": …, "detail": <text>}]}` | `503` with `Retry-After`; `ansible-galaxy` does not retry |
+| npm | `403`, `{"error": <text>, "message": <text>, "code": "signature_not_verified"}`; npm prints `E403` and the text | `503` with `Retry-After`; npm retries twice and prints `E503` and the text |
+| NuGet | `403`, one line `signature_not_verified: <text>`, and the text in the header `X-NuGet-Warning`, which `dotnet restore` prints as `warning : <text>` before each attempt's status line (Q-SIG-241) | `503` with `Retry-After` and the text in `X-NuGet-Warning`; the client retries at once, five times, and prints the warning each time |
+| OCI | `403`, `{"errors": [{"code": "DENIED", "message": <text>, "detail": null}]}`; Docker 29 asks by `HEAD`, then `GET`s the body and prints `error from registry: <text>`; the kubelet `denied: <text>`; Podman `denied: <text>` | `503`, `{"errors": [{"code": "UNAVAILABLE", …}]}` with `Retry-After`; Docker asks by `HEAD`, retries it once and prints only `503 Service Unavailable`; Podman `GET`s it, retries it and prints only the status ([H-1540](#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked)) |
+| Ansible Galaxy | `403`, `{"errors": [{"status": "403", "code": "signature_not_verified", "title": …, "detail": <text>}]}`, at the archive and at its version document (Q-SIG-241); `ansible-galaxy` reads the document first and prints `(HTTP Code: 403, Message: <text> Code: signature_not_verified)` | `503` with `Retry-After`, at both; `ansible-galaxy` prints the document's text and does not retry |
 | generic (`/files/`) | `403` problem with `code`, `reason` and `sha256` | `503` problem with `Retry-After` |
 
 What each client prints and whether it retries is the malware gate's record of the same shapes ([malware-scanning.md](malware-scanning.md)
-R-MAL-016, Q-MAL-3, read in the clients' sources on 2026-11-20); this stage adds no shape. Measured with the real clients on 2026-11-21
+R-MAL-016, Q-MAL-3, read in the clients' sources on 2026-11-20); this stage adds the header of NuGet and the version document of Ansible
+Galaxy, which carry the malware gate's and the vulnerability block's answers too (Q-SIG-241). Measured with the real clients on 2026-11-21
 (R-SIG-078): npm and curl show the text; Docker 29.9.3 shows it for a refusal without the `denied:` prefix the table of R-MAL-016 names;
-`dotnet restore` (NuGet 7.9.0) and `ansible-galaxy` 2.21.6 show only the status, NuGet retries a 403 and a 503 five times without waiting for
-`Retry-After`, and `ansible-galaxy` does not retry. Debian answers none of them: its repositories have no gate (R-SIG-061).
+`dotnet restore` (NuGet 7.9.0) and `ansible-galaxy` 2.21.6 showed only the status, NuGet retries a 403 and a 503 five times without waiting
+for `Retry-After`, and `ansible-galaxy` does not retry. Measured again on 2026-11-23 with Q-SIG-241 built: `dotnet restore` of the .NET SDK
+10.0.403 prints the refusal's and the pending answer's text as a warning before each attempt; `ansible-galaxy` 2.21.6 prints both from the
+version document and stops there (the pending one after the 25 s wait); Docker 29.9.3 (two `HEAD`s, 50 s) and Podman 5.8.9 (`GET`s, 104 s)
+print only `503 Service Unavailable` for a pending image, and Podman prints a refusal after `denied:`. Debian answers none of them: its
+repositories have no gate (R-SIG-061).
 
 - **The texts** name the addressed repository by its qualified name, never another repository, and no signer (a signer's name is text an
   uploader chose; the screens show it as text). They name the artifact in its client's words
@@ -3213,8 +3229,13 @@ Built (package 1): `errs.CodeSignatureNotVerified` and `errs.CodeSignatureCheckP
 `pendingError`; kit check 17 renders both for every format. The details link is `<server.base_url>/ui/projects/<project>/repositories/<key>/files/<path>`.
 Repaired after the measurement of 2026-11-21: the texts of Q-SIG-212, and the artifact's name of Q-SIG-213 from the format's
 `SignatureDeclaration.ArtifactName` (OCI, npm, NuGet, Ansible Galaxy; a generic file and `/files/` keep the path), which the format host
-hands to the gate as `Download.Name`. NuGet's client shows no body of a `403` or `503`; the header `X-NuGet-Warning`, which might carry the
-text, was not tried ([Q-SIG-214](#q-sig-214--nugets-client-gets-no-text-in-a-header-for-now)).
+hands to the gate as `Download.Name`. Repaired after the measurement of 2026-11-23 (Q-SIG-241, which replaces Q-SIG-214): NuGet's
+`WriteError` puts the text of the answers of the three checks (`signature_not_verified`, `signature_check_pending`, `malware_found`,
+`malware_not_checked`, `malware_check_pending`, `vulnerability_blocked`, `vulnerability_data_missing`) into `X-NuGet-Warning` as printable
+ASCII on one line, and no other error's ([errors.go](../../internal/formats/nuget/errors.go)); Ansible Galaxy's version document of every class
+asks the archive's checks (`localArchiveChecks`, `remoteArchiveChecks`, `virtualArchiveChecks` in
+[archive_checks.go](../../internal/formats/ansible/archive_checks.go)) through `ItemStore.Check`, which runs the serve point's checks with the
+malware gate asked as at a download, and `Resolver.Check`, the virtual engine's `Stored` walk of the first two tiers.
 
 Acceptance criteria:
 
@@ -3222,6 +3243,18 @@ Acceptance criteria:
   `Retry-After` for `signature_check_pending`, both with `Cache-Control: no-store`, for every registered format and the test format.
 - Unit (`internal/formats/<id>`, microseconds): each declaration's `ArtifactName` (`TestR_SIG_068_TheGatesAnswersNameTheArtifactAsTheClientDoes`);
   the texts in `internal/signatures/gate`.
+- Unit (`internal/formats/nuget`, microseconds, no payload): the seven answers of the checks carry their text in `X-NuGet-Warning`, a byte
+  outside printable ASCII is replaced, and a 404, a 403 of a permission, a 429 and a 401 carry none
+  (`TestR_SIG_068_TheChecksOfADownloadReachNuGetsClientsAsAWarning`).
+- Unit (`internal/formats/ansible`, milliseconds, a collection of a few hundred bytes): a local version document answers the archive's refusal
+  or pending answer in Galaxy's shape and is served on a pass, the check asked of the archive's path
+  (`TestR_SIG_068_TheVersionDocumentAnswersWhatTheArchivesDownloadWould`); a remote's asks it of a cached archive only, a virtual's through
+  `Resolver.Check` (`TestR_SIG_068_ARemotesAndAVirtualsVersionDocumentAnswerWhatTheirArchivesDownloadWould`).
+- Unit (`internal/virtual`, milliseconds): `Stored` takes the first stored hit of the local members and the remote members' caches, asks no
+  upstream, passes over a lost cache, ends at another failure and counts no resolution
+  (`TestR_SIG_068_StoredAnswersTheFirstStoredHitWithoutServingIt`).
+- Integration (area `ansiblelocal`, in `TestR_SIG_031_…`, under a second): with the gate switched on, the version document of a version
+  without a signature answers `403 signature_not_verified` with the gate's text, and its archive `403`.
 - Integration (area `signatures`, in the tests of R-SIG-064, R-SIG-065 and R-SIG-067): the `/files/` and the npm answers carry the code and
   the reason; the OCI answer is `DENIED` with the text.
 
@@ -3702,6 +3735,14 @@ ansible-core 2.21.6, cosign 3.1.4, Notation 1.3.2 and curl 8.14.1 (the commands,
   refuses that read, so R-SIG-064's "OCI's signatures arrive after the push" does not hold while the gate is on. A NuGet package with an
   author's signature cannot pass (R-SIG-042's NuGet finding), nor an Ansible version whose signature was posted right after the publish. The
   text of `missing` says "it has no signature" for an npm package that carries npm's registry signature.
+
+**Measured again on 2026-11-23** against the repairs of 2026-11-21 and Q-SIG-241, with the .NET SDK 10.0.403, ansible-core 2.21.6, Docker
+29.9.3, Podman 5.8.9, cosign 3.1.4, Notation 1.3.2 and npm 11.20.0 ([developer/signatures.md](../developer/signatures.md#defects-found)):
+every falsified line above holds no more but the pending image's, which no OCI client shows
+([H-1540](#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked)). Q-SIG-241 adds one unit test of NuGet
+(microseconds), two of Ansible Galaxy (milliseconds, the kit's documents and a collection of a few hundred bytes), one of the virtual engine
+(milliseconds) and one subtest in `ansiblelocal` (under a second); the unit run gains under 0.1 s, the shard with `ansiblelocal` under a
+second, no other leg anything, and with 25 formats nothing: a format whose client needs a document of its own adds one unit test.
 
 Acceptance criteria: the coverage generator lists every requirement of stage 3 with a test of the tier this table names.
 
@@ -6191,7 +6232,9 @@ Status: **Decided by the development agent** after the measurement of 2026-11-21
 
 ### Q-SIG-214 · NuGet's client gets no text in a header, for now
 
-Status: **Decided by the development agent** after the measurement of 2026-11-21 (defect 5).
+Status: **Decided by the development agent** after the measurement of 2026-11-21 (defect 5). **Replaced by
+[Q-SIG-241](#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal)** on 2026-11-23, on its own condition: the
+header was measured with the pinned SDK, which prints it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -6521,6 +6564,39 @@ when.
 named it (Q-SIG-213). The outcome is `warning`: the download was served, and it is the one served download of a gated repository an auditor
 looks at. **Applied in the spec:** R-SIG-064, R-SIG-075. Code: [gate.go](../../internal/signatures/gate/gate.go) `WriterRead`.
 
+### Q-SIG-241 · What a client is shown where it prints no body of the artifact's refusal
+
+Status: **Decided by the development agent** after the measurement with real clients of 2026-11-23 (defect 5 of
+[developer/signatures.md](../developer/signatures.md#defects-found)), under the owner's rule of 2026-11-22 that open questions are decided and
+written down; it replaces Q-SIG-214. It extends the owner's Q-SIG-79 (the gate acts at download) to the one document a client reads to
+download: Ansible Galaxy's version document is refused where its archive is.
+
+Context: R-SIG-068 promises the text of a refusal in every client. Three do not show it. `dotnet restore` prints the status line and never a
+body; `ansible-galaxy` prints urllib's status line for the archive (`HTTP Error 403: Forbidden`, the reason phrase Go's server writes
+itself); Docker asks a tag by `HEAD`, which has no body, and Podman prints a `503` without its body. Measured on 2026-11-23 with the pinned
+clients: `dotnet restore` prints the header `X-NuGet-Warning` of any answer as `warning : <value>`, an error's included, once for every
+attempt; `ansible-galaxy` reads the version document before the archive and prints the `detail` of its error (`Error when getting collection
+version metadata for <ns>.<name>:<version> from <server> (HTTP Code: 403, Message: <detail> Code: <code>)`); Docker turns a `403` of its
+`HEAD` into a `GET` and prints that body, and retries a `503` of its `HEAD` once without one. The same holds for the malware gate's and the
+vulnerability block's answers, which these clients show no better (R-MAL-016).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each client where it reads text: NuGet's answers of the three download checks carry their text in `X-NuGet-Warning`; Ansible Galaxy's version document answers what the archive's download would (the three checks of the stored archive, without serving it); OCI's pending answer stays as it is, and what Docker, Podman and the kubelet show is said per client (chosen) | Two places of the formats, one host call (`ItemStore.Check`, `Resolver.Check`) | Every refusal reaches NuGet's and Ansible's users in words, with what to do; the gate's decision and its texts stay one; the malware gate and the vulnerability block profit alike | NuGet prints the warning once per attempt (six times); a version document of a gated repository costs the checks' statements; a pending image shows no text in any OCI client |
+| (b) A reason phrase of Quader's own over HTTP/1.1 | The status line carries the text | `ansible-galaxy` and NuGet print it | Go's server writes the standard phrase, so the connection would be hijacked past the request's logging and metrics; HTTP/2 has none; RFC 9112 tells clients to ignore it |
+| (c) For OCI's pending `HEAD`, a status that makes the client `GET` the body (a 4xx in place of the `503`) | | Docker would print the text | A wrong status for a temporary state, chosen for one client's fallback; a kubelet would back off as for a refusal |
+| (d) Nothing; the limits written down (Q-SIG-214) | | Nothing to build | `dotnet restore` blames the feed after six 503s, and an Ansible user learns only "Forbidden" |
+
+**Choice:** (a). The header carries only the answers of the checks of R-SIG-069 (`signature_not_verified`, `signature_check_pending`,
+`malware_found`, `malware_not_checked`, `malware_check_pending`, `vulnerability_blocked`, `vulnerability_data_missing`): a restore asks
+its sources with 404s and warnings on them would bury the one that matters, and the download limits' `429` is
+[usage-and-limits.md](usage-and-limits.md)'s Gap 1, the owner's to decide, which now has this measurement. The version document asks the
+archive's checks in every class (local, remote, virtual); an archive no repository of the request stores yet is judged at its download alone
+([H-1541](#h-1541--ansible-galaxy-shows-only-the-status-of-a-refusal-of-an-archive-that-no-repository-stored-before)). The OCI clients'
+pending answer is [H-1540](#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked). **Applied in the spec:**
+R-SIG-064, R-SIG-068, R-SIG-078; [formats/nuget.md](formats/nuget.md) R-NUGET-002; [formats/ansible.md](formats/ansible.md) R-ANS-004;
+[architecture.md](architecture.md) R-ARCH-008 (ADR-256).
+
 ## What this does not cover
 
 The gaps of the mechanisms are on [security/artifact-signatures.md](../security/artifact-signatures.md#what-this-does-not-cover). This page
@@ -6604,8 +6680,30 @@ or a release whose signature arrives after its publish.
 Component: the bounded wait (R-SIG-067, Q-SIG-85). Subject: the first pull of an image or a collection through a gated remote repository by
 Docker or `ansible-galaxy`, which do not retry a `503` (the malware gate's record of their sources, Q-MAL-3). Specified for stage 3, not
 built. When the fetch of the upstream's signatures and their check take longer than 25 s from the request's arrival, the pull fails with
-"Quader is checking the signatures …" and works when it is repeated; npm, NuGet and apt retry by themselves. A mirror pass decides ahead of
+the pending answer, which Docker shows as `503 Service Unavailable` alone
+([H-1540](#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked)) and `ansible-galaxy` as
+`HTTP Error 503` ([H-1541](#h-1541--ansible-galaxy-shows-only-the-status-of-a-refusal-of-an-archive-that-no-repository-stored-before)),
+and works when it is repeated; npm, NuGet and apt retry by themselves. A mirror pass decides ahead of
 demand. What makes it real: a slow or rate-limited upstream, or a backlog of the job `signature-verify`.
+
+### H-1540 · Docker, Podman and the kubelet show no text while a signature is being checked
+
+Component: the pending answer of OCI (R-SIG-068, Q-SIG-241). Subject: a user who pulls an image of a gated repository whose signatures are
+not judged yet. Live since package 1 of stage 3. Docker 29.9.3 asks the tag by `HEAD`, whose `503` has no body, asks once more and prints
+`unexpected status from HEAD request to …: 503 Service Unavailable` after 50 s; Podman 5.8.9 `GET`s it, gets the body and prints only
+`received unexpected HTTP status: 503 Service Unavailable` after about 104 s; the kubelet reports the `HEAD`'s status and backs off. None says
+that a check is running or that a repeat will work; the image's page says **Not checked yet**. A status other than `503` would make Docker
+read the text and lie about the state (Q-SIG-241 (c)). What makes it real: a pull right after the push of a signature, a backlog of the job
+`signature-verify`, or a slow fetch of a remote's signatures.
+
+### H-1541 · `ansible-galaxy` shows only the status of a refusal of an archive that no repository stored before
+
+Component: the version document's checks (R-SIG-064, Q-SIG-241). Subject: the first install of a collection version through a gated remote
+repository, or a virtual repository whose remote member holds no copy yet. Live since Q-SIG-241. The version document is served, because
+there are no bytes to judge; the archive's download fetches and judges them and answers `HTTP Error 403: Forbidden` or `HTTP Error 503:
+Service Unavailable`; the second install shows the text. The same holds while `ansible-galaxy` serves the version document from its own
+response cache of an earlier, passing read. What makes it real: a gate on a remote of a Galaxy whose collections carry no signature the
+repository's anchors know.
 
 ### H-1224 · A virtual repository's member refused and the version list show one gate each
 

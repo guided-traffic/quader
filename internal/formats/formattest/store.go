@@ -634,6 +634,14 @@ func (h *Host) itemOf(rec *itemRec) formats.Item {
 	}
 }
 
+// Check is the option of the same name; without it every item passes.
+func (s itemStore) Check(ctx context.Context, rq *formats.Request, it formats.Item) error {
+	if c := s.h.opts.Check; c != nil {
+		return c(ctx, rq, it)
+	}
+	return nil
+}
+
 func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.ResponseWriter, it formats.Item, mode formats.ServeMode) error {
 	rec, ok := it.Handle.(*itemRec)
 	if !ok {

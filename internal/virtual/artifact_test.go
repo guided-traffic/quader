@@ -432,3 +432,54 @@ func TestNewRefusesAnEngineWithoutItsParts(t *testing.T) {
 		}
 	}
 }
+
+// TestR_SIG_068_StoredAnswersTheFirstStoredHitWithoutServingIt: the walk a check at a document asks (signatures.md Q-SIG-241) takes
+// the hit Artifact would serve first from the local members and the remote members' caches, never asks an upstream, passes over a
+// cache whose object is lost, serves nothing and counts no resolution. Unit, milliseconds, a few bytes.
+func TestR_SIG_068_StoredAnswersTheFirstStoredHitWithoutServingIt(t *testing.T) {
+	stored := func(w *world, sub authz.Subject) (string, bool, error) {
+		_, p := w.plan(sub, artifactOf("left-pad", "1.0.0"))
+		hit, ok, err := w.r.Stored(context.Background(), p, w.arts)
+		if err != nil || !ok {
+			return "", ok, err
+		}
+		rec := httptest.NewRecorder()
+		if err := hit(rec); err != nil {
+			t.Fatal(err)
+		}
+		return rec.Body.String(), true, nil
+	}
+	t.Run("the local member first, the cache second, and never the upstream", func(t *testing.T) {
+		w := newWorld(t, func(o *worldOpts) { o.members = []repository.Repository{remote, local} })
+		vt.Put(w.arts.CachedItems, "npm-remote", tgz, "cached-bytes")
+		vt.Put(w.arts.UpstreamItems, "npm-remote", tgz, "upstream-bytes")
+		if body, ok, err := stored(w, alice); err != nil || !ok || body != "cached-bytes" {
+			t.Fatalf("the cache: %q %v %v", body, ok, err)
+		}
+		vt.Put(w.arts.LocalItems, "npm-local", tgz, "local-bytes")
+		if body, ok, err := stored(w, alice); err != nil || !ok || body != "local-bytes" {
+			t.Fatalf("the local member: %q %v %v", body, ok, err)
+		}
+		if slices.Contains(w.arts.Calls(), "fetch:npm-remote") {
+			t.Fatalf("the upstream was asked: %v", w.arts.Calls())
+		}
+		if n := counter(t, w.reg, "quader_virtual_resolutions_total", map[string]string{"repo": "it/npm-all", "source": "local"}); n != 0 {
+			t.Fatalf("a resolution was counted: %v", n)
+		}
+	})
+	t.Run("nothing stored, and a lost cache, are no hit and no error", func(t *testing.T) {
+		w := newWorld(t)
+		vt.Put(w.arts.UpstreamItems, "npm-remote", tgz, "upstream-bytes")
+		w.arts.CachedErr["npm-remote"] = errs.E(errs.Unavailable, errs.CodeContentUnavailable, "lost")
+		if _, ok, err := stored(w, alice); ok || err != nil {
+			t.Fatalf("ok %v err %v", ok, err)
+		}
+	})
+	t.Run("another failure of a cache ends the walk", func(t *testing.T) {
+		w := newWorld(t)
+		w.arts.CachedErr["npm-remote"] = errs.E(errs.Unavailable, errs.CodeObjectStoreUnavail, "outage")
+		if _, _, err := stored(w, alice); errs.KindOf(err) != errs.Unavailable {
+			t.Fatalf("err %v", err)
+		}
+	})
+}

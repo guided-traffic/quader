@@ -330,6 +330,10 @@ func (f *Format) remoteVersion(ctx context.Context, rq *formats.Request, w http.
 	if found {
 		recorded = hexSum(rec.SHA256)
 	}
+	// The document answers what the cached archive's download would: ansible-galaxy shows this document's error text alone (Q-SIG-241).
+	if err := remoteArchiveChecks(ctx, rq, ns, name, ver); err != nil {
+		return err
+	}
 	err = remoteReply(rq, w, etag(rq, "version", hexSum(doc.Digest), recorded), doc.Status.Header, func() ([]byte, error) {
 		raw, err := doc.Bytes(ctx)
 		if err != nil {

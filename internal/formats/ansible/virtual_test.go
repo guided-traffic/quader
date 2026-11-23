@@ -106,6 +106,9 @@ type fakeResolver struct {
 	notAdmit bool
 	// hidden are the versions the caller's grants hide by path, "<member key>/<version>".
 	hidden map[string]bool
+	// checked are the paths Check was asked about; refuse answers Check by path.
+	checked []string
+	refuse  map[string]error
 }
 
 // pathScope is the read scope of a caller whose grants decide versions by path.
@@ -180,6 +183,12 @@ func (r *fakeResolver) Artifact(_ context.Context, _ *formats.Request, p formats
 	w.Header().Set("Content-Type", "application/gzip")
 	_, _ = w.Write([]byte("archive"))
 	return nil
+}
+
+// Check answers checked for a path the test refuses, and passes every other (Q-SIG-241).
+func (r *fakeResolver) Check(_ context.Context, _ *formats.Request, p formats.Path, _ formats.PathInfo) error {
+	r.checked = append(r.checked, p.Path)
+	return r.refuse[p.Path]
 }
 
 func (r *fakeResolver) DeployTarget(context.Context, *formats.Request) (*repository.Repository, error) {

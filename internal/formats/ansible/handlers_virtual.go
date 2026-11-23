@@ -300,6 +300,10 @@ func (f *Format) virtualVersion(ctx context.Context, rq *formats.Request, w http
 	if v.Namespace != ns || v.Name != name || v.Version != ver {
 		return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "A member's version document names another collection or version than the one asked for.")
 	}
+	// The document answers what the archive's download would: ansible-galaxy shows this document's error text alone (Q-SIG-241).
+	if err := f.virtualArchiveChecks(ctx, rq, ns, name, ver); err != nil {
+		return err
+	}
 	if m.CacheStatus != "" {
 		w.Header().Set("Cache-Status", m.CacheStatus)
 	}

@@ -225,6 +225,7 @@ checked every earlier decision against them:
 | [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) | The guide data names the addresses on which a client certificate reads the repository | Decided by the development agent — owner review at the walkthrough |
 | [ADR-233](#adr-233--the-background-fetch-hands-its-bounds-to-a-formats-fetch-in-the-context-of-a-run) | The background fetch hands its bounds to a format's fetch in the context of a run | Decided by the development agent — owner review at the walkthrough |
 | [ADR-237](#adr-237--the-signature-declaration-says-whether-a-writer-reads-to-sign-and-how-the-gate-names-an-artifact) | The signature declaration says whether a writer reads to sign and how the gate names an artifact | Decided by the development agent in the owner's absence; the writer's read (Q-SIG-211) confirmed by the owner on 2026-11-22, with a trace of every such read |
+| [ADR-256](#adr-256--a-format-asks-the-checks-of-an-artifacts-download-at-the-document-its-client-reads-first) | A format asks the checks of an artifact's download at the document its client reads first | Decided by the development agent after the measurement with real clients of 2026-11-23 |
 | [ADR-238](#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table) | A Bastion serves every format: the registry root, the formats' Bastion facts and the handshake's format table | The scope is the owner's decision of 2026-11-22; the design was decided by the planner in the owner's absence. An addition |
 | [ADR-239](#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy) | Several object-store connections: every blob on every connection, a row per copy, one reconciliation and a scrub per copy | The scope is the owner's decisions 7, 8, 9, 10 and 14 of 2026-11-22; the design was decided by the planner in the owner's |
 | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) | Delivery by signed links of the object store: one switch of the installation, where a link costs nothing | Accepted (owner decision of 2026-11-22); the mechanisms decided by the planner in the owner's absence |
@@ -2079,6 +2080,35 @@ identifier tested in the core (the core would name formats); any `HEAD` or read 
 signed content between repositories (Q-SIG-211 (c)).
 
 **Spec:** [signatures.md](spec/signatures.md) R-SIG-064, R-SIG-068, Q-SIG-211, Q-SIG-213; [architecture.md](spec/architecture.md) R-ARCH-008.
+
+### ADR-256 · A format asks the checks of an artifact's download at the document its client reads first
+
+**Status:** Decided by the development agent after the measurement with real clients of 2026-11-23, under the owner's rule of 2026-11-22
+that open questions are decided and written down. An addition to the format contract's host at version 10.
+
+**Context.** `ansible-galaxy` prints the text of an error of a collection version's document and only the status line of the archive's
+download, so a refusal of the malware gate, the vulnerability block or the signature gate reached its user as `HTTP Error 403: Forbidden`.
+The checks run inside the item store's `Serve`, which a format cannot ask without serving, and through a virtual repository inside the
+resolution's walk, which serves its first hit or fetches.
+
+**Decision.** `formats.ItemStore` gains `Check(ctx, rq, it)`: the serve point's three checks of R-SIG-069 for a stored item, with the malware
+gate asked as at a download, their wait and their records, and nothing served or counted. `formats.Resolver` gains `Check(ctx, rq, p,
+info)`: the plan of `Artifact` and the virtual engine's `Stored` walk of the first two tiers (local members, remote members' caches), the
+first hit checked and not served, nothing fetched. Ansible Galaxy's version document asks them in each class; NuGet needs none (its text
+goes into `X-NuGet-Warning`, Q-SIG-241).
+
+**Consequences.** A version document of a repository where a check applies costs that check's statements; an archive not stored yet is
+judged at its download only (H-1541). The engine's walk of the stored tiers is the one `Artifact` walks, so the document and the download
+name the same item.
+
+**Alternatives considered.** A `Serve` mode that stops after the checks (every other effect of `Serve` would have to learn to skip it); the
+format walking the members itself with `Plan` and `Stat` (the tier order a second time, in a format); the signature gate's `Refuse` alone at
+the document (the malware gate and the vulnerability block would still reach the user as a status).
+
+**Revisit condition:** a client of another format that shows the text of a document but not of the artifact it names.
+
+**Spec:** [signatures.md](spec/signatures.md) R-SIG-064, R-SIG-068, Q-SIG-241; [formats/ansible.md](spec/formats/ansible.md) R-ANS-004;
+[architecture.md](spec/architecture.md) R-ARCH-008.
 
 ### ADR-238 · A Bastion serves every format: the registry root, the formats' Bastion facts and the handshake's format table
 
@@ -10860,6 +10890,7 @@ Questions raised by that revision are listed in their page's order like every ot
 | [Q-SIG-143](spec/signatures.md#q-sig-143--what-a-format-derives-or-stores-as-a-document-is-gatenone) | What of the unnamed items of a format? | (a) `GateNone` | — |
 | [Q-SIG-144](spec/signatures.md#q-sig-144--the-blocks-epoch-is-named-anchor_epoch) | The name of the block's epoch? | (a) `anchor_epoch`, no revision column | — |
 | [Q-SIG-240](spec/signatures.md#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event) | Are a writer's `HEAD` and `GET` of one manifest one event of the trace? | (a) one `signature.download_by_writer` a minute per repository, path, caller and client address on each replica; the metric counts every read | [ADR-237](#adr-237--the-signature-declaration-says-whether-a-writer-reads-to-sign-and-how-the-gate-names-an-artifact) |
+| [Q-SIG-241](spec/signatures.md#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal) | What does a client see where it prints no body of the artifact's refusal? | (a) NuGet: the text of the download checks' answers in `X-NuGet-Warning`; Ansible Galaxy: the version document answers the archive's checks; OCI's pending answer unchanged and said per client (replaces Q-SIG-214) | [ADR-256](#adr-256--a-format-asks-the-checks-of-an-artifacts-download-at-the-document-its-client-reads-first) |
 | [Q-BAS-1](spec/bastion.md#q-bas-1--the-bastion-asks-the-main-installation-and-keeps-no-copy-of-users-tokens-or-policies) | How does the Bastion know what a caller may read? | (a) it asks the main installation and keeps the answers briefly; no copy of users, tokens or policies (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-2](spec/bastion.md#q-bas-2--the-bastion-is-read-only-for-package-content) | May the Bastion take writes? | (a) read-only for package content; writes refused in the protocol's shape, pointing at the main installation (owner, 2026-10-31) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |
 | [Q-BAS-3](spec/bastion.md#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation) | What is the Bastion's credential towards the main installation? | (a) a token issued by an administrator of the main installation, not a client certificate (owner, 2026-11-02) | [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) |

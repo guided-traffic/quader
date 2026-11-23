@@ -135,6 +135,11 @@ func (e *fakeEngine) Artifact(ctx context.Context, _ virtual.Caller, p *virtual.
 	return hit(w)
 }
 
+func (e *fakeEngine) Stored(ctx context.Context, p *virtual.Plan, t virtual.Tiers) (virtual.Hit, bool, error) {
+	e.tiers = t
+	return t.Local(ctx, virtual.Member{Repo: vt.LocalRepo(1, "member-local"), ID: 1}, p.Descriptor)
+}
+
 func (e *fakeEngine) Metadata(ctx context.Context, _ virtual.Caller, p *virtual.Plan, m virtual.Merger) (*virtual.Merged, error) {
 	e.merger = m
 	local := virtual.Member{Repo: vt.LocalRepo(1, "member-local"), ID: 1, Position: 0}

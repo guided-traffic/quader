@@ -163,4 +163,31 @@ func TestR_SIG_031_ASignaturePostedForALocalVersionIsServed(t *testing.T) {
 			t.Errorf("%d events %s with the fingerprint, want 1", n, action)
 		}
 	}
+	t.Run("R-SIG-068 the version document of an archive the gate refuses carries the gate's text", func(t *testing.T) {
+		// ansible-galaxy prints the text of the version document's error, and only the status of the archive's, so the document answers
+		// what the archive's download would (Q-SIG-241): the version now has no signature, and the gate is switched on.
+		path := "/api/v1/projects/" + project + "/repositories/" + repo
+		cur := e.st.Do(e.r, http.MethodGet, path, e.tokAdmin, nil)
+		a := e.st.Do(e.r, http.MethodPatch, path, e.tokAdmin, []byte(`{"signatures":{"onlyVerified":true}}`),
+			"Content-Type", "application/merge-patch+json", "If-Match", cur.Header.Get("ETag"))
+		if a.Status != http.StatusOK {
+			t.Fatalf("the gate: %d %s", a.Status, a.Body)
+		}
+		var doc testenv.Answer
+		for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(100 * time.Millisecond) {
+			if doc = e.get(e.tokC, "v3/collections/acme/tools/versions/1.0.0/"); doc.Status == http.StatusForbidden {
+				break
+			}
+		}
+		var b struct {
+			Errors []struct{ Status, Code, Detail string }
+		}
+		if err := json.Unmarshal(doc.Body, &b); err != nil || doc.Status != http.StatusForbidden || len(b.Errors) != 1 || b.Errors[0].Code != "signature_not_verified" ||
+			!strings.HasPrefix(b.Errors[0].Detail, "Quader refused acme.tools:1.0.0 of "+project+"/"+repo+": it has no signature of its publisher or its build") {
+			t.Fatalf("the version document: %d %s", doc.Status, doc.Body)
+		}
+		if a := e.get(e.tokC, "v3/artifacts/collections/acme-tools-1.0.0.tar.gz"); a.Status != http.StatusForbidden {
+			t.Errorf("the archive: %d", a.Status)
+		}
+	})
 }

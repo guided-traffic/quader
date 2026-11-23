@@ -247,6 +247,13 @@ type ItemStore interface {
 	// Serve runs ServeCheck(mode), then the ETag, the conditionals, Range,
 	// Repr-Digest, the streaming and the download statistics (edge.ServeItem).
 	Serve(ctx context.Context, rq *Request, w http.ResponseWriter, it Item, mode ServeMode) error
+	// Check decides the checks of a download of the item (the malware gate, the vulnerability
+	// block and the signature gate, signatures.md R-SIG-069) without serving it, waiting as a
+	// download waits: nil when Serve would pass them, else the refusal or the pending answer. It
+	// counts no download and records the refusal as a download's. A format whose client reads a
+	// document before the artifact, and shows that document's error text but not the artifact's,
+	// asks it where it serves the document (Ansible Galaxy's version document, Q-SIG-241).
+	Check(ctx context.Context, rq *Request, it Item) error
 	// Open reads the content of an item through the verifying reader, whole.
 	Open(ctx context.Context, it Item) (io.ReadCloser, error)
 	// RecordDownload counts a download of an item that the format answered with the same bytes from a stored document of its

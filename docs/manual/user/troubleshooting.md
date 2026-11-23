@@ -160,7 +160,8 @@ APT prints the status line of a failed request and no body; a signature that can
 
 Quader compares the bytes of every file a client can download with ClamAV's signatures of known malware. When the scan stands in the
 way of a download, every client gets an answer of its own kind with the same text: npm prints it after `E403`, Docker after
-`error from registry:` (Kubernetes after `denied:`), `dotnet restore` and APT show the status, and `curl` on the address prints the text.
+`error from registry:` (Kubernetes after `denied:`), `dotnet restore` as a `warning :` line before the status, `ansible-galaxy` after
+`Message:` in its error about the collection version's metadata, APT shows the status, and `curl` on the address prints the text.
 
 | Code | Status | What happened | What to do |
 |---|---|---|---|
@@ -178,14 +179,17 @@ scan is never cached.
 A repository can be set to serve only artifacts with a verified signature (the section **Signatures** of its settings). Such a repository
 refuses a package, an image or a file that has no signature of its publisher or its build that a trust anchor of the repository knows.
 Every client gets an answer of its own kind with the same text, and the clients show it differently: npm prints it after `E403`, Docker
-after `error from registry:`, Kubernetes in the pod's event after `denied:`, and `curl` on the address prints a problem document whose
-`reason` says why. `dotnet restore` and `ansible-galaxy` show only `403 (Forbidden)` and `HTTP Error 403: Forbidden`; to read the reason,
-open the version's page or request the file's address with curl.
+after `error from registry:`, Podman and Kubernetes (in the pod's event) after `denied:`, `dotnet restore` as a `warning :` line before
+each attempt's `403 (Forbidden)`, `ansible-galaxy` in `Error when getting collection version metadata for … (HTTP Code: 403, Message: <text>
+Code: signature_not_verified)`, and `curl` on the address prints a problem document whose `reason` says why. Two cases show only the
+status: an image that is still being checked (Docker, Podman and Kubernetes print `503 Service Unavailable`), and the first install of a
+collection through a remote repository that held no copy of it before (`ansible-galaxy` prints `HTTP Error 403: Forbidden`); to read the
+reason, open the version's page or request the file's address with curl.
 
 | Code | Status | What happened | What to do |
 |---|---|---|---|
 | `signature_not_verified` | 403 | The repository serves only artifacts with a verified signature, and this one has none it accepts. The text names the artifact as your client does and says why: it has no signature of its publisher or its build (`missing`), no trust anchor the repository accepts knows its signer (`untrusted`), its signature is verified by an anchor the repository does not accept (`not_chosen`), the signature does not match the content (`invalid`), an administrator blocked its signer (`blocked`), or the signature could not be checked (`not_checked`); it ends with the address of the file's page | Sign the artifact with a key or identity the repository's anchors know and upload the signature (for an image, push it with `cosign` or `notation`; for a file, upload `<file>.asc` or `<file>.sigstore.json` beside it), or download it from a repository without the setting. An Owner cannot switch the setting off; an administrator can, and an administrator, a security administrator or an auditor can release this one artifact for this repository |
-| `signature_check_pending` | 503 | The repository serves only artifacts with a verified signature, and the artifact's signatures are being checked, or, for a remote repository, fetched from its upstream; the answer carries `Retry-After` | Run the command again in a minute. npm retries by itself and then prints the text after `E503`; NuGet retries at once and ends with a message that the feed is invalid or the package was removed, which here is not the case; Docker waits about 50 s and prints only `503 Service Unavailable`; `ansible-galaxy` prints `HTTP Error 503` and does not retry |
+| `signature_check_pending` | 503 | The repository serves only artifacts with a verified signature, and the artifact's signatures are being checked, or, for a remote repository, fetched from its upstream; the answer carries `Retry-After` | Run the command again in a minute. npm retries by itself and then prints the text after `E503`; `dotnet restore` prints the text as a warning, retries at once and ends with a message that the feed is invalid or the package was removed, which here is not the case; `ansible-galaxy` waits about 25 s, prints the text and does not retry; Docker waits about 50 s and Podman about 100 s, and both print only `503 Service Unavailable` |
 
 An image's signatures, attestations and SBOMs are always served, so that `cosign verify` and `notation verify` work against a repository
 with the setting; a platform image of a multi-platform image passes on the signature of its index. Through a virtual repository both the

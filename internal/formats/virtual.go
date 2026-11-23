@@ -209,6 +209,11 @@ type Resolver interface {
 	// Artifact plans (R-REPO-019 steps 1 to 5) and walks the tiers of step 6,
 	// serving the first hit.
 	Artifact(ctx context.Context, rq *Request, p Path, info PathInfo, w http.ResponseWriter) error
+	// Check plans as Artifact does and walks the first two tiers of step 6 (the local members,
+	// then the remote members' caches), fetching no artifact, and decides the checks of a
+	// download (ItemStore.Check) for the first stored hit without serving it: nil when Artifact
+	// would serve it or when no member stores it yet (signatures.md Q-SIG-241).
+	Check(ctx context.Context, rq *Request, p Path, info PathInfo) error
 	// Metadata plans and merges through the merged-metadata cache (R-REPO-020), with
 	// the request's format's VirtualAdapter as the merger.
 	Metadata(ctx context.Context, rq *Request, p Path, info PathInfo, variant string) (*Merged, error)

@@ -56,6 +56,8 @@ type HostOptions struct {
 	// Admit is the admission of the download limits that Host.Serve runs for a GET of a Download route before the status line
 	// (usage-and-limits.md R-LIM-021, R-LIM-036); nil admits. Check 16 refuses with it.
 	Admit func(ctx context.Context, rq *formats.Request) error
+	// Check answers ItemStore.Check, the checks of a download decided at a document (signatures.md Q-SIG-241); nil passes every item.
+	Check func(ctx context.Context, rq *formats.Request, it formats.Item) error
 	// Claim decides PackageWriter.Claim; nil allows.
 	Claim func(formats.Target, formats.OwnershipWrite) error
 	// Precheck decides Host.CheckOwnership, the read-only early form of Claim; nil allows.
@@ -726,6 +728,10 @@ func (unsupportedResolver) ReadScope(context.Context, *formats.Request, []qname.
 }
 
 func (unsupportedResolver) Artifact(context.Context, *formats.Request, formats.Path, formats.PathInfo, http.ResponseWriter) error {
+	return notSupported()
+}
+
+func (unsupportedResolver) Check(context.Context, *formats.Request, formats.Path, formats.PathInfo) error {
 	return notSupported()
 }
 

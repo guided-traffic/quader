@@ -237,6 +237,14 @@ the public Galaxy:
   link of a list carries the same `limit` and the next `offset`; the last one has `next: null`.
 - **Limits.** `limit` defaults to 100 and is clamped to 1..100; an `offset` beyond the count returns an empty `data`. A request for an
   unknown collection or version answers 404 in the Galaxy shape (R-ANS-007).
+- **The archive's checks.** The version document answers what the download of its archive would answer: where the malware gate, the
+  vulnerability block or the signature gate refuses the stored archive or holds it, the document answers that refusal or pending answer in
+  the Galaxy shape, the text in `detail` ([signatures.md](../signatures.md) R-SIG-064,
+  [Q-SIG-241](../signatures.md#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal)). `ansible-galaxy` reads
+  this document before the archive and prints its error's text, `(HTTP Code: 403, Message: <detail> Code: <code>)`, while of the archive's
+  download it prints only `HTTP Error 403: Forbidden`. Every class asks it: the local repository of its stored archive, the remote of the
+  archive its cache holds, the virtual repository of the archive its resolution would serve first from what its members store; an archive
+  not stored yet is judged at its download alone.
 - **Local class.** The documents are computed from the rows of R-ANS-011 on every request, with no rendition cache ([Q-ANS-35](#q-ans-35--a-document-is-computed-per-request-and-its-validator-is-a-digest-of-its-bytes));
   `created_at` is the publish time on the database clock and `updated_at` the newest version's; `deprecated` is always false.
 - **Remote class** and **virtual class**: R-ANS-017 and R-ANS-022.

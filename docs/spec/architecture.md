@@ -2560,10 +2560,10 @@ type Host interface {
 	Write(ctx context.Context, rq *Request, fn func(tx Tx, w PackageWriter) error) error
 
 	Ingest() Ingestor            // upload pipeline of storage.md: admission, spool, digests, commit; Commit takes the request's other files as Companions, in one transaction (Q-ARCH-228)
-	Items() ItemStore            // repository paths <-> blobs, Range and conditional reads (storage.md); RecordDownload counts a document the format answered itself (R-STOR-015, ADR-205)
+	Items() ItemStore            // repository paths <-> blobs, Range and conditional reads (storage.md); RecordDownload counts a document the format answered itself (R-STOR-015, ADR-205); Check decides the checks of an item's download without serving it (signatures.md Q-SIG-241, ADR-256)
 	Packages() PackageStore      // package and version rows behind the package view (FMT-007)
 	Remote() RemoteFetcher       // remote engine (repositories-and-proxy.md); Exchange sends one request through a remote's upstream client outside the cache (Q-NPM-62); Query passes a Volatile request through with a registered per-replica cache (Q-ARCH-270); Gate runs the artifact gate without fetching (Q-ARCH-272)
-	Resolver() Resolver          // virtual resolution (repositories-and-proxy.md); Plan, KeepsAway and ReadScope serve a format that fans a request out over the members (Q-ARCH-271)
+	Resolver() Resolver          // virtual resolution (repositories-and-proxy.md); Plan, KeepsAway and ReadScope serve a format that fans a request out over the members (Q-ARCH-271); Check decides the checks of the first stored hit without serving it (Q-SIG-241, ADR-256)
 	Links(rq *Request) LinkBuilder // absolute URLs on the response base URL of rq's endpoint and host (R-ARCH-006)
 	Renditions() RenditionCache  // rendered documents (R-ARCH-012), keyed by a struct the core hashes
 	FormatData(id ID) any        // the data port bound to a format (Q-ARCH-193); nil without Descriptor.DataPort

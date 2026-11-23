@@ -381,6 +381,21 @@ func (s itemStore) Stat(ctx context.Context, repo formats.RepoRef, p formats.Pat
 	return itemOf(repo, it), true, nil
 }
 
+// Check implements [formats.ItemStore]: the three checks of R-SIG-069 decided for the item as for its download, which the malware gate
+// asks on a download alone, with their wait and their records, and nothing served or counted (Q-SIG-241). The system read asks none, as
+// at Serve.
+func (s itemStore) Check(ctx context.Context, rq *formats.Request, it formats.Item) error {
+	if systemRead(rq) {
+		return nil
+	}
+	row, err := s.row(ctx, it)
+	if err != nil {
+		return err
+	}
+	_, err = s.h.checks(ctx, rq, it.Ref.Repo, row, true)
+	return err
+}
+
 // Serve implements [formats.ItemStore]: the format's serve-time check, then the
 // conditional headers, Range, Repr-Digest and the streaming of the generic layer,
 // and the download statistics.

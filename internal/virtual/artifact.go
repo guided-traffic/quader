@@ -122,6 +122,33 @@ func (r *Resolver) Artifact(ctx context.Context, c Caller, p *Plan, t Tiers, w h
 	return p.notFound()
 }
 
+// Stored walks the first two tiers of R-REPO-019 step 6 as Artifact does (the local members in order, then the caches of the remote
+// members) and answers the first hit without running it and without the third tier's fetch: what Artifact would serve first when an
+// item is stored, for a check of the item at a document a client reads before it (signatures.md Q-SIG-241). No hit (nothing stored,
+// a plan that admits nothing) is ok false and no error; a remote member's cache whose object is lost is passed over, as Artifact's
+// walk passes it. It records no resolution in the metrics: nothing is served.
+func (r *Resolver) Stored(ctx context.Context, p *Plan, t Tiers) (Hit, bool, error) {
+	if !p.Admitted {
+		return nil, false, nil
+	}
+	for _, m := range p.Local() {
+		hit, ok, err := t.Local(ctx, m, p.Descriptor)
+		if err != nil || ok {
+			return hit, ok, err
+		}
+	}
+	for _, m := range p.Remote() {
+		hit, ok, err := t.RemoteCached(ctx, m, p.Descriptor)
+		switch {
+		case err != nil && !contentLost(err):
+			return nil, false, err
+		case err == nil && ok:
+			return hit, true, nil
+		}
+	}
+	return nil, false, nil
+}
+
 // trackWriter notes whether the response has been started, so that a fetch which failed after the
 // first byte is not followed by another member's.
 type trackWriter struct {

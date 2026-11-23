@@ -83,6 +83,10 @@ func (unsupportedResolver) Artifact(context.Context, *formats.Request, formats.P
 	return errNoResolver()
 }
 
+func (unsupportedResolver) Check(context.Context, *formats.Request, formats.Path, formats.PathInfo) error {
+	return errNoResolver()
+}
+
 func (unsupportedResolver) Metadata(context.Context, *formats.Request, formats.Path, formats.PathInfo, string) (*formats.Merged, error) {
 	return nil, errNoResolver()
 }

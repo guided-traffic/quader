@@ -240,6 +240,7 @@ formats.ItemRef: field Facts ServeFacts
 formats.ItemRef: field ID int64
 formats.ItemRef: field Path string
 formats.ItemRef: field Repo RepoRef
+formats.ItemStore: method Check(context.Context, *Request, Item) error
 formats.ItemStore: method Open(context.Context, Item) (io.ReadCloser, error)
 formats.ItemStore: method RecordDownload(context.Context, *Request, Item)
 formats.ItemStore: method Serve(context.Context, *Request, http.ResponseWriter, Item, ServeMode) error
@@ -445,6 +446,7 @@ formats.Request: method RepoRef() RepoRef
 formats.Request: method WriteTarget(*repository.Repository) *Request
 formats.RequestKind: alias catalog.RequestKind
 formats.Resolver: method Artifact(context.Context, *Request, Path, PathInfo, http.ResponseWriter) error
+formats.Resolver: method Check(context.Context, *Request, Path, PathInfo) error
 formats.Resolver: method DeployTarget(context.Context, *Request) (*repository.Repository, error)
 formats.Resolver: method KeepsAway(context.Context, *Request, RepoRef, string) (bool, error)
 formats.Resolver: method Metadata(context.Context, *Request, Path, PathInfo, string) (*Merged, error)

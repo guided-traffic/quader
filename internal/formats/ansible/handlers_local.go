@@ -281,6 +281,10 @@ func (f *Format) handleVersion(ctx context.Context, rq *formats.Request, w http.
 	if !found {
 		return errNoVersion(name, ver)
 	}
+	// The document answers what the archive's download would: ansible-galaxy shows this document's error text alone (Q-SIG-241).
+	if err := localArchiveChecks(ctx, rq, ns, n, ver); err != nil {
+		return err
+	}
 	// The signatures clients posted for the version stand in signatures[] (signatures.md R-SIG-031).
 	return reply(w, rq, galaxydoc.RenderVersion(versionOfRow(row), addrOf(rq)))
 }

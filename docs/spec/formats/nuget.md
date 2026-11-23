@@ -224,6 +224,16 @@ HTTP conventions for every NuGet endpoint:
   `invalid_token`, `deny.ownership`, `no_deploy_target`). NuGet clients print status and reason
   phrase; the line serves people using `curl` and the logs. `/files/` and `/api/v1` keep their own
   error format.
+- The answers of the three checks of a download (the malware gate, the vulnerability block and the
+  signature gate: `malware_found`, `malware_not_checked`, `malware_check_pending`,
+  `vulnerability_blocked`, `vulnerability_data_missing`, `signature_not_verified`,
+  `signature_check_pending`) also carry their message in the header `X-NuGet-Warning`, as printable
+  ASCII on one line ([signatures.md](../signatures.md)
+  [Q-SIG-241](../signatures.md#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal)). NuGet's
+  clients print that header of any answer as a warning: `dotnet restore` of the .NET SDK 10.0.403
+  prints `warning : <message>` before each attempt's status line (measured on 2026-11-23). No
+  other error carries it: a restore asks its sources with 404s, and the download limits' 429 is
+  Gap 1 of [usage-and-limits.md](../usage-and-limits.md), the owner's to decide.
 - The request headers `X-NuGet-Protocol-Version` and `X-NuGet-Client-Version` are ignored.
   `X-NuGet-Session-Id` is recorded in the request log so the requests of one restore can be
   correlated.

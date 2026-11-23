@@ -766,121 +766,122 @@ The details link answers `302` to `/ui/en/projects/…`; whether the page there 
 
 ### Defects found
 
-1. **No real NuGet signature is readable.** Reproduce: `dotnet nuget sign <pkg> --certificate-path <pfx>` with SDK 10.0.403, push to a
-   local NuGet repository; or fetch `Microsoft.Extensions.Primitives` 8.0.0 through a remote of nuget.org. Expected: the author's signature
-   `valid`, trusted by the CA anchor (nuget.org's by the shipped anchors), and a gated repository serves the package. Actual: every
-   signature, the countersignature of nuget.org included, is `malformed` with "the .signature.p7s is no CMS SignedData"; the badge reads
-   **Scheme not supported**, and a gated repository refuses every signed package with `not_checked`. Cause, confirmed with a probe of
-   `pkcs7.Parse` on both files: their `SignerInfo` is of version 3 and names its signer by `subjectKeyIdentifier` (RFC 5652, section
-   5.3), and `github.com/digitorus/pkcs7` parses only `issuerAndSerialNumber` (`asn1: structure error: tags don't match … issuerAndSerial
-   @5`). The place: `parse` in [nugetcms/cms.go](../../internal/signatures/scheme/nugetcms/cms.go) and the `signerInfo` it fills; the
-   unit tests sign with `issuerAndSerialNumber` only, which is why they pass.
-   **Repaired:** `nugetcms` reads `ContentInfo`, `SignedData`, every `SignerInfo` (the signer by issuer and serial number or by subject key
-   identifier, a certificate without the extension by the SHA-1 of its key) and the timestamp's `TSTInfo` itself on `encoding/asn1`, BER
-   brought to definite lengths by `pki.Definite` first, the signature checked over the signed attributes as encoded
-   ([Q-SIG-216](../spec/signatures.md#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key)); `nugetcms` imports
-   digitorus no more. With that, nuget.org's countersignature of 2023 read `weak_algorithm`: its chain ends at a root self-signed with SHA-1
-   in 2006, and `pki.CheckCertificate` no longer judges a self-signed certificate's own signature
-   ([Q-SIG-218](../spec/signatures.md#q-sig-218--a-self-signed-roots-own-signature-is-not-judged)). The two signatures of this measurement
-   are the fixtures of [realtool_test.go](../../internal/signatures/scheme/nugetcms/realtool_test.go) (31 KiB): `dotnet nuget sign`'s package
-   reads `valid`; nuget.org's author signature and countersignature each find their certificate, chain, verify and carry DigiCert's verified
-   timestamp, and the whole check reaches the package's hash (the 205 KiB package is not kept). The old parser refuses both fixtures with the
-   error above (probed once). Why the vectors did not catch it: every NuGet signature of the tests was made in process by digitorus/pkcs7,
-   the library that read them, which writes the one form it reads; no signature came from dotnet or nuget.org. The tests' own signatures now
-   also name every signer by its key. Not measured again with the real client: a gated repository serving `Sigm.Signed`, and the trust
-   row of nuget.org's countersignature under the shipped anchors. A row the defect already wrote stays `malformed` in an installation:
-   nothing reads it again (the trust job recomputes trust rows only, discovery's insert keeps an existing row's verdict, the daily retry
-   takes `failed` rows only), and storing the same package again reaches the same row; only after every attachment of it is gone and the
-   job's removal of orphans has deleted the row does the next store read the signature anew.
-2. **In a gated OCI repository no client can sign an image after the push.** Reproduce: gate on `docker-local`, push an unsigned image,
-   `cosign sign --key k <repo>/<image>@<digest>` or `notation sign` of the same. Expected (R-SIG-064: "OCI's signatures arrive after the
-   push"): the signature is pushed and the image passes. Actual: cosign `GET`s and notation `HEAD`s the manifest before signing, the gate
-   refuses that read (`missing`), and both exit 1; the image can only be signed while the gate is off. The place: the gate judges every
-   manifest read alike, whoever asks ([formathost/signature_gate.go](../../internal/formathost/signature_gate.go) `serveChecks`, OCI's
-   [handlers_manifest.go](../../internal/formats/oci/handlers_manifest.go)); what should pass (a writer's read of a manifest by digest, any
-   `HEAD`, or a writer's read at all) is a decision of the specification.
-   **Repaired** (Q-SIG-211): a principal that may write (`deploy`) to the repository reads through its signature gate where the format's
-   signing tools read the artifact, which OCI declares (`SignatureDeclaration.ReadToSign`); the format host passes the right as
-   `Download.MayWrite` and the gate asks it only after a decision that is no pass (`Gate.writerRead`); the malware gate and the vulnerability
-   block are not opened. Shown by a unit test, by an integration assertion (`HEAD` and `GET` by digest with the pusher's token in
-   `TestR_SIG_070_…`) and since package 3 of stage 2 by the real cosign 3.1.4 in `e2e (oci)` (`TestOCIGate_R_SIG_064_…`): the pusher's
-   `cosign sign --key --signing-config nolog.json` of an image in a gated repository exits 0 in 2.5 s, a reader's `docker pull` is refused
-   before it and served 1.1 s after it. Each such read is traced (Q-SIG-240): `Serve.Run`, once the download is served, and `Check` call
-   `Gate.WriterRead`, which counts `quader_signatures_downloads_by_writer_total{reason}` and queues `signature.download_by_writer`
-   (asynchronous, once a minute per repository, path, caller and client address on the replica); a verified pass never reaches it
-   (`TestR_SIG_064_AWritersReadIsAuditedAndCounted`). `notation sign` is not measured again ([H-1229](../security/artifact-signatures.md#h-1229--a-holder-of-the-write-right-pulls-unverified-images-of-a-gated-oci-repository)).
-3. **A signature posted for a new Ansible version disappears from the signature store.** Reproduce: publish a collection, post its
-   `MANIFEST.json.asc` at once (the manual's CI flow), wait for the worker. Expected: the posted signature is checked and stays attached.
-   Actual: the post answers `201` and the version document keeps serving it to `ansible-galaxy`, but its attachment, signature row and
-   object are gone within seconds: the version shows **No signature** and a gated repository refuses it with `missing`. A signature posted
-   after the worker's discovery passed the archive stays (seen for `sigm.signed` 1.0.0). Cause, read in the code and matching what was
-   seen: discovery ([formathost/discover.go](../../internal/formathost/discover.go), `recordAt` with `fresh` false) records an empty
-   batch for the archive's item, and `SignatureReplaceAttachments` ([queries/signatures.sql](../../internal/meta/postgres/queries/signatures.sql))
-   deletes every attachment whose `item_id` is that item, the posted one included, which
-   [ansible/signatures_store.go](../../internal/formatdata/ansible/signatures_store.go) `record` attaches with the archive's `ItemID`;
-   `RemoveOrphans` then removes the row and the object. Since discovery starts again from the first item once a day
-   ([Q-SIG-111](../spec/signatures.md#q-sig-111--discovery-walks-the-items-by-a-cursor-and-starts-a-new-pass-once-a-day)), every
-   posted signature is lost at the latest at the next pass (inferred, not waited for).
-   **Repaired:** a batch names the sources it speaks for (`signatures.Batch.Sources`) and `SignatureReplaceAttachments` removes attachments
-   of those sources only; a detector's batch (`formathost.recordAt`, so a commit, a fill and discovery) speaks for the eight sources a
-   detector names, the posted signature's for `upload`, and `formats.SignatureSourceValid` refuses `upload` from a detector. npm's provenance
-   bundle, the one detector candidate that was `upload`, is attached `sibling`
-   ([Q-SIG-217](../spec/signatures.md#q-sig-217--a-batch-replaces-the-attachments-of-its-own-sources-only)). The formats that attach from
-   more than one writer are Ansible (the detector's `document` in a remote, the management API's `upload` in a local repository) and npm
-   (the detector's `sibling` and `document`, and stage 2's `issued`); every other format attaches from its detector alone. Tested in
-   `ansiblelocal` by running the worker's discovery and the removal of orphans in process after the post (the attachment, its row and its
-   object stay; with `upload` among a detector's sources the test fails, run once), and at the unit tier in `internal/formathost`. A
-   version whose posted signature an installation already lost stays without it until the signature is posted again.
-4. **A remote OCI image's version lists no signature.** Reproduce: pull a signed image through an OCI remote and read
-   `GET /api/v1/packages/{id}/versions/1.0/signatures?repository=web/docker-remote`. Expected: the fetched signatures and **Verified ·
-   internal**. Actual: `"state":"none"` with no signature, while the manifest's file view of the same repository shows them verified. The
-   place: `versionSubjects` in [signatures_views.go](../../internal/api/v1/signatures_views.go) adds the tag's digest only when the
-   repository holds the tag as a file, and a remote holds its tags as documents (R-OCI-022), so the version has no files and no subject.
-   **Repaired:** `SignatureVersionBlobs` also answers the blob of the document a repository lists a version by
-   (`package_version_listing.document_sha256`: a remote's OCI tag, whose document is the manifest), marked `Document`; the version's answer
-   reads it for all holders in one call (`versionDocuments`) and a holder whose document names the metadata's manifest asks for it and its
-   platforms, one whose tag names another manifest asks for that one; the version list counts it the same way
-   ([Q-SIG-219](../spec/signatures.md#q-sig-219--a-remotes-version-reads-the-document-it-holds-the-version-as)). The other formats' remotes
-   (npm, NuGet, Ansible Galaxy, Debian) hold a version's file as an item and showed their signatures already; the generic format has no
-   remote class; a virtual repository shows its members' union, a remote member now included. Tested at the unit tier
-   (`TestR_SIG_034_VersionSignatures`) and in `ociremote` (`TestR_SIG_026_…`, the version's answer and its list after the fetch).
-5. **NuGet and `ansible-galaxy` never show the gate's text, and Docker does not show it for a pending image.** `dotnet restore` prints
-   `Response status code does not indicate success: 403 (Forbidden).` (also with `-v detailed`, where the body never appears), retries a
-   403 and a 503 five times, and after the 503s ends with "The feed is either invalid or required packages were removed"; `ansible-galaxy`
-   prints `HTTP Error 403: Forbidden` or `HTTP Error 503: Service Unavailable`; Docker asks a tag with `HEAD`, whose 503 has no body. A
-   reader learns that the download failed, not why, and the NuGet text points the wrong way. Expected (R-SIG-068): the client shows the
-   text. A way for NuGet that was not tried: the header `X-NuGet-Warning`, which NuGet's client prints for nuget.org's notices (whether it
-   prints it on an error answer is not verified). Docker 29.9.3 also retries the pending `HEAD` once, so its pull waits twice the bound
-   (50 s) before it fails without the text.
-   `X-NuGet-Warning` was not tried with the pinned SDK: not cheap enough for the repair of 2026-11-21, so nothing is sent (Q-SIG-214).
-6. **The text of `missing` is wrong where a registry signature exists.** `color-name` 1.1.4 through `npm-remote` is refused with "it has
-   no signature" while Quader's own view of it shows npm's registry signature verified (and `npm audit signatures` counts it verified). The
-   same holds for a nuget.org package without an author's signature. Expected: the text says what is missing, "no signature of its
-   publisher or its build". The place: the texts of `gate.Gate.refusal` ([gate/gate.go](../../internal/signatures/gate/gate.go)).
-   **Repaired** (Q-SIG-212): every reason's text speaks of the signature of the publisher or the build (`missing`: "it has no signature of its
-   publisher or its build"; the others likewise), in `reasonText`.
-7. **The texts name Quader's storage paths**, not what the client asked for: `unsigned/_tags/1.0` for `unsigned:1.0`,
-   `chain/_manifests/sha256:…` for a digest. Readable, but `_tags` and `_manifests` are words of Quader's file view, not of the client.
-   **Repaired** (Q-SIG-213): the format names the artifact (`SignatureDeclaration.ArtifactName`), the format host hands it to the gate as
-   `Download.Name`: OCI `unsigned:1.0` or `chain@sha256:…`, npm `color-name@1.1.4`, NuGet `sigm.unsigned 1.0.2` (the id as stored, in lower
-   case), Ansible Galaxy `sigm.unsigned:1.0.0`; a generic file and `/files/` keep the path, which is the client's own. The details link keeps
-   the stored path.
+Found by the measurement of 2026-11-21 above, most serious first, and **measured again on 2026-11-23** with the real clients against `main`
+at d961712fa and the repair of point 5 ([the setup](#measured-again-on-2026-11-23)). Every point is closed; what each client cannot show
+stays as a gap ([H-1540](../spec/signatures.md#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked),
+[H-1541](../spec/signatures.md#h-1541--ansible-galaxy-shows-only-the-status-of-a-refusal-of-an-archive-that-no-repository-stored-before)).
 
-What the repairs of 1, 3 and 4 cost in tests (measured on 2026-11-21 in the unit job's mode, `-race -covermode=atomic -coverpkg=./...`,
-load 14 to 16 on 20 cores):
+1. **No real NuGet signature was readable.** `dotnet nuget sign` (SDK 10.0.403) and nuget.org name the signer by `subjectKeyIdentifier`
+   (RFC 5652, section 5.3; a `SignerInfo` of version 3), and `github.com/digitorus/pkcs7` parses only `issuerAndSerialNumber`, so every
+   NuGet signature read `malformed` (**Scheme not supported**) and a gated repository refused every signed package with `not_checked`.
+   **Closed** on 2026-11-21 (48a4cd763, [Q-SIG-216](../spec/signatures.md#q-sig-216--quader-reads-nugets-cms-itself-and-a-signer-named-by-its-key),
+   [Q-SIG-218](../spec/signatures.md#q-sig-218--a-self-signed-roots-own-signature-is-not-judged)): `nugetcms` reads `ContentInfo`,
+   `SignedData`, every `SignerInfo` in both forms of the signer and the timestamp's `TSTInfo` itself on `encoding/asn1`. Did not reproduce on
+   2026-11-23: two packages `dotnet nuget sign` signed that day, one with a leaf that carries the key identifier extension (NuGet then names the
+   signer by key) and one without it (NuGet then names it by issuer and serial number), read `valid` and untrusted, then internal under their
+   root as a CA anchor, and `dotnet restore` of the pinned SDK installed both from a gated repository, while the unsigned package was refused.
+   **Held by** [realtool_test.go](../../internal/signatures/scheme/nugetcms/realtool_test.go) with those two packages as fixtures
+   (`dotnet-sign-by-key.nupkg`, `dotnet-sign-by-issuer.nupkg`, 11.3 KiB together, made on 2026-11-23 and replacing the measurement's
+   package): `TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreFoundByBothFormsOfTheSigner` (both valid; one byte of the signature value
+   changed reads `invalid`, `signature_mismatch`; an entry added after the signing `invalid`, `digest_mismatch`) and
+   `TestR_SIG_029_NugetOrgsAuthorSignatureAndRepositoryCountersignatureRead`; in `trust`,
+   `TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreInternalUnderTheirCA` (internal under their root, untrusted without it and under
+   another CA of the same name); the seeds of `FuzzSignatureP7s` and `FuzzDefinite`. Not measured with a client: the trust row of nuget.org's
+   countersignature under the shipped anchors through a remote of nuget.org.
+2. **In a gated OCI repository no client could sign an image after the push**: `cosign sign` `GET`s and `notation sign` `HEAD`s the manifest
+   first, and the gate refused that read. **Closed** on 2026-11-21 (3550b3d69,
+   [Q-SIG-211](../spec/signatures.md#q-sig-211--a-writer-of-the-repository-reads-through-the-gate-where-the-formats-signing-tools-read-the-artifact),
+   the owner's (a) with a trace, Q-SIG-240): a principal that may write reads through the signature gate where OCI's signing tools read.
+   Did not reproduce on 2026-11-23: the pusher's `cosign sign --key` (3.1.4) by digest and by tag and `notation sign` (1.3.2) by digest and
+   by tag of unsigned images in the gated `oci-local` each exit 0; a reader's `docker pull` (29.9.3) is refused before and served after, and
+   `cosign verify --key` by tag passes; the reads are counted in `quader_signatures_downloads_by_writer_total{reason="missing"}`.
+   **Held by** `TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient` and
+   `TestR_SIG_064_AWritersReadIsAuditedAndCounted` (unit, `internal/signatures/gate`), `TestR_SIG_070_…` (integration, area `signatures`) and
+   `TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen` (`e2e (oci)`); `notation sign` is shown by the measurement only.
+3. **A signature posted for a new Ansible version disappeared from the signature store**: discovery recorded the archive's empty detector
+   batch, and `SignatureReplaceAttachments` removed the posted attachment with it. **Closed** on 2026-11-21 (48a4cd763,
+   [Q-SIG-217](../spec/signatures.md#q-sig-217--a-batch-replaces-the-attachments-of-its-own-sources-only)): a batch replaces the attachments
+   of the sources it speaks for. Did not reproduce on 2026-11-23: three collections published with `ansible-galaxy collection publish`
+   (2.21.6) and signed at once as the manual's CI flow does keep their posted signature (`upload`) after discovery's cursor passed their
+   archives, and `ansible-galaxy collection install` of two of them passes the gated `ansible-local` under the release key's anchor.
+   **Held by** `TestR_SIG_031_ASignaturePostedForALocalVersionIsServed` (integration, area `ansiblelocal`: discovery and the removal of
+   orphans run in process after the post) and `TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly` (unit, `internal/formathost`).
+4. **A remote OCI image's version listed no signature**: a remote holds its tags as documents, and the version's answer took subjects from
+   files alone. **Closed** on 2026-11-21 (48a4cd763,
+   [Q-SIG-219](../spec/signatures.md#q-sig-219--a-remotes-version-reads-the-document-it-holds-the-version-as)). Did not reproduce on
+   2026-11-23: after `docker pull` of a cosign-signed and a Notation-signed image through `docker-remote` (upstream: the stack's own
+   `oci-local`), `GET /api/v1/packages/{id}/versions/1.0/signatures?repository=web/docker-remote` lists each fetched signature (`referrer`)
+   `valid`, **Verified · internal**. **Held by** `TestR_SIG_034_VersionSignatures` (unit, `internal/api/v1`) and `TestR_SIG_026_…`
+   (integration, area `ociremote`).
+5. **NuGet and `ansible-galaxy` never showed the gate's text, and Docker showed none for a pending image.** Reproduced on 2026-11-23 on the
+   base: `dotnet restore` (SDK 10.0.403) printed `Response status code does not indicate success: 403 (Forbidden).` six times and, after six
+   503s of a pending package, blamed the feed; `ansible-galaxy collection install` (2.21.6) printed `Failed to download collection tar from
+   'quader': HTTP Error 403: Forbidden`; Docker 29.9.3 asked the pending tag twice by `HEAD` and printed `503 Service Unavailable` after 51 s.
+   Q-SIG-214 had left NuGet's header untried. **Repaired** on 2026-11-23
+   ([Q-SIG-241](../spec/signatures.md#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal), which replaces
+   Q-SIG-214, ADR-256): NuGet's answers of the three download checks carry their text in `X-NuGet-Warning`, and `dotnet restore` now prints
+   `warning : Quader refused example.toy 1.2.0 of web/nuget-local: it has no signature of its publisher or its build, …` (and `… Quader is
+   checking the signatures of example.toy 1.3.0. Try again in a minute.` for a pending one) before each attempt; Ansible Galaxy's version
+   document answers what the archive's download would, and `ansible-galaxy` now prints `Error when getting collection version metadata for
+   sigm.unsigned:1.0.0 from quader (…) (HTTP Code: 403, Message: Quader refused sigm.unsigned:1.0.0 of web/ansible-local: it has no signature
+   of its publisher or its build, … Code: signature_not_verified)`, and the pending answer's text after 25 s. The same reaches both clients
+   for the malware gate's and the vulnerability block's answers. Docker's pending pull is unchanged, and Podman 5.8.9 shows no text either
+   (`received unexpected HTTP status: 503 Service Unavailable` after 104 s): [H-1540](../spec/signatures.md#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked).
+   **Held by** `TestR_SIG_068_TheChecksOfADownloadReachNuGetsClientsAsAWarning` (unit, `internal/formats/nuget`),
+   `TestR_SIG_068_TheVersionDocumentAnswersWhatTheArchivesDownloadWould` and
+   `TestR_SIG_068_ARemotesAndAVirtualsVersionDocumentAnswerWhatTheirArchivesDownloadWould` (unit, `internal/formats/ansible`),
+   `TestR_SIG_068_StoredAnswersTheFirstStoredHitWithoutServingIt` (unit, `internal/virtual`) and a subtest of `TestR_SIG_031_…` (integration,
+   area `ansiblelocal`). Not measured: nuget.exe and the SDKs 8 and 9 of the NuGet set, and the kubelet.
+6. **The text of `missing` said "it has no signature" for a package that carries a registry signature.** **Closed** on 2026-11-21
+   (3550b3d69, [Q-SIG-212](../spec/signatures.md#q-sig-212--a-refusal-says-what-is-missing-a-signature-of-the-publisher-or-the-build)).
+   Did not reproduce on 2026-11-23: `npm install color-name@1.1.4` (npm 11.20.0) through a gated remote of registry.npmjs.org prints `E403`
+   and `Quader refused color-name@1.1.4 of web/npm-remote: it has no signature of its publisher or its build, and this repository serves only
+   artifacts with a verified signature.` **Held by** the texts' unit test in `internal/signatures/gate`
+   (`TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient`).
+7. **The texts named Quader's storage paths** (`unsigned/_tags/1.0`). **Closed** on 2026-11-21 (3550b3d69,
+   [Q-SIG-213](../spec/signatures.md#q-sig-213--the-gates-answers-name-the-artifact-in-its-clients-words)). Did not reproduce on 2026-11-23:
+   Docker and Podman name `unsigned:1.0`, npm `color-name@1.1.4`, `dotnet restore` `example.toy 1.2.0`, `ansible-galaxy`
+   `sigm.unsigned:1.0.0`. The details link keeps the stored path, which the file's page needs (Q-SIG-213); the page's data answers for each
+   link (`GET …/items?path=` 200 for the reader), the page itself was not opened in a browser. **Held by**
+   `TestR_SIG_068_TheGatesAnswersNameTheArtifactAsTheClientDoes` (unit, each format).
+
+What the repairs cost in tests (measured on 2026-11-21 in the unit job's mode, `-race -covermode=atomic -coverpkg=./...`, load 14 to 16 on
+20 cores; point 5 on 2026-11-23 in plain `go test`, load 20 to 40):
 
 | Tier | Test | Run time | Data |
 |---|---|---|---|
-| Unit | `nugetcms`: the real tools' two signatures (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsValid`, `…NugetOrgsAuthorSignatureAndRepositoryCountersignatureRead`), the signers named by key in DER and BER (`TestR_SIG_006_ASignerNamedByItsKeyIdentifierIsFound`) | 0.02 s, 0.02 s and 0.03 s | the fixtures, 31 KiB; packages of the test |
-| Unit | `trust`: the `dotnet nuget sign` package internal under its CA (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsInternalUnderItsCA`) | under 0.01 s | the fixture, 7.5 KiB |
+| Unit | `nugetcms`: dotnet's two packages (`TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreFoundByBothFormsOfTheSigner`), nuget.org's signature (`…NugetOrgsAuthorSignatureAndRepositoryCountersignatureRead`), the signers named by key in DER and BER (`TestR_SIG_006_ASignerNamedByItsKeyIdentifierIsFound`) | under 0.01 s, 0.01 s and 0.01 s | the fixtures, 35 KiB; packages of the test |
+| Unit | `trust`: dotnet's two packages internal under their CA (`TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreInternalUnderTheirCA`) | under 0.01 s | the fixtures, 11.3 KiB |
 | Unit | `formathost`: a detector's batch speaks for the detectors' sources (`TestR_SIG_004_…`); `api/v1`: two cases of a remote's tag in `TestR_SIG_034_VersionSignatures` | under 0.01 s each | none |
-| Unit (fuzz seeds) | `FuzzSignatureP7s` (`nugetcms`: the parse and every step of a check on each part) and `FuzzDefinite` (`pki`: the conversion to definite lengths is DER in its tags and lengths, nests at most 32 deep, grows by at most 64 bytes, is a fixed point); R-SIG-013 lists the bounds they assert | 0.04 s and 0.02 s | the fixtures and the tests' own signatures; six short BER structures and one kept input |
+| Unit | point 5: NuGet's header (`internal/formats/nuget`), Ansible's version document in three classes (`internal/formats/ansible`), the engine's walk of the stored tiers (`internal/virtual`) | microseconds; 0.01 s; under 0.01 s | none; a collection of a few hundred bytes and the kit's remote documents |
+| Unit (fuzz seeds) | `FuzzSignatureP7s` (`nugetcms`: the parse and every step of a check on each part) and `FuzzDefinite` (`pki`: the conversion to definite lengths is DER in its tags and lengths, nests at most 32 deep, grows by at most 64 bytes, is a fixed point); R-SIG-013 lists the bounds they assert | 0.01 s and under 0.01 s | the fixtures and the tests' own signatures; six short BER structures and one kept input |
 | Fuzz (closing run only) | the same two targets in the `fuzz nuget` matrix, 30 minutes a leg; run here two minutes each on 2026-11-22 (8 workers, `-fuzzminimizetime 5s`, load 15 to 25): 565,507 executions of the CMS target and 7,407,794 of `Definite`, no finding of the readers; `Definite`'s first run found a flaw of the target's own walk (an empty constructed value at the deepest level counted as one level deeper), whose input stays as `testdata/fuzz/FuzzDefinite/ca72bc74dfb10117` | two legs of 30 minutes | none kept besides the input |
-| Integration | `ansiblelocal`: discovery and the removal of orphans in process after a post; `ociremote`: the remote's version and its list after the fetch | about 0.1 s (0.09 s measured); two requests and a wait of at most 10 s for the tag's download to be counted, in existing tests (`TestR_SIG_026_…` took 42.6 s whole at load 15 to 30, its share not isolated) | rows; the stub's image |
+| Integration | `ansiblelocal`: discovery and the removal of orphans in process after a post, and point 5's version document under the gate; `ociremote`: the remote's version and its list after the fetch | about 0.1 s and under a second; two requests and a wait of at most 10 s for the tag's download to be counted, in existing tests (`TestR_SIG_026_…` took 42.6 s whole at load 15 to 30, its share not isolated) | rows; the stub's image |
 
-No leg gains a second the unit run would notice; the shard with `ociremote` at most the 10 s wait, the one with `ansiblelocal` 0.1 s; no
-end-to-end leg anything; with 25
-formats the same: the rules are the core's.
+No leg gains a second the unit run would notice; the shard with `ociremote` at most the 10 s wait, the one with `ansiblelocal` about a
+second; no end-to-end leg anything; with 25 formats the same: the rules are the core's, and a format whose client reads a document before
+the artifact adds one unit test.
+
+### Measured again on 2026-11-23
+
+The same kind of setup as [above](#the-setup-and-how-to-repeat-it), built from the worktree at d961712fa and then with point 5's repair: one
+replica (role `all`, and `web` to provoke pending) on `127.0.0.1:37443` as `https://host.docker.internal:37443`, PostgreSQL, Valkey and
+SeaweedFS in a compose project of their own, a listener certificate with key usage and authority key identifier (Python 3.13 refuses one
+without the latter: `Missing Authority Key Identifier`), tokens inserted as `testenv.Stack.Token` writes them (an administrator, and a
+reader of the project). The clients ran in containers: the pinned .NET SDK image, the Docker and Podman images of the OCI set (cosign 3.1.4
+copied from its image, Notation 1.3.2 from its release with the checksum checked), the Ansible 2.21 image of the Ansible set, the pinned
+Node image, and Debian 13 with GnuPG for the release key. The test material was made for the run and thrown away, but for the two NuGet
+packages kept as fixtures: a throwaway RSA root with two code-signing leaves (one without the key identifier extension), a cosign key pair,
+Notation's test certificate, an Ed25519 OpenPGP release key.
+
+| Point | Client | Case | Result |
+|---|---|---|---|
+| 1 | `dotnet nuget sign`, `dotnet restore` 10.0.403 | push of the two signed packages and an unsigned one; gate on with the root as a CA anchor | both signed: `valid`, then internal; restored (exit 0); the unsigned refused |
+| 2 | cosign 3.1.4, Notation 1.3.2, Docker 29.9.3 | the pusher signs unsigned images in the gated repository by digest and by tag; the reader pulls | all four signs exit 0; the reader's pulls refused before, served after |
+| 3 | `ansible-galaxy` 2.21.6 | publish, then post the signature at once; discovery's cursor past the archives; install under the gate | the posted signatures stay; two installs exit 0 |
+| 4 | Docker 29.9.3 | pull through `docker-remote`; the version's signatures | `referrer` signatures `valid`, internal |
+| 5 | `dotnet restore`, `ansible-galaxy`, Docker, Podman 5.8.9 | refused and pending downloads, before and after the repair | as point 5 above |
+| 6, 7 | npm 11.20.0, Docker, Podman, `dotnet restore`, `ansible-galaxy` | refused downloads | the texts name the artifact in the client's words and the publisher's or the build's signature |
 
 ### Not measured, and why
 
@@ -890,15 +891,21 @@ formats the same: the rules are the core's.
 - **Symbol packages of NuGet, a virtual repository's gate, chosen anchors, a blocked signer and a narrowing at the gate** with a real
   client: the gate's decision is the same for every client and is tested at the unit and integration tiers; only the answers' shapes were
   in question here.
-- **Notation's COSE envelope** (`--signature-format cose`) and Notation's plugins; **Podman**; **APT under the gate** (not offered).
-- The malware gate's refusals: not provoked (the scanning was off). The user manual's line on Docker for them was changed with this
-  measurement because the OCI error body is the same writer's (R-SIG-068); that line is inferred, not seen.
-- Verified, not only read: every row of both tables. Read, not run: the cause of defect 3 (the code path), the daily repetition of
-  discovery, and whether `X-NuGet-Warning` would reach a NuGet user. The cause of defect 3 was run since, with the repair: discovery in
-  process removes the posted signature when a detector's batch speaks for `upload`, and keeps it when it does not.
+- **Notation's COSE envelope** (`--signature-format cose`) and Notation's plugins; **APT under the gate** (not offered). Podman was
+  measured on 2026-11-23 for a refused and a pending image only.
+- The malware gate's refusals: not provoked (the scanning was off, also on 2026-11-23). The user manual's lines on Docker, NuGet and
+  `ansible-galaxy` for them follow from the same writers of the answers (R-SIG-068, Q-SIG-241); they are inferred, not seen.
+- Verified, not only read: every row of the tables. Read, not run: the daily repetition of discovery. The cause of defect 3 was run since,
+  with the repair: discovery in process removes the posted signature when a detector's batch speaks for `upload`, and keeps it when it does
+  not; on 2026-11-23 the worker's own discovery passed posted signatures and kept them. That `dotnet restore` prints `X-NuGet-Warning` was
+  measured on 2026-11-23 with the SDK 10.0.403; nuget.exe and the SDKs 8 and 9 were not run.
 
 ## What this page does not cover
 
+- What Docker, Podman and the kubelet show while an image's signatures are being checked: the status alone
+  ([H-1540](../spec/signatures.md#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked)); and what
+  `ansible-galaxy` shows of a refusal of an archive no repository stored before: the status alone
+  ([H-1541](../spec/signatures.md#h-1541--ansible-galaxy-shows-only-the-status-of-a-refusal-of-an-archive-that-no-repository-stored-before)).
 - A project that starts to reach a checked signature gets its own trust row only at the next recomputation
   ([H-1202](../security/artifact-signatures.md#h-1202--a-project-that-starts-to-reach-a-signature-is-served-the-installations-trust-until-the-next-recomputation)).
 - A format added later (ClamAV's definitions, [formats/clamav.md](../spec/formats/clamav.md)) declares its kinds and adds its row to the

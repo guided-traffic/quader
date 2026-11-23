@@ -62,6 +62,12 @@ func (s hostSignatures) Refuse(ctx context.Context, rq *formats.Request, repo fo
 // answer ends the request and, in a virtual repository, the resolution (R-MAL-018, R-SIG-065). decided reports whether every check
 // that applies passed at its first decision on a decided state, the condition of a signed link (storage.md R-STOR-070 step 6).
 func (h *Host) serveChecks(ctx context.Context, rq *formats.Request, repo formats.RepoRef, row items.Item) (decided bool, err error) {
+	return h.checks(ctx, rq, repo, row, gatesDownload(rq))
+}
+
+// checks is serveChecks with the malware gate's question decided by the caller: download says whether the request is a download of the
+// item, which the malware gate asks alone (R-MAL-013); a check of the item at a document a client reads before it is one (Q-SIG-241).
+func (h *Host) checks(ctx context.Context, rq *formats.Request, repo formats.RepoRef, row items.Item, download bool) (decided bool, err error) {
 	srv := sgate.Serve{}
 	if h.o.Enforce != nil && row.Kind == items.KindFile {
 		srv.Enforce = h.o.Enforce
@@ -72,7 +78,7 @@ func (h *Host) serveChecks(ctx context.Context, rq *formats.Request, repo format
 			Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx), Endpoint: rq.Subject.Endpoint,
 		}
 	}
-	if g := h.o.Malware; g.Enabled() && row.Kind == items.KindFile && gatesDownload(rq) {
+	if g := h.o.Malware; g.Enabled() && row.Kind == items.KindFile && download {
 		strict, err := h.malwareStrict(ctx, rq.Addressed(), repo.Name)
 		if err != nil {
 			return false, err

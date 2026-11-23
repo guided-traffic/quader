@@ -50,11 +50,47 @@ const challenge = `Basic realm="quader"`
 // command, and a longer value would spend a push's budget on waiting.
 const maxRetryAfter = 30 * time.Second
 
+// headerWarning is the header NuGet's clients print as a warning on any answer, an error's
+// included: `dotnet restore` of the .NET SDK 10.0.403 (NuGet 7.9.0) prints `warning : <value>`
+// once for every attempt of a download (measured on 2026-11-23, signatures.md Q-SIG-241).
+const headerWarning = "X-NuGet-Warning"
+
+// downloadCheck reports whether a code is an answer of the three checks of a download
+// (signatures.md R-SIG-069): the malware gate, the vulnerability block and the signature gate.
+// Their text says why a package is refused or held and what to do, which the status line cannot,
+// so it also goes into headerWarning (Q-SIG-241). Every other error keeps the body alone: a 404
+// is how a restore asks its sources, and a warning on each would bury the one that matters.
+func downloadCheck(code string) bool {
+	switch code {
+	case errs.CodeMalwareFound, errs.CodeMalwareNotChecked, errs.CodeMalwareCheckPending,
+		errs.CodeVulnerabilityBlocked, errs.CodeVulnerabilityDataMissing,
+		errs.CodeSignatureNotVerified, errs.CodeSignatureCheckPending:
+		return true
+	}
+	return false
+}
+
+// headerText keeps a header value to printable ASCII: a control character becomes a blank and
+// any other byte outside ASCII a question mark, so that no client reads it in another encoding.
+func headerText(s string) string {
+	return strings.Map(func(r rune) rune {
+		switch {
+		case r < 0x20 || r == 0x7f:
+			return ' '
+		case r > 0x7e:
+			return '?'
+		}
+		return r
+	}, s)
+}
+
 // WriteError renders an error in the native shape of NuGet (R-NUGET-002): the status of the
 // error, Content-Type text/plain and one line, "<code>: <message>". The NuGet clients print
 // status and reason phrase and no body; the line serves people with curl, and the logs. The
-// chain's refusals on this format's paths are rendered here too (Q-ARCH-214), which is why it
-// must not call back into the chain's problem writer.
+// text of a refusal or a pending answer of the download's checks also goes into
+// X-NuGet-Warning, which the clients print (Q-SIG-241). The chain's refusals on this format's
+// paths are rendered here too (Q-ARCH-214), which is why it must not call back into the
+// chain's problem writer.
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	recordClientFacts(r)
 	p, e := errs.ProblemOf(err, "", "")
@@ -91,6 +127,9 @@ func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 		}
 	}
 	body := oneLine(p.Code + ": " + text)
+	if downloadCheck(p.Code) {
+		h.Set(headerWarning, headerText(text))
+	}
 	h.Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(p.Status)
 	if r.Method != http.MethodHead {

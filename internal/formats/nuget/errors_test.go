@@ -82,6 +82,45 @@ func TestR_NUGET_002_RetryAfterIsAtMost30Seconds(t *testing.T) {
 	}
 }
 
+// TestR_SIG_068_TheChecksOfADownloadReachNuGetsClientsAsAWarning: NuGet's clients print no body of an error, and they print
+// X-NuGet-Warning (Q-SIG-241, measured with dotnet restore of the .NET SDK 10.0.403): the refusals and the pending answers of the
+// malware gate, the vulnerability block and the signature gate carry their text there, as printable ASCII on one line; every other
+// error, a 404 above all, carries none. Unit, microseconds, no payload.
+func TestR_SIG_068_TheChecksOfADownloadReachNuGetsClientsAsAWarning(t *testing.T) {
+	text := "Quader refused example.toy 1.2.0 of web/nuget-local: it has no signature of its publisher or its build.\nDetails: x"
+	for _, c := range []struct {
+		kind errs.Kind
+		code string
+	}{
+		{errs.Forbidden, errs.CodeSignatureNotVerified},
+		{errs.Unavailable, errs.CodeSignatureCheckPending},
+		{errs.Forbidden, errs.CodeMalwareFound},
+		{errs.Forbidden, errs.CodeMalwareNotChecked},
+		{errs.Unavailable, errs.CodeMalwareCheckPending},
+		{errs.Forbidden, errs.CodeVulnerabilityBlocked},
+		{errs.Forbidden, errs.CodeVulnerabilityDataMissing},
+	} {
+		w := render(http.MethodGet, nil, errs.E(c.kind, c.code, text))
+		want := "Quader refused example.toy 1.2.0 of web/nuget-local: it has no signature of its publisher or its build. Details: x"
+		if got := w.Header().Get("X-NuGet-Warning"); got != want {
+			t.Errorf("%s: X-NuGet-Warning = %q, want %q", c.code, got, want)
+		}
+	}
+	if got := render(http.MethodGet, nil, errs.E(errs.Forbidden, errs.CodeSignatureNotVerified, "café\x7f")).Header().Get("X-NuGet-Warning"); got != "caf? " {
+		t.Errorf("a byte outside printable ASCII: X-NuGet-Warning = %q", got)
+	}
+	for _, err := range []error{
+		errs.E(errs.NotFound, errs.CodeNotFound, "The package does not exist."),
+		errs.E(errs.Forbidden, errs.CodeForbidden, "The permission read is required."),
+		errs.E(errs.RateLimited, errs.CodeRateLimited, "slow down"),
+		errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "Credentials are required."),
+	} {
+		if w := render(http.MethodGet, nil, err); w.Header().Get("X-NuGet-Warning") != "" {
+			t.Errorf("%d %v carries X-NuGet-Warning %q", w.Code, err, w.Header().Get("X-NuGet-Warning"))
+		}
+	}
+}
+
 // TestR_NUGET_001_AV2PathAnswersWithTheServiceIndexOfTheAddressedRepository: the 404 of a
 // path that is no v3 resource names the absolute URL of the service index, built from the
 // refusal the dispatcher attached (Q-ARCH-263), so the message is the repository the client
