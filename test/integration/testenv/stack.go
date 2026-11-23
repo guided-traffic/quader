@@ -254,7 +254,10 @@ func (s *Stack) environ(host, port, name, userFile, passFile string) []string {
 		// maintenance worker while it downloads the public archives; a test of the scanning sets the test advisory source.
 		"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://osv.invalid/",
 		"QUADER_VULNERABILITIES_SOURCES_KEV_URL=https://kev.invalid/known_exploited_vulnerabilities.json",
-		"QUADER_HEALTH_CHECK_INTERVAL=300ms", "QUADER_HEALTH_CHECK_TIMEOUT=200ms", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY=200ms",
+		"QUADER_HEALTH_CHECK_INTERVAL=300ms", "QUADER_HEALTH_CHECK_TIMEOUT=200ms",
+		// No edge routes to a replica of the harness, so a stop has nobody to drain for; a test of the drain sets the delay in
+		// StackOptions.Env or ReplicaOptions.Env, which come after this and win (Q-ARCH-582).
+		"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY=0s",
 		"QUADER_SERVER_SHUTDOWN_TIMEOUT=5s", "QUADER_STORAGE_SPOOL_DIR=" + filepath.Join(dir, "spool"),
 		"QUADER_SYSTEM_HEARTBEAT_INTERVAL=1s", "QUADER_SYSTEM_HEARTBEAT_STALE_AFTER=3s",
 		"QUADER_CONFIG_FILE=" + WriteFile(tb, dir, "quader.yaml", ""),

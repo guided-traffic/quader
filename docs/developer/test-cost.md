@@ -1132,3 +1132,60 @@ cover before it went; a test that asserted something more stayed. Measured once,
 Per shard: a 49.5 s, b 31.2 s, c 62.6 s, d 8.1 s, 151 s in all. Added: one unit test, `TestR_STOR_007_NoFormatWithAProtocolOfItsOwnTakesARawDeploy`
 (`internal/formats/all`, milliseconds, no data), which holds the refusal of a raw deploy for every registered format. Not measured: the same on a
 runner; the seconds every `ansiblevirtual` test saves by the smaller environment.
+
+## 11. An integration test's own installation, before and after the harness's three changes (2026-11-23)
+
+Almost every integration test builds an installation of its own (`testenv.NewStack`). The plan of the installation cost measured on the
+same morning, with a probe in an area's package, where its time went [V, that plan's runs on the developer workstation, one replica, no
+built UI]: about **1.83 s** an installation, of which the response validator's parse of the API document 0.60 s, the migration's steps
+into a new database 0.57 to 0.69 s, the replica's start 0.27 s, its stop 0.22 s (0.199 s of it the harness's drain delay of 200 ms) and
+seed, first request and cleanup about 0.1 s. Its split for a runner, computed from the per-test minima of two pipeline runs [I]: about
+**2.5 s**, of which the validator about 1.25 s, the migration about 0.55 s and start, stop, seed and a small body 0.55 to 0.7 s. A run
+from the main checkout paid 1.73 to 1.78 s more per installation for publishing the locally built UI (375 files) [V].
+
+The three changes take those pieces away without touching a test: the validator's document is parsed once per test binary
+([Q-ARCH-580](../spec/architecture.md#q-arch-580--a-test-process-parses-the-api-document-for-its-response-validators-once)), every stack is
+a clone of a migrated template with identity rows of its own
+([Q-ARCH-581](../spec/architecture.md#q-arch-581--every-stack-of-the-in-process-harness-is-a-clone-of-a-migrated-template-with-identity-rows-of-its-own)),
+and a replica of the harness drains for no time and serves the committed placeholder UI
+([Q-ARCH-582](../spec/architecture.md#q-arch-582--a-replica-of-the-in-process-harness-drains-for-no-time-and-serves-the-placeholder-ui-unless-its-test-says-otherwise)).
+
+Measured once each, locally, from a worktree (so without a built UI either time), with `test/integration/run.sh -json`, one area per
+call, on the developer workstation (20 CPUs) while three other builders ran their own tests: before the first change on instance 2
+(06:19 to 06:31, load 4 to 55 over one minute), after the third on instance 1 (06:35 to 06:41, load 10 to 24; the template existed, so no
+run paid its one migration). [V] from the `go test -json` streams; "least" is the fastest top-level test of the area, and every top-level
+test of these four areas builds an installation.
+
+| Area (shard) | Area before [V] s | Area after [V] s | Least test before [V] s | Least test after [V] s | Median test before / after [V] s |
+|---|---:|---:|---:|---:|---:|
+| `ansiblelocal` (a) | 56.6 | 20.1 | 1.80 | 0.55 | 2.44 / 0.69 |
+| `endpoints` (b) | 29.5 | 16.0 | 2.05 | 0.66 | 2.13 / 1.29 |
+| `api` (c) | 210.7 | 101.7 | 1.91 | 0.44 | 3.31 / 1.46 |
+| `ci` (d) | 399.2 | 175.3 | 1.89 | 0.43 | 2.74 / 0.90 |
+| **sum** | **696.0** | **313.1** | | | |
+
+The same test before and after: `TestR_ANS_012_TheReindexOfAnotherFormatIsNotApplicable` 1.80 → 0.55 s, `TestR_EP_019_TheCacheFillPolicyOfAnEndpoint`
+2.05 → 0.66 s, `TestR_API_015_ANarrowedTokenCancelsItsOwnersJobsOnlyWithSettingsWrite` 1.91 → 0.61 s, `TestR_CI_009_ADisabledMappingIsNotEvaluated`
+1.89 → 0.51 s: 1.25 to 1.39 s less per installation, as the plan's local split predicts (0.60 + 0.57 to 0.69 + 0.2). The median test of each
+area saved 1.41 to 1.70 s [I]. The before run of `api` ended at a load of 55 and one of its tests (`TestKeyRingStatus`, which waits up to 15 s for
+the replicas' rings to agree) took 7.1 s after against 3.1 before, so the area figures carry the noise of a shared machine; the per-test
+minima carry less of it.
+
+**What the change itself adds** (CLAUDE.md, "Say what it costs"): unit tests of milliseconds (`internal/api/v1/apitest`, the template's name and the
+refusal to drop a foreign database in `test/integration/testenv`, no data); in the area `testenv` (shard b) `TestStacksAreClonesOfTheTemplate`
+(three stacks, 1.2 s), `TestTemplateFollowsTheMigrations` (three template migrations: one of a step added during development by two sessions at
+once, the embedded one twice, and a failing one-step migration; 9.0 to 9.1 s at a load of about 20) and `TestReplicaOfTheHarness` (three stacks,
+four replicas, 2.8 s); data: none beyond the template of about 16 MB that each instance's PostgreSQL keeps between runs. The template's one
+migration per day and change of a migration file is paid by the first stack of a run that finds none (about 1 s locally).
+
+**Computed for the pipeline [I]**: with the plan's counts of tests that build an installation per shard (a 257, b 171, c 216, d 354, a
+name-matching estimate) and its runner split of 1.95 s less per installation (validator 1.25, migration 0.5, drain 0.2, one stop per test), the
+shard jobs of Test and Release 45109360386 (a 34.8, b 30.2, c 33.0, d 34.9 minutes) would take about a 26.4, b 24.6, c 26.0, d 23.4 minutes;
+with the 1.3 s measured here per installation as the floor, about 29.2, 26.5, 28.3 and 27.2.
+
+**Prediction to check in the first pipeline run after the change** (a prediction, not a result): the fastest data-port test, which builds an
+installation without a replica (`oci`'s data port, NuGet's `TestQ_NUGET_48`), falls from about 1.9 s to about 0.7 s. If it falls much less,
+the runner split of the validator (1.25 s, computed from minima and not separated from the object store's cleanup) was wrong.
+
+Not measured: the same on a runner (the first pipeline run shows it); the clone under a runner's load; a run from the main checkout with the
+built UI after the change (it pays neither the UI's 1.7 s nor the drain, by construction); any other area before and after.

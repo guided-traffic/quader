@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"net"
@@ -12,12 +13,14 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/app"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/webui"
 )
 
 // SyncBuffer is a log sink that is safe to read while a replica writes.
@@ -69,9 +72,26 @@ type ReplicaOptions struct {
 	// RequestTransactions counter.
 	Database []postgres.Option
 	// UI replaces the UI build the binary embeds (app.Options.UIAssets): two replicas with different trees stand for two
-	// releases with different bundles (R-HA-020). Nil serves the embedded build.
+	// releases with different bundles (R-HA-020). Nil serves the committed placeholder page alone (placeholderUI), as the
+	// pipeline's binaries do, also in a checkout that built the UI.
 	UI fs.FS
 }
+
+// placeholderUI is the UI tree of a binary built without the web build: the committed internal/webui/dist/index.html alone. A
+// replica of the harness whose options name no UI serves it (Q-ARCH-582). A checkout that built the UI embeds its 375 files as
+// well, and every replica published them into the installation's shared asset store before it turned ready, about 1.7 s per
+// installation that the pipeline, which builds no UI, never paid.
+var placeholderUI = sync.OnceValues(func() (fs.FS, error) {
+	tree, err := webui.Tree(nil)
+	if err != nil {
+		return nil, err
+	}
+	index, err := fs.ReadFile(tree, "index.html")
+	if err != nil {
+		return nil, fmt.Errorf("the committed placeholder page: %w", err)
+	}
+	return fstest.MapFS{"index.html": &fstest.MapFile{Data: index}}, nil
+})
 
 // Replica is one in-process replica started through app.New.
 type Replica struct {
@@ -118,6 +138,13 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 		environ = append(environ, "QUADER_VULNERABILITIES_IMAGES_SCANNER_URL=http://127.0.0.1:1")
 	}
 	environ = append(environ, o.Env...)
+	if o.UI == nil {
+		ui, err := placeholderUI()
+		if err != nil {
+			tb.Fatal(err)
+		}
+		o.UI = ui
+	}
 	loaded, err := config.Load(config.Options{Environ: environ, Flags: map[string]string{"process.role": o.Role}, Command: config.CommandServe})
 	if err != nil {
 		tb.Fatalf("config: %v", err)

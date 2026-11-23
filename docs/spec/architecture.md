@@ -11967,9 +11967,9 @@ about 0.6 s (a runner: about 1.25 s) from every installation of the tier without
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: `testenv.NewStack` created an empty database for every installation and ran the 109 migration steps into it: 0.57 to
-0.69 s on the development workstation, about 0.55 s on a runner, in about a thousand tests (the plan of the installation cost,
-[test-cost.md](../developer/test-cost.md)). A clone of a migrated database took 27 to 66 ms there. The first migration draws
+Context: `testenv.NewStack` created an empty database for every installation and ran every migration step into it (109 when it was
+measured, 110 at this change): 0.57 to 0.69 s on the development workstation, about 0.55 s on a runner, in about a thousand tests
+(the plan of the installation cost, [test-cost.md](../developer/test-cost.md)). A clone of a migrated database took 27 to 66 ms there. The first migration draws
 `installation_id`, `keyspace_id` and `incarnation` into `system_state` at random (R-OPS-024); every Valkey key carries the keyspace
 (R-ARCH-030), so two clones that kept the template's rows would share their Valkey state, which is the one way a clone can make a
 test lie. The area `uploads` clones a template of its own per run already, without Valkey. Several test binaries can meet on one
@@ -11978,7 +11978,7 @@ build several stacks at once.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) One template per PostgreSQL server for the embedded migrations of the day, made by the first stack that finds none, under an advisory lock, built under a name of its own and renamed when complete; every stack a clone with its identity rows drawn again (chosen) | One migration per server, day and change of a migration file | About 0.6 s off every installation; a second test binary, another checkout and the next run reuse the template | A template stays in each stack's PostgreSQL between runs (about 17 MB); a clone carries what the migration wrote with the time of its run, up to a day old (H-1470) |
+| (a) One template per PostgreSQL server for the embedded migrations of the day, made by the first stack that finds none, under an advisory lock, built under a name of its own and renamed when complete; every stack a clone with its identity rows drawn again (chosen) | One migration per server, day and change of a migration file | About 0.6 s off every installation; a second test binary, another checkout and the next run reuse the template | A template stays in each stack's PostgreSQL between runs (about 16 MB); a clone carries what the migration wrote with the time of its run, up to a day old (H-1470) |
 | (b) A template per test binary, dropped when the binary ends (the way of `uploads`) | No state between runs | Nothing stays | One migration per area and run (about 70); dropping needs a hook in every area's `TestMain`, and a killed binary leaves its template |
 | (c) As (a), keyed by the migration files alone | Fewer migrations | One migration per change of a file | What the migrations write with the time of their run ages without bound: a template made in November holds the audit partitions of November to February, and a stack without a replica (which makes the month's partition when it starts) cannot write an audit event in March |
 | (d) Keep the fresh migration and make the stack's PostgreSQL faster (`fsync`, `synchronous_commit`, `full_page_writes` off) | No harness change | No difference from a fresh installation | Every stack has to be restarted, which the other runs feel; not measured |
@@ -12020,6 +12020,33 @@ keeps an identity of its own, and the day in the name keeps what the migration w
 **Applied:** [template.go](../../test/integration/testenv/template.go), [stack.go](../../test/integration/testenv/stack.go) (`NewStack`,
 `databaseConfig`), [testenv_test.go](../../test/integration/testenv/testenv_test.go),
 [template_integration_test.go](../../test/integration/testenv/template_integration_test.go);
+[build-and-test.md](../developer/build-and-test.md#the-in-process-harness).
+
+### Q-ARCH-582 · A replica of the in-process harness drains for no time and serves the placeholder UI unless its test says otherwise
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the harness set `health.shutdown_drain_delay` to 200 ms for every replica, and a web replica sleeps that long when it stops
+(R-ARCH-024 step 2): 0.199 of the 0.22 s a stop took, at least once in every test with a replica. No edge routes to a replica of the
+harness, so nothing waits for that window, and no test on the harness relies on it: the tests of the drain (`server`, `tls`) have
+harnesses of their own and set their own delay. A replica whose options name no UI served the binary's embedded build. In the pipeline
+that is the committed placeholder page; in a checkout that built the UI (`make web`) it is 375 files, which every replica published into
+the installation's shared asset store before it turned ready (R-HA-020): 1.73 to 1.78 s per installation, more than the pipeline pays
+for the whole installation, and only on a developer's machine. Every test that passes in the pipeline passes with the placeholder.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The harness sets the drain delay to `0s` in the stack's environment, before `StackOptions.Env` and `ReplicaOptions.Env`, which win; a replica whose options name no UI gets the committed placeholder page alone (chosen) | The harness behaves as the pipeline's binary and stops at once | 0.2 s per stop everywhere; about 1.7 s per installation in a checkout with a built UI; a test that needs the drain or a built UI says so | A test of the drain must set its delay (none on the harness does today) |
+| (b) Keep 200 ms and the embedded UI | Nothing changes | No risk to a test | The 0.2 s per stop stay; local runs stay slower than the pipeline's and differ from it |
+| (c) Drain 0 only; the UI as it was | Half of (a) | | A developer's run keeps paying 1.7 s per installation for files no test reads |
+
+**Choice:** (a). A test that tests the drain names the delay in `StackOptions.Env` or `ReplicaOptions.Env`; the loader takes the last
+value of a variable, so the test's value wins (shown by `TestReplicaOfTheHarness`, which also shows that the harness's replica does not
+drain). `uiassets` passes its own trees and keeps testing the publication of a built UI.
+**Rationale:** both were work and waits the pipeline never needed; the placeholder makes a developer's run the pipeline's run.
+
+**Applied:** [stack.go](../../test/integration/testenv/stack.go) (`environ`), [replica.go](../../test/integration/testenv/replica.go)
+(`ReplicaOptions.UI`, `placeholderUI`), [replica_integration_test.go](../../test/integration/testenv/replica_integration_test.go);
 [build-and-test.md](../developer/build-and-test.md#the-in-process-harness).
 
 ## What this does not cover
@@ -12296,6 +12323,6 @@ template's: the timestamps of the seeded rows and of `schema_migration.applied_a
 the template's month and the three after it, the five built-in limit profiles carry the same random ids in every stack of the day, and
 the schema's grants to `quader_app` are those of the moment the template was migrated. The identity rows of `system_state` are drawn
 again and are not part of this. What makes it real: a test that asserts the age of a seeded row, compares the ids of the built-in
-profiles across two stacks, or connects as `quader_app` to a stack; none of the areas run for the change did (the areas named in
-[test-cost.md](../developer/test-cost.md)), and the areas that connect as `quader_app` (`postgres`, `audit`) keep databases of their
-own. What would close it: drawing these values again in `NewStack` as the identity rows are, once a test needs it.
+profiles across two stacks, or connects as `quader_app` to a stack. No test on the harness is known to do so: the areas run for the change passed
+([test-cost.md](../developer/test-cost.md#11-an-integration-tests-own-installation-before-and-after-the-harnesss-three-changes-2026-11-23)), and the
+areas that connect as `quader_app` (`postgres`, `audit`) keep databases of their own. What would close it: drawing these values again in `NewStack` as the identity rows are, once a test needs it.
