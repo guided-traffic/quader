@@ -626,7 +626,19 @@ func (h *harness) do(method, path string, body io.Reader, hdr ...string) *httpte
 		r.Header.Set(hdr[i], hdr[i+1])
 	}
 	w := httptest.NewRecorder()
-	h.e.ServeHTTP(w, r)
+	func() {
+		// A cut response panics with http.ErrAbortHandler, which net/http's server recovers: the test that did not expect
+		// it fails here, and the package's other tests still run.
+		defer func() {
+			if v := recover(); v != nil {
+				if err, ok := v.(error); !ok || !errors.Is(err, http.ErrAbortHandler) {
+					panic(v)
+				}
+				h.t.Errorf("%s %s: the response was cut after %d bytes", method, path, w.Body.Len())
+			}
+		}()
+		h.e.ServeHTTP(w, r)
+	}()
 	return w
 }
 

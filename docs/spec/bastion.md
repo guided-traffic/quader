@@ -2932,6 +2932,10 @@ Acceptance criteria:
   (Q-BAS-197); a second caller of the running fill, a partial reader, receives the whole blob from the spool with one conditional request
   and no second transfer, and its serve is reported; with a fill that fails its digest both transfers are cut
   (`TestR_BAS_054_LargeArtifacts`).
+- Unit (`internal/bastion/engine`, a blob of 16 KiB whose first transfer breaks off after 4 KiB and whose close the test holds): only a
+  caller of a running fill follows it. A fill that fails ends its flight before its callers are cut, so a caller that comes after the
+  failure, while the fill still closes its source, is a miss of its own and receives the whole blob with a second transfer
+  (`TestR_BAS_054_ACallerAfterAFailedFillIsAMissOfItsOwn`).
 - Unit (`internal/bastion/engine`, two engines on one shared state and one cache): a replica that meets another's lock waits while it is
   held, sending nothing, and serves the committed entry afterwards; past `fill_wait_max` it fetches itself
   (`TestR_BAS_054_AReplicaWaitsForAnotherReplicasFill`).

@@ -169,11 +169,17 @@ func (r *fillRun) release() {
 // request's own while the engine drains). end cancels the request to the main installation (and the direct read of a
 // handover); flightDone ends the flight of the collapsed fetch. A direct read that breaks off after its first byte is
 // continued from the main installation into the same spool (R-BAS-075); the commit's check of the SHA-256 decides for
-// every source.
+// every source. A fill that fails ends its flight before its callers learn it: a request that comes after the failure
+// joins no flight, is a miss of its own and is never cut by a fill that no longer runs (R-BAS-054, R-BAS-075), while the
+// fill still closes its source.
 func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 	e := r.e
 	defer r.release()
 	defer flightDone()
+	fail := func() {
+		flightDone()
+		r.finishWith(fillFailed)
+	}
 	defer end()
 	stall := time.AfterFunc(e.fillStall, func() { r.stall(end) })
 	defer stall.Stop()
@@ -188,14 +194,14 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 			total += int64(n)
 			if total > r.size {
 				e.log.Warn("the source of a fill sent more bytes than it announced", "sha256", r.sha, "want", r.size)
-				r.finishWith(fillFailed)
+				fail()
 				return
 			}
 			if _, werr := r.fill.Write(buf[:n]); werr != nil {
 				// The spool cannot take the bytes, so the transfer cannot be verified: it is cut, never
 				// passed on unverified.
 				e.log.Warn("the spool of a fill could not be written", "error", werr)
-				r.finishWith(fillFailed)
+				fail()
 				return
 			}
 			e.d.Metrics.FillBytes.WithLabelValues(r.fillSourceLabel()).Add(float64(n))
@@ -207,7 +213,7 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 		if rerr != nil {
 			next, ok := r.turnToMain(rerr, total)
 			if !ok {
-				r.finishWith(fillFailed)
+				fail()
 				return
 			}
 			body = next
@@ -217,7 +223,7 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 	_ = body.Close() // the response is complete: the budget slot is free (a direct read's key destroyed) while the commit and the clients go on
 	if total != r.size {
 		e.log.Warn("the source of a fill sent another number of bytes than it announced", "sha256", r.sha, "got", total, "want", r.size)
-		r.finishWith(fillFailed)
+		fail()
 		return
 	}
 	ctx := context.Background()
@@ -225,7 +231,7 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 	r.committed(!errors.Is(err, cache.ErrMismatch))
 	if errors.Is(err, cache.ErrMismatch) {
 		e.log.Warn("the bytes of a fill do not match their content address", "sha256", r.sha)
-		r.finishWith(fillFailed)
+		fail()
 		return
 	}
 	if err == nil && r.key != "" {

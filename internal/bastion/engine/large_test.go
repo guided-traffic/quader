@@ -197,6 +197,66 @@ func TestR_BAS_054_LargeArtifacts(t *testing.T) {
 	t.Run("a fill that fails its digest cuts both transfers", func(t *testing.T) { run(t, true) })
 }
 
+// breakingBody sends its bytes and then breaks off; its close is announced on closing and returns only once the test closes
+// release, as the body of a connection that takes its time to close.
+type breakingBody struct {
+	data    []byte
+	off     int
+	closing chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func (b *breakingBody) Read(p []byte) (int, error) {
+	if b.off >= len(b.data) {
+		return 0, io.ErrUnexpectedEOF
+	}
+	n := copy(p, b.data[b.off:])
+	b.off += n
+	return n, nil
+}
+
+func (b *breakingBody) Close() error {
+	b.once.Do(func() { close(b.closing) })
+	<-b.release
+	return nil
+}
+
+// TestR_BAS_054_ACallerAfterAFailedFillIsAMissOfItsOwn: a caller that comes after a fill failed, while the failed fill still
+// closes its source, follows no fill: it is a miss of its own and receives the whole blob with a second transfer. Only a
+// caller of a running fill follows it, and only such a caller is cut by its failure.
+func TestR_BAS_054_ACallerAfterAFailedFillIsAMissOfItsOwn(t *testing.T) {
+	s := newSiteHarness(t, options{})
+	path := "/api/npm/web/npm-all/@acme/big/-/big-3.0.0.tgz"
+	blob := payload(16 << 10)
+	s.site.artifacts[path] = blob
+	broken := &breakingBody{data: blob[:4<<10], closing: make(chan struct{}), release: make(chan struct{})}
+	var released sync.Once
+	t.Cleanup(func() { released.Do(func() { close(broken.release) }) })
+	var first sync.Once
+	viaSite := s.main.doFn
+	s.main.doFn = func(f mainclient.Forward) (*mainclient.Response, error) {
+		r, err := viaSite(f)
+		if err == nil && r.Status == http.StatusOK && f.Kind == mainclient.KindForward {
+			first.Do(func() { r.Body = broken })
+		}
+		return r, err
+	}
+	_, aDone := serveAsync(s.harness, path, "Authorization", bearer(s.full))
+	if !waitDone(t, aDone) {
+		t.Fatal("the caller of the fill that broke off was not cut")
+	}
+	waitClosed(t, broken.closing, "the failed fill to close its source")
+	b, bDone := serveAsync(s.harness, path, "Authorization", bearer(s.full))
+	if waitDone(t, bDone) {
+		t.Fatal("a caller that came after the fill failed followed it and was cut")
+	}
+	released.Do(func() { close(broken.release) })
+	if st, got := b.got(); st != http.StatusOK || !bytes.Equal(got, blob) || s.main.count(mainclient.KindForward) != 2 {
+		t.Fatalf("the caller after the failure: %d, %d bytes, %d transfers", st, len(got), s.main.count(mainclient.KindForward))
+	}
+}
+
 // TestR_BAS_054_AReplicaWaitsForAnotherReplicasFill: with the bucket backend and shared state, a replica that meets
 // another replica's fetch lock waits while it is held, sending nothing, and serves the committed entry afterwards; past
 // fill_wait_max it fetches itself.
