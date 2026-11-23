@@ -22623,6 +22623,24 @@ dashes (point 6 of the same finding, the trust anchors' **Remove** likewise). **
 [package-version.html](../../web/src/app/features/packages/package-version.html),
 [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts).
 
+### Q-UI-1003 · Without an updater the page names the updater and its setting, and says why no database arrives
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "what Settings › Malware scanning shows on the UI
+stack, where the scanning is on and no updater is configured"; the owner reviews it at the walkthrough.
+
+Context: on a start without `freshclam` (the role `all`, the UI stack) the page said "This installation runs no
+malware-updater-freshclam pod: no freshclam scanner is configured (`malware.scanner.url` is empty)", the updater's absence in the words
+and the setting of the scanner, and its section **Signature database** "None yet" without saying that nothing will fetch one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The updater's line names it an updater and its setting, `malware.updater.url`; with the source `updater`, no set, no error and no updater, the section says "No updater is configured (`malware.updater.url` is empty), so no database arrives until one is. The database task waits for it and records no failure." (chosen) | Q-MAL-98 | The page says what the task does (R-MAL-010) | One sentence more in a state of development starts |
+| (b) Only the setting's name corrected | — | Smallest | The section still does not say why nothing arrives |
+
+**Choice:** (a). **Applied in the spec:** R-MAL-023 of [malware-scanning.md](malware-scanning.md). Code:
+[scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
+[malware-settings.html](../../web/src/app/features/settings/malware-settings.html).
+
 ## What this does not cover
 
 

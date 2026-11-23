@@ -50089,5 +50089,17 @@
         <target>der Testlink antwortete mit Status <ph id="0" equiv="status" disp="status"/> und <ph id="1" equiv="bytes" disp="bytes"/> statt mit Status <ph id="2" equiv="expectedStatus" disp="expectedStatus"/> und <ph id="3" equiv="expectedBytes" disp="expectedBytes"/></target>
       </segment>
     </unit>
+    <unit id="malware.db.no-updater">
+      <segment>
+        <source> No updater is configured (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.updater.url</pc> is empty), so no database arrives until one is. The database task waits for it and records no failure. </source>
+        <target> Es ist kein Updater konfiguriert (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.updater.url</pc> ist leer), daher kommt keine Datenbank, bis einer konfiguriert ist. Die Datenbank-Aufgabe wartet darauf und verzeichnet keinen Fehler. </target>
+      </segment>
+    </unit>
+    <unit id="scanners.none.updater">
+      <segment>
+        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> updater is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
+        <target>Diese Installation betreibt keinen Pod <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc>: Kein <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/>-Updater ist konfiguriert (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> ist leer).</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

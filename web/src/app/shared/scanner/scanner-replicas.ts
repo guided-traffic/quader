@@ -104,7 +104,13 @@ export function scannerReasonText(reason: string): string | null {
             }
             @case ('none') {
               <span class="material-icons inline" aria-hidden="true">info</span>
-              <span i18n="@@scanners.none.none">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: no {{ g.tool }} scanner is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
+              <!-- The updater is no scanner and has a setting of its own (R-MAL-032): it said "no freshclam scanner is configured
+                   (malware.scanner.url is empty)" on a start without it (Q-UI-1003). -->
+              @if (updater()) {
+                <span i18n="@@scanners.none.updater">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: no {{ g.tool }} updater is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
+              } @else {
+                <span i18n="@@scanners.none.none">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: no {{ g.tool }} scanner is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
+              }
             }
             @default {
               <span class="material-icons inline" aria-hidden="true">info</span>
@@ -318,9 +324,9 @@ export class ScannerReplicas {
     const n = g?.rows.length ?? 0;
     return $localize`:@@scanners.fold:Replicas of ${d}:deployment: (${n}:count:)`;
   });
-  /** The setting that names the kind's scanner, empty without one (R-VULN-041, R-MAL-005). */
+  /** The setting that names the kind's scanner or the updater, empty without one (R-VULN-041, R-MAL-005, R-MAL-032). */
   protected readonly urlKey = computed(() =>
-    this.group()?.purpose === 'malware' ? 'malware.scanner.url' : 'vulnerabilities.images.scanner.url',
+    this.updater() ? 'malware.updater.url' : this.group()?.purpose === 'malware' ? 'malware.scanner.url' : 'vulnerabilities.images.scanner.url',
   );
 
   /**
