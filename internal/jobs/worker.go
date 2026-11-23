@@ -19,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // WorkerSignals is the signal path a worker needs: the wake-up subscription and
@@ -459,6 +460,8 @@ func (w *Worker) execute(ctx context.Context, rj *runningJob) {
 		defer stop()
 	}
 	run := &Run{Job: j, w: w, rj: rj}
+	// The handler's code that has no logger of its own (a format's fill run by a job) logs through the worker's.
+	ctx = observability.ContextWithLogger(ctx, w.log)
 	call := func(ctx context.Context) (err error) {
 		defer func() {
 			if r := recover(); r != nil {

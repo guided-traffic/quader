@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/qname"
 )
 
@@ -16,7 +17,6 @@ type ctxKey int
 
 const (
 	keyRequestID ctxKey = iota
-	keyLogger
 	keyInfo
 	keyPrincipal
 	keyShapes
@@ -74,12 +74,10 @@ func RequestID(ctx context.Context) string {
 	return v
 }
 
-// Logger returns the request-scoped logger, or a discarding one outside the chain.
+// Logger returns the request-scoped logger, or a discarding one outside the chain. The chain keeps it under the key of
+// observability.ContextWithLogger, so code that may not import this package (a format) finds the same logger.
 func Logger(ctx context.Context) *slog.Logger {
-	if l, ok := ctx.Value(keyLogger).(*slog.Logger); ok {
-		return l
-	}
-	return slog.New(slog.DiscardHandler)
+	return observability.LoggerFrom(ctx)
 }
 
 // PrincipalFrom returns the caller; anonymous outside the chain.

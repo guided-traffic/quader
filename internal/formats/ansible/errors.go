@@ -2,13 +2,13 @@ package ansible
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // challenge is the WWW-Authenticate value of every 401 on a Galaxy endpoint (R-ANS-006): a client that retries on a challenge sends
@@ -81,14 +81,14 @@ func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 	// A refusal of an operation the format does not serve is the client's, however it is numbered.
 	if status >= 500 && e.Kind != errs.NotImplemented {
-		attrs := []any{"status", status, "code", p.Code, "kind", e.Kind.String()}
+		attrs := []any{"request_id", w.Header().Get("X-Request-Id"), "status", status, "code", p.Code, "kind", e.Kind.String()}
 		if e.Op != "" {
 			attrs = append(attrs, "op", e.Op)
 		}
 		if e.Err != nil {
 			attrs = append(attrs, "cause", e.Err.Error())
 		}
-		slog.Error("ansible request failed", attrs...)
+		observability.LoggerFrom(r.Context()).Error("ansible request failed", attrs...)
 	}
 }
 

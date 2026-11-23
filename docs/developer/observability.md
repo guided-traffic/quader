@@ -37,6 +37,13 @@ proxyLog := logging.Component("proxy")  // log=app, component=proxy, level from 
 - **Fixed fields.** `time` (RFC 3339 UTC, milliseconds), `level`, `msg`, `log`, `replica`, `role` always;
   `component` when the logger came from `Component`; `trace_id` and `span_id` when the call passes a context
   that carries a trace (`log.InfoContext(ctx, ...)`). Always pass the request context.
+- **Never the default logger.** Code that is not handed a logger takes the one of its context:
+  `observability.LoggerFrom(ctx)` ([context.go](../../internal/observability/context.go)) returns what the request chain
+  (`httpserver`'s first stage) and the job worker put there with `ContextWithLogger`, and a discarding logger outside both. A
+  format logs through `formats.Request.Log` or, in its error writer, `observability.LoggerFrom(r.Context())`, so the line of a
+  request that failed carries `request_id`, `replica`, `role`, `log` and `component`. `TestR_OPS_009_NoFormatLogsThroughTheDefaultLogger`
+  ([defaultlogger.go](../../internal/archtest/defaultlogger.go)) refuses `slog.Default`, the package-level functions of `log/slog`
+  and the package `log` in `internal/formats/...`.
 - **Keys** are `snake_case` and stable; renaming one is a breaking change that the release notes name.
 - **Messages are constants.** Variable data goes into attributes.
 - **Component levels** (R-OPS-012) are one `slog.LevelVar` per component. `Logging.SetOverride` /

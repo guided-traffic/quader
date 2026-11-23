@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -18,6 +17,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // What a client sees of a remote repository (R-OCI-021 to R-OCI-025). The routes are the ones of the local class; the handlers of
@@ -216,7 +216,7 @@ func refreshSignatures(ctx context.Context, rq *formats.Request, name, tag strin
 	if err := queueSignatureFetch(ctx, nil, rq.Host.FormatData(ID), rq.RepoRef().ID, name, doc.Digest, true); err != nil {
 		log := rq.Log
 		if log == nil {
-			log = slog.Default()
+			log = observability.LoggerFrom(ctx)
 		}
 		log.Warn("signatures: the refresh of an image's signatures could not be queued", "repo", rq.Repo.Name.String(), "name", name, "err", err)
 	}

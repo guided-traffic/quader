@@ -2,13 +2,13 @@ package oci
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // errorCodeHeader names quader's code of a refusal whose code the scanner's pull reads (Q-VULN-180).
@@ -160,14 +160,14 @@ func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 		_, _ = w.Write(body)
 	}
 	if status >= 500 && e.Kind != errs.NotImplemented {
-		attrs := []any{"status", status, "code", p.Code, "kind", e.Kind.String()}
+		attrs := []any{"request_id", w.Header().Get("X-Request-Id"), "status", status, "code", p.Code, "kind", e.Kind.String()}
 		if e.Op != "" {
 			attrs = append(attrs, "op", e.Op)
 		}
 		if e.Err != nil {
 			attrs = append(attrs, "cause", e.Err.Error())
 		}
-		slog.Error("oci request failed", attrs...)
+		observability.LoggerFrom(r.Context()).Error("oci request failed", attrs...)
 	}
 }
 

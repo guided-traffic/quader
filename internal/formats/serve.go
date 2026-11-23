@@ -11,6 +11,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver/content"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // ServeMode says what a stored item is served for, and so how far ServeCheck may
@@ -63,10 +64,7 @@ func ServeRoute(f Format, w http.ResponseWriter, rq *Request, sameOrigin bool) {
 		}
 		out = content.Wrap(tw, kind, path.Base(rq.Path.Path), sameOrigin)
 	}
-	log := rq.Log
-	if log == nil {
-		log = slog.Default()
-	}
+	log := requestLog(rq)
 	defer func() {
 		rec := recover()
 		if rec == nil {
@@ -190,5 +188,17 @@ func (Base) Guide() []GuideSection { return nil }
 
 // WriteError renders the error as problem+json (R-ARCH-023).
 func (Base) WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	errs.Write(w, r, err, w.Header().Get("X-Request-Id"), slog.Default())
+	errs.Write(w, r, err, w.Header().Get("X-Request-Id"), observability.LoggerFrom(r.Context()))
+}
+
+// requestLog is the logger of a request: the one the dispatcher handed over, else the one of the request's context (the replica's,
+// R-OPS-009). It is never the process's default logger, whose lines carry none of the replica's fields.
+func requestLog(rq *Request) *slog.Logger {
+	if rq.Log != nil {
+		return rq.Log
+	}
+	if rq.Request != nil {
+		return observability.LoggerFrom(rq.Context())
+	}
+	return observability.LoggerFrom(context.Background())
 }

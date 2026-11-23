@@ -2,7 +2,6 @@ package npm
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -10,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/npm/merge"
 	"github.com/guided-traffic/quader/internal/formats/npm/name"
 	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The virtual class (R-NPM-028 to R-NPM-032). The virtual engine plans a request
@@ -119,7 +119,11 @@ func (a virtualAdapter) Merge(ctx context.Context, rq *formats.Request, p format
 	if len(res.Conflicts) > 0 {
 		a.f.replicaOf(rq.Host).met.versionConflicts(rq.Repo.Name.String(), len(res.Conflicts))
 		for _, c := range res.Conflicts {
-			slog.WarnContext(ctx, "two members of a virtual repository hold a version with different integrity",
+			log := rq.Log
+			if log == nil {
+				log = observability.LoggerFrom(ctx)
+			}
+			log.WarnContext(ctx, "two members of a virtual repository hold a version with different integrity",
 				"repo", rq.Repo.Name, "package", n.String(), "version", c.Version, "winner", c.Winner, "other", c.Other)
 		}
 	}

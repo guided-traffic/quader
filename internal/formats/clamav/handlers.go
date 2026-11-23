@@ -2,12 +2,12 @@ package clamav
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // container serves <db>.cvd: the container of the version of db that the set in use names (R-CLAMAV-004, Q-MAL-99), with the
@@ -67,7 +67,7 @@ const challenge = `Basic realm="quader"`
 // on a cool-down of 4 hours; a 401 carries the Basic challenge. Every other error keeps its status. The body names the error's code
 // and detail, for a person who asks with curl; the chain's refusals on the prefix are rendered here too (R-ARCH-023).
 func (Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	errs.Write(w, r, Rendered(err), w.Header().Get("X-Request-Id"), slog.Default())
+	errs.Write(w, r, Rendered(err), w.Header().Get("X-Request-Id"), observability.LoggerFrom(r.Context()))
 }
 
 // Rendered maps an error to the kind the endpoint answers it with (the table of R-CLAMAV-005).

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // HeaderRequestID carries the request's trace ID on every client-listener
@@ -180,7 +181,7 @@ func (c Chain) recoverStage(next http.Handler) http.Handler {
 		log = slog.New(slog.DiscardHandler)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), keyLogger, log)
+		ctx := observability.ContextWithLogger(r.Context(), log)
 		// The error shapes of the router's paths: every refusal of a stage below, and of
 		// the handler, renders through Problem and so through them (Q-ARCH-214).
 		if c.Router != nil {

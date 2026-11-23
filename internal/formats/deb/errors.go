@@ -1,10 +1,10 @@
 package deb
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // WriteError renders a core error in the shape of R-DEB-005: the standard status of the error with the problem details of R-ARCH-023.
@@ -26,7 +26,7 @@ import (
 // The kind of each code fixes its status in internal/errs, so the format adds nothing to the shape: the codes are the format's, the
 // table is held by a test (errors_test.go), and the chain's refusals on this format's paths are rendered here too (Q-ARCH-214).
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	errs.Write(w, r, err, w.Header().Get("X-Request-Id"), slog.Default())
+	errs.Write(w, r, err, w.Header().Get("X-Request-Id"), observability.LoggerFrom(r.Context()))
 }
 
 // notImplemented is the answer of a route whose work package is not built yet (R-DEB-005, the skeleton of WP0).

@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -200,7 +201,10 @@ func logOf(rq *formats.Request) *slog.Logger {
 	if rq.Log != nil {
 		return rq.Log
 	}
-	return slog.Default()
+	if rq.Request != nil {
+		return observability.LoggerFrom(rq.Context())
+	}
+	return observability.LoggerFrom(context.Background())
 }
 
 // forwardParams are the parameters of the upstream request (R-NUGET-016): the terms of the

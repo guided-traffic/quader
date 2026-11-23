@@ -2,7 +2,6 @@ package npm
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -104,14 +103,14 @@ func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 	// A refusal of an operation the format does not implement is the client's, however it is numbered.
 	if p.Status >= 500 && e.Kind != errs.NotImplemented {
-		attrs := []any{"status", p.Status, "code", p.Code, "kind", e.Kind.String()}
+		attrs := []any{"request_id", w.Header().Get("X-Request-Id"), "status", p.Status, "code", p.Code, "kind", e.Kind.String()}
 		if e.Op != "" {
 			attrs = append(attrs, "op", e.Op)
 		}
 		if e.Err != nil {
 			attrs = append(attrs, "cause", e.Err.Error())
 		}
-		slog.Error("npm request failed", attrs...)
+		observability.LoggerFrom(r.Context()).Error("npm request failed", attrs...)
 	}
 }
 

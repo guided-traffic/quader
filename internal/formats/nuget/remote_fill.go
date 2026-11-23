@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log/slog"
 	"slices"
 	"strings"
 
@@ -73,7 +72,7 @@ func (remoteAdapter) InspectFill(ctx context.Context, _ formats.RemoteContext, p
 			return nil, err
 		}
 		if notAPackage(err, sp) {
-			slog.Warn("a cached NuGet package is no package; it is served as it came and gets no NuGet rows",
+			observability.LoggerFrom(ctx).Warn("a cached NuGet package is no package; it is served as it came and gets no NuGet rows",
 				"package", t.id, "version", t.version, "cause", e.Detail)
 			return nil, nil //nolint:nilnil // no inspection is the answer for content that is no package, see above
 		}
