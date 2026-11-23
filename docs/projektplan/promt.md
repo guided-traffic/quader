@@ -2536,7 +2536,7 @@ runs are in `git log`; this section holds the current state.
   With three stacks nothing waits at a lock that another holds for long; the load is 7. The kit move's
   package 1 and the handover's package 2 wait for their areas' runs, the encryption's package 4 is at
   work; none has reported.
-- **In work since 04:47: package 3 of the handover, the Bastion's side:** the link client with its refusals
+- **In work since 04:45: package 3 of the handover, the Bastion's side:** the link client with its refusals
   (no redirect, no credential, the refused hosts), the readers of a plain and of an encrypted body, the
   offer, the fill by a direct read with the fallback before the first byte and the continuation after it,
   the cooldown, the metrics and the alert; built and tested against the fake main installation, which can
