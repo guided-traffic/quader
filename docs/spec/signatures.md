@@ -501,7 +501,7 @@ four visible states, and the icon stands for what proves the publisher's origin.
      `malformed`), or **No signature** with the schemes the format knows ("Signatures this format knows: Notation, cosign.") or "This
      format has no signatures."
 - An invalid signature beside a better one does not change the badge; it is listed in the details with its reason, records its event and
-  stands in the security dashboard (R-SIG-038): it alarms and blocks nothing.
+  stands on the page Signatures under Security audit (R-SIG-038): it alarms and blocks nothing.
 - **Debian.** A package carries no badge; its details say "apt checks the signature of this repository's index, not of the package" and
   which release signed the index that names it (R-SIG-030).
 
@@ -3503,7 +3503,7 @@ in the main view of a repository; a plain user sees why a download is refused wh
   with "This includes the public Sigstore, where anyone can sign. Choose anchors to accept only your own signers.", and **These trust
   anchors**, a list of the scope's anchors with title, kind, scope and fingerprint to tick, a removed one shown as **Removed trust anchor**
   in red. Under them the stored setting's state when the section opens: "<n> of <m> artifacts pass. <k> are refused." (R-SIG-072), with a
-  link to the refused downloads in the security dashboard for its readers.
+  link to the refused downloads on the page Signatures under Security audit for its readers.
   - On a virtual repository it adds "Applies to everything this repository serves from its members."; on a remote with `fetch` off, "Signatures
     of images are not fetched: an image whose signature no client pulled is refused."
   - On a Debian repository the section says "apt checks the signature of this repository's index, not of a package. This setting is not

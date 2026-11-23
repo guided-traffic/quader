@@ -953,7 +953,7 @@ var registry = []CodeInfo{
 	//
 	// >>> malware
 	{CodeMalwareFound, Forbidden, "Malware found", "Quader's malware scan found a signature of ClamAV in the stored bytes, and no instance auditor released them. The problem names the signature and the date of the signature database; the response is never cached."},
-	{CodeMalwareNotChecked, Forbidden, "Not checked for malware", "Only checked artifacts can be downloaded here, and the malware scan could not check these bytes (too large, past a limit, encrypted, or the scans failed). An instance auditor can release them in the security dashboard. The response is never cached."},
+	{CodeMalwareNotChecked, Forbidden, "Not checked for malware", "Only checked artifacts can be downloaded here, and the malware scan could not check these bytes (too large, past a limit, encrypted, or the scans failed). An instance auditor can release them on the page Malware under Security audit. The response is never cached."},
 	{CodeMalwareCheckPending, Unavailable, "Malware check pending", "Only checked artifacts can be downloaded here, and the bytes are being scanned; retry after the Retry-After period. The response is never cached."},
 	{CodeMalwareWeakeningRefused, Forbidden, "Malware setting cannot be weakened", "The write would switch the repository's setting malware.onlyChecked off. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
 	{CodeNothingToRelease, Conflict, "Nothing to release", "The blob's verdict is pending or clean: a release is for infected, unscannable and failed content only."},

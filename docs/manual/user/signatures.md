@@ -79,7 +79,7 @@ in its own words (see [Troubleshooting](troubleshooting.md)). Where you look in 
 - A version that is still being checked shows nothing more than **Not checked yet**: the client waits a little and then gets a "try again".
 
 Only people who triage security findings (an administrator, a security administrator, an auditor) can release one artifact for one
-repository, with a reason: **Release for this repository** on the banner, in the section or in the security dashboard. A released artifact
+repository, with a reason: **Release for this repository** on the banner, in the section or on the page Signatures under Security audit. A released artifact
 says so, by whom, when and why, and the release can be withdrawn. A project's Owner cannot release, because a release loosens the check.
 
 **Setting it.** The repository's **Settings › Signatures** (closed, never part of creating a repository) holds **Only artifacts with a
