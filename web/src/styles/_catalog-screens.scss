@@ -40,6 +40,13 @@
   color: var(--quader-text-muted);
 }
 
+// A muted word or sentence inside a line of text: a state without a badge, a note beside a value, a fact of less weight. Many
+// screens wrote `class="muted"` and few styled it, so most stood in the text's colour; the one rule is here, and a screen that also
+// shrinks it keeps its own rule.
+.muted {
+  color: var(--quader-text-muted);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: minmax(0, 36rem);

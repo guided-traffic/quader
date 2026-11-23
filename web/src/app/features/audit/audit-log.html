@@ -228,7 +228,9 @@
             } @else {
               <span translate="no">{{ actorName(e) }}</span>
             }
-            <span class="hint" translate="no"
+            <!-- The kind of the actor and how it signed in, a muted word after the name ("admin breakglass, session"); without the space
+                 the two ran together, "adminbreakglass". -->
+            &ngsp;<span class="muted" translate="no"
               >{{ e.actor.type }}{{ e.actor.authMethod ? ', ' + e.actor.authMethod : '' }}</span
             >
           </dd>

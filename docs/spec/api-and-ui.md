@@ -5168,7 +5168,9 @@ Priority: **MVP** · Covers: OPS-023
   source address; filters time range (presets and custom), actor, action, category, project, repository,
   outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
-- Detail panel with the full event and links to actor and target.
+- Detail panel with the full event and links to actor and target. Where the panel is narrower than 25 rem (beside the log at
+  1,280 px, under it at 390 px) each fact's name stands above its value, so that the time of the event stays on one line
+  ([Q-UI-972](#q-ui-972--a-narrow-audit-event-puts-each-facts-name-above-its-value)).
 - Times in the user's locale with a UTC toggle; export of the current filter as CSV or JSON Lines
   (`/api/v1/audit/events/export`).
 
@@ -22234,6 +22236,27 @@ development agent sees no case for revisiting this.
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts),
 [malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html),
 [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts).
+
+### Q-UI-972 · A narrow audit event puts each fact's name above its value
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "An opened audit event at 390 px breaks its Time
+over two lines"; the owner reviews it at the walkthrough.
+
+Context: the event's facts stand as two columns, the name beside the value. A log writes the moment in full (Q-UI-431), "November 23,
+2026, 7:37:23 AM GMT+0", which needs about 250 px; beside its name it had 136 px at 390 px and 213 px beside the log at 1,280 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Where the event's panel is narrower than 25 rem, each fact's name above its value (chosen) | A container query of the panel | Every value has the panel's width; the wide panel keeps its two columns | Taller at 1,280 px |
+| (b) A shorter time ("Nov 23, 2026, 7:37:23 AM") | The medium format | One line at 1,280 px | Still two lines at 390 px, and the zone is gone from the moment of a log |
+| (c) Let the time break between date and time | — | Nothing changes | The renders' check refuses a time on two lines |
+
+**Choice:** (a).
+
+**Rationale:** a narrow card of facts reads best name over value; the time keeps its form. The development agent sees no case for
+revisiting this.
+
+**Applied in the spec:** R-UI-037. Code: [audit-log.scss](../../web/src/app/features/audit/audit-log.scss).
 
 ## What this does not cover
 

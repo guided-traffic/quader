@@ -2206,6 +2206,13 @@ async function* staleAdvisories(page: Page): AsyncGenerator<string> {
   await page.unroute(summary);
 }
 
+/** The audit log with one event opened (R-UI-037): its facts, the time on one line, the copy buttons of its IDs on their lines. */
+async function* auditEvent(page: Page): AsyncGenerator<string> {
+  await page.locator('main table.data tbody th[scope="row"] button.link').first().click();
+  await expect(page.locator('main section.detail dl.facts')).toBeVisible();
+  yield 'event';
+}
+
 /**
  * The repository page's **Details** opened, then the page loaded again: the section is open as the reader left it (R-UI-067,
  * Q-UI-319, Q-UI-967), kept in the browser per user and screen.
@@ -2559,7 +2566,10 @@ export const screens: readonly Screen[] = [
   ...createStates,
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
-  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen() },
+  // At 1,280 px too: the log scrolled sideways there (its Source address column).
+  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen(), widths: [1280] },
+  // One event opened: its time on one line at 390 px, the copy buttons of its IDs on their lines (R-UI-037).
+  { id: 'admin-audit-event', path: '/ui/admin/audit', kinds: admins, walk: auditEvent, widths: [1280] },
   // The traces of data keys handed to a Bastion (storage.md R-STOR-096), answered in the browser: the list and one opened.
   { id: 'admin-audit-data-keys', path: '/ui/admin/audit', kinds: admins, walk: auditDataKeys },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
