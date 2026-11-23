@@ -2140,6 +2140,12 @@ async function* gateSetup(page: Page): AsyncGenerator<string> {
 // ---- States the seed does not hold, answered in the browser ----
 
 /**
+ * The key of the session's storage that keeps the Details a walk opened for the page's next load; without it every load of a render
+ * shows the screen as a first visit (render.spec.ts).
+ */
+export const KEEP_OPEN = 'quader-renders.keep-open';
+
+/**
  * A file of a disabled repository (R-UI-193, Q-UI-965): the repository's answer, the full document and the reader's view alike, says
  * that it is disabled, so the file offers no **Download**, no download address and no download with curl, and says why once.
  */
@@ -2175,6 +2181,21 @@ async function* listUnavailable(page: Page): AsyncGenerator<string> {
 /** The answer of the walk's 503 and its notice: the error state is what the screen renders. */
 const unavailable = [{ match: /^GET \/api\/v1\/repositories\?.* answered 503$/, why: 'the walk answers the list 503 to render its error state' }];
 const unavailableNotice = [{ match: /Retry/, why: 'the error state of the list, which the walk renders' }];
+
+/**
+ * The repository page's **Details** opened, then the page loaded again: the section is open as the reader left it (R-UI-067,
+ * Q-UI-319, Q-UI-967), kept in the browser per user and screen.
+ */
+async function* detailsRemembered(page: Page): AsyncGenerator<string> {
+  const toggle = page.locator('main quader-disclosure.details > .disclosure button.toggle');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate((keep) => sessionStorage.setItem(keep, '1'), KEEP_OPEN);
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  yield 'remembered';
+}
 
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
 /** A signed-out visitor's page asks who is signed in and is told nobody. */
@@ -2224,6 +2245,8 @@ export const screens: readonly Screen[] = [
   { id: 'repositories-upstream', path: '/ui/projects/upstream/repositories', kinds: ['admin'], walk: systemRepositories },
   { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },
   { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
+  // Details stays open across a visit (Q-UI-319, Q-UI-967).
+  { id: 'repository-details-remembered', path: `${P}/repositories/npmjs`, kinds: ['power'], walk: detailsRemembered },
   { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },

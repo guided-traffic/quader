@@ -70,7 +70,7 @@ import { TechnicalTokens } from './technical-tokens';
           }
         </form>
 
-        <quader-disclosure i18n-heading="@@sa.details" heading="Details" [hint]="a.project ? detailsHintPlace : detailsHintInstance">
+        <quader-disclosure remember="service-account.details" i18n-heading="@@sa.details" heading="Details" [hint]="a.project ? detailsHintPlace : detailsHintInstance">
           <dl class="facts">
             <dt i18n="@@sa.status">Status</dt>
             <dd>

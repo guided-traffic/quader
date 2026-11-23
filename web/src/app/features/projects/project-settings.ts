@@ -116,6 +116,7 @@ import { ProjectSignatureAnchors } from './project-signature-anchors';
         </quader-disclosure>
 
         <quader-disclosure
+          remember="project-settings.details"
           i18n-heading="@@project.details"
           heading="Details"
           i18n-hint="@@project.details-hint"

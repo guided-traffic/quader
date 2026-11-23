@@ -4,7 +4,7 @@ import { Page, expect, test } from '@playwright/test';
 import { LayoutFinding, emptyScroll, findingLine, judge, layoutFindings } from './layout';
 import { manifestDir, outDir } from './paths';
 import { Kind } from './seed';
-import { Screen, screens } from './screens';
+import { KEEP_OPEN, Screen, screens } from './screens';
 
 /**
  * The renders of `make ui-renders` (rule 11 of docs/projektplan/promt.md; docs/developer/web-ui.md#renders-of-every-screen):
@@ -52,6 +52,14 @@ for (const screen of screens) {
       forget(kind, screen);
       const failures = watch(page, screen);
       trackRequests(page);
+      // Every width shows the screen as a first visit: the Details a walk opened at the width before are not reopened from the
+      // browser's memory (Q-UI-967), unless the walk asks to keep them for its next load (KEEP_OPEN).
+      await page.addInitScript((keep) => {
+        if (sessionStorage.getItem(keep) === null) {
+          for (const key of Object.keys(localStorage)) if (key.startsWith('quader.open.')) localStorage.removeItem(key);
+        }
+        sessionStorage.removeItem(keep);
+      }, KEEP_OPEN);
       const shots: Shot[] = [];
       // A walk or a tab that throws stops the screen: what it took so far is recorded with the reason, so failures.txt names it.
       let width = 0;

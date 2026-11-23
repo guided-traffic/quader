@@ -110,7 +110,7 @@ The page is titled with the repository's key and says what the repository is. At
 - **Settings** opens the repository's settings, if you may read them.
 - **More actions** holds **Files**, the raw files of a repository of a package format ([Browsing and transferring files](files.md)), and **Vulnerabilities**.
 
-Below them the page lists the **Images**, **Packages** or **Files** of the repository, depending on the format, with a filter. **Details**, at the end and closed until you open it, holds the repository's other addresses, each named (**Address for downloads by path (curl, wget)**), the upstream a remote repository caches, and the members a virtual repository resolves from.
+Below them the page lists the **Images**, **Packages** or **Files** of the repository, depending on the format, with a filter. **Details**, at the end and closed until you open it (once you have opened it, it stays open on your next visit, as every **Details** section does in this browser), holds the repository's other addresses, each named (**Address for downloads by path (curl, wget)**), the upstream a remote repository caches, and the members a virtual repository resolves from.
 
 Depending on the format, the content shows:
 

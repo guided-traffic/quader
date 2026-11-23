@@ -158,6 +158,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
 
       <quader-disclosure
         class="details"
+        remember="file.details"
         i18n-heading="@@files.details"
         heading="Details"
         i18n-hint="@@files.details-hint"

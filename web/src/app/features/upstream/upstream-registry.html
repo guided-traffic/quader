@@ -425,6 +425,7 @@
     @if (!retired() && noAddress()) {
       <div class="details">
         <quader-disclosure
+          remember="upstream-registry.details"
           i18n-heading="@@repo.settings.details"
           heading="Details"
           i18n-hint="@@wellknown.details.hint-local"
@@ -443,6 +444,7 @@
     } @else if (!retired()) {
       <div class="details">
         <quader-disclosure
+          remember="upstream-registry.details"
           i18n-heading="@@repo.settings.details"
           heading="Details"
           i18n-hint="@@wellknown.details.hint"

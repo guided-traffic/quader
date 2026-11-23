@@ -196,7 +196,7 @@
   }
 
   @if ((view() === 'items' || (isGeneric() && path() === '')) && (upstream() || members().length > 0 || otherAddresses().length > 0)) {
-    <quader-disclosure class="details" [heading]="detailsHeading" [hint]="detailsText">
+    <quader-disclosure class="details" remember="repository.details" [heading]="detailsHeading" [hint]="detailsText">
       @for (a of otherAddresses(); track a.value) {
         <p class="other-address">
           <span class="field-label">{{ a.label }}</span>

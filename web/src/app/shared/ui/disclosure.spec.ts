@@ -1,7 +1,11 @@
 import { Component } from '@angular/core';
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { expectAccessible, settle } from '../../testing/screen';
 import { Disclosure } from './disclosure';
+import { DisclosureMemory } from '../../core/disclosure-memory';
+import { renderScreen } from '../../testing/screen';
+import { BrowserStorage } from '../../core/storage';
 
 @Component({
   imports: [Disclosure],
@@ -22,6 +26,30 @@ class Host {}
   `,
 })
 class InlineHost {}
+
+@Component({
+  imports: [Disclosure],
+  template: `
+    <quader-disclosure heading="Details" remember="file.details" (expandedChange)="opened = $event">
+      <p class="inside">Every checksum.</p>
+    </quader-disclosure>
+  `,
+})
+class RememberedHost {
+  opened = false;
+}
+
+/** The store of the open Details of one viewer, in memory (Q-UI-967). */
+class FakeMemory {
+  readonly open = new Set<string>();
+  isOpen(id: string): boolean {
+    return this.open.has(id);
+  }
+  set(id: string, open: boolean): void {
+    if (open) this.open.add(id);
+    else this.open.delete(id);
+  }
+}
 
 describe('Disclosure', () => {
   it('R-UI-067 the details are one quiet disclosure: a heading at text size with a chevron, one hint line, closed until opened', async () => {
@@ -64,5 +92,48 @@ describe('Disclosure', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(root.querySelector('.collapse-region')!.classList).toContain('open');
     await expectAccessible(root);
+  });
+
+  it('Q-UI-319 Q-UI-967 a Details section opens as the viewer left it, and tells its screen so; another fold is not remembered', async () => {
+    const memory = new FakeMemory();
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [RememberedHost], providers: [{ provide: DisclosureMemory, useValue: memory }] }).compileComponents();
+    let fixture = TestBed.createComponent(RememberedHost);
+    await settle(fixture);
+    let toggle = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('h2 button')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    toggle.click();
+    await settle(fixture);
+    expect([...memory.open]).toEqual(['file.details']);
+    // The next visit of the screen: open at once, and the screen hears it (the file page then reads the statistics).
+    fixture.destroy();
+    fixture = TestBed.createComponent(RememberedHost);
+    await settle(fixture);
+    toggle = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('h2 button')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.componentInstance.opened).toBe(true);
+    toggle.click();
+    await settle(fixture);
+    expect(memory.open.size).toBe(0);
+  });
+
+  it('Q-UI-967 the open Details are kept per signed-in viewer in the browser, and a page works when the storage is blocked', async () => {
+    new BrowserStorage().clear('local');
+    await renderScreen(RememberedHost, {});
+    const memory = TestBed.inject(DisclosureMemory);
+    memory.set('file.details', true);
+    expect(new BrowserStorage().get('local', 'quader.open.alice')).toBe('["file.details"]');
+    memory.set('file.details', false);
+    expect(new BrowserStorage().get('local', 'quader.open.alice')).toBeNull();
+    // Blocked storage: the choice lasts while the page does, nothing throws.
+    const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    try {
+      memory.set('repository.details', true);
+      expect(memory.isOpen('repository.details')).toBe(true);
+    } finally {
+      blocked.mockRestore();
+    }
   });
 });

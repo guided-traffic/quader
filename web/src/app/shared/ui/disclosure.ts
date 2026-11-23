@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, input, model } from '@angular/core';
+import { Component, Injector, effect, inject, input, model, untracked } from '@angular/core';
+import { DisclosureMemory } from '../../core/disclosure-memory';
 
 let nextDisclosureId = 1;
 
@@ -11,6 +12,9 @@ let nextDisclosureId = 1;
  * `inline` is the same toggle without the section around it: no heading element, no rule above it, no room above and below. It
  * folds a detail inside a section or a table cell (a pattern syntax, a request body, a certificate, the messages of a row). The
  * app has no bare details element (a lint rule refuses one): every fold is this component, so every fold has the one chevron.
+ *
+ * `remember` names a **Details** section by its screen (`file.details`): it opens as the viewer left it (R-UI-067, Q-UI-319,
+ * Q-UI-967), kept in the browser per user by `DisclosureMemory`.
  */
 @Component({
   selector: 'quader-disclosure',
@@ -23,7 +27,7 @@ let nextDisclosureId = 1;
         type="button"
         [attr.aria-expanded]="expanded()"
         [attr.aria-controls]="bodyId"
-        (click)="expanded.set(!expanded())"
+        (click)="flip()"
       >
         <span class="material-icons chevron" aria-hidden="true">chevron_right</span>
         <span>{{ heading() }}</span>
@@ -143,6 +147,34 @@ export class Disclosure {
   readonly inline = input(false);
   /** The level of the heading: 3 for the sections under a heading of their own (the **Guide** of Set up client, Q-UI-805). */
   readonly level = input<2 | 3>(2);
+  /**
+   * The screen and section of a **Details** section whose open state is kept per viewer (Q-UI-967), such as `file.details`; empty
+   * for every other fold, which opens as its screen says.
+   */
+  readonly remember = input('');
 
   protected readonly bodyId = `quader-disclosure-${nextDisclosureId++}`;
+  private readonly injector = inject(Injector);
+
+  constructor() {
+    // A section the viewer left open opens again; the store is asked only by a section that is remembered.
+    effect(() => {
+      const id = this.remember();
+      if (!id || !this.memory().isOpen(id)) return;
+      untracked(() => {
+        if (!this.expanded()) this.expanded.set(true);
+      });
+    });
+  }
+
+  protected flip(): void {
+    const open = !this.expanded();
+    this.expanded.set(open);
+    const id = this.remember();
+    if (id) this.memory().set(id, open);
+  }
+
+  private memory(): DisclosureMemory {
+    return this.injector.get(DisclosureMemory);
+  }
 }

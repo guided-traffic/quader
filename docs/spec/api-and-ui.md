@@ -14768,8 +14768,9 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** one look for everyone, and the power user pays one click once. The development agent revisits (b) if
 power users report the click.
 
-**Applied in the spec:** R-UI-067. The component is the quiet disclosure of Q-UI-322 (fix wave 2); that it remembers whether the
-user opened it is not built yet: it opens closed on every visit.
+**Applied in the spec:** R-UI-067. The component is the quiet disclosure of Q-UI-322 (fix wave 2). It remembers whether the user
+opened it since 2026-11-23, per user, screen and section in the browser's local storage
+([Q-UI-967](#q-ui-967--a-details-section-is-remembered-per-user-screen-and-section-in-the-browsers-local-storage)).
 
 ### Q-UI-320 · Every value to copy of one line is a field with its joined copy button; a page shows one client address, and a panel's selects share one width
 
@@ -22159,6 +22160,29 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
 [document.go](../../internal/repository/document.go). The package pages are not covered: H-1560.
+
+### Q-UI-967 · A Details section is remembered per user, screen and section in the browser's local storage
+
+Status: **Decided by the development agent** on 2026-11-23, building what Q-UI-319 decided and R-UI-067 asks ("remembers per user
+and screen whether it was opened"); the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per signed-in user, per screen and section (`file.details`, `repository.details`), in the browser's local storage; only an open section is kept, closed is the default (chosen) | `DisclosureMemory` | What R-UI-067 and Q-UI-319 say; a power user opens the file's Details once and finds it open on every file; two people on one browser keep their own, as the side bar does (NavState); the page works when the storage is blocked or cleared | Kept per browser, not per account |
+| (b) Per object (each repository, each file its own) | One entry per thing | Exact | Grows with every page visited; a reader opens Details again on every new file |
+| (c) In the user's preferences on the server | `PUT /users/me/preferences` | Follows the account across browsers | A write to the API for every click on a heading; a convenience of one browser becomes stored state |
+| (d) The session's storage | Per tab | Nothing left behind | Lost with the tab, so opened again on every visit, which is what Q-UI-319 wanted to end |
+
+**Choice:** (a), for every closed section headed **Details** (the repository page, a file, a package, the settings of a repository and
+of a project, a user, a service account, an upstream registry) and the report's **About these counts** (Q-UI-966). The groups of a
+settings page and the folds inside a section are not remembered: they open as their screen says. The renders open every screen as a
+first visit; their walk `repository-details-remembered` keeps the state for one load.
+
+**Rationale:** R-UI-067 names the unit (user and screen) and Q-UI-319 the place (the browser); a section is the finest grain a reader
+notices. The development agent would revisit (c) if the owner wants it to follow the account.
+
+**Applied in the spec:** R-UI-067, Q-UI-319. Code: [disclosure-memory.ts](../../web/src/app/core/disclosure-memory.ts), `remember` of
+[disclosure.ts](../../web/src/app/shared/ui/disclosure.ts).
 
 ### Q-UI-968 · The vulnerability pages take the shared page header, and the advisory names a finding's page
 
