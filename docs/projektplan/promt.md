@@ -2190,7 +2190,7 @@ runs are in `git log`; this section holds the current state.
   since 00:48, on its commit: package 3 of the links,** the API, the settings page and the repository's
   section, rendered on a stack of its own, with the manual. Builders with a test load: package F, the
   encryption's package 3, the Bastion's P4, the links' package 3, and the landing's gates.
-- **Package F of the several connections, the surface and the manual, reported at 01:21** (two commits, a
+- **Package F of the several connections, the surface and the manual, reported at 01:22** (two commits, a
   `feat` and the documents; its builder worked from 23:09; every gate exit 0 after three repairs of its own
   and one run that failed on a flaky test of another package, section 8). **The storage summary did not
   exist on `main`, so it is built whole:** an hourly task counts the live blobs, the content per
@@ -2210,7 +2210,7 @@ runs are in `git log`; this section holds the current state.
   dark; one thing is sent back, that short pairs share a line in the stacked rows of the narrow width while
   longer ones take their own. **Its migration took the number the links hold,** so it moves onto the two
   commits that land before it and becomes 00109; the skip mark comes off its documents' commit, which would
-  have skipped the run of the push. Its builder is at that since 01:26. **Not verified:** the summary's
+  have skipped the run of the push. Its builder is at that since 01:23. **Not verified:** the summary's
   statements on a large table; a localized production build.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
