@@ -26,8 +26,12 @@ import (
 // shape has no member for it, and the scanner tells an uncached layer of a remote (populate_not_permitted) from a refused token by it.
 const ErrorCodeHeader = "Quader-Error-Code"
 
-// populateNotPermitted is the code of a remote's refusal to fill for a reader who may not fill (R-AUTHZ-008).
-const populateNotPermitted = "populate_not_permitted"
+// populateNotPermitted is the code of a remote's refusal to fill for a reader who may not fill (R-AUTHZ-008); repositoryDisabled the
+// code of a 404 for a repository the scan listener's replica holds for disabled (Q-VULN-226).
+const (
+	populateNotPermitted = "populate_not_permitted"
+	repositoryDisabled   = "repository_disabled"
+)
 
 // The manifest media types the pull accepts: the image manifests the job scans (R-VULN-033).
 var manifestAccept = strings.Join([]string{
@@ -40,6 +44,9 @@ var manifestAccept = strings.Join([]string{
 var (
 	errPullRefused         = errors.New("the scan listener refused the scan token")
 	errRegistryUnavailable = errors.New("the scan listener could not be reached")
+	// errRepositoryDisabled is a 404 that names repository_disabled: the job read the repository as enabled, the scan listener's replica
+	// has not followed the switch yet (Q-VULN-226). The handler answers it 409 repository_disabled, which the worker puts off.
+	errRepositoryDisabled = errors.New("the scan listener holds the repository for disabled")
 )
 
 // Registry is the scan listener as the scanner reaches it: its origin and the link's TLS (nil: plain HTTP, Q-HA-322).
@@ -104,6 +111,10 @@ func (p *puller) get(ctx context.Context, kind, digest, accept string) (*http.Re
 	defer func() { _ = res.Body.Close() }()
 	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 64<<10))
 	switch {
+	case res.StatusCode == http.StatusNotFound && res.Header.Get(ErrorCodeHeader) == repositoryDisabled:
+		// Not the image's: the repository is enabled in the database and not yet on the listener's replica. Asked again without an
+		// attempt (Q-VULN-226).
+		return nil, fmt.Errorf("%w: %s", errRepositoryDisabled, p.repo.String())
 	case res.StatusCode == http.StatusNotFound,
 		res.StatusCode == http.StatusForbidden && res.Header.Get(ErrorCodeHeader) == populateNotPermitted:
 		// The repository does not hold it: a layer no client brought into a remote's cache, or a manifest that went since the job read

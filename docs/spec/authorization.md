@@ -3174,6 +3174,7 @@ Fields of `authz.decision`:
 | `deny.shadowing` | Action allowed; the first version would shadow a package a remote member serves (R-AUTHZ-007, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-048) |
 | `deny.capability` | Management operation without the required capability |
 | `deny.stale` | Grant index not confirmed current within the wait of R-AUTHZ-028 |
+| `deny.repository-disabled` | A system subject's fixed rule refused only because the repository is disabled in the replica's index; its `404` names `repository_disabled` ([vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-226) |
 
 - **Refused populates and ownership.** A refused populate that is answered 403
   (`deny.populate`) and a refused ownership check (`deny.ownership`) are recorded like refused

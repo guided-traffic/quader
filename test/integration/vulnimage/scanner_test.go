@@ -299,6 +299,59 @@ func TestR_VULN_042_TheImagesOfADisabledRepositoryAreNotScanned(t *testing.T) {
 	})
 }
 
+// R-VULN-034, Q-VULN-226: a repository enabled again is due at once in the database, while the scan listener's replica may still hold it
+// for disabled. The test makes that window last: it switches the repository on in its row alone, which no replica learns of, so the job
+// takes the image and the listener refuses the pull as one of a disabled repository. The scan is put off as repository_disabled without an
+// attempt (before Q-VULN-226 it ended layer_missing and spent one), and the switch through the API, which every replica follows, scans it.
+func TestQ_VULN_226_AScanRefusedForARepositoryTheListenerHoldsDisabledSpendsNoAttempt(t *testing.T) {
+	f := newFlowWith(t, options{laterWorker: true})
+	f.push("app", "1.0", newImage(t))
+	path := "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + repoKey
+	patch := func(body string) {
+		t.Helper()
+		got := f.st.Do(f.api, "GET", path, f.adm, nil)
+		if got.Status != http.StatusOK {
+			t.Fatalf("read the repository: %d %s", got.Status, got.Body)
+		}
+		if a := f.st.Do(f.api, "PATCH", path, f.adm, []byte(body), "If-Match", got.Header.Get("ETag"), "Content-Type", "application/merge-patch+json"); a.Status != http.StatusOK {
+			t.Fatalf("%s: %d %s", body, a.Status, a.Body)
+		}
+	}
+	patch(`{"disabled":true}`)
+	// The worker starts before the row is switched: its start writes repositories of its own (the project upstream), which every
+	// replica follows, and would end the window the test holds open.
+	f.startWorker()
+	testenv.WaitFor(t, "the replica to hold the repository for disabled", 30*time.Second, func() bool {
+		return f.do("GET", v2("app")+"/manifests/1.0", nil, "Accept", manifestType).Status == http.StatusNotFound
+	})
+	f.st.Exec(`UPDATE repositories SET config = jsonb_set(config, '{disabled}', 'false') WHERE key = $1`, repoKey)
+	f.runScan()
+	const row = `SELECT COALESCE((SELECT state || ' ' || attempts || ' ' || COALESCE(error_code, '-') FROM vuln_image_scan), 'no row')`
+	for deadline := time.Now().Add(60 * time.Second); f.st.Text(row) != "pending 0 repository_disabled"; time.Sleep(50 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatalf("the scan was not put off as repository_disabled within 60 s; the row reads %q (state, attempts, code)", f.st.Text(row))
+		}
+	}
+	if n := f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE attempts > 0 OR state = 'failed'`); n != 0 {
+		t.Fatalf("%d rows spent an attempt or failed", n)
+	}
+	if n := f.an.started.Load(); n != 0 {
+		t.Fatalf("%d analyses of an image the scanner could not pull", n)
+	}
+	// The row says enabled already, so the switch through the API goes off and on again: the second write is the change the replicas
+	// follow.
+	patch(`{"disabled":true}`)
+	patch(`{"disabled":false}`)
+	testenv.WaitFor(t, "the repository readable again", 30*time.Second, func() bool {
+		return f.do("GET", v2("app")+"/manifests/1.0", nil, "Accept", manifestType).Status == http.StatusOK
+	})
+	f.st.Exec(`UPDATE vuln_image_scan SET not_before = now()`)
+	f.runScan()
+	testenv.WaitFor(t, "the image scanned once every replica follows the switch", 60*time.Second, func() bool {
+		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE state = 'scanned' AND attempts = 0`) == 1
+	})
+}
+
 // R-VULN-041, Q-VULN-168: before any database exists the job still has the scanner analyse what has no analysis; the row stays pending,
 // the evaluation never reads as clean, and the first database detects without reading a layer again.
 func TestR_VULN_041_AnImageIsAnalysedBeforeAnyDatabaseExists(t *testing.T) {

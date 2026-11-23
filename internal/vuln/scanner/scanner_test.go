@@ -476,6 +476,19 @@ func TestR_VULN_042_TheAnswersOfTheScanListenerMapToTheirCodes(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 			return true
 		}, http.StatusUnprocessableEntity, imagescan.CodeLayerMissing},
+		{"Q-VULN-226 a repository the listener holds for disabled is repository_disabled, not the image's", func(w http.ResponseWriter, _ *http.Request) bool {
+			w.Header().Set(ErrorCodeHeader, "repository_disabled")
+			w.WriteHeader(http.StatusNotFound)
+			return true
+		}, http.StatusConflict, imagescan.CodeRepositoryDisabled},
+		{"Q-VULN-226 a layer of a repository the listener holds for disabled is repository_disabled too", func(w http.ResponseWriter, r *http.Request) bool {
+			if strings.HasSuffix(r.URL.Path, layer) {
+				w.Header().Set(ErrorCodeHeader, "repository_disabled")
+				w.WriteHeader(http.StatusNotFound)
+				return true
+			}
+			return false
+		}, http.StatusConflict, imagescan.CodeRepositoryDisabled},
 		{"a refused token is pull_refused", func(w http.ResponseWriter, _ *http.Request) bool {
 			w.WriteHeader(http.StatusUnauthorized)
 			return true

@@ -127,10 +127,11 @@ func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	h.Set("Content-Type", "application/json")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Docker-Distribution-API-Version", "registry/2.0")
-	if p.Code == errs.CodePopulateNotPermitted {
+	if p.Code == errs.CodePopulateNotPermitted || p.Code == errs.CodeRepositoryDisabled {
 		// The registry's shape has no member for quader's code: the image scanning's pull tells an uncached layer of a remote from a
-		// refused scan token by this header (vulnerability-scanning.md R-VULN-042, Q-VULN-180). The 403 already says the caller may
-		// read the repository, so the header reveals nothing more.
+		// refused scan token by this header (vulnerability-scanning.md R-VULN-042, Q-VULN-180), and a repository the replica holds for
+		// disabled from one that does not hold the manifest or the layer (Q-VULN-226). The 403 already says the caller may read the
+		// repository, and the message of repository_disabled already says it is disabled, so the header reveals nothing more.
 		h.Set(errorCodeHeader, p.Code)
 	}
 	switch e.Kind {

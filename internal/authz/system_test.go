@@ -63,6 +63,26 @@ func TestR_OCI_037_TheScanSubjectReadsTheRepositoryItsTokenNamesAndNothingElse(t
 			t.Fatalf("decision %+v err %v", d, d.Err())
 		}
 	})
+	t.Run("Q-VULN-226 a refusal for the switch alone names repository_disabled, every other refusal is the plain 404", func(t *testing.T) {
+		d := e.DecideOn(ctx, idx, scanSub("docker-off"), read("docker-off", "app", "app/_manifests/sha256:x"))
+		if ee, ok := errs.As(d.Err()); d.Reason != ReasonRepositoryDisabled || !ok || ee.Status() != 404 || ee.Code != errs.CodeRepositoryDisabled {
+			t.Fatalf("the disabled repository: decision %+v err %v", d, d.Err())
+		}
+		for _, tc := range []struct {
+			sub Subject
+			c   Coordinate
+		}{
+			{scanSub("docker-local"), read("docker-off", "app", "")},                 // the switch, but not the token's repository
+			{scanSub("docker-off"), write("docker-off", "app", "app/_blobs/x", Deploy)}, // the switch, but a write
+			{scanSub("npm-local"), read("npm-local", "left-pad", "")},
+			{scanSub("docker-gone"), read("docker-gone", "app", "")},
+		} {
+			d := e.DecideOn(ctx, idx, tc.sub, tc.c)
+			if ee, ok := errs.As(d.Err()); d.Reason != ReasonNoGrant || !ok || ee.Code != errs.CodeNotFound {
+				t.Errorf("%s on %s: decision %+v err %v, want the plain 404", tc.sub.SystemRepo, tc.c.Repository, d, d.Err())
+			}
+		}
+	})
 	t.Run("R-AUTHZ-002 it holds no capability, no role and is not internal", func(t *testing.T) {
 		sub := scanSub("docker-local")
 		if e.HoldsOn(idx, sub, string(SettingsRead)) || sub.Internal() || idx.rolesOf(sub) != 0 {

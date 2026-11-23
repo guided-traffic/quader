@@ -30,6 +30,9 @@ const (
 	ReasonExposure                = "deny.exposure"
 	ReasonEndpointReadOnly        = "deny.endpoint_read_only"
 	ReasonEpochUnknown            = "deny.epoch-unknown"
+	// ReasonRepositoryDisabled: a system subject's rule refused only because the repository is disabled in the replica's index
+	// (system.go, Q-VULN-226); the 404 names the code repository_disabled.
+	ReasonRepositoryDisabled = "deny.repository-disabled"
 	// ReasonPopulate: the caller may read the remote repository but not populate
 	// it (R-AUTHZ-008); ReasonOwnership: the action is allowed, ownership is not
 	// (R-AUTHZ-018).
@@ -96,6 +99,11 @@ func (d Decision) Err() error {
 		return errs.E(errs.PreconditionFailed, errs.CodeAuthzEpochUnknown,
 			"The authorization epoch named in Quader-Authz-Min-Epoch has not been reached by the database.")
 	case DenyHidden:
+		if d.Reason == ReasonRepositoryDisabled {
+			// Only a system subject's decision has this reason, for the repository its token names (system.go): the scanner tells it
+			// from a manifest or a layer the repository does not hold.
+			return errs.E(errs.NotFound, errs.CodeRepositoryDisabled, "The repository is disabled.")
+		}
 		return NotFound()
 	case DenyVisible:
 		switch d.Reason {

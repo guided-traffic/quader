@@ -37,17 +37,32 @@ func imageScannerReads(sub Subject, r *repoInfo, a Action) bool {
 		(r.Class == repository.Local || r.Class == repository.Remote) && !r.disabled
 }
 
+// enabled is a copy of the repository with its switch on: what a system subject's rule would decide but for the switch.
+func enabled(r *repoInfo) *repoInfo {
+	on := *r
+	on.disabled = false
+	return &on
+}
+
 // isSystem reports whether the subject is a system subject.
 func isSystem(sub Subject) bool { return sub.Kind == principal.KindSystem }
 
 // decideSystem is the decision on a coordinate of a system subject: its rule for every action, nothing else. A refusal is the 404
-// of a repository the caller cannot see (R-AUTHZ-016), whatever the repository's hideExistence says.
+// of a repository the caller cannot see (R-AUTHZ-016), whatever the repository's hideExistence says. A refusal that the repository's
+// switch alone causes carries the reason deny.repository-disabled, and its answer names the code repository_disabled (Q-VULN-226): the
+// scan token's repository was enabled when the job read its row, so the replica's index has not followed the switch yet, and the scanner
+// puts the scan off without an attempt. Only a system subject reaches this, for the repository its own token names, so the code tells no
+// client anything.
 func (e *Engine) decideSystem(idx *Index, sub Subject, c Coordinate, actions []Action, epoch int64) Decision {
 	r := idx.repo(c.Repository)
 	rule, ok := systemRuleOf(sub.Name)
 	for _, a := range actions {
 		if r == nil || !ok || !rule(sub, r, a) {
-			return Decision{Outcome: DenyHidden, Reason: ReasonNoGrant, Missing: a, Target: targetOf(c), Epoch: epoch}
+			reason := ReasonNoGrant
+			if r != nil && ok && r.disabled && rule(sub, enabled(r), a) {
+				reason = ReasonRepositoryDisabled
+			}
+			return Decision{Outcome: DenyHidden, Reason: reason, Missing: a, Target: targetOf(c), Epoch: epoch}
 		}
 	}
 	return Decision{Outcome: Allow, Reason: ReasonAllowSystem, Epoch: epoch, Target: targetOf(c), Sources: []string{"system:" + sub.Name}}

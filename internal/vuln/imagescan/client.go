@@ -41,8 +41,11 @@ const (
 	CodeScannerUnavailable  = "scanner_unavailable"
 	CodeRegistryUnavailable = "registry_unavailable"
 	CodePullRefused         = "pull_refused"
-	CodeScannerLost         = "scanner_lost"
-	CodeMalformedRequest    = "malformed_request"
+	// CodeRepositoryDisabled: the scan listener's replica held the call's repository for disabled while the job had read it enabled
+	// (Q-VULN-226): a repository just enabled whose replica has not followed yet.
+	CodeRepositoryDisabled = "repository_disabled"
+	CodeScannerLost        = "scanner_lost"
+	CodeMalformedRequest   = "malformed_request"
 )
 
 // The waits of a scan put off for a reason of the installation (R-VULN-034): no attempt is spent.
@@ -267,6 +270,8 @@ func problemOf(res *http.Response) error {
 		return &ScanError{Code: CodeRegistryUnavailable, Defer: scannerRetryAfter, Detail: "the scanner could not reach the scan listener of packages: " + detail}
 	case http.StatusForbidden:
 		return &ScanError{Code: CodePullRefused, Defer: pullRefusedWait, Detail: "the scan listener refused the scan token: " + detail}
+	case http.StatusConflict:
+		return &ScanError{Code: CodeRepositoryDisabled, Defer: scannerRetryAfter, Detail: "the scan listener held the repository for disabled: " + detail}
 	case http.StatusUnprocessableEntity:
 		switch {
 		case p.Code == CodeSpoolTooSmall:

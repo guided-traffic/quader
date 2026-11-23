@@ -370,6 +370,8 @@ func (s *Service) callErrorOf(ctx context.Context, err error) *callError {
 		return &callError{status: http.StatusForbidden, code: imagescan.CodePullRefused, detail: err.Error()}
 	case errors.Is(err, errRegistryUnavailable):
 		return &callError{status: http.StatusBadGateway, code: imagescan.CodeRegistryUnavailable, detail: err.Error()}
+	case errors.Is(err, errRepositoryDisabled):
+		return &callError{status: http.StatusConflict, code: imagescan.CodeRepositoryDisabled, detail: err.Error()}
 	}
 	s.o.Log.Error("an analysis failed", "error", err)
 	return &callError{status: http.StatusUnprocessableEntity, code: imagescan.CodeAnalyserFailed, detail: "the analysis failed; the scanner's log has the cause"}
