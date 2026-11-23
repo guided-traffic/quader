@@ -73,7 +73,10 @@ export class UsageByRepositoryTable {
   }
 }
 
-/** **By credential** of a user (R-UI-184): the browser session and each personal token by its description and hint. */
+/**
+ * **By credential** (R-UI-184): a user's browser session and each personal token by its description and hint; a certificate subject's
+ * certificates by serial (R-LIM-027), so that a renewed certificate stands beside the one it replaced.
+ */
 @Component({
   selector: 'quader-usage-by-credential',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,11 +89,16 @@ export class UsageByRepositoryTable {
       [empty]="rows().length === 0"
       [emptyText]="emptyText()"
     >
-      @for (r of rows(); track r.credential.kind === 'token' ? r.credential.id : 'session') {
+      @for (r of rows(); track trackOf(r)) {
         <tr>
           <th scope="row">
             @if (r.credential.kind === 'session') {
               <ng-container i18n="@@usage.credential.session">Browser session</ng-container>
+            } @else if (r.credential.kind === 'certificate') {
+              <span class="token">
+                <span i18n="@@usage.credential.certificate">Client certificate</span>
+                <code class="secondary" translate="no">{{ r.credential.serial }}</code>
+              </span>
             } @else {
               <span class="token">
                 <span>{{ r.credential.description || tokenWord }}</span>
@@ -123,6 +131,10 @@ export class UsageByCredentialTable {
   readonly rows = input.required<readonly UsageByCredential[]>();
   readonly emptyText = input('');
   protected readonly tokenWord = $localize`:@@usage.credential.token:Personal token`;
+  protected trackOf(r: UsageByCredential): string {
+    const c = r.credential;
+    return c.kind === 'token' ? `token:${c.id}` : c.kind === 'certificate' ? `certificate:${c.serial}` : 'session';
+  }
   protected readonly columns: readonly TableColumn[] = [
     { id: 'credential', label: $localize`:@@usage.col.credential:Credential`, width: '12rem', prefer: true },
     { id: 'requests', label: $localize`:@@usage.col.requests:Requests`, numeric: true },

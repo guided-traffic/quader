@@ -61,6 +61,19 @@ export class GuideView {
     // A command of the prose is copied like a snippet (R-UI-125): each code block gets the copy button of the snippets.
     afterRenderEffect(() => {
       this.sections();
+      // Each cell of a table carries its column's name, which a narrow page shows before the value when the rows stand as blocks
+      // (guide-view.scss, Q-UI-971).
+      for (const table of this.host.nativeElement.querySelectorAll<HTMLTableElement>('.readme table')) {
+        const names = Array.from(table.tHead?.rows[0]?.cells ?? []).map((c) => (c.textContent ?? '').trim());
+        for (const body of Array.from(table.tBodies)) {
+          for (const row of Array.from(body.rows)) {
+            Array.from(row.cells).forEach((cell, i) => {
+              const name = names[i];
+              if (name) cell.setAttribute('data-label', name);
+            });
+          }
+        }
+      }
       for (const pre of this.host.nativeElement.querySelectorAll<HTMLPreElement>('.readme pre')) {
         if (pre.parentElement?.classList.contains('prose-code')) continue;
         const wrap = document.createElement('div');

@@ -41,7 +41,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
  * A caller's usage, and which limit applies (R-UI-184): the caller as the title, under it its kind and its reference (a user's
  * `@name`, a technical token's account, Q-UI-765); a block with
  * **Lift block** for whoever may lift it; the limits of each budget key now with their meters; **Explain for a repository**; the
- * last 24 hours; and, for the period of the head, **By repository** and, for a user, **By credential**. In a project only the
+ * last 24 hours; and, for the period of the head, **By repository** and, for a user and a certificate subject, **By credential**. In a project only the
  * project's repositories are counted (R-LIM-029).
  */
 @Component({
@@ -101,7 +101,8 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
         <quader-usage-by-repository [rows]="d.repositories" [emptyText]="emptyText()" />
       </section>
 
-      @if (d.subject.kind === 'user') {
+      <!-- A user's session and tokens, a certificate subject's certificates (R-UI-184, R-LIM-027). -->
+      @if (d.subject.kind === 'user' || d.subject.kind === 'certificate') {
         <section class="section" aria-labelledby="credentials-title">
           <h2 id="credentials-title" i18n="@@usage.by-credential">By credential</h2>
           <quader-usage-by-credential [rows]="d.credentials" [emptyText]="emptyText()" />

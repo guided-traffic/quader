@@ -116,4 +116,21 @@ describe('Guides', () => {
     expect(rows[0]!.getAttribute('lang')).toBe('en');
     await expectAccessible(r.root);
   });
+
+  it('R-UI-125 Q-UI-971 every cell of a table carries its column\'s name, which a narrow page shows when the rows stand as blocks', async () => {
+    const r = await renderScreen(GuideView, {
+      inputs: {
+        sections: [
+          {
+            id: 'clamav.troubleshooting',
+            topic: 'troubleshooting',
+            title: 'Troubleshooting',
+            html: '<table><thead><tr><th>What <code>freshclam</code> reports</th><th>Why</th><th>What to do</th></tr></thead><tbody><tr><td><code>401</code></td><td>No token</td><td>Put a valid token into the address</td></tr></tbody></table>',
+          },
+        ],
+      },
+    });
+    const cells = [...r.root.querySelectorAll('.readme tbody td')].map((c) => c.getAttribute('data-label'));
+    expect(cells).toEqual(['What freshclam reports', 'Why', 'What to do']);
+  });
 });

@@ -23,6 +23,7 @@ import {
   repositoryServiceAccount,
   serviceAccount,
   blockedAddress,
+  certificateSubject,
   ciIssuer,
   ciProject,
 } from './seed';
@@ -2539,6 +2540,8 @@ export const screens: readonly Screen[] = [
   // The usage and the download limits (R-UI-177 to R-UI-184): the administrator changes, the auditor reads.
   { id: 'admin-usage', path: '/ui/admin/usage', kinds: auditors, walk: usageWalk },
   { id: 'admin-usage-caller', path: `/ui/admin/usage/user/${kinds.power}`, kinds: auditors, walk: usageDetailWalk },
+  // A ClamAV installation's certificate subject: its certificates by serial under By credential (R-UI-184, R-LIM-027).
+  { id: 'admin-usage-caller-certificate', path: `/ui/admin/usage/certificate/${encodeURIComponent(certificateSubject)}`, kinds: ['admin'] },
   // A blocked anonymous address and a CI project as callers (R-UI-184): the block's notice, a subject without credentials.
   { id: 'admin-usage-caller-blocked', path: `/ui/admin/usage/anonymous/${blockedAddress}`, kinds: admins, walk: limitsModes },
   { id: 'admin-usage-caller-ci', path: `/ui/admin/usage/ci/${ciIssuer}:${ciProject.id}`, kinds: admins },

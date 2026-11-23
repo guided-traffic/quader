@@ -18,16 +18,68 @@ quader-guide-view {
     margin-block-start: 0;
   }
 
-  // A troubleshooting table fits the column (R-UI-125): its first column is a status, not a name, and a long code breaks inside
-  // itself instead of widening the table past the page.
+  // A troubleshooting table fits the column (R-UI-125): its first column is a status (npm's 404) or a sentence (ClamAV's "A curl
+  // error such as ..."), so it wraps like the others, and a long code breaks inside itself instead of widening the table past the
+  // page. As one line, ClamAV's first column took the page at 390 px and left the reason and the remedy a word wide.
   .guide-prose .readme :is(th, td):first-child {
     min-inline-size: 0;
-    white-space: nowrap;
   }
 
   .guide-prose .readme :is(th, td) code {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  // Where the page is narrow, a table's rows stand as blocks (Q-UI-971), as a list's do (R-UI-174): the first cell, what the client
+  // reports, on a line of its own in the weight of a name, then every other cell under it with its column's name before the value
+  // (`data-label`, set by guide-view.ts). Three or four columns of sentences cannot be read side by side at 390 px.
+  @container content (max-width: 40rem) {
+    .guide-prose .readme .readme-table {
+      overflow-x: visible;
+    }
+
+    .guide-prose .readme table,
+    .guide-prose .readme tbody,
+    .guide-prose .readme tr,
+    .guide-prose .readme td {
+      display: block;
+    }
+
+    .guide-prose .readme thead {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .guide-prose .readme tr {
+      padding-block: var(--quader-space-2);
+      border-block-end: 1px solid var(--quader-border);
+    }
+
+    .guide-prose .readme tr:first-child {
+      border-block-start: 1px solid var(--quader-border);
+    }
+
+    .guide-prose .readme td {
+      padding: 0;
+      border: 0;
+    }
+
+    .guide-prose .readme td + td {
+      margin-block-start: var(--quader-space-1);
+    }
+
+    .guide-prose .readme td:first-child {
+      font-weight: 600;
+    }
+
+    .guide-prose .readme td + td[data-label]::before {
+      content: attr(data-label) ' ';
+      color: var(--quader-text-muted);
+    }
   }
 
   // A code block of the prose wraps a long line instead of hiding it, and has the copy button of the snippets beside it.

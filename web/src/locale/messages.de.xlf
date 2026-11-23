@@ -50079,5 +50079,11 @@
         <target>Advisory-Daten nicht aktuell</target>
       </segment>
     </unit>
+    <unit id="usage.credential.certificate">
+      <segment>
+        <source>Client certificate</source>
+        <target>Client-Zertifikat</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

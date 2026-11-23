@@ -7299,7 +7299,9 @@ Priority: **MVP** · Covers: quader-only
   is closed too ([Q-UI-805](#q-ui-805--the-guide-is-a-list-of-closed-rows-under-one-heading), revising Q-UI-485). The headings are the
   contents: no contents box stands above the page.
 - A line of the prose (paragraphs, lists, the prose's own headings) is at most 70 characters wide; a table or a code block may
-  take the page's column, which is the settings measure (56 rem).
+  take the page's column, which is the settings measure (56 rem). Every column of a table wraps; where the page is narrower than
+  40 rem a table's rows stand as blocks, the first cell on a line of its own, every other cell under it with its column's name
+  before the value ([Q-UI-971](#q-ui-971--a-guides-table-stands-as-blocks-where-the-page-is-narrow)).
 - Every code block of the prose has a copy button (**Copy code**). A line too long for its block wraps instead of being cut off.
   The copy buttons copy the text unchanged.
 - The format's text carries `lang="en"`; the frame is translated (Q-UI-86).
@@ -8360,8 +8362,10 @@ caller, not its reference: a user's display name ("Priya Raman"), a technical to
   screen-reader users; the colours follow the design tokens.
 - **By repository** (for the period of the head): repository, requests, from the cache, from the upstream, upstream requests,
   refused; sortable.
-- **By credential** (users only): **Browser session** and each personal token by its description and hint, with requests, from the
-  cache and from the upstream.
+- **By credential** (a user and a certificate subject): a user's **Browser session** and each personal token by its description and
+  hint; a certificate subject's certificates, each **Client certificate** with its serial, so that a renewed certificate stands
+  beside the one it replaced ([usage-and-limits.md](usage-and-limits.md) R-LIM-027); with requests, from the cache and from the
+  upstream.
 - The period control of R-UI-183 stands in the head and changes **By repository** and **By credential**; the limits and the 24 hours
   stay "now".
 
@@ -22259,6 +22263,28 @@ sees no case for revisiting this.
 **Applied in the spec:** [architecture.md](architecture.md) R-ARCH-008, [formats/npm.md](formats/npm.md) R-NPM-038. Code:
 [settings.go](../../internal/formats/catalog/settings.go), [settings.schema.json](../../internal/formats/npm/settings.schema.json),
 [settings-schema.ts](../../web/src/app/features/repositories/settings-schema.ts).
+
+### Q-UI-971 · A guide's table stands as blocks where the page is narrow
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "The client setup of the ClamAV definitions: its
+table of troubleshooting is squeezed at 390 px"; the owner reviews it at the walkthrough.
+
+Context: a guide's first column did not wrap, written for npm's status codes; ClamAV's, Debian's, OCI's and Ansible's troubleshooting
+tables have a sentence there, which took the page at 390 px and left the reason and the remedy a word wide in a region that scrolled.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every column wraps; below 40 rem of the page each row is a block: the first cell on a line of its own, each other cell under it with its column's name before the value (chosen) | `data-label` set by the guide view, CSS of the stacked list's look | Readable on a phone for every format's table; the same reading order as a stacked list (R-UI-174) | The table's head is for assistive technology there |
+| (b) The table scrolls sideways at 390 px | — | Kept as a table | Three columns of sentences read through a slot |
+| (c) The guides' tables rewritten as lists | Markdown changes | No layout needed | Seven formats' guides change, and the wide form loses its table |
+
+**Choice:** (a).
+
+**Rationale:** a table of sentences is read row by row; at a phone's width a row is a block. The development agent sees no case for
+revisiting this.
+
+**Applied in the spec:** R-UI-125. Code: [guide-view.ts](../../web/src/app/features/guides/guide-view.ts),
+[guide-view.scss](../../web/src/app/features/guides/guide-view.scss).
 
 ### Q-UI-972 · A narrow audit event puts each fact's name above its value
 

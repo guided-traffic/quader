@@ -1,6 +1,6 @@
 Put the line of the snippet into `freshclam.conf` (`/etc/clamav/freshclam.conf` with the packages of most distributions). `PrivateMirror` replaces ClamAV's own network, its DNS record and its patch files; `DatabaseMirror` lines may stay, `PrivateMirror` wins. `ScriptedUpdates`, `DNSDatabaseInfo` and `Checks` need no change. Quader serves no patch files, so name Quader in `PrivateMirror` only, never in `DatabaseMirror`.
 
-The address is `{{.RegistryURL}}` without its trailing slash, with the scheme written out: `freshclam` reads an address without a scheme as `http://`.
+Write the address as the snippet does: without a trailing slash, which `freshclam` adds itself before a file name, and with its scheme, since `freshclam` reads an address without one as `http://`.
 
 ### The certificate
 

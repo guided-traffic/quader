@@ -172,6 +172,32 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
     expect([...root.querySelectorAll('#explain-repositories option')].map((o) => o.getAttribute('value'))).toEqual(['web/npm-remote']);
   });
 
+  it('R-UI-184 R-LIM-027 a certificate subject lists its certificates by serial under By credential, a renewed one beside the one it replaced', async () => {
+    const subject = 'CN=clamav-scan-01.example.com,O=Example GmbH';
+    const { root } = await renderScreen(UsageDetailPage, {
+      capabilities: ['usage:read'],
+      inputs: { kind: 'certificate', id: subject },
+      setup: (get) => {
+        const api = get(LimitsApi) as FakeLimitsApi;
+        api.detailValue = {
+          ...api.detailValue,
+          subject: { kind: 'certificate', id: subject, name: subject },
+          credentials: [
+            { credential: { kind: 'certificate', serial: '5c2f9e0b71a4d3e8' }, requests: 96, cachedBytes: 2_300_000_000, uncachedBytes: 0 },
+            { credential: { kind: 'certificate', serial: '0a7d33c19f6e2b45' }, requests: 12, cachedBytes: 110_000_000, uncachedBytes: 0 },
+          ],
+        };
+      },
+    });
+    const section = [...root.querySelectorAll('section')].find((s) => text(s).startsWith('By credential'))!;
+    const rows = [...section.querySelectorAll('tbody tr th')].map((th) => [...th.querySelectorAll('.token > *')].map((e) => text(e)));
+    expect(rows).toEqual([
+      ['Client certificate', '5c2f9e0b71a4d3e8'],
+      ['Client certificate', '0a7d33c19f6e2b45'],
+    ]);
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
   it('R-UI-184 a blocked caller shows the block and Lift block for an administrator', async () => {
     const { root } = await renderScreen(UsageDetailPage, {
       capabilities: ['usage:read', 'limits:read', 'limits:write'],

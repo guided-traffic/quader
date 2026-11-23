@@ -987,6 +987,8 @@ export const ciProject = { id: '4711', path: 'acme/customer-portal/web-frontend'
 export const anonymousV6 = '2001:db8:1:2::/64';
 export const blockedAddress = '198.51.100.23';
 export const quietAddress = '203.0.113.9';
+/** The certificate subject of a ClamAV installation that fetches the definitions with its client certificate (R-CLAMAV-010). */
+export const certificateSubject = 'CN=clamav-scan-01.example.com,O=Example GmbH';
 
 /**
  * The UI development profile's PostgreSQL container (deploy/ui-dev/compose.yaml). UI_RENDERS_POSTGRES names another one: a
@@ -1042,10 +1044,13 @@ SELECT gen_random_uuid(), i.id, '{}', '{}', 'id_token', ${lit(ciProject.id)}, ${
  * refused requests in the last 24 hours and, of those, in the last hour, and the profile whose limits the rows record.
  */
 interface UsageSeed {
-  readonly kind: 'user' | 'technical_token' | 'ci' | 'anonymous' | 'system';
+  readonly kind: 'user' | 'technical_token' | 'ci' | 'certificate' | 'anonymous' | 'system';
   /** The subject's reference, as SQL. */
   readonly ref: string;
-  /** The credential column (R-LIM-027): a user's session or personal token, empty for the other kinds; as SQL. */
+  /**
+   * The credential column (R-LIM-027): a user's session or personal token, a certificate subject's certificate serial, empty for the
+   * other kinds; as SQL.
+   */
   readonly credential: string;
   readonly place: string;
   readonly repo: string;
@@ -1095,6 +1100,11 @@ function usageSeeds(): readonly UsageSeed[] {
       repo: repoId(otherProject, 'docker-hub-remote'), day: [61, 0, 0, 0, 61], hour: [61, 0, 0, 0, 61], profile: 'anonymous' },
     { kind: 'anonymous', ref: lit(quietAddress), credential: `''`, place: repoPlace(mainProject, 'npmjs'), repo: repoId(mainProject, 'npmjs'),
       day: [1_400, 30 * MB, 2 * MB, 3, 0], hour: [12, 0, 0, 0, 0], profile: 'anonymous' },
+    // A ClamAV installation by its certificate's subject, its certificate renewed this month: two serials (Q-CLAMAV-12).
+    { kind: 'certificate', ref: lit(certificateSubject), credential: `'5c2f9e0b71a4d3e8'`, place: `'instance'`, repo: repoId('upstream', 'clamav'),
+      day: [96, 2_300 * MB, 0, 0, 0], hour: [4, 120 * MB, 0, 0, 0], profile: 'technical' },
+    { kind: 'certificate', ref: lit(certificateSubject), credential: `'0a7d33c19f6e2b45'`, place: `'instance'`, repo: repoId('upstream', 'clamav'),
+      day: [12, 110 * MB, 0, 0, 0], hour: [0, 0, 0, 0, 0], profile: 'technical' },
     { kind: 'system', ref: `'system'`, credential: `''`, place: `'instance'`, repo: repoId(otherProject, 'docker-hub-remote'),
       day: [0, 0, 40 * GB, 2_000, 0], hour: [0, 0, 1_600 * MB, 80, 0], profile: null },
   ];
