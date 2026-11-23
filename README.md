@@ -3803,7 +3803,7 @@ metrics:
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     relabelings: []                     # default; appended after the fixed role and pool relabelings
     metricRelabelings: []               # default
-  prometheusRule:                       # R-HA-045; 48 alerts, of which the four QuaderMalware* only with config.malware.enabled, the four QuaderSignature* only with config.signatures.enabled, the four QuaderSigning* only with config.signing.enabled and the six QuaderBackup* run alerts only with backup.enabled
+  prometheusRule:                       # R-HA-045; 55 alerts, of which the four QuaderMalware* only with config.malware.enabled, the four QuaderSignature* only with config.signatures.enabled, the four QuaderSigning* only with config.signing.enabled and the six QuaderBackup* run alerts only with backup.enabled
     enabled: false                      # default; true renders the PrometheusRule <fullname>; needs the Prometheus operator's CRDs
     labels: {}                          # default; example: {release: kube-prometheus-stack}
     disabledAlerts: []                  # default; example: [QuaderVulnerabilitySyncFailing]; a name that is no alert of the chart fails the render

@@ -4266,6 +4266,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Does a package-name `*` cross a slash? | (a) yes; (b) no | (b), per the table of R-AUTHZ-005 (`@acme/*` must not match `@acme/a/b`; `*` matches one unscoped name) |
 | Case folding | (a) all formats; (b) NuGet only | (b): the pattern and the name are lower-cased for repositories of the format `nuget`, decided per repository at the build |
 
+**Choice:** `**` is zero or more whole segments (so `releases/**` matches `releases`), `**` inside a segment is `422 invalid_pattern`, a package-name `*` does not cross a slash, and only the repositories of the format `nuget` fold case.
+
 **Rationale:** each choice is the narrower reading where the text is silent, because a grant that matches too much cannot be seen from the policy. The development agent would revisit the first row if a format page defines paths where a directory and a file share a name.
 
 **Applied in the spec:** none.
@@ -4280,6 +4282,8 @@ R-AUTHZ-009 sends writes through a virtual repository to its deploy target and l
 |---|---|---|
 | Is a `manage` request on a virtual repository a write "through" it? | (a) yes, decided on the deploy target; (b) no, decided on the virtual repository | (b): a request is rerouted to the deploy target only when it asks for an action other than `read` and `manage` |
 | What does a write answer when the caller lacks the gate? | (a) 404 as for a refused read; (b) 403 | (b): the acceptance criterion of R-AUTHZ-009 ("without `read` on `npm-all`, the same command gets 403") and the rule that a refused write is 403 whether or not the target exists |
+
+**Choice:** a `manage` request on a virtual repository is decided on the virtual repository itself, and a write refused at the gate answers `403`.
 
 **Rationale:** both follow the text where it is explicit and keep the answer independent of what exists. The development agent would revisit the first row if a format defines a `manage` operation that acts on content.
 
@@ -4403,6 +4407,8 @@ Status: **Decided by the development agent** — selected from the options below
 | `GET /authz/me` | `roles`, `capabilities`, `principals`, `scope` (`null` for a credential without a ceiling, else `inherit`, `admin`, `system`, `grants`), `projects` (the projects the caller administers, `[]` otherwise; Q-AUTHZ-181) and `epoch`; the members the shell reads (`capabilities`, `principals`) keep their names |
 | `POST /authz/check` | At most 100 checks (`422 validation_failed` beyond), an unknown action `422 invalid_action`, no credential `401`; the answer carries the epoch of the index that decided all of them |
 | Which operations carry `Quader-Authz-Epoch` | Policy create, replace, patch and delete, role bind and unbind (an existing binding answers the current epoch). A replay of an idempotent create answers the epoch of the first answer |
+
+**Choice:** the shapes the table lists, each the representation the requirement shows: `already_exists` for a policy name that exists, `200` with `valid: false` from the validation, the fixed roles in one page, a binding without a body, lists paged in memory, at most 100 checks, and the epoch header on every write of a policy or a binding.
 
 **Rationale:** each is the reading that keeps the answer identical on every replica and the representation the one the requirement shows. The development agent would revisit the paging of the policy list when a policy count above a thousand is seen.
 

@@ -5696,6 +5696,8 @@ Status: **Decided by the development agent** — selected from the options below
 | The outcome of `authz.denied` | `denied` (it was `failure`); the filter `outcome=denied` finds refusals (Q-OPS-40) |
 | Reading the trail | A query or a read of one event is not itself an event; only the export is (R-OPS-017). That is [H-144](../security/audit.md#h-144--reading-the-audit-trail-leaves-no-event-except-for-the-export) |
 
+**Choice:** the shapes the table lists: pages of 1 to 1,000 events, the capability `audit:read`, `400` for a malformed parameter, both bounds of an export required, `audit.exported` committed before the first byte and batches of 1,000, a cut answer when a batch fails, a CSV with guarded formula cells, the outcome `denied` for `authz.denied`, and no event for a read.
+
 **Rationale:** each follows R-OPS-017 where it is explicit and keeps a long export from holding a transaction. The development agent would revisit the cut export if a client library cannot tell an aborted chunked answer from a complete one.
 
 **Applied in the spec:** R-OPS-017: the capability is written `audit:read`.

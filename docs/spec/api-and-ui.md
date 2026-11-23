@@ -9743,6 +9743,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Who sees "Re-encrypt now" | `admin` role; any holder of `settings:write` | The action needs `admin` (R-API-049) and `authz/me` lists capabilities, not roles; the UI offers it to holders of `content:bypass`, which only `admin` bundles (R-AUTHZ-010). The API refuses anyone else |
 | When the Administration area appears | Any capability; a named list | Any capability in `authz/me` (R-UI-002). Each entry additionally needs its own: repositories `repositories:read-config`, users, groups and service accounts `identities:read`, permission policies `policies:read`, system roles `roles:read`, tokens `tokens:read`, endpoints `endpoints:read`, audit log `audit:read`, system status and settings `settings:read` |
 
+**Choice:** the status screen renders the cards the API serves (completed by Q-UI-19), replicas that disagree about the primary get a fixed grace of 30 s, "Re-encrypt now" is offered to holders of `content:bypass`, and the Administration area appears for any capability, each entry with its own.
+
 **Rationale:** Each choice follows the nearest requirement and stays removable: the grace constant and the capability map are one line each. The development agent would revisit the
 re-encryption gate when `authz/me` also reports roles.
 
@@ -9794,6 +9796,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Hashing | Never; always; up to 256 MiB | Up to 256 MiB the browser computes SHA-256 and sends `Repr-Digest` (R-UI-012). A file that cannot be read for hashing is still sent |
 | A cut upload | Fail; retry once | One retry from the start with the `File` in hand after a request that got no answer. If the retry answers `412` (the first attempt did commit), the dialog reads the item and counts the upload as done when the stored SHA-256 equals the one it computed |
 
+**Choice:** a second `HttpClient` on XHR for the progress, `If-None-Match: *` unless the caller ticks "Replace files that already exist", SHA-256 in `Repr-Digest` up to 256 MiB, and one retry of a cut upload.
+
 **Rationale:** Each choice is the literal reading of R-UI-012 and R-ARCH-014; the create-only default makes an accidental overwrite impossible without the permission and the switch. The development agent would revisit the second client when `fetch` upload streaming reports progress in all supported browsers.
 
 **Applied in the spec:** R-UI-012 is unchanged (the dialog is P1; the file tree offered it because the API has the operation; since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) a folder of a repository's page does).
@@ -9828,6 +9832,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Delete | Immediate; type the key | The key is typed; `202` is followed by the job progress component until the job ends, and the row disappears when it succeeded. A `repository_referenced` answer repeats the dialog with the "detach" choice |
 | Key availability | `GET` of the key | A `404` after a 400 ms pause means free; any other answer says the check was inconclusive and the server decides at the create |
 
+**Choice:** the list shows last activity instead of the creation time, the forms are hand-built for the generic format's members (the format member since rendered from its schema, Q-UI-78), the wizard offers the union of the formats' classes, an edit is a merge patch with the loaded `ETag`, a delete needs the typed key, and a `404` means a free key.
+
 **Rationale:** The list cannot show what the API does not give, and a request per row would defeat the paging. The development agent would revisit the columns once the summary view has `createdAt`.
 
 **Applied in the spec:** R-UI-020 reads "created" and "sort by creation"; this block records why the list shows last activity until the API changes.
@@ -9846,6 +9852,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Audit action labels | The event name; a label | A translated label for each event name of the registry, the name in code next to it; an unknown name is shown as sent. Filters, the open event and the time zone are query parameters; the export links carry the filter and, when the range is a preset, its resolved bounds |
 | Job progress | Poll fast; poll with an announcement limit | A shared component polls every 2 s and gives assistive technology a new text at most every 10 s and on the final state (R-UI-042) |
 | Status screen | Cards without endpoints; all cards | This work package completes the cards of Q-UI-13's first row: the key card shows the replicas' key rings, the replica that lacks a key ID, the canary with the replica that reported it, the last re-encryption and the next rotation step; the scheduled tasks card runs a task with an `Idempotency-Key`; recent jobs offer "Cancel" for queued and running jobs; `/admin/system/jobs` filters by kind and state and refreshes with a pause control. Backups stay a placeholder (R-UI-048) |
+
+**Choice:** the rule editor follows the format's pattern subject, a rule's save shows a diff first, the preview runs 500 ms after the last change, a client address the endpoint does not serve is flagged, mode `all` shows a banner, audit actions get translated labels, job progress is polled every 2 s and announced at most every 10 s, and every card of the status screen but backups is completed.
 
 **Rationale:** Each row is the literal requirement where the API allows it and the narrowest reading where it does not. The development agent would revisit the tag handling when the descriptor reports its dimensions.
 
@@ -9945,6 +9953,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Audit link on the user detail | Omit; link with a query | A link to `/admin/audit?actor=<username>`; the audit screen's filter parameter is the audit screen's decision |
 | `PermissionCheck.action` type | The generated enum; a string | A string, because callers hold actions in variables; the HTTP body is the generated shape |
 
+**Choice:** a create button disabled with a note and edit controls hidden for a caller without the permission, the token filter as a day count, no invented warnings for what the settings answer lacks, an audit link by actor, and the action of a permission check as a string.
+
 **Rationale:** Each choice follows the nearest requirement and stays a one-line change. The development agent revisits the settings gap when the answer carries the facts.
 
 **Applied in the spec:** R-UI-005, R-UI-030 and R-UI-031 are unchanged; the gaps are recorded here.
@@ -9966,6 +9976,8 @@ Status: **Decided by the development agent** — selected from the options below
 | Reporting | The list only; plus a JSON report | List, HTML (`.out/playwright/report`, uploaded by CI) and, when `TestE1_11Journeys` runs it, JSON, which the Go test turns into one subtest per journey named by its title, so the `go test -json` report says which journey failed |
 | Browsers | Chromium, Firefox and WebKit | Chromium. R-UI-047 asks for all three in the full run on the commit that closes the phase; that run is not set up (the self-hosted runner would install two more browsers, and the journeys have no engine-specific behavior yet) |
 
+**Choice:** Playwright in the Angular workspace, a verified TLS handshake before `ignoreHTTPSErrors`, `--host-resolver-rules` for the IdP's name, one worker in file order without retries, scattering read from the replicas of the responses the page saw, test data through the API, a JSON report turned into a subtest per journey, and Chromium only.
+
 **Rationale:** The choices keep the tier cheap to run on the e2e job that already exists and the verdict unambiguous: a failing journey, an axe violation
 or a CSP violation fails `TestE1_11Journeys`. The development agent would revisit Firefox and WebKit at the end of the milestone, and the single worker if the
 journeys grow past what the 90-minute budget of the e2e job leaves.
@@ -9983,6 +9995,8 @@ Status: **Decided by the development agent** — selected from the options below
 | The label of every `mat-form-field` was `display: none`: the density of -2 sets `--mat-form-field-filled-label-display: none`. Sighted users saw empty boxes; axe reported `label` and `select-name` as critical | Leave the density; give each field an `aria-label` and a visible placeholder; set the token to `block` once | Set `--mat-form-field-filled-label-display: block` on `html` in `main.scss`: the label becomes the floating label and every field of every screen is fixed at once; per-field fixes would repeat in each form |
 | The user menu button had `aria-label="User menu"` while its visible text is the user's name (WCAG 2.5.3, axe `label-content-name-mismatch`, serious, on every screen) | Keep the `aria-label` and add the name to it; drop the `aria-label` and add the words as visually hidden text | Drop the `aria-label`; the name is the visible user name followed by a visually hidden "User menu" (same message id `shell.user-menu`, so the German unit stays valid) |
 | The upload dialog's title, label and hint failed `color-contrast` when axe ran while the dialog was still fading in | Raise the colours; wait for the animation | Wait: `expectAccessible` awaits the finite animations of the document before axe runs. The colours were not wrong (the same dialog passes after the transition) |
+
+**Choice:** the labels of the form fields shown again by one token in `main.scss`, the user menu named by its visible user name with a hidden "User menu", and axe run after the dialog's animation ends.
 
 **Rationale:** The first two were present on every screen and invisible to the jsdom tier; they are the reason the browser tier was worth building.
 The third was a false alarm of timing, not a defect. The development agent would revisit the token if a form needs the compact label-less look again.
@@ -10997,6 +11011,8 @@ the rule for a missing `If-Match`; it replaces what Q-API-24 and Q-API-32 said s
 |---|---|---|
 | The document marks `If-Match` required on `PUT` and `PATCH`, and the generated wrapper answers a missing required header with 400 before any handler runs. R-API-012 says 428 | (a) Mark the header optional in the document and let each handler answer 428. (b) Keep it required and map the wrapper's missing-`If-Match` error to the 428 problem in `bindError` | (b): the document keeps saying the header is needed (a client generated from it sends it), one place answers it for every resource, and the problem is the 428 of `Precondition.Require`. A handler does not check the header again |
 | `Quader-Authz-Epoch` is raised by the change log in a hook just before `COMMIT`, after the operation returned its outcome, yet an idempotent create stores its outcome (R-API-014) and a replay must carry the epoch of the first answer | (a) Leave the header out of a replay. (b) Read the epoch in the operation by locking the epoch row early. (c) Let an outcome complete itself after the commit hooks: `Outcome.Finish` runs in a hook registered after the operation's own, before the outcome is stored | (c): (a) loses what a client that lost the first response needs; (b) takes the epoch row before the policy rows and can deadlock with a writer that takes them in the other order. Every idempotent create that changes authorization data uses it through `finishEpoch` ([Q-API-44](#q-api-44--one-header-name-and-one-setter-for-the-authorization-epoch)) |
+
+**Choice:** (b) for a missing `If-Match`, which the document keeps required and `bindError` answers with the 428 problem for every resource, and (c) for the epoch of a replay, which `Outcome.Finish` adds after the commit hooks.
 
 **Rationale:** both keep the convention in the shared package and add nothing a resource has to remember. The development agent would revisit (c) if a second use shows that a resource needs to change the status after the hooks, which `Finish` allows but no one needs; it would revisit the binder mapping if the code generator offers a hook for required headers.
 
@@ -12276,6 +12292,8 @@ Status: **Decided by the development agent** — selected from the options below
 | What an edit patches | A diff that may drop `remote`; a structural diff | The mode and the mirror object are always part of the compared document, so a merge patch carries only the changed members and a member set back to its default is cleared with `null`; the rest of `remote` (the URL, the credentials) is never part of the patch |
 | Project administrator | Hide; read-only | The caller without `repositories:write-config` sees the section read-only except **Paused** and **Turn off** (the mode back to `pullThrough`), and cannot choose mode `mirror` (Q-REPO-142; the server answers `422 mirror_restricted` for anything else) |
 
+**Choice:** the Mirror section in the remote's class step and edit form (moved since by Q-UI-344), its members shown in mode `mirror` only, a create that writes what differs from the defaults, an edit that patches the mode and the mirror object structurally, and a section read-only but for **Paused** and **Turn off** to a caller without `repositories:write-config`.
+
 **Rationale:** a member written only where it differs follows Q-UI-80 and keeps a stored document equal to what the user decided;
 the structural diff is what makes a patch of one member safe on a document whose other `remote` members the form does not edit. The
 development agent would revisit the "members in mode `mirror` only" view if operators ask to prepare the settings before turning the
@@ -12377,6 +12395,8 @@ Status: **Decided by the development agent** — selected from the options below
 | What a create writes | Everything; what differs from the preset and the defaults | The URL only when it names another upstream than the preset (compared as the server normalizes it), the authentication members only for an authentication other than none, a period only when it differs from the format's default, `availability` only when offline; nothing at all of `remote` when none applies (Q-UI-80) |
 | What an edit patches | Whole objects; members | The URL always as entered, so a patch never depends on how the server reads a removed URL; `cache` and `availability` are always present as objects on both sides of the merge patch, so a member set back to its default is `null` inside the object and the members the form does not edit (`storeArtifacts`, `failureThreshold`, ...) are never nulled |
 | The mirror's bound notice | The format's well-known upstream; the URL entered | The URL entered, or the preset while it is empty (Q-UI-118 compared the stored URL or assumed the preset) |
+
+**Choice:** the upstream settings above the format's settings (moved since by Q-UI-344 and Q-UI-345), the preset as the URL field's value, a create that writes only what differs from the preset and the defaults, an edit that sends the URL as entered and `cache` and `availability` as whole objects, and the mirror's bound notice from the URL entered.
 
 **Rationale:** a remote of a private registry, the case that needs a URL and a credential, is what a mirror is most used for; the form shows what the repository will do. The development agent would revisit the
 split of the wizard's step if it grows past what one page carries once the extra hosts, the limits and the integrity members get fields.
@@ -15439,6 +15459,12 @@ suggestion there. The development agent revisits (b) if people of the walk wait 
 
 ### Q-UI-349 · A field of the repository forms takes the width of its kind of input, and a schema member the width of its type
 
+Status: **Superseded by [Q-UI-335](#q-ui-335--every-text-field-names-the-width-of-its-expected-input-and-a-number-field-is-never-the-column)** — decided by the development agent for T-21 after Q-UI-335 had landed the same day and given every field of the forms its width.
+The standard fields of the repository forms take the kinds both questions name; a schema member takes its width from its name and its
+schema as Q-UI-335 chose (`…Seconds` a duration, `…Bytes` bytes, a URL or a string above 128 characters the column;
+[settings-schema.ts](../../web/src/app/features/repositories/settings-schema.ts) `widthOf`), not from its type alone as option (a) below
+says.
+
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Each standard field is named to one of the five widths of Q-UI-334, and a member of a format's schema takes the width of its type (chosen) | key, names, hosts and choices `name`; URL, description, notes, patterns and lists `full`; periods `duration`; counts `number`; the storage limit `bytes`; a schema's `integer` and `number` `number`, a string with `format: uri` or `maxLength` above 128 `full`, any other string and every choice `name` | A format's schema needs no annotation; a member a format adds gets a width without a change of the UI | A member whose type does not tell its length (a short string without `maxLength`) takes `name` |
@@ -16760,7 +16786,7 @@ the project and at its repositories, from one read of the store. **Choice:** the
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-A field error gains the optional member `cap` (an integer in the figure's unit), set on every entry of `422 limit_above_maximum` and on
+**Choice:** A field error gains the optional member `cap` (an integer in the figure's unit), set on every entry of `422 limit_above_maximum` and on
 no other, so the rule dialog names the most the figure may be. **Applied in the spec:** [usage-and-limits.md](usage-and-limits.md)
 R-LIM-016; the schema `FieldError` of `api/openapi.yaml`.
 
@@ -16768,7 +16794,7 @@ R-LIM-016; the schema `FieldError` of `api/openapi.yaml`.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-`GET /api/v1/usage` and its export take `project=<key>`, which narrows the rows to the project's repositories, as the project's
+**Choice:** `GET /api/v1/usage` and its export take `project=<key>`, which narrows the rows to the project's repositories, as the project's
 operation does; it costs the same statement with a list of repositories. The project's own operation stays for an Owner, who holds no
 `usage:read`. **Applied in the spec:** R-API-082, [usage-and-limits.md](usage-and-limits.md) R-LIM-034.
 

@@ -7799,6 +7799,8 @@ break-glass password in the dev values while the chart has no value for either.
 | Per-address limits (R-AUTH-038) | (a) the edge address, with long waits between tests; (b) port-forwards to the web pods | (b) for the threshold tests: the replicas see 127.0.0.1, a bucket of its own, and the requests are sent to the three pods in turn, which is the criterion's "round robin over three replicas" without the edge in between |
 | Login configuration of the dev profile | (a) wait for chart values `secrets.oidc` and `secrets.breakGlass`; (b) `extraVolumes` and `extraVolumeMounts` with one projected volume | (b) in values-dev.yaml: the chart is not touched, and the paths in `config.auth` are those the chart's values will render |
 
+**Choice:** (b) in each row: stop and start scripts that hold Valkey down, `CLIENT PAUSE` for 4 s as the late Valkey, port-forwards to the pods for the per-address limits, and the login configuration through `extraVolumes` of the dev values, which the chart's own values have since replaced.
+
 **Rationale:** Each choice adds no component to the profile and keeps the tests close to what an operator does. The revisit
 conditions: the chart gains the two secret values (then the projected volume goes), or a criterion needs a delay finer than
 `CLIENT PAUSE` (then a proxy).
@@ -7826,6 +7828,8 @@ reaches through `kubectl exec`, which runs through the API server while a node i
 | The fixtures | (a) built at test time: nine versions of a package with 1 to 5 MiB of random bytes in `npm-local` for k6's tarballs; a lockfile resolved through `npm-all` from corpus roots whose closure has at least 397 names plus three `npm-local` packages; (b) committed fixtures | (a): the lockfile locks 475 packages (472 through `npm-remote`, 3 from `npm-local`), and its `npm install` fills Quader's cache, so the loops start warm; nothing to keep in step with the corpus |
 | Tokens | (a) one per load source; (b) two per `npm ci` loop, alternated per command, three for k6 taken in turn, one for the publisher | (b). A loop asks for 475 tarballs every 2.5 s; on one token per loop four in ten commands met the `package_read` budget of 1,000 in 5 s (measured: `429`, then npm's retry after 10 s), so the load measured the limiter more than the drain. k6's 120 requests/s are spread over three tokens since 2026-11-01: a PostgreSQL switchover held the replicas for 19 s, the edge queued the load and handed it on at once, and one token met its burst (48 answers `429` in Actions run 41249697928). 20 tokens, all an account may hold |
 | How a command is counted | (a) a shell loop per load source detached in its client pod (`setsid`), one record per command with its exit status, the output of a failed one kept, stopped through a file; (b) one `kubectl exec` per command from the test; (c) a Go client that sends npm's requests | (a): the exit status is the client's own, and an exec that breaks during a fault is never a failed command. (b) cannot tell a broken exec stream's status from npm's; (c) is not npm, whose retries and timeouts the criterion names. A loop that writes no record fails `loopsSpan` |
+
+**Choice:** k6 at the npm rows' own rate of 120 requests/s, fixtures built at test time, two tokens per `npm ci` loop and three for k6, and every command counted by a shell loop detached in its client pod.
 
 The long-transfer probes of R-HA-059 are no npm load and join the drain test in E5.9.
 
@@ -8728,6 +8732,8 @@ package documents, 30 % npm tarballs and 20 % NuGet registration and flat-contai
 | How a `dotnet` command is counted | (a) as an `npm` command: a shell loop per load source detached in its client pod, one record per command with its exit status, the output of a failed one kept; a restore that exits `0` but extracted another number of packages than the fixture has counts as failed (exit status 96), and a push that exits `0` without printing "Your package was pushed." too (97); (b) the exit status alone | (a). `dotnet` exits `0` on some failures ([e2e.md](../developer/e2e.md#the-nuget-clients)) |
 | Why a restore reaches the server | (a) `--no-cache --force` and a new, empty `NUGET_PACKAGES` and `NUGET_HTTP_CACHE_PATH` per iteration, removed afterwards; (b) the flags alone | (a). With the flags alone the global packages folder of the loop's first iteration satisfies the later ones and a restore asks for the registrations only |
 | Tokens | (a) another service account, `e2e-nuget-ha`, with two tokens per restore loop (alternated per command), three for k6, one for the publisher; (b) the npm account's | (a). The account holds at most 20 active tokens (`auth.tokens.max_active_per_principal`); the npm load uses 20 |
+
+**Choice:** (a) in each row: a second k6 script `nuget.js` at 30 requests/s beside `npm.js`, one p99 bound over the requests of both, `dotnet` commands counted like npm's with the package count and the push message checked, empty package folders per restore, and a service account of its own for the NuGet tokens.
 
 **Rationale:** the pass conditions of R-HA-059 are the clients' and k6's, whichever format the request is; the second k6 process and the
 second set of loops reproduce the table's rates without touching the scripts the other tests share. The development agent revisits the
@@ -10612,6 +10618,8 @@ Context: R-HA-007 rows without an R-HA-052 scenario: Sentinel quorum lost, S3 cr
 | Valkey credential mismatch | e2e `TestHAFaults_ValkeyCredentialMismatch` (running replicas, the replacement pod) and integration `TestValkeyStartup` (the first readiness) |
 | Backup and restore pod evicted or crashed | e2e `TestBackupDrain` (R-BAK-012, R-BAK-010, R-BAK-021: the drain of the node, `kill -9` of the pod), named with R-HA-007 and R-HA-052 as well; "cut off" is a network fault and is not built (H-792) |
 
+**Choice:** each row at the cheapest tier that shows it: the Sentinel quorum loss, a lost pooler instance and the switchover behind the poolers, a Valkey credential mismatch and the backup pod in end-to-end tests, the failing S3 credential in unit tests, and the full spool in an integration test.
+
 **Rationale:** each row at the cheapest tier that shows the contract; the e2e runs where the contract involves several processes. **Applied in the spec:** none.
 
 ### Q-HA-258 · A lost pooler instance is deleted gracefully and forced, for both poolers, under the full npm load
@@ -12419,6 +12427,8 @@ TLS series of the worker's links (`scanner`, `malware-scanner`); the log field `
 and in the role `all`, `malware_scanner` on a worker without a malware scanner); and the system subjects of the scanners' reads
 (`image-scanner`, `malware-scanner`), which the scan listener's request log, the decision point's allow and the usage records' credential
 column show. The owner's rule of Q-HA-372 is "immer so benennen, dass man sieht um welches Tool es sich handelt".
+
+**Choice:** every name an operator or an auditor reads of a scanner unit is the unit's name (`vuln-scanner-trivy`, `malware-scanner-clamav`): the label `listener` of a link's TLS series, the log field `component`, the readiness check in camel case and the system subject of its reads; what a second tool would share keeps its purpose's name.
 
 Decision, the owner's sentence applied:
 

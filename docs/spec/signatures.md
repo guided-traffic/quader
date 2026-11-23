@@ -3964,6 +3964,8 @@ Its entry in the decision log: [ADR-226](../decisions.md#adr-226--quader-detects
 
 Status: **Decided by the owner on 2026-11-21** — the development agent's eight readings, confirmed.
 
+**Choice:** the development agent's eight readings r1 to r8 as listed: three steps at the signed content, per format what its ecosystem knows, four visible states, one switch for project anchors, an obligation of the format contract, a signature in no list, nothing that breaks an upstream signature, and the signing certificate through Helm or an upload.
+
 - **r1** three steps, stored at the signed content, the original kept (R-SIG-001, R-SIG-003);
 - **r2** per format what its ecosystem knows; none invented; a format without a scheme says so; Debian's index says so (R-SIG-002);
 - **r3** four visible states; no icon for no signature, not checked yet, scheme not supported (R-SIG-009);

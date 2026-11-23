@@ -101,7 +101,9 @@ func register[C prometheus.Collector](reg prometheus.Registerer, c C) (C, error)
 }
 
 // RemoteRequest counts one request of the background fetch of a remote's signatures (R-SIG-026): the format of the remote and the
-// result ("ok", "not_found", "error", "limited").
+// result: "error" when the request returned an error (a transport failure, a rate-limit answer of the upstream), "ok" for every
+// other answer, one that says the upstream has no such object included. A request the hourly budget of R-SIG-040 holds back is never
+// sent and not counted, nor is a document read from the store (the type limited in internal/signatures/fetch).
 func (m *Metrics) RemoteRequest(format, result string) {
 	if m != nil {
 		m.remote.WithLabelValues(format, result).Inc()

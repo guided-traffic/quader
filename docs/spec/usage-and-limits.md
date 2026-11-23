@@ -2412,7 +2412,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Stage 7 checks the block and the class of `GET /v2/_token` and defers its request windows (`limits.Charge.DeferRequestFigures`); the
+**Choice:** Stage 7 checks the block and the class of `GET /v2/_token` and defers its request windows (`limits.Charge.DeferRequestFigures`); the
 handler's `Retarget` counts them once: under the subject of a valid Quader token, else under the address. A presented credential
 that failed is a refused request of the address. **Applied in the spec:** R-LIM-003.
 

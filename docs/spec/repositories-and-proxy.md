@@ -5710,6 +5710,8 @@ members owned by other pages are stored.
 | `PUT` with an omitted `key`, `class` or `format` | unchanged (a different value is `immutable_field`) |
 | Members that cannot apply to a format | `not_applicable` in the same pass, decided by the format descriptor |
 
+**Choice:** the stored document holds every setting with its defaults filled in, refuses an unknown member with `invalid_document`, carries the members other pages own unread, removes a member on `null`, and writes nothing for an update that changes nothing.
+
 **Rationale:** A misspelt member must never be dropped silently (R-REPO-008). A no-op that moves the ETag would
 make a client that re-sends an unchanged document race with itself. The development agent would revisit the
 treatment of `storage` when R-STOR-003's settings are implemented.
