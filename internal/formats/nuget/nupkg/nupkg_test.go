@@ -324,7 +324,9 @@ func TestR_ARCH_028_NupkgHonoursTheContext(t *testing.T) {
 	}
 }
 
-func FuzzR_ARCH_028_Inspect(f *testing.F) {
+// FuzzInspect: the reader of a package never panics and refuses a broken one with a client error (R-ARCH-028). The
+// name carries no requirement code, because the fuzz job of the closing run names its legs and artifacts after it.
+func FuzzInspect(f *testing.F) {
 	f.Add(good().bytes())
 	zip64 := good()
 	zip64.zip64 = true

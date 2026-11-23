@@ -276,7 +276,9 @@ func TestR_NUGET_005_NuspecLimitsOnlyTighten(t *testing.T) {
 	}
 }
 
-func FuzzR_NUGET_005_Nuspec(f *testing.F) {
+// FuzzNuspec: the reader of a .nuspec never panics and refuses what it cannot read within its limits (R-NUGET-005). The
+// name carries no requirement code, because the fuzz job of the closing run names its legs and artifacts after it.
+func FuzzNuspec(f *testing.F) {
 	f.Add([]byte(doc(ns2013, minimal+`<dependencies><group targetFramework="net8.0"><dependency id="A" version="1.0"/></group></dependencies>`)))
 	f.Add(utf16Bytes(doc("", minimal), false, true))
 	f.Add([]byte(`<!DOCTYPE a [<!ENTITY b "c">]><package/>`))

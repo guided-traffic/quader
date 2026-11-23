@@ -419,12 +419,13 @@ func TestR_ARCH_010_Conformance(t *testing.T) {
 	formattest.Run(t, New(), conformance(t))
 }
 
-// FuzzR_ARCH_028_Match: Match never resolves a path that is not clean and never panics.
-func FuzzR_ARCH_028_Match(f *testing.F) { formattest.FuzzMatch(f, New()) }
+// FuzzKitMatch: Match never resolves a path that is not clean and never panics (R-ARCH-028): the kit's fuzz of every format,
+// beside npm's own FuzzMatch of its escaped paths. The names carry no requirement code, because the fuzz job of the closing
+// run names its legs and artifacts after them.
+func FuzzKitMatch(f *testing.F) { formattest.FuzzMatch(f, New()) }
 
-// FuzzR_ARCH_028_Inspect: Inspect never panics, finishes in its deadline and fails only
-// with a client error.
-func FuzzR_ARCH_028_Inspect(f *testing.F) {
+// FuzzInspect: Inspect never panics, finishes in its deadline and fails only with a client error (R-ARCH-028).
+func FuzzInspect(f *testing.F) {
 	formattest.FuzzInspect(f, New(), "lodash/-/lodash-1.0.0.tgz", tgzFor(f, "lodash", "1.0.0"))
 }
 

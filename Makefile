@@ -609,13 +609,13 @@ nuget-clients-smoke: nuget-clients-image nuget-stub-image ## Run the NuGet clien
 
 # >>> M2 npm-fuzz
 # The fuzz run of the closing phase (roadmap M2, E2.6): npm's Match and Inspect with the R-ARCH-028 limits checked on
-# every input. The workflow runs three legs (FUZZ=FuzzR_ARCH_028_Match, FuzzR_ARCH_028_Inspect, FuzzMatch) for 30 minutes
+# every input. The workflow runs three legs (FUZZ=FuzzKitMatch, FuzzInspect, FuzzMatch) for 30 minutes
 # each when it is dispatched with closing=true (Q-NPM-46). Locally: make fuzz-npm FUZZ=FuzzMatch FUZZTIME=1m.
-FUZZ ?= FuzzR_ARCH_028_Match
+FUZZ ?= FuzzKitMatch
 FUZZTIME ?= 30m
 
 .PHONY: fuzz-npm
-fuzz-npm: ## Fuzz one npm target (FUZZ, default FuzzR_ARCH_028_Match) for FUZZTIME (default 30m); a failing input stays in internal/formats/npm/testdata/fuzz
+fuzz-npm: ## Fuzz one npm target (FUZZ, default FuzzKitMatch) for FUZZTIME (default 30m); a failing input stays in internal/formats/npm/testdata/fuzz
 	go test ./internal/formats/npm -run '^$$' -fuzz '^$(FUZZ)$$' -fuzztime $(FUZZTIME)
 # <<< M2 npm-fuzz
 
@@ -667,7 +667,7 @@ oidc-fixtures: ## Re-record the GitLab fixtures of the OIDC issuer double from a
 # NuGet signature (the CMS of a .signature.p7s and the BER bounds; signatures.md R-SIG-013, Q-SIG-216), the golden vectors
 # of the version and ID rules generated with NuGet.Versioning (tools/nugetvectors, R-NUGET-003) and the counting NuGet
 # test upstream (test/nugetstub, docs/developer/e2e.md). A target is <package below internal/>:<Target>. Edit only between the markers.
-NUGET_FUZZ_TARGETS ?= formats/nuget/nupkg:FuzzR_ARCH_028_Inspect formats/nuget/nuspec:FuzzR_NUGET_005_Nuspec \
+NUGET_FUZZ_TARGETS ?= formats/nuget/nupkg:FuzzInspect formats/nuget/nuspec:FuzzNuspec \
   formats/nuget/version:FuzzNormalize formats/nuget/version:FuzzCompare formats/nuget/version:FuzzRange formats/nuget/id:FuzzID \
   signatures/scheme/nugetcms:FuzzSignatureP7s signatures/scheme/rawkey/pki:FuzzDefinite
 NUGET_FUZZTIME ?= 5m

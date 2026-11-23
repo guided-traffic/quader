@@ -4207,7 +4207,7 @@ stopped, the read-only subset against `https://registry.npmjs.org`, and a fuzz r
 | (d) A marker in the commit message | The legs run when the head commit says so | In the history | A commit message that decides what CI runs; squash merges lose it; a pull request run could carry it by accident |
 
 **Choice:** (a). The jobs are `e2e-npm` (its matrix gains the leg `npm-closing`) and `fuzz-npm` (three legs of 30
-minutes: `FuzzR_ARCH_028_Match`, `FuzzR_ARCH_028_Inspect`, `FuzzMatch`), both in
+minutes: `FuzzKitMatch`, `FuzzInspect`, `FuzzMatch`), both in
 [release.yml](../../../.github/workflows/release.yml); the legs are the make targets
 `make e2e SET=npm-closing` and `make fuzz-npm`. A dispatch does not release (Semantic Release runs on `push`
 only), so the closing run is a pure verification of the commit.

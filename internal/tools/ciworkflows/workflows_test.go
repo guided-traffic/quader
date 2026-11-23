@@ -26,6 +26,7 @@ type step struct {
 }
 
 type job struct {
+	Name           string            `yaml:"name"`
 	If             string            `yaml:"if"`
 	RunsOn         string            `yaml:"runs-on"`
 	Outputs        map[string]string `yaml:"outputs"`

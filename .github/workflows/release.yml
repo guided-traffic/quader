@@ -3067,7 +3067,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [FuzzR_ARCH_028_Match, FuzzR_ARCH_028_Inspect, FuzzMatch]
+        target: [FuzzKitMatch, FuzzInspect, FuzzMatch]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -3113,9 +3113,9 @@ jobs:
       matrix:
         include:
           - pkg: formats/nuget/nupkg
-            fuzz: FuzzR_ARCH_028_Inspect
+            fuzz: FuzzInspect
           - pkg: formats/nuget/nuspec
-            fuzz: FuzzR_NUGET_005_Nuspec
+            fuzz: FuzzNuspec
           - pkg: formats/nuget/version
             fuzz: FuzzNormalize
           - pkg: formats/nuget/version

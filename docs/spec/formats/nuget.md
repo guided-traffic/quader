@@ -4851,7 +4851,7 @@ Context: the bounded scan of R-NUGET-005 step 1 (Q-NUGET-23) takes the end-of-ce
 
 **Rationale:** the reader's promise is that what was checked is what is served; refusing the ambiguous archive keeps that without following any reader's guess. The price is the refusal of a package whose comment holds the signature where a record fits. The development agent revisits this if a package from a real client is refused for a signature in its comment.
 
-**Applied in the spec:** R-NUGET-005 step 1. Tests: `TestR_NUGET_005_AnEndRecordAfterTheOneTheScanChoseIsRefused`, `TestR_NUGET_005_EveryEntryIsReadFromTheOffsetTheScanChecked`; the seed and the corpus entry `second-end-record` of `FuzzR_ARCH_028_Inspect`.
+**Applied in the spec:** R-NUGET-005 step 1. Tests: `TestR_NUGET_005_AnEndRecordAfterTheOneTheScanChoseIsRefused`, `TestR_NUGET_005_EveryEntryIsReadFromTheOffsetTheScanChecked`; the seed and the corpus entry `second-end-record` of `FuzzInspect`.
 
 ### Q-NUGET-90 · A forwarded search answer is read within 8 MiB, and a result within the versions Quader reads of one ID
 
