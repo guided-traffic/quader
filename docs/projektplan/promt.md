@@ -614,6 +614,11 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
+- **The remote engine's test of the fetch slots failed once under load (2026-11-23, in a builder's run at a
+  load of 35 to 76):** `TestFetchSlots` in the area `proxy` met a migration's timeout and a window of 2 s; alone
+  at a load of 5 it passes in 10 s. **The lint's limit of ten minutes is tight with a cold cache beside
+  another worktree's lint** (two builders met it on 2026-11-23); the pinned binary with a longer limit is
+  what the briefs name.
 - **Seen by the builder of the Bastion's P4 on 2026-11-23 and left for the batch:** the gauge of the Bastion's
   answers of the kind `shape` read 0 on a cluster of the development profile while lookups hit (not traced;
   the profile's answers end after 30 s); the development profile's Bastion chart and values name the image
@@ -2217,7 +2222,13 @@ runs are in `git log`; this section holds the current state.
   longer ones take their own. **Its migration took the number the links hold,** so it moves onto the two
   commits that land before it and becomes 00109; the skip mark comes off its documents' commit, which would
   have skipped the run of the push. Its builder is at that since 01:23. **Not verified:** the summary's
-  statements on a large table; a localized production build.
+  statements on a large table; a localized production build. **It reported again at 02:31, on the two
+  commits that had landed meanwhile:** the migration is 00109 wherever it is named, the documents' commit
+  carries no skip mark, each pair of a stacked row takes its own line (the narrow render looked at again by
+  the development agent; the table stacks at the middle width too and reads well there), every gate exit 0
+  on the new base, the lint within its limit only on a second run with a warm cache beside another
+  builder's lint. **It stands on the Bastion's P4 in the landing worktree, and the gates of the two together
+  run since 02:31:** the full set with the unit run and the lint, and eleven integration areas.
 - **Package 3 of the signed links reported at 02:21** (one commit of the type `feat` on the second package;
   its builder worked from 00:48; every gate exit 0, the lint in 819 s beside other builders, four
   integration areas). The operations of the settings with `If-Match` and the test link, which writes a
@@ -5065,7 +5076,22 @@ at 01:00, twenty-one of them, each exit 0. The links' second package is put on t
 though both change the host of the formats), **and the gates of the two together run since 01:00:** the full
 set with the unit run and the lint, and the areas of the query budget, overload, `blob`, `files`, `limits`,
 `api`, `upstream`, `signatures`, `backup`, `postgres`, `bastion` and `bastioniface`. The two builders'
-worktrees and branches are removed. **In work since
+worktrees and branches are removed. **Landed on 2026-11-23 at 02:27, both in one push:** twenty-nine gates,
+each exit 0, from 01:00 to 02:26; seventeen minutes of that the gates stood at the integration stack's lock.
+With it the main installation marks the package of a response and answers the check per package, and an
+administrator's switch exists in the store that hands large downloads of OCI and Ansible Galaxy clients to
+signed links; no screen and no API reach the switch until the links' third package lands, so nothing
+changes on an installation by this release. His UI's backend is started again on this state (ready at
+02:28). Released at 02:39; the plan's commits of the minutes between waited for it. **The Bastion's P4 stands on
+it in the landing
+worktree since 02:28** (no conflict; the build and the links through); it is gated and pushed together with
+package F and, if it has reported by then, the links' third package, after this push's run has finished
+its integration shards.
+**In work since 02:28: package 1 of the handover per blob to a Bastion,** the wire: the interface's sixth
+version, the offer's header, the class and the members of a handover with their checks; after it both
+sides speak the new version and nobody offers or hands over yet. Builders with a test load: the
+encryption's package 3, package F and the links' package 3 at their last changes, the handover's first
+package. **In work since
 00:21, on its commit: P4, the Bastion's side,** the last package: the fourth kind of answer with the
 grant's comparison, the package on a cache entry, the read flow that serves a package's entries on a full
 answer and sends a conditional request and no check where the repository's shape is known, the followers,
@@ -5097,6 +5123,52 @@ older replica beside a newer one. **In work since 02:04: a planner** (it does no
 for the move of the formats' repeated integration tests into the contract's kit, the development agent's
 answer 12: the inventory per area with times, the new checks, what shrinks, the shards afterwards, what a
 kit check cannot catch that an integration test caught before, and work packages.
+**The kit move's plan came back at 02:27** (its planner worked from 02:04; kept in the scratchpad as
+`plan-kit-move.md`; nothing was run for it, its times are the measured ones of 2026-11-18 and 21). **Its
+finding changes the development agent's answer 12:** the move is sound, eighty tests and four subtests go
+for six new checks of the kit (the action map, exposure, refused writes that leave nothing, a version's
+fixed bytes, a change that reaches the next read, writes through a virtual repository) and two widened
+ones, and the four shards lose about 285 s a push, 386 s with seven tests moved to the unit tier and one
+waiting test shortened; **but that makes room for five or six further formats where there is room for four
+today, not for twenty.** A format costs about 5.1 minutes of integration after the move, and twenty need
+about 1.5. What is left is each test's own installation: a format area's test creates and migrates a
+database and starts replicas, about 1.8 s before it asserts anything, and about 380 such tests stay, about
+eleven minutes a push (inferred from the fastest tests' times, not measured). **Decided by the development
+agent at 02:29: both,** the kit move as planned and then one installation per area and class with the cases
+as subtests, as two of the shared areas do already; the second is the larger lever and is planned when the
+first has landed and its saving is measured. No real defect of the past would have been missed by the
+move: the recorded failures of the moved tests were load, and the defects of their families are held by
+the kit's thirteenth check, the unit tests of the decision point and the reference cases that stay. Ten
+work packages; the first deletes what existing checks cover already, about 81 s, and adds one unit test.
+It starts when a builder's place is free. **In work since 02:32: that first package,** with the brief to read
+every test and its cover before it goes, since the plan was written from the tests' names, to keep what
+asserts more than its cover, and to leave every requirement's evidence with a test that stays. Builders
+with a test load: the encryption's package 3, the links' package 3, the handover's package 1, the kit
+move's package 1, and the landing's gates.
+**Package 3 of the encryption, the store and the sessions, reported at 02:36** (one commit of the type `feat`
+on the stack of four; its builder worked from 23:10; every gate exit 0, seventeen integration areas, but the
+`proxy` area, whose test of the fetch slots met a migration's timeout at a load of 35 to 76 and passes alone
+at a load of 5: the machine, section 8). **The binary accepts `encrypted: true` with it; the chart refuses it
+until package 6.** Each write of an encrypted connection gets a data key of its own, the record under the
+active storage key, a keyed name and a check of the stored size and the key after a multipart write; a
+session seals its data key into its row, stores parts and tails as segments and counts them; whole and
+ranged reads open the record before the first byte, every reason but an unknown key marks the copy and
+every refusal falls to the next copy; a download needs no statement more, since the stored size and the
+key's identifier travel with the copies. **A guard of its own (Q-STOR-382):** the client of an encrypted
+connection refuses, before it is sent, every write of a blob's name without a record and every copy from
+another bucket, so no path writes plain content there; a plain connection refuses an object of the stored
+format (Q-STOR-383). Decisions Q-STOR-380 to 385; gaps H-1410 (an encrypted copy is not scrubbed, repaired
+or backed up before package 4) and H-1411 (without keyed names the sweep adopts an unplaced encrypted
+object as corrupt). **What the first stage's jobs do with an encrypted connection until package 4:** the
+collection works; the sweep passes over keyed names; the reconciliation reads from an encrypted source and
+is refused by the guard at an encrypted target; the scrub passes over and logs it; the backup refuses to
+run and the restore refuses an encrypted first connection. Each of seven defences was taken out once and a
+named test caught it; one test passed for another reason at first and was sharpened. The sentence about
+the lost key ring is in the README and the manual with it. Its cost: the unit job about 0.9 s, the shards
+with `blob` and `uploads` about 0.8 s and 1.3 s. **Not verified:** any store but the stack's; memory and
+throughput of a large blob's finalize; the query budget with an encrypted connection. **It moves onto the
+landing's top since 02:36,** over the links (an encrypted connection serves no link: one case to show it)
+and the surface (what it writes into the rows is what the connections' API shows).
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
