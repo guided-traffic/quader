@@ -11834,6 +11834,29 @@ that a slow host fails says nothing about the product; a bound that is the produ
 
 **Applied in the spec:** none (test wiring).
 
+### Q-ARCH-703 · A landing names the areas whose tests name a member the change made to an answer
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on 2026-11-23 at 13:08 `integration (shard b)` failed after a landing: the screens' first round had put `disabled` into the
+consumer view of a repository (6b8eae484), and `TestR_REPO_009_to_013_RepositoryLifecycle` of the area `transfer` still listed it among
+the keys a reader must not see. The landing had chosen its areas by the package's subject. The rule decided then: a change of an
+answer is followed by a search of the test tree for the changed field, and every area that names it is in the gate.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tool that diffs the schemas of `api/openapi.yaml` against a base and lists, per changed property, the areas whose tests name it as a quoted string (chosen) | `internal/tools/apiareas`, a unit test of its own | About a second; on 6b8eae484 it names `transfer`; the search the rule asks for, done the same way every time | A common name matches many areas; a format's routes, a key built from parts and an error code are not seen |
+| (b) A unit test that fails when a changed member's areas were not run | | A gate | The unit tier does not know what a landing ran |
+| (c) The rule alone | | Nothing to build | A search by hand, which the landing of 13:08 had skipped |
+
+**Choice:** (a), [apiareas](../../internal/tools/apiareas/main.go), held by `TestTheChangedMembersAndTheAreasThatNameThem` and
+`TestTheRealDocumentHasMembers` (milliseconds); how a landing uses it is in
+[build-and-test.md](../developer/build-and-test.md#which-areas-a-changed-answer-needs). **Rationale:** the rule needs the areas, and a
+listing that costs a second is run where a search by hand is skipped; it lists and does not gate, since only the landing knows what it
+ran.
+
+**Applied in the spec:** none (a developer tool).
+
 ### Q-ARCH-522 · The kind legs load the Quader image the job `image` of their run built, and need that job
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

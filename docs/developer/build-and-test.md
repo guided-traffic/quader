@@ -156,6 +156,23 @@ other and runs its tests in under a second on one clone of the template: every b
 `test/integration/run.sh ./test/integration/conventions/` beside the areas of the change. A new check of the kind goes there, not into
 the area of the format or component that made the list.
 
+### Which areas a changed answer needs
+
+A change of an answer of the management API is followed by the areas whose tests name the changed member, whatever the change's
+subject ([Q-ARCH-703](../spec/architecture.md#q-arch-703--a-landing-names-the-areas-whose-tests-name-a-member-the-change-made-to-an-answer)).
+[apiareas](../../internal/tools/apiareas/main.go) lists them in about a second:
+
+```sh
+go run ./internal/tools/apiareas -base main                         # the working tree against main
+go run ./internal/tools/apiareas -base 6b8eae484~1 -head 6b8eae484   # example: a change that landed
+```
+
+It prints one line per property a schema of `api/openapi.yaml` gained, lost or changed, with the areas whose test files name it as a
+quoted string, and a last line `areas: …` for `run.sh`. On the change that put `disabled` into the consumer view (6b8eae484) it names
+`transfer` among eleven areas, the one whose test then failed in shard b. A common name (`kind`, `id`) is named by many areas; the
+line says how many, and the landing decides. It does not see a format's own routes, a key a test builds from parts, or an error code;
+for those the search of the test tree for the changed field or code stays the rule.
+
 ### The unit run's time
 
 `make test` runs every package under the race detector with the coverage of the whole module (`-coverpkg=./...`), eight
