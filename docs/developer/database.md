@@ -828,7 +828,7 @@ waiting or running row of a version, the bulk's rows, the finished rows for the 
 revision column, raised by a restore), and `deb_remote_entries.provides`, `description` and `description_md5`. Every table is export class
 `data` ([tables_remote_curation.go](../../internal/meta/postgres/tables_remote_curation.go); the Debian one in
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
-in `internal/remotecuration` holds the CHECK lists to the domain package's constants.
+in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
 ## The storage summary (00109)
 

@@ -10117,10 +10117,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-30 questions on [spec/remote-curation.md](spec/remote-curation.md).
+31 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 30 questions</summary>
+<summary>Q-CUR: 31 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10154,6 +10154,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-28](spec/remote-curation.md#q-cur-28--the-upstream-is-another-surface-the-protocol-routes-keep-what-they-serve) | The upstream is another surface: the protocol routes keep what they serve | Decided by the development agent | (a) The catalogue is a management API surface for a person; every protocol route and the package list keep their answers, filtered by the rules | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
 | [Q-CUR-109](spec/remote-curation.md#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters) | The catalogue's browsing calls live in the leaf discover, and Register's adapter check lands with the adapters | Decided by the development agent | (a) The browsing calls (`CatalogueCaps`, `Search`, `Children`, `Package`) and their types in `discover`; `formats.Catalogue` embeds them and adds `VersionProbe`, whose `Probe` is a type of the contract; `Register` refuses a missing adapter from the change that brings the five catalogues | [ADR-152](#adr-152--the-format-contract-gains-the-optional-mirror-lister) |
 | [Q-CUR-110](spec/remote-curation.md#q-cur-110--the-ports-of-the-domain-package-speak-in-a-repositorys-id-and-the-decider-reads-no-database) | The ports of the domain package speak in a repository's ID, and the decider reads no database | Decided by the development agent | (a) Ports at the root of `internal/remotecuration` in plain values: `Decider.Decide(ctx, repoID, name, version) Decision` and `Package(ctx, repoID, name)`, no error; `Queue.Active` and `Requests.Open` by repository ID, package and versions; stubs `DeliverAll`, `NoQueue`, `NoRequests` | — |
+| [Q-CUR-111](spec/remote-curation.md#q-cur-111--the-purge-of-a-retired-repository-removes-its-queue-and-examinations-and-keeps-its-rules-and-requests) | The purge of a retired repository removes its queue and examinations and keeps its rules and requests | Decided by the development agent | (a) The queue, its bulks and the examination rows are purged; the rules and the requests (with their askers) are kept | — |
 
 </details>
 

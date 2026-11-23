@@ -1902,7 +1902,9 @@ management API above). For each declaration of `wellknown.Declared(catalog)`, an
    row. Its signature attachments are content and go too ([signatures.md](signatures.md) R-SIG-004); the signatures and signature
    objects they leave without an attachment belong to the installation and are the store's orphans, which the job of R-SIG-011 removes
    (R-SIG-003). The repository row and its `upstream_repository` row stay as a tombstone: the virtual repositories that list it keep a
-   placeholder (R-REPO-072), its key is never given to another repository, and its usage and findings rows go with the purge.
+   placeholder (R-REPO-072), its key is never given to another repository, and its usage and findings rows go with the purge. Of its
+   curation, the download queue and the examination rows go and the delivery rules and requests stay
+   ([remote-curation.md](remote-curation.md) R-CUR-021, Q-CUR-111).
 6. **A declared key that a repository of another format or class holds in `upstream`**: nothing is written and `quader migrate`
    exits 1 naming the key; a catalog in which that can happen does not pass its tests (R-REPO-062, Q-REPO-387).
 

@@ -1263,6 +1263,12 @@ Priority: **P1** · Covers: quader-only
   rendered under rules after *t* is answered `304` under the restored ones. A Debian remote's `deb_remote_descriptions` are its cache rows,
   purged with its parsed indexes (R-BAK-008).
 - **A Bastion** holds no rule; it learns of a narrowing by the `content` entry of `repository.narrowed` (R-BAS-015).
+- **A repository that goes away.** A deleted repository takes every row of this page with it (each table's key to the repository
+  cascades). A retired well-known repository keeps its row as a tombstone and its content is purged (R-REPO-067 step 5,
+  [Q-REPO-376](repositories-and-proxy.md#q-repo-376--a-preset-the-product-no-longer-offers-leaves-a-tombstone-without-content)): the purge
+  removes its queue rows, its bulks and its examination rows, which are derived work, and the Debian descriptions with their index; it
+  keeps its rules and its requests with their askers, which are people's decisions, as it keeps the repository's configuration
+  ([Q-CUR-111](#q-cur-111--the-purge-of-a-retired-repository-removes-its-queue-and-examinations-and-keeps-its-rules-and-requests)).
 
 ### R-CUR-022 · Tests and what they cost
 Priority: **P1** · Covers: quader-only
@@ -1885,6 +1891,32 @@ the queue's states, origins, outcomes, failure classes and steps, the job, queue
 development agent would revisit the second lookup if it shows at the serve point.
 
 **Applied in the spec:** [../developer/remote-curation.md](../developer/remote-curation.md) (the contracts the packages build on).
+
+### Q-CUR-111 · The purge of a retired repository removes its queue and examinations and keeps its rules and requests
+
+Status: **Decided by the development agent** — selected from the options below while building the contracts package; the owner reviews it
+at the walkthrough.
+
+Context: a well-known repository the product no longer declares is retired: disabled, its row kept as a tombstone, its content purged by
+`upstream_repository_purge`, which content goes and which configuration stays decided per table and held to the schema's cascading keys by
+`TestR_REPO_067_ThePurgeOfARetiredRepository` (R-REPO-067, Q-REPO-376, Q-REPO-391). This page's tables with such a key are
+`remote_delivery_rules`, `remote_delivery_requests`, `remote_download`, `remote_download_bulks` and `remote_examinations`;
+`remote_delivery_request_askers` reaches a repository through a request, `deb_remote_descriptions` through an index.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The queue, its bulks and the examination rows are purged; the rules and the requests (with their askers) are kept (chosen) | Derived work goes with the content, people's decisions stay with the row | The purge's rule as it stands (content goes, configuration stays); a waiting row of a repository that serves nothing would only end `skipped`; an examination row names content the purge removes; a rule or a request is an act of a named person, kept as the claims and the exposure rules are | Kept rules and requests of a repository nobody can use |
+| (b) Everything of this page is purged | Nothing remains | No rows of a dead repository | A person's decisions vanish without an event of their own; a repository declared again (R-REPO-067) would start without its curation |
+| (c) Everything is kept | Nothing changes in the purge | Smallest change | Queue rows that point at removed content, examination rows of versions no longer stored |
+
+**Choice:** (a). The Debian descriptions go with their index, which the purge removes, through their foreign key; the askers stay with their
+request.
+
+**Rationale:** the purge removes what the content implies and keeps what a person decided, the line R-REPO-067 already draws. The
+development agent would revisit the requests if a retired repository's open requests are shown anywhere as waiting for a decision.
+
+**Applied in the spec:** R-CUR-021 ("A repository that goes away"); [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-067
+step 5 (a sentence); the function in [00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql).
 
 ## What this does not cover
 

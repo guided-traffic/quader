@@ -9,21 +9,23 @@ import (
 )
 
 // purged and kept are the tables whose rows reference a repository by a cascading foreign key, as the purge of a retired well-known
-// repository treats them (upstream_repository_purge of migration 00086, replaced by 00093, Q-REPO-376): content goes, configuration
+// repository treats them (upstream_repository_purge of migration 00086, replaced last by 00114, Q-REPO-376, Q-CUR-111): content goes, configuration
 // stays. A table a later migration adds fails this test until it is put into one of the lists and, when purged, into the function.
 var (
 	purged = []string{
 		"ansible_collection_versions", "ansible_doc_fetches", "ansible_import_tasks", "ansible_tombstones", "ansible_upstream_versions",
 		"ansible_version_docs", "deb_binaries", "deb_remote_files", "deb_remote_indexes", "deb_remote_releases", "deb_suites", "deb_tombstones",
 		"items", "mirror_pending", "mirror_state", "npm_packages", "npm_remote_packages", "npm_tombstones", "nuget_symbol_file",
-		"nuget_tombstone", "nuget_version", "oci_manifests", "oci_tombstones", "packages", "remote_cache_entries",
+		"nuget_tombstone", "nuget_version", "oci_manifests", "oci_tombstones", "packages", "remote_cache_entries", "remote_download",
+		"remote_download_bulks", "remote_examinations",
 		"remote_cache_invalidations", "remote_upstream_state", "remote_url_map", "repository_usage", "signature_attachments", "signature_fetches",
 		"signature_refusals",
 		"upload_sessions", "usage_bucket", "usage_daily_summary", "usage_limit_event", "vuln_finding",
 	}
 	kept = []string{
 		"authz_policy_selector", "deb_signing_keys", "endpoint_exposure_rule", "limit_assignment", "limit_ceiling", "namespace_claims",
-		"repository_secrets", "service_account", "signature_releases", "virtual_deploy_targets", "virtual_members", "virtual_pin_rules",
+		"remote_delivery_requests", "remote_delivery_rules", "repository_secrets", "service_account", "signature_releases",
+		"virtual_deploy_targets", "virtual_members", "virtual_pin_rules",
 	}
 )
 
