@@ -24,6 +24,8 @@
 #   - UI_INSTANCE unset: instance 1 in the main checkout; in a worktree the instance it claims already, else the first one of 2 to
 #     8 that no existing checkout claims, which it claims.
 #   - UI_INSTANCE=n (2 to 8): refused while another checkout that still exists claims it; otherwise claimed.
+#   - An instance with no claim whose compose project has containers (started before claims existed) is someone's whose checkout is
+#     not known: it is never picked, and naming it is refused until its owner ends it.
 #   - A claim whose checkout no longer exists (a removed worktree) is stale: the claim is taken over, and the instance's containers
 #     and volumes, which belonged to that checkout, are removed first (its database was written with another key ring).
 #   - The claim stays through `make ui-dev-down` (the data is kept for the checkout) and ends with `make ui-dev-down PURGE=1`.
@@ -51,6 +53,11 @@ ui_is_worktree() {
   [ -n "$git_dir" ] && [ -n "$common" ] && [ "$git_dir" != "$common" ]
 }
 
+# ui_unclaimed_running <n> succeeds when instance n's compose project has containers.
+ui_unclaimed_running() {
+  [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=quader-ui-dev$1" 2>/dev/null)" ]
+}
+
 # ui_claims_locked <checkout> <want> <mode> runs under the claims' lock (descriptor 8) and prints the instance: want is the number the
 # caller named or empty; mode is claim or release.
 ui_claims_locked() {
@@ -70,17 +77,25 @@ ui_claims_locked() {
       fi
     done
     for n in 2 3 4 5 6 7 8; do
-      if [ ! -f "$dir/$n" ] || [ ! -d "$(cat "$dir/$n")" ]; then
+      if { [ ! -f "$dir/$n" ] && ! ui_unclaimed_running "$n"; } || { [ -f "$dir/$n" ] && [ ! -d "$(cat "$dir/$n")" ]; }; then
         want="$n"
         break
       fi
     done
     if [ -z "$want" ]; then
       echo "every instance of the UI development profile (2 to 8) is claimed by a checkout that still exists:" >&2
-      for n in 2 3 4 5 6 7 8; do echo "  $n: $(cat "$dir/$n")" >&2; done
+      for n in 2 3 4 5 6 7 8; do
+        if [ -f "$dir/$n" ]; then echo "  $n: $(cat "$dir/$n")" >&2; else echo "  $n: running without a claim" >&2; fi
+      done
       echo "end one with 'make ui-dev-down UI_INSTANCE=<n> PURGE=1' in its checkout" >&2
       return 2
     fi
+  fi
+  # down.sh (UI_DOWN=1) may end such an instance: its owner stops what it started before claims existed.
+  if [ ! -f "$dir/$want" ] && [ -z "${UI_DOWN:-}" ] && ui_unclaimed_running "$want"; then
+    echo "instance $want of the UI development profile has containers and no claim: it was started before instances were claimed," \
+      "by a checkout that is not known; leave UI_INSTANCE unset for a free one, or end it in its checkout ('make ui-dev-down UI_INSTANCE=$want PURGE=1')" >&2
+    return 2
   fi
   if [ -f "$dir/$want" ]; then
     owner="$(cat "$dir/$want")"

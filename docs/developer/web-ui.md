@@ -189,7 +189,9 @@ on 2026-11-23 two builders chose instance 6 a minute apart, and the second recre
 certificates. A claim is the file `.dev/ui-dev-claims/<n>` of the main checkout, holding the claiming checkout's path; every script
 of the profile reads and writes the claims under a lock on `.dev/ui-dev-claims.lock`. A claim stays through `make ui-dev-down` (the
 data is the checkout's) and ends with `PURGE=1`; a claim whose checkout no longer exists is taken over by the next worktree, which
-first removes that instance's containers and volumes. Instance 1 has no claim: it is the main checkout's.
+first removes that instance's containers and volumes. An instance that runs without a claim (started before claims existed) is
+never picked and is refused when named, since its owner is not known; `make ui-dev-down` with its number ends it from the checkout
+that started it. Instance 1 has no claim: it is the main checkout's.
 
 Instance 1 is the profile as it was before instances existed: its compose configuration resolves to the same values (the same
 configuration hash), so a running stack is not recreated, and the pipeline's job `ui-layout` runs it unchanged. **Instance 1 is

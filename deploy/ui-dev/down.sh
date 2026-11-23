@@ -11,7 +11,8 @@ cd "$root"
 
 # shellcheck source=deploy/ui-dev/instance.sh
 . deploy/ui-dev/instance.sh
-ui_instance "$root"
+# UI_DOWN: an instance started before claims existed has none, and its owner may still end it (instance.sh).
+UI_DOWN=1 ui_instance "$root"
 # compose.yaml requires the variables up.sh sets; the values do not matter for down.
 export POSTGRES_IMAGE=unused VALKEY_IMAGE=unused SEAWEEDFS_IMAGE=unused CERT_DIR="$UI_STATE/certs"
 

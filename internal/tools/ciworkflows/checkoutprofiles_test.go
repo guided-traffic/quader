@@ -71,7 +71,9 @@ type shellRun struct {
 func (r profileRepo) sh(t *testing.T, dir string, env []string, script string) shellRun {
 	t.Helper()
 	stubs := filepath.Join(r.home, "bin")
-	write(t, filepath.Join(stubs, "docker"), "#!/usr/bin/env bash\necho \"docker $*\" >> \"$STUB_LOG\"\n")
+	// STUB_RUNNING=n: instance n's compose project has a container (docker ps prints an ID for its label)
+	write(t, filepath.Join(stubs, "docker"), "#!/usr/bin/env bash\necho \"docker $*\" >> \"$STUB_LOG\"\n"+
+		"case \"$*\" in \"ps -aq --filter label=com.docker.compose.project=quader-ui-dev${STUB_RUNNING:-none}\") echo 0123abcd ;; esac\n")
 	if err := os.Chmod(filepath.Join(stubs, "docker"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -175,6 +177,21 @@ func TestUIDevInstancesAreClaimedNotChosen(t *testing.T) {
 		t.Fatalf("a refusal changed a claim: 2 is %q, 3 is %q", owner("2"), owner("3"))
 	}
 	expect("the main checkout names a free instance", instance(r.main, "UI_INSTANCE=5"), "5 quader-ui-dev5 4600")
+
+	// Instance 4 runs with no claim (started before claims existed): never picked, refused when named, and its owner may end it.
+	if res := instance(c, "STUB_RUNNING=4", "UI_INSTANCE=4"); res.code == 0 || !strings.Contains(res.stderr, "has containers and no claim") {
+		t.Fatalf("a worktree named a running instance without a claim: exit %d, %q\n%s", res.code, res.stdout, res.stderr)
+	}
+	if res := instance(c, "STUB_RUNNING=4", "UI_INSTANCE=4", "UI_DOWN=1"); res.code != 0 {
+		t.Fatalf("down.sh could not name the running instance without a claim: exit %d\n%s", res.code, res.stderr)
+	}
+	if err := os.Remove(filepath.Join(claims, "4")); err != nil {
+		t.Fatal(err)
+	}
+	expect("a worktree's pick passes the running instance without a claim", instance(c, "STUB_RUNNING=4"), "6 quader-ui-dev6 4700")
+	if res := r.sh(t, c, []string{"UI_INSTANCE=6"}, `. deploy/ui-dev/instance.sh; ui_instance "$PWD" && ui_release "$PWD"`); res.code != 0 || owner("6") != "" {
+		t.Fatalf("the release of instance 6: exit %d, the claim holds %q\n%s", res.code, owner("6"), res.stderr)
+	}
 
 	// The first worktree is removed without its down.sh: its claim is stale, the next checkout takes the instance over and removes
 	// the containers and volumes of its compose project first.
