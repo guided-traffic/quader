@@ -82,7 +82,7 @@ describe('Frequently visited places (R-UI-096, Q-UI-405)', () => {
 
   it('R-UI-096 a route under /admin is never recorded', async () => {
     const store = await places();
-    await TestBed.inject(Router).navigateByUrl('/admin/repositories');
+    await TestBed.inject(Router).navigateByUrl('/admin/upstream');
     store.visitRepository('web', 'npm-local');
     store.visitProject('web');
     expect(store.frequentRepositories()).toEqual([]);

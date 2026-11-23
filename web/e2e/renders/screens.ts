@@ -163,6 +163,23 @@ async function* systemRepositories(page: Page): AsyncGenerator<string> {
   yield 'search';
 }
 
+/** The repositories of every project with the project chosen in the drawer (Q-UI-1042). */
+const projectFilter = async (drawer: Locator): Promise<void> => {
+  await drawer.getByRole('combobox', { name: 'Project' }).selectOption(mainProject);
+};
+
+/** The start page as it opens, then with **Show Owners and storage** ticked (Q-UI-1041), which the browser keeps for the viewer. */
+async function* projectDetails(page: Page): AsyncGenerator<string> {
+  const box = page.getByRole('checkbox', { name: 'Show Owners and storage' });
+  if (await box.isChecked()) await box.uncheck();
+  await expect(page.locator('main thead th', { hasText: 'Owners' })).toHaveCount(0);
+  yield '';
+  await box.check();
+  await expect(page.locator('main thead th', { hasText: 'Owners' })).toHaveCount(1);
+  yield 'details';
+  await box.uncheck();
+}
+
 /** The repository list of the main project with two filters set: a format and a class. */
 const repositoryChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByRole('combobox', { name: 'Format' }).selectOption('npm');
@@ -323,9 +340,9 @@ async function* systemFileView(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The admin area's repositories of the project upstream (R-UI-193, Q-UI-898, Q-UI-902): every registry with its copy button and its
- * menu, the two system repositories with the badge **System** and the menu alone; then the menu of `scanner-trivy`, without **Copy
- * client address**.
+ * The repositories of the project upstream on the list of every project (R-UI-193, Q-UI-896, Q-UI-902, Q-UI-1042): every registry
+ * with Set up client and its menu, the two system repositories with the badge **System** and the menu alone; then the menu of
+ * `scanner-trivy`.
  */
 async function* systemRows(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main tbody th[scope="row"] .badge', { hasText: /^System$/ })).toHaveCount(2);
@@ -610,6 +627,15 @@ async function openSidebar(page: Page): Promise<void> {
   if ((page.viewportSize()?.width ?? 1440) >= 1024) return;
   await page.getByRole('button', { name: 'Open navigation' }).click();
   await expect(page.locator('aside.sidebar')).toBeVisible();
+}
+
+/** The admin area with its side bar shown, pinned or in the drawer: no entry Projects and none Repositories (Q-UI-1040). */
+async function* adminSidebarShown(page: Page): AsyncGenerator<string> {
+  await openSidebar(page);
+  const nav = page.getByRole('navigation', { name: 'Main navigation' });
+  await expect(nav.getByRole('link', { name: 'Dashboard', exact: true })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Repositories', exact: true })).toHaveCount(0);
+  yield '';
 }
 
 /** The page with its side bar shown: as it is where the side bar is pinned, the drawer opened below 1024 px. */
@@ -1340,20 +1366,15 @@ const refused = [
 /** The states of the creation form the class walks do not reach (R-UI-086, R-UI-081). */
 const createStates: Screen[] = [
   { id: 'new-npm-errors', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: createErrors, expected: refused },
-  { id: 'admin-new-npm-errors', path: '/ui/admin/repositories/new/npm', kinds: ['admin'], walk: createErrors, expected: refused },
   { id: 'new-npm-eight-members', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: eightMembers },
   { id: 'new-npm-restricted', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: restrictedCreate },
-  { id: 'admin-new-npm-restricted', path: '/ui/admin/repositories/new/npm', kinds: ['admin'], walk: restrictedCreate },
 ];
 
 /** The creation form of every format with settings of its own, in every class: its Advanced settings show them (R-UI-088). */
 const createForms: Screen[] = (['oci', 'npm', 'ansible', 'nuget', 'deb'] as const).flatMap((name) =>
   (['Local', 'Remote', 'Virtual'] as const).flatMap((cls): Screen[] => {
     const id = `new-${name}-${cls.toLowerCase()}`;
-    return [
-      { id, path: `/ui/projects/${mainProject}/repositories/new/${name}`, kinds: ['power'], walk: createForm(cls) },
-      { id: `admin-${id}`, path: `/ui/admin/repositories/new/${name}`, kinds: ['admin'], walk: createForm(cls) },
-    ];
+    return [{ id, path: `/ui/projects/${mainProject}/repositories/new/${name}`, kinds: ['power'], walk: createForm(cls) }];
   }),
 );
 
@@ -1479,7 +1500,6 @@ const upstreams: Screen[] = [
   { id: 'upstream-oci', path: `/ui/projects/${mainProject}/repositories/new/oci`, kinds: ['power'], walk: upstreamWalk('GitLab', true) },
   { id: 'upstream-npm', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: upstreamWalk(null, false) },
   { id: 'upstream-deb', path: `/ui/projects/${mainProject}/repositories/new/deb`, kinds: ['power'], walk: upstreamWalk(null, false) },
-  { id: 'admin-upstream-oci', path: '/ui/admin/repositories/new/oci', kinds: ['admin'], walk: upstreamWalk('GitLab', true) },
 ];
 
 /**
@@ -2417,6 +2437,14 @@ export const screens: readonly Screen[] = [
   // The start and the project's content (Q-UI-129): the plain user's main path.
   { id: 'home', path: '/ui/', kinds: all },
   { id: 'projects', path: '/ui/projects', kinds: all, widths: [1100] },
+  // The administrator's columns Owners and Storage on demand (Q-UI-1041), for the holder of projects:read.
+  { id: 'projects-details', path: '/ui/projects', kinds: auditors, walk: projectDetails, widths: [1100, 1280] },
+  // The repositories of every project under Your work (R-UI-020, Q-UI-1040, Q-UI-1042): as each kind of user sees them, with the
+  // drawer's filters open; the row menu; the rows of upstream with the badge System (R-UI-193); a filter that matches nothing.
+  { id: 'all-repositories', path: '/ui/repositories', kinds: all, walk: filtersOpen(projectFilter), widths: [1100, 1280] },
+  { id: 'all-repositories-menu', path: '/ui/repositories', kinds: ['admin'], walk: rowMenuOpen },
+  { id: 'all-repositories-upstream', path: '/ui/repositories?project=upstream', kinds: admins, walk: systemRows },
+  { id: 'all-repositories-none', path: '/ui/repositories?q=zzqx', kinds: ['plain'] },
   // The search field and its list on the start page; anonymous while the seed makes a project public (R-UI-095).
   { id: 'search-field', path: '/ui/projects', kinds: ['anonymous', ...all], walk: searchField, expected: tooMany },
   // The side bar's Recently opened and the project switcher read the search's store (R-UI-096, R-UI-167); an anonymous visitor's
@@ -2433,7 +2461,7 @@ export const screens: readonly Screen[] = [
   // A list's error states (G5-20): the shared notice with Retry on its line (R-UI-175), with a request ID and Copy, and a refusal.
   { id: 'repositories-unavailable', path: `${P}/repositories`, kinds: ['plain'], walk: listUnavailable, expected: unavailable, notices: unavailableNotice },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
-  // The row menus of the lists that have one, open (G5-20): a project's repositories, the admin area's, a service account's technical
+  // The row menus of the lists that have one, open (G5-20): a project's repositories, every project's, a service account's technical
   // tokens, the exposure rules of an endpoint and the registries of upstream.
   { id: 'repositories-menu', path: `${P}/repositories`, kinds: ['power'], walk: rowMenuOpen },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
@@ -2667,11 +2695,8 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins, walk: dashboardStorage },
-  { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
-  { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen(), widths: [1100, 1280] },
-  { id: 'admin-repositories-menu', path: '/ui/admin/repositories', kinds: ['admin'], walk: rowMenuOpen },
-  // The rows of upstream: the system repositories with their badge and without the copy button (R-UI-193).
-  { id: 'admin-repositories-upstream', path: '/ui/admin/repositories?project=upstream', kinds: admins, walk: systemRows },
+  // The admin area's side bar without Projects and Repositories (Q-UI-1040), in the drawer at 390 px.
+  { id: 'sidebar-admin', path: '/ui/admin/dashboard', kinds: admins, walk: adminSidebarShown },
   // The public registries Quader offers (R-UI-187, R-UI-188): the list grouped by format, and a Debian archive's page, the one with
   // the most to lay out (its archive keys). The member editor's placeholder is in repository-settings-oci-virtual.
   { id: 'admin-upstream', path: '/ui/admin/upstream', kinds: admins, walk: registryPresetsWalk },
@@ -2697,7 +2722,6 @@ export const screens: readonly Screen[] = [
   // Its client setup as it opens, and with the guide's sections open: the four ways of R-CLAMAV-006 (public, a token, a client
   // certificate on the profile's endpoint that admits one, without freshclam).
   { id: 'clamav-setup', path: '/ui/projects/upstream/repositories/clamav/setup', kinds: ['plain', 'admin'], walk: clamavSetupWalk },
-  { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
   { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },
   // The break-glass account: no Advanced action, so the page asks the token list whether it offers Revoke all.

@@ -132,7 +132,7 @@ describe('App shell', () => {
     const entry = sidebar.querySelector<HTMLAnchorElement>('a[href="/security"]')!;
     expect(entry.textContent).toContain('Security dashboard');
     expect(entry.getAttribute('aria-current')).toBe('page');
-    expect([...sidebar.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Projects', 'Guides', 'Security dashboard', 'Malware', 'Signatures']);
+    expect([...sidebar.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Projects', 'Repositories', 'Guides', 'Security dashboard', 'Malware', 'Signatures']);
     // Only the dashboard is current on its page: the entry of the longest route the page's path starts with (Q-UI-1005).
     expect(sidebar.querySelectorAll('a[aria-current="page"]')).toHaveLength(1);
     const sections = TestBed.inject(Navigation).area('home')!.sections;

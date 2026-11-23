@@ -1,12 +1,14 @@
+import { ComponentFixture } from '@angular/core/testing';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects';
 import { ProjectsApi } from '../../api/projects-api';
 import { seriousViolations } from '../../testing/axe';
-import { buttonByText, choosePrincipal, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { buttonByText, choosePrincipal, expectAccessible, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
 import { ProjectSettings } from './project-settings';
 import { ProjectPoliciesPage, ProjectServiceAccountsPage } from './project-list-pages';
-import { ProjectList } from './project-list';
+import { ProjectsHome } from './projects-home';
+import { BrowserStorage } from '../../core/storage';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 
@@ -22,9 +24,24 @@ function asProjectAdministrator() {
   };
 }
 
-describe('Projects overview (R-UI-041)', () => {
-  it('R-UI-041 R-UI-146 Q-UI-577 lists key, display name, Owners, members, repositories and storage, not the own role, and passes axe', async () => {
-    const { root } = await renderScreen(ProjectList, {
+/** Ticks **Show Owners and storage** in the head of the start page (Q-UI-1041). */
+async function showDetails(r: { root: HTMLElement; fixture: ComponentFixture<unknown> }): Promise<void> {
+  const box = [...r.root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) =>
+    text(i.closest('label') ?? i.parentElement!).includes('Show Owners and storage'),
+  )!;
+  box.click();
+  await settle(r.fixture);
+}
+
+const headsOf = (root: HTMLElement): string[] => [...root.querySelectorAll('thead th')].map((h) => text(h).replace('help_outline', '').trim());
+
+describe('The start page holds what the admin area\'s list of projects held (R-UI-041, the owner\'s T-25)', () => {
+  // The choice of the columns is kept in the browser per viewer (Q-UI-1041): each case starts without it.
+  beforeEach(() => new BrowserStorage().clear('local'));
+  afterEach(() => new BrowserStorage().clear('local'));
+
+  it('R-UI-041 R-UI-146 Q-UI-1041 a holder of projects:read adds Owners and Storage on demand; the role stays, and axe passes', async () => {
+    const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [
           sampleProject({ repositories: 2, role: 'owner' }),
@@ -32,37 +49,33 @@ describe('Projects overview (R-UI-041)', () => {
         ];
       },
     });
-    const rows = root.querySelectorAll('tbody tr');
-    expect(rows).toHaveLength(2);
-    expect(text(rows[0]!)).toContain('data');
-    expect(text(rows[1]!)).toContain('web');
-    expect(text(rows[1]!)).toContain('Web platform');
+    expect(headsOf(r.root)).not.toContain('Owners');
+    expect(headsOf(r.root)).not.toContain('Storage');
+    await showDetails(r);
+    expect(headsOf(r.root)).toEqual(['Project', 'Description', 'Visibility', 'Your role', 'Owners', 'Repositories', 'Members', 'Storage']);
+    const row = [...r.root.querySelectorAll('tbody tr')].find((x) => text(x).includes('Web platform'))!;
     // The Owners are named, not referenced (UI-A-27).
-    expect(text(rows[1]!)).toContain('web-leads');
-    expect(text(rows[1]!)).not.toContain('group:web-leads');
-    // The caller's role is no column of the admin area's list (owner, 2026-11-18).
-    const heads = [...root.querySelectorAll('thead th')].map((h) => text(h).replace('help_outline', '').trim());
-    expect(heads).not.toContain('Your role');
-    expect(text(rows[1]!)).not.toContain('Owner');
-    expect(text(rows[1]!)).not.toContain('Policies: on');
-    expect(await seriousViolations(root)).toEqual([]);
+    expect(text(row)).toContain('web-leads');
+    expect(text(row)).not.toContain('group:web-leads');
+    await expectAccessible(r.root);
   });
 
-  it('R-UI-146 Q-UI-574 Q-UI-561 the counts and the size stand at their column\'s end; no Owners is the dash', async () => {
-    const { root } = await renderScreen(ProjectList, {
+  it('R-UI-146 Q-UI-574 Q-UI-561 Q-UI-1041 the counts and the size stand at their column\'s end; no Owners is the dash', async () => {
+    const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [sampleProject({ key: 'data', displayName: 'Data', owners: [], members: 0 })];
       },
     });
-    const heads = [...root.querySelectorAll('thead th')].map((h) => [text(h).replace('help_outline', '').trim(), h.classList.contains('num')]);
-    expect(heads.filter(([, num]) => num).map(([label]) => label)).toEqual(['Members', 'Repositories', 'Storage']);
-    const row = root.querySelector('tbody tr')!;
+    await showDetails(r);
+    const heads = [...r.root.querySelectorAll('thead th')].map((h) => [text(h).replace('help_outline', '').trim(), h.classList.contains('num')]);
+    expect(heads.filter(([, num]) => num).map(([label]) => label)).toEqual(['Repositories', 'Members', 'Storage']);
+    const row = r.root.querySelector('tbody tr')!;
     expect(row.querySelectorAll('td.num')).toHaveLength(3);
     expect(row.querySelectorAll('td quader-no-value')).toHaveLength(1);
   });
 
-  it('R-STOR-049 shows the logical size each project is charged in a column of its own', async () => {
-    const { root } = await renderScreen(ProjectList, {
+  it('R-STOR-049 Q-UI-1041 shows the logical size each project is charged, the exact bytes its title', async () => {
+    const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [
           sampleProject({ logicalBytes: 3 * 1024 ** 3 }),
@@ -70,25 +83,38 @@ describe('Projects overview (R-UI-041)', () => {
         ];
       },
     });
-    const headers = [...root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim());
-    const column = headers.findIndex((h) => h?.startsWith('Storage'));
+    await showDetails(r);
+    const column = headsOf(r.root).indexOf('Storage');
     expect(column).toBeGreaterThan(-1);
-    const cells = (row: Element): string[] => [...row.querySelectorAll('th, td')].map((c) => text(c));
-    const rows = root.querySelectorAll('tbody tr');
-    expect(cells(rows[0]!)[column]).toBe('0 B');
-    expect(cells(rows[1]!)[column]).toBe('3.0 GiB');
-    expect(rows[1]!.querySelectorAll('td')[column - 1]!.getAttribute('title')).toBe(`${3 * 1024 ** 3} B`);
+    const cells = (row: Element): Element[] => [...row.querySelectorAll('th, td')];
+    const rows = [...r.root.querySelectorAll('tbody tr')];
+    const data = rows.find((x) => text(x).includes('Data'))!;
+    const web = rows.find((x) => text(x).includes('Web platform'))!;
+    expect(text(cells(data)[column]!)).toBe('0 B');
+    expect(text(cells(web)[column]!)).toBe('3.0 GiB');
+    expect(cells(web)[column]!.getAttribute('title')).toBe(`${3 * 1024 ** 3} B`);
   });
 
-  it('R-UI-041 an Owner reads the overview and edits its project, but creates none, with the reason', async () => {
-    const { root } = await renderScreen(ProjectList, { capabilities: [], setup: asProjectAdministrator() });
-    expect((buttonByText(root, 'New project') as HTMLButtonElement).disabled).toBe(true);
-    expect(text(root)).toContain('Read only: changing this needs the permission projects:write');
-    expect(root.textContent).toContain('Edit web');
+  it('Q-UI-1041 the choice is kept for the viewer, and a plain user is offered no such columns', async () => {
+    const first = await renderScreen(ProjectsHome);
+    await showDetails(first);
+    const again = await renderScreen(ProjectsHome);
+    expect(headsOf(again.root)).toContain('Owners');
+
+    const plain = await renderScreen(ProjectsHome, { capabilities: [] });
+    expect(text(plain.root)).not.toContain('Show Owners and storage');
+    expect(headsOf(plain.root)).not.toContain('Owners');
+    expect(headsOf(plain.root)).not.toContain('Storage');
+  });
+
+  it('R-UI-041 an Owner without projects:write reads the list and is offered no New project', async () => {
+    const { root } = await renderScreen(ProjectsHome, { capabilities: [], setup: asProjectAdministrator() });
+    expect([...root.querySelectorAll('button')].some((b) => text(b) === 'New project')).toBe(false);
+    expect(text(root)).toContain('Web platform');
   });
 
   it('R-UI-041 R-AUTHZ-026 R-UI-150 creates a project with a first Owner group chosen from the search, then opens it', async () => {
-    const { fixture, root, get } = await renderScreen(ProjectList);
+    const { fixture, root, get } = await renderScreen(ProjectsHome);
     buttonByText(root, 'New project').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
@@ -104,7 +130,7 @@ describe('Projects overview (R-UI-041)', () => {
   });
 
   it('R-UI-041 a key that does not match the pattern is refused before any request', async () => {
-    const { fixture, root, get } = await renderScreen(ProjectList);
+    const { fixture, root, get } = await renderScreen(ProjectsHome);
     buttonByText(root, 'New project').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
@@ -113,30 +139,6 @@ describe('Projects overview (R-UI-041)', () => {
     await settle(fixture);
     expect(text(dialog)).toContain('The key does not match the pattern.');
     expect((get(ProjectsApi) as FakeProjectsApi).calls).toEqual([]);
-  });
-
-  it('R-UI-041 R-UI-042 an edit sends If-Match; a 412 opens the conflict dialog', async () => {
-    const { fixture, root, get } = await renderScreen(ProjectList);
-    const api = get(ProjectsApi) as FakeProjectsApi;
-    buttonByText(root, 'Edit web').click();
-    await settle(fixture);
-    let dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
-    expect(dialog.querySelector<HTMLInputElement>('input[name="key"]')!.readOnly).toBe(true);
-    typeInto(dialog, 'Display name', 'Web team');
-    buttonByText(dialog, 'Save project').click();
-    await sleep(fixture, 100);
-    expect(api.ifMatch).toEqual(['"1"']);
-    expect(api.projects[0]?.displayName).toBe('Web team');
-
-    // Someone else changes it while the dialog is open.
-    buttonByText(root, 'Edit web').click();
-    await settle(fixture);
-    dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
-    api.bump('web');
-    typeInto(dialog, 'Display name', 'Web crew');
-    buttonByText(dialog, 'Save project').click();
-    await settle(fixture);
-    expect(overlay().querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 });
 
@@ -183,6 +185,19 @@ describe('Project settings (R-UI-041, Q-UI-129)', () => {
     expect(api.calls.some((c) => c.startsWith('replace web'))).toBe(true);
     expect(save.disabled).toBe(true);
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-041 R-UI-042 a save sends If-Match; a 412 opens the conflict dialog', async () => {
+    const { fixture, root, get } = await renderScreen(ProjectSettings, { inputs: { project: 'web' } });
+    const api = get(ProjectsApi) as FakeProjectsApi;
+    // Someone else changes the project while the page is open.
+    api.bump('web');
+    typeInto(root, 'Display name', 'Web crew');
+    await settle(fixture);
+    buttonByText(root, 'Save changes').click();
+    await sleep(fixture, 100);
+    expect(api.ifMatch).toEqual(['"1"']);
+    expect(overlay().querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 
   it('R-UI-041 Q-UI-215 a settings section folds and says whether it is open', async () => {

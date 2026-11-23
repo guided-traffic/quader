@@ -110,9 +110,8 @@ test('R-UI-021 R-DEB-008 R-UI-084 the creation form offers Debian and the settin
   const architectures = page.getByLabel('Architectures', { exact: true });
 
   await test.step('the form shows the default architectures as lines and writes the ones that differ', async () => {
-    await page.goto('/ui/en/admin/repositories/new/deb');
+    await page.goto(`/ui/en/projects/${e2eProject}/repositories/new/deb`);
     await expect(page.getByRole('heading', { name: 'New Debian (APT) repository', level: 1 })).toBeVisible();
-    await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
     await page.locator('#f-key').fill(wizardKey);
     await page.getByRole('button', { name: 'Advanced settings' }).click();
     await expect(page.getByRole('heading', { name: 'Debian (APT) settings', level: 3 })).toBeVisible();

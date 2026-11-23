@@ -12016,10 +12016,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-509 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+513 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 509 questions</summary>
+<summary>Q-UI: 513 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12532,6 +12532,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1006](spec/api-and-ui.md#q-ui-1006--every-page-names-a-principal-by-the-username-and-every-other-kind-with-its-kind-as-a-word) | Every page names a principal by the username, and every other kind with its kind as a word | Decided by the development agent on 2026-11-23, settling option (a) of [Q-UI-1004](spec/api-and-ui.md#q-ui-1004--a-page-names-a-person-without-a-principals-syntax) that waited | (c) One helper for every page: a user by the username without the kind ("by priya"), a service account, a group, a Bastion and a CI job with their kind as a word ("service account ci-build", "Servicekonto ci-build"); the reference stays the title | — |
 | [Q-UI-1007](spec/api-and-ui.md#q-ui-1007--a-technical-tokens-description-is-edited-and-the-token-deleted-from-its-rows-menu) | A technical token's description is edited and the token deleted from its row's menu | Decided by the development agent on 2026-11-23 as the coordinator of the screens' second round decided it (G5-51) | (a) A menu **Actions for <token>** at the row's end, beside the words, with **Edit description** (a dialog of the one field, read with the token's `ETag` as it opens and saved with it) and **Delete** (the confirmation every removal uses, "Delete this technical token?") | — |
 | [Q-UI-1031](spec/api-and-ui.md#q-ui-1031--the-ui-development-profile-runs-in-instances-one-per-builder-and-instance-1-is-the-main-checkouts) | The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's | Decided by the development agent on 2026-11-23 | (a) Instances `UI_INSTANCE=1..8`: project `quader-ui-dev<n>`, state `.dev/ui-dev-<n>`, every port plus `(n - 1) * 100`; instance 1 exactly the former names and ports, and refused in a git worktree | — |
+| [Q-UI-1040](spec/api-and-ui.md#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held) | Projects and Repositories leave the admin area; the main area holds what they held | Decided by the owner, 2026-11-23 | (b), the owner's. | — |
+| [Q-UI-1041](spec/api-and-ui.md#q-ui-1041--the-owners-and-the-storage-are-columns-on-demand-of-the-start-page-for-the-holder-of-projectsread) | The Owners and the storage are columns on demand of the start page, for the holder of projects:read | Decided by the development agent | (a) A check box **Show Owners and storage** at the end of the list's head, beside **Your projects**, for the holder of `projects:read`; the choice kept for the viewer in the browser as an opened Details section is (Q-UI-967) | — |
+| [Q-UI-1042](spec/api-and-ui.md#q-ui-1042--the-repositories-of-every-project-are-the-project-lists-columns-with-the-project-and-no-new-repository) | The repositories of every project are the project list's columns with the project, and no New repository | Decided by the development agent | (a) A project's list's columns (the visibility icon before the key, format, class, **Set up client** and the menu) with **Project** after the repository; **Last activity** for the holder of `repositories:write-config` while a row has one; no copy button; the project filter a choice of the projects the caller sees, by display name; no **New repository**, the line under the heading saying where a repository is created | — |
+| [Q-UI-1043](spec/api-and-ui.md#q-ui-1043--admin-without-the-dashboard-starts-at-the-first-entry-of-the-admin-side-bar-or-on-the-start-page) | `/admin` without the dashboard starts at the first entry of the admin side bar, or on the start page | Decided by the development agent | (a) The dashboard for `settings:read`, else the first entry of the admin side bar the caller has, in its order; with none, the start page | — |
 
 </details>
 

@@ -346,14 +346,13 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
   with the input's, inner corners square, outer corners `--quader-control-radius`.
 - **Width: one per place, never per address, never more than its share.** The field fills its line and never takes its
   address's width.
-  - A list has no field. The admin area's repository list has a quiet `<quader-copy-button [quiet]="true">` at the end of the row,
-    beside the menu, its `label` **Copy client address** with the address, which is also the button's tooltip; the menu offers
-    **Copy client address** too ([Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
-    A system repository of `upstream` has neither: its address answers every client 404, and no screen offers an address, a download
+  - A list has no field and no copy of an address
+    ([Q-UI-1042](../spec/api-and-ui.md#q-ui-1042--the-repositories-of-every-project-are-the-project-lists-columns-with-the-project-and-no-new-repository)).
+    A system repository of `upstream` offers no address anywhere: its address answers every client 404, and no screen offers an address, a download
     or a command of it ([Q-UI-898](../spec/api-and-ui.md#q-ui-898--nothing-offers-what-a-system-repository-refuses-no-address-no-download-no-command)).
-    Where it is listed among other repositories (that list, the search's suggestions and results) it carries the neutral badge
+    Where it is listed among other repositories (the list of every project's repositories, the search's suggestions and results) it carries the neutral badge
     **System** after its key ([Q-UI-902](../spec/api-and-ui.md#q-ui-902--where-a-system-repository-is-listed-among-others-it-carries-the-badge-system)).
-    A project's list and the repositories behind a format's tile offer **Set up client** in the row, as the quiet row action
+    A project's list, the list of every project's repositories and the repositories behind a format's tile offer **Set up client** in the row, as the quiet row action
     `btn btn-tertiary row-setup` whose accessible name ends with the key; on a page and in a header it is a default button, never
     blue ([Q-UI-487](../spec/api-and-ui.md#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)). The search results offer neither ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
   - A field alone on its line, or a stack of the addresses of one thing, fills the line up to `--quader-address-measure`

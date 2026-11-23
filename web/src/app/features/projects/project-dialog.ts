@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
+import { DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
 import { newIdempotencyKey } from '../../api/client';
 import { ApiError } from '../../api/problem';
 import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
@@ -9,42 +9,29 @@ import {
   installationReasons,
   restrictedNotes,
 } from '../../shared/ui/visibility-level';
-import { PROJECT_KEY_PATTERN, Project, ProjectInput, ProjectsApi } from '../../api/projects-api';
+import { PROJECT_KEY_PATTERN, Project, ProjectsApi } from '../../api/projects-api';
 import { Versioned } from '../../api/repositories-api';
 import { ProjectContext } from '../../core/project-context';
-import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { TextField } from '../../shared/access/fields';
 import { PrincipalField } from '../../shared/ui/principal-field';
 
-/** What the dialog is opened with: nothing to create a project, the loaded project to edit it. */
-export interface ProjectDialogData {
-  readonly project?: Versioned<Project>;
-}
-
 /**
- * Create and edit a project (R-UI-041, R-AUTHZ-026). The key is fixed at creation. A new project takes its visibility level from the
- * radio group, preset to the installation's default (R-UI-054), with the levels the caller cannot choose disabled and a restricted level
- * marked for an administrator (R-UI-141); an existing project's level changes on its settings page only. A new project names its first
- * Owners (`owners`, Q-AUTHZ-229; the caller holds `projects:write`); an edit changes the display name and the
- * description (`PUT` with `If-Match`; a 412 opens the conflict dialog of R-UI-042), by an Owner or an administrator of
- * Quader. The members and their roles are changed on the project's screen, the repositories are created in the
- * project. The display name and the key are checked before the first request; the idempotency key of the create is
- * replaced after a refusal, because the server stores a 4xx outcome under it.
+ * Create a project (R-UI-041, R-AUTHZ-026), from **New project** of the start page. The key is fixed at creation. A new project takes
+ * its visibility level from the radio group, preset to the installation's default (R-UI-054), with the levels the caller cannot choose
+ * disabled and a restricted level marked for an administrator (R-UI-141), and names its first Owners (`owners`, Q-AUTHZ-229; the caller
+ * holds `projects:write`). A project is edited in place on its settings page (Q-UI-215), where its level changes too; the members and
+ * their roles are changed on the project's screen, the repositories are created in the project. The display name and the key are
+ * checked before the first request; the idempotency key of the create is replaced after a refusal, because the server stores a 4xx
+ * outcome under it.
  */
 @Component({
   selector: 'quader-project-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice, PrincipalField, TextField, VisibilityLevelControl],
   template: `
-    <h2 quaderDialogTitle>
-      @if (existing(); as p) {
-        <ng-container i18n="@@project-dialog.title-edit">Edit project {{ p.value.key }}</ng-container>
-      } @else {
-        <ng-container i18n="@@project-dialog.title-new">New project</ng-container>
-      }
-    </h2>
+    <h2 quaderDialogTitle i18n="@@project-dialog.title-new">New project</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
@@ -57,7 +44,6 @@ export interface ProjectDialogData {
           name="key"
           [(value)]="key"
           [required]="true"
-          [readonly]="existing() !== null"
           [error]="keyError()"
           i18n-hint="@@project-dialog.key-hint"
           hint="Lower-case letters, digits and -, two to 32 characters, starting with a letter and ending with a letter or digit. Cannot be changed later."
@@ -81,64 +67,48 @@ export interface ProjectDialogData {
           [error]="fieldError('/description')"
         />
 
-        @if (!existing()) {
-          <quader-visibility-level
-            i18n-label="@@project-dialog.visibility"
-            label="Visibility level"
-            subject="project"
-            [value]="shownLevel()"
-            (valueChange)="chosenLevel.set($event)"
-            [reasons]="levelReasons()"
-            [notes]="levelNotes()"
-          />
-          <quader-principal-field
-            i18n-label="@@project-dialog.owners"
-            label="First Owners"
-            name="owners"
-            [kinds]="ownerKinds"
-            [multiple]="true"
-            [width]="'full'"
-            [(value)]="owners"
-            i18n-hint="@@project-dialog.owners-hint"
-            hint="Users and groups can own a project; members are added on the project's screen."
-          />
-        }
+        <quader-visibility-level
+          i18n-label="@@project-dialog.visibility"
+          label="Visibility level"
+          subject="project"
+          [value]="shownLevel()"
+          (valueChange)="chosenLevel.set($event)"
+          [reasons]="levelReasons()"
+          [notes]="levelNotes()"
+        />
+        <quader-principal-field
+          i18n-label="@@project-dialog.owners"
+          label="First Owners"
+          name="owners"
+          [kinds]="ownerKinds"
+          [multiple]="true"
+          [width]="'full'"
+          [(value)]="owners"
+          i18n-hint="@@project-dialog.owners-hint"
+          hint="Users and groups can own a project; members are added on the project's screen."
+        />
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@project-dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()">
-          @if (existing()) {
-            <ng-container i18n="@@project-dialog.save">Save project</ng-container>
-          } @else {
-            <ng-container i18n="@@project-dialog.create">Create project</ng-container>
-          }
-        </button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@project-dialog.create">Create project</button>
       </div>
     </form>
   `,
   styleUrl: '../../shared/access/access.scss',
-  styles: `
-    .move {
-      color: var(--quader-text-muted);
-      font: var(--quader-type-label-small);
-    }
-  `,
 })
 export class ProjectDialog {
   private readonly api = inject(ProjectsApi);
-  private readonly conflicts = inject(ConflictResolver);
   private readonly context = inject(ProjectContext);
   private readonly ref = inject<DialogRef<Project, ProjectDialog>>(DialogRef);
-  private readonly data = inject<ProjectDialogData>(DIALOG_DATA);
   private readonly visibilityApi = inject(VisibilityApi);
   /** Replaced after every refusal of the create: the server stores a 4xx outcome under its key (R-API-014). */
   private idempotencyKey = newIdempotencyKey();
 
-  /** The project once it exists: the one being edited, or the one this dialog just created. */
-  protected readonly existing = signal<Versioned<Project> | null>(this.data.project ?? null);
-  protected readonly key = signal(this.data.project?.value.key ?? '');
-  protected readonly displayName = signal(this.data.project?.value.displayName ?? '');
-  protected readonly description = signal(this.data.project?.value.description ?? '');
+  /** The project once this dialog created it: a second submit, after the read of it failed, creates nothing again. */
+  private readonly created = signal<Versioned<Project> | null>(null);
+  protected readonly key = signal('');
+  protected readonly displayName = signal('');
+  protected readonly description = signal('');
   protected readonly owners = signal<readonly string[]>([]);
   /** The caller's choices (R-API-076): the installation's default level, the restricted levels, whether Public is available. */
   private readonly choices = signal<VisibilityChoices | null>(null);
@@ -153,12 +123,10 @@ export class ProjectDialog {
   private readonly attempted = signal(false);
 
   constructor() {
-    if (this.data.project === undefined) {
-      this.visibilityApi
-        .choices()
-        .then((c) => this.choices.set(c))
-        .catch(() => undefined);
-    }
+    this.visibilityApi
+      .choices()
+      .then((c) => this.choices.set(c))
+      .catch(() => undefined);
   }
 
   protected readonly ownerKinds = ['user', 'group'] as const;
@@ -166,7 +134,7 @@ export class ProjectDialog {
   protected keyError(): string | null {
     const server = fieldErrorAt(this.error(), '/key');
     if (server) return server;
-    if (this.existing() || !this.attempted()) return null;
+    if (this.created() || !this.attempted()) return null;
     return PROJECT_KEY_PATTERN.test(this.key().trim())
       ? null
       : $localize`:@@project-dialog.key-invalid:The key does not match the pattern.`;
@@ -193,13 +161,13 @@ export class ProjectDialog {
   protected async submit(event: Event): Promise<void> {
     event.preventDefault();
     this.attempted.set(true);
-    const keyValid = this.existing() !== null || PROJECT_KEY_PATTERN.test(this.key().trim());
+    const keyValid = this.created() !== null || PROJECT_KEY_PATTERN.test(this.key().trim());
     if (!keyValid || !this.displayNameValid()) return;
     this.busy.set(true);
     this.error.set(null);
     try {
-      if (!(await this.saveProject())) return;
-      const key = this.existing()?.value.key ?? this.key().trim();
+      await this.createProject();
+      const key = this.created()?.value.key ?? this.key().trim();
       this.context.refresh().catch(() => undefined);
       this.ref.close((await this.api.get(key)).value);
     } catch (e) {
@@ -209,60 +177,29 @@ export class ProjectDialog {
     }
   }
 
-  private body(): ProjectInput {
-    return {
-      displayName: this.displayName().trim(),
-      description: this.description().trim(),
-    };
-  }
-
-  /** Creates or replaces the project; false when the person left the conflict dialog without a choice. */
-  private async saveProject(): Promise<boolean> {
-    const current = this.existing();
-    if (!current) {
-      let created: Versioned<Project>;
-      try {
-        created = await this.api.create(
+  /** Creates the project once; a later submit only reads it again. */
+  private async createProject(): Promise<void> {
+    if (this.created()) return;
+    try {
+      this.created.set(
+        await this.api.create(
           {
             key: this.key().trim(),
-            ...this.body(),
+            displayName: this.displayName().trim(),
+            description: this.description().trim(),
             ...(this.chosenLevel() ?? this.defaultLevel() ? { visibility: this.shownLevel() } : {}),
             ...(this.owners().length > 0 ? { owners: [...this.owners()] } : {}),
           },
           this.idempotencyKey,
-        );
-      } catch (e) {
-        // The refusal is stored under the key; a corrected retry has another body and needs another key.
-        // A request still in progress is the same intent: its key stays.
-        if (e instanceof ApiError && e.status >= 400 && e.status < 500 && e.code !== 'idempotency_in_progress') {
-          this.idempotencyKey = newIdempotencyKey();
-        }
-        throw e;
+        ),
+      );
+    } catch (e) {
+      // The refusal is stored under the key; a corrected retry has another body and needs another key.
+      // A request still in progress is the same intent: its key stays.
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && e.code !== 'idempotency_in_progress') {
+        this.idempotencyKey = newIdempotencyKey();
       }
-      this.existing.set(created);
-      return true;
+      throw e;
     }
-    const body = this.body();
-    const stored = current.value;
-    const patch: Record<string, unknown> = {};
-    if (body.displayName !== stored.displayName) patch['displayName'] = body.displayName;
-    if (body.description !== stored.description) patch['description'] = body.description;
-    if (Object.keys(patch).length === 0) return true;
-    const result = await this.conflicts.save<Project>({
-      etag: current.etag,
-      patch,
-      send: (etag) => this.api.replace(stored.key, { key: stored.key, ...body }, etag),
-      reload: () => this.api.get(stored.key),
-    });
-    if (result.outcome === 'dismissed') return false;
-    this.existing.set(result.current);
-    if (result.outcome === 'reloaded') {
-      // "Reload (discard mine)": the fields show what is stored now; the person looks and saves again.
-      const p = result.current.value;
-      this.displayName.set(p.displayName);
-      this.description.set(p.description);
-      return false;
-    }
-    return true;
   }
 }

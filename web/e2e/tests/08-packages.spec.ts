@@ -236,9 +236,8 @@ test('R-UI-021 R-ARCH-004 R-UI-083 the npm settings in Advanced settings and on 
   };
 
   await test.step('the form offers the settings of a local npm repository in Advanced settings and writes the one that differs from the default', async () => {
-    await page.goto('/ui/en/admin/repositories/new/npm');
+    await page.goto(`/ui/en/projects/${e2eProject}/repositories/new/npm`);
     await expect(page.getByRole('heading', { name: 'New npm repository', level: 1 })).toBeVisible();
-    await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
     await expect(page.getByRole('radio', { name: /^Local/ })).toBeChecked();
     await page.locator('#f-key').fill(wizardKey);
     // The format's settings wait in the closed Advanced settings (R-UI-083).
@@ -282,8 +281,7 @@ test('R-UI-021 R-UI-083 R-REPO-050 the Mirror group of a remote npm repository i
   const interval = page.getByRole('textbox', { name: 'Pass interval in seconds', exact: true });
 
   await test.step('the form shows the Mirror group of a remote npm repository in Advanced settings, in mode pull-through with no members', async () => {
-    await page.goto('/ui/en/admin/repositories/new/npm');
-    await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
+    await page.goto(`/ui/en/projects/${e2eProject}/repositories/new/npm`);
     await expect(page.getByRole('radio', { name: /^Virtual/ })).toBeEnabled();
     await page.getByRole('radio', { name: /^Remote/ }).check();
     await page.locator('#f-key').fill(mirrorKey);

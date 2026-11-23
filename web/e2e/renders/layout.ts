@@ -735,10 +735,10 @@ export const allowed: readonly {
 }[] = [
   {
     check: 'row-actions',
-    screen: /^admin-repositories/,
+    screen: /^all-repositories/,
     what: /td\.actions/,
-    detail: /^the action cells of one table are built 2 ways: (icon\+menu \(\d+\), menu \(\d+\)|menu \(\d+\), icon\+menu \(\d+\))$/,
-    why: "a system repository of upstream has no address to copy, so its row keeps the menu alone beside the copy button and menu of every other row (Q-UI-898)",
+    detail: /^the action cells of one table are built 2 ways: (menu\+word \(\d+\), menu \(\d+\)|menu \(\d+\), menu\+word \(\d+\))$/,
+    why: 'on the list of every project a system repository of upstream answers no client, so its row keeps the menu alone beside the Set up client and menu of every other row (Q-UI-896, Q-UI-1042)',
   },
   {
     check: 'row-actions',

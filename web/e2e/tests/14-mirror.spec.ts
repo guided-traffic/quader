@@ -38,10 +38,9 @@ type Remote = {
   availability?: { mode?: string };
 };
 
-/** Opens the creation form of a remote npm repository in the admin area (R-UI-080), with the project chosen and the key typed. */
+/** Opens the creation form of a remote npm repository in the project (R-UI-080, Q-UI-1040), with the key typed. */
 async function remoteForm(page: import('@playwright/test').Page, key: string): Promise<void> {
-  await page.goto('/ui/en/admin/repositories/new/npm');
-  await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
+  await page.goto(`/ui/en/projects/${e2eProject}/repositories/new/npm`);
   await page.getByRole('radio', { name: /^Remote/ }).check();
   await page.locator('#f-key').fill(key);
   await expect(page.getByRole('heading', { name: 'Upstream', level: 2 })).toBeVisible();

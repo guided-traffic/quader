@@ -5,7 +5,7 @@
   <quader-error-notice [error]="f" (retry)="formats.reload()" />
 } @else if (descriptor(); as fmt) {
   <quader-page-header [heading]="heading()" [description]="projectLine()">
-    <a actions class="btn btn-default" [routerLink]="chooserLink()" [queryParams]="chooserQuery()" i18n="@@repo.create.change-format"
+    <a actions class="btn btn-default" [routerLink]="chooserLink()" i18n="@@repo.create.change-format"
       >Change format</a
     >
   </quader-page-header>
@@ -16,32 +16,6 @@
       @if (f.fieldErrors.size === 0) {
         <quader-error-notice [error]="f" />
       }
-    }
-
-    @if (!inProject()) {
-      <div class="field">
-        <label class="field-label" for="f-project" i18n="@@repo.create.project">Project</label>
-        <select
-          id="f-project"
-          class="select-input field-w-name"
-          [disabled]="projects.isLoading()"
-          [attr.aria-busy]="projects.isLoading() ? 'true' : null"
-          [attr.aria-invalid]="projectError() ? 'true' : null"
-          [attr.aria-describedby]="projectError() ? 'e-project' : null"
-          (change)="setProject($any($event.target).value)"
-        >
-          @if (projects.isLoading()) {
-            <option value="" selected>{{ loadingProjects }}</option>
-          } @else {
-            @for (o of projectOptions(); track o.value) {
-              <option [value]="o.value" [selected]="o.value === chosenProject()" translate="no">{{ o.label }}</option>
-            }
-          }
-        </select>
-        @if (projectError(); as text) {
-          <p class="field-error" id="e-project">{{ text }}</p>
-        }
-      </div>
     }
 
     <fieldset class="choices">
@@ -141,7 +115,7 @@
           [central]="activeCentral()"
           [own]="ownPresets()"
           [virtualLink]="newVirtualLink()"
-          [virtualQuery]="newVirtualQuery()"
+          [virtualQuery]="newVirtualQuery"
         />
       </div>
     }

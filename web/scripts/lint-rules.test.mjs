@@ -102,8 +102,28 @@ test('R-UI-158 a link to the removed route /admin/security fails the check, the 
     "return ctx.instanceWide ? ['/security', ...rest] : [];",
     '<a routerLink="/admin/advisory-sources">Advisory sources</a>',
     "route: '/admin/settings/auth',",
-    "['/admin', 'repositories']",
+    "['/admin', 'upstream', key]",
     "path: 'security',",
+  ];
+  for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
+});
+
+test('Q-UI-1040 a link to the removed routes /admin/projects and /admin/repositories fails the check, /projects and /repositories pass', () => {
+  const bad = [
+    '<a routerLink="/admin/repositories">View repositories</a>',
+    '<a routerLink="/admin/repositories/new">New repository</a>',
+    "return router.createUrlTree(['/admin', 'projects']);",
+    "return router.createUrlTree(['/admin', 'repositories']);",
+    "const url = `/admin/projects?q=${q}`;",
+    "['/admin/repositories/new', format]",
+  ];
+  for (const t of bad) assert.equal(linksToRemovedRoutes(t).length, 1, t);
+  const good = [
+    '<a routerLink="/repositories">View repositories</a>',
+    "['/projects', project, 'repositories', 'new']",
+    "route: '/repositories',",
+    "path: 'repositories',",
+    "['/admin', 'upstream', key]",
   ];
   for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
 });

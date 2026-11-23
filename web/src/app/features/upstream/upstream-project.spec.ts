@@ -9,7 +9,7 @@ import { FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { projectEntries } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
 import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
-import { ProjectList } from '../projects/project-list';
+import { BrowserStorage } from '../../core/storage';
 import { ProjectSwitcher } from '../projects/project-switcher';
 import { UPSTREAM_PROJECT } from '../../core/upstream-project';
 import { ProjectsHome } from '../projects/projects-home';
@@ -49,16 +49,21 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-190 the admin area keeps Upstream first under either direction of the sort, without Edit, Owners or members', async () => {
-    const r = await renderScreen(ProjectList, { setup: projects });
+  it('R-UI-190 Q-UI-1041 with the administrator\'s columns Upstream stays first, without Owners or members', async () => {
+    const r = await renderScreen(ProjectsHome, {
+      setup: (get) => {
+        projects(get);
+        // The viewer asked for the columns before (Q-UI-1041).
+        new BrowserStorage().set('local', 'quader.open.alice', JSON.stringify(['projects.details']));
+      },
+    });
+    new BrowserStorage().clear('local');
     expect(names(r.root)).toEqual(['Upstream', 'Alpha team', 'Web platform']);
-    r.root.querySelector<HTMLButtonElement>('thead button.th-sort')!.click();
-    await settle(r.fixture);
-    expect(names(r.root)).toEqual(['Upstream', 'Web platform', 'Alpha team']);
     const row = r.root.querySelector('tbody tr')!;
     expect(text(row)).toContain('Built-in');
-    expect([...row.querySelectorAll('button')].some((b) => text(b).startsWith('Edit'))).toBe(false);
+    // The Owners and the members are the dash; there is nothing to edit in the row.
     expect(row.querySelectorAll('quader-no-value').length).toBe(2);
+    expect(row.querySelectorAll('button')).toHaveLength(0);
   });
 
   it('R-UI-190 a filter that does not match takes it out, and the project switcher lists it first among its matches', async () => {
@@ -89,8 +94,6 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     expect(home.root.querySelectorAll('tbody tr')[1]!.querySelector('td.level quader-visibility-icon')).not.toBeNull();
     await expectAccessible(home.root);
 
-    const admin = await renderScreen(ProjectList, { setup: projects });
-    expect(admin.root.querySelector('tbody tr')!.querySelector('td.level quader-visibility-icon')).toBeNull();
 
     const switcher = await renderScreen(ProjectSwitcher, {
       inputs: { label: 'Upstream' },
@@ -220,8 +223,8 @@ describe('A new remote repository names the central one (R-UI-191)', () => {
     expect(text(line)).toContain('Docker Hub is offered to every project as upstream/docker-hub.');
     const link = line.querySelector('a')!;
     expect(text(link)).toBe('New virtual repository');
-    // The test renders the form outside a project's route: the admin area's form, which carries the project on.
-    expect(link.getAttribute('href')).toBe('/admin/repositories/new/oci?class=virtual&project=web');
+    // The form of the same project, with the class virtual (Q-UI-1040: a repository is created in its project).
+    expect(link.getAttribute('href')).toBe('/projects/web/repositories/new/oci?class=virtual');
     // Nothing stops the create.
     expect([...root.querySelectorAll('button')].some((b) => text(b).startsWith('Create') && !b.disabled)).toBe(true);
   });

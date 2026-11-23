@@ -1,14 +1,14 @@
 import { ProjectsApi } from '../../api/projects-api';
 import { FakeProjectsApi } from '../../api/testing/fakes-projects';
 import { buttonByText, renderScreen, settle, sleep, text, typeInto } from '../../testing/screen';
-import { ProjectList } from './project-list';
+import { ProjectsHome } from './projects-home';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 const dialogOf = (): HTMLElement => overlay().querySelector('quader-project-dialog') as HTMLElement;
 
 describe('The project dialog saves a sequence of calls (R-UI-041, R-UI-042, R-API-014)', () => {
   it('R-UI-041 R-API-014 a corrected retry after a refusal carries a new idempotency key', async () => {
-    const { fixture, root, get } = await renderScreen(ProjectList);
+    const { fixture, root, get } = await renderScreen(ProjectsHome);
     buttonByText(root, 'New project').click();
     await settle(fixture);
     const dialog = dialogOf();
@@ -27,7 +27,7 @@ describe('The project dialog saves a sequence of calls (R-UI-041, R-UI-042, R-AP
   });
 
   it('R-UI-041 a blank or over-long display name is refused before any request', async () => {
-    const { fixture, root, get } = await renderScreen(ProjectList);
+    const { fixture, root, get } = await renderScreen(ProjectsHome);
     buttonByText(root, 'New project').click();
     await settle(fixture);
     const dialog = dialogOf();
@@ -48,7 +48,7 @@ describe('The project dialog saves a sequence of calls (R-UI-041, R-UI-042, R-AP
   });
 
   it('R-UI-041 R-AUTHZ-026 a new project names its first Owners and the dialog edits no members or repositories', async () => {
-    const { fixture, root, get } = await renderScreen(ProjectList);
+    const { fixture, root, get } = await renderScreen(ProjectsHome);
     buttonByText(root, 'New project').click();
     await settle(fixture);
     const dialog = dialogOf();

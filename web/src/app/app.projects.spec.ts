@@ -89,7 +89,7 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect([...root.querySelectorAll('main tbody tr th .secondary')].map((t) => t.textContent?.trim())).toEqual(['data', 'web']);
     // Outside a project the sidebar is the start sidebar, without a switcher.
     expect(root.querySelector('.project-switcher')).toBeNull();
-    expect(navLabels(root)).toEqual(['Projects', 'Guides']);
+    expect(navLabels(root)).toEqual(['Projects', 'Repositories', 'Guides']);
     root.querySelector<HTMLAnchorElement>('main tbody a[href="/projects/data"]')!.click();
     await settleApp(fixture);
     expect(TestBed.inject(Router).url).toBe('/projects/data/repositories');
@@ -217,30 +217,41 @@ describe('The administration area (R-UI-041, Q-UI-129)', () => {
     expect(root.querySelector('#nav-admin')).toBeNull();
   });
 
-  it('R-UI-041 the administrator sees the projects next to the other entries; the auditor too', async () => {
-    const admin = await render('/admin/projects');
-    expect(navLabels(admin.root)).toContain('Projects');
-    expect(navLabels(admin.root)).toContain('Repositories');
-    const auditor = await render('/admin/audit', {
+  it('Q-UI-1040 the admin area has no Projects and no Repositories: they are entries of Your work, for the administrator and the auditor too', async () => {
+    const admin = await render('/admin/dashboard');
+    expect(navLabels(admin.root)).not.toContain('Projects');
+    expect(navLabels(admin.root)).not.toContain('Repositories');
+    expect(navLabels(admin.root)[0]).toBe('Dashboard');
+    const auditor = await render('/projects', {
       roles: ['auditor'],
       capabilities: ['projects:read', 'repositories:read-config', 'audit:read'],
       principals: [],
       projects: [],
     });
-    expect(navLabels(auditor.root)).toContain('Projects');
+    expect(navLabels(auditor.root).slice(0, 3)).toEqual(['Projects', 'Repositories', 'Guides']);
+    // The old addresses are not found, and nothing redirects from them (R-UI-003).
+    for (const url of ['/admin/projects', '/admin/repositories', '/admin/repositories/new', '/admin/repositories/new/npm']) {
+      const old = await render(url);
+      expect(old.root.querySelector('main h1')?.textContent?.trim(), url).toBe('Page not found');
+      expect(TestBed.inject(Router).url, url).toBe(url);
+    }
   });
 
-  it('R-UI-041 a caller with capabilities but no project and no projects:read has no Projects entry', async () => {
-    const { root } = await render('/admin/audit', { roles: [], capabilities: ['audit:read'], principals: [], projects: [] });
-    expect(navLabels(root)).not.toContain('Projects');
+  it('R-UI-041 Q-UI-1043 a caller with projects:read and no entry of the admin area has no Admin button', async () => {
+    const { root } = await render('/projects', { roles: [], capabilities: ['projects:read'], principals: [], projects: [] });
+    expect(root.querySelector('header a.admin-button')).toBeNull();
+    expect(root.querySelector('#nav-admin')).toBeNull();
   });
 
-  it('Q-UI-129 Q-UI-330 the admin lists name the project in a column and link to it', async () => {
-    const repositories = await render('/admin/repositories');
+  it('Q-UI-129 Q-UI-330 Q-UI-1042 the lists across projects name the project in a column and link to it', async () => {
+    const repositories = await render('/repositories');
     expect([...repositories.root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim())).toContain('Project');
     expect(repositories.root.querySelector('tbody td.project-cell a[href="/projects/web"]')).toBeTruthy();
     expect(repositories.root.querySelector('tbody a[href^="/projects/web/repositories/"]')).toBeTruthy();
     expect(repositories.root.querySelector('tbody a[href="/projects/web"]')).toBeTruthy();
+    // A page of the main area: the start side bar, no admin breadcrumb, no link into /admin (Q-UI-1040).
+    expect(repositories.root.querySelector('#nav-admin')).toBeNull();
+    expect([...repositories.root.querySelectorAll('main a')].some((a) => (a.getAttribute('href') ?? '').startsWith('/admin'))).toBe(false);
     const accounts = await render('/admin/service-accounts');
     expect([...accounts.root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim())).toContain('Project');
     const policies = await render('/admin/permissions');

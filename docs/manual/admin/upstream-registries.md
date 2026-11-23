@@ -185,8 +185,8 @@ Both system repositories answer `404` to every client, administrators included, 
 any repository you read: **Set up client**, its address and **Download**; it keeps the badge **System** and nobody deletes its files.
 While closed:
 
-- **Admin area › Repositories** lists them with their project and the badge **System** after the key, without the copy button of the
-  address and without **Copy client address** in the row's menu; the menu keeps **Settings**, **Files** and, for `scanner-trivy`,
+- **Repositories** under **Your work** (the repositories of every project) lists them with their project and the badge **System**
+  after the key, without **Set up client**; the row's menu keeps **Settings**, **Files** and, for `scanner-trivy`,
   **Vulnerabilities**.
 - The search finds them, in the suggestions under the search field and on the tab **Repositories** of the results, with the same badge.
 - On their own pages there is no **Set up client**, no address for downloads by path in **Details**, no pull command in an opened image

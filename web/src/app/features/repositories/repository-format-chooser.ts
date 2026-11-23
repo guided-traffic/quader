@@ -15,8 +15,9 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
 /**
  * The first page of a new repository (R-UI-080, Q-UI-340): the installed formats of `GET /api/v1/formats` as tiles under a search
  * field (the shared tiles of R-UI-127), each tile a link to the form of its format (`new/{format}`). Enter in
- * the search field opens the one format that is left. The admin area passes its `project` query parameter on. The creation form
- * shows this page in its place for a format the installation does not have (`unknownFormat`).
+ * the search field opens the one format that is left. A repository is created in its project (Q-UI-1040): the page is the
+ * project's, `/projects/{project}/repositories/new`. The creation form shows this page in its place for a format the installation
+ * does not have (`unknownFormat`).
  */
 @Component({
   selector: 'quader-repository-format-chooser',
@@ -62,7 +63,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
           <ng-container i18n="@@repo.new.count">{{ shown().length }} of {{ all().length }} formats</ng-container>
         }
       </p>
-      <quader-format-tiles [formats]="shown()" [linkOf]="linkFn" [queryParams]="query$()" [label]="tilesLabel" />
+      <quader-format-tiles [formats]="shown()" [linkOf]="linkFn" [label]="tilesLabel" />
     }
   `,
   styles: `
@@ -78,10 +79,7 @@ export class RepositoryFormatChooser {
   private readonly api = inject(RepositoriesApi);
   private readonly router = inject(Router);
 
-  /**
-   * The project of the page: the route parameter inside a project, the query parameter `project` in the admin area, where it is
-   * the project the form starts with and is carried to the form.
-   */
+  /** The project of the page: the route parameter `:project`, or the creation form's project where it shows the chooser. */
   readonly project = input<string | undefined>();
   /** The format named in the address that this installation does not have (R-UI-080). */
   readonly unknownFormat = input<string | null>(null);
@@ -94,22 +92,8 @@ export class RepositoryFormatChooser {
     const e = this.formats.error();
     return e ? asApiError(e) : null;
   });
-  /** The admin area keeps its project choice from the list to the form; inside a project the path names it. */
-  protected readonly query$ = computed((): Record<string, string> => {
-    const project = this.project();
-    return project && this.chooserPath().startsWith('/admin/') ? { project } : {};
-  });
-
-  /** `…/repositories/new` of the page, also when the creation form shows the chooser in its place at `…/new/{format}`. */
-  private readonly chooserPath = computed(() => {
-    const path = this.router.url.split(/[?#]/)[0] ?? '';
-    const marker = '/repositories/new';
-    const at = path.indexOf(marker);
-    return at < 0 ? '/admin/repositories/new' : path.slice(0, at + marker.length);
-  });
-
   protected linkOf(f: FormatDescriptor): string {
-    return `${this.chooserPath()}/${f.name}`;
+    return `/projects/${encodeURIComponent(this.project() ?? '')}/repositories/new/${f.name}`;
   }
   protected readonly linkFn = (f: FormatDescriptor): string => this.linkOf(f);
   protected readonly tilesLabel = $localize`:@@repo.new.formats:Package formats`;
@@ -119,6 +103,6 @@ export class RepositoryFormatChooser {
     const only = this.shown();
     if (only.length !== 1) return;
     event.preventDefault();
-    void this.router.navigate([this.linkOf(only[0]!)], { queryParams: this.query$() });
+    void this.router.navigate([this.linkOf(only[0]!)]);
   }
 }

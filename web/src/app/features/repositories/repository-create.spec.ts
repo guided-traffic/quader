@@ -72,7 +72,7 @@ describe('The creation form of a repository', () => {
     expect(r.root.querySelector('nav ol, [aria-current="step"]')).toBeNull();
     expect([...r.root.querySelectorAll('button')].some((b) => /^\s*Next\s*$/.test(b.textContent ?? ''))).toBe(false);
     const change = [...r.root.querySelectorAll('a')].find((a) => text(a) === 'Change format')!;
-    expect(change.getAttribute('href')).toBe('/admin/repositories/new?project=web');
+    expect(change.getAttribute('href')).toBe('/projects/web/repositories/new');
     const oci = await openForm('oci');
     expect(text($(oci, 'h1'))).toBe('New OCI (Docker) repository');
     for (const h of oci.root.querySelectorAll('h1, h2, h3')) expect(text(h), text(h)).not.toMatch(/ and /);
@@ -449,7 +449,6 @@ describe('The creation form of a repository', () => {
   it('R-UI-085 Q-UI-551 every field takes the width of its kind of input; the description is a sentence, as wide as the key above it', async () => {
     const r = await openForm('npm');
     expect($(r, '#f-key').classList.contains('field-w-name')).toBe(true);
-    expect($(r, '#f-project').classList.contains('field-w-name')).toBe(true);
     expect($(r, '#f-description').classList.contains('field-w-name')).toBe(true);
     await openAdvanced(r);
     expect($(r, '#f-adminNotes').classList.contains('field-w-full')).toBe(true);
@@ -482,19 +481,15 @@ describe('The creation form of a repository', () => {
     expect(r.get(DraftStore).take<{ cls: string }>()?.cls).toBe('remote');
   });
 
-  it('R-UI-080 R-REPO-001 a project chosen right after the page opens stays when the address binds its project again', async () => {
-    const r = await renderScreen(RepositoryCreate, {
-      inputs: { format: 'npm' },
-      setup: (get) => ((get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [PACKAGE_FORMAT]),
-    });
-    const select = $<HTMLSelectElement>(r, '#f-project');
-    type(select, 'web');
+  it('R-UI-021 R-REPO-001 Q-UI-1040 the project is the address\'s, named under the title and never chosen', async () => {
+    const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
+    expect(r.root.querySelector('#f-project')).toBeNull();
+    expect(text(r.root.querySelector('.page-header-description')!)).toBe('In the project web.');
+    stayOnPage();
+    type($(r, '#f-description'), 'x');
     await settle(r.fixture);
-    r.fixture.componentRef.setInput('project', undefined);
-    r.fixture.componentRef.setInput('project', 'data');
-    await settle(r.fixture);
-    expect($<HTMLSelectElement>(r, '#f-project').value).toBe('web');
-    expect($(r, '#f-key').value).toBe('npm-local');
+    await create(r);
+    expect(created(r.fake, 'npm-local')?.project).toBe('web');
   });
 
   describe('a default that arrives while the person is in its field (Q-UI-702)', () => {
@@ -529,7 +524,8 @@ describe('The creation form of a repository', () => {
       });
       const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
       const release = holdDefaults(fake);
-      type($<HTMLSelectElement>(r, '#f-project'), 'web');
+      // The router binds the project after the page opened: the defaults are asked then, and held.
+      r.fixture.componentRef.setInput('project', 'web');
       await step(r);
       const key = $(r, '#f-key');
       expect(key.value).toBe('');

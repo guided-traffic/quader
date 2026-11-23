@@ -49,6 +49,14 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/projects/project-context.routes').then((m) => m.PROJECT_CONTEXT_ROUTES),
       },
+      // The repositories the caller can see in every project, under Your work (R-UI-020, Q-UI-1040): the list across projects is
+      // the main area's, since everyone looks for a repository there; an administrator sees every one.
+      {
+        path: 'repositories',
+        data: wrapper($localize`:@@route.repositories.title:Repositories`),
+        loadChildren: () =>
+          import('./features/repositories/repositories.routes').then((m) => m.REPOSITORIES_ROUTES),
+      },
       // The results page of the top bar's search: a page of the main area, never of the admin area (R-UI-098, R-UI-099).
       {
         path: 'search',
@@ -88,24 +96,12 @@ export const routes: Routes = [
         path: 'admin',
         data: { crumbs: [area.admin] satisfies CrumbSpec[] },
         children: [
-          // The admin area starts at the dashboard (Q-OPS-175); a project Owner without the repository
-          // capability starts at the projects (R-UI-041).
+          // The admin area starts at the dashboard (Q-OPS-175), else at the first entry of its side bar the caller may use (Q-UI-1043).
           { path: '', pathMatch: 'full', canActivate: [adminHomeGuard], children: [] },
           {
             path: 'dashboard',
             title: $localize`:@@route.dashboard.title:Dashboard`,
             loadComponent: () => import('./features/system/dashboard').then((m) => m.Dashboard),
-          },
-          {
-            path: 'projects',
-            data: wrapper($localize`:@@route.projects.title:Projects`),
-            loadChildren: () => import('./features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
-          },
-          {
-            path: 'repositories',
-            data: wrapper($localize`:@@route.repositories.title:Repositories`),
-            loadChildren: () =>
-              import('./features/repositories/repositories.routes').then((m) => m.REPOSITORIES_ROUTES),
           },
           // The well-known repositories of the built-in project `upstream` (R-UI-187, R-UI-188).
           {

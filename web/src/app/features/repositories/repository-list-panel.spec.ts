@@ -1,5 +1,5 @@
 import { Router } from '@angular/router';
-import { addressValues, applyFilters, button, chipTexts, expectAccessible, filterDrawer, openFilters, renderScreen, searchList, settle, type } from '../../testing/screen';
+import { applyFilters, button, chipTexts, expectAccessible, filterDrawer, openFilters, renderScreen, searchList, settle, type } from '../../testing/screen';
 import { RepositoryList } from './repository-list';
 import { BrowserStorage } from '../../core/storage';
 
@@ -89,21 +89,23 @@ describe('Repository list head and filter drawer (R-UI-020)', () => {
   it('R-UI-020 the repository table has no sort control because the API takes no sort parameter, and explains the class', async () => {
     const { root } = await open();
     expect(root.querySelectorAll('th button.th-sort')).toHaveLength(0);
-    // The admin area's list has no address column (Q-UI-330): the class is the column to explain.
+    // No list has an address column (Q-UI-330): the class is the column to explain.
     expect([...root.querySelectorAll('th button.th-help')].map((b) => b.getAttribute('aria-label'))).toEqual([
       'About the column Class',
     ]);
   });
 
-  it('R-REPO-002 R-UI-020 R-UI-066 an absolute client address is copied unchanged, without the origin of the page in front', async () => {
-    const { root } = await open();
-    expect(addressValues(root)).toEqual([]);
-    const write = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText: write }, configurable: true });
-    const copy = root.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
-    expect(copy.getAttribute('aria-label')).toBe('Copy client address https://quader.example.net/files/web/generic-local/');
-    copy.click();
-    await Promise.resolve();
-    expect(write).toHaveBeenCalledWith('https://quader.example.net/files/web/generic-local/');
+  it('R-UI-020 Q-UI-1042 the project filter chooses among the projects the caller sees, by display name, and its chip names the project', async () => {
+    const { fixture, root, router } = await open({ project: 'web' });
+    expect(chipTexts(root)).toEqual(['Project: Web platform']);
+    const drawer = await openFilters(fixture, root);
+    const select = drawer.querySelector<HTMLSelectElement>('select[aria-label="Project"]')!;
+    expect(select.value).toBe('web');
+    expect([...select.options].map((o) => o.textContent?.trim())).toEqual(['Any', 'Web platform']);
+    type(select, '');
+    await settle(fixture);
+    await applyFilters(fixture);
+    const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
+    expect(extras.queryParams).toEqual({ class: null, format: null, state: null, project: null });
   });
 });

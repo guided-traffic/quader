@@ -66,9 +66,11 @@ export function areaItems(area: NavArea | null): readonly NavItem[] {
  * every screen outside a project and outside the admin area (the start page of your projects, the guides, the profile, the
  * security dashboard); the **project** sidebar belongs to `/projects/<key>/…` and is built for that key (see
  * {@link projectEntries}); the **admin** sidebar belongs to `/admin/…` behind the top bar's Admin button. The home sidebar has two
- * titled blocks (R-UI-168): **Your work** with Projects and Guides, which the shell ends with the folding group **Recently opened**
- * (R-UI-167), and **Security audit** with Security dashboard for the instance's auditors and administrators (R-UI-158). In the
- * admin area, single entries (repositories, endpoints) and folding groups (identity, access, system). Only the screens that exist
+ * titled blocks (R-UI-168): **Your work** with Projects, Repositories (of every project, Q-UI-1040) and Guides, which the shell ends
+ * with the folding group **Recently opened** (R-UI-167), and **Security audit** with Security dashboard for the instance's auditors
+ * and administrators (R-UI-158). In the admin area, single entries (dashboard, upstream registries, endpoints, Bastions) and folding
+ * groups (identity, access, system, settings); projects and repositories are the main area's, for everyone (the owner's T-25,
+ * Q-UI-1040). Only the screens that exist
  * in the current milestone are listed; the capabilities are those of R-AUTHZ-010. The router and the API decide access, this only
  * hides entries (R-UI-005).
  */
@@ -81,6 +83,8 @@ export const NAV_AREAS: readonly NavArea[] = [
         label: $localize`:@@nav.context.home:Your work`,
         entries: [
           { kind: 'item', route: '/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects` },
+          // The repositories the caller can see, of every project (R-UI-020, Q-UI-1040).
+          { kind: 'item', route: '/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories` },
           { kind: 'item', route: '/guides', icon: 'menu_book', label: $localize`:@@nav.guides:Guides` },
         ],
       },
@@ -124,8 +128,6 @@ export const NAV_AREAS: readonly NavArea[] = [
         label: $localize`:@@nav.context.admin:Admin area`,
         entries: [
           { kind: 'item', route: '/admin/dashboard', icon: 'dashboard', label: $localize`:@@nav.dashboard:Dashboard`, capability: 'settings:read' },
-          { kind: 'item', route: '/admin/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects`, capability: 'projects:read' },
-          { kind: 'item', route: '/admin/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories`, capability: 'repositories:read-config' },
           // The well-known repositories of the project `upstream`, switched on and off (R-UI-187).
           { kind: 'item', route: '/admin/upstream', icon: 'cloud_download', label: $localize`:@@nav.upstream:Upstream registries`, capability: 'repositories:read-config' },
           { kind: 'item', route: '/admin/endpoints', icon: 'router', label: $localize`:@@nav.endpoints:Endpoints`, capability: 'endpoints:read' },

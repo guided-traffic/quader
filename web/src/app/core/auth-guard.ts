@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, RedirectCommand, Router, RouterStateSnapshot } from '@angular/router';
 import { LoginApi } from '../api/login-api';
+import { Navigation, areaItems } from './navigation';
 import { ProjectContext } from './project-context';
 import { SessionStore } from './session-store';
 
@@ -19,18 +20,19 @@ export const homeGuard: CanActivateFn = async () => {
 };
 
 /**
- * `/admin` itself starts at the first screen the caller may use: the dashboard for a caller who may read the
- * installation's facts (Q-OPS-175), else the repositories, or the projects for a holder of `projects:read` without the
- * repository capability (R-UI-041). It runs after `authGuard`, so the session is known; a redirect function of the
- * route would run before it.
+ * `/admin` itself starts at the first screen the caller may use (Q-UI-1043): the dashboard for a caller who may read the
+ * installation's facts (Q-OPS-175), else the first entry of the admin side bar the caller has, in the side bar's order; a caller
+ * with none, who has no admin area, starts on the start page. It runs after `authGuard`, so the session is known; a redirect
+ * function of the route would run before it.
  */
 export const adminHomeGuard: CanActivateFn = async () => {
   const session = inject(SessionStore);
   const router = inject(Router);
+  const navigation = inject(Navigation);
   await session.load();
   if (session.has('settings:read')) return router.createUrlTree(['/admin', 'dashboard']);
-  const projectsOnly = !session.has('repositories:read-config') && session.has('projects:read');
-  return router.createUrlTree(['/admin', projectsOnly ? 'projects' : 'repositories']);
+  const first = areaItems(navigation.area('admin'))[0];
+  return router.parseUrl(first?.route ?? '/');
 };
 
 /**

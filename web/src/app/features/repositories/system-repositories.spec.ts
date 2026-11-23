@@ -45,7 +45,7 @@ async function open(url: string, options: { system?: boolean; capabilities?: str
       provideRouter(
         [
           { path: 'projects/:project/repositories', component: RepositoryList },
-          { path: 'admin/repositories', component: RepositoryList },
+          { path: 'repositories', component: RepositoryList },
           { path: '**', children: [] },
         ],
         withComponentInputBinding(),
@@ -158,17 +158,15 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     ]);
   });
 
-  it('R-UI-193 Q-UI-898 Q-UI-902 the admin area lists the system repositories with the badge System, without the copy button and without Copy client address', async () => {
-    const { root, harness } = await open('/admin/repositories?project=upstream');
+  it('R-UI-193 Q-UI-896 Q-UI-902 Q-UI-1042 the list of every project lists the system repositories with the badge System and without Set up client', async () => {
+    const { root, harness } = await open('/repositories?project=upstream');
     const row = (key: string) => [...root.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;
     const badges = (key: string) => [...row(key).querySelectorAll('th .badge')].map((b) => text(b));
     expect(badges('scanner-trivy')).toEqual(['System']);
     expect(badges('clamav')).toEqual(['System']);
     expect(badges('npmjs')).toEqual([]);
-    expect(row('scanner-trivy').querySelector('quader-copy-button')).toBeNull();
-    expect(row('npmjs').querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe(
-      'Copy client address https://quader.example.net/files/upstream/npmjs/',
-    );
+    expect(row('scanner-trivy').querySelector('a.row-setup')).toBeNull();
+    expect(row('npmjs').querySelector('a.row-setup')?.getAttribute('href')).toBe('/projects/upstream/repositories/npmjs/setup');
     const menuOf = async (key: string): Promise<string[]> => {
       row(key).querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${key}"]`)!.click();
       harness.detectChanges();
@@ -180,8 +178,8 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
       return items;
     };
     expect(await menuOf('scanner-trivy')).toEqual(['Settings', 'Files', 'Vulnerabilities']);
-    expect(await menuOf('npmjs')).toContain('Copy client address');
-    // No section in the admin area: the badge sets them apart there (Q-UI-902).
+    expect(await menuOf('npmjs')).not.toContain('Copy client address');
+    // No section on the list of every project: the badge sets them apart there (Q-UI-902).
     expect(section(root)).toBeNull();
     await expectAccessible(root);
   });

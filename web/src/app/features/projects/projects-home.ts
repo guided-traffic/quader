@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { collectAll } from '../../api/pagination';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
+import { DisclosureMemory } from '../../core/disclosure-memory';
 import { ProjectContext } from '../../core/project-context';
 import { isUpstreamProject, projectDescription, upstreamFirst } from '../../core/upstream-project';
 import { SessionStore } from '../../core/session-store';
@@ -14,15 +15,21 @@ import { ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLevel, ProjectMark } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
+import { formatSize } from '../packages/format-size';
 import { ProjectDialog } from './project-dialog';
 import { projectRoleLabel } from './project-roles';
+
+/** The remembered choice of the start page's administrator columns, kept as an opened Details section is (Q-UI-967, Q-UI-1041). */
+const DETAILS_ID = 'projects.details';
 
 /**
  * The start page (Q-UI-129, R-UI-166): the list of the projects the caller may see (`GET /api/v1/projects`), under its one heading
  * **Projects**: the place to find a project and explore what it holds. The repositories opened last are the side bar's **Recently
  * opened** (R-UI-167), and the top bar's field is the one search (Q-UI-414). An anonymous visitor sees the public projects, without
  * a role. A caller with exactly one project never sees it: the start route sends them into that project. Creating a project needs
- * `projects:write` (R-UI-041).
+ * `projects:write` (R-UI-041). A holder of `projects:read` gets the administrator's facts of a project on demand (the owner's T-25,
+ * Q-UI-1041): **Show Owners and storage** in the head adds the columns Owners and Storage (the logical size the project is charged,
+ * R-STOR-049), and the choice is kept for the viewer as an opened Details section is (Q-UI-967); a plain user's list stays as it is.
  */
 @Component({
   selector: 'quader-projects-home',
@@ -39,6 +46,12 @@ import { projectRoleLabel } from './project-roles';
       @if (session.authenticated() && hasOthers()) {
         <quader-checkbox headEnd [checked]="onlyMine()" (checkedChange)="onlyMine.set($event)">
           <ng-container i18n="@@projects-home.mine">Your projects</ng-container>
+        </quader-checkbox>
+      }
+      <!-- The administrator's columns, on demand (Q-UI-1041). -->
+      @if (mayShowDetails()) {
+        <quader-checkbox headEnd [checked]="details()" (checkedChange)="setDetails($event)">
+          <ng-container i18n="@@projects-home.details">Show Owners and storage</ng-container>
         </quader-checkbox>
       }
     </quader-list-head>
@@ -71,6 +84,16 @@ import { projectRoleLabel } from './project-roles';
           @if (!anonymous()) {
             <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
           }
+          @if (details()) {
+            <!-- The Owners by name; the built-in project has none (R-UI-190), and a project without one shows the dash (Q-UI-561). -->
+            <td class="wrap" translate="no">
+              @if (ownerSummary(p); as owners) {
+                {{ owners }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
+          }
           <td class="num">{{ p.repositories }}</td>
           <td class="num">
             @if (builtIn(p.key)) {
@@ -79,6 +102,10 @@ import { projectRoleLabel } from './project-roles';
               {{ p.members }}
             }
           </td>
+          @if (details()) {
+            <!-- A figure at the column's end (Q-UI-574), the exact bytes its title. -->
+            <td class="num" [attr.title]="p.logicalBytes + ' B'">{{ size(p.logicalBytes) }}</td>
+          }
         </tr>
       }
     </quader-data-table>
@@ -104,6 +131,20 @@ export class ProjectsHome {
     return $localize`:@@projects-home.hint:Find a project and explore the repositories and packages it holds.`;
   });
   protected readonly canCreate = computed(() => this.session.has('projects:write'));
+
+  private readonly memory = inject(DisclosureMemory);
+  /** The administrator's facts are for the holder of `projects:read`, who sees every project (R-UI-041, Q-UI-1041). */
+  protected readonly mayShowDetails = computed(() => this.session.has('projects:read'));
+  /** The columns Owners and Storage are shown: asked for, and allowed. */
+  protected readonly details = computed(() => this.mayShowDetails() && this.memory.isOpen(DETAILS_ID));
+  protected setDetails(on: boolean): void {
+    this.memory.set(DETAILS_ID, on);
+  }
+  protected readonly size = formatSize;
+  /** "web-leads, alice": the Owners by name, as the API orders them; the `user:` and `group:` of a reference is not shown. */
+  protected ownerSummary(p: Project): string {
+    return p.owners.map((o) => o.replace(/^(user|group):/, '')).join(', ');
+  }
 
   /** The search of the project list (Q-UI-421). */
   protected readonly q = signal('');
@@ -147,7 +188,9 @@ export class ProjectsHome {
    * values (Q-UI-563). Without a least width the description was one word wide; the list's form follows these widths (Q-UI-680).
    */
   protected readonly columns = computed<readonly TableColumn[]>(() =>
-    this.anonymous() ? this.allColumns.filter((c) => c.id !== 'role') : this.allColumns,
+    this.allColumns.filter(
+      (c) => !(c.id === 'role' && this.anonymous()) && !((c.id === 'owners' || c.id === 'storage') && !this.details()),
+    ),
   );
   private readonly allColumns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@projects.col.project:Project`, width: '12rem' },
@@ -159,8 +202,16 @@ export class ProjectsHome {
       label: $localize`:@@projects.col.role:Your role`,
       help: $localize`:@@projects.help.role:Your role in the project; empty when you see it through a system role and are no member.`,
     },
+    // On demand (Q-UI-1041): the Owners wrap, a list of names.
+    { id: 'owners', label: $localize`:@@projects.col.owners:Owners` },
     { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories`, numeric: true },
     { id: 'members', label: $localize`:@@projects.col.members:Members`, numeric: true },
+    {
+      id: 'storage',
+      label: $localize`:@@projects.col.storage:Storage`,
+      numeric: true,
+      help: $localize`:@@projects.help.storage:The logical size the project is charged: the full size of every file in its repositories, also where another project holds the same content.`,
+    },
   ];
 
   protected roleLabel(role: ProjectRole): string {

@@ -1,6 +1,6 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { NgTemplateOutlet } from '@angular/common';
-import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
+import { VisibilityIcon } from '../../shared/ui/visibility-level';
 import {
   Component,
   computed,
@@ -35,7 +35,6 @@ import { stateBadge } from '../upstream/upstream-words';
 import { Confirm } from '../../shared/confirm-dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
-import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { JobProgress } from '../../shared/job-progress';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -70,9 +69,10 @@ export function listAdmits(r: RepositorySummary, f: RepositoryFilters): boolean 
 /**
  * The repository list (R-UI-020), its columns from the job of its kind of user (Q-UI-330). Inside a project, the plain user's:
  * the repository (visibility icon, key and description), format, class, and the row's **Set up client** beside its menu: the
- * address is no column (Q-UI-426), it stands where its client is set up. In the admin area, the administrator's: the repository,
- * project (mark and name), format, class, visibility, last activity, and a quiet copy button for the address beside the menu
- * (Q-UI-302). Where its columns do not fit the rows stack (Q-UI-680). The head of the list is the search by key or
+ * address is no column (Q-UI-426), it stands where its client is set up. At `/repositories` under Your work, the repositories the
+ * caller can see in every project (Q-UI-1040, Q-UI-1042): the same columns with the project (mark and name) after the repository,
+ * the last activity for a holder of `repositories:write-config`, the project as a filter, and no **New repository**: a repository
+ * is created in its project. Where its columns do not fit the rows stack (Q-UI-680). The head of the list is the search by key or
  * description, **Filters** and the filters that are set (Q-UI-420 to Q-UI-422); the filters live in the query parameters
  * (R-UI-003) and restart the cursor walk; "Load more" continues it. A repository is addressed inside its project (R-REPO-002): its key links to
  * the content page `/projects/<project>/repositories/<key>` (R-UI-052), its Settings action to `…/settings`. Delete asks for the key, may offer to detach the repository from
@@ -91,7 +91,6 @@ export function listAdmits(r: RepositorySummary, f: RepositoryFilters): boolean 
     CdkMenuTrigger,
     NgTemplateOutlet,
     RouterLink,
-    CopyButton,
     DataTable,
     Disclosure,
     ErrorNotice,
@@ -123,8 +122,8 @@ export class RepositoryList {
   readonly format = input<string | undefined>();
   readonly state = input<string | undefined>();
   /**
-   * Route parameter `:project` below `/projects/:project/repositories`: the list is that project's (Q-UI-129). In the admin
-   * area it is the query parameter `project`, a filter of the instance-wide list.
+   * Route parameter `:project` below `/projects/:project/repositories`: the list is that project's (Q-UI-129). At
+   * `/repositories` it is the query parameter `project`, a filter of the list of every project (Q-UI-1042).
    */
   readonly project = input<string | undefined>();
 
@@ -143,14 +142,19 @@ export class RepositoryList {
   protected readonly stagedProject = signal('');
   protected readonly panelOpen = signal(false);
 
-  protected readonly canCreate = computed(() => this.session.has('repositories:write-config'));
   /** The list belongs to a project: its screens drop the project column and the project filter. */
   protected readonly inProject = (): boolean => this.route.snapshot.paramMap.has('project');
-  /** The project the list is limited to: the project of the screen, or the filter of the admin list. */
+  /** The project the list is limited to: the project of the screen, or the filter of the list of every project. */
   protected readonly projectKey = computed(() => this.project() || null);
-  /** Create goes to the wizard of the project when the list is limited to one the caller manages; nothing is created in `upstream`. */
+  /**
+   * **New repository** stands on a project's list, for who may create in that project; nothing is created in `upstream`. The list
+   * of every project has none: a repository is created in its project (Q-UI-1042).
+   */
   protected readonly canCreateHere = computed(
-    () => !isUpstreamProject(this.projectKey()) && (this.canCreate() || this.session.canWriteRepositories(this.projectKey())),
+    () =>
+      this.inProject() &&
+      !isUpstreamProject(this.projectKey()) &&
+      (this.session.has('repositories:write-config') || this.session.canWriteRepositories(this.projectKey())),
   );
   /** A repository may be deleted by the capability and by the Owners of its project; a well-known one never (R-UI-190). */
   protected canDeleteRow(row: RepositorySummary): boolean {
@@ -160,8 +164,8 @@ export class RepositoryList {
   private readonly upstreamApi = inject(UpstreamApi);
   private readonly systemClients = inject(SystemClients);
   /**
-   * The retired well-known repositories, by key, for a caller who reads the admin list (R-UI-190): their rows say **No longer
-   * offered**, every other one that is off **Off**. Read only once the list shows one of them that is off.
+   * The retired well-known repositories, by key, for a caller who reads every repository's configuration (R-UI-190): their rows say
+   * **No longer offered**, every other one that is off **Off**. Read only once the list shows one of them that is off.
    */
   private readonly retired = resource({
     params: () =>
@@ -193,7 +197,9 @@ export class RepositoryList {
    * localized sentence, not the stored English one (Q-UI-895).
    */
   protected readonly headerLine = computed(() => {
-    const key = this.inProject() ? this.projectKey() : null;
+    // The list of every project says what it holds and where a new repository is made (Q-UI-1042).
+    if (!this.inProject()) return this.acrossLine;
+    const key = this.projectKey();
     if (!key) return '';
     const p = this.projects.projects().find((x) => x.key === key);
     const description = projectDescription(key, p?.description);
@@ -203,12 +209,26 @@ export class RepositoryList {
     const ask = $localize`:@@repo.list.ask:Ask ${owners.join(', ')}:owners: for access or a new repository.`;
     return description ? `${description} ${ask}` : ask;
   });
+  private readonly acrossLine = $localize`:@@repo.list.across:The repositories you can see, in every project. A new repository is created in its project.`;
   protected readonly refOf = refOf;
   protected readonly formatOptions = computed(() =>
     (valueOf(this.formats) ?? []).map((f) => f.name),
   );
-  /** The project filter of the panel: the admin list only, the project's list is that project whatever the filter says. */
+  /** The project filter of the panel: the list of every project only, the project's list is that project whatever the filter says. */
   protected readonly filterProject = computed(() => (this.inProject() ? undefined : this.project()));
+  /**
+   * The projects the filter offers: those the caller sees, the built-in one first (Q-UI-837), each by its display name (Q-UI-1042).
+   * A key in the address that is not among them stays an option, so that the filter shows what the list is filtered by.
+   */
+  protected readonly projectOptions = computed<readonly { readonly key: string; readonly label: string }[]>(() => {
+    const seen = this.projects.projects().map((p) => ({ key: p.key, label: this.projectLabel(p.key) }));
+    const set = this.filterProject();
+    return set && !seen.some((p) => p.key === set) ? [...seen, { key: set, label: set }] : seen;
+  });
+  /** A project by its display name, its key while the projects load or where the caller sees none of that key. */
+  protected projectLabel(key: string): string {
+    return this.projects.projects().find((p) => p.key === key)?.displayName || key;
+  }
   protected readonly filtered = computed(
     () => !!(this.q() || this.class() || this.format() || this.state() || this.filterProject()),
   );
@@ -254,7 +274,7 @@ export class RepositoryList {
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const out: ListChip[] = [];
     const project = this.filterProject();
-    if (project) out.push({ key: 'project', label: $localize`:@@repo.col.project:Project`, value: project });
+    if (project) out.push({ key: 'project', label: $localize`:@@repo.col.project:Project`, value: this.projectLabel(project) });
     const format = this.format();
     if (format) out.push({ key: 'format', label: $localize`:@@repo.col.format:Format`, value: this.formatLabel(format) });
     const cls = this.class();
@@ -293,29 +313,29 @@ export class RepositoryList {
   protected readonly emptyFilteredText = $localize`:@@repo.list.empty-filtered:No repository matches.`;
   /** No sort control: the repository list is ordered by key and the API takes no sort parameter. */
   protected readonly columns = computed<readonly TableColumn[]>(() => {
-    const admin = !this.inProject();
+    const across = !this.inProject();
     return this.allColumns().filter((c) => {
-      if (c.id === 'project' || c.id === 'activity') return admin && (c.id === 'project' || this.showActivity());
-      if (c.id === 'visibility') return admin;
-      if (c.id === 'actions-admin') return admin;
-      if (c.id === 'actions') return !admin;
+      if (c.id === 'project') return across;
+      if (c.id === 'activity') return this.showActivity();
       return true;
     });
   });
   /**
-   * The last activity is a fact of maintenance: the administrator's (Q-UI-330), and only while a loaded row has one, so that it
-   * is no column of dashes (Q-UI-305). A project's list is the plain user's; its maintainers find it in the repository's Details.
+   * The last activity is a fact of maintenance: the administrator's (Q-UI-330), on the list of every project, and only while a
+   * loaded row has one, so that it is no column of dashes (Q-UI-305). A project's list is the plain user's; its maintainers find
+   * it in the repository's Details.
    */
   protected readonly showActivity = computed(
-    () => !this.inProject() && this.canCreate() && this.list.items().some((r) => !!r.lastActivityAt),
+    () =>
+      !this.inProject() && this.session.has('repositories:write-config') && this.list.items().some((r) => !!r.lastActivityAt),
   );
   /**
    * The columns take their widths from their content (Q-UI-563): a format, a class, a level, a time and the actions never break,
    * so each is as wide as its longest value and declares no width; the repository and the project wrap and declare their least
    * (Q-UI-308). Inside a project the repository is the one column that wraps, and it takes what the others leave (`prefer`,
-   * Q-UI-330). In the admin area the repository and the project share that room in proportion to their content: a pinned project
-   * of 11 rem broke **Customer portal release engineering and delivery** into three lines beside a Last activity of 7.5 rem that
-   * held "4 minutes ago" (2026-11-18). The project is its mark and its name (Q-UI-424). In the admin area the repository's least
+   * Q-UI-330). On the list of every project the repository and the project share that room in proportion to their content: a
+   * pinned project of 11 rem broke **Customer portal release engineering and delivery** into three lines beside a Last activity of
+   * 7.5 rem that held "4 minutes ago" (2026-11-18). The project is its mark and its name (Q-UI-424). There the repository's least
    * is 12 rem: the format **ClamAV definitions** made the format column 27 px wider than **Ansible Galaxy** had, and at 13 rem
    * the list needed 963 px at 1,280 px where its region has 953 beside a scrollbar (2026-11-21).
    */
@@ -330,22 +350,16 @@ export class RepositoryList {
       label: $localize`:@@repo.col.class:Class`,
       help: $localize`:@@repo.help.class:Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.`,
     },
-    // The admin area's column: who reads the artifacts, an icon and a word (Q-UI-330); inside a project the icon stands before the name.
-    { id: 'visibility', label: $localize`:@@repo.col.visibility:Visibility` },
     {
       id: 'activity',
       label: $localize`:@@repo.col.activity:Last activity`,
       help: $localize`:@@repo.help.activity:The last time a client read from or wrote to the repository. A dash means nothing has been recorded yet.`,
-      // Below 64 rem of the list's width the other columns take this room: the admin area's list at 1280 px.
+      // Below 64 rem of the list's width the other columns take this room: the list of every project at 1280 px.
       narrow: true,
     },
-    // Inside a project: **Set up client** and the menu.
+    // **Set up client** and the menu.
     { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
-    // The admin area's row has the copy button beside the menu.
-    { id: 'actions-admin', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
   ]);
-
-  protected readonly levelText = levelName;
 
   protected readonly classIcon = classIcon;
   /**
@@ -372,28 +386,7 @@ export class RepositoryList {
   protected isClamav(row: RepositorySummary): boolean {
     return isUpstreamProject(row.project) && row.key === CLAMAV_KEY;
   }
-  /** The admin area's copy button: its name and its tooltip carry the address itself (Q-UI-330). */
-  protected copyValueLabel(address: string): string {
-    return $localize`:@@repo.copy-address-value:Copy client address ${address}:address:`;
-  }
-  /** The menu's "Copy client address": the same as the row's copy button. */
-  protected async copyAddress(address: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(address);
-      this.notifier.status($localize`:@@copy.done:Copied to the clipboard.`);
-    } catch {
-      this.notifier.alert($localize`:@@copy.failed:The clipboard is not available. Select the text and copy it.`);
-    }
-  }
   protected readonly deleteLabel = $localize`:@@repo.delete.progress:Repository deletion`;
-
-  /**
-   * The client address of a row, copied by the admin area's copy button and its menu (Q-UI-330). The server serves absolute URLs
-   * (public base URL plus path): copied as they are. None for a system repository, whose address answers every client 404 (Q-UI-898).
-   */
-  protected address(row: RepositorySummary): string {
-    return this.closed(row) ? '' : (row.addresses[0] ?? '');
-  }
 
   /** A system repository of the project `upstream` (R-UI-192, R-UI-193). */
   protected system(row: RepositorySummary): boolean {

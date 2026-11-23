@@ -85,8 +85,7 @@ test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload on the repository page,
   expect(replicas.size, `replicas that answered: ${[...replicas]}`).toBeGreaterThanOrEqual(2);
 });
 
-test('R-UI-066 Q-UI-426 the repository list of a project offers Set up client for a row and no address, the one of the admin area a copy button that puts the address on the clipboard', async ({ page, context, admin }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+test('R-UI-066 Q-UI-426 Q-UI-1042 a list of repositories, a project\'s and every project\'s, offers Set up client for a row and no address', async ({ page, admin }) => {
   const key = unique('ui-address');
   const created = await admin.post(repositories(), {
     data: { key, class: 'local', format: 'generic', description: 'client address field' },
@@ -96,7 +95,6 @@ test('R-UI-066 Q-UI-426 the repository list of a project offers Set up client fo
     const listed = await admin.get(`${repositories()}?q=${key}`);
     const row = ((await listed.json()) as { items: { key: string; addresses: string[] }[] }).items.find((r) => r.key === key);
     expect(row?.addresses[0], 'the API gives the repository a client address').toBeTruthy();
-    const address = row!.addresses[0]!;
 
     await signInLocal(page);
     await page.goto(`/ui/en/projects/${e2eProject}/repositories?q=${key}`);
@@ -107,12 +105,11 @@ test('R-UI-066 Q-UI-426 the repository list of a project offers Set up client fo
     await page.getByRole('link', { name: `Set up client ${key}` }).click();
     await expect(page).toHaveURL(new RegExp(`/projects/${e2eProject}/repositories/${key}/setup$`));
 
-    // The admin area's list has no field: a quiet copy button beside the row's menu carries the address (Q-UI-330).
-    await page.evaluate(() => navigator.clipboard.writeText(''));
-    await page.goto(`/ui/en/admin/repositories?q=${key}`);
+    // The list of every project, under Your work, has no field either: its row offers Set up client (Q-UI-1042).
+    await page.goto(`/ui/en/repositories?q=${key}`);
     await expect(page.getByRole('textbox', { name: `Client address of ${key}` })).toHaveCount(0);
-    await page.getByRole('button', { name: `Copy client address ${address}` }).click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(address);
+    await page.getByRole('link', { name: `Set up client ${key}` }).click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${e2eProject}/repositories/${key}/setup$`));
     await signOut(page);
   } finally {
     await admin.delete(repositoryApi(key));

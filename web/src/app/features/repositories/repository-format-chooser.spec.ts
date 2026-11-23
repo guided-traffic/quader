@@ -55,7 +55,7 @@ describe('The format chooser of a new repository (R-UI-080)', () => {
     expect(text(r.root.querySelector('#format-count')!)).toBe('1 of 6 formats');
     search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await settle(r.fixture);
-    expect(navigate).toHaveBeenCalledWith(['/projects/web/repositories/new/nuget'], { queryParams: {} });
+    expect(navigate).toHaveBeenCalledWith(['/projects/web/repositories/new/nuget']);
 
     type(search, 'zzz');
     await settle(r.fixture);
@@ -64,9 +64,9 @@ describe('The format chooser of a new repository (R-UI-080)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-080 the admin area carries the project of the list to the form', async () => {
-    const r = await chooser('/admin/repositories/new', { project: 'data' });
-    expect(tiles(r.root)[1]!.getAttribute('href')).toBe('/admin/repositories/new/npm?project=data');
+  it('R-UI-080 Q-UI-1040 the tiles lead to the form of the page\'s project', async () => {
+    const r = await chooser('/projects/data/repositories/new');
+    expect(tiles(r.root)[1]!.getAttribute('href')).toBe('/projects/data/repositories/new/npm');
   });
 
   it('R-UI-080 an unknown format of the address is named in a notice above the tiles', async () => {

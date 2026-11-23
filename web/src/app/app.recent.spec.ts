@@ -66,10 +66,11 @@ describe('Recently opened in the side bar (R-UI-167)', () => {
     expect(named()).toEqual([['web/releases', 'platform/gone', 'web/generic-local', 'web/one', 'web/two']]);
     const button = toggle()!;
     expect(button).not.toBeNull();
-    // The last entry of the block Your work, after Projects and Guides.
+    // The last entry of the block Your work, after Projects, Repositories and Guides.
     const block = root.querySelector<HTMLElement>('[role="group"][aria-labelledby="nav-your-work"]')!;
     expect([...block.querySelectorAll(':scope > ul > li')].map((li) => li.querySelector('.nav-label')?.textContent?.trim())).toEqual([
       'Projects',
+      'Repositories',
       'Guides',
       'Recently opened',
     ]);

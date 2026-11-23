@@ -94,6 +94,8 @@ export interface Place {
 export function places(): Place[] {
   return [
     { route: '/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects`, anonymous: true },
+    // The repositories of every project, the entry of Your work (Q-UI-1040).
+    { route: '/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories`, anonymous: true },
     { route: '/guides', icon: 'menu_book', label: $localize`:@@nav.guides:Guides`, anonymous: true },
     { route: '/profile', icon: 'person', label: $localize`:@@search.place.profile:Profile`, anonymous: false },
     { route: '/profile/tokens', icon: 'key', label: $localize`:@@search.place.tokens:Personal tokens`, anonymous: false },
@@ -125,12 +127,13 @@ export function adminItems(admin: NavArea | null): NavItem[] {
 }
 
 /**
- * The **Admin area** group of the empty list (R-UI-096): Dashboard, Repositories, Users, Groups and Settings, each the admin side
- * bar's entry where the administrator may use it; Settings is the side bar's group of that name, opened at its first page.
+ * The **Admin area** group of the empty list (R-UI-096): Dashboard, Users, Groups and Settings, each the admin side bar's entry
+ * where the administrator may use it; Settings is the side bar's group of that name, opened at its first page. The repositories are
+ * a place of the main area (Q-UI-1040).
  */
 export function adminShortcuts(admin: NavArea | null): Place[] {
   if (!admin) return [];
-  const wanted = ['/admin/dashboard', '/admin/repositories', '/admin/users', '/admin/groups'];
+  const wanted = ['/admin/dashboard', '/admin/users', '/admin/groups'];
   const items = adminItems(admin);
   const out: Place[] = wanted.flatMap((route) => {
     const i = items.find((x) => x.route === route);

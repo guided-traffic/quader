@@ -28,6 +28,8 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/project/ci', { section: 'admin', page: 'gitlab-ci' }],
   // <<< M4 ci
   ['/projects', { section: 'admin', page: 'projects' }],
+  // The repositories of every project under Your work (R-UI-020, Q-UI-1040).
+  ['/repositories', { section: 'user', page: 'repositories' }],
   ['/search', { section: 'user', page: 'search' }],
   ['/security', { section: 'user', page: 'security-dashboard' }],
   ['/guides', { section: 'user', page: 'client-setup' }],
@@ -38,8 +40,6 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/admin/limits', { section: 'admin', page: 'download-limits' }],
   ['/project/usage', { section: 'admin', page: 'download-limits' }],
   // <<< W-26 limits
-  ['/admin/projects', { section: 'admin', page: 'projects' }],
-  ['/admin/repositories', { section: 'admin', page: 'repositories' }],
   ['/admin/upstream', { section: 'admin', page: 'upstream-registries' }],
   ['/admin/endpoints', { section: 'admin', page: 'endpoints' }],
   // >>> M5b bastion

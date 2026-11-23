@@ -92,7 +92,7 @@ Quader shows you only what you may read. A repository you may not read is not li
 | A role in the repository's project | **Reader** reads every repository of the project, **Developer** also publishes and uploads, **Maintainer** and **Owner** also replace, delete and manage; [Projects](../admin/projects.md#members-and-roles) explains the roles |
 | Read on a repository | It appears in the project's **Repositories** and, for npm, NuGet, OCI and Debian, under **Packages**; you can open its page and its files, download, and install from it |
 | Deploy, overwrite or delete | Upload or publish, replace, and delete, on the paths and packages your permission names |
-| The permission to read repository configuration | Every repository, the settings of every repository, and **Admin area › Repositories** |
+| The permission to read repository configuration | Every repository, in its project and under **Repositories** of **Your work**, and the settings of every repository |
 | Nothing, as an anonymous reader | Only the public projects and repositories, and nothing you can change |
 | Only the level **Internal** or **Public** | A project and its repositories whose level admits you: **Internal** admits everyone signed in, service accounts and CI jobs included, except an **External user**, **Public** everyone. The projects start page lists your own projects first, then these, without a role; the level's icon (a lock, a shield, a globe) stands before the name |
 

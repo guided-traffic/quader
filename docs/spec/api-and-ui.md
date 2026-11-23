@@ -3562,7 +3562,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
   ([Q-UI-129](#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)). A configurable server name is P2 on
   [operations-and-observability.md](operations-and-observability.md).
 - Navigation with three side bars, each shown while one of its routes is open (Q-UI-127, Q-UI-129): the **project**
-  (`/projects/{project}/…`), the **start** (everything else outside the admin area: the list of your projects, the guides,
+  (`/projects/{project}/…`), the **start** (everything else outside the admin area: the list of your projects, the repositories of
+  every project, the guides,
   the profile, the help, the security dashboard) and the **Admin area** (`/admin/…`, reached through the Admin button; shown
   when the caller may use one of its entries,
   [Q-UI-621](#q-ui-621--the-admin-button-is-shown-when-the-admin-area-has-an-entry-for-the-caller)). The project's side bar starts with the **project switcher**
@@ -3572,12 +3573,15 @@ Priority: **MVP** · Covers: UI-001, UI-004
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022), a folding group **Access** (members, permission
   policies, service accounts and CI identity, the last three for the holder of their capability and for the Owner of the
   project) and settings. A side bar is made of titled blocks, each a group of the navigation named by its context title (R-UI-168):
-  the start side bar has the block **Your work** with Projects and Guides (R-UI-124) and the folding group **Recently opened**, the
+  the start side bar has the block **Your work** with Projects, Repositories (the repositories the caller can see in every project,
+  R-UI-020) and Guides (R-UI-124) and the folding group **Recently opened**, the
   last five repositories the person opened (R-UI-167), and for the holder of `content:metadata-read` a second block **Security
   audit** with **Security dashboard** (R-UI-158); the admin area's one block is titled **Admin area**, a project's one block by
   its switcher. The guides also open from the user menu,
   and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
-  (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
+  (dashboard, upstream registries (R-UI-187), endpoints, Bastions) come first (projects and repositories are no entries of it: an
+  administrator finds them where everyone does, in the main area,
+  [Q-UI-1040](#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held), the owner's T-25), and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on, then
   Signatures, the trust anchors and Quader's signing identity ([signatures.md](signatures.md) R-SIG-036 and R-SIG-056), then Storage (R-UI-200);
@@ -3649,7 +3653,7 @@ Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filte
 selected tab live in query parameters; a version of a package is an object with a path of its own (R-UI-111).
 
 <details>
-<summary>Route table (59)</summary>
+<summary>Route table (58)</summary>
 
 | Route | Screen | Requirement |
 |---|---|---|
@@ -3672,6 +3676,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/service-accounts`, `/projects/{project}/service-accounts/{name}` | Service accounts of the project | R-UI-026 |
 | `/projects/{project}/usage`, `/projects/{project}/usage/{kind}/{id}` | The usage of the project and one caller's usage in it, for its Owner and the holder of `usage:read` | R-UI-183, R-UI-184 |
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/new`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
+| `/repositories` (`?q=&project=&format=&class=&state=`) | The repositories the caller can see in every project, each row naming its project; an administrator sees every one (Q-UI-1040) | R-UI-020 |
+| `/repositories/quick-setup` | Quick setup (P1, specified, not built) | R-UI-023 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
 | `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/security/malware` | **Malware** under Security audit: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)) | R-MAL-025 |
@@ -3684,8 +3690,6 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/profile`, `/profile/tokens`, `/profile/sessions`, `/profile/usage` | Profile, personal tokens, sessions, the caller's own usage | R-UI-029, R-UI-185 |
 | `/integrations/webhooks`, `/integrations/webhooks/{key}` | Webhooks (P1, specified, not built) | R-UI-039 |
 | `/admin`, `/admin/dashboard` | The admin area starts at the dashboard for the holder of `settings:read`, else at its first screen the caller may use | R-UI-038 (Q-OPS-175) |
-| `/admin/repositories`, `/admin/repositories/new`, `/admin/repositories/new/{format}` | Repositories of every project, each row naming its project; a new repository | R-UI-020, R-UI-021, R-UI-080 |
-| `/admin/repositories/quick-setup` | Quick setup (P1, specified, not built) | R-UI-023 |
 | `/admin/upstream` (`?q=`) | Upstream registries: the well-known repositories of the project `upstream`, switched on and off | R-UI-187 |
 | `/admin/upstream/{key}` | One well-known repository: its state, level, address and account | R-UI-188 |
 | `/admin/users`, `/admin/users/{username}` | Users | R-UI-024 |
@@ -3707,7 +3711,6 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/settings/sign-in` | The group Settings: Sign-in (P1, specified, not built) | R-UI-031 to R-UI-034 |
 | `/admin/settings/malware` | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
 | `/admin/settings/signatures` | The group Settings: Signatures, the trust anchors of the installation and of the projects, the blocked signers and the public Sigstore root ([signatures.md](signatures.md) R-SIG-036) | R-SIG-036 |
-| `/admin/projects` | Every project, to create and edit them | R-UI-041 |
 | `/login` (`?auto_sign_in=false`), `/logged-out` | Sign-in, signed out | R-UI-004 |
 | `/cli-login/{publicId}` | Command-line login approval of `npm login` (P1, specified, not built; R-AUTH-034) | R-UI-004 |
 | `/device` (`?code=`) | Device-code login approval for other command-line tools (P1, specified, not built; R-AUTH-036) | R-UI-004 |
@@ -3729,7 +3732,9 @@ selected tab live in query parameters; a version of a package is an object with 
   answers with the repositories (Q-UI-216), so that the step of the project in the breadcrumb links to a route that exists. A route
   that existed before the project was the context (`/packages`, `/browse`, `/vulnerabilities`, and since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) a project's `…/browse`,
   `/admin/repositories/{project}/{key}`, `/admin/projects/{project}`) is not found, and so is the admin area's `/admin/security`, since
-  the security dashboard is the auditor's page `/security` (R-UI-158).
+  the security dashboard is the auditor's page `/security` (R-UI-158), and so are `/admin/projects` and `/admin/repositories` with
+  every path below them, since the projects and the repositories are the main area's (`/projects`, `/repositories`, Q-UI-1040):
+  no redirect leads from them.
 - Route guards only shape navigation; the API decides (R-UI-005). When a screen's first API call
   answers 403, the screen shows a "no access" state with the missing permission and, for callers
   with `policies:read`, a link to the explainer.
@@ -4534,12 +4539,16 @@ Priority: **MVP** · Covers: UI-030, REPO-007
     **Class** (icon and name), and at the row's end **Set up client**, the quiet form of a row's action ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)),
     which opens the repository's page Set up client (R-UI-120), beside the row's menu. The client address is no column: it stands on the repository's page and in the client setup ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
     The repository takes every pixel the others leave.
-  - The admin area's list (`/admin/repositories`), the administrator's (manage the repositories): **Repository**, **Project**
-    (its mark and its name, linked to it, R-UI-102), **Format**, **Class**, **Visibility**, **Last activity** (relative, R-UI-103)
-    and the row's actions: a quiet copy button whose name and tooltip carry the client address, beside the menu, which has
-    **Copy client address** too. The address is no field there.
+  - The list of every project (`/repositories`, the entry **Repositories** under **Your work**, [Q-UI-1040](#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held),
+    [Q-UI-1042](#q-ui-1042--the-repositories-of-every-project-are-the-project-lists-columns-with-the-project-and-no-new-repository)):
+    the repositories the caller can see (`GET /api/v1/repositories`, R-REPO-012: what it may read, every one for a holder of
+    `repositories:read-config`, so an administrator sees all of them), with the project's list's columns and, after the
+    repository, **Project** (its mark and its name, linked to it, R-UI-102); a holder of `repositories:write-config` also sees
+    **Last activity** (relative, R-UI-103) while a loaded row has one. A system repository of the built-in project `upstream`
+    carries the badge **System** after its key (R-UI-193). There is no **New repository** on this list: a repository is created
+    in its project, and the line under the heading says so.
 - The head of the list (R-UI-100): the search by key or description (`q`, **Filter repositories**); the drawer's filters: project
-  (the admin area's list), format, class, disabled only. The list is ordered by key; the API takes
+  (the list of every project; a choice of the projects the caller sees, by display name), format, class, disabled only. The list is ordered by key; the API takes
   no `sort` parameter yet, so the table has no sort control (sorting by creation arrives with the
   API, and the creation time with the summary, Q-UI-18). "Recently opened" (browser storage, 20) is the side bar's (R-UI-167): neither
   list shows it ([Q-UI-329](#q-ui-329--recently-opened-is-the-start-pages-only-the-admin-areas-repository-list-leaves-it-out-too)); a project's list says under its heading what the project is and, to a plain user,
@@ -4553,22 +4562,25 @@ Priority: **MVP** · Covers: UI-030, REPO-007
   delete. Delete requires typing the key, offers the `detach` choice of
   [repositories-and-proxy.md](repositories-and-proxy.md) when other repositories reference it, and
   shows that deletion runs as a job.
-- **New repository** (when the caller may create repositories in a project: `repositories:write-config`, or the role
-  `owner`) opens the wizard ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)).
+- **New repository** on a project's list (when the caller may create repositories in that project: `repositories:write-config`,
+  or the role `owner`) opens the wizard of that project
+  ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)).
 
 Acceptance criteria:
 
 - Filtering by `format=npm` and `class=remote` shows only npm remote repositories; deleting one shows
   the job's progress until it disappears.
+- `/repositories` as `sam` lists the repositories `sam` may read, of every project, each naming its project; as `ada` every
+  repository; neither list has a link whose path starts with `/admin` (Q-UI-1040).
 
 ### R-UI-021 · Repository creation wizard and edit form
 Priority: **MVP** · Covers: UI-031
 
 - A page of format tiles, then one form for the chosen format (R-UI-080, R-UI-081); there are no steps. The format comes first
   because some features are technically impossible for some formats (Q-UI-112). The form holds the artifacts' visibility level
-  (R-UI-055). In the admin area the project is chosen at the top of the form, from the projects in which the caller may create
-  repositories (every project for `repositories:write-config`, the projects it owns otherwise); inside a project
-  (`/projects/{project}/repositories/new/{format}`) the project is given, shown as text and not chosen. It is read-only on the
+  (R-UI-055). A repository is created in its project: the form is the project's (`/projects/{project}/repositories/new/{format}`),
+  and the project is given, shown as text and not chosen (Q-UI-1040; the admin area's form with a project to choose is gone with
+  the admin area's list). It is read-only on the
   settings page, where a move to another project is its own action (R-UI-087). After the create the form opens the new
   repository's content page (R-UI-052); its settings are `/projects/{project}/repositories/{key}/settings` (R-UI-087).
 - The format chooser (R-UI-080) is a page of tiles from `GET /api/v1/formats`, each with the format's icon (its owner's logo where
@@ -5507,7 +5519,7 @@ Priority: **MVP** · Covers: quader-only
 - The create dialog of a project (R-UI-041) has the same radio group, preset to the installation's `defaultLevel`. A level the
   caller cannot choose is disabled with its reason, a restricted level is marked for an administrator (R-UI-141); both dialogs read
   the levels from `GET /api/v1/visibility-choices` (R-API-076).
-- The project list (`/projects`, `/admin/projects`) and the project's header show the level's icon before the project's name,
+- The project list (`/projects`) and the project's header show the level's icon before the project's name,
   with the level's name as its accessible label and tooltip ([Q-UI-230](#q-ui-230--a-level-is-shown-as-an-icon-before-a-name-as-gitlab-shows-it)).
 - The start page lists the caller's projects first with the role, then the other projects it may read with no role; a filter
   "Your projects" shows the first group alone (`membership=true`). An anonymous visitor has no role and no projects of its own: its
@@ -5697,16 +5709,19 @@ the model gives the screens:
   memberships of `authz/me`, every project for a holder of `projects:read`) and then the projects whose level admits the caller
   (R-UI-054), and a caller with exactly one project starts in it; inside a project the project switcher at the top of the side bar changes it. There is no project filter in the top
   bar, and no list of a project's content is narrowed by a stored choice.
-- Start page: the project (its mark, its display name and its key under it, R-UI-102), description, the caller's role (for a
-  member), the number of repositories and of members; the head's search by key or name and **Your projects** (R-UI-100).
-  The admin area's list of projects (`/admin/projects`, `projects:read`) has the project (mark, display name, key), the
-  visibility, the Owners, the members, the repositories and a column with the logical size the project is charged
-  (`logicalBytes`, [R-STOR-049](storage.md#r-stor-049--the-storage-of-a-project)), not the caller's role
-  ([Q-UI-577](#q-ui-577--the-admin-areas-list-of-projects-has-no-column-your-role), owner 2026-11-18), and creates and edits
-  projects.
-- Create dialog (administrators, `projects:write`): key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$`, immutable), display name,
-  description, the visibility level (R-UI-054), and the first Owner; repositories are created in the project afterwards. Edit dialog: display name and
-  description, for administrators and the project's Owners. Delete is offered to administrators only, and only for
+- Start page: the project (its mark, its display name and its key under it, R-UI-102), description, the visibility, the caller's
+  role (for a member), the number of repositories and of members; the head's search by key or name and **Your projects** (R-UI-100).
+  It is the one list of projects: the admin area has none (the owner's T-25,
+  [Q-UI-1040](#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held)). For a holder of
+  `projects:read` the head also holds the check box **Show Owners and storage**, which adds the columns **Owners** (by name, the
+  dash for none) and **Storage** (the logical size the project is charged, `logicalBytes`,
+  [R-STOR-049](storage.md#r-stor-049--the-storage-of-a-project), the exact bytes as its title); the choice is kept for the viewer
+  as an opened Details section is (Q-UI-967), and a plain user's list stays as it is
+  ([Q-UI-1041](#q-ui-1041--the-owners-and-the-storage-are-columns-on-demand-of-the-start-page-for-the-holder-of-projectsread)).
+- Create dialog (administrators, `projects:write`), opened by **New project** on the start page: key
+  (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$`, immutable), display name, description, the visibility level (R-UI-054), and the first Owner;
+  repositories are created in the project afterwards. The display name and the description are edited in place on the project's
+  settings, by administrators and the project's Owners (Q-UI-215). Delete is offered there to administrators only, and only for
   projects without repositories, service accounts and CI mappings.
 - The project's settings show the logical size the project is charged (`logicalBytes`, in binary units, with the exact byte count as its
   tooltip), for every member and every holder of `projects:read`. The physical size of the object store is a figure of the admin
@@ -5731,8 +5746,9 @@ the model gives the screens:
   action the caller's role does not allow is not offered; the policies, service accounts and CI identity are listed in the
   side bar only for the holder of their capability and for the Owner.
 - The `auditor` and the other holders of `projects:read` see every project, its members and its screens read-only.
-- The admin area's lists (repositories, service accounts, permission policies, audit log) name the project of each item in a
-  column and link to the project's screen; the project is also a filter of the repository and policy lists.
+- The lists across projects (the repositories of every project under **Your work**, R-UI-020; the admin area's service accounts,
+  permission policies and audit log) name the project of each item in a column and link to the project's screen; the project is
+  also a filter of the repository and policy lists.
 - The built-in project `upstream` is listed where its rule of [authorization.md](authorization.md) R-AUTHZ-041 admits the caller,
   with the badge **Built-in** after its name and no role, members or Owners (R-UI-190).
 
@@ -5745,6 +5761,8 @@ Acceptance criteria:
   screens; she creates a policy `npm-read` and a service account `partner` in `team-a`, and the account is shown as
   `sa:team-a/partner`.
 - The remove action of alice's own membership is disabled while she is the only Owner.
+- An administrator finds **New project** on the start page and no entry **Projects** in the admin area; ticking **Show Owners and
+  storage** adds the columns Owners and Storage, which `sam` is not offered (Q-UI-1041).
 
 ### R-UI-042 · Errors, conflicts and feedback
 Priority: **MVP** · Covers: quader-only
@@ -6198,8 +6216,8 @@ the list showed a field of a different width in every row and scrolled sideways.
   Where the field is shorter than the address, the address scrolls inside the field (an input does so natively), and the
   copy button stays joined to it.
 - **One width per place.** A field takes the width of its line, not of its address. No list has an address column: an address
-  means nothing without its client, so a project's repository list offers **Set up client** in the row ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)), and the
-  admin area's repository list has a copy button in the row (Q-UI-330). A field alone on its line fills the line up to a measure
+  means nothing without its client, so a list of repositories offers **Set up client** in the row ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)),
+  a project's and the list of every project alike (Q-UI-1042). A field alone on its line fills the line up to a measure
   of 70 characters, so stacked fields are one width too (Q-UI-301).
 - **Selectable.** A click or focus in the field selects the whole address; the user can also select a part of it and copy
   with the keyboard. The address is the field's value, so the browser's find, drag and copy work as on any input (Q-UI-273).
@@ -6233,8 +6251,7 @@ Acceptance criteria:
 - Every screen of R-UI-066 shows its address through the component, and no template of those screens gives a client address
   the class `ellipsis`.
 - Playwright: a project's repository list holds no address field, and the row's **Set up client** opens the repository's page Set
-  up client (`…/repositories/<key>/setup`); on the admin area's list the row's copy button, named with the address, puts the address the API gave on the
-  clipboard.
+  up client (`…/repositories/<key>/setup`); so does a row of the list of every project (`/repositories`).
 
 ### R-UI-066 · The screens that show a client address use the address field
 Priority: **MVP** · Covers: quader-only
@@ -6243,7 +6260,7 @@ Each screen shows its client addresses through `<quader-address-field>` (R-UI-06
 
 | Screen | Place | Notes |
 |---|---|---|
-| Repository list (R-UI-020), `/projects/{project}/repositories` | No field: the row's **Set up client** opens the repository's page Set up client, where the address stands with the snippets that use it ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)) | The admin area's list (`/admin/repositories`) has a copy button in the row, whose name and tooltip carry the address (Q-UI-330); the search results (`/search`) have neither (Q-UI-430) |
+| Repository list (R-UI-020), `/projects/{project}/repositories` and `/repositories` | No field: the row's **Set up client** opens the repository's page Set up client, where the address stands with the snippets that use it ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client), Q-UI-1042) | The search results (`/search`) have neither a field nor Set up client (Q-UI-430) |
 | Repository settings (R-UI-087), the settings view and the consumer view | No address ([R-UI-169](#r-ui-169--a-repositorys-address-stands-in-a-field-on-set-up-client-only)) | The address stands on Set up client |
 | Repository content page (R-UI-052) | No field in the header, whose **Set up client** leads to the address (Q-UI-664); **Details**: each further address with its label | Q-UI-320: the address for downloads by path is not on Set up client |
 | Start page (R-UI-166) and the side bar's **Recently opened** (R-UI-167) | No address | The owner's rule of W-20 |
@@ -6322,14 +6339,14 @@ Acceptance criteria:
 ### R-UI-080 · A new repository: the format first, then one form that names it
 Priority: **MVP** · Covers: UI-031
 
-- **The format chooser.** `/projects/{project}/repositories/new` and `/admin/repositories/new` are a page titled **New
+- **The format chooser.** `/projects/{project}/repositories/new` is a page titled **New
   repository**, with the sentence "Choose the package format. It decides what the repository can do." and the tiles of the
   installed formats from `GET /api/v1/formats` (the format's icon, Q-UI-225, and its display name) under the field **Search by
   package type** (Q-UI-115). A tile is a link to the form of its format; Enter in the search field opens the one format that is
   left. There is no Next button ([Q-UI-340](#q-ui-340--a-new-repository-is-a-format-chooser-and-one-form-as-the-references-new-project)).
-- **The form.** `/projects/{project}/repositories/new/{format}` and `/admin/repositories/new/{format}` are one page titled
+- **The form.** `/projects/{project}/repositories/new/{format}` is one page titled
   **New <display name> repository** ("New OCI (Docker) repository", "New npm repository", Q-UI-353) with a link **Change format**
-  back to the chooser. In this order: the project (admin area only; inside a project it is given and shown as text), **Class**,
+  back to the chooser. In this order (the project is given by the address and named in the line under the title, Q-UI-1040): **Class**,
   **Key**, **Description (optional)**, **Visibility**, the class's own group (**Upstream** for remote, **Members** for virtual),
   the closed section **Advanced settings** (R-UI-083), the disclosure **Show as API request**, then **Create repository** and
   **Cancel**. One column of at most 56 rem. In the admin area the project is a select, held while the projects load; a project
@@ -6826,16 +6843,16 @@ Priority: **MVP** · Covers: quader-only
 When the field gets the focus without a text, a list opens under it, in this order
 ([Q-UI-404](#q-ui-404--the-empty-field-offers-the-references-parts-in-its-order-and-the-admin-pages-last)):
 
-1. **Places**: Projects (`/projects`), Guides (`/guides`), Profile (`/profile`), Personal tokens (`/profile/tokens`), and the entries
+1. **Places**: Projects (`/projects`), Repositories (`/repositories`, Q-UI-1040), Guides (`/guides`), Profile (`/profile`), Personal tokens (`/profile/tokens`), and the entries
    of the start side bar's sections the caller has (Security dashboard, `/security`, for the holder of `content:metadata-read`,
    R-UI-158, [Q-UI-626](#q-ui-626--the-security-dashboard-is-a-place-and-a-page-of-the-main-area-in-the-search)), each with its
-   side-bar icon; an anonymous caller gets Projects and Guides.
+   side-bar icon; an anonymous caller gets Projects, Repositories and Guides.
 2. **Frequently visited repositories**: up to five, each with its format's icon, the key, and "· <project key>" muted.
 3. **View all my projects** (`/projects`).
 4. **Frequently visited projects**: up to five, each with the project's letter mark (as the project switcher's), the display name,
    and "· <key>" muted.
-5. For an instance administrator only (R-UI-099), after a divider: **Admin area**, with Dashboard, Repositories, Users, Groups and
-   Settings, each the admin side bar's entry (icon and label, R-UI-002) where the administrator may use it, and each marked
+5. For an instance administrator only (R-UI-099), after a divider: **Admin area**, with Dashboard, Users, Groups and
+   Settings (the repositories are a place of the main area, Q-UI-1040), each the admin side bar's entry (icon and label, R-UI-002) where the administrator may use it, and each marked
    **Admin area**.
 
 Groups 2 to 4 are not shown to an anonymous caller.
@@ -7006,8 +7023,7 @@ closed. Every list screen has one row above its table, built by one component, `
   the same query parameter or request member, 250 ms after the last key or at once on Enter. A list whose API has no search by name
   (the permission policies, the token administration, the audit log, the issued CI tokens) has no field.
 - **Filters**, the button that opens the list's drawer (R-UI-101), with the number of filters that are set. A list whose only filter
-  is the name (the admin area's projects, the service accounts, the start page's projects, a project's members) has no button and no
-  drawer.
+  is the name (the service accounts, the start page's projects, a project's members) has no button and no drawer.
 - **The filters that are set**, one chip each, to the right of the button
   ([Q-UI-422](#q-ui-422--a-set-filter-is-a-chip-beside-filters-and-what-does-not-fit-folds-into-n-more)): the filter's name muted,
   its value, and a button that removes that filter alone, named "Remove the filter Format: npm". Chips that do not fit beside the
@@ -7065,9 +7081,9 @@ line.
   `<quader-project-mark>` ([project-mark.ts](../../web/src/app/shared/ui/project-mark.ts)): the first letter of its display name
   (else its key), or for the built-in project `upstream` an arrow pointing up
   ([Q-UI-837](#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)), on a stone of Quader's mark, which turns into the mark's coloured stone while the pointer or the keyboard's focus
-  is on its row, link or option; decorative. It stands before the name in every list of projects (the start page, the admin
-  area's projects, the search's **Projects** tab, the project switcher's lists, at 32 px beside a name with its key under it) and
-  wherever a row names its project (the admin area's repository list, the search's repositories and packages, the permission
+  is on its row, link or option; decorative. It stands before the name in every list of projects (the start page, the search's
+  **Projects** tab, the project switcher's lists, at 32 px beside a name with its key under it) and
+  wherever a row names its project (the list of every project's repositories, the search's repositories and packages, the permission
   policies, the audit log, at 20 px), there as `<quader-project-link>`: the mark and the project's display name, linked to it.
 - **An icon before a name** ([Q-UI-425](#q-ui-425--an-icon-before-a-name-has-a-column-of-its-own-in-the-cell-and-a-long-name-breaks-inside-itself-beside-it)):
   the cell `.icon-name` gives the icon a column of its own and the name the rest, so the icon and the start of the name share the
@@ -7077,8 +7093,8 @@ line.
 Acceptance criteria:
 
 - Unit tests: the search's repository rows and a project's repository rows hold the visibility icon and the key as the two columns
-  of `.icon-name`; the search's project cell holds the mark; the start page's and the admin area's project rows hold the mark.
-- Rendered: `repositories-long-keys`, `repositories` and `admin-repositories` with `release-candidates-for-the-customer-portal-frontend`
+  of `.icon-name`; the search's project cell holds the mark; the start page's project rows hold the mark.
+- Rendered: `repositories-long-keys`, `repositories` and `all-repositories` with `release-candidates-for-the-customer-portal-frontend`
   and the project **Customer portal release engineering and delivery** show the icon and the start of the name on one line.
 
 ### R-UI-103 · One way to write a time
@@ -7520,7 +7536,7 @@ Acceptance criteria:
 - `check-rules.mjs` fails on a template whose table cell holds an icon directly (`status-rule.mjs`, tested by
   `lint-rules.test.mjs`); the app passes it.
 - Unit tests: the jobs' state, the audit outcome and a replica's state are badges whose word starts with a capital; the replica
-  cell has no `.wrap`; the admin area's repository list and the token lists pin no column; the audit key holds `<wbr>` after each
+  cell has no `.wrap`; the list of every project's repositories and the token lists pin no column; the audit key holds `<wbr>` after each
   dot only; a target known by name shows it with the identifier as the title; the system status shows the revision's twelve
   characters with the hash as the title and the schema version apart from its badge; the dashboard's CPU and Memory are rows of
   the card's list; the endpoints' sentence is the header's; a check box is a direct child of its `.check-row`.
@@ -7923,7 +7939,7 @@ The owner's correction of 2026-11-18 (W-17): "Security-Audit hatte ich eigentlic
 
 - **The model** ([Q-UI-663](#q-ui-663--a-side-bar-is-a-list-of-titled-blocks)). A side bar (`NavArea`) is a list of titled blocks
   (`NavSection`: an id, a context title and its entries, items and folding groups). The home side bar has two: **Your work**
-  (Projects, Guides, and the group **Recently opened** of R-UI-167) and **Security audit** (**Security dashboard**). The admin area
+  (Projects, Repositories (Q-UI-1040), Guides, and the group **Recently opened** of R-UI-167) and **Security audit** (**Security dashboard**). The admin area
   has one, **Admin area**; a project's side bar has one, whose title is the project switcher. A block without an entry for the
   caller is left out with its title; an area without a block is left out.
 - **The look.** Every context title is the same element in the same place: a `<p class="context-title">` in the accent colour of the
@@ -7941,11 +7957,12 @@ The owner's correction of 2026-11-18 (W-17): "Security-Audit hatte ich eigentlic
 Acceptance criteria:
 
 - Unit tests (`app.spec.ts`): as an auditor at `/security` the side bar's titles are **Your work** and **Security audit**, both
-  `p.context-title`, each the name of its group; no group toggle and no chevron in the home side bar; the entries Projects, Guides,
+  `p.context-title`, each the name of its group; no group toggle and no chevron in the home side bar; the entries Projects, Repositories, Guides,
   Security dashboard; without the capability one title. `security-dashboard.spec.ts`: the block of the model, and none without
   the capability. The admin area's and a project's side bars keep their tests.
 - The journey 16 finds **Security dashboard** in the group named **Security audit** and no button of that name.
-- Render: `sidebar-auditor` as `auditor` (the drawer opened at 390 px), and `security` as `admin` and `auditor`.
+- Render: `sidebar-auditor` as `auditor` (the drawer opened at 390 px), and `security` as `admin` and `auditor`; `sidebar-admin` as
+  `admin`, the admin area's block without Projects and Repositories (Q-UI-1040).
 
 ### R-UI-169 · A repository's address stands in a field on Set up client only
 Priority: **MVP** · Covers: quader-only
@@ -7960,8 +7977,10 @@ The address a client needs has its context on the page Set up client (R-UI-120):
   **Details** keep the **Address for downloads by path (curl, wget)**, the raw file address of R-REPO-002 where it differs from the
   client address, because Set up client does not show it.
 - **The repository's settings** (R-UI-087) show no **Client address**, neither in **Details** nor in the consumer view.
-- **The start page** has no address (R-UI-166); a project's list of repositories has none (Q-UI-426).
-- Not addresses of a repository, and unchanged: the admin area's quiet copy button in a row of repositories (Q-UI-330); the
+- **The start page** has no address (R-UI-166); a project's list of repositories has none (Q-UI-426), and neither has the list of
+  every project's repositories, which offers **Set up client** in its rows as a project's does (Q-UI-1042; the admin area's quiet copy
+  button went with that area's list, Q-UI-1040).
+- Not addresses of a repository, and unchanged: the
   download address of a file on its page (R-UI-010); an install command of one line (Q-UI-320); an exposure rule's address on its
   editor in the admin area (Q-UI-331); a Bastion's address on its card.
 
@@ -8040,7 +8059,7 @@ Priority: **MVP** · Covers: quader-only
   stood at its place, far below the window's end, and a package's 33 versions had 900 px of empty page under them (the check
   `empty-scroll`).
 - The renders take a screen at a further width where a list changes its form between the run's three (the start page at 1,100 px,
-  the admin area's repositories at 1,100 and 1,280 px; `widths` of a screen in
+  the list of every project's repositories at 1,100 and 1,280 px; `widths` of a screen in
   [screens.ts](../../web/e2e/renders/screens.ts)).
 
 Acceptance criteria:
@@ -8648,8 +8667,8 @@ Priority: **MVP** · Covers: quader-only
 - **Lists.** The project is listed where R-AUTHZ-041 admits the caller, by its mark and display name **Upstream** with the badge
   **Built-in** after the name, its key, its description (the UI's localized sentence, not the stored English one,
   [Q-UI-895](#q-ui-895--the-built-in-projects-description-is-a-localized-text-of-the-ui)), the number of repositories the caller reads and no role or members
-  ([Q-UI-835](#q-ui-835--the-project-upstream-is-a-project-with-the-badge-built-in-and-no-administration)). The admin area's list of
-  projects shows it with the same badge and no **Delete**. It stands first in every list of projects it is in, above the other
+  ([Q-UI-835](#q-ui-835--the-project-upstream-is-a-project-with-the-badge-built-in-and-no-administration)); with the columns of
+  an administrator (R-UI-041) it has no Owners. It stands first in every list of projects it is in, above the other
   projects whatever the list is sorted by (a filter that does not match it takes it out), and its mark carries an arrow pointing
   up where every other project's carries its initial
   ([Q-UI-837](#q-ui-837--the-project-upstream-stands-first-in-a-list-of-projects-and-its-mark-is-an-arrow-pointing-up)). It shows no
@@ -8684,8 +8703,9 @@ Priority: **MVP** · Covers: quader-only
 - **Search, Recently opened and the guides** list well-known repositories like any repository the caller reads, with the project's
   mark (R-UI-095, R-UI-167, R-UI-124); a system repository without **Set up client** (Q-UI-896), with the badge **System** in the
   search, and not at all in the guides (R-UI-193).
-- **The admin area's repository list** (R-UI-020) shows them with their project and offers no **Delete** and no **Move** for them; a
-  system repository with the badge **System** and without its address to copy (R-UI-193).
+- **The list of every project's repositories** (`/repositories`, R-UI-020) shows them with their project and offers no **Delete**
+  and no **Move** for them; a system repository with the badge **System**, and without **Set up client** while it answers no client
+  (R-UI-193, Q-UI-896).
 
 Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**, first, above a
 project whose name and key sort before it, also when the list is sorted the other way, and its mark holds an arrow and no letter; its side bar
@@ -8820,7 +8840,7 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
   (the findings and the view **Malware**), and the repository suggestions of **Explain for a repository**. A filter whose address names
   one keeps it as an option, so that the reader can take it off.
 - **Still found, and marked** ([Q-UI-902](#q-ui-902--where-a-system-repository-is-listed-among-others-it-carries-the-badge-system)): the
-  admin area's list of repositories, the top bar's suggestions (also its frequently visited repositories) and the tab **Repositories** of
+  list of every project's repositories (`/repositories`), the top bar's suggestions (also its frequently visited repositories) and the tab **Repositories** of
   the search's results show them with the neutral badge **System** after the key, part of a suggestion's spoken name ("scanner-trivy ·
   upstream, System"). The project's own section has its heading and no badge in its rows.
 - **While ClamAV definition updates is on** ([Q-UI-908](#q-ui-908--upstreamclamav-answers-its-clients-while-its-switch-is-on-and-every-screen-treats-it-so)):
@@ -8837,7 +8857,7 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
 Acceptance criteria (Vitest, about 1 s together: the R-UI-193 cases of `core/upstream-project.spec.ts`, `system-repositories.spec.ts`,
 `repository-content.spec.ts`, `install-panel.spec.ts`, `package-version.spec.ts`, `guides.spec.ts`, `endpoints.spec.ts`,
 `security-dashboard.spec.ts`, `malware-finds.spec.ts`, `usage.spec.ts`, `search-field.spec.ts`, `search-results.spec.ts`, and the
-Q-UI-900 case of `upstream-registries.spec.ts`; rendered under rule 11: `admin-repositories-upstream`, `files-system`, `admin-upstream`,
+Q-UI-900 case of `upstream-registries.spec.ts`; rendered under rule 11: `all-repositories-upstream`, `files-system`, `admin-upstream`,
 `search-system`, `search-field-system`):
 
 - The admin list of `upstream` shows `scanner-trivy` and `clamav` with **System**, no copy button, and the menu of
@@ -15122,7 +15142,10 @@ what is needed to use them. The development agent revisits it if administrators 
 ### Q-UI-330 · A list takes its columns from the job of its kind of user; the important properties are columns, and the address takes no more than its share
 
 Status: **Decided by the development agent** — the rule is the coordinator's (2026-11-12), after the owner's review of a render;
-the columns per list are selected from the options below; the owner reviews them at the walkthrough.
+the columns per list are selected from the options below; the owner reviews them at the walkthrough. **Superseded in part by
+[Q-UI-1040](#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held) and
+[Q-UI-1042](#q-ui-1042--the-repositories-of-every-project-are-the-project-lists-columns-with-the-project-and-no-new-repository)**:
+the admin area's list is gone; the list of every project under Your work has a project's columns with the project.
 
 Context: the owner on `admin/admin-repositories-filters-dark-1440.png` (2026-11-12): "This looks like shit. A huge field for
 copying a path that may not even be needed gets all the room, and every other important property squeezes itself somehow into the
@@ -18497,7 +18520,9 @@ builder: the development agent confirms the cause there, and revisits (b) if a l
 ### Q-UI-577 · The admin area's list of projects has no column Your role
 
 Status: **Decided by the owner, 2026-11-18** (on the development agent's list of the administrator's station, where it stood under
-"For the owner to decide": the column **Your role** was empty in every row for an administrator).
+"For the owner to decide": the column **Your role** was empty in every row for an administrator). **Superseded by
+[Q-UI-1040](#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held)**: the admin area's list
+of projects is gone; the start page keeps **Your role** and gets the Owners and the storage on demand (Q-UI-1041).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -22808,6 +22833,126 @@ configuration hashes of instance 1 equal those of the former file.
 **Applied in the spec:** none (development tooling). Code: [deploy/ui-dev/](../../deploy/ui-dev/), the `ui-*` targets of the
 [Makefile](../../Makefile). Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder),
 [build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
+
+### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
+
+Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts
+zusuchen. Sind da falsch plaziert. Ein Admin schaut nicht im Admin menü nach diesen beiden. Willst du das verteidigen oder kommt das
+weg? Wenn ja, schreibe es auf die Liste"; and at 19:34, whole: "Ich stimme ebenso deinen Ausführungen zu, so vermerken", to the
+development agent's three points of what has to move and where). Supersedes the admin area's list of projects of R-UI-041 and
+[Q-UI-577](#q-ui-577--the-admin-areas-list-of-projects-has-no-column-your-role), and the admin area's list of repositories of R-UI-020
+with its columns of [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)
+and its copy button; the decisions about that list's widths (Q-UI-325, Q-UI-563's cases of the admin area) apply to the list of every
+project.
+
+Context: an administrator reads every project in the main area already (the start page, with **Your projects**), so the two entries
+were a second way to the same things and the reason a path of the main area had a twin under `/admin`. Three things lived only there:
+creating a project, the administrator's facts of a project (its Owners and the logical size it is charged), and the one list of
+repositories across projects.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the two entries | As built | Nothing moves | Two places for one thing; an administrator does not look for projects in the admin area (the owner) |
+| (b) The entries go; what lived only there moves into the main area (chosen) | **New project** on the start page (it stood there already for `projects:write`); the Owners and the storage as columns on demand there (Q-UI-1041); an entry **Repositories** under **Your work** with the repositories the caller can see in every project (Q-UI-1042) | One place for each thing, for every kind of user; a search never needs the admin area for a project or a repository | The administrator's columns are a click away |
+
+**Choice:** (b), the owner's. What goes: the side bar's entries **Projects** and **Repositories** of the admin area, the routes
+`/admin/projects` and `/admin/repositories` with every path below them (not found, no redirect, R-UI-003; the UI's lint refuses a link
+to them, [removed-routes-rule.mjs](../../web/scripts/removed-routes-rule.mjs)), the admin area's creation form with a project to choose
+(a repository is created in its project, R-UI-021), the dashboard's **New repository** (its **View repositories** opens
+`/repositories`), the empty search list's admin page **Repositories** (R-UI-096), the renders of the two pages and the manual's
+sentences about them. What stays in the admin area: Dashboard, Upstream registries, Endpoints, Bastions, Identity, Access, System,
+Settings. Checked when it was built, by a search of every template and route command of `web/src/app` for `/admin` outside the
+admin area's own features: no page of the main area links into `/admin` for a project or a repository's list or creation. What
+remains links into pages the owner kept in the admin area and says so in its words: a well-known repository's settings in `upstream`
+say "Managed in Admin area › Upstream registries" with a link to its page there for the holder of `repositories:read-config`
+(R-UI-190); a Debian repository's indexes and a mirror's status link to the jobs of System status; the vulnerability report links to
+the advisory sources; a principal's roles to System roles. The start page, the list of every project and a project's list are held to
+it by unit tests.
+
+**Applied in the spec:** R-UI-002, R-UI-003, R-UI-020, R-UI-021, R-UI-041, R-UI-054, R-UI-065, R-UI-066, R-UI-080, R-UI-096, R-UI-100,
+R-UI-102, R-UI-145, R-UI-168, R-UI-169, R-UI-173, R-UI-190, R-UI-193. Code: [app.routes.ts](../../web/src/app/app.routes.ts),
+[navigation.ts](../../web/src/app/core/navigation.ts), [repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts),
+[repository-create.ts](../../web/src/app/features/repositories/repository-create.ts),
+[repository-format-chooser.ts](../../web/src/app/features/repositories/repository-format-chooser.ts),
+[dashboard.html](../../web/src/app/features/system/dashboard.html), [search-model.ts](../../web/src/app/features/search/search-model.ts),
+[help-topics.ts](../../web/src/app/core/help-topics.ts). The manual: [projects.md](../manual/admin/projects.md),
+[repositories.md](../manual/admin/repositories.md), [user/repositories.md](../manual/user/repositories.md).
+
+### Q-UI-1041 · The Owners and the storage are columns on demand of the start page, for the holder of projects:read
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the
+facts are shown on the main list to a holder of `projects:read` as columns on demand, and a plain user's list stays as it is, is the
+owner's (Q-UI-1040); how they are asked for is this decision.
+
+Context: the admin area's list of projects showed the Owners, the members, the repositories and the logical size the project is
+charged ([R-STOR-049](storage.md#r-stor-049--the-storage-of-a-project)). The start page shows the members and the repositories
+already; the Owners and the storage were the admin list's alone. The app has no control that chooses a table's columns.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A check box **Show Owners and storage** at the end of the list's head, beside **Your projects**, for the holder of `projects:read`; the choice kept for the viewer in the browser as an opened Details section is (Q-UI-967) (chosen) | The shared check box of the head (`headEnd`, Q-UI-420); `DisclosureMemory` with the id `projects.details` | One control the head already has; an administrator who wants the columns sets it once; nothing new to style | Two check boxes in the head for an administrator who is also a member |
+| (b) A menu **Columns** with a check box per column | A new control | Each column on its own | A control of its own for two columns; new styling, against the owner's rule to copy his GitLab's controls and add none |
+| (c) The columns always shown to the holder of `projects:read` | No control | No click | Not on demand: the owner asked for columns on demand |
+
+**Choice:** (a). The columns stand where the admin list had them: **Owners** after **Your role** (the names, the `user:` and `group:`
+of a reference left out, the dash for none and for the built-in project `upstream`, R-UI-190), **Storage** last (a figure at the
+column's end in binary units, the exact bytes as its title, the admin list's help). Editing a project, which the admin list offered in
+its row, is the project's settings' (Q-UI-215); deleting an empty project too, by an administrator. **Rationale:** simple by default,
+details on demand (the owner's rule of 2026-11-12): a plain user's list and an administrator's first look are the same list, and the
+two facts that only manage a project are one click away and stay so. The development agent would revisit it if a third optional
+column came, where a menu of columns would pay for itself.
+
+**Applied in the spec:** R-UI-041. Code: [projects-home.ts](../../web/src/app/features/projects/projects-home.ts). Tests:
+[projects.spec.ts](../../web/src/app/features/projects/projects.spec.ts) ("The start page holds what the admin area's list of
+projects held"). Rendered: `projects-details` (`admin`, `auditor`).
+
+### Q-UI-1042 · The repositories of every project are the project list's columns with the project, and no New repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The list
+itself, its filters by format, class and project, that an administrator sees every repository there and that a repository is created
+in its project are the owner's (Q-UI-1040); its columns and what its head offers are this decision.
+
+Context: the admin area's list was the administrator's (Q-UI-330): the repository, the project, format, class, the visibility as a
+column, the last activity, and a quiet button that copied the client address. The new list is the main area's, read by a plain user
+too, whose job is to find a repository and set up its client (R-UI-067); R-UI-169 keeps the address on Set up client.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A project's list's columns (the visibility icon before the key, format, class, **Set up client** and the menu) with **Project** after the repository; **Last activity** for the holder of `repositories:write-config` while a row has one; no copy button; the project filter a choice of the projects the caller sees, by display name; no **New repository**, the line under the heading saying where a repository is created (chosen) | One row for one repository wherever it is listed | A plain user sets up a client from the row as in a project; the address stands where its client is set up; the administrator keeps the fact of maintenance | The administrator copies an address from Set up client, one click further |
+| (b) The admin list's columns as they were | Visibility column, copy button | Nothing changes for an administrator | A column and an address a plain user does not need, against R-UI-169 |
+| (c) **New repository** with a project to choose in the form | The admin area's form, moved | One place to create from | A second way to create, the one the owner named to go ("A new repository is created in its project, as everywhere else") |
+
+**Choice:** (a). The line under the heading: "The repositories you can see, in every project. A new repository is created in its
+project." A system repository of `upstream` carries the badge **System** after its key (R-UI-193) and, while it answers no client,
+no **Set up client** (Q-UI-896). The list reads `GET /api/v1/repositories` (R-REPO-012), which already lists what the caller may read
+across projects and every repository for `repositories:read-config`, with its authorization tests at the integration tier
+(`R-REPO-012 R-AUTHZ-016 the list holds the repositories the caller may read, anonymous included`); the API needed no change.
+**Rationale:** the list is one more way to the same rows; it should look like the rows a user knows from a project, with the one
+column a list across projects needs. The development agent would revisit the copy button if the owner misses it at the walk.
+
+**Applied in the spec:** R-UI-020, R-UI-065, R-UI-066, R-UI-169. Code: [repository-list.ts](../../web/src/app/features/repositories/repository-list.ts),
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html). Tests:
+[repository-list.spec.ts](../../web/src/app/features/repositories/repository-list.spec.ts),
+[repository-list-panel.spec.ts](../../web/src/app/features/repositories/repository-list-panel.spec.ts),
+[system-repositories.spec.ts](../../web/src/app/features/repositories/system-repositories.spec.ts). Rendered: `all-repositories`,
+`all-repositories-menu`, `all-repositories-upstream`, `all-repositories-none`.
+
+### Q-UI-1043 · `/admin` without the dashboard starts at the first entry of the admin side bar, or on the start page
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `/admin` started at the dashboard for the holder of `settings:read` (Q-OPS-175) and otherwise at the repositories, or the
+projects for a holder of `projects:read` without the repository capability. Both pages left the admin area (Q-UI-1040).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The dashboard for `settings:read`, else the first entry of the admin side bar the caller has, in its order; with none, the start page (chosen) | The side bar's model decides ([auth-guard.ts](../../web/src/app/core/auth-guard.ts) reads `Navigation`) | One rule that follows the side bar as it changes; never a page the caller cannot use | — |
+| (b) A fixed second page (the users) | A route in the guard | Simple | A caller without `identities:read` lands on a refusal |
+
+**Choice:** (a). A holder of `projects:read` alone has no entry of the admin area any more, so no Admin button (Q-UI-621) and no
+admin area: the projects are the main area's. **Rationale:** the start follows the side bar, so it never names a page the side bar
+does not offer. The development agent sees no case for revisiting this. **Applied in the spec:** R-UI-003 (the row of `/admin`,
+unchanged in its words). Tests: [admin-home.spec.ts](../../web/src/app/core/admin-home.spec.ts).
 
 ### Q-API-417 · The version list of a package is read a page at a time by a keyset query in the order of publication
 

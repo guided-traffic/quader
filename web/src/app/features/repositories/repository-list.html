@@ -1,12 +1,9 @@
 <!-- The header names the list; inside a project its one muted line is the project's description and, for a plain user, whom
-     to ask (Q-UI-317, UI-A-15). The repositories opened last are the start page's only (Q-UI-323, Q-UI-329). -->
+     to ask (Q-UI-317, UI-A-15); on the list of every project it says what the list holds and where a repository is created
+     (Q-UI-1042). The repositories opened last are the side bar's (R-UI-167, Q-UI-329). -->
 <quader-page-header [heading]="heading" [description]="headerLine()">
-  @if (inProject() && canCreateHere()) {
+  @if (canCreateHere()) {
     <a actions class="btn btn-confirm" [routerLink]="['/projects', projectKey(), 'repositories', 'new']" i18n="@@repo.list.create"
-      >New repository</a
-    >
-  } @else if (!inProject() && canCreate()) {
-    <a actions class="btn btn-confirm" routerLink="/admin/repositories/new" i18n="@@repo.list.create"
       >New repository</a
     >
   }
@@ -35,17 +32,20 @@
   (clearAll)="clearFilters()"
   (dismissed)="restage()"
 >
+  <!-- The list of every project chooses a project from those the caller sees, by display name (Q-UI-1042). -->
   @if (!inProject()) {
     <quader-filter-category i18n-label="@@repo.col.project" label="Project">
-      <input
-        class="text-input"
-        type="text"
-        autocomplete="off"
+      <select
+        class="select-input"
         i18n-aria-label="@@repo.col.project"
         aria-label="Project"
-        [value]="stagedProject()"
-        (input)="stagedProject.set($any($event.target).value)"
-      />
+        (change)="stagedProject.set($any($event.target).value)"
+      >
+        <option value="" [selected]="!stagedProject()" i18n="@@repo.filter.any">Any</option>
+        @for (p of projectOptions(); track p.key) {
+          <option [value]="p.key" [selected]="stagedProject() === p.key" translate="no">{{ p.label }}</option>
+        }
+      </select>
     </quader-filter-category>
   }
   <quader-filter-category i18n-label="@@repo.col.format" label="Format">
@@ -136,12 +136,10 @@
   <tr>
     <!-- The first column names the thing: the visibility icon and the key each in a column of the cell, so a long key breaks
          inside itself beside the icon (Q-UI-425); the description is its muted second line and the only one: every other
-         property is a column of its own (ui-style-guide.md, Lists; Q-UI-302, Q-UI-330). The admin area has the level as a column. -->
+         property is a column of its own (ui-style-guide.md, Lists; Q-UI-302, Q-UI-330). -->
     <th scope="row">
       <span class="icon-name">
-        @if (inProject()) {
-          <quader-visibility-icon [level]="row.visibility.artifacts" />
-        }
+        <quader-visibility-icon [level]="row.visibility.artifacts" />
         <span class="icon-name-text">
           <a
             [routerLink]="['/projects', row.project, 'repositories', row.key]"
@@ -149,8 +147,8 @@
             translate="no"
             >{{ row.key }}</a
           >
-          <!-- In the admin area a system repository of upstream carries its one word, so that it does not read as one more
-               repository of a project; on the project's page its section's heading says it (R-UI-193, Q-UI-902). -->
+          <!-- On the list of every project a system repository of upstream carries its one word, so that it does not read as one
+               more repository of a project; on the project's page its section's heading says it (R-UI-193, Q-UI-902). -->
           @if (!inProject() && system(row)) {
             <span class="badge">{{ systemBadge }}</span>
           }
@@ -179,13 +177,8 @@
     <td class="class-cell">
       <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(row.class) }}</span>{{ classText(row.class) }}</span>
     </td>
-    @if (!inProject()) {
-      <td class="level-cell">
-        <quader-visibility-icon [level]="row.visibility.artifacts" />{{ levelText(row.visibility.artifacts) }}
-      </td>
-    }
-    <!-- A time relative to now, the absolute time its title (Q-UI-431); the administrator's, while a row has one (Q-UI-312,
-         Q-UI-330). -->
+    <!-- A time relative to now, the absolute time its title (Q-UI-431); the administrator's, on the list of every project, while a
+         row has one (Q-UI-312, Q-UI-330). -->
     @if (showActivity()) {
       <td class="narrow-drop">
         @if (row.lastActivityAt; as at) {
@@ -195,21 +188,15 @@
         }
       </td>
     }
-    <td class="actions" [class.with-setup]="inProject() && setupLink(row) !== null">
-      <!-- Inside a project the address is no column: it means nothing without its client, so the row offers the repository's
-           page Set up client, where the address stands with the snippets that use it (Q-UI-426, R-UI-126), in the quiet form of a
-           row's action (Q-UI-487). A system repository answers no client and offers none (Q-UI-896). -->
-      @if (inProject() && setupLink(row); as setup) {
+    <td class="actions" [class.with-setup]="setupLink(row) !== null">
+      <!-- The address is no column: it means nothing without its client, so the row offers the repository's page Set up client,
+           where the address stands with the snippets that use it (Q-UI-426, R-UI-126, Q-UI-1042), in the quiet form of a row's
+           action (Q-UI-487). A system repository that answers no client offers none (Q-UI-896). -->
+      @if (setupLink(row); as setup) {
         <a class="btn btn-tertiary row-setup" [routerLink]="setup"
           ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
           ><span class="visually-hidden" translate="no">&ngsp;{{ row.key }}</span></a
         >
-      }
-      <!-- The administrator manages and copies the address now and then: a quiet copy button whose name and tooltip carry the
-           address, beside the menu, which has the same action (Q-UI-330). A system repository's address answers every client 404:
-           it has neither (Q-UI-898). -->
-      @if (!inProject() && address(row); as a) {
-        <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
       }
       <!-- The row's actions are a menu (ui-style-guide.md, Lists; Q-UI-302): four buttons pushed the list sideways. -->
       <button
@@ -229,11 +216,6 @@
               (click)="visit(row)"
               i18n="@@repo.action.settings"
               >Settings</a
-            >
-          }
-          @if (!inProject() && address(row); as a) {
-            <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="copyAddress(a)" i18n="@@repo.action.copy-address"
-              >Copy client address</button
             >
           }
           <!-- A repository's folders and files are on its page (ADR-203). -->

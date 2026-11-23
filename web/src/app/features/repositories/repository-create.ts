@@ -1,6 +1,6 @@
 import { DocumentBlock } from '../../shared/document-block';
 import { Component, DestroyRef, computed, effect, inject, input, linkedSignal, resource, signal, untracked, viewChild } from '@angular/core';
-import { ActivatedRoute, ActivatedRouteSnapshot, ResolveFn, Router, RouterLink } from '@angular/router';
+import { ActivatedRouteSnapshot, ResolveFn, Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
 import { collectAll } from '../../api/pagination';
 import { ApiError, FieldProblem } from '../../api/problem';
@@ -17,7 +17,7 @@ import {
 import { Notifier } from '../../core/notifier';
 import { ServerAddress } from '../../core/server-address';
 import { SessionStore } from '../../core/session-store';
-import { UPSTREAM_PROJECT, isUpstreamProject } from '../../core/upstream-project';
+import { UPSTREAM_PROJECT } from '../../core/upstream-project';
 import { WellKnownMembers } from './well-known-members';
 import { SelectOption } from '../../shared/access/fields';
 import { DraftStore } from '../../shared/drafts';
@@ -89,7 +89,6 @@ function presetClass(format: FormatDescriptor | null): RepositoryClass {
 interface CreateDraft {
   readonly format: string;
   readonly cls: RepositoryClass;
-  readonly project: string;
   readonly form: RepositoryForm;
   readonly keyEdited: boolean;
   readonly artifacts: VisibilityLevel | null;
@@ -130,14 +129,13 @@ export class RepositoryCreate implements HasUnsavedChanges {
   private readonly api = inject(RepositoriesApi);
   private readonly projectsApi = inject(ProjectsApi);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly notifier = inject(Notifier);
   private readonly session = inject(SessionStore);
   private readonly drafts = inject(DraftStore);
   private readonly serverAddress = inject(ServerAddress);
   private readonly destroyed = inject(DestroyRef);
 
-  /** Route parameter `:project` inside a project; in the admin area the query parameter `project`, the project the form starts with. */
+  /** Route parameter `:project`: the project the repository is created in, given by the address and not chosen (Q-UI-1040). */
   readonly project = input<string | undefined>();
   /** Route parameter `:format`: the format the form is for. */
   readonly format = input<string | undefined>();
@@ -148,9 +146,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
   readonly class = input<string | undefined>();
 
   private readonly summaryView = viewChild(ErrorSummary);
-
-  /** Inside a project the project is given, not chosen (Q-UI-129). */
-  protected readonly inProject = (): boolean => this.route.snapshot.paramMap.has('project');
 
   /** Generated when the form opens and kept until it closes (R-UI-042). */
   private readonly idempotencyKey = newIdempotencyKey();
@@ -174,53 +169,13 @@ export class RepositoryCreate implements HasUnsavedChanges {
     return f ? createHeading(f) : '';
   });
   protected readonly projectLine = computed(() =>
-    this.inProject() ? $localize`:@@repo.create.in-project:In the project ${this.chosenProject()}:project:.` : '',
+    this.chosenProject() ? $localize`:@@repo.create.in-project:In the project ${this.chosenProject()}:project:.` : '',
   );
-  /** The chooser, with the admin area's project carried back. */
-  protected readonly chooserLink = computed(() =>
-    this.inProject() ? ['/projects', this.chosenProject(), 'repositories', 'new'] : ['/admin/repositories/new'],
-  );
-  protected readonly chooserQuery = computed(() =>
-    !this.inProject() && this.chosenProject() ? { project: this.chosenProject() } : {},
-  );
-  protected readonly cancelLink = computed(() =>
-    this.inProject() ? ['/projects', this.chosenProject(), 'repositories'] : ['/admin/repositories'],
-  );
-
-  // ---- Project (admin area only) ----
-
-  /**
-   * The project the repository is created in. It follows the address until the user chooses one; after that only the user
-   * changes it, so an input bound late by the router never drops a choice made right after the page opened.
-   */
-  private readonly projectChoice = signal<string | null>(null);
-  protected readonly chosenProject = computed(() => this.projectChoice() ?? this.project() ?? '');
-  /** The projects the caller may create in: every project for `projects:read`, the projects it owns otherwise; the server decides. */
-  protected readonly projects = resource({
-    // The session's projects and capabilities are the parameters: a session that arrives after the page opened lists again,
-    // and the choice, which is the user's (`projectChoice`), stays.
-    params: () => ({
-      owned: this.session
-        .projects()
-        .filter((p) => p.role === 'owner')
-        .map((p) => p.key),
-      all: !this.inProject() && this.session.has('projects:read'),
-    }),
-    loader: async ({ params: { owned, all } }): Promise<readonly string[]> => {
-      if (!all) return owned;
-      try {
-        return (await collectAll(this.projectsApi.list({}))).map((p) => p.key);
-      } catch {
-        return owned;
-      }
-    },
-  });
-  protected readonly loadingProjects = $localize`:@@repo.create.project-loading:Loading projects…`;
-  protected readonly projectOptions = computed<readonly SelectOption[]>(() => [
-    { value: '', label: $localize`:@@repo.create.project-choose:Choose a project` },
-    // Nothing is created in the built-in project `upstream` (R-REPO-069).
-    ...(valueOf(this.projects) ?? []).filter((k) => !isUpstreamProject(k)).map((k) => ({ value: k, label: k })),
-  ]);
+  /** The format chooser of the project. */
+  protected readonly chooserLink = computed(() => ['/projects', this.chosenProject(), 'repositories', 'new']);
+  protected readonly cancelLink = computed(() => ['/projects', this.chosenProject(), 'repositories']);
+  /** The project the repository is created in: the address's (Q-UI-129, Q-UI-1040). */
+  protected readonly chosenProject = computed(() => this.project() ?? '');
 
   // ---- Class and the defaults of the class (R-REPO-063) ----
 
@@ -365,14 +320,8 @@ export class RepositoryCreate implements HasUnsavedChanges {
   });
   protected readonly activeCentral = computed<ReadonlySet<string>>(() => valueOf(this.centralRead) ?? new Set());
   /** The form of a new virtual repository of the same format, where the line under the presets leads. */
-  protected readonly newVirtualLink = computed(() =>
-    this.inProject()
-      ? ['/projects', this.chosenProject(), 'repositories', 'new', this.format() ?? '']
-      : ['/admin/repositories/new', this.format() ?? ''],
-  );
-  protected readonly newVirtualQuery = computed<Readonly<Record<string, string>>>(() =>
-    this.inProject() ? { class: 'virtual' } : { class: 'virtual', ...(this.chosenProject() ? { project: this.chosenProject() } : {}) },
-  );
+  protected readonly newVirtualLink = computed(() => ['/projects', this.chosenProject(), 'repositories', 'new', this.format() ?? '']);
+  protected readonly newVirtualQuery: Readonly<Record<string, string>> = { class: 'virtual' };
   protected readonly targetOptions = computed<readonly SelectOption[]>(() => [
     { value: '', label: $localize`:@@virtual.target.none:None: the repository is read-only` },
     ...this.members()
@@ -422,9 +371,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
     if (this.keyCheck() === 'taken') return $localize`:@@repo.key.taken:A repository with this key already exists in the project.`;
     return null;
   });
-  protected readonly projectError = computed(() =>
-    this.submitted() && this.chosenProject() === '' ? $localize`:@@repo.create.project-missing:Choose a project.` : null,
-  );
   protected readonly fieldErrors = computed<ReadonlyMap<string, FieldProblem>>(() => this.failure()?.fieldErrors ?? new Map());
   protected readonly descriptionError = computed(() => {
     const problem = problemsAt(this.fieldErrors(), '/description')[0];
@@ -435,9 +381,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
   private readonly ownProblems = computed<readonly SummaryItem[]>(() => {
     const items: SummaryItem[] = [];
     const f = this.descriptor();
-    if (!this.inProject() && this.chosenProject() === '') {
-      items.push({ label: $localize`:@@repo.create.project:Project`, message: this.projectError() ?? '', targetId: 'f-project' });
-    }
     if (!this.keyValid() || this.keyCheck() === 'taken') {
       items.push({ label: $localize`:@@repo.field.key:Key`, message: this.keyError() ?? keyShapeText(), targetId: 'f-key' });
     }
@@ -568,13 +511,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
     this.deployTarget.set(null);
     this.targetChosen.set(false);
     this.failure.set(null);
-  }
-
-  protected setProject(project: string): void {
-    this.projectChoice.set(project);
-    this.members.set([]);
-    this.deployTarget.set(null);
-    this.targetChosen.set(false);
   }
 
   protected setKey(key: string): void {
@@ -713,7 +649,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
     const draft: CreateDraft = {
       format: this.format() ?? '',
       cls: this.cls(),
-      project: this.chosenProject(),
       // The password is a secret: it never goes to storage (R-UI-043).
       form: { ...this.form(), upstream: { ...this.form().upstream, password: '' } },
       keyEdited: this.keyEdited(),
@@ -727,7 +662,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
 
   private restore(draft: CreateDraft): void {
     this.restoredClass = draft.cls;
-    if (draft.project) this.projectChoice.set(draft.project);
     this.form.set({ ...EMPTY_FORM, ...draft.form });
     this.keyEdited.set(draft.keyEdited);
     this.artifactsChoice.set(draft.artifacts);

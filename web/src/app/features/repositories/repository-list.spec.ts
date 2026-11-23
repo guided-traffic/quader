@@ -2,11 +2,44 @@ import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FrequentPlaces } from '../../core/frequent-places';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { FakeSessionApi, provideFakeApis } from '../../api/testing/fakes';
+import { SessionApi } from '../../api/session-api';
+import { SessionStore } from '../../core/session-store';
 import { addressValues, browserStorage, button, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { RepositoryList } from './repository-list';
 
+/** The list as the router opens it at `url`, its route and query bound to its inputs: a project's list or the list of every project. */
+async function routed(url: string, capabilities?: string[]): Promise<HTMLElement> {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter(
+        [
+          { path: 'projects/:project/repositories', component: RepositoryList },
+          { path: 'repositories', component: RepositoryList },
+          { path: '**', children: [] },
+        ],
+        withComponentInputBinding(),
+      ),
+      ...provideFakeApis(),
+    ],
+  });
+  if (capabilities) (TestBed.inject(SessionApi) as FakeSessionApi).meResult = { capabilities };
+  await TestBed.inject(SessionStore).load();
+  const harness = await RouterTestingHarness.create();
+  await harness.navigateByUrl(url);
+  for (let i = 0; i < 6; i++) {
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+  }
+  return harness.routeNativeElement as HTMLElement;
+}
+
 describe('Repository list', () => {
-  it('R-UI-020 Q-UI-330 the admin area\'s list has the columns repository, project, format and class, and no address field, and has no serious violation', async () => {
+  it('R-UI-020 Q-UI-330 Q-UI-1042 the list of every project has the columns repository, project, format and class, the level as the icon before the key, and no address field, and has no serious violation', async () => {
     const { root } = await renderScreen(RepositoryList);
     const t = text(root);
     expect(t).toContain('generic-local');
@@ -16,6 +49,13 @@ describe('Repository list', () => {
     expect(heads.slice(0, 4)).toEqual(['Repository', 'Project', 'Format', 'Class']);
     const row = [...root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('generic-local'))!;
     expect(row.querySelector('td.project-cell a')?.getAttribute('href')).toBe('/projects/web');
+    // The level is the icon before the key, as in a project's list; no column of its own (Q-UI-1042).
+    expect(row.querySelector('th[scope="row"] .icon-name > quader-visibility-icon')).toBeTruthy();
+    expect(heads).not.toContain('Visibility');
+    // The line under the heading says what the list holds and where a repository is created.
+    expect(text(root.querySelector('.page-header-description')!)).toBe(
+      'The repositories you can see, in every project. A new repository is created in its project.',
+    );
     expect(row.querySelector('td.format-cell .format-name quader-format-icon')).toBeTruthy();
     expect(text(row.querySelector('td.format-cell span[translate="no"]')!)).toBe('Generic');
     expect(text(row.querySelector('td.class-cell')!)).toContain('Local');
@@ -24,7 +64,7 @@ describe('Repository list', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-145 Q-UI-563 the admin area\'s columns take their widths from their content: the repository and the project wrap and share the room, the rest is as wide as its values', async () => {
+  it('R-UI-145 Q-UI-563 the columns of the list of every project take their widths from their content: the repository and the project wrap and share the room, the rest is as wide as its values', async () => {
     const { root } = await renderScreen(RepositoryList);
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     // No column is pinned to its least while another takes every pixel (the project broke into three lines beside an empty column).
@@ -44,29 +84,17 @@ describe('Repository list', () => {
     expect(row.closest('quader-data-table table.data tbody')).toBeTruthy();
   });
 
-  it('R-UI-066 Q-UI-330 in the admin area the address is a quiet copy button beside the menu, its name and tooltip carrying the address, and an item of the menu', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+  it('R-UI-169 Q-UI-426 Q-UI-1042 a row of the list of every project offers Set up client, and no copy of the address', async () => {
     const { root, fixture } = await renderScreen(RepositoryList);
     const row = [...root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('generic-local'))!;
-    const copy = row.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
-    const label = copy.getAttribute('aria-label')!;
-    expect(label).toMatch(/^Copy client address https?:\/\/.*generic-local\/$/);
-    expect(copy.getAttribute('title')).toBe(label);
-    expect(copy.classList.contains('btn-tertiary')).toBe(true);
-    const address = label.replace('Copy client address ', '');
-    copy.click();
-    await settle(fixture);
-    expect(writeText).toHaveBeenLastCalledWith(address);
+    const setup = row.querySelector<HTMLAnchorElement>('td.actions a.row-setup')!;
+    expect(text(setup)).toBe('Set up client generic-local');
+    expect(setup.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup');
+    expect(row.querySelector('quader-copy-button')).toBeNull();
     row.querySelector<HTMLButtonElement>('button[aria-label="Actions for generic-local"]')!.click();
     await settle(fixture);
-    const item = [...root.ownerDocument.body.querySelectorAll<HTMLButtonElement>('.menu [role="menuitem"]')].find(
-      (i) => i.textContent?.trim() === 'Copy client address',
-    )!;
-    writeText.mockClear();
-    item.click();
-    await settle(fixture);
-    expect(writeText).toHaveBeenLastCalledWith(address);
+    const items = [...root.ownerDocument.body.querySelectorAll('.menu [role="menuitem"]')].map((i) => i.textContent?.trim());
+    expect(items).not.toContain('Copy client address');
   });
 
   it('R-UI-020 the description is the second line of the first column, and the row actions are one menu named for the row', async () => {
@@ -82,8 +110,9 @@ describe('Repository list', () => {
     // No row has a last activity: the column is left out (a column of dashes says nothing).
     expect(heads).not.toContain('Last activity');
     expect(root.querySelector('quader-data-table')?.classList.contains('stack')).toBe(true);
-    // The copy button and the menu.
-    expect(row.querySelectorAll('td.actions button')).toHaveLength(2);
+    // Set up client and the menu.
+    expect(row.querySelectorAll('td.actions a.row-setup')).toHaveLength(1);
+    expect(row.querySelectorAll('td.actions button')).toHaveLength(1);
     row.querySelector<HTMLButtonElement>('button[aria-label="Actions for generic-local"]')!.click();
     await settle(fixture);
     const menu = root.ownerDocument.body.querySelector('.menu')!;
@@ -140,13 +169,16 @@ describe('Repository list', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-020 R-UI-146 Q-UI-573 "New repository" is offered only to a caller who may write repository configuration', async () => {
-    const admin = await renderScreen(RepositoryList);
-    expect(text(admin.root)).toContain('New repository');
-    const reader = await renderScreen(RepositoryList, {
-      capabilities: ['repositories:read-config'],
-    });
-    expect(text(reader.root)).not.toContain('New repository');
+  it('R-UI-020 R-UI-146 Q-UI-573 Q-UI-1042 "New repository" stands on a project\'s list for who may write repository configuration, and on the list of every project for nobody', async () => {
+    const admin = await routed('/projects/web/repositories');
+    const create = [...admin.querySelectorAll('a')].find((a) => text(a) === 'New repository')!;
+    expect(create.getAttribute('href')).toBe('/projects/web/repositories/new');
+    const reader = await routed('/projects/web/repositories', ['repositories:read-config']);
+    expect(text(reader)).not.toContain('New repository');
+    const across = await routed('/repositories');
+    expect(text(across)).toContain('generic-local');
+    expect(text(across)).not.toContain('New repository');
+    expect([...across.querySelectorAll('a')].some((a) => (a.getAttribute('href') ?? '').startsWith('/admin'))).toBe(false);
   });
 
   it('R-UI-020 "Load more" continues the cursor walk', async () => {

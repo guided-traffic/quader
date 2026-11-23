@@ -339,20 +339,13 @@
         }
       </dl>
       <div class="card-foot">
+        <!-- The repositories of every project are the main area's (Q-UI-1040); a new one is created in its project. -->
         <a
           class="btn btn-default btn-sm"
-          routerLink="/admin/repositories"
+          routerLink="/repositories"
           i18n="@@dashboard.repositories.view"
           >View repositories</a
         >
-        @if (session.has('repositories:write-config')) {
-          <a
-            class="btn btn-default btn-sm"
-            routerLink="/admin/repositories/new"
-            i18n="@@dashboard.repositories.new"
-            >New repository</a
-          >
-        }
       </div>
     </section>
 

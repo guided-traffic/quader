@@ -831,15 +831,6 @@
         <target>Nur Mitglieder des Projekts und die Prinzipale, die eine Richtlinie nennt.</target>
       </segment>
     </unit>
-    <unit id="repo.col.visibility">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:212</note>
-      </notes>
-      <segment>
-        <source>Visibility</source>
-        <target>Sichtbarkeit</target>
-      </segment>
-    </unit>
     <unit id="audit.action.ci.mapping.created">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:125</note>
@@ -1341,15 +1332,6 @@
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> and their tokens and sessions are removed. This cannot be undone.</source>
         <target><ph id="0" equiv="user" disp="this.username()"/> sowie seine Token und Sitzungen werden entfernt. Das kann nicht rückgängig gemacht werden.</target>
-      </segment>
-    </unit>
-    <unit id="project-dialog.title-edit">
-      <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:38,39</note>
-      </notes>
-      <segment>
-        <source>Edit project <ph id="0" equiv="INTERPOLATION" disp="{{ p.value.key }}"/></source>
-        <target>Projekt <ph id="0" equiv="INTERPOLATION" disp="{{ p.value.key }}"/> bearbeiten</target>
       </segment>
     </unit>
     <unit id="upstream.details">
@@ -2522,15 +2504,6 @@
       <segment>
         <source>One hour</source>
         <target>Eine Stunde</target>
-      </segment>
-    </unit>
-    <unit id="project-dialog.save">
-      <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:122,123</note>
-      </notes>
-      <segment>
-        <source>Save project</source>
-        <target>Projekt speichern</target>
       </segment>
     </unit>
     <unit id="sas.active">
@@ -5668,15 +5641,6 @@
       <segment>
         <source>Keywords</source>
         <target>Schlagwörter</target>
-      </segment>
-    </unit>
-    <unit id="projects.edit">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:97,98</note>
-      </notes>
-      <segment>
-        <source>Edit</source>
-        <target>Bearbeiten</target>
       </segment>
     </unit>
     <unit id="virtual.selected">
@@ -12506,15 +12470,6 @@
         <target>Letzte 90 Tage</target>
       </segment>
     </unit>
-    <unit id="projects.empty">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:79,80</note>
-      </notes>
-      <segment>
-        <source>There is no project yet.</source>
-        <target>Es gibt noch kein Projekt.</target>
-      </segment>
-    </unit>
     <unit id="policy.resources-help">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:151,152</note>
@@ -17834,15 +17789,6 @@
       <segment>
         <source>No platform</source>
         <target>Keine Plattform</target>
-      </segment>
-    </unit>
-    <unit id="projects.heading">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:30</note>
-      </notes>
-      <segment>
-        <source>Projects</source>
-        <target>Projekte</target>
       </segment>
     </unit>
     <unit id="policy.try-repository">
@@ -23472,15 +23418,6 @@
         <target>Dokumentation durchsuchen</target>
       </segment>
     </unit>
-    <unit id="dashboard.repositories.new">
-      <notes>
-        <note category="location">src/app/features/system/dashboard.html:294,298</note>
-      </notes>
-      <segment>
-        <source>New repository</source>
-        <target>Neues Repository</target>
-      </segment>
-    </unit>
     <unit id="visibility.public">
       <notes>
         <note category="location">src/app/shared/ui/visibility-level.ts:24</note>
@@ -27426,15 +27363,6 @@
         <target>das Tag ist ausgeschlossen oder nicht eingeschlossen</target>
       </segment>
     </unit>
-    <unit id="projects.caption">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:126</note>
-      </notes>
-      <segment>
-        <source>Projects</source>
-        <target>Projekte</target>
-      </segment>
-    </unit>
     <unit id="tokens-admin.by-value-text">
       <notes>
         <note category="location">src/app/features/tokens/token-admin.html:91,93</note>
@@ -29138,15 +29066,6 @@
         <target>Abbrechen</target>
       </segment>
     </unit>
-    <unit id="projects.add">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:38,40</note>
-      </notes>
-      <segment>
-        <source> New project </source>
-        <target> Neues Projekt </target>
-      </segment>
-    </unit>
     <unit id="ci.test.view-json">
       <notes>
         <note category="location">src/app/features/ci/claim-tester.ts:69,70</note>
@@ -29282,15 +29201,6 @@
       <segment>
         <source>Bastion deleted.</source>
         <target>Bastion gelöscht.</target>
-      </segment>
-    </unit>
-    <unit id="repo.create.project-choose">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:202</note>
-      </notes>
-      <segment>
-        <source>Choose a project</source>
-        <target>Projekt wählen</target>
       </segment>
     </unit>
     <unit id="deb.index.reindex.title">
@@ -30322,15 +30232,6 @@
         <target>Die Befehle eines Paket-Clients mit den Adressen dieser Installation stehen in den <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a routerLink=&quot;/guides&quot;&gt;" dispEnd="&lt;/a&gt;">Anleitungen</pc>.</target>
       </segment>
     </unit>
-    <unit id="repo.create.project-loading">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:200</note>
-      </notes>
-      <segment>
-        <source>Loading projects…</source>
-        <target>Projekte werden geladen …</target>
-      </segment>
-    </unit>
     <unit id="backups.state.finalizing">
       <notes>
         <note category="location">src/app/features/system/backups/backups-model.ts:34</note>
@@ -30677,15 +30578,6 @@
       <segment>
         <source>Severity</source>
         <target>Schweregrad</target>
-      </segment>
-    </unit>
-    <unit id="projects.hint">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:43,46</note>
-      </notes>
-      <segment>
-        <source> A project holds a team&apos;s repositories. Its members have a role in it; its Owners manage the repositories, permission policies and service accounts without a system role. </source>
-        <target> Ein Projekt enthält die Repositories eines Teams. Seine Mitglieder haben darin eine Rolle; seine Eigentümer verwalten die Repositories, Berechtigungsrichtlinien und Servicekonten ohne Systemrolle. </target>
       </segment>
     </unit>
     <unit id="auth-settings.save-new-users-external">
@@ -32399,15 +32291,6 @@
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
         <target>Adresse für Downloads über den Pfad (curl, wget)</target>
-      </segment>
-    </unit>
-    <unit id="repo.create.project-missing">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:346</note>
-      </notes>
-      <segment>
-        <source>Choose a project.</source>
-        <target>Wählen Sie ein Projekt.</target>
       </segment>
     </unit>
     <unit id="visibility.public-unavailable">
@@ -34963,16 +34846,6 @@
         <target>Aktiv</target>
       </segment>
     </unit>
-    <unit id="repo.create.project">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:23,25</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:359</note>
-      </notes>
-      <segment>
-        <source>Project</source>
-        <target>Projekt</target>
-      </segment>
-    </unit>
     <unit id="dashboard.state.degraded">
       <notes>
         <note category="location">src/app/features/system/dashboard.html:44,46</note>
@@ -35961,15 +35834,6 @@
       <segment>
         <source>There is no policy yet.</source>
         <target>Es gibt noch keine Richtlinie.</target>
-      </segment>
-    </unit>
-    <unit id="projects.empty-filtered">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:131</note>
-      </notes>
-      <segment>
-        <source>No project matches.</source>
-        <target>Kein Projekt passt.</target>
       </segment>
     </unit>
     <unit id="sas.empty-none">
@@ -50294,6 +50158,18 @@
       <segment>
         <source>Description saved.</source>
         <target>Beschreibung gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="projects-home.details">
+      <segment>
+        <source>Show Owners and storage</source>
+        <target>Eigentümer und Speicher anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="repo.list.across">
+      <segment>
+        <source>The repositories you can see, in every project. A new repository is created in its project.</source>
+        <target>Die Repositories, die Sie sehen können, aus allen Projekten. Ein neues Repository wird in seinem Projekt erstellt.</target>
       </segment>
     </unit>
   </file>

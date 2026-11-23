@@ -21,10 +21,3 @@
 .system-repositories {
   margin-block-start: var(--quader-space-6);
 }
-
-// The admin area's row: the quiet copy button and the menu side by side (Q-UI-330).
-td.actions {
-  quader-copy-button {
-    margin-inline-end: var(--quader-space-1);
-  }
-}

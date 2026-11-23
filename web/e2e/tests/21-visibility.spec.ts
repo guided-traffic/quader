@@ -69,7 +69,7 @@ test('R-UI-053 R-UI-054 an administrator sets the default level, and lowers a pr
     await expectAccessible(page, 'general settings, visibility');
     const created = await admin.post('/api/v1/projects', { data: { key: defaultProject, displayName: 'Journey default', description: '' } });
     expect(created.status(), await created.text()).toBe(201);
-    await page.goto('/ui/en/admin/projects');
+    await page.goto('/ui/en/projects');
     const row = page.getByRole('row', { name: new RegExp(defaultProject) });
     await expect(row.getByRole('img', { name: 'Internal' })).toBeVisible();
   });

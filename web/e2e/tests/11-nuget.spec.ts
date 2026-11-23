@@ -112,9 +112,8 @@ test('R-UI-021 R-ARCH-004 R-UI-083 the NuGet settings in Advanced settings and o
   };
 
   await test.step('the form offers the delete mode of a local repository in Advanced settings and writes the value that differs from the default', async () => {
-    await page.goto('/ui/en/admin/repositories/new/nuget');
+    await page.goto(`/ui/en/projects/${e2eProject}/repositories/new/nuget`);
     await expect(page.getByRole('heading', { name: 'New NuGet repository', level: 1 })).toBeVisible();
-    await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
     await page.locator('#f-key').fill(wizardKey);
     await page.getByRole('button', { name: 'Advanced settings' }).click();
     await expect(page.getByRole('heading', { name: 'NuGet settings', level: 3 })).toBeVisible();

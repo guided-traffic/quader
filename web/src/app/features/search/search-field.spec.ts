@@ -149,7 +149,7 @@ describe('What the opened field offers (R-UI-096)', () => {
     const { root, fixture } = await render('sam');
     await open(fixture, root);
     expect(groupNames(root)).toEqual(['Places']);
-    expect(said(options(root))).toEqual(['Projects', 'Guides', 'Profile', 'Personal tokens', 'View all my projects']);
+    expect(said(options(root))).toEqual(['Projects', 'Repositories', 'Guides', 'Profile', 'Personal tokens', 'View all my projects']);
     await expectAccessible(root);
   });
 
@@ -161,7 +161,6 @@ describe('What the opened field offers (R-UI-096)', () => {
     expect(admin.classList).toContain('admin-start');
     expect(said(options(admin))).toEqual([
       'Dashboard, Admin area',
-      'Repositories, Admin area',
       'Users, Admin area',
       'Groups, Admin area',
       'Settings, Admin area',
@@ -179,7 +178,7 @@ describe('What the opened field offers (R-UI-096)', () => {
     const { root, fixture } = await render('sam', { setup: auditor });
     await open(fixture, root);
     // The entries of Security audit are places as every entry of the side bar is (Q-UI-1005).
-    expect(said(options(root))).toEqual(['Projects', 'Guides', 'Profile', 'Personal tokens', 'Security dashboard', 'Malware', 'Signatures', 'View all my projects']);
+    expect(said(options(root))).toEqual(['Projects', 'Repositories', 'Guides', 'Profile', 'Personal tokens', 'Security dashboard', 'Malware', 'Signatures', 'View all my projects']);
     typeText(root, 'security');
     await sleep(fixture, 300);
     expect(groupNames(root)).toEqual(['Pages']);
@@ -193,10 +192,10 @@ describe('What the opened field offers (R-UI-096)', () => {
     expect(said(options(plain.root))).not.toContain('Security dashboard');
   });
 
-  it('R-UI-096 an anonymous visitor gets Projects and Guides only', async () => {
+  it('R-UI-096 Q-UI-1040 an anonymous visitor gets Projects, Repositories and Guides only', async () => {
     const { root, fixture } = await render('anonymous');
     await open(fixture, root);
-    expect(said(options(root))).toEqual(['Projects', 'Guides']);
+    expect(said(options(root))).toEqual(['Projects', 'Repositories', 'Guides']);
   });
 
   it('R-UI-096 Q-UI-406 the frequently visited repositories show after one name= request, in their order, and only those it returned; the others stay stored', async () => {

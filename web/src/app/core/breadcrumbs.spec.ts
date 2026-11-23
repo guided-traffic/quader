@@ -22,10 +22,14 @@ async function trailAt(url: string, setup?: () => void) {
 
 describe('Breadcrumbs', () => {
   it('R-UI-002 a list screen reads area, then screen; the area is a name without a link', async () => {
-    expect(await trailAt('/admin/repositories')).toEqual([
+    expect(await trailAt('/admin/users')).toEqual([
       { label: 'Admin area', link: null, literal: false },
-      { label: 'Repositories', link: '//admin/repositories', literal: false },
+      { label: 'Users', link: '//admin/users', literal: false },
     ]);
+  });
+
+  it('R-UI-002 Q-UI-1040 the repositories of every project are a page of the main area: a trail of one step, which is not shown', async () => {
+    expect(await trailAt('/repositories?format=npm')).toEqual([]);
   });
 
   it('R-UI-002 Q-UI-129 a detail screen of a project reads projects, the project, the section, then the parameter value', async () => {
@@ -80,14 +84,14 @@ describe('Breadcrumbs', () => {
   });
 
   it('R-UI-002 a literal child route such as "new" uses its title', async () => {
-    const trail = await trailAt('/admin/repositories/new');
-    expect(trail.map((c) => c.label)).toEqual(['Admin area', 'Repositories', 'New repository']);
+    const trail = await trailAt('/projects/web/repositories/new');
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Repositories', 'New repository']);
   });
 
   it('R-UI-002 R-UI-080 the creation form of a format adds its resolved title after the chooser', async () => {
-    const trail = await trailAt('/admin/repositories/new/generic');
-    expect(trail.map((c) => c.label)).toEqual(['Admin area', 'Repositories', 'New repository', 'New Generic repository']);
-    expect(trail[2]?.link).toBe('//admin/repositories/new');
+    const trail = await trailAt('/projects/web/repositories/new/generic');
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Repositories', 'New repository', 'New Generic repository']);
+    expect(trail[3]?.link).toBe('//projects/web/repositories/new');
   });
 
   it('R-UI-002 a multi-segment route skips the fixed word and keeps the parameters', async () => {

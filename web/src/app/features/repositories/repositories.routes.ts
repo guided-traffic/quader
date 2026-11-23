@@ -38,20 +38,15 @@ const NEW_REPOSITORY_ROUTES: Routes = [
 ];
 
 /**
- * R-UI-020 (list), R-UI-080 (a new repository). The admin area's list of every repository, each row naming its project, the format
- * chooser and the creation form of a format, with a project to choose. A repository's own screen lives in its project
- * (`PROJECT_REPOSITORIES_ROUTES`, R-REPO-002, Q-UI-129).
+ * R-UI-020: the repositories the caller can see in every project, each row naming its project, mounted at `/repositories` under
+ * Your work (Q-UI-1040). A repository is created in its project and has its screens there (`PROJECT_REPOSITORIES_ROUTES`,
+ * R-REPO-002, Q-UI-129): this list has no `new`.
  */
 export const REPOSITORIES_ROUTES: Routes = [
   {
     path: '',
     title: $localize`:@@route.repositories.title:Repositories`,
     loadComponent: () => import('./repository-list').then((m) => m.RepositoryList),
-  },
-  {
-    path: 'new',
-    title: $localize`:@@route.repositories.new.title:New repository`,
-    children: NEW_REPOSITORY_ROUTES,
   },
 ];
 

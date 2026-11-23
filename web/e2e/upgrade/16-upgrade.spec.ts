@@ -21,7 +21,7 @@ test('R-HA-020 R-UI-047 the UI signs in, lists the repositories and the replicas
   });
   await signInLocal(page);
 
-  await page.goto('/ui/en/admin/repositories');
+  await page.goto('/ui/en/repositories');
   await expect(page.getByRole('heading', { name: 'Repositories', level: 1 })).toBeVisible();
   await expect(page.getByText('npm-local').first()).toBeVisible();
 

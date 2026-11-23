@@ -42,7 +42,8 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
   await signInLocal(page);
 
   await test.step('the administrator creates the project with its Owner group; a repository is created in it', async () => {
-    await page.goto('/ui/en/admin/projects');
+    // New project stands on the start page for an administrator (Q-UI-1040).
+    await page.goto('/ui/en/projects');
     await expect(page.getByRole('heading', { name: 'Projects', level: 1 })).toBeVisible();
     await expectAccessible(page, 'project list');
     await page.getByRole('button', { name: 'New project' }).click();

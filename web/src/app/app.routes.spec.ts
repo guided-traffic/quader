@@ -40,6 +40,8 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001', 'GHSA-aaaa-aaaa-0001', 'GHSA-aaaa-aaaa-0001'],
   // <<< M4b vulnerabilities
   ['/projects/web/repositories/npm-local/setup', 'Set up client'],
+  // The repositories of every project, under Your work (Q-UI-1040).
+  ['/repositories', 'Repositories'],
   ['/guides', 'Guides'],
   // The title names the format as people read it (Q-UI-553).
   ['/guides/generic', 'Generic', 'Generic repositories'],
@@ -49,9 +51,6 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/profile', 'Profile'],
   ['/profile/tokens', 'Personal tokens'],
   ['/profile/sessions', 'Sessions'],
-  ['/admin/projects', 'Projects'],
-  ['/admin/repositories', 'Repositories'],
-  ['/admin/repositories/new', 'New repository'],
   ['/admin/users', 'Users'],
   ['/admin/users/alice', 'User', 'alice'],
   ['/admin/groups', 'Groups'],
@@ -133,8 +132,8 @@ describe('route map', () => {
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Repositories');
   });
 
-  it('Q-UI-129 ADR-203 R-UI-126 R-UI-158 the old routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup, /admin/repositories/{project}/{key} and /admin/security are not found', async () => {
-    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web', '/setup', '/admin/security', '/admin/security/findings/0193a000-0000-7000-8000-000000000001']) {
+  it('Q-UI-129 ADR-203 R-UI-126 R-UI-158 Q-UI-1040 the old routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup, /admin/repositories…, /admin/projects… and /admin/security are not found', async () => {
+    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories', '/admin/repositories/new', '/admin/repositories/new/npm', '/admin/repositories/web/npm-local', '/admin/projects', '/admin/projects/web', '/setup', '/admin/security', '/admin/security/findings/0193a000-0000-7000-8000-000000000001']) {
       const root = await open(url);
       expect(root.querySelector('main h1')?.textContent?.trim(), url).toBe('Page not found');
     }

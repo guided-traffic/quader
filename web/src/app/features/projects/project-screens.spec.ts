@@ -210,7 +210,6 @@ describe('The creation form of a repository and its project (R-REPO-001, R-AUTHZ
         (g(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [PACKAGE_FORMAT];
       },
     });
-    expect(root.querySelector<HTMLSelectElement>('#f-project')!.value).toBe('web');
     type(root.querySelector<HTMLInputElement>('#f-key')!, 'libs');
     await settle(fixture);
     button(root, /Create repository/).click();
@@ -218,20 +217,6 @@ describe('The creation form of a repository and its project (R-REPO-001, R-AUTHZ
     const api = get(RepositoriesApi) as FakeRepositoriesApi;
     expect(api.createProjects).toEqual(['web']);
     expect(api.repositories.find((r) => r.key === 'libs')?.project).toBe('web');
-  });
-
-  it('R-REPO-001 R-UI-086 the admin area form without a project asks for one and sends nothing without', async () => {
-    const { fixture, root, get } = await renderScreen(RepositoryCreate, {
-      inputs: { format: 'npm' },
-      setup: (g) => ((g(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [PACKAGE_FORMAT]),
-    });
-    expect(root.querySelector<HTMLSelectElement>('#f-project')!.value).toBe('');
-    type(root.querySelector<HTMLInputElement>('#f-key')!, 'libs');
-    await settle(fixture);
-    button(root, /Create repository/).click();
-    await settle(fixture);
-    expect(text(root.querySelector('[role="alert"]')!)).toContain('Choose a project.');
-    expect((get(RepositoriesApi) as FakeRepositoriesApi).createKeys).toEqual([]);
   });
 });
 
@@ -284,7 +269,8 @@ describe('Session helpers and messages of the project screens (R-UI-041, R-UI-04
   });
 
   it('R-UI-050 the project screens open the manual page about projects', () => {
-    expect(helpFor('/admin/projects')).toEqual(['/help', 'admin', 'projects']);
+    expect(helpFor('/projects')).toEqual(['/help', 'admin', 'projects']);
+    expect(helpFor('/repositories?format=npm')).toEqual(['/help', 'user', 'repositories']);
     expect(helpFor('/projects/web/settings')).toEqual(['/help', 'admin', 'projects']);
     expect(helpFor('/projects/web/members')).toEqual(['/help', 'admin', 'projects']);
     expect(helpFor('/projects/web/packages/npm/left-pad')).toEqual(['/help', 'user', 'packages']);

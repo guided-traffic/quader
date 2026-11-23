@@ -71,7 +71,9 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(t).toContain('2.4 ms');
     expect(t).toContain('8.5 GiB');
     expect(t).toContain('Repositories');
-    expect(root.querySelector('a[href="/admin/repositories/new"]')).toBeTruthy();
+    // The repositories of every project are the main area's, and a new one is created in its project (Q-UI-1040).
+    expect(root.querySelector('a[href="/repositories"]')).toBeTruthy();
+    expect(root.querySelector('a[href^="/admin/repositories"], a[href^="/admin/projects"]')).toBeNull();
     expect(await seriousViolations(root)).toEqual([]);
   });
 
