@@ -96,7 +96,7 @@ func New(o Options) (*Engine, error) {
 		o.Audit = audit.Nop{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Engine{o: o, notified: map[int64]time.Time{}}, nil
 }

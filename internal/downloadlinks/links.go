@@ -99,7 +99,7 @@ type Links struct {
 // New creates the replica's side with the defaults of a new installation until a snapshot is set.
 func New(o Options) *Links {
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	l := &Links{o: o, logged: map[string]string{}}
 	d := Defaults()

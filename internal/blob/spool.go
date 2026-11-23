@@ -93,7 +93,7 @@ func NewSpool(cfg config.StorageSpool, opts ...SpoolOption) (*Spool, error) {
 	s := &Spool{
 		dir: cfg.Dir, max: int64(cfg.MaxBytes), minFree: int64(cfg.MinFreeBytes),
 		memThreshold: int64(cfg.MemoryThreshold), warnPercent: cfg.WarnPercent,
-		free: freeBytes, log: slog.Default(), syncEvery: syncwrite.Every,
+		free: freeBytes, log: slog.New(slog.DiscardHandler), syncEvery: syncwrite.Every,
 	}
 	for _, o := range opts {
 		o(s)

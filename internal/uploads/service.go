@@ -99,7 +99,7 @@ func New(o Options) (*Service, error) {
 func newService(r rows, o Options) *Service {
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	retry := max(5*time.Second, (o.Storage.ObjectStore.CircuitBreaker.OpenDuration+time.Second-1)/time.Second*time.Second)
 	return &Service{

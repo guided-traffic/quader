@@ -87,7 +87,7 @@ func (j *RemoteJobs) log() *slog.Logger {
 	if j.Log != nil {
 		return j.Log
 	}
-	return slog.Default()
+	return slog.New(slog.DiscardHandler)
 }
 
 // repoInfo is what a job reads of a remote repository's document.

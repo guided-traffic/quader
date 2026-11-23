@@ -91,7 +91,7 @@ func NewBuffer(o Options) *Buffer {
 		o.MaxKeys = 100_000
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	b := &Buffer{
 		o: o, rows: map[key]*counts{}, events: map[eventKey]int64{}, stop: make(chan struct{}), done: make(chan struct{}),

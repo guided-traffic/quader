@@ -143,7 +143,7 @@ func NewSemver2(o Semver2Options) (*Semver2, error) {
 		o.Wait = time.Minute
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Semver2{o: o}, nil
 }

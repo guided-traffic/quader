@@ -151,7 +151,7 @@ func NewService(o Options) (*Service, error) {
 		o.Recorder = audit.Nop{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.DeleteBatch <= 0 {
 		o.DeleteBatch = 5000

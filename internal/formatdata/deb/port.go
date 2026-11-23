@@ -15,6 +15,7 @@ package deb
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/audit"
@@ -44,6 +45,9 @@ type Options struct {
 	Jobs Jobs
 	// IndexDelay is deb.index_delay: the time a change waits before its build starts. Zero means DefaultIndexDelay.
 	IndexDelay time.Duration
+	// Log receives what a mirror pass's index step logs (a release no key verifies); nil discards it. The replica's logger, so the
+	// line carries the replica's fields.
+	Log *slog.Logger
 }
 
 // Store implements the data port of the format: the groups, each embedded from the file of the package that builds it.

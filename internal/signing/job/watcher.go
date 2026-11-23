@@ -64,7 +64,7 @@ type Watcher struct {
 // NewWatcher returns the watcher.
 func NewWatcher(o WatcherOptions) *Watcher {
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

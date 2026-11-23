@@ -108,7 +108,7 @@ var _ Authenticator = (*Stage)(nil)
 func New(o Options) *Stage {
 	l := o.Log
 	if l == nil {
-		l = slog.Default()
+		l = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

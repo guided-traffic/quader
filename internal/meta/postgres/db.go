@@ -66,7 +66,7 @@ type DB struct {
 // pass by retrying; a database that stays unreachable is IsUnavailable.
 func Open(ctx context.Context, cfg config.Database, instance, role string, log *slog.Logger, opts ...Option) (*DB, error) {
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	var o openOptions
 	for _, opt := range opts {

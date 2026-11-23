@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"log/slog"
 	"reflect"
 	"strings"
 	"testing"
@@ -55,7 +56,7 @@ func (sidecar) PackageDocumentPath(string) (formats.Path, bool) {
 // a binding missing or wrong (typed wiring).
 func TestQ_ARCH_193_AMissingDataPortBindingIsAStartupError(t *testing.T) {
 	t.Run("the formats of this build pass with the bindings the root makes", func(t *testing.T) {
-		ports, err := formatPorts(noRunner{}, audit.Nop{}, nil, jobs.NewQueue(jobs.QueueOptions{}), nil, config.Deb{}, signaturePorts{})
+		ports, err := formatPorts(noRunner{}, audit.Nop{}, nil, jobs.NewQueue(jobs.QueueOptions{}), nil, config.Deb{}, signaturePorts{}, slog.New(slog.DiscardHandler))
 		if err != nil {
 			t.Fatal(err)
 		}

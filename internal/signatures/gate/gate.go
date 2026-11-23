@@ -173,7 +173,7 @@ func New(o Options) *Gate {
 		o.Audit = audit.Nop{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Gate{
 		o: o, slots: make(chan struct{}, o.MaxWaiting), stop: make(chan struct{}),

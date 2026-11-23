@@ -130,7 +130,7 @@ func New(o Options) (*Service, error) {
 		return nil, errors.New("imagescan: the database in use, the scanner and the scan tokens are required")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

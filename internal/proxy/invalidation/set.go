@@ -148,7 +148,7 @@ func NewSet(o SetOptions) (*Set, error) {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	s := &Set{o: o, log: log, pend: map[int64]bool{}, wake: make(chan struct{}, 1)}
 	s.load = func(ctx context.Context, repo int64) ([]row, error) { return loadRows(ctx, o.Runner, repo) }

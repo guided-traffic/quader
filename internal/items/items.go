@@ -122,7 +122,7 @@ func New(o Options) (*Store, error) {
 		o.Hooks = NoHooks{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Store{
 		run: o.Runner, blobs: o.Blobs, rec: o.Recorder, jobs: o.Jobs, hooks: o.Hooks, cfg: o.Storage,

@@ -59,13 +59,13 @@ type MigrateOptions struct {
 	// the runner's connection; its error fails the run (exit status 1). Nil skips
 	// it (tests with their own steps).
 	Declared func(ctx context.Context, s *MigrationSession) error
-	// Log receives the progress lines; nil means slog.Default.
+	// Log receives the progress lines; nil discards them.
 	Log *slog.Logger
 }
 
 func (o *MigrateOptions) fill() {
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Steps == nil {
 		o.Steps = EmbeddedFS()

@@ -40,7 +40,7 @@ func NewActivity(run meta.Runner, interval time.Duration, log *slog.Logger) *Act
 		interval = DefaultActivityInterval
 	}
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Activity{
 		run: run, interval: interval, log: log, now: time.Now,

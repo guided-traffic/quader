@@ -106,7 +106,7 @@ func New(o Options) (*Service, error) {
 		o.PullTimeout = 10 * time.Minute
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

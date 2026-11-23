@@ -81,7 +81,7 @@ func NewFolder(o FolderOptions) (*Folder, error) {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Folder{o: o, log: log}, nil
 }

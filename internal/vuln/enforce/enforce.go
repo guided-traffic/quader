@@ -99,7 +99,7 @@ func New(o Options) *Enforcer {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	if o.Enforcement == "" {
 		o.Enforcement = vuln.EnforceBlocks

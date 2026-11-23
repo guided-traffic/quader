@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 
@@ -63,7 +64,7 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 	if err := requireInputs(AreaFormatPorts, given("database", in.db), given("audit recorder", in.rec)); err != nil {
 		return formatPortsArea{}, err
 	}
-	ports, err := formatPorts(in.db, in.rec, in.blobs, in.queue, in.ring, a.cfg.Deb, a.signaturePorts())
+	ports, err := formatPorts(in.db, in.rec, in.blobs, in.queue, in.ring, a.cfg.Deb, a.signaturePorts(), a.log)
 	if err != nil {
 		return formatPortsArea{}, err
 	}
@@ -204,7 +205,7 @@ var _ ansibleformat.Store = (*ansibledata.Store)(nil)
 // The same for the data port of ClamAV's definitions.
 var _ clamavformat.Store = (*clamavdata.Store)(nil)
 
-func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nugetdata.Jobs, ring *secrets.KeyRing, debCfg config.Deb, sig signaturePorts) (map[formats.ID]any, error) {
+func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nugetdata.Jobs, ring *secrets.KeyRing, debCfg config.Deb, sig signaturePorts, log *slog.Logger) (map[formats.ID]any, error) {
 	// The background fetch of a remote's signatures (signatures.md R-SIG-026), queued by the OCI and the npm data ports.
 	fetches := signatureFetchQueue(db, queue, sig.RefreshAfter)
 	npmOpts := npm.Options{
@@ -240,7 +241,7 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 		return nil, fmt.Errorf("formats: oci data port: %w", err)
 	}
 	debOpts := debdata.Options{
-		DB: db, Recorder: rec, Source: httpserver.SourceFrom, Ring: ring, IndexDelay: debCfg.IndexDelay,
+		DB: db, Recorder: rec, Source: httpserver.SourceFrom, Ring: ring, IndexDelay: debCfg.IndexDelay, Log: log.With("component", "deb-mirror"),
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
 	}
 	// The index build's queue: the restore's refusing queue has no Running and enqueues no build, as it enqueues no job.
@@ -333,7 +334,7 @@ func (a *App) wireFormats(_ context.Context, in infra, fp formatPortsArea, vr vi
 		return formatsArea{}, err
 	}
 	catalog.Default().Freeze()
-	d := formathost.Deps{Bindings: fp.bindings, Signals: in.signals, Remover: func() formathost.ItemRemover {
+	d := formathost.Deps{Bindings: fp.bindings, Signals: in.signals, Log: a.log.With("component", "formathost"), Remover: func() formathost.ItemRemover {
 		if s, ok := a.itemStore.get(); ok {
 			return s
 		}

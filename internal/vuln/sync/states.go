@@ -60,7 +60,7 @@ func NewStates(db Database, reg *cache.Registry, staleAfter time.Duration, now f
 		now = time.Now
 	}
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return newStates(db, reg, staleAfter, now, log)
 }

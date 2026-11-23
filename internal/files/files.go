@@ -140,7 +140,7 @@ func New(o Options) (*Service, error) {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "files: no repository reader")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Service{
 		items: o.Items, repos: o.Repos, formats: o.Formats, enforce: o.Enforce, writes: o.Writes, malware: o.Malware, sigs: o.Signatures, log: o.Log,

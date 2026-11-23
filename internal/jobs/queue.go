@@ -47,7 +47,7 @@ func NewQueue(o QueueOptions) *Queue {
 		o.Registry = Default
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Queue{db: o.DB, reg: o.Registry, sig: o.Signals, log: o.Log}
 }

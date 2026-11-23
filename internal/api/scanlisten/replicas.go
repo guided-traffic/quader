@@ -43,7 +43,7 @@ type ReplicaOptions struct {
 // RegisterReplicas mounts the route of the scanner replicas on the scan listener's router.
 func RegisterReplicas(mux interface{ Handle(string, http.Handler) }, o ReplicaOptions) {
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	h := &replicas{o: o}
 	mux.Handle(ReplicaReportPattern, http.HandlerFunc(h.report))

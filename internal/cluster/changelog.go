@@ -131,7 +131,7 @@ func NewChanges(o ChangesOptions) (*Changes, error) {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	m := &changeMetrics{
 		applied:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_cluster_changes_applied_total", Help: "Changes applied by area and source (poll, message, local)."}, []string{"area", "source"}),

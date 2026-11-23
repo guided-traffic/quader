@@ -42,7 +42,7 @@ func NewStore(o StoreOptions) *Store {
 		o.Audit = audit.Nop{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Store{o: o}
 }

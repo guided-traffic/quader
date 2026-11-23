@@ -100,7 +100,7 @@ func NewToken(o TokenOptions) (*Token, error) {
 		o.Now = time.Now
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Audit == nil {
 		o.Audit = audit.Nop{}

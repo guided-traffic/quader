@@ -75,7 +75,7 @@ func New(o Options) (*Service, error) {
 		return nil, errors.New("evaluate: no repository snapshot")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.BatchNames <= 0 {
 		o.BatchNames = BatchNames

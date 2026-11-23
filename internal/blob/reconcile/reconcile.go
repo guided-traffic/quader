@@ -85,7 +85,7 @@ func New(o Options) (*Reconciler, error) {
 		return nil, errors.New("reconcile: needs the blob store and the database")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

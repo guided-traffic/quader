@@ -23,7 +23,7 @@ type Reaper struct {
 // NewReaper returns the reaper of this process.
 func NewReaper(log *slog.Logger) *Reaper {
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Reaper{log: log, pid1: os.Getpid() == 1, kill: syscall.Kill, wait: reapOne}
 }

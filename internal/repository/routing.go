@@ -90,7 +90,7 @@ func NewRouting(o RoutingOptions) (*Routing, error) {
 		return nil, errors.New("repository: no claims safety TTL")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Recorder == nil {
 		o.Recorder = audit.Nop{}

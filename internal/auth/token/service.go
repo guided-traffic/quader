@@ -75,7 +75,7 @@ func NewService(o ServiceOptions) *Service {
 		o.Now = time.Now
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	s := &Service{o: o, log: o.Log}
 	s.tokens = cache.Register(o.Cache, tokenCacheName, cache.Options[[32]byte, cachedToken]{

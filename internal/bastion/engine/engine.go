@@ -182,7 +182,7 @@ func newFlow(d Deps) (*engine, error) {
 		d.Shared = shared.NewLocal(d.Config.Bastion.Replicas, d.Now)
 	}
 	if d.Log == nil {
-		d.Log = slog.Default()
+		d.Log = slog.New(slog.DiscardHandler)
 	}
 	u, err := url.Parse(d.Config.Server.BaseURL)
 	if err != nil || u.Hostname() == "" {

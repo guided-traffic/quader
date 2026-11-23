@@ -121,7 +121,7 @@ func NewReader(o ReaderOptions) (*SnapshotReader, error) {
 		return nil, errors.New("repository: no snapshot safety TTL")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.LookupWait <= 0 {
 		o.LookupWait = 5 * time.Second

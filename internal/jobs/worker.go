@@ -140,7 +140,7 @@ func NewWorker(o WorkerOptions) (*Worker, error) {
 		o.Registry = Default
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	m, err := newMetrics(o.Metrics)
 	if err != nil {

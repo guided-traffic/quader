@@ -207,7 +207,7 @@ func newEngine(o Options, readOnly bool) (*Engine, error) {
 		o.SafetyTTL = 5 * time.Minute
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.GlobalOffline == nil {
 		off := o.Config.GlobalOffline

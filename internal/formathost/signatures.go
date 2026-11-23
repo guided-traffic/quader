@@ -248,5 +248,5 @@ func (d Deps) log() *slog.Logger {
 	if d.Log != nil {
 		return d.Log
 	}
-	return slog.Default()
+	return slog.New(slog.DiscardHandler)
 }

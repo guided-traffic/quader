@@ -81,7 +81,7 @@ func NewSweeper(o SweepOptions) (*Sweeper, error) {
 		o.Batch = sweepBatch
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Sweeper{o: o}, nil
 }

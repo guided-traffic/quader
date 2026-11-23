@@ -86,7 +86,7 @@ func NewLeases(o LeaseOptions) (*Leases, error) {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Leases{o: o, log: log, m: m, holders: map[LeaseID]*holder{}, held: map[LeaseID]*Held{}}, nil
 }

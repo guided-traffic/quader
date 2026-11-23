@@ -129,7 +129,7 @@ func New(o Options) (*Clients, error) {
 		o.ReadFile = readLimited
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	c := &Clients{
 		o: o, cat: catalog.Or(o.Catalog),

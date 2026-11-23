@@ -146,7 +146,7 @@ func (x *Indexer) log() *slog.Logger {
 	if x.Log != nil {
 		return x.Log
 	}
-	return slog.Default()
+	return slog.New(slog.DiscardHandler)
 }
 
 // snapshotInputs reads the suites a build is for in one REPEATABLE READ snapshot and holds no transaction afterwards.

@@ -31,7 +31,7 @@ func indexVariants() []string { return []string{"", ".xz", ".gz", ".bz2", ".lzma
 // have waited for a client or a queue. A suite the upstream does not have is recorded absent and noted; a release no key verifies or
 // that has expired plans nothing. A rate-limit answer or any other error of the upstream ends the call.
 func (s *Store) MirrorSync(ctx context.Context, up discover.Upstream, sc rows.MirrorScope) (suites, notes []string, err error) {
-	j := &RemoteJobs{Store: s}
+	j := &RemoteJobs{Store: s, Log: s.o.Log}
 	info, ok, err := j.repo(ctx, sc.RepoID)
 	if err != nil {
 		return nil, nil, err

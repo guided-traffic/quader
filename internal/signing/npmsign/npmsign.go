@@ -82,7 +82,7 @@ func New(o Options) (*Signer, error) {
 		return nil, errors.New("npm signing: the database, the signature store and the signing store are required")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Signer{o: o}, nil
 }

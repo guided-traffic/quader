@@ -134,7 +134,7 @@ func New(o Options) (*Attester, error) {
 		return nil, errors.New("attest: the database, the formats and the signature store are required")
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

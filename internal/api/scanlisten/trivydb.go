@@ -57,7 +57,7 @@ type TrivyOptions struct {
 // RegisterTrivyDatabase mounts the two routes on the scan listener's router.
 func RegisterTrivyDatabase(mux interface{ Handle(string, http.Handler) }, o TrivyOptions) {
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	h := &trivyHandler{o: o}
 	mux.Handle(TrivyDatabasePattern, http.HandlerFunc(h.listing))

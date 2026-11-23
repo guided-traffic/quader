@@ -77,7 +77,7 @@ func NewSignals(o SignalsOptions) (*Signals, error) {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Signals{bus: o.Bus, window: o.Config.SignalCoalesceWindow, log: log, m: m, areas: map[string]*signalArea{}}, nil
 }

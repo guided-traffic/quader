@@ -156,7 +156,7 @@ func New(o Options) (*Job, error) {
 		o.Limits = scheme.DefaultLimits()
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

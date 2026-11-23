@@ -77,7 +77,7 @@ type Deps struct {
 	// Attestations tells the job signing of a committed item it may attest and of an older cosign signature tag that arrived for an
 	// attested image (signatures.md R-SIG-053, R-SIG-054); nil tells nothing.
 	Attestations AttestationWork
-	// Log receives what the hooks log; nil is slog.Default.
+	// Log receives what the hooks log; nil discards it.
 	Log *slog.Logger
 }
 
@@ -171,7 +171,7 @@ func New(o Options) (*Host, error) {
 		o.Resolver = unsupportedResolver{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	h.o = o
 	return h, nil

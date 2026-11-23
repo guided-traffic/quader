@@ -39,7 +39,7 @@ type Keeper struct {
 // NewKeeper returns the keeper of a build: tree and its hashed files (webui.HashedFiles).
 func NewKeeper(store *Store, tree fs.FS, files []webui.File, log *slog.Logger) *Keeper {
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Keeper{store: store, tree: tree, files: files, log: log, every: RenewEvery, retention: Retention}
 }

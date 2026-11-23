@@ -26,7 +26,7 @@ import (
 // so nothing is evaluated (R-VULN-026).
 func RestoreItems(cfg *config.Config, log *slog.Logger) func(ctx context.Context, db meta.Runner, rec audit.Recorder) (fixup.CacheEraser, error) {
 	return func(_ context.Context, db meta.Runner, rec audit.Recorder) (fixup.CacheEraser, error) {
-		ports, err := formatPorts(db, rec, nil, refusedJobs{}, nil, config.Deb{}, signaturePorts{})
+		ports, err := formatPorts(db, rec, nil, refusedJobs{}, nil, config.Deb{}, signaturePorts{}, log)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +34,7 @@ func RestoreItems(cfg *config.Config, log *slog.Logger) func(ctx context.Context
 		if err != nil {
 			return nil, err
 		}
-		hooks := formathost.NewHooks(formathost.Deps{Bindings: bindings, Signals: silentSignals{}})
+		hooks := formathost.NewHooks(formathost.Deps{Bindings: bindings, Signals: silentSignals{}, Log: log.With("component", "restore-items")})
 		return items.New(items.Options{
 			Runner: db, Blobs: refusedBlobs{}, Recorder: rec, Hooks: hooks, Storage: cfg.Storage, Log: log.With("component", "restore-items"),
 		})

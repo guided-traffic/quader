@@ -47,7 +47,7 @@ func NewStats(run meta.Runner, interval time.Duration, log *slog.Logger) *Stats 
 		interval = 10 * time.Second
 	}
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Stats{
 		run: run, interval: interval, log: log, now: time.Now,

@@ -36,7 +36,7 @@ type Options struct {
 	Now func() time.Time
 	// RereadEvery bounds the re-read for an unknown identifier per connection; zero is DefaultRereadEvery.
 	RereadEvery time.Duration
-	// Log receives what the holder drew and what it could not read again; nil is slog.Default.
+	// Log receives what the holder drew and what it could not read again; nil discards it.
 	Log *slog.Logger
 }
 
@@ -91,7 +91,7 @@ func New(o Options) (*Holder, error) {
 		o.RereadEvery = DefaultRereadEvery
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Holder{o: o, rows: o.Rows, conns: map[string]*held{}}, nil
 }

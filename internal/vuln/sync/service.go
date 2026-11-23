@@ -173,7 +173,7 @@ func New(o Options) (*Service, error) {
 		o.Recorder = audit.Nop{}
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	if o.Now == nil {
 		o.Now = time.Now

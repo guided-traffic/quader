@@ -83,7 +83,7 @@ type StartCheckOptions struct {
 
 func (o StartCheckOptions) log() *slog.Logger {
 	if o.Log == nil {
-		return slog.Default()
+		return slog.New(slog.DiscardHandler)
 	}
 	return o.Log
 }

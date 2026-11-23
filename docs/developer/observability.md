@@ -43,7 +43,12 @@ proxyLog := logging.Component("proxy")  // log=app, component=proxy, level from 
   format logs through `formats.Request.Log` or, in its error writer, `observability.LoggerFrom(r.Context())`, so the line of a
   request that failed carries `request_id`, `replica`, `role`, `log` and `component`. `TestR_OPS_009_NoFormatLogsThroughTheDefaultLogger`
   ([defaultlogger.go](../../internal/archtest/defaultlogger.go)) refuses `slog.Default`, the package-level functions of `log/slog`
-  and the package `log` in `internal/formats/...`.
+  and the package `log` (but `log.New`, which builds a logger of its own) in `internal/...` and `cmd/...`, the repository's tools
+  `internal/archtest` and `internal/tools` aside. A component whose options take a logger and get none discards
+  (`slog.New(slog.DiscardHandler)`); the composition root passes the replica's logger to every one. Until 2026-11-23 the check held the
+  formats' tree only, and two components outside it wrote through the default logger in a running replica: the signature detection's
+  warning of the format hooks (`formathost.Deps` without `Log`) and a Debian mirror pass's "Release does not verify" (`RemoteJobs`
+  built without `Log` in `MirrorSync`); both carry the replica's fields now.
 - **Keys** are `snake_case` and stable; renaming one is a breaking change that the release notes name.
 - **Messages are constants.** Variable data goes into attributes.
 - **Component levels** (R-OPS-012) are one `slog.LevelVar` per component. `Logging.SetOverride` /

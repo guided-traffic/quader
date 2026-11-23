@@ -77,7 +77,7 @@ func New(cfg config.Storage, conns *Connections, db DB, opts ...Option) (*Store,
 		return nil, errors.New("blob store needs its object-store connections and a database")
 	}
 	s := &Store{
-		cfg: cfg, conns: conns, db: db, rows: pgRows{}, log: slog.Default(), now: time.Now, wait: 250 * time.Millisecond,
+		cfg: cfg, conns: conns, db: db, rows: pgRows{}, log: slog.New(slog.DiscardHandler), now: time.Now, wait: 250 * time.Millisecond,
 	}
 	for _, o := range opts {
 		o(s)

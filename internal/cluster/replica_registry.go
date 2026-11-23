@@ -166,7 +166,7 @@ func NewRegistry(o RegistryOptions) (*Registry, error) {
 	}
 	log := o.Log
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Registry{o: o, log: log}, nil
 }

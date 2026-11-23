@@ -77,7 +77,7 @@ type EnforcerOptions struct {
 	// format reads it (the composition root passes the format's oci.MountSource). Both set, a registry token's request of that route with `mount` and `from` is checked
 	// for pull on the source (R-OCI-006, Q-OCI-102). Both empty: no mount is enforced.
 	MountRoute string
-	// Log records a stripped mount at debug level; nil is slog.Default.
+	// Log records a stripped mount at debug level; nil discards it.
 	Log         *slog.Logger
 	MountSource func(from string, bound qname.Repo) (repo qname.Repo, image string, cache, ok bool)
 	// Pinned names the two routes a scan token reaches (R-OCI-037, Q-OCI-227, scan_pin.go): the manifest by its digest and the
@@ -165,7 +165,7 @@ func (e *Enforcer) log() *slog.Logger {
 	if e.o.Log != nil {
 		return e.o.Log
 	}
-	return slog.Default()
+	return slog.New(slog.DiscardHandler)
 }
 
 // match is the dispatcher's match of the request, with the reason when it reaches no route if the matcher gives one.

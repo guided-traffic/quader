@@ -57,7 +57,7 @@ type Options struct {
 // Register mounts the three routes on the scan listener's router.
 func Register(mux interface{ Handle(string, http.Handler) }, o Options) {
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	h := &handler{o: o}
 	mux.Handle(BlobPattern, http.HandlerFunc(h.blob))

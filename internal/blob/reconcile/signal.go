@@ -25,7 +25,7 @@ const SignalSpacing = time.Second
 // NewSignal returns a signal that calls enqueue; Start starts it.
 func NewSignal(enqueue func(ctx context.Context) error, log *slog.Logger) *Signal {
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Signal{enqueue: enqueue, log: log, ch: make(chan struct{}, 1)}
 }

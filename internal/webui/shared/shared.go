@@ -74,7 +74,7 @@ var _ webui.Shared = (*Store)(nil)
 // New returns the store. release names the replica's build in the rows it inserts (published_by).
 func New(db DB, blobs Blobs, release string, log *slog.Logger) *Store {
 	if log == nil {
-		log = slog.Default()
+		log = slog.New(slog.DiscardHandler)
 	}
 	return &Store{db: db, blobs: blobs, release: release, log: log}
 }

@@ -98,7 +98,7 @@ func New(o Options) (*Loader, error) {
 		o.Timeout = 15 * time.Minute
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	l := &Loader{o: o, http: o.HTTP, held: map[string]int64{}}
 	if l.http == nil {

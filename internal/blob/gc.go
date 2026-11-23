@@ -128,7 +128,7 @@ func WithCollectorPoll(d time.Duration) CollectorOption { return func(c *Collect
 // DeleteObjects where that connection's batch_delete is true (Q-STOR-222). cfg is the storage section: collection reads storage.gc,
 // the orphan sweep storage.orphans, storage.uploads and storage.upload.commit_deadline.
 func NewCollector(cfg config.Storage, conns *Connections, db DB, opts ...CollectorOption) *Collector {
-	c := &Collector{db: db, conns: conns, storage: cfg, cfg: cfg.GC, log: slog.Default(), now: time.Now}
+	c := &Collector{db: db, conns: conns, storage: cfg, cfg: cfg.GC, log: slog.New(slog.DiscardHandler), now: time.Now}
 	for _, o := range opts {
 		o(c)
 	}
