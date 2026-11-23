@@ -6,7 +6,16 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
 )
+
+// TestMain runs the package's tests with the AWS environment emptied, so that no command's test (the offline tool's connection
+// element of storage.md R-STOR-089 among them) passes or fails by the region or the profile of the machine it runs on.
+func TestMain(m *testing.M) {
+	blobtest.EmptyAWSEnvironment()
+	os.Exit(m.Run())
+}
 
 func runCmd(t *testing.T, env []string, args ...string) (code int, stdout, stderr string) {
 	t.Helper()

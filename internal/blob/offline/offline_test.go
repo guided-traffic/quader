@@ -238,9 +238,15 @@ func TestR_STOR_089_TheConnectionElement(t *testing.T) {
 		return p
 	}
 	t.Run("R-STOR-089 an element is read with the binary's rules and defaults: keyed names are on with encrypted, the prefix is quader", func(t *testing.T) {
-		_, info, err := offline.OpenElement(context.Background(), write("id: archive\nbucket: quader-archive\nendpoint: https://objects.example\nencrypted: true\n"))
+		_, info, err := offline.OpenElement(context.Background(), write("id: archive\nbucket: quader-archive\nendpoint: https://objects.example\nregion: eu-central-1\nencrypted: true\n"))
 		if err != nil || info != (offline.Info{Connection: "archive", Prefix: "quader", Encrypted: true, KeyedNames: true}) {
 			t.Fatalf("info = %+v, %v", info, err)
+		}
+	})
+	t.Run("R-STOR-089 an element without a region, and none in the environment, is refused naming the region as the binary refuses it", func(t *testing.T) {
+		_, _, err := offline.OpenElement(context.Background(), write("id: archive\nbucket: quader-archive\nendpoint: https://objects.example\nencrypted: true\n"))
+		if !offline.IsRefusal(err) || !strings.Contains(err.Error(), "storage.connections[0] (archive): region is required") {
+			t.Fatalf("err = %v", err)
 		}
 	})
 	t.Run("R-STOR-089 an element the binary refuses, a key it does not know, or a file that is no map is refused naming what is wrong", func(t *testing.T) {

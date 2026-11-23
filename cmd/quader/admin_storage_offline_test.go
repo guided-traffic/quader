@@ -86,7 +86,7 @@ func newOfflineFixture(t *testing.T) *offlineFixture {
 	b, _ := json.Marshal(doc)
 	f.export = filepath.Join(t.TempDir(), "export.json")
 	f.element = filepath.Join(t.TempDir(), "archive.yaml")
-	for p, data := range map[string][]byte{f.export: b, f.element: []byte("id: archive\nbucket: quader-archive\nencrypted: true\n")} {
+	for p, data := range map[string][]byte{f.export: b, f.element: []byte("id: archive\nbucket: quader-archive\nregion: eu-central-1\nencrypted: true\n")} {
 		if err := os.WriteFile(p, data, 0o600); err != nil {
 			t.Fatal(err)
 		}
