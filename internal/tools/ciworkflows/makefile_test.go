@@ -1,0 +1,70 @@
+package ciworkflows
+
+import (
+	"os"
+	"os/exec"
+	"strings"
+	"testing"
+)
+
+// makeDryRun is what `make -n <args>` would run in the repository, as a make of its own (a run under `make test` passes its
+// flags and level down otherwise).
+func makeDryRun(t *testing.T, args ...string) string {
+	t.Helper()
+	if _, err := exec.LookPath("make"); err != nil {
+		t.Skip("make is not on PATH")
+	}
+	cmd := exec.Command("make", append([]string{"-n", "-f", "Makefile"}, args...)...)
+	cmd.Dir = repoRoot
+	for _, kv := range os.Environ() {
+		name, _, _ := strings.Cut(kv, "=")
+		if name != "MAKEFLAGS" && name != "MFLAGS" && name != "MAKELEVEL" && !strings.HasPrefix(name, "LINT_") && name != "PKGS" {
+			cmd.Env = append(cmd.Env, kv)
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -n %s: %v\n%s", strings.Join(args, " "), err, out)
+	}
+	return string(out)
+}
+
+// goTestLine is the first line of a dry run that runs go test, or "".
+func goTestLine(out string) string {
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "go test ") {
+			return l
+		}
+	}
+	return ""
+}
+
+// The unit run before a push (make unit; G2-19 of the triage of 2026-11-23): the packages of make test, the environment a runner
+// has, no race detector and no coverage. A plain go test read the host's AWS configuration and passed where CI failed
+// (TestBackupCommands, run 42387599073), so the environment is the one definition make test uses, not a copy.
+func TestTheUnitTargetRunsWithTheRunnersEnvironment(t *testing.T) {
+	t.Parallel()
+	unit := goTestLine(makeDryRun(t, "unit", "PKGS=ciworkflows-pkgs"))
+	full := goTestLine(makeDryRun(t, "test", "PKGS=ciworkflows-pkgs"))
+	if unit == "" || full == "" {
+		t.Fatalf("no go test line: unit %q, test %q", unit, full)
+	}
+	for _, want := range []string{
+		"-u AWS_REGION", "-u AWS_DEFAULT_REGION", "-u AWS_PROFILE", "-u AWS_ACCESS_KEY_ID", "-u AWS_SECRET_ACCESS_KEY",
+		"AWS_CONFIG_FILE=/nonexistent", "AWS_SHARED_CREDENTIALS_FILE=/nonexistent", "AWS_EC2_METADATA_DISABLED=true",
+		"-count=1", "-timeout ", "ciworkflows-pkgs",
+	} {
+		if !strings.Contains(unit, want) {
+			t.Errorf("make unit runs %q; it lacks %q", unit, want)
+		}
+	}
+	envOf := func(line string) string { before, _, _ := strings.Cut(line, "go test "); return strings.TrimSpace(before) }
+	if envOf(unit) == "" || !strings.HasSuffix(envOf(full), envOf(unit)) {
+		t.Errorf("make unit runs with %q, make test with %q; both read UNIT_ENV", envOf(unit), envOf(full))
+	}
+	for _, not := range []string{"-race", "-cover", "-json"} {
+		if strings.Contains(unit, not) {
+			t.Errorf("make unit runs %q; the run before a push has no %s", unit, not)
+		}
+	}
+}

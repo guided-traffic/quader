@@ -3860,6 +3860,7 @@ requirement of the chart is [HA and Helm](docs/spec/ha-and-helm.md).
 | `make cyclo`, `make cyclo-report` | gocyclo (pinned): fails above `CYCLO_THRESHOLD`; the 20 most complex functions |
 | `make malware-scan` | ClamAV over the source tree; needs `clamscan` on the `PATH` |
 | `make test` | Unit tests with the race detector |
+| `make unit` | The unit tests as a runner runs them (no AWS configuration of the host), without the race detector and the coverage: the run before a push |
 | `make coverage-report` | Merges the unit and integration profiles into `.out/coverage` (`coverage.txt`, `summary.md`, `coverage.json`) |
 | `make test-release-tooling` | `npm ci`, `npm audit signatures`, and the release-notes check of `hack/verify-release-tooling.mjs` |
 | `make chart-lint`, `make chart-test` | Helm lint over every value set; render assertions (`chart` build tag) |
@@ -3874,7 +3875,8 @@ requirement of the chart is [HA and Helm](docs/spec/ha-and-helm.md).
 
 ## 🛠 Development
 
-Run `make help` for the list of targets. Before a change, run `make generate-check`, `make lint` and `make test`. Contributors
+Run `make help` for the list of targets. Before a push, run `make generate-check`, `make lint` and `make unit` (`make test` adds the race
+detector and the coverage profile, as the unit job does). Contributors
 start at [docs/developer/README.md](docs/developer/README.md), which describes the repository layout, the test tiers and the
 conventions. The security architecture is in [docs/security/](docs/security/README.md).
 

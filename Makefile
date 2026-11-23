@@ -338,6 +338,13 @@ test: ## Unit tests with the race detector, without the host's AWS configuration
 	@# ships: the race run above stretches them, this plain run of the kit holds them as specified.
 	$(UNIT_ENV) go test -count=1 -run 'TestR_ARCH_010' ./internal/formats/...
 
+# The unit run before a push: the packages of `make test` with the environment a runner has (UNIT_ENV), without the race
+# detector and the coverage, so it takes minutes, not the unit job's quarter of an hour. A plain `go test` reads the host's
+# AWS configuration and can pass where CI fails (TestBackupCommands, run 42387599073; the offline tool's tests, 7dd5646b3).
+.PHONY: unit
+unit: ## The unit tests as a runner runs them, without the race detector and the coverage (before a push): PKGS, UNIT_ENV, UNIT_TIMEOUT
+	$(UNIT_ENV) go test -count=1 -timeout $(UNIT_TIMEOUT) $(PKGS)
+
 .PHONY: integration-up
 integration-up: ## Start PostgreSQL, PgBouncer, Valkey with Sentinel (TLS) and SeaweedFS; write .dev/integration/env (INSTANCE=2..9: another instance beside it, .dev/integration-<n>/env)
 	test/integration/up.sh $(INSTANCE)

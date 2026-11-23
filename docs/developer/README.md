@@ -270,7 +270,7 @@ The NuGet format (`internal/formats/nuget`) followed in phase 4 ([nuget.md](nuge
 
 | Tier | How it runs | Where |
 |---|---|---|
-| Unit | `make test` (`go test -race`, JSON to `.out/test-unit.json`) | next to the code; `_test.go` |
+| Unit | `make test` (`go test -race`, JSON to `.out/test-unit.json`, as the unit job); before a push `make unit`, the same packages with the runner's environment, without the race detector | next to the code; `_test.go` |
 | Architecture | part of unit: `go test ./internal/archtest` | `internal/archtest/` |
 | Integration | `make integration-up`, then `make test-integration`; one area on whichever instance of the stack is free: `test/integration/run.sh ./test/integration/<area>/` ([several stacks](build-and-test.md#integration-stack)); build tag `integration`; `-p 1`; S3 conformance against Silo: `make silo-up`, `make s3-conformance` | `test/integration/<area>/` |
 | Chart | `make chart-lint`, `make chart-test`; build tag `chart` | `test/chart/` |
