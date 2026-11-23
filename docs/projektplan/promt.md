@@ -217,8 +217,84 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   entries (46 of tests and tools, 64 of the product) and section 12 another 43, counted at 08:16. An entry is
   closed by a repair with what holds it, or, where nothing can be built, by the check that would catch it again
   or the reasoned statement of what was looked at; never by deleting it.
+- **Finish what is in work, begin nothing new, write the rest into this plan** (owner, 2026-11-23, 17:15,
+  whole: "Bitte nur noch die aktuellen Aufgaben und Subagents beenende und übriggebliebene Aufgaben in der
+  docs/projektplan/promt.md vermerken. Keine neuen Aufgaben mehr beginnen."). From that minute no builder,
+  planner, research or package is started and no new item is given to a running builder; what was running is
+  brought to its end and landed after its gates, and every task that remains stands in
+  [section 1](#1--find-the-next-phase), "State at the stop of 2026-11-23", with where its entry or its
+  cut is. The rule stands until he says how the work goes on; the timer's text says the same.
 
 ## 1 · Find the next phase
+
+### State at the stop of 2026-11-23
+
+Read this first. By the owner's words of 17:15 (section 0) nothing new is begun; this list is what was
+in work then and what remains, kept current until the last package of the evening has landed. The next
+run starts from it and from his word how the work goes on, not from the order of the items below it.
+
+**In work at 17:15 and brought to its end** (each row's state is kept in the packages' table of
+[section 8](#8--open-findings) and the queue of T-24 in
+[section 10](#10--owner-tasks-of-2026-11-07-the-next-registries)):
+
+| What | State at 17:17 |
+|---|---|
+| T-24 · C · Contracts | built, with what the purge of a retired repository does with its tables (Q-CUR-111); at the landing's gates |
+| T-24 · R2 · Delivery rules | in work; told to end at a whole point and to list what of R-CUR-001 to 006 and 017 is built and what is not |
+| W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); the layout checks of its push's run show whether the audit log's table holds on the runner |
+| W4 · the rest of the Go tests' package | built (six commits, the Bastion unit test's repair among them); its builder rebases onto the contracts (the purge's lists moved) and drops a test the leftovers' package holds too; then the landing's gates. What it did not do is listed below |
+| W12 · the leftovers no package took | built, all six items; its builder rebases onto the contracts (one conflict in code), then the landing's gates |
+| The evidence record's step W6b | landed at 17:06; the release goes out through the changed job, **the publish is refused** (section 8, "The first publish of the evidence record was refused"): open, not started, the owner is told |
+
+**Not begun, each waiting for the owner's word:**
+
+- **T-24, the packages behind the contracts** (the queue of section 10; the cut, the files and the tests
+  of each are on the [developer page](../developer/remote-curation.md), the contracts' exported names in
+  the code and in Q-CUR-109 to Q-CUR-111): R3, the upstream catalogue (it also turns on the
+  registration's check that a remote adapter implements the catalogue, Q-CUR-109); R4, downloads ahead and
+  the queue (it registers the job kind `remote-download` and the dispatch task, which nothing registers
+  yet); then R2b, R5a, R5b, R6. Rules their builders need beside the page: a migration takes the next
+  free number on the branch it stands on (the runner refuses a gap; 00114 is the contracts'); the
+  packages that run side by side write only their own marked section of `api/openapi.yaml`, their own
+  query file and wiring file; decision blocks of the series Q-CUR from 40 (R2), 60 (R3), 80 (R4).
+- **W8 · Web and end-to-end tests wait for what they stand for** (the packages' table of section 8), with
+  what today added to it: a cluster name and ports per checkout so that a builder runs the journey or
+  the end-to-end test it changed before it reports; the walk's widths on the development machine and on
+  the runner; the journeys' texts from the source the pages take them from; the fixed waits of the
+  limits' client cases; the count of a cold load's requests.
+- **W10b · Translations and test names** (the packages' table of section 8): the extraction check, the
+  names of tests that carry a decision's number, the translation file's stale location notes.
+- **A second round of the documents' writer** (section 8, "What the same writer saw in the documents and
+  left").
+- **The repair of the evidence record's publish** (section 8, "The first publish of the evidence record was
+  refused"): one commit of a builder; until then the README's badge is invalid and no record is
+  published.
+- **Three single sets of the nightly workflow, each dispatched alone in a pipeline window with no code
+  push beside it:** `upgrade-release`, the vulnerability performance set, `drain-roles` (section 8, "The
+  drain of the roles missed its latency criterion", and the entry of the one run itself); the two
+  changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
+- **What W4 did not do** (its builder's list of 17:46, word for word in the run record): a unit test of a
+  real Sentinel failover while a start waits for Valkey's first answer (F-249; needs a fake Sentinel in
+  `internal/cluster`); `TestR_CI_003_StaleAndUnreachable` with its fixed sleeps of 1.2 s and 6 s;
+  `revoke_bound_test.go` of the area `ci`, which still counts reads from the statistics with waits of
+  2.5 s; `vulnblock/querycount_test.go`, which still counts statements in windows of the database's log
+  instead of by request ID; the propagation waits of 3 to 5 s in the area `ci` that stand for no bound;
+  the Bastion's `downloads_test.go` with a queue timeout of 100 ms; `TestBurstBesideEmptyCaches` with a
+  fixed second.
+- **Single open entries without a package**, each in section 8 with its "To do": the cancel through
+  poolers that are not peers (H-1662); the trace of the Bastion's answers by kind; the integration
+  tests that start a process with the caller's whole environment; the free port taken from port 0;
+  `TestConcurrentWritersOnOnePath` (F-126); the mirror's back-off test that missed its lower bound by a
+  millisecond; and every other entry of sections 8 and 12 that names no package.
+- **With the owner** (the list of that name in section 8 and his walk): the decisions the development
+  agent took today, each a decision block on its page and listed in the run record; the README's badge
+  on the branch `coverage` instead of `main`, told to him at 16:11.
+
+**To read from the pipeline, whoever comes next:** of the six points of the evidence record's first runs
+(run record, 17:06) the fourth is shown (the release goes out) and the third failed (the publish is
+refused); the first and second are read from the evidence job of the run of 17:06, the fifth and sixth
+wait for the publish's repair. `e2e (bastion)` in the run of the push of 16:58; the layout checks once
+the screens' rest is on `main`.
 
 1. `git status` must be clean; then `git pull --rebase origin main`.
 2. During the alpha (rule 10) a run works on two fronts at once: the first open task of
@@ -447,13 +523,13 @@ order is what a user or an operator meets first. The state is kept here.
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release landed as W6b at 17:06 (two commits), in the pipeline window, since only its first runs can show it (six points to read, run record): the record and the badge are published onto a branch `coverage` of their own after a release, `main` gets no commit of the pipeline, a test that holds a refusal marks its requirement as not built |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. The second step landed at 16:13 (two commits and migration 00113): a page of versions reads its page and no version past it, in every format (an image with 100,000 tags lists a page in 43 ms instead of 16.6 s); OCI and Debian record a publish with the undetermined shadowing check. Left open with numbers: the package list of such an image (H-829), the order by version in memory (H-1683) |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
-| W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | in work since 14:31; its first part landed at 16:58 (two commits): the tests a loaded host broke wait for the state they stand for, and a local gate runs on six cores unless `LOCAL_CORES` lifts the cap. The rest is built and at its builder's gates: the fixed sleeps and paced setups, the convention checks, the harness's policy helper, the default logger outside the formats, the check that names the areas of a changed answer |
+| W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | in work since 14:31; its first part landed at 16:58 (two commits): the tests a loaded host broke wait for the state they stand for, and a local gate runs on six cores unless `LOCAL_CORES` lifts the cap. The rest is built (six commits, back at 17:46, its gates and one run of every integration area exit 0) and rebases onto the contracts before it lands: the fixed sleeps and paced setups, the convention checks, the harness's policy helper, the default logger outside the formats, the check that names the areas of a changed answer |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | landed: its first item (a bound and a retry per fetch of an image's build, one build of an image per run, a failure that names the fetch) at 13:56, the rest at 14:48 (the checkout's image tag, instances of the UI profile, the root CA issued once, `nuget-ha` cut, the Valkey outage case in `npm-ha`, the Makefile's lazy package list); the drain variant is not folded (Q-VULN-267); the two changed sets of the nightly have not run yet |
-| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | the first group (what a person meets on a page first: the lists that keep their table, the stored document, the test link's reason, the audit log's filter by a resource, the malware settings) and the owner's menu entries T-23 landed at 14:34 (fifteen commits); the other groups in work, with a person named the same way on every page, the server's messages that name the new pages, and two points of the malware finds' list |
+| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | the first group (what a person meets on a page first: the lists that keep their table, the stored document, the test link's reason, the audit log's filter by a resource, the malware settings) and the owner's menu entries T-23 landed at 14:34 (fifteen commits); the other groups landed at 17:53 (eighteen commits): the system page, a technical token's description and removal, the states the renders never showed (the open row menus, the shared error notice), a person named the same way on every page, the server's messages that name the new pages, the German pages' formal address, the audit log's table beside an opened event. Left open by its builder: a remote's row filled by a mirror pass on no screen, "Token" with two genders in German, the signature column at 1,024 px (run record) |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
-| W12 · The product does what its pages say: the leftovers no package took | five places where the specification and the code disagree (two of them tables to hold to the code by a check); a refusal's text and its `Retry-After` from one source; the count of a writer's reads through the signature gate; a test for the store's own encryption (R-STOR-032); why the switchover legs were green under the parallel limit (a reading); each pool's size in the evidence of a kind leg | in work since 16:11, on the landing stack |
+| W12 · The product does what its pages say: the leftovers no package took | five places where the specification and the code disagree (two of them tables to hold to the code by a check); a refusal's text and its `Retry-After` from one source; the count of a writer's reads through the signature gate; a test for the store's own encryption (R-STOR-032); why the switchover legs were green under the parallel limit (a reading); each pool's size in the evidence of a kind leg | built (six commits, back at 17:39; every item done, none left unbegun); its first commit meets the contracts' default of the maintenance tasks in code, so its builder rebases onto them before it lands |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
 ### Tests and tools
@@ -725,6 +801,40 @@ records the recorder that tells such a stall apart).
   after its readiness flip) or the neighbours'. To do: the set `drain-roles` dispatched alone in a
   pipeline window with no push beside it, with the two other single sets that wait for one; a ratio
   that holds alone closes this as the neighbours' load, one that does not is a finding of the product.
+- **A unit test of the Bastion's server made the gating job red once (2026-11-23; `unit tests` of Test and
+  Release 45211254958, the push of 16:58, job 137820371091).**
+  `TestR_BAS_039_TheDrainSpoolsTheBufferDuringAnOutageAndAnotherReplicaDeliversIt`
+  (`internal/bastion/server/lifecycle_test.go:270`): "not within 20s: the three events in the buffer", on a
+  runner that carried two runs at once. Nothing of that push touches the package, and it is the first
+  record of this test. Not read: how long a flush holds the batch against the stand-in's outage, and
+  whether the gauge can read 3 while one does. The run was not the tip any more when it failed, so no
+  release hung on it. In work since 17:12 by the builder of W4, as one more test that waits for the host's
+  speed; if the reading shows events lost or a wrong gauge after a failed flush, it is the product's and
+  comes back at once.
+- **`TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially` (area `mirror`) missed its lower bound once
+  (2026-11-23, at the gates of the contracts' builder):** its third wait measured 1.9986 s against a floor
+  of 2 s; the rerun passed. A wait compared with a floor to the millisecond. Not looked into. To do: the
+  floor is compared with the clock that set the wait, or with a tolerance the test states.
+- **The first publish of the evidence record was refused, so the branch `coverage` does not exist and the
+  README's badge is invalid (2026-11-23; Test and Release 45212749706, the job Semantic Release, read at
+  17:29).** The release itself went out through the changed job (17:23) and the image and chart after it
+  (17:27); the two new steps ran after the release and ended `success`; the script chose the record of run
+  45195009156 (commit e81e0f7c3, sixteen commits before the released one) and the badge of run 45202783240.
+  Then GitHub refused the push three times: "refusing to allow a GitHub App to create or update workflow
+  `.github/workflows/…` without `workflows` permission". The commit the script pushes carries the whole tree
+  of the record's commit, workflow files among them, and the App's token has `contents: write` only. The
+  script read each refusal as a race ("the branch coverage moved three times while this job decided"),
+  which it was not. Until it is repaired `main` holds no record (the step removed it) and the badge shows
+  nothing: less than before the step. **Not repaired today:** the step's builder had ended and cannot be
+  taken up again, and by the owner's word of 17:15 nothing new is started; he is told, and a word of his
+  starts it. To do, as decided by the development agent: the tree of a commit on `coverage` holds only the
+  record's and the badge's files, its only parent is the branch's head, the record's and the badge's
+  commits stay in the trailers (the token gets no `workflows` permission); whatever assumed the full tree
+  is read again (the evidence job's comparison with the branch's record, the links inside the published
+  pages, the README's badge address, whether a path under `.github/` that is no workflow is accepted); a
+  refusal that is not a non-fast-forward is not retried and is reported in the remote's words; the
+  publish's test gets a remote that refuses a tree with a workflow file, as GitHub did. Then the next
+  release's log must say `published to coverage:` and the branch must exist.
 
 ### Product
 
@@ -2625,8 +2735,8 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 |---|---|---|---|
 | T-24 · R0 · Three researches | the code's inventory, the upstream protocols, the scans on content that is stored and not served | — | done (12:58, 12:59, 13:10) |
 | T-24 · R1 · The specification | the pages named above | R0 | landed at 13:47 |
-| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (one commit, back at 15:58, migration 00114); the landing's gates found one failure at 16:39 (the purge of a retired repository does not know its five tables with a cascading key), back with its builder since 16:45 |
-| T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | in work since 16:00, on the stack that carries C; beside R3 and R4, which start as places free |
+| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (two commits, migration 00114; the second, back at 17:16, says what the purge of a retired repository does with its tables: the queue's rows, its bulks and the examinations go, rules and requests stay with the tombstone, Q-CUR-111); at the landing's gates since 17:16 |
+| T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | in work since 16:00, on the stack that carries C; told at 17:16 to end at a whole point; R3 and R4 are not begun (the owner's word of 17:15) |
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | after C; beside R2 and R3 |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
@@ -8678,6 +8788,124 @@ the release job's log; a ruleset that refuses the App would show as a warning); 
 itself goes out and the image's and chart's workflow starts; (5) the README's badge renders, invalid
 until the first publish; (6) after npm's leg has run on the step's second commit the published
 record lacks R-NPM-018, R-NPM-021 and R-NPM-037 and holds the series of Ansible Galaxy.
+**17:12, the gating job of the run of the push of 16:58 is red** by a unit test of the Bastion's server
+that waited 20 s for a gauge (a new entry of section 8, to the builder of W4); the run was no longer
+the tip, so the release of that push is the matter of the run of 17:06, whose unit job was still
+running when this was read.
+**17:15, the owner ends the day's starts** (his words whole in section 0): only what is in work is
+finished, nothing new is begun, what remains is written here. Done at once: the three builders with
+work ahead of them (the delivery rules, the leftovers' package, the rest of W4) are told to finish
+what they have begun, to begin nothing more, and to list what remains in words this plan takes over;
+the timer's text is the wind-down's (it starts nothing and says when it deletes itself); section 1
+opens with "State at the stop of 2026-11-23", the list of what was in work and of everything not
+begun, each with where its entry or its cut stands. Not started and written there: R3 and R4 of T-24
+with the packages behind them, W8, W10b, the second round of the documents' writer, the three single
+sets of the nightly. From now the development agent marks what a landing closed itself, from the
+builder's report and the commits, since a writer would be a new start.
+**17:16, the contracts of T-24 are back with the purge** (a second commit; its gates exit 0: the areas
+`upstream`, `postgres`, `backup`, `repository`, the unit set, the documentation tool, the lint; `mirror`
+red once by a back-off test that missed its floor of 2 s by 1.4 ms and green on the rerun, a new entry
+of section 8). Decided in Q-CUR-111, since the specification was silent: the queue's rows, its bulks
+and the examinations are derived work and go with the content of a purged repository; rules and
+requests are people's decisions and stay with the tombstone, like its configuration; the askers stay
+with their request, Debian's descriptions go with their index. Both commits are picked onto the
+landing branch (no conflict) and at the landing's gates since 17:16, with six cores: the whole set
+with the web's checks and the chart's, then `upstream`, `postgres`, `repository`, `testenv`, `api`,
+`audit`, `backup`, `mirror`, `bastion`, `querybudget`.
+**17:23, the release of the pushes of 16:58 and 17:06 is cut by the run of 17:06, through the changed
+release job** (its unit job green; image and chart published at 17:27). **17:29, the job's log is read:
+the publish of the record onto the branch `coverage` was refused three times** by GitHub, since the
+pushed commit carries workflow files and the App's token may not push them (a new entry of section 8
+with the repair as decided). The step's builder cannot be taken up again (its worktree was removed
+after the landing), and a new builder is not started after the owner's word of 17:15: he is told in
+three sentences at 17:30 that the README's badge is invalid until then and that a word of his starts
+the repair.
+**17:19 to 17:27, the rest of the screens' second round is back and its pictures are looked at** (W9:
+eighteen commits on the `main` of 17:06; its full render run on a freshly seeded stack of its own: 472
+screens, 0 failed, no layout finding; its gates exit 0: build, vet, the unit set, generate, cyclo, the
+documentation tool, the lint, the web's lint and 2,007 tests, the layout checks' 150 fixture tests in
+three browsers, the areas `audit`, `api`, `repository`, `malware`). Looked at by the development agent,
+ten pictures, both schemes: the audit log beside an opened event at 1,440 px (a table; the actor
+without a name cut on one line, the target's kind broken after its underscore) and at 1,024 px (the
+event above the list); the system page at 1,024 px with two replicas lost and at 390 px; a technical
+token's description dialog; the shared error notice at 390 px; an open row menu of the repositories;
+the issued CI tokens with date and time on one line. Nothing that holds the landing. **Seen and left,
+as entries for the next round:** the system page shows the readiness check `malwareUpdaterFreshclam`
+by its key alone, without a sentence; an audit event without a label shows its code twice (as the
+action's name and under it). **What its builder left open:** a remote's row filled by a mirror pass is
+shown by no screen (G5-66); the German texts use "Token" with two genders (about 36 neuter, 15
+masculine; the repair is neuter everywhere and a glossary row); the version's files table can fall to
+blocks at 1,024 px with the badge "Signed · signer not trusted" (needs a decision on the signature
+column); the first group's intermediate commits may each be inconsistent by a few lines, the finished
+files are right; its render stack's three containers still run and are removed when the round has
+ended. At the landing's gates since 17:28 on a second landing branch, beside the contracts' gates.
+**17:39, W12 is back with all six items** (six commits on the `main` of 17:06; its gates exit 0: build,
+both vets, the unit set, generate, the documentation tool, cyclo, the lint, the web's lint and 2,001
+tests, and before its rebase the areas `limits`, `signatures`, `signing`, `coordination`, `postgres`,
+`server`, `malware`, `vulnsync`, `api`). (1) All five disagreements of specification and code were true:
+a replica now refuses at its start a maintenance task nobody registers, with a sentence that names
+it (Q-OPS-418), and the default no longer names `remote-cache-cleanup`; the task table gains the seven
+registered tasks it missed and marks six as not built, held to the registry by
+`TestR_OPS_019_TheTaskTableIsTheRegistry`; the routes' table gains 31 built routes and is held to the
+router by a web unit test; R-API-024 says 405; the system scope is the `permission` of
+`x-quader-permission` (Q-AUTH-609). (2) A refusal's text and its `Retry-After` carry one wait, rounded
+once (Q-LIM-291); "113 minutes" of a one-hour window was the true wait of a sliding window. (3) A
+writer's HEAD through the signature gate is served and neither counted nor recorded (Q-SIG-422), so a
+push's existence checks no longer count as a writer's download. (4) R-STOR-032 has its test (the
+store's own encryption on every request that makes an object and on no other; a fake endpoint). (5)
+The reading: a request the database holds takes no place of the parallel limit, since the place is
+taken after every database read; what refuses is the pile behind a hold that does not stream within
+the wait of 10 s, which a switchover's six to nine seconds do and the sixteen seconds of an OOM kill
+did not (inferred from the code and the rates, not measured). (6) The evidence of a kind leg records
+each replica's pool sizes and the memory the primary's connections hold; its first file comes from
+the next such leg. Seen and left: the UI rounds a wait of 90 to 119 s to "2 minutes" where the API
+says the seconds; a conditional GET answered 304 still counts as a writer's read; the examples of
+R-STOR-045 still name `remote-cache-cleanup`. **Its first commit conflicts in code with the contracts'
+default of the maintenance tasks**; its builder rebases onto them and resolves it (told at 17:40); the
+landing's gates follow on the combined tree, behind the contracts and the screens.
+**17:47, the rest of W4 is back** (six commits on the `main` of 17:06; its gates exit 0: build, both vets,
+the unit set 169 s, cyclo, the documentation tool, the lint with 0 issues in 383 s, the touched
+packages' tests; every integration area ran once on the same changes before its last rebase, 70
+packages, none failed, 5,890 s). (1) Integration tests start their processes without the caller's
+`QUADER_` variables (`testenv.ChildEnv`, nine places), take an address no other listener got
+(`testenv.FreeAddr`), and a refused write prints its own request's log lines. (2) The harness's policy
+helper fails on a repository key that selects nothing; every area ran on it and none had relied on
+the empty policy. (3) The checks of a list or a convention run in the unit tier or in a new area
+`conventions` of about a second (Q-ARCH-701). (4) No code of the binary logs through the process's
+default logger: two of 68 uses were reachable in a running replica and carry its fields now, the
+others discard, and the check covers `internal/` and `cmd/`. (5) `go run ./internal/tools/apiareas
+-base main` lists in a second the integration areas whose tests name a member a change made to an
+answer (Q-ARCH-703); on the commit that had made `transfer` red it names that area among eleven; it
+lists and does not gate, and it is blind to a format's own routes, a key a test builds from parts and
+error codes. (6) **The Bastion unit test that made the gating job red at 17:11 was the test's fault:**
+the link says the handshake before its watchers turn the download buffer on, and the test added its
+events in that gap, where the buffer discards them; no event is lost and the gauge is right after a
+failed flush. The tests wait for the reporter's own signal now and passed with one core under the
+background class. Seen and left by it: an event of the microseconds after a handshake is dropped in
+production as one before the handshake is. **Not done, for this plan:** a unit test of a real
+Sentinel failover while a start waits for Valkey's first answer (F-249, needs a fake Sentinel);
+`TestR_CI_003_StaleAndUnreachable`'s fixed sleeps of 1.2 s and 6 s against `max_stale`;
+`revoke_bound_test.go` (area `ci`), which counts reads from the table statistics with waits of 2.5 s;
+`vulnblock/querycount_test.go`, which counts statements in windows of the database's log; the
+propagation waits of 3 to 5 s in the area `ci` that stand for no bound; the Bastion's
+`downloads_test.go` with `queue_timeout: 100ms`; `TestBurstBesideEmptyCaches` with its fixed second.
+**Two meetings with what lands before it, given to its builder:** the purge's table lists that it
+moved into `conventions` take the contracts' five tables, and its test of R-STOR-032 goes unless it
+holds what the leftovers' package's test of the same requirement does not.
+**17:46, read from the pipeline:** `e2e (bastion)` is green in the run of the push of 16:58, the first
+run of the scenario's repair, with every other leg and shard of that run; in the run of 17:06 the
+evidence job and the coverage report ended green beside legs still running. The layout checks of both
+runs still ran (they carry no repair of the audit log's table yet).
+**17:53, the rest of the screens' second round lands** (eighteen commits on the `main` of 17:06). The
+landing's gates on a second landing branch ended at 17:52, each exit 0: build, both vets, the unit
+set, generate, the documentation tool's four steps, cyclo, the workflow files' check, the API client,
+the extraction, the web's lint and unit tests, the end-to-end tree's vet, the layout checks' fixture
+tests in three browsers, the journeys' type check, the lint with 0 issues, then `audit` 154 s,
+`malware` 237 s, `api` 116 s, `apikey` 10 s, `repository` 47 s, `signatures` 40 s, `identity` 99 s,
+`vulnblock` 99 s at a load of 23 to 43 beside the contracts' gates. The pictures were looked at before
+(run record above). It is a code push, this plan's commit lies under it, and **the layout checks of
+its run are the proof of the audit log's repair**, which the development machine could not show. The
+owner's UI backend is started again on it; the builder's render stack and worktree are removed.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
