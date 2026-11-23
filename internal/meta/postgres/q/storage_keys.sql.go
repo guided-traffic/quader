@@ -420,8 +420,12 @@ SELECT (SELECT count(*) FROM blob_copies c
        (SELECT count(*) FROM storage_key_exports e WHERE e.key_ids && $2::text[])::bigint AS exports,
        COALESCE((SELECT (EXTRACT(EPOCH FROM max(e.exported_at)) * 1000000)::bigint FROM storage_key_exports e
                   WHERE e.key_ids && $2::text[]), 0)::bigint AS last_export_us,
-       (SELECT count(*) FROM audit_event a
-         WHERE a.action = 'bastion.data_key.handed' AND a.details ->> 'connection' = $1::text)::bigint AS handed
+       h.files::bigint AS handed_files,
+       h.events::bigint AS handovers
+  FROM (SELECT count(DISTINCT a.details ->> 'sha256') AS files, count(*) AS events FROM audit_event a
+         WHERE a.action = 'bastion.data_key.handed'
+           AND (a.details ->> 'connection' = $1::text
+                OR a.details ->> 'storageKeyId' = ANY ($2::text[]))) h
 `
 
 type StorageKeysHoldersParams struct {
@@ -435,12 +439,14 @@ type StorageKeysHoldersRow struct {
 	Sessions     int64
 	Exports      int64
 	LastExportUs int64
-	Handed       int64
+	HandedFiles  int64
+	Handovers    int64
 }
 
 // What still holds a connection's keys (R-STOR-098): copy rows of the connection or under one of its keys, queue rows, upload sessions;
-// and what the destruction reports: the exports that listed one of its keys and the data keys of its objects handed to a Bastion within
-// the audit trail's retention.
+// and what the destruction reports: the exports that listed one of its keys, and the files whose data key was handed to a Bastion
+// within the audit trail's retention, as the distinct sha256 of the events bastion.data_key.handed of the connection or under one of
+// its keys, beside the count of those events (Q-STOR-475): a file handed twice is one file and two handovers.
 func (q *Queries) StorageKeysHolders(ctx context.Context, arg StorageKeysHoldersParams) (StorageKeysHoldersRow, error) {
 	row := q.db.QueryRow(ctx, storageKeysHolders, arg.ConnectionID, arg.KeyIds)
 	var i StorageKeysHoldersRow
@@ -450,7 +456,8 @@ func (q *Queries) StorageKeysHolders(ctx context.Context, arg StorageKeysHolders
 		&i.Sessions,
 		&i.Exports,
 		&i.LastExportUs,
-		&i.Handed,
+		&i.HandedFiles,
+		&i.Handovers,
 	)
 	return i, err
 }

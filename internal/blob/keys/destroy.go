@@ -112,10 +112,18 @@ const (
 // Remaining are the holders that stay able to open what the provider keeps, with the key ring, and that the destruction reports and
 // never refuses for (R-STOR-098).
 type Remaining struct {
-	Exports        ExportsHeld `json:"exports"`
-	Backups        BackupsHeld `json:"backups"`
-	Database       string      `json:"database"`
-	HandedDataKeys int64       `json:"handedDataKeys"`
+	Exports  ExportsHeld `json:"exports"`
+	Backups  BackupsHeld `json:"backups"`
+	Database string      `json:"database"`
+	Handed   HandedHeld  `json:"handed"`
+}
+
+// HandedHeld are the files of the connection whose data key was handed to a Bastion, as the audit trail records them within its
+// retention (Q-STOR-475): Files the distinct sha256 of the events bastion.data_key.handed, Handovers the events. A file handed twice, or
+// to two replicas of a Bastion, is one file and two handovers.
+type HandedHeld struct {
+	Files     int64 `json:"files"`
+	Handovers int64 `json:"handovers"`
 }
 
 // ExportsHeld are the exports that listed one of the connection's keys (storage_key_exports).
@@ -286,7 +294,7 @@ func (d *Destruction) judgeHolders(h Holders) {
 		d.refuse(HolderSessions, h.Sessions, fmt.Sprintf("%d upload sessions lie on connection %s, and a finalize wraps under its active key; they end within storage.uploads.session_max_age", h.Sessions, c))
 	}
 	d.Remaining.Exports = ExportsHeld{Count: h.Exports, LastAt: timePtr(h.LastExport)}
-	d.Remaining.HandedDataKeys = h.HandedDataKeys
+	d.Remaining.Handed = HandedHeld{Files: h.HandedFiles, Handovers: h.Handovers}
 }
 
 func (d *Destruction) refuse(holder string, n int64, say string) {

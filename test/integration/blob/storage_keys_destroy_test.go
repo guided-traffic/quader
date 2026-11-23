@@ -131,11 +131,18 @@ func destroyedKeysInPostgreSQL(t *testing.T, p *pgEnv, ring *secrets.KeyRing) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// The traces of data keys handed to a Bastion as the handover writes them (R-STOR-096, the connection in their details): the
-		// report counts those of its connection, not another's (R-STOR-098's holder "data keys handed to a Bastion").
-		for _, conn := range []string{"gone", "gone", "other"} {
+		// The traces of data keys handed to a Bastion as the handover writes them (R-STOR-096, the connection and the storage key in
+		// their details): the report counts the files and the handovers of its connection, not another's (R-STOR-098's holder, Q-STOR-475).
+		// File ab is handed twice (by two replicas of the Bastion), file cd once, and file ab once more on connection other: two files and
+		// three handovers.
+		for _, h := range []struct{ replica, sha, conn, key string }{
+			{"bastion-1", "ab", "gone", sk},
+			{"bastion-2", "ab", "gone", sk},
+			{"bastion-1", "cd", "gone", sk},
+			{"bastion-1", "ab", "other", "sk-other-1-0000bbbb"},
+		} {
 			handed, _ := json.Marshal(map[string]string{
-				"bastion": "partners", "replica": "bastion-1", "sha256": strings.Repeat("ab", 32), "connection": conn, "storageKeyId": sk,
+				"bastion": "partners", "replica": h.replica, "sha256": strings.Repeat(h.sha, 32), "connection": h.conn, "storageKeyId": h.key,
 				"linkExpiresAt": time.Now().UTC().Format(time.RFC3339),
 			})
 			if err := p.db.InTx(ctx, func(tx meta.Tx) error {
@@ -151,8 +158,8 @@ func destroyedKeysInPostgreSQL(t *testing.T, p *pgEnv, ring *secrets.KeyRing) {
 		if err != nil || dry.Confirm != storagekeys.Confirmation(opts.Installation, "gone", ids) {
 			t.Fatalf("dry run: %v %+v", err, dry)
 		}
-		if dry.Remaining.HandedDataKeys != 2 {
-			t.Errorf("the dry run counts %d data keys handed to a Bastion, want the 2 traces of connection gone", dry.Remaining.HandedDataKeys)
+		if got := dry.Remaining.Handed; got != (storagekeys.HandedHeld{Files: 2, Handovers: 3}) {
+			t.Errorf("the dry run counts %+v, want the 2 files and 3 handovers of connection gone", got)
 		}
 		o := opts
 		o.Confirm = dry.Confirm

@@ -282,8 +282,9 @@ Component: the handover of a data key ([storage.md](../spec/storage.md) R-STOR-0
 the objects of the destroyed connection whose data keys a Bastion received. A data key opens its object without the storage key; whoever kept
 a handed key ([bastion-handover.md](bastion-handover.md#h-1340--a-taken-over-bastion-collects-the-data-keys-of-the-encrypted-blobs-filled-through-it)
 H-1340) reads that object from the provider's leftovers after the destruction. The audit events `bastion.data_key.handed` name the blobs, and
-the destruction counts them within the audit trail's retention. Dormant while no Bastion registration has the handover on; then live for
-every object of a destroyed connection that was handed, once packages 7 and the handover are built.
+the destruction's report counts the files and the handovers within the audit trail's retention and names the day the audit log goes back to
+(R-STOR-099, Q-STOR-475); a file handed before that day is not counted. Dormant while no Bastion registration has the handover on; live for
+every object of a destroyed encrypted connection that was handed, since both are built (2026-11-23).
 
 ### H-1375 · A forged journal entry can destroy a retired connection's keys at a restore before the operator does
 

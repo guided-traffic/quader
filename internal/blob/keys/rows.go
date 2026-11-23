@@ -85,8 +85,10 @@ type Holders struct {
 	// Exports counts the rows of storage_key_exports that list one of the identifiers; LastExport is the newest one's time.
 	Exports    int64
 	LastExport time.Time
-	// HandedDataKeys counts the audit events bastion.data_key.handed of the connection within the audit trail's retention.
-	HandedDataKeys int64
+	// HandedFiles counts the files whose data key was handed to a Bastion, the distinct sha256 of the audit events
+	// bastion.data_key.handed of the connection or under one of its keys within the audit trail's retention; Handovers counts those
+	// events (Q-STOR-475).
+	HandedFiles, Handovers int64
 	// BackupRuns counts the create and delete runs of backup_run; BackupActive is true while a target-writing run is active.
 	BackupRuns   int64
 	BackupActive bool
@@ -233,7 +235,8 @@ func (PG) Holders(ctx context.Context, tx meta.Tx, connection string, ids []stri
 		return h, err
 	}
 	h.Copies, h.Queued, h.Sessions = held.Copies, held.Queued, held.Sessions
-	h.Exports, h.LastExport, h.HandedDataKeys = held.Exports, fromMicros(held.LastExportUs), held.Handed
+	h.Exports, h.LastExport = held.Exports, fromMicros(held.LastExportUs)
+	h.HandedFiles, h.Handovers = held.HandedFiles, held.Handovers
 	runs, err := qs.StorageKeysBackupRuns(ctx)
 	if err != nil {
 		return h, err

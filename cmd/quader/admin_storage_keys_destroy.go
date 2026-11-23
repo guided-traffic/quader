@@ -31,7 +31,8 @@ type destroyOptions struct {
 	configured []string
 	staleAfter time.Duration
 	backup     keys.BackupTarget
-	// auditDays is audit.retention_days, which bounds what the audit trail says of handed data keys (0 keeps every event).
+	// auditDays is audit.retention_days, which bounds what the audit trail says of the files whose data key was handed to a Bastion
+	// (0 keeps every event).
 	auditDays int
 }
 
@@ -85,14 +86,14 @@ func runKeysDestroy(ctx context.Context, d keysDeps, o destroyOptions, out io.Wr
 	case errors.Is(err, keys.ErrNoKeys), errors.Is(err, keys.ErrConfigured), errors.Is(err, keys.ErrConfirmMismatch):
 		return backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
 	case errors.Is(err, keys.ErrHeld):
-		if perr := printDestruction(out, rep, o); perr != nil {
+		if perr := printDestruction(out, rep, o, d.now()); perr != nil {
 			return perr
 		}
 		return backup.Fail(backup.ExitFindings, backup.CodePrecondition, fmt.Errorf("%w (connection %s): the report names each holder", err, o.connection))
 	case err != nil:
 		return err
 	}
-	return printDestruction(out, rep, o)
+	return printDestruction(out, rep, o, d.now())
 }
 
 // destroyedEvent writes system.storage.keys_destroyed with its journal entry, in the destroying transaction (R-STOR-099 step 6).
@@ -123,19 +124,19 @@ func destroyedEvent(ctx context.Context, rec audit.Recorder, tx meta.Tx, rep key
 	})
 }
 
-// printDestruction prints the report as JSON or as the text of R-STOR-099.
-func printDestruction(out io.Writer, rep keys.Destruction, o destroyOptions) error {
+// printDestruction prints the report as JSON or as the text of R-STOR-099; now dates the audit trail's bound.
+func printDestruction(out io.Writer, rep keys.Destruction, o destroyOptions, now time.Time) error {
 	if o.asJSON {
 		enc := json.NewEncoder(out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(rep)
 	}
-	_, err := io.WriteString(out, destructionText(rep, o))
+	_, err := io.WriteString(out, destructionText(rep, o, now))
 	return err
 }
 
 // destructionText is the report in the operator's words (R-STOR-099).
-func destructionText(rep keys.Destruction, o destroyOptions) string {
+func destructionText(rep keys.Destruction, o destroyOptions, now time.Time) string {
 	var b strings.Builder
 	c := rep.Connection
 	if rep.State == keys.StateDestroyed {
@@ -156,7 +157,7 @@ func destructionText(rep keys.Destruction, o destroyOptions) string {
 	b.WriteString("  " + exportsLine(rep.Remaining.Exports) + "\n")
 	b.WriteString("  " + backupsLine(rep.Remaining.Backups) + "\n")
 	b.WriteString("  " + rep.Remaining.Database + "\n")
-	fmt.Fprintf(&b, "  data keys handed to a Bastion: %d (audit trail, %s)\n", rep.Remaining.HandedDataKeys, auditWindow(o.auditDays))
+	b.WriteString("  " + handedLine(rep.Remaining.Handed, o.auditDays, now) + "\n")
 	switch {
 	case len(rep.Refusals) > 0:
 		b.WriteString("refused: nothing was destroyed; run the command again once the holders above are gone\n")
@@ -227,11 +228,22 @@ func backupsLine(b keys.BackupsHeld) string {
 	return s
 }
 
-func auditWindow(days int) string {
-	if days <= 0 {
-		return "every event kept"
+// handedLine names the files whose data key was handed to a Bastion and the handovers, with the bound of the audit trail they are
+// counted from (Q-STOR-475): the day audit.retention_days before now, or every event when the retention is 0.
+func handedLine(h keys.HandedHeld, auditDays int, now time.Time) string {
+	const lead = "files whose data key was handed to a Bastion: "
+	bound := "the audit log keeps every event"
+	if auditDays > 0 {
+		bound = "the audit log goes back to " + now.UTC().AddDate(0, 0, -auditDays).Format(time.DateOnly)
 	}
-	return fmt.Sprintf("last %d days", days)
+	if h.Handovers == 0 {
+		return lead + "none recorded (" + bound + ")"
+	}
+	handovers := "handovers"
+	if h.Handovers == 1 {
+		handovers = "handover"
+	}
+	return fmt.Sprintf("%s%d (%d %s; %s)", lead, h.Files, h.Handovers, handovers, bound)
 }
 
 func day(t *time.Time) string {

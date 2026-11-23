@@ -5423,7 +5423,7 @@ exists), then reads each of these:
 | PostgreSQL's own copies: old row versions, the write-ahead log, a point-in-time archive, standbys, volume snapshots | not knowable to Quader | documented ([H-1372](../security/stored-content-keys.md#h-1372--postgresql-keeps-the-sealed-value-after-the-destruction)) |
 | Noncurrent versions and leftover objects in the connection's bucket | not knowable: the runtime credential cannot list versions (H-1328) | they are what the destruction makes unreadable |
 | The revocation journal | — | it holds no key and no content (Q-STOR-315) |
-| Data keys handed to a Bastion | the audit events `bastion.data_key.handed` within retention | a handed key was never wrapped again ([H-1374](../security/stored-content-keys.md#h-1374--a-data-key-handed-to-a-bastion-outlives-its-storage-key)) |
+| Files whose data key was handed to a Bastion | the audit events `bastion.data_key.handed` whose `details.connection` is the connection or whose `details.storageKeyId` is one of its identifiers, within retention: the files are their distinct `sha256`, the handovers the events ([Q-STOR-475](#q-stor-475--the-dry-run-counts-the-files-whose-data-key-was-handed-and-the-handovers-and-names-the-audit-logs-bound)) | a handed key was never wrapped again ([H-1374](../security/stored-content-keys.md#h-1374--a-data-key-handed-to-a-bastion-outlives-its-storage-key)) |
 | Directories written by `offline pull` | not knowable | they need an export and the key ring |
 
 Acceptance criteria (unit, `internal/blob/keys` with keystest; the exit code `5` is the command's mapping of the refusal, shown once in
@@ -5490,14 +5490,14 @@ still able to open what archive's provider keeps, with the key ring:
   exports made before: 4, the last on 2027-02-14T09:00:00Z; destroy those files
   retained backups whose database holds these keys sealed: 7 on s3://quader-backups/quader (listed by run 0193… at 2027-03-10T02:41:17Z); they leave retention not before 2027-04-01
   PostgreSQL: old row versions, the write-ahead log and any point-in-time archive until they turn over
-  data keys handed to a Bastion: 3 (audit trail, last 365 days)
+  files whose data key was handed to a Bastion: 3 (5 handovers; the audit log goes back to 2026-03-20)
 dry run: nothing was destroyed. To destroy, run: quader admin storage keys destroy --connection archive --confirm archive-5c1e09ab
 ```
 
 After a destruction the last line reads "destroyed 3 keys of connection archive; what archive's bucket still holds stays there as
 ciphertext; export the storage keys again: quader admin storage keys export". `--json` prints the same as `{connection, state, retiredAt,
-keys[], refusals[{holder, count, say}], remaining{exports, backups, database, handedDataKeys}, confirm, dryRun, destroyed}`; it holds no
-sealed value.
+keys[], refusals[{holder, count, say}], remaining{exports, backups, database, handed{files, handovers}}, confirm, dryRun, destroyed}`; it
+holds no sealed value.
 
 *As built:* `keys[]` are `{keyId, kind, generation, state}`, the storage keys by generation, then the name key; `destroyed` is the list of
 the identifiers this run destroyed (empty in a dry run); the report adds `drainedAt` and, for a connection whose keys are all destroyed,
@@ -5508,8 +5508,13 @@ archive …`) and ends with "refused: nothing was destroyed; run the command aga
 confirmation; `--dry-run` with `--confirm` ends with "dry run: the confirmation matches and every check passes; nothing was destroyed. To
 destroy, run: …". Where a value is not known the text says so: "exports made before: none recorded", "retained backups whose database
 holds these keys sealed: none, no backup recorded in this database" or "… not known on s3://… (the listing of run … records no
-sealedKeyIds)", "data keys handed to a Bastion: 0 (audit trail, last 365 days)" (with `audit.retention_days`). The change is the payload
-version 2 of R-STOR-101 (`keys.DestroyedChange`).
+sealedKeyIds)", "files whose data key was handed to a Bastion: none recorded (the audit log goes back to 2026-03-20)". *Amended on
+2026-11-23 by [Q-STOR-475](#q-stor-475--the-dry-run-counts-the-files-whose-data-key-was-handed-and-the-handovers-and-names-the-audit-logs-bound)*,
+which replaced "data keys handed to a Bastion: 3 (audit trail, last 365 days)", a count of the events that read as a count of keys: the
+line names the files (the distinct `sha256`) and the handovers (the events), and its bound is the day `audit.retention_days` of the
+command's configuration before the command's run (UTC), or "the audit log keeps every event" when the retention is `0`; `--json` carries
+the two numbers as `remaining.handed{files, handovers}` and not the bound, which is the configuration's. The change is the payload version
+2 of R-STOR-101 (`keys.DestroyedChange`).
 
 Acceptance criteria (unit, `cmd/quader` with keystest; `TestR_STOR_099_TheDestroyCommand`):
 
@@ -10731,6 +10736,32 @@ R-BAS-073), and the insert, a round trip to the database.
 | (b) Trace, then encode | The numbered order read literally | | A refused encoding leaves a trace of a key that never left; the key lives across the insert |
 
 **Choice:** (a). **Applied in the spec:** R-STOR-095 step 10; code: `HandoverOptions` of [handover.go](../../internal/downloadlinks/handover.go).
+
+### Q-STOR-475 · The dry run counts the files whose data key was handed and the handovers, and names the audit log's bound
+
+Status: **Decided by the development agent** (the join of the handover's data keys with the key destruction, 2026-11-23) — selected from
+the options below; the owner reviews it.
+
+Context: the destruction's report printed "data keys handed to a Bastion: 3 (audit trail, last 365 days)", and the number counted the
+events `bastion.data_key.handed` of the connection. A file handed twice, or to two replicas of a Bastion, is two events and one data key,
+so the line read as more keys than had left, in the report an operator reads before something that cannot be undone. The trail does not
+record the data key itself (R-STOR-096): an event names the file (`sha256`) and the storage key that wrapped its key, so the files are what
+can be counted.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Both numbers and the bound: the files (the distinct `sha256` of the events of the connection or under one of its keys), the handovers (the events), and the day the audit log goes back to (chosen) | "files whose data key was handed to a Bastion: 3 (5 handovers; the audit log goes back to 2026-03-20)" | The operator sees how many files stay readable with a key outside Quader, how often they left, and what the count cannot see | A copy written again with a new data key (its blob collected and uploaded anew) is one file and two keys; the bound is the retention of the command's configuration, not the oldest event |
+| (b) The files alone | One number | Shortest | Hides that a file left more than once, to more than one place |
+| (c) The events alone, called handovers | The query as it was | No change of the count | Does not say how many files stay readable |
+| (d) The oldest event's day, read from `audit_event` | The exact bound | Exact | One statement more for a day the configuration already gives to within a month |
+
+**Choice:** (a). The bound is the day `audit.retention_days` before the run (UTC); the audit log reaches at least that far back unless the
+retention was raised within those days, and up to a month further, because its partitions are dropped by the month. With a retention of
+`0` the line says "the audit log keeps every event"; with no event it says "none recorded" and the bound, as the exports' line says "none
+recorded". The events are those of the connection or under one of its storage keys, as the copy rows' holder reads its rows. **Applied in
+the spec:** R-STOR-098 (the holders' table), R-STOR-099 (the text and `--json`); code: `StorageKeysHolders` of
+[storage_keys.sql](../../internal/meta/postgres/queries/storage_keys.sql), `handedLine` of
+[admin_storage_keys_destroy.go](../../cmd/quader/admin_storage_keys_destroy.go).
 
 ## What this does not cover
 

@@ -127,8 +127,9 @@ SELECT count(*)::bigint AS replicas
 
 -- name: StorageKeysHolders :one
 -- What still holds a connection's keys (R-STOR-098): copy rows of the connection or under one of its keys, queue rows, upload sessions;
--- and what the destruction reports: the exports that listed one of its keys and the data keys of its objects handed to a Bastion within
--- the audit trail's retention.
+-- and what the destruction reports: the exports that listed one of its keys, and the files whose data key was handed to a Bastion
+-- within the audit trail's retention, as the distinct sha256 of the events bastion.data_key.handed of the connection or under one of
+-- its keys, beside the count of those events (Q-STOR-475): a file handed twice is one file and two handovers.
 SELECT (SELECT count(*) FROM blob_copies c
          WHERE c.connection_id = sqlc.arg(connection_id)::text OR c.storage_key_id = ANY (sqlc.arg(key_ids)::text[]))::bigint AS copies,
        (SELECT count(*) FROM blob_copy_queue q WHERE q.connection_id = sqlc.arg(connection_id)::text)::bigint AS queued,
@@ -136,8 +137,12 @@ SELECT (SELECT count(*) FROM blob_copies c
        (SELECT count(*) FROM storage_key_exports e WHERE e.key_ids && sqlc.arg(key_ids)::text[])::bigint AS exports,
        COALESCE((SELECT (EXTRACT(EPOCH FROM max(e.exported_at)) * 1000000)::bigint FROM storage_key_exports e
                   WHERE e.key_ids && sqlc.arg(key_ids)::text[]), 0)::bigint AS last_export_us,
-       (SELECT count(*) FROM audit_event a
-         WHERE a.action = 'bastion.data_key.handed' AND a.details ->> 'connection' = sqlc.arg(connection_id)::text)::bigint AS handed;
+       h.files::bigint AS handed_files,
+       h.events::bigint AS handovers
+  FROM (SELECT count(DISTINCT a.details ->> 'sha256') AS files, count(*) AS events FROM audit_event a
+         WHERE a.action = 'bastion.data_key.handed'
+           AND (a.details ->> 'connection' = sqlc.arg(connection_id)::text
+                OR a.details ->> 'storageKeyId' = ANY (sqlc.arg(key_ids)::text[]))) h;
 
 -- name: StorageKeysBackupRuns :one
 -- The backup runs the check of R-STOR-100 reads: how many create and delete runs the database records and whether a target-writing run is

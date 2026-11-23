@@ -713,8 +713,9 @@ last mark of a tail segment, the segment key's own label, and the refusal of a b
   `MAINTAIN` (read from 00001's default privileges, not run). On the stack's PostgreSQL 18.6 the old row version was on the page after the
   `UPDATE` and gone after a plain `VACUUM`, and a full-page image in the write-ahead log held the sealed value. Not established: whether
   `VACUUM` overwrites freed space in every case, what standbys, archives and snapshots keep, and the log's recycling time.
-- Package 7: the holders' read counts `bastion.data_key.handed` events by `details ->> 'connection'` over every partition of `audit_event`;
-  its cost on a large audit trail was not measured. The command's dry run, its destruction and its refusals ran at the unit tier and in the
+- Package 7: the holders' read counts the `bastion.data_key.handed` events of the connection or under one of its keys
+  (`details ->> 'connection'`, `details ->> 'storageKeyId'`), and their distinct `sha256`, over every partition of `audit_event`
+  (Q-STOR-475); its cost on a large audit trail was not measured. The command's dry run, its destruction and its refusals ran at the unit tier and in the
   keys' integration case and against the backup's encrypted case, never against a running installation.
 - Package 4 ran against the stack's S3 with blobs of 1 KiB: a server-side copy of an encrypted copy above the single copy's limit (the
   multipart copy that sets the record and names the entity tag on every `UploadPartCopy`) ran against a fake S3 only, and whether a real

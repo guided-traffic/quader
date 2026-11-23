@@ -61,6 +61,7 @@ func (f *destroyFixture) ids() []string {
 func TestR_STOR_099_TheDestroyCommand(t *testing.T) {
 	t.Run("R-STOR-099 without --confirm the command prints the report and the confirmation, changes nothing and exits 0", func(t *testing.T) {
 		f := newDestroyFixture(t)
+		f.deps.now = func() time.Time { return time.Date(2027, 3, 20, 23, 30, 0, 0, time.UTC) }
 		before, events := f.db.Rows(), len(f.ev.list)
 		out, err := f.run("", nil)
 		want := keys.Confirmation(installation, "archive", f.ids())
@@ -72,7 +73,7 @@ func TestR_STOR_099_TheDestroyCommand(t *testing.T) {
 			"  exports made before: none recorded\n",
 			"  retained backups whose database holds these keys sealed: none, no backup recorded in this database\n",
 			"  PostgreSQL: old row versions, the write-ahead log and any point-in-time archive until they turn over\n",
-			"  data keys handed to a Bastion: 0 (audit trail, last 365 days)\n",
+			"  files whose data key was handed to a Bastion: none recorded (the audit log goes back to 2026-03-20)\n",
 			"dry run: nothing was destroyed. To destroy, run: quader admin storage keys destroy --connection archive --confirm " + want + "\n",
 		} {
 			if !strings.Contains(out, line) {
@@ -81,6 +82,24 @@ func TestR_STOR_099_TheDestroyCommand(t *testing.T) {
 		}
 		if err != nil || len(f.ev.list) != events || len(f.destroyed) != 0 || len(f.db.Rows()) != len(before) || f.db.Rows()[0] != before[0] {
 			t.Fatalf("exit %d: %v; a dry run changed something", exitCode(err), err)
+		}
+	})
+	t.Run("R-STOR-099 Q-STOR-475 the dry run names the files whose data key was handed and the handovers, with the audit log's bound", func(t *testing.T) {
+		f := newDestroyFixture(t)
+		f.deps.now = func() time.Time { return time.Date(2027, 3, 20, 23, 30, 0, 0, time.UTC) }
+		f.db.Held.HandedFiles, f.db.Held.Handovers = 2, 3
+		for days, want := range map[int]string{
+			365: "  files whose data key was handed to a Bastion: 2 (3 handovers; the audit log goes back to 2026-03-20)\n",
+			0:   "  files whose data key was handed to a Bastion: 2 (3 handovers; the audit log keeps every event)\n",
+		} {
+			out, err := f.run("", func(o *destroyOptions) { o.auditDays = days })
+			if err != nil || !strings.Contains(out, want) {
+				t.Errorf("retention %d: %v, the report lacks %q:\n%s", days, err, want, out)
+			}
+		}
+		out, err := f.run("", func(o *destroyOptions) { o.asJSON = true })
+		if err != nil || !strings.Contains(out, `"handed": {`) || !strings.Contains(out, `"files": 2,`) || !strings.Contains(out, `"handovers": 3`) {
+			t.Errorf("--json: %v\n%s", err, out)
 		}
 	})
 	t.Run("R-STOR-099 a confirmation computed for another installation, or before a generation was added, exits 2", func(t *testing.T) {
