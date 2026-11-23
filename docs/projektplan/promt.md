@@ -400,9 +400,11 @@ and `Release Docker & Helm` publishes the image `guidedtraffic/quader` and the c
    (Q-ARCH-594). A `[skip ci]` commit is not: it moves the tip and starts no run, so the release of the push before it is lost
    until the next code push. A release whose gating job was red is likewise cut by the next code push whose gating jobs are
    green; nothing is released by hand.
-3. The release moves `main` by no commit today (the evidence record and the badge are not written back by the pipeline; that
-   returns with the package that makes the pipeline their only source, and from then every landing fetches before it
-   rebases). The release number goes into no plan: BETA.md and FULL.md track features only (owner, 2026-11-02).
+3. The release moves `main` by no commit. The evidence record and the coverage badge are published by the release job onto
+   the branch `coverage`, after the release and without the release waiting for them (Q-ARCH-811, since 2026-11-23); `main`
+   holds neither file, the generator refuses a tree that holds one, and nobody writes a requirement into a record by hand. Read
+   the record with `git fetch origin coverage` and `git show origin/coverage:docs/coverage/implemented.txt`. The release number
+   goes into no plan: BETA.md and FULL.md track features only (owner, 2026-11-02).
 4. Check the published artifacts of the release: `gh release view vX.Y.Z`, the image
    `guidedtraffic/quader:X.Y.Z` on Docker Hub, and the chart index
    `https://guided-traffic.github.io/quader/index.yaml`. The release notes are generated from the commit
@@ -442,7 +444,7 @@ order is what a user or an operator meets first. The state is kept here.
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); the second step landed at 15:13 (seven commits): the request's statement bound without a round trip more for a single read, the spools' flushes, the scanner's full disk, the command `quader admin secrets status`, the malware rows of the audit events' table. Left open: a cancel through poolers that are not peers (H-1662, section 8) |
-| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release is built as W6b (two commits, back at 16:10) and lands in the pipeline window from 17:00, since only its first runs can show it: the record and the badge are published onto a branch `coverage` of their own after a release, `main` gets no commit of the pipeline, a test that holds a refusal marks its requirement as not built |
+| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release landed as W6b at 17:06 (two commits), in the pipeline window, since only its first runs can show it (six points to read, run record): the record and the badge are published onto a branch `coverage` of their own after a release, `main` gets no commit of the pipeline, a test that holds a refusal marks its requirement as not built |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. The second step landed at 16:13 (two commits and migration 00113): a page of versions reads its page and no version past it, in every format (an image with 100,000 tags lists a page in 43 ms instead of 16.6 s); OCI and Debian record a publish with the undetermined shadowing check. Left open with numbers: the package list of such an image (H-829), the order by version in memory (H-1683) |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | in work since 14:31; its first part landed at 16:58 (two commits): the tests a loaded host broke wait for the state they stand for, and a local gate runs on six cores unless `LOCAL_CORES` lifts the cap. The rest is built and at its builder's gates: the fixed sleeps and paced setups, the convention checks, the harness's policy helper, the default logger outside the formats, the check that names the areas of a changed answer |
@@ -566,15 +568,18 @@ records the recorder that tells such a stall apart).
   and 141 s to refuse an altered tarball, by their retries.
 - **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
   answer and the token API's unit test of an upper-case path pattern (each waits for the owner's go for new
-  formats), the evidence record that holds no requirement of Ansible Galaxy (not looked into), and the virtual
-  NuGet repository that the query budget's environment creates and no case asks.** Closed: the undetermined
-  shadowing check of NuGet's and Ansible Galaxy's data ports, by 916e4cc52 (2026-11-23): the data ports of
-  npm, NuGet and Ansible Galaxy write `claim` and `shadowCheck` through the one function `audit.PublishGuards`
-  (`internal/audit/publish_guards.go`), held by `TestR_REPO_048_APublishRecordsAnUndeterminedShadowingCheck`
-  (unit, `internal/audit`, milliseconds), which holds the two keys and that `npm.publish` and
-  `package.published` declare them; npm's integration case holds the function's wiring, and the one call of
-  NuGet's and of Ansible Galaxy's port (`internal/formatdata/nuget/store.go`,
-  `internal/formatdata/ansible/local_store.go`) is run by no test of its own. As it stood:
+  formats), and the evidence record that holds no requirement of Ansible Galaxy (not looked into).** Closed:
+  the undetermined shadowing check of NuGet's and Ansible Galaxy's data ports, by 916e4cc52 (2026-11-23): the
+  data ports of npm, NuGet and Ansible Galaxy write `claim` and `shadowCheck` through the one function
+  `audit.PublishGuards` (`internal/audit/publish_guards.go`), held by
+  `TestR_REPO_048_APublishRecordsAnUndeterminedShadowingCheck` (unit, `internal/audit`, milliseconds), which
+  holds the two keys and that `npm.publish` and `package.published` declare them; npm's integration case holds
+  the function's wiring, and the one call of NuGet's and of Ansible Galaxy's port
+  (`internal/formatdata/nuget/store.go`, `internal/formatdata/ansible/local_store.go`) is run by no test of
+  its own. The virtual NuGet repository of the query budget's environment, by ff478f910 (2026-11-23,
+  Q-ARCH-700): `newEnvWith` of `test/integration/querybudget/env_test.go` creates a local and a remote NuGet
+  repository and a virtual one of npm alone, since no case asked a virtual NuGet repository; the area
+  `querybudget` passed in the landing's gates (run record, 16:44 and 16:58). As it stood:
   **Seen by the builder of the kit move's first package on 2026-11-23 and left for the batch:** the rule
   that a removal is refused whole when one of its files may not be deleted has no unit test (two integration
   tests of npm and NuGet hold it); the headers of the first answer of a cache miss have no test at the
@@ -627,15 +632,20 @@ records the recorder that tells such a stall apart).
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
 - **Partly closed; open: (2) the newest report that `tools/fetch-e2e-reports.sh` takes by the artifact's
-  creation time, which can be an older commit's (with the evidence record's step), and (3)
-  `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` under load (W4).** Closed: (1), by d9e79a585
+  creation time, which can be an older commit's (with the evidence record's step).** Closed: (1), by d9e79a585
   (2026-11-23): the Makefile reads `INTEGRATION_ALL`, the list of the integration packages, the first time a
   recipe expands it, and the checkout's image tag the same way; held by
   `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` (unit, `internal/tools/ciworkflows`, about
   3 s), which holds that `make -n cyclo` runs no `go list` and no `git` and that
   `make -n test-integration SHARD=a` lists the packages once; it passes. That the gating jobs without the
-  module cache no longer download the module graph is to be read from the first run after d9e79a585.
-  As it stood:
+  module cache no longer download the module graph is to be read from the first run after d9e79a585. (3), by
+  ff478f910 (2026-11-23, Q-ARCH-702): `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives`
+  (`internal/malware/gate/gate_test.go`) gives the gate a wait of an hour, since the wait's bound is the
+  subject of `TestR_MAL_014_TheWaitEndsAtItsBoundFromTheRequestsArrival` and not of this test, and waits 30 s
+  for the signal to wake the download; its neighbours' bounds only tell an answer at once from the whole wait.
+  The four `TestR_MAL_014_*` (unit, milliseconds) pass. The builder's proof: each repaired test passed with
+  one core under the background scheduling class at a host load of 15 to 20 (run record, 15:37); the original
+  failure was not reproduced. As it stood:
   **Seen by the builder of W6 on 2026-11-23, outside its package:** (1) the Makefile lists the integration
   packages with `go list` on every call of `make`, which downloads the modules in jobs without the module
   cache, the gating jobs `image`, `container-scan`, `malware-scan` and `release-tooling` among them (W7,
@@ -643,37 +653,22 @@ records the recorder that tells such a stall apart).
   the newest report by the artifact's creation time, which can be an older commit's (with the evidence
   record's step); (3) `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` failed once at a load
   of about 100 (5.01 s against the gate's wait of 5 s; alone it passed) (W4).
-- **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
+- **Partly closed; open: the web's `ci-editor-screens.spec.ts`, "the groups of a system mapping are chosen
+  from the search": what it waits for (W8).** Closed: `TestR_HA_011_UploadsDuringARolloutRestart`, by
+  ff478f910 (2026-11-23, Q-ARCH-702): the upload in flight is waited for until the replica's client listener
+  has the request (`spooling`, `Server.Active` of `internal/httpserver/server.go`) instead of a fixed 300 ms,
+  the cut upload's spool file until it is removed, and the case of the committing upload, the one that got
+  `EOF`, runs with a commit grace of a minute instead of the product's 4 s, since it stands for a commit the
+  shutdown does not cut and not for the grace's size (`test/integration/files/transfer_test.go`); in the table
+  "Tests that hold on a loaded host" of `docs/developer/build-and-test.md`. The area `files` passed in the
+  landing's gates (run record, 16:44, on the same commits with the contracts' commit among them). The
+  builder's proof: each repaired test passed with one core under the background scheduling class at a host
+  load of 15 to 20 (run record, 15:37); the original failure was not reproduced. As it stood:
+  **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
   (seen by the builder of W1, not repeated by it):** the web's `ci-editor-screens.spec.ts`, "the groups of
   a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
   and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
   during the rolling restart). To do (W4, W8): what each waits for.
-- **Three integration tests failed on a starved machine on 2026-11-23, about 09:52 to 09:57, at a load of
-  30 to 59 (four builders and the landing at their gates), and are not looked into:**
-  `TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache/volume+valkey` ("a warm run sent 1 requests for
-  artifacts or documents to the main installation", Valkey's probe timing out in the Bastion's log);
-  `TestR_BAS_021_R_BAS_023_R_BAS_024_EveryCallerIsAnsweredAsTheMainInstallationAnswers` (the Bastion
-  answered 503 `main_unreachable` where the main installation answered 404); `TestGCKilledAtRandomPoints`
-  of `blob` ("commit did not settle", on two trees in the same minutes, green at a load of 12 to 17). To do
-  (W4): for each, whether it waits for what it stands for or for a time a starved host does not keep; the
-  two of the Bastion compare answers while a link's health is in doubt, which a test can wait out.
-  `ColdAndWarmCache` failed a second time at 10:18 in its subtest `bucket` (a 504 in a warm run) at a load
-  of up to 133, which the landing's own gates helped to make: the lint ran beside two integration
-  streams; from 10:29 a landing runs its lint before its areas.
-- **`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` (area `identity`) failed once under load
-  (2026-11-23, about 09:25, host load 40 to 46, four builders at their gates):** 401 where 429 was
-  expected; alone it passed in 7 s. Not looked into. To do (W4): what it waits for and whether the
-  throttle's window can pass before the last attempt on a starved host.
-- **Three tests of the areas `repository` and `blob` failed at a host load of 107 (2026-11-23, 14:20 and
-  14:28, at a landing's gates):** `TestInvalidationAtScale` seeds a million entries (74 s) and its fold
-  met the statement timeout after 207 s with 775,000 entries expired; `TestInvalidationNegativeRetention`
-  and two cases of `TestGarbageCollection` failed in `migrate` with "context deadline exceeded" after
-  60 s. To do (W4): whether the million is what the first test asserts or a measurement that became a
-  test (the rule of the tests that stay runnable), and what bounds a migration of a test's own
-  database at 60 s when the template database exists to make that step cheap.
-- **`TestR_NUGET_004_AWorkerRecomputesTheSemVer2Flag…` (area `nuget`) timed out once waiting for a job
-  under load (2026-11-23, host load 42 to 46, at the gates of W5a's builder);** the area passed on the
-  rerun. Not looked into. To do (W4): with the other waits that a starved host breaks.
 - **`UI layout checks` is red in every run since the push of 14:34 (2026-11-23; Test and Release 45185325770,
   45187733127, 45191858474; job 137751995332 of the last): the audit log's table stands as blocks at wide
   widths when a key is long.** One screen of 464 fails, `admin-audit-event` as the administrator, in the
@@ -717,6 +712,19 @@ records the recorder that tells such a stall apart).
   landed at 16:58. **Open until the leg is green in the run of that push;** also seen and left: the rollout's output and the
   clean-up's write the same file `profile-bastion-upgrade.log`, so the artifact of a failed run holds
   the clean-up's.
+- **The drain of the roles missed its latency criterion in the scheduled nightly of 2026-11-23 (HA and
+  Performance 45158700734, job 137640102202; read on 2026-11-23 at 17:01).** Nothing failed in function:
+  ten evictions in 3 min 18 s, 72,786 pings all 200, 5,723 transfers without a wrong checksum, 473 `npm
+  ci` and 73 publishes without a failure, every job resumed. Red is R-HA-059 alone: the p99 of the npm
+  requests from the first eviction until two minutes after the last replacement was 1.306 s against a
+  warm-up of 534 ms (2.4 times, the bound is twice), and of the documents 579 ms against 230 ms (2.5
+  times). The run stood beside sixteen other legs of the kind cluster, seven of which sat in the stalled
+  build of the NuGet clients' image at that time (their only failed step; the entry of that stall is
+  closed by the profiles' package), and the run was cancelled at 12:42 by somebody else. Not looked
+  into: whether the ratio is the product's (a drained packages pod's last requests arrived up to 1.9 s
+  after its readiness flip) or the neighbours'. To do: the set `drain-roles` dispatched alone in a
+  pipeline window with no push beside it, with the two other single sets that wait for one; a ratio
+  that holds alone closes this as the neighbours' load, one that does not is a finding of the product.
 
 ### Product
 
@@ -743,11 +751,6 @@ records the recorder that tells such a stall apart).
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
-- `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` (integration, area `files`) failed once under host load with
-  "deadlock detected (SQLSTATE 40P01)" and passed alone (2026-11-20): it deadlocks on purpose and passes only when
-  PostgreSQL aborts the deploy, which is retried; under load the test's own DELETE starts waiting later than
-  `deadlock_timeout` after the deploy and is the one aborted. A test that depends on which of two transactions the
-  deadlock check picks; not fixed.
 - On the System page at 1024 and 390 px the header's time wraps when two replicas are lost (the layout check's
   "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
   breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
@@ -766,9 +769,6 @@ records the recorder that tells such a stall apart).
   The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
   connection or each pool's size, so a growth of the database's memory between two runs cannot be assigned
   (2026-11-20).
-- `TestJobs`, the case of 100 coalesced enqueues (integration, area `coordination`), made three executions where
-  one or two are allowed, on a loaded machine where enqueues 8 ms apart took 2.6 s; alone it passes (2026-11-21).
-  A test whose bound depends on the machine's speed.
 - The clients' cases for the download limits (five formats, end to end) wait a fixed three seconds for a new rule
   to reach every replica; a replica that takes longer counts the first document against the instance and the
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
@@ -922,6 +922,89 @@ the plan.
 
 **Of tests and tools:**
 
+- **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): each of the three waits for what it stands for.**
+  `TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache` raced a `metadata_revalidate_after` of 3 s of the real
+  clock between its cold and its warm run, so a slow warm run revalidated; the period is the default minute
+  now and the test moves the Bastion's clock past it (`b.clk.Advance`,
+  `test/integration/bastion/cache_test.go`). The harness gave every Bastion the short link bounds of a test
+  that cuts the link (connect 1 s, unreachable after 3 s, an answer within 10 s), which made a Bastion nobody
+  cut answer 503 `main_unreachable`
+  (`TestR_BAS_021_R_BAS_023_R_BAS_024_EveryCallerIsAnsweredAsTheMainInstallationAnswers`) and 504 (the subtest
+  `bucket` at 10:18); a Bastion keeps the product's defaults (5 s, 10 s, 30 s) unless its test sets
+  `bastionOptions{CutsLink: true}`, which the three outage tests do (`linkBounds` of
+  `test/integration/bastion/replica_test.go`). The Valkey probe's timeouts in the Bastion's log of that run
+  assert nothing in the test and were not looked into on their own. `TestGCKilledAtRandomPoints` lost a commit
+  that has to insert its row within `delete_settle/2` (75 ms) of its object write; the helper `garbage`
+  (`test/integration/blob/gc_test.go`) retries it as a client does, for at most two minutes, and names the
+  window when it gives up. In the table "Tests that hold on a loaded host" of
+  `docs/developer/build-and-test.md`; the cold and warm cache takes 5.2 s instead of 17.8 s (section 13 of
+  `docs/developer/test-cost.md`). The areas `bastion` and `blob` passed in the landing's gates (run record,
+  16:44, on the same commits with the contracts' commit among them; `bastion` again on the tree that landed,
+  run record, 16:58). The builder's proof: each repaired test passed with one core under the background
+  scheduling class at a host load of 15 to 20 (run record, 15:37); the original failure was not reproduced.
+  As it stood:
+  **Three integration tests failed on a starved machine on 2026-11-23, about 09:52 to 09:57, at a load of
+  30 to 59 (four builders and the landing at their gates), and are not looked into:**
+  `TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache/volume+valkey` ("a warm run sent 1 requests for
+  artifacts or documents to the main installation", Valkey's probe timing out in the Bastion's log);
+  `TestR_BAS_021_R_BAS_023_R_BAS_024_EveryCallerIsAnsweredAsTheMainInstallationAnswers` (the Bastion
+  answered 503 `main_unreachable` where the main installation answered 404); `TestGCKilledAtRandomPoints`
+  of `blob` ("commit did not settle", on two trees in the same minutes, green at a load of 12 to 17). To do
+  (W4): for each, whether it waits for what it stands for or for a time a starved host does not keep; the
+  two of the Bastion compare answers while a link's health is in doubt, which a test can wait out.
+  `ColdAndWarmCache` failed a second time at 10:18 in its subtest `bucket` (a 504 in a warm run) at a load
+  of up to 133, which the landing's own gates helped to make: the lint ran beside two integration
+  streams; from 10:29 a landing runs its lint before its areas.
+- **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): the throttle's window cannot pass before the last attempt,
+  since the limiters' clock stands still.** The budget of 9 a minute gave a token back every 6.7 s of the real
+  clock and the cluster's window turned once a minute, so a host whose requests took that long admitted a
+  credential the test expected throttled (401 for 429). The test stands for which requests share a budget, not
+  how fast it refills (which `internal/cluster`'s unit tests hold): the replicas' limiters run on a clock that
+  stands still (`replicaOpts.limiterNow` of `test/integration/identity/env_test.go`), Valkey gets 10 s for a
+  count instead of 500 ms, and a failure prints how often each replica decided on its own share
+  (`fallbackDecisions`); `TestR_AUTH_038_RevocationByValueCountsInTheFlowStartBudget` got the same. In the
+  table "Tests that hold on a loaded host" of `docs/developer/build-and-test.md`. The area `identity` passed
+  in the landing's gates (run record, 16:44, on the same commits with the contracts' commit among them). The
+  builder's proof: each repaired test passed with one core under the background scheduling class at a host
+  load of 15 to 20 (run record, 15:37); the original failure was not reproduced. As it stood:
+  **`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` (area `identity`) failed once under load
+  (2026-11-23, about 09:25, host load 40 to 46, four builders at their gates):** 401 where 429 was
+  expected; alone it passed in 7 s. Not looked into. To do (W4): what it waits for and whether the
+  throttle's window can pass before the last attempt on a starved host.
+- **Closed on 2026-11-23 by ff478f910 (Q-REPO-481, Q-ARCH-702): the million is a measurement, and the areas'
+  databases are clones of the migrated template.** `TestInvalidationAtScale` holds the invalidation's shape
+  with 2,000 entries and a fold batch of 250 (one insert and one count that touch no entry, every replica
+  finding every cached package invalid without a query, the fold in batches), 0.5 to 0.9 s; the million of
+  R-REPO-045's criterion and its one second were measured once with `QUADER_TEST_INVALIDATION_ENTRIES=1000000`
+  and written down (seed 15.8 s, the call 46 ms, the fold 70 s; section 12 of `docs/developer/test-cost.md`).
+  `TestInvalidationNegativeRetention` and `TestGarbageCollection` no longer migrate a database of their own
+  inside the minute: the areas `blob` and `repository` (and `identity`, `files`, `coordination`) clone the
+  template of the test process with `testenv.MigratedDatabase` (`test/integration/testenv/template.go`), 30 to
+  70 ms where a migration took 0.6 s idle. In the table "Tests that hold on a loaded host" of
+  `docs/developer/build-and-test.md`. The areas `repository` and `blob` passed in the landing's gates (run
+  record, 16:44, on the same commits with the contracts' commit among them; `repository` again on the tree
+  that landed, run record, 16:58). The builder's proof: each repaired test passed with one core under the
+  background scheduling class at a host load of 15 to 20 (run record, 15:37); the original failure was not
+  reproduced. As it stood:
+  **Three tests of the areas `repository` and `blob` failed at a host load of 107 (2026-11-23, 14:20 and
+  14:28, at a landing's gates):** `TestInvalidationAtScale` seeds a million entries (74 s) and its fold
+  met the statement timeout after 207 s with 775,000 entries expired; `TestInvalidationNegativeRetention`
+  and two cases of `TestGarbageCollection` failed in `migrate` with "context deadline exceeded" after
+  60 s. To do (W4): whether the million is what the first test asserts or a measurement that became a
+  test (the rule of the tests that stay runnable), and what bounds a migration of a test's own
+  database at 60 s when the template database exists to make that step cheap.
+- **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): the recomputation's runs get two minutes and a failure
+  lists them.** The test waited 30 s for a worker to start, enqueue and run one job; `awaitSemver2Runs` of
+  `test/integration/nuget/semver2_test.go` waits two minutes and, when they run out, names each run's state
+  and attempts, so a failure tells the worker's start from its pick-up or its work; `TestR_HA_022_*` of the
+  same file uses it too. In the table "Tests that hold on a loaded host" of
+  `docs/developer/build-and-test.md`. The area `nuget` passed in the landing's gates (run record, 16:44, on
+  the same commits with the contracts' commit among them). The builder's proof: each repaired test passed with
+  one core under the background scheduling class at a host load of 15 to 20 (run record, 15:37); the original
+  failure was not reproduced. As it stood:
+  **`TestR_NUGET_004_AWorkerRecomputesTheSemVer2Flag…` (area `nuget`) timed out once waiting for a job
+  under load (2026-11-23, host load 42 to 46, at the gates of W5a's builder);** the area passed on the
+  rerun. Not looked into. To do (W4): with the other waits that a starved host breaks.
 - **Closed on 2026-11-23 by e81e0f7c3: the journey of the security dashboard names the three entries under
   Security audit by their accessible names, and the leg is green.** The journey
   (`web/e2e/vuln/16-security-dashboard.spec.ts`) asserts three links and each one's accessible name in their
@@ -1446,6 +1529,33 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): the test's transaction treats a deadlock its own DELETE
+  lost as a client does.** The test's DELETE closes a cycle with the deploy, and PostgreSQL aborts the
+  deploy's session when the DELETE waits within `deadlock_timeout` of the deploy's wait, the DELETE's own
+  otherwise. A round whose DELETE is aborted (SQLSTATE 40P01) now rolls back, the deploy commits under the
+  folders that stayed, which holds the invariant, and the test starts a round with a new file; three rounds
+  pass for one that shows the deploy recreating the folders (`stor017Round` of
+  `test/integration/files/races_test.go`), and a test whose three DELETEs all lose fails with a sentence that
+  says so. In the table "Tests that hold on a loaded host" of `docs/developer/build-and-test.md`. The area
+  `files` passed in the landing's gates (run record, 16:44, on the same commits with the contracts' commit
+  among them). The builder's proof: each repaired test passed with one core under the background scheduling
+  class at a host load of 15 to 20 (run record, 15:37); the original failure was not reproduced. As it stood:
+  `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` (integration, area `files`) failed once under host load with
+  "deadlock detected (SQLSTATE 40P01)" and passed alone (2026-11-20): it deadlocks on purpose and passes only when
+  PostgreSQL aborts the deploy, which is retried; under load the test's own DELETE starts waiting later than
+  `deadlock_timeout` after the deploy and is the one aborted. A test that depends on which of two transactions the
+  deadlock check picks; not fixed.
+- **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): the coalesced rebuild lasts until the burst has returned,
+  not a fixed 1.5 s.** The handler of `it.coalesce` in `test/integration/coordination/jobs_test.go` waits for
+  `burstDone`, closed once every enqueue of the burst has returned, so a rebuild always outlasts the burst
+  (R-ARCH-016's criterion) however long the burst takes. In the table "Tests that hold on a loaded host" of
+  `docs/developer/build-and-test.md`. The area `coordination` passed in the landing's gates (run record,
+  16:44, on the same commits with the contracts' commit among them). The builder's proof: each repaired test
+  passed with one core under the background scheduling class at a host load of 15 to 20 (run record, 15:37);
+  the original failure was not reproduced. As it stood:
+  `TestJobs`, the case of 100 coalesced enqueues (integration, area `coordination`), made three executions where
+  one or two are allowed, on a loaded machine where enqueues 8 ms apart took 2.6 s; alone it passes (2026-11-21).
+  A test whose bound depends on the machine's speed.
 - **Closed on 2026-11-23 by 8dd62014e (R-API-010, Q-API-417, Q-API-428, Q-OCI-267): a page of a package's
   versions is one keyset query that reads no version past its limit, in every format.** A package that one
   repository of the scope holds is read a page at a time in the order of publication (`keysetPage` of
@@ -8527,6 +8637,47 @@ at six cores by themselves. It is a code push in the pipeline window, and this p
 under it; its run is the first of the scenario's repair (`e2e (bastion)`) and of the repaired waits
 in the shards. A writer marks what it closes. Next: the contracts when their builder is back, the
 evidence record's step by itself, the rest of W4, the screens' rest after its render run.
+**17:00, the evidence record's step is at the landing's gates** (two commits picked onto the `main` of
+16:58; one conflict, the generated index, regenerated with the checklist; no integration area, since
+no product code changes; a gate of its own checks that a hand-written record makes the documentation
+check fail). Read before it: the release job gains `actions: read` beside the workflow's `contents:
+read` and nothing else; the workflow starts on pushes to `main` only, and the branch's commit carries
+`[skip ci]`; the two new steps stand after the release and cannot fail the job.
+**17:01, the cancelled nightly of this noon is read** (the first reading of the pipeline window): of its
+eight failed legs seven failed in the build of the NuGet clients' image, the stall of the package
+archive that the profiles' package has bounded since; the eighth, the drain of the roles, missed its
+latency criterion with no failure of function (a new entry of section 8). **The three single sets
+(`upgrade-release`, the vulnerability performance set, `drain-roles`) are dispatched when no code push
+stands beside their load legs, which is not before the stacks of this evening are out: in the night's
+window.**
+**17:04, the gates of the evidence record's step end** (each exit 0 but the links: build, the four
+vets, the unit set, generate, the documentation tool's plain run, check and tests, the gate of the
+hand-written record, which the check refuses, cyclo, the workflow files' check, the release tooling's
+tests, the chart's lint, the web's lint and tests, the journeys' type check, the lint with 0 issues).
+**One broken link**, of a sentence that the documents' writer had added this afternoon to the
+specification's entry page and that pointed at the record's file on `main`; the sentence now points
+to the coverage page, which says where the record is (a documents' repair of the development agent,
+folded into the step's first commit; links 0 broken, check and the tool's tests pass). **17:05, the
+marking of what the landing of 16:58 closed is applied** (a writer's script; eight unit tests it
+names ran, the integration areas are cited from the landing's gates): six entries of section 8 move
+to the list Closed (the three tests of the Bastion's cache and the garbage collection, the throttle
+across three replicas, the three of `repository` and `blob`, NuGet's job wait, the deploy's deadlock,
+the coalesced rebuild), three stay partly open for what the landing did not touch (the web's person
+search test, the reports chosen by creation time, the kit move's test tiers). Every closing of a load
+failure says that the original failure was not reproduced. **Open now: 44 entries in section 8 and 19
+in section 12** (104 and 24 in the lists Closed).
+**17:06, the evidence record's step lands** (two commits on the `main` of 16:58, before that push's
+release was cut, on purpose: its run is the tip's and cuts that release through the changed release
+job, which is the proof that a release still goes out; a release it held would be seen within the
+window and cost two repairs of tests and scripts a few minutes. This plan's commit lies under it;
+section 6 says from now that a release moves `main` by no commit and where the record is). **What its first runs have to show, read by the development agent in this window:** (1)
+the evidence job runs beside a red leg and its summary carries the lines `carried:`, `not whole:`,
+`too old:`; (2) the first run says that the branch holds no record yet, later ones what is newly
+proven and no longer proven; (3) the first publish creates the branch (`published to coverage:` in
+the release job's log; a ruleset that refuses the App would show as a warning); (4) the release
+itself goes out and the image's and chart's workflow starts; (5) the README's badge renders, invalid
+until the first publish; (6) after npm's leg has run on the step's second commit the published
+record lacks R-NPM-018, R-NPM-021 and R-NPM-037 and holds the series of Ansible Galaxy.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
