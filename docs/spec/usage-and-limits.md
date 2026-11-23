@@ -1376,6 +1376,8 @@ Priority: **MVP** · Covers: BEYOND-030
   - `quader_limits_mode` (gauge, 1 in `enforce`, 0 in `audit`);
   - `quader_limits_index_epoch` (gauge): the epoch of the change area `limits` up to which the replica's index holds every change,
     0 before its first load ([Q-LIM-111](#q-lim-111--a-replica-reports-the-epoch-of-the-limits-it-decides-with));
+  - `quader_limits_flushes_total`: the rounds of the replica's charge buffer (R-LIM-017) that ended, also a round with nothing to send
+    ([Q-LIM-112](#q-lim-112--a-replica-counts-the-rounds-of-its-charge-buffer));
   - `quader_limits_usage_buffer_keys` (gauge), `quader_limits_usage_flush_failures_total`, `quader_limits_usage_overflow_total`;
   - the limiter's fallback as `quader_ratelimit_fallback{limiter="limits"}`.
 
@@ -3107,6 +3109,30 @@ it compiled. The development agent would revisit it if the index ever loads from
 (`Snapshot.Epoch`), `limitsIndex.load` and `newLimitsIndexEpoch` in [wire_limits.go](../../internal/app/wire_limits.go); the waits
 `awaitLimitsIndex` in [limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go) and `awaitIndex` in
 [limits_test.go](../../test/integration/limits/limits_test.go).
+
+### Q-LIM-112 · A replica counts the rounds of its charge buffer
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the bytes of a response reach the hour's window at the next round of the replica's charge buffer (R-LIM-017,
+`limits.flush_interval`, 1 s), and nothing told from outside when that round had ended. The clients' cases of the five formats
+(`cachedBytesPerHour` 1 after a document) waited a fixed two seconds after the document: a runner on which a round took longer let the
+archive through where the case expected the 429, and a fast one waited for nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A counter `quader_limits_flushes_total` of the rounds that ended; a test reads it on every serving replica after the request and waits for two more rounds (chosen) | One counter, raised at the end of every round | The wait is the round's, whatever the runner's speed; the second round began after the first ended, so it began after the request's bytes were counted | A counter an operator rarely reads, though a replica whose counter stands still has a stuck buffer |
+| (b) A gauge of the time the last round began | One gauge | One round less to wait | Compares the replica's clock with the test's |
+| (c) Read the window in Valkey | No product change | Exact | The key is a hash of the budget key and the figure; a test would rebuild Quader's key scheme |
+
+**Choice:** (a). **Rationale:** a count of what happened needs no clock and no knowledge of the keys; the cost is one counter. The
+development agent would revisit it if a round were ever split across goroutines, which would make "ended" mean less than it says.
+
+**Applied in the spec:** R-LIM-030 (the metric). Code: `Engine.Flush` in [flush.go](../../internal/limits/flush.go),
+[metrics.go](../../internal/limits/metrics.go); the wait `awaitFlush` in
+[limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go). Test: `TestR_LIM_030_EveryRoundOfTheChargeBufferThatEndedIsCounted`
+([metrics_test.go](../../internal/limits/metrics_test.go)).
+
 ### Q-LIM-291 · A refusal names one wait, in the unit its text names it in
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the

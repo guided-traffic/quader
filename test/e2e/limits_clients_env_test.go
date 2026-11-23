@@ -65,6 +65,26 @@ func awaitLimitsIndex(t testing.TB) {
 	t.Logf("limits: epoch %s on all %d serving replicas after %s", epoch, len(pods), time.Since(start).Round(time.Millisecond))
 }
 
+// awaitFlush waits until every serving replica has ended two rounds of its charge buffer since the call (quader_limits_flushes_total,
+// Q-LIM-112): the bytes of a request answered before the call are then in the hour's window, whichever replica served it (R-LIM-017).
+// The first of the two rounds may have begun before the request's bytes were counted; the second began after the first ended. A fixed
+// two seconds stood here before: a runner on which a round took longer outran it, and on a fast one it was waited for nothing.
+func awaitFlush(t testing.TB) {
+	t.Helper()
+	start := time.Now()
+	pods := readyServingPods(t)
+	since := make(map[string]float64, len(pods))
+	for _, pod := range pods {
+		since[pod] = metricsOf(t, pod)["quader_limits_flushes_total"]
+	}
+	for _, pod := range pods {
+		waitFor(t, pod+" to end two rounds of its charge buffer", 30*time.Second, 100*time.Millisecond, func() bool {
+			return metricsOf(t, pod)["quader_limits_flushes_total"] >= since[pod]+2
+		})
+	}
+	t.Logf("limits: two rounds of the charge buffer on all %d serving replicas after %s", len(pods), time.Since(start).Round(time.Millisecond))
+}
+
 // awaitPathOnEveryReplica waits until every packages replica answers a read of the path with the token with 200: the repository and the
 // grant are known there (R-AUTHZ-028).
 func awaitPathOnEveryReplica(t testing.TB, token, path string) {

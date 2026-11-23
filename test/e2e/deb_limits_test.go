@@ -50,7 +50,7 @@ func TestDebLimits_R_LIM_020_WhatAptShowsAtARefusal(t *testing.T) {
 		_, c := repo(t, "bytes", map[string]any{"cachedBytesPerHour": 1})
 		// the indexes count their bytes but are never refused by a byte figure (R-LIM-007): after them the hour is used up
 		c.mustUpdate()
-		time.Sleep(2 * time.Second) // the bytes reach the window at the next flush
+		awaitFlush(t) // the bytes reach the window at the next round of the charge buffer
 		out, code, d := run(c, "cd /tmp && apt-get -o Acquire::Retries::Delay::Maximum=1 download "+name)
 		noteRefusal(t, out, clientRefusal{
 			Client: "apt-get download (APT 3.0)", Figure: "cachedBytesPerHour", Printed: firstLineWith(out, "E: Failed to fetch"),

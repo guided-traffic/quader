@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 )
 
 // npmRetried matches the HTTP log line npm writes for each attempt answered 429 (--loglevel http): "attempt 1 failed with 429".
@@ -65,7 +64,7 @@ func TestNPMLimits_R_LIM_020_WhatNpmShowsAtARefusal(t *testing.T) {
 		key := repo(t, "bytes", map[string]any{"cachedBytesPerHour": 1})
 		// the package document counts its bytes but is never refused by a byte figure (R-LIM-007): after it the hour is used up
 		newAPI(t).withToken(c.token).get(npmAddr(key)+"/"+name).want(t, "the package document", 200)
-		time.Sleep(2 * time.Second) // the bytes reach the window at the next flush
+		awaitFlush(t) // the bytes reach the window at the next round of the charge buffer
 		r := install(t, key)
 		attempts := len(npmRetried.FindAllString(r.Out, -1))
 		noteRefusal(t, r.Out, clientRefusal{

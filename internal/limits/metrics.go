@@ -12,6 +12,8 @@ type Metrics struct {
 	upstreamC *prometheus.CounterVec
 	blocks    *prometheus.CounterVec
 	mode      prometheus.Gauge
+	// flushes counts the rounds of the charge buffer that ended (Q-LIM-112): what a test waits for instead of a time.
+	flushes prometheus.Counter
 }
 
 // NewMetrics creates the families and registers them on reg; a nil reg registers nothing.
@@ -37,9 +39,13 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Name: "quader_limits_mode",
 			Help: "1 while the download limits are in enforce, 0 in audit.",
 		}),
+		flushes: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "quader_limits_flushes_total",
+			Help: "Rounds of the replica's charge buffer that ended: the bytes and requests counted before a round began are in Valkey, or on the replica's share while Valkey cannot be used, once it ends.",
+		}),
 	}
 	if reg != nil {
-		for _, c := range []prometheus.Collector{m.decisions, m.bytesC, m.upstreamC, m.blocks, m.mode} {
+		for _, c := range []prometheus.Collector{m.decisions, m.bytesC, m.upstreamC, m.blocks, m.mode, m.flushes} {
 			_ = reg.Register(c)
 		}
 	}
@@ -67,6 +73,12 @@ func (m *Metrics) bytes(kind SubjectKind, cached, uncached int64) {
 func (m *Metrics) upstream(kind SubjectKind) {
 	if m != nil {
 		m.upstreamC.WithLabelValues(kind.APIName()).Inc()
+	}
+}
+
+func (m *Metrics) flushed() {
+	if m != nil {
+		m.flushes.Inc()
 	}
 }
 

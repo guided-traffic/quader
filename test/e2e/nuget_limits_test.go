@@ -60,7 +60,7 @@ func TestNuGetLimits_R_LIM_020_WhatDotnetShowsAtARefusal(t *testing.T) {
 		key := repo(t, "bytes", map[string]any{"cachedBytesPerHour": 1})
 		// the version list counts its bytes but is never refused by a byte figure (R-LIM-007): after it the hour is used up
 		newAPI(t).withToken(fx.token).get(nugetAddr(key)+"/v3/flatcontainer/"+strings.ToLower(id)+"/index.json").want(t, "the version list", 200)
-		time.Sleep(2 * time.Second) // the bytes reach the window at the next flush
+		awaitFlush(t) // the bytes reach the window at the next round of the charge buffer
 		out, code, d := restore(t, key)
 		noteRefusal(t, out, clientRefusal{
 			Client: "dotnet restore", Figure: "cachedBytesPerHour", Printed: firstLineWith(out, "429"),

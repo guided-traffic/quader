@@ -58,7 +58,7 @@ func TestOCILimits_R_LIM_020_WhatDockerAndPodmanShowAtARefusal(t *testing.T) {
 		key := repo(t, "bytes", map[string]any{"cachedBytesPerHour": 1})
 		// the manifest of a tag is a document (R-LIM-007): its bytes count, and after it the hour is used up
 		fx.registry(t).do(http.MethodGet, "/v2/"+repoRef(key)+"/tiny/manifests/1", nil, "Accept", ociManifestAccept).want(t, "the manifest", 200)
-		time.Sleep(2 * time.Second) // the bytes reach the window at the next flush
+		awaitFlush(t) // the bytes reach the window at the next round of the charge buffer
 		if out, code := pull(t, ociDocker, key, "cachedBytesPerHour"); code != 1 || !strings.Contains(out, "error from registry: The download limit of 1 bytes per hour is used up") {
 			t.Errorf("docker pull with the hour's bytes used up exited %d, want 1 with the limit's message:\n%s", code, tailLines(out, 20))
 		}

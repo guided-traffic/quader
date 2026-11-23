@@ -51,7 +51,7 @@ func TestAnsibleLimits_R_LIM_020_WhatAnsibleGalaxyShowsAtARefusal(t *testing.T) 
 		// install's own documents cannot stand in for it: the archive follows them within tens of milliseconds, and whether a
 		// replica flushed their bytes in between (R-LIM-018) decides whether the archive is admitted
 		fx.registry(t).get(ansibleRepoPath(key)+"/v3/collections/"+col.ns+"/"+col.name+"/versions/").want(t, "the version list", 200)
-		time.Sleep(2 * time.Second) // the bytes reach the window at the next flush
+		awaitFlush(t) // the bytes reach the window at the next round of the charge buffer
 		out, code, d := install(c, key)
 		noteRefusal(t, out, clientRefusal{
 			Client: "ansible-galaxy collection install (2.21)", Figure: "cachedBytesPerHour", Printed: firstLineWith(out, "[ERROR]"),

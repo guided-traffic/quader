@@ -152,6 +152,9 @@ func (e *Engine) Flush(ctx context.Context) {
 		}
 	}
 	e.flushCounters(ctx, now, keys, ceilings, drops, renews, paced)
+	// The round has ended: what was counted before it began is where its round put it (Q-LIM-112). A test that waits for the bytes
+	// of a request reads the counter after the request and waits for two more rounds, since the first may have begun before.
+	e.m.flushed()
 }
 
 // upstreamOf takes the upstream requests step 9a counted for the charge since the last flush.
