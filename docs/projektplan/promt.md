@@ -441,15 +441,15 @@ order is what a user or an operator meets first. The state is kept here.
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | landed at 11:51 (twenty-two commits, the storage walk's race among them) |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
-| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:43 (six commits); a second step is in work: the request's statement timeout that no request uses, the upload spool's unflushed copy, a write failure reported as a malformed request, the command `quader admin secrets status`, the malware rows of the audit events' table |
+| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); a second step is in work: the request's statement timeout that no request uses, the upload spool's unflushed copy, a write failure reported as a malformed request, the command `quader admin secrets status`, the malware rows of the audit events' table |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release follows as a step of its own |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | built (five commits), back at 12:33: NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. It lands next, after a rebase onto the generated index; a second step follows (the version list that reads every row for every page, in every format; the shadowing check that OCI and Debian do not record) |
-| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:43 (two commits); a second step is in work since 11:58: collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
+| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); a second step is in work since 11:58: collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | in work since 11:55; what a person meets on a page first, to land ahead |
-| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:43 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left (section 8) goes to a writer |
+| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left is built by a writer (one commit, back at 12:57) and lands with the next push |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
@@ -520,7 +520,15 @@ records the recorder that tells such a stall apart).
   20 (H-795 below).
   Read on 2026-11-23: the upload probes' 502 of the drain legs of 2026-11-19 to 22 are no stall but the cut
   `test/e2e/drain_transfers_test.go` makes on purpose (H-795, in the list Closed).
-- **F-121 · The nightly performance run misses V-7b on a loaded runner** (runs 42571414393 with p99 314.7 ms and 42595813923 with
+- **Partly closed; open: the one run itself, a dispatch of the set alone in a pipeline window with no push
+  beside it (decision 3 of the reading of 2026-11-23), and its reading against V-7b.** Closed: what that run
+  records, by 1b2e20ffb (2026-11-23): the notes of V-7a and V-7b in `perf-vuln.json` name the five slowest
+  requests of each list with their start, time and `X-Request-Id`, the CPU stall of the job's cgroup and the
+  garbage collections that ended while each ran, and the note of V-7a holds the autovacuum's counters of
+  `vuln_finding` before and after the lists (`perf/vuln/perf_test.go`; how to read them is "Reading a slow V-7
+  on a runner" in `docs/developer/vulnerabilities.md`). The package vets with the tag `integration`; what it
+  writes is first seen in that run. As it stood:
+  **F-121 · The nightly performance run misses V-7b on a loaded runner** (runs 42571414393 with p99 314.7 ms and 42595813923 with
   610.957 ms against 300 ms; V-7a 17 to 60 ms in the same runs; both shared the nodes with other kind legs). Not a regression of the
   path that [Q-VULN-81](../spec/vulnerability-scanning.md) decided: on the integration stack the run's 100 requests give a p99 of
   76 ms, every request runs exactly two statements, and the test now asserts them, so a regression of the path fails before a
@@ -534,10 +542,13 @@ records the recorder that tells such a stall apart).
 - `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right
   after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally).
 - **Partly closed; open: R-ARCH-034's count of held requests by the clock (decision 4 of the reading of
-  2026-11-23: counted by the limiter's metric; package W8) and the 503 of `TestR_DEB_010_DelayBound` (package
-  W5b).** Closed: `TestE14Drain`'s unready pod with Valkey `circuit_open`, by the statement on the stall
-  family: its run, of 2026-11-10 or earlier, predates every recorder of the evidence ("Reading a stall" of
-  `docs/developer/e2e.md`). As it stood:
+  2026-11-23: counted by the limiter's metric; package W8), and the cause of the 503 of
+  `TestR_DEB_010_DelayBound`, which its next recurrence names.** Closed: `TestE14Drain`'s unready pod with
+  Valkey `circuit_open`, by the statement on the stall family: its run, of 2026-11-10 or earlier, predates
+  every recorder of the evidence ("Reading a stall" of `docs/developer/e2e.md`). The 503's diagnostic, by
+  039f8fa2b (2026-11-23): a refused upload of `TestR_DEB_010_DelayBound`
+  (`test/integration/deblocal/delay_test.go`) prints the replica's log lines of its request ID, so a
+  recurrence of `database_unavailable` tells an exhausted pool from a fault of the database. As it stood:
   `TestE14Drain` (a packages pod unready for 5 s at the end, Valkey `circuit_open`), R-ARCH-034 (26 held against 24, once),
   `TestR_DEB_010_DelayBound` (503 `database_unavailable`, once in nightly 42677190569; the suspicion on the retry budget of Q-HA-259
   is unverified).
@@ -606,7 +617,17 @@ records the recorder that tells such a stall apart).
   answers of kind `package` since 3a194e987 or an answer ended after the profile's 30 s, which a trace of
   `quader_bastion_answers_total{result="hit"}` by kind within 30 s of a lookup on the development profile
   decides.
-- **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
+- **Partly closed; open: the stale location notes of the German translation file (package W10b, with the
+  extraction check).** Closed: the index's rows, by 240a446fb (2026-11-23): the rows of `docs/decisions.md`
+  are generated from every question block, Q-SIG-145 to Q-SIG-239 among them, and
+  `go run ./internal/tools/coverage -check` fails on a question block without a row, in the step "Rules and
+  the committed pages" of the job `coverage generator (links and rules)`, held by `TestDecisionsIndex`,
+  `TestDecisionsCheck` and `TestDecisionsIndexOfTheRealDocs` (unit, `internal/tools/coverage`, 9 s); the check
+  passes on eadaf0bc1. The double row and the README, by eadaf0bc1 (2026-11-23):
+  `docs/spec/operations-and-observability.md` keeps only the built row of `signature.download_refused`, and
+  the README's naming tables name every audit event and metric family of the signatures and of the signing
+  identity. As it stood:
+  **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
   `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
   tables held no event and no metric of the signatures before the gate's two were added; the location notes of
@@ -682,7 +703,15 @@ records the recorder that tells such a stall apart).
   (W7): a timeout and a retry of the fetches in the images' builds. **The leg `e2e (vuln)` of the same
   run ended the same way three minutes later** (the build of its NuGet clients image fetched the
   packages of the Mono runtime from the same archive until the step's limit). Both legs were started
-  again at 12:30, the first of three re-runs.
+  again at 12:30, the first of three re-runs; `e2e (vuln)` passed in it before 12:50. **The same build
+  cost two legs of the run of W6's push** (45159763759: `e2e (nuget)` and `e2e (ci)`, each in "Load or
+  build the NuGet clients image", 12:27 and 12:28; started again at 12:50, the first of three), **and
+  eight legs of the scheduled nightly failed in the same quarter of an hour** (45158700734, 12:20 to
+  12:24: `ci-ha`, `bastion-long`, `nuget`, `vuln-pooler`, `drain-roles`, `vuln`, `vuln-long`, `upgrade`;
+  their logs are not read yet). The archive answered slowly from about 11:45 to 12:30. One slow public
+  mirror cost at least four legs of two pushes: the bound and the retry of W7 come first in that
+  package, and with them the question why a leg builds an image that another leg of the same run builds
+  beside it.
 
 ### Product
 
@@ -714,44 +743,35 @@ records the recorder that tells such a stall apart).
   (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
   updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
   analyser's move, left.)
-- The developer page on secrets (`docs/developer/secrets.md`) still lists the task `secrets-reencrypt` under what is
-  deliberately not there and calls the API's steps work of a later milestone; both exist (found on 2026-11-21 by the builder
-  that repaired the task's test, left).
 - The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
-- The image scanner's spool writes of large layers may be killed for memory by dirty pages of the file cache, as its
-  database's loader was before it flushed every 32 MiB (not measured; found on 2026-11-21 by the builder of the
-  analyser's move, left). A scanner's row of a pod removed in a simultaneous rollout stayed "ready" until it was pruned
-  (the same builder, not looked into).
-- The decisions' index (`docs/decisions.md`) has no rows for the decisions of the signatures' second stage (Q-SIG-53 to
-  Q-SIG-74); found on 2026-11-21 by the planner of the third stage, left. Nor for the signing identity's (Q-SIG-145 to
-  Q-SIG-155; found the same day by the gate's builder, left). (The index also stops at Q-UI-844, an older entry of this
-  list.)
-- A ClamAV inside the cluster that names the definitions' endpoint by a host the endpoint does not accept gets 421, which
-  `freshclam` counts as a failed attempt without a cool-down; the client setup does not say which host to use from inside the
-  cluster (found on 2026-11-21 by the builder of the ClamAV import's measurement, left).
 - The NuGet README route is still the P1 stub (R-NUGET-024): it answers 501 behind the wiki gate.
-- No integration test checks the 401 challenge of Debian or of the `formats.Base` formats without a credential, and no real apt
+- **Partly closed; open: the challenge of the formats built on `formats.Base` without a credential, which the
+  kit's case of every format's challenge holds in package W5a, not on `main`.** Closed: Debian, by 039f8fa2b
+  (2026-11-23): `TestR_DEB_027_TheGateAndTheMemberPaths` (integration, area `debvirtual`) asserts 401 with
+  `WWW-Authenticate: Basic realm="quader"` for an anonymous request to a private Debian repository, and
+  `docs/developer/deb.md` ("What is built and what is not") says why no real apt client is run without a
+  credential: the set `deb` runs `apt-get` with an `auth.conf.d` file, and the answer a client without one
+  gets is the one asserted. As it stood:
+  No integration test checks the 401 challenge of Debian or of the `formats.Base` formats without a credential, and no real apt
   client was run against it.
-- No code counts the metrics `quader_deb_remote_parse_total` (R-DEB-033) and `quader_oci_upstream_token_requests_total`
+- **Partly closed; open: `quader_oci_upstream_token_requests_total` (R-OCI-034), which package W5a counts in
+  commits not on `main`; `docs/developer/oci.md` still says so.** Closed: Debian's, by 039f8fa2b (2026-11-23):
+  each run of `deb-remote-parse` counts `parsed`, `skipped` or `failed` in `quader_deb_remote_parse_total`
+  through `RemoteJobs.CountParse` (`internal/formatdata/deb/remote_parse.go`), registered in
+  `internal/app/wire_deb_remote.go`; held by
+  `TestR_DEB_023_TheRowsOfAnIndexAreParsedAfterAnUpdateAndReplacedWhenItChanges` (the metric after a parse)
+  and `TestR_DEB_023_AnIndexOverTheBoundFailsItsRunAndTheEarlierRowsStay` (skipped, then failed), both
+  integration, area `debremote`; `docs/developer/deb.md` no longer lists the metric as not built. As it stood:
+  No code counts the metrics `quader_deb_remote_parse_total` (R-DEB-033) and `quader_oci_upstream_token_requests_total`
   (R-OCI-034); [deb.md](../developer/deb.md) and [oci.md](../developer/oci.md) say so.
-- **Partly closed; open: H-851 (the core's archive bounds) and the untested hold of a publish's base64 body to
-  the system upload limit before `ansible.max_archive_bytes` (Q-ANS-53), both of package W5b.** Closed: H-861
-  and H-863, which stay as written by decision 13 of the reading of 2026-11-23; why each stays is in its gap's
-  text in `docs/spec/formats/ansible.md`. As it stood:
-  Ansible Galaxy, open gaps on [formats/ansible.md](../spec/formats/ansible.md) and its security pages: H-861 (digest conflicts
-  counted per merge), H-863 (a role lookup is not merged across members), H-851 (the core's archive bounds). The base64 body of a
-  publish is held to the system upload limit before `ansible.max_archive_bytes` sees the decoded bytes (Q-ANS-53), not tested.
-- `api-and-ui.md` has Q-API-260 to 263 after its first `## What this does not cover` and a second such heading after them.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 - `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` (integration, area `files`) failed once under host load with
   "deadlock detected (SQLSTATE 40P01)" and passed alone (2026-11-20): it deadlocks on purpose and passes only when
   PostgreSQL aborts the deploy, which is retried; under load the test's own DELETE starts waiting later than
   `deadlock_timeout` after the deploy and is the one aborted. A test that depends on which of two transactions the
   deadlock check picks; not fixed.
-- The settings answer of the malware scanning counts the unchecked blobs over all items at every read
-  (`backlog.unchecked`), costly on a large installation (its builder's note, 2026-11-20; not measured).
 - On the System page at 1024 and 390 px the header's time wraps when two replicas are lost (the layout check's
   "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
   breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
@@ -803,13 +823,6 @@ records the recorder that tells such a stall apart).
   Not fixed: either the task is idle while its directory was never filled and no scanner is
   named, or the UI profile switches the scanning's database task off as it does for the image database
   (Q-VULN-195).
-- **The index of decisions in `docs/decisions.md` stops at Q-UI-844;** the UI decisions taken since are in the
-  specification but not in the index (noticed on 2026-11-21; not fixed).
-- **A repository enabled again can lose one of five scan attempts** (the scanner role, not on `main` yet): for about a
-  second a replica's grant index still shows it disabled, the scanner's pull is refused and the scan ends
-  `layer_missing`; retried after a minute, never read as clean. Written into R-VULN-034 by its builder. A fix is named
-  and not built: the scan listener answers a system subject on a disabled repository with a code of its own, and the
-  scanner puts that off without an attempt.
 
 - **Seen by the builder of the screens' first round on its renders (2026-11-23), for the second round
   (W9):** (1) the audit log is a table or blocks at 1440 by what its rows hold (it needs 1,123 px and has
@@ -880,6 +893,11 @@ records the recorder that tells such a stall apart).
   every row (Q-OCI-256); H-829 stays open with these numbers, which are in `docs/developer/oci.md`. To
   do (the second step of W5a): the keyset statement of the version list, for every format; then the
   lookup by id; then the list's estimate; the measurement again after each.
+- **The evidence record lists npm's search as implemented and the route answers that it is not (found on
+  2026-11-23 by the inventory of T-24).** `docs/coverage/implemented.txt` holds R-NPM-037; `-/v1/search` is
+  one of the deferred paths of R-NPM-043 in `internal/formats/npm/routes.go`. Not read: which test makes
+  the record say so. To do: the package of T-24 that brings search (R3) builds the route or the record
+  is corrected by what marks a requirement as deferred; until then the entry stays.
 - **OCI and Debian record no undetermined shadowing check (seen on 2026-11-23 by the builder of W5a).**
   R-REPO-048 requires `shadowCheck: undetermined` on the publish event of every format; npm, NuGet and
   Ansible Galaxy record it through one function in W5a's commits, the publish events of the two others
@@ -930,7 +948,7 @@ the plan.
   agent applied the research's patch as one commit in a landing worktree of its own, since no builder
   had a free place; its gates were exit 0 (the three tests 30 times with the race detector, the
   Bastion's packages with it, the whole unit set, the lint). What the pipeline still has to show: a
-  green unit job on the push of 12:43. As it stood:
+  green unit job on the push of 12:45. As it stood:
   **A unit test of the Bastion's engine made the gating job red and a release was skipped (2026-11-23,
   12:13; Test and Release 45160021052, the push of the screens' first round, which touched nothing of the
   Bastion).** `TestR_BAS_075_ADirectReadThatFails/a_replaced_plain_object_cuts_every_caller_and_marks_the_key`
@@ -1280,6 +1298,98 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by a9b6cbafd: an image of a repository just enabled is put off a minute and loses no
+  scan attempt.** The scan listener's refusal that the switch alone causes names `repository_disabled`
+  (`internal/authz/errors.go`, `system.go`), the scanner answers it 409 `repository_disabled`
+  (`internal/vuln/scanner/pull.go`) and the worker puts the scan off without an attempt
+  (`internal/vuln/imagescan/client.go`; Q-VULN-226, R-VULN-034). Held by unit cases of `internal/authz`,
+  `internal/vuln/scanner`, `internal/vuln/imagescan` and `internal/formats/oci`, and by
+  `TestQ_VULN_226_AScanRefusedForARepositoryTheListenerHoldsDisabledSpendsNoAttempt` (integration, area
+  `vulnimage`, 3.3 s), which ended `failed 1 layer_missing` before the change. As it stood:
+  **A repository enabled again can lose one of five scan attempts** (the scanner role, not on `main` yet): for about a
+  second a replica's grant index still shows it disabled, the scanner's pull is refused and the scan ends
+  `layer_missing`; retried after a minute, never read as clean. Written into R-VULN-034 by its builder. A fix is named
+  and not built: the scan listener answers a system subject on a disabled repository with a code of its own, and the
+  scanner puts that off without an attempt.
+- **Closed on 2026-11-23 by a6339c84b and a reading of the scanners' list: every large write of the scanning
+  units is flushed every 32 MiB, and the row of a removed scanner pod reads Lost, not ready.** The image
+  scanner's layers and analyses, the analyser's database loader, ClamAV's signature loader and the updater's
+  seed write through `syncwrite.Copy` (`internal/syncwrite`, Q-VULN-225), held by `TestCopy` (unit, 0.6 s); no
+  kill for dirty pages was measured before or after. A row of `scanner_replica` whose heartbeat is older than
+  `system.heartbeat_stale_after` (30 s) is listed as lost (`ListScannerReplicas` in
+  `internal/meta/postgres/queries/cluster.sql`), the screens show it as Lost and count it out
+  (`web/src/app/shared/scanner/scanner-replicas.ts`, `scanner-model.ts`), and
+  `TestR_OPS_048_TheRowsOfTheScannerReplicas` (integration, area `coordination`) holds the list; the defect as
+  written does not exist. As it stood:
+  The image scanner's spool writes of large layers may be killed for memory by dirty pages of the file cache, as its
+  database's loader was before it flushed every 32 MiB (not measured; found on 2026-11-21 by the builder of the
+  analyser's move, left). A scanner's row of a pod removed in a simultaneous rollout stayed "ready" until it was pruned
+  (the same builder, not looked into).
+- **Closed on 2026-11-23 by c478247b5: the backlog of the malware settings is measured once and nothing is
+  built.** On the integration stack with 1,000,000 file items a read of `MalwareBacklog` took 240 to 272 ms,
+  two parallel sequential scans and a hash anti-join that spills; the slow-query mark of 500 ms is reached at
+  about 2,000,000 items and the statement timeout at about 120,000,000 (`docs/developer/malware.md`). The gap
+  H-1660 of `docs/spec/malware-scanning.md` says what makes it real and that
+  `quader_db_slow_queries_total{query="MalwareBacklog"}` shows it; a measurement, not a test, by the rule
+  "Tests stay runnable". As it stood:
+  The settings answer of the malware scanning counts the unchecked blobs over all items at every read
+  (`backlog.unchecked`), costly on a large installation (its builder's note, 2026-11-20; not measured).
+- **Closed on 2026-11-23 by 2aee8d1eb: H-851 stays by a checked statement, and the archive limit of a base64
+  body is tested.** H-851 in `docs/spec/formats/ansible.md` says why the core's bounds are no defect of the
+  format: they are R-ARCH-028's for every format that reads an archive, and `untrusted.Limits.Tighten` lowers
+  a bound and never raises one (`TestR_ARCH_028_DefaultLimitsAndTighten`, unit). The entry's premise on
+  Q-ANS-53 was wrong: `ansible.max_archive_bytes` and the repository's upload limit are one limit of the
+  spool, the smaller of the two, and both count the decoded bytes (`Ingest.Spool` of
+  `internal/formathost/ingest.go`); `TestQ_ANS_53_TheArchiveLimitCountsTheDecodedBytesOfABase64Part` (unit,
+  `internal/formats/ansible`) holds a limit that lies between the archive and its encoded text, and the
+  option's row of Q-ANS-53 says so. Open until now: H-851 (the core's archive bounds) and the untested hold of
+  a publish's base64 body to the system upload limit before `ansible.max_archive_bytes` (Q-ANS-53), both of
+  package W5b. Closed before: H-861 and H-863, which stay as written by decision 13 of the reading of
+  2026-11-23; why each stays is in its gap's text in `docs/spec/formats/ansible.md`. As it stood:
+  Ansible Galaxy, open gaps on [formats/ansible.md](../spec/formats/ansible.md) and its security pages: H-861 (digest conflicts
+  counted per merge), H-863 (a role lookup is not merged across members), H-851 (the core's archive bounds). The base64 body of a
+  publish is held to the system upload limit before `ansible.max_archive_bytes` sees the decoded bytes (Q-ANS-53), not tested.
+- **Closed on 2026-11-23 by eadaf0bc1: `docs/developer/secrets.md` describes the canary table, the start-up
+  and restore checks, `ringsCompatible` and the task `secrets-reencrypt` as built.** Its list of what is
+  deliberately not there keeps only the live reload of key files, and the page names the command
+  `quader admin secrets status` as not built, which is the open entry of that command. A change of a page; no
+  test reads its sentences. As it stood:
+  The developer page on secrets (`docs/developer/secrets.md`) still lists the task `secrets-reencrypt` under what is
+  deliberately not there and calls the API's steps work of a later milestone; both exist (found on 2026-11-21 by the builder
+  that repaired the task's test, left).
+- **Closed on 2026-11-23 by eadaf0bc1: the client setup and the endpoints page say which host a ClamAV inside
+  the cluster names.** `docs/manual/user/client-setup.md` tells it to name the guide's address and to have
+  another name, such as a Service's, added to the endpoint's hosts, and `docs/manual/admin/endpoints.md` (Host
+  check and 421) says that a name the endpoint does not list answers 421 and how to list the Service. That
+  `freshclam` counts a 421 without a cool-down is the client's behaviour. A change of pages; no test reads
+  their sentences. As it stood:
+  A ClamAV inside the cluster that names the definitions' endpoint by a host the endpoint does not accept gets 421, which
+  `freshclam` counts as a failed attempt without a cool-down; the client setup does not say which host to use from inside the
+  cluster (found on 2026-11-21 by the builder of the ClamAV import's measurement, left).
+- **Closed on 2026-11-23 by eadaf0bc1: `docs/spec/api-and-ui.md` has one `## What this does not cover`, at its
+  end.** The empty first heading is gone, so Q-UI-759 to Q-UI-957 and Q-API-260 to Q-API-263 stand under the
+  page's Decisions; checked by the page's headings on eadaf0bc1. As it stood:
+  `api-and-ui.md` has Q-API-260 to 263 after its first `## What this does not cover` and a second such heading after them.
+- **Closed on 2026-11-23 by 240a446fb: the index of decided questions is generated from the question blocks
+  and checked.** The rows between the markers `coverage-gen` of `docs/decisions.md` are written by
+  `go run ./internal/tools/coverage`, 3,480 rows on eadaf0bc1, Q-SIG-53 to Q-SIG-74 and Q-SIG-145 to Q-SIG-155
+  among them; `go run ./internal/tools/coverage -check` fails on a question block without a row, in the step
+  "Rules and the committed pages" of the job `coverage generator (links and rules)`, held by
+  `TestDecisionsIndex`, `TestDecisionsCheck` and `TestDecisionsIndexOfTheRealDocs` (unit,
+  `internal/tools/coverage`, 9 s); the check passes on eadaf0bc1. As it stood:
+  The decisions' index (`docs/decisions.md`) has no rows for the decisions of the signatures' second stage (Q-SIG-53 to
+  Q-SIG-74); found on 2026-11-21 by the planner of the third stage, left. Nor for the signing identity's (Q-SIG-145 to
+  Q-SIG-155; found the same day by the gate's builder, left). (The index also stops at Q-UI-844, an older entry of this
+  list.)
+- **Closed on 2026-11-23 by 240a446fb: the index has a row for every question block, the UI's after Q-UI-844
+  among them.** The 71 blocks of the UI after Q-UI-844 have their 71 rows on eadaf0bc1, generated by
+  `go run ./internal/tools/coverage`; `go run ./internal/tools/coverage -check` fails on a question block
+  without a row, in the step "Rules and the committed pages" of the job
+  `coverage generator (links and rules)`, held by `TestDecisionsIndex`, `TestDecisionsCheck` and
+  `TestDecisionsIndexOfTheRealDocs` (unit, `internal/tools/coverage`, 9 s); the check passes on eadaf0bc1.
+  As it stood:
+  **The index of decisions in `docs/decisions.md` stops at Q-UI-844;** the UI decisions taken since are in the
+  specification but not in the index (noticed on 2026-11-21; not fixed).
 - **Closed on 2026-11-23 by the storage topic's first stage and its surface: every point is repaired.** Point
   (1) by 0b917b2da: the four alerts' series are exported (`internal/blob/reconcile/metrics.go`,
   `internal/blob/summary/gauges.go`, `internal/blob/scrub/metrics.go`), and the alert of a damaged copy names
@@ -1735,6 +1845,21 @@ The owner, 2026-11-23, 12:38, while the findings of section 8 were being worked 
 > Diese Dinge müssen bitte umfangreich ausgearbeitet werden und die Arbeitsqueue als Arbeitspakete in
 > docs/projektplan/promt.md hinzugefügt werden.
 
+And at 12:57, to the delivery rules:
+
+> Sollte ein Repo auf Whitelistig gestellt sein, also Libaries müssen "freigegeben" werden damit der Cache diese
+> anbietet, kann ein Nutzer der selber nicht whitelisten kann, eine lib oder lib+version "beantragen", berechtigen
+> Usern wie Administratoren oder Maintainern wird diese dann in diesem Repo angezeigt/hervorgehoben, nach der
+> Freigabe durch eine berechtigte Person startet quader den download direkt.
+
+And at 13:01:
+
+> oder wird der Download ggf. direkt gestartet um die lib durch quader untersuchen zu können? Klingt auch gut.
+> Es muss auch möglich sein, für ein Maintainer, eine Version und alle Versionen einer Lib herunterladen zu können,
+> ob diese auf vulns und malware untersuchen zu können, ohne direkt den Download dieser lib zu ermöglichen. Eine Art
+> pre-cache für untersuchungen.
+> Ebenfalls recherchieren lassen und in die queue einsortieren
+
 **How the two tasks stand beside the findings.** His word of 08:15 the same day stands (every open finding is
 worked down to nothing), and so does his word of 08:09 (no new format, no edit of FULL.md): the example of a
 PyPI remote is read as an example of what the design must carry, not as leave to build PyPI. The working-out
@@ -1767,7 +1892,26 @@ development agent's reading of his words, as what the specification has to settl
 4. **A tab with the repository's download queue:** what waits, what runs, what failed and why, in the words of
    the failure itself (the upstream's status, the address, the step, the attempt), with a way to start a failed
    download again.
-5. **Every format, and every class that stands on a remote:** what a rule refuses is refused the same way through
+5. **A request for a release (his word of 12:57).** In a repository that delivers only what was released, a user
+   who may not release asks for a package, or for a version of it; those who may release see the requests in
+   that repository, set apart from the rest; a release by one of them starts the download at once. The
+   development agent's additions, to be settled in the specification: the one who asked sees what became of
+   the request (open, released, declined with a reason); several users' requests for the same thing are one
+   entry with its count; what clients asked for and the rules refused stands in the same list as what users
+   asked for by hand, told apart, since both are what an administrator needs to see; a request and its answer
+   are audit events.
+6. **A fetch for examination, without delivery (his word of 13:01).** A Maintainer fetches one version or every
+   version of a package into the cache to have it scanned for malware and vulnerabilities, without making it
+   deliverable. Decided by the development agent on his words: a download ahead of a client does not depend on
+   the rules; what is stored and not allowed is scanned as every stored item and is not served, and the page
+   shows that state per version with each scan's verdict beside the action that allows it. A request starts
+   that fetch at once ("klingt auch gut"), charged to the one who asks as a probe's download is today, bounded
+   per request and per requester, with a switch of the repository for an installation that wants nothing
+   fetched before an approval (default: on); an approval then has nothing left to fetch, or starts what is
+   missing. Open for the specification: what each gate does to a fetch for examination, what a verdict
+   "malware found" does to such an item, who sees the findings, that it is no download in the usage records,
+   and what retention does to what was examined and never allowed.
+7. **Every format, and every class that stands on a remote:** what a rule refuses is refused the same way through
    a virtual repository and through a Bastion; the formats that come later bring their own answers to items 1
    and 2 through the format contract, at a constant cost.
 
@@ -1775,10 +1919,12 @@ The work queue of T-24, a first cut; the planner's cut replaces it when the spec
 
 | Package | What it delivers | State |
 |---|---|---|
-| T-24 · R0 · Two researches | what the code has today near the four wishes (the model of a remote, the pull-through path of each format, patterns and disabling, mirrors, the job system, the tabs, the roles); what each format's upstream protocol allows for search, enumeration, levels, versions, sizes ahead of a download, and the limits a bulk download meets, from primary sources and single live requests | in work since 12:39 |
-| T-24 · R1 · The specification | requirements and decision blocks for the delivery rules, the upstream catalogue, the downloads ahead of a client, the queue and the two tabs; the contracts (the format contract's new port, the management API, the schema); the cut into packages with what each costs in tests | after R0; landed like code |
+| T-24 · R0 · Three researches | what the code has today near the wishes (the model of a remote, the pull-through path of each format, patterns and disabling, mirrors, the job system, the tabs, the roles); what each format's upstream protocol allows for search, enumeration, levels, versions, sizes ahead of a download, and the limits a bulk download meets, from primary sources and single live requests; what the scans do with an item that is stored and not served | the first two back at 12:58 and 12:59; the third in work since 13:02 |
+| T-24 · R1 · The specification | requirements and decision blocks for the delivery rules, the upstream catalogue, the downloads ahead of a client, the queue and the two tabs; the contracts (the format contract's new port, the management API, the schema); the cut into packages with what each costs in tests | in work since 13:01 (a planner in a worktree of its own, with the development agent's sixteen decisions on the owner's words); landed like code |
 | T-24 · R2 · Delivery rules | the two modes, rules on a package, on chosen versions and on a sub-section, future versions; evaluated at one point for every format, honoured by virtual repositories and Bastions; the audit events; the API | after R1 |
+| T-24 · R2b · Requests for a release | a user asks for a package or a version in a repository that delivers only what was released; the list of requests for those who may release, with what the rules refused to clients; release or decline with a reason; a release starts the download (R4) | after R2 |
 | T-24 · R3 · The upstream catalogue | the format contract's port for search, levels and versions with its capabilities, implemented for npm, NuGet, OCI (the distribution protocol and what the well-known registries add), Debian and Ansible Galaxy; the kit's checks | after R1 |
+| T-24 · R4b · Fetched for examination | a version or every version of a package stored and scanned without being delivered; the verdicts beside the action that allows; the fetch a request starts; what gates, retention and the usage records do with it | after R4; the planner says whether it is a package of its own |
 | T-24 · R4 · Downloads ahead of a client and their queue | a download per version as a job, the expansion of a bulk request into them, the upstream budget and the gates they meet; the queue of one repository with states, the failure's own words and the restart | after R1 |
 | T-24 · R5 · The two tabs | browse and search with the actions of R2 and R4 on a version, a package and a sub-section; the queue; shown by class and by what the format can do; renders in both schemes, wide and narrow | after R2 to R4 |
 | T-24 · R6 · Clients and documents | one small end-to-end case per format for a rule that refuses and a download ahead; the manual and the developer pages | with R5 |
@@ -7200,17 +7346,74 @@ signatures become menu entries of their own under "Security audit" (T-23, given 
 three levels, delivery rules in two modes, and a tab with the download queue (T-24); all of it worked out
 at length and queued as packages in this plan. Two researches of T-24 started at 12:39 (the code's
 inventory; the upstream protocols of every format); the specification follows them. The findings'
-packages keep their builders.
+packages keep their builders. **12:57, he adds:** in a repository that delivers only what was released,
+a user who may not release can ask for a package or a version, those who may release see the requests
+set apart, and a release starts the download at once (section 10, item 5 of T-24, package R2b).
+**12:46, the builder of W5a rebases** its five commits onto the `main` of 12:45 and goes on with its
+second step after its gates (the version list's keyset statement for every format; the shadowing check
+of OCI and Debian). **12:46 to 12:57, a writer closes what W10a's builder had left** (one commit on the
+`main` of 12:45, its gates exit 0): Q-UI-349 says what superseded it; 26 of the 32 rows of the index
+without a choice have one, read from each block (20 tables of several decisions with a one-sentence
+summary, three choices that stood in prose, three decisions of the owner in one sentence), and the six
+left are superseded questions whose row names what replaced them; the chart ships 55 alerts, 37 of
+them always, which the README said in one place and not in the other and a developer page said
+nowhere (35 and 32): a chart test now counts the rules' source and holds the five sentences to it
+(`TestR_HA_045_TheDocumentsCountTheAlerts`, about 40 ms, renders nothing; it failed when the old number
+was put back once); the comment of the signatures' fetch metric names the two results the code
+reports. The 26 summaries are the writer's reading and worth the owner's eye at the walk. At 12:46 a
+writer also started on the marking of what the landing of 12:45 closed.
+**12:58, that marking is applied** (the writer's script; every unit test it names was run, the
+integration cases rest on the landing's gates): nine entries of section 8 and three of section 12
+move to the lists Closed, five and two are partly closed. **Open now: 60 entries in section 8 and 21
+in section 12** (74 and 22 in the lists Closed). The subsection F of section 12 is empty. What the
+writer doubted and left: the open part of the 401 challenge's entry closes with W5a's kit check; the
+malware settings on the UI stack are W9's render; H-591's item may close by a statement.
+**12:58 and 12:59, the two researches of T-24 are back** (files in the session's scratch directory;
+their substance goes into the specification). What the code has: patterns are the only admission of a
+remote today, evaluated at one place on a package's name, never on a version, and a refusal is a plain
+404 without an audit event; a browser session never fills a cache (R-AUTHZ-008), and what fills as
+the system exists twice already (the mirror, and the background download a probe starts: one
+version, at most `maxConcurrentFetches` queued or running per repository, more is refused); the job
+system cannot list by repository, has no restart, and keeps a failure as 2,000 bytes of text; a
+client's failed fetch leaves nothing per package; generic has no remote class; "release" already
+names a gate's exception, so the new act needs another word; Maintainer, Owner and administrator are
+exactly the holders of `manage`; and three sentences of the specification stand against the wishes as
+written (R-UI-052 "No tabs", R-API-081 "a remote lists what was fetched", R-ANS-017 "no browsing of
+uncached content"), the second being the owner's choice of W-24, which stays (the upstream is another
+surface). What the protocols allow: a text search by the upstream for npm, NuGet, Quay and Ansible
+Galaxy, with short windows (npm 250 hits a page and nothing past 5,000, NuGet nothing past a skip of
+3,000); for APT a search by Quader itself over the indexes, with `apt search`'s own answers if the
+translation index is read too (about 16 MB compressed for one suite, component and architecture);
+for the container registries no search in the protocol and a catalogue that three of the four
+well-known registries do not answer without a credential (Docker Hub lists a namespace and searches
+through its own interface, the search undocumented); the size of a version is unknown before the
+download for npm, NuGet without its catalogue, and Galaxy; and a PyPI index has no text search a
+server can use: a package is found by its exact name, a text search only over the list of 949,450
+names (10 MB compressed), which holds no descriptions. **Found beside it:** the evidence record lists
+npm's search (R-NPM-037) as implemented and the route answers that it is not (section 8, where 61
+entries are open with this one).
+**13:01, the planner of T-24 starts** (a worktree of its own; the specification, the decision blocks,
+the cut into packages), with sixteen decisions of the development agent on the owner's words: real
+tabs; other words than "release"; one rule model that takes the patterns in; rules applied to
+metadata and artifacts; a refusal of its own kind that a virtual repository treats as a miss; who may
+do what; the session still fills nothing by reading; the queue as a table of its own; the catalogue
+as an optional port of the format contract; sizes; future versions and the mirror; the five formats
+with a remote class and no new format; the existing sentences that change; security pages; tests
+that stay runnable; the fetch for examination. **13:01, the owner adds the fetch for examination**
+(section 10, item 6); the planner is told, and a third research started at 13:02 on what the scans do
+with an item that is stored and not served.
 **12:42, the last gates of one stack of eleven commits are green** (W2's six, W5b's two, the Bastion's
 repair, W10a's two; the index of decisions was regenerated at the pick and holds 3,480 rows, the three
 that W2 had written by hand among them): build, vet, the whole unit set, the repair's three tests ten
 times with the race detector, generate, the documentation tool twice without a change, links, check,
-cyclo, the lint over the whole repository with 0 issues. **12:43, landed and pushed**, with this plan
+cyclo, the lint over the whole repository with 0 issues. **12:45, landed and pushed** (committed at 12:43), with this plan
 commit under it. The push's run releases the screens' first round as well, whose own run had the red
 unit job. **Sections 5 and 6 say from now what holds with a pipeline that cancels nothing:** a code
 push may follow a code push at once and the run at the tip releases both; a documents commit without
 a run still costs the release of the code push before it and goes under the next code push or after
-the release; a scheduled nightly holds no push. **Open now: 69 entries in section 8 and 24 in section
+the release; a scheduled nightly holds no push. **The scheduled nightly of 11:43 ended cancelled at
+12:42** (45158700734; not by the development agent, and what was read does not say by whom; eight legs
+had failed before, section 8); it is read from 17:00 and not dispatched again as a whole. **Open now: 69 entries in section 8 and 24 in section
 12** (65 and 19 in the lists Closed): the red unit test is closed, three entries are new (the version
 list, the shadowing check of two formats, a wait of the `nuget` area), and what this landing closes of
 the entries of W2, W5b and W10a is marked by a writer next.
@@ -8734,14 +8937,18 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
 
-- **Partly closed; open: F-126 (its recurrence) and V-7b, which is measured once (decision 3 of the reading of
-  2026-11-23).** Closed: F-124 and the stall of the whole cluster in the set `push`, by the statement on the
-  stall family ("Reading a stall" of `docs/developer/e2e.md`; the standing entry "A stall without a neighbour"
-  of section 8); F-127, whose run 43022311289 predates the recorder and kept no log of the operator, so what
-  is left of it is the one question of its entry in section 8; the 502 probes of the drain legs, the cut the
-  drain test makes on purpose (H-795 in section 8, read on 2026-11-23); F-127's one question is answered after
-  all: its run's kept cluster state, which the recorder did not write, shows the root CA issued twice and the
-  operator not restarted, as in F-141, whose entry in section 8 names the repair. As it stood:
+- **Partly closed; open: F-126 (its recurrence) and V-7b, which is measured once by one dispatch in a pipeline
+  window with no push beside it (decision 3 of the reading of 2026-11-23).** Closed: F-124 and the stall of
+  the whole cluster in the set `push`, by the statement on the stall family ("Reading a stall" of
+  `docs/developer/e2e.md`; the standing entry "A stall without a neighbour" of section 8); F-127, whose run
+  43022311289 predates the recorder and kept no log of the operator, so what is left of it is the one question
+  of its entry in section 8; the 502 probes of the drain legs, the cut the drain test makes on purpose (H-795
+  in section 8, read on 2026-11-23); F-127's one question is answered after all: its run's kept cluster state,
+  which the recorder did not write, shows the root CA issued twice and the operator not restarted, as in
+  F-141, whose entry in section 8 names the repair. What that run records, by 1b2e20ffb (2026-11-23): the five
+  slowest requests of V-7a and V-7b with their `X-Request-Id`, the CPU stall of the job's cgroup and the
+  garbage collections meanwhile, and the autovacuum's counters of `vuln_finding` (F-121 in section 8).
+  As it stood:
   **F-126** `TestConcurrentWritersOnOnePath` refused one writer once; **F-127** `e2e (push)` with a certificate the job's own
   CA did not verify, the secrets operator suspected and its kept log not read; **F-124** tarballs of 1 to 5 MB stalling at the
   edge for about 40 s; **the 502 bursts at the edge (H-795)**, seen again as one upload probe per drain leg on 2026-11-19
@@ -8775,7 +8982,14 @@ the walk items and the run record); what the code holds beyond the plan has not 
   image and chart in a cluster).
 - **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
   never measured on a cache with very many tags. W-25 adds rows to that view.
-- **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
+- **Partly closed; open: H-842, the hub exchange tested against the stub realm only.** Closed: H-868, by
+  2aee8d1eb (2026-11-23): its gap in `docs/spec/formats/ansible.md` says why no case with the clients is
+  added: the union and the first tier per version are properties of the documents a virtual repository
+  answers, held by the cases `TestR_ANS_022_*` of `internal/formats/ansible` (unit) and
+  `test/integration/ansiblevirtual`, and `TestAnsibleVirtual` installs through a virtual repository with
+  `ansible-galaxy`; a case with the clients follows only if a client is found to treat such a list
+  differently. As it stood:
+  **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
   exchange is tested against the stub realm only (H-842).
 - **Partly closed; open: every cache entry exists twice without `zstd` on the runners.** Closed: a clients
   image loaded from the cache was read: in the nightly 45008950010, `e2e (npm)` (job 137206249010) logged
@@ -8790,34 +9004,58 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### F · Tests a plan named and nobody wrote
 
-- **Partly closed; open: no integration case of a denying wiki gate in `ansiblelocal` or `ansiblevirtual`, no
-  test that names R-ANS-040, R-ANS-043, R-ANS-044 or R-ANS-045, the directory R-ANS-046 names does not exist,
-  and the collection of 6,000 files is unit-tested only.** Closed at the cheaper tier: that a caller who may
-  not read the wiki sees no tab is held by the component test of
-  `web/src/app/features/packages/ansible-docs.spec.ts` (no Documentation and no Contents tab, no request), and
-  `test/e2e/ansible_wiki_test.go` holds the API's refusal. As it stood:
-  **The documentation of Ansible collections (T-19):** `ansiblelocal` has no integration case for a denying wiki gate or for a
-  collection of 6,000 files (both are unit-tested only); no test carries R-ANS-040 (a mirror pass that queues), R-ANS-043,
-  R-ANS-044 or R-ANS-045 in its name; `ansiblevirtual` has no member whose wiki the denying fake closes, so a wiki-denied member
-  of a virtual repository has no proof; the e2e row **wiki** checks the install and `docs-blob/`, not in a browser that the
-  user sees no tab; R-ANS-046 names `test/e2e/testdata/ansible_docs/`, which does not exist (the collection's source is inlined
-  in `test/e2e/ansible_docs_test.go`).
-- **Ansible Galaxy (F0):** the read-only check against the public Galaxy (`https://galaxy.ansible.com/api/`) in the closing run,
-  an exit criterion of F0's plan, has no test and no record.
-- **Partly closed; open: the Debian rows of the drain and mirror sets (a pass beside clients and under a
-  drain), and `member_expired` and the dropping of a member's recorded `Date` as integration cases (package
-  W5b).** Closed: the nightly set `deb-long`, which is not built by decision 27 of the reading of 2026-11-23:
-  what it was to run is held at cheaper tiers, said in `docs/developer/deb.md` ("What is built and what is
-  not") and at Q-DEB-59. As it stood:
-  **APT (T-17):** the nightly set `deb-long` and the Debian rows of the e2e sets `mirror` and `mirror-long` are not built;
-  `member_expired` and the dropping of a member's recorded `Date` are unit rules, not integration cases
-  ([deb.md](../developer/deb.md#what-is-built-and-what-is-not)).
+Nothing is open here since 2026-11-23; the entries are in the list Closed.
 
 ### Closed
 
 Entries of this section that are closed, each with what closed it and what holds it; nothing is deleted from
 the plan.
 
+- **F · Closed on 2026-11-23 by 2aee8d1eb: each point is held by a test that names its requirement or by a
+  statement at the cheaper tier.**
+  `TestR_ANS_041_AMemberWhoseWikiTheCallerMayNotReadIsSkippedForTheDocumentation` (integration, area
+  `ansiblevirtual`, 1.7 s) has a wiki-denied member of a virtual repository, whose own route answers that
+  caller 404; R-ANS-040, R-ANS-043, R-ANS-044 and R-ANS-045 are named by cases of
+  `test/integration/mirror/ansible_test.go`, `ansibleremote/docs_test.go` and `ansiblelocal/docs_test.go`;
+  R-ANS-046 says that the test writes the collection's source itself; `docs/developer/ansible-docs.md` says
+  why the collection of 6,000 files and a local repository's denying gate stay at the unit tier
+  (`TestR_ANS_034_R_ANS_043_TheBoundsOfAVersionKeepTheListAndDropTheRest`,
+  `TestR_AUTHZ_034_ARouteThatServesOnlyWikiContentIsDecidedWithThePartWiki`,
+  `TestR_ANS_037_EverySurfaceAsksTheWikiGate`). Open until now: no integration case of a denying wiki gate in
+  `ansiblelocal` or `ansiblevirtual`, no test that names R-ANS-040, R-ANS-043, R-ANS-044 or R-ANS-045, the
+  directory R-ANS-046 names does not exist, and the collection of 6,000 files is unit-tested only. Closed
+  before at the cheaper tier: that a caller who may not read the wiki sees no tab is held by the component
+  test of `web/src/app/features/packages/ansible-docs.spec.ts` (no Documentation and no Contents tab, no
+  request), and `test/e2e/ansible_wiki_test.go` holds the API's refusal. As it stood:
+  **The documentation of Ansible collections (T-19):** `ansiblelocal` has no integration case for a denying wiki gate or for a
+  collection of 6,000 files (both are unit-tested only); no test carries R-ANS-040 (a mirror pass that queues), R-ANS-043,
+  R-ANS-044 or R-ANS-045 in its name; `ansiblevirtual` has no member whose wiki the denying fake closes, so a wiki-denied member
+  of a virtual repository has no proof; the e2e row **wiki** checks the install and `docs-blob/`, not in a browser that the
+  user sees no tab; R-ANS-046 names `test/e2e/testdata/ansible_docs/`, which does not exist (the collection's source is inlined
+  in `test/e2e/ansible_docs_test.go`).
+- **F · Closed on 2026-11-23 by 2aee8d1eb: the read of the public Galaxy was made once and is kept as a
+  record.** `docs/developer/ansible-remote.md` ("A read of the public Galaxy") records the reads of
+  `ansible-galaxy collection install ansible.posix` through a remote repository on 2026-11-23: the documents
+  read as the shapes recorded on 2026-11-10, and the archive was refused for its symbolic links, the gap
+  H-1620, whose entry in section 8 stays open. A read of a public service is a measurement and gets no test,
+  by the rule "Tests stay runnable". As it stood:
+  **Ansible Galaxy (F0):** the read-only check against the public Galaxy (`https://galaxy.ansible.com/api/`) in the closing run,
+  an exit criterion of F0's plan, has no test and no record.
+- **F · Closed on 2026-11-23 by 039f8fa2b: the two rules are integration cases, and the Debian rows of the
+  drain and mirror sets are not built, by a statement.** `member_expired` is a step of
+  `TestR_DEB_025_TheEarliestValidUntilIsCarriedOver` and the dropped `Date` of a member taken out and put back
+  a step of `TestR_DEB_025_AReleaseOlderThanTheRecordedDateIsNotMerged` (integration, area `debvirtual`);
+  `docs/developer/deb.md` ("What is built and what is not") says why no Debian rows are built: the sets
+  `mirror` and `mirror-long` no longer exist, the set `deb` runs a mirror repository with `apt-get`
+  (`TestDebMirror`), and a drain under a client's load is the drain's behaviour, held once by the legs of npm
+  and NuGet. Open until now: the Debian rows of the drain and mirror sets (a pass beside clients and under a
+  drain), and `member_expired` and the dropping of a member's recorded `Date` as integration cases (package
+  W5b). Closed before: the nightly set `deb-long`, which is not built by decision 27 of the reading of
+  2026-11-23: what it was to run is held at cheaper tiers, said in `docs/developer/deb.md` ("What is built and
+  what is not") and at Q-DEB-59. As it stood:
+  **APT (T-17):** the nightly set `deb-long` and the Debian rows of the e2e sets `mirror` and `mirror-long` are not built;
+  `member_expired` and the dropping of a member's recorded `Date` are unit rules, not integration cases
+  ([deb.md](../developer/deb.md#what-is-built-and-what-is-not)).
 - **A · Closed on 2026-11-23 by 2e379c84d: several integration stacks run side by side, each under its own
   lock.** `test/integration/instance.sh` gives an instance n its own project, state and lock and moves its
   ports by 100 for each step, `locked.sh` takes that instance's lock, and `run.sh` (`make integration-run`)
