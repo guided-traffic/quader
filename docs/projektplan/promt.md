@@ -447,7 +447,7 @@ order is what a user or an operator meets first. The state is kept here.
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
-| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | in work since 13:21; first the bound and the retry of the fetches in the clients' image builds and one build of an image per run, reported and landed ahead of the rest |
+| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | in work since 13:21; its first item (a bound and a retry per fetch of an image's build, one build of an image per run, a failure that names the fetch) landed at 13:55; the rest in work |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | in work since 11:55; what a person meets on a page first, to land ahead |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
@@ -548,7 +548,12 @@ records the recorder that tells such a stall apart).
   every recorder of the evidence ("Reading a stall" of `docs/developer/e2e.md`). The 503's diagnostic, by
   039f8fa2b (2026-11-23): a refused upload of `TestR_DEB_010_DelayBound`
   (`test/integration/deblocal/delay_test.go`) prints the replica's log lines of its request ID, so a
-  recurrence of `database_unavailable` tells an exhausted pool from a fault of the database. As it stood:
+  recurrence of `database_unavailable` tells an exhausted pool from a fault of the database. The cause in
+  those lines, by bc787cfed (2026-11-23): until then the Debian format's error writer wrote the line "request
+  failed", the one that names the cause, through the process's default logger, which never reaches the log the
+  harness keeps of a replica (`LogWriter` in `test/integration/testenv/replica.go`), so the diagnostic could
+  not have printed why the upload failed; the line now goes to the request's logger with its `request_id`
+  (held as the entry "Seen by the builder of W5b" in the list Closed says). As it stood:
   `TestE14Drain` (a packages pod unready for 5 s at the end, Valkey `circuit_open`), R-ARCH-034 (26 held against 24, once),
   `TestR_DEB_010_DelayBound` (503 `database_unavailable`, once in nightly 42677190569; the suspicion on the retry budget of Q-HA-259
   is unverified).
@@ -844,23 +849,6 @@ records the recorder that tells such a stall apart).
   several Bastions to the API (`resourceType`, `resourceId`). To do (W9): read what the filter of the page
   offers and give it the resource in the form its other fields have, if a field of the answer is all it
   needs.
-- **A collection that contains symbolic links cannot be fetched through a remote or published (found on
-  2026-11-23 by the read of the public Galaxy that the format's first plan had asked for and nobody had
-  run; gap H-1620).** `ansible.posix` 2.2.2 holds ten symbolic links, the reader of untrusted archives
-  refuses every link entry, and the remote answers 502; the discovery document, the collection's and the
-  version's documents read as recorded on 2026-11-10. **Decided by the development agent:** Quader
-  follows the format's own client: a symbolic link whose target stays inside the collection is admitted
-  and counted, an absolute or escaping target is refused by name, and Quader itself never follows a link
-  in anything it reads of an archive; the stored archive is served unchanged. One option of the core's
-  reader, switched on by a format; the builder says for every other format whether its client's own
-  archives meet the same refusal. In work as the second step of W5b; the read of the public Galaxy is
-  made again after it.
-- **Seen by the builder of W5b on 2026-11-23, outside its rows (in its second step):** (1) right after a
-  change of the keys leaves `InRelease` unverified, a client's request for it got the stale stored copy
-  with 200, where R-DEB-020 says a file of that directory answers 502; tests check the indexes only; (2)
-  R-ANS-046's row of the local class expects "Modules 2, Roles 1" and the end-to-end collection has one
-  module and no role; (3) a format's "request failed … cause=" line goes to the process's default
-  logger, so it carries none of the fields an operator filters by and does not reach a replica's log.
 - **`quader admin secrets status` does not exist (found on 2026-11-23 by the builder of W10a behind a
   sentence).** R-ARCH-021 requires the command, the evidence record lists the requirement as implemented,
   and four pages send an operator to it (`docs/security/deb-signing.md`, `docs/spec/storage.md`,
@@ -915,11 +903,20 @@ records the recorder that tells such a stall apart).
   field or code, and every area that names it is in the landing's gate. To do (W4, with the
   convention checks): whether a cheap check can name, for a changed API field, the areas that assert
   it.
+- **The check against the default logger covers the formats' tree only (2026-11-23, seen by the writer of
+  the marking).** `TestR_OPS_009_NoFormatLogsThroughTheDefaultLogger` stops at `internal/formats`; outside
+  it `slog.Default()` stands 68 times (`internal/repository`, `internal/cluster`, `internal/vuln`,
+  `internal/signing` and others), mostly as a fallback when no logger is passed. Not read: whether any of
+  those fallbacks is reached in a running replica, where its line would miss the replica's fields. To do
+  (W4, with the convention checks): read the 68, repair what is reachable, and widen the check to the
+  tree it can hold.
 - **The evidence record lists npm's search as implemented and the route answers that it is not (found on
   2026-11-23 by the inventory of T-24).** `docs/coverage/implemented.txt` holds R-NPM-037; `-/v1/search` is
   one of the deferred paths of R-NPM-043 in `internal/formats/npm/routes.go`. Not read: which test makes
-  the record say so. To do: the package of T-24 that brings search (R3) builds the route or the record
-  is corrected by what marks a requirement as deferred; until then the entry stays.
+  the record say so. The specification of T-24 keeps the protocol route as it is (Q-CUR-28: searching
+  the upstream is the catalogue's surface, not `-/v1/search`), so no package of T-24 builds it. To do
+  (W10b, with the names of tests): find what makes the record say "implemented" and correct the record
+  through it; the route itself stays a deferred requirement of the format.
 - **OCI and Debian record no undetermined shadowing check (seen on 2026-11-23 by the builder of W5a).**
   R-REPO-048 requires `shadowCheck: undetermined` on the publish event of every format; npm, NuGet and
   Ansible Galaxy record it through one function in W5a's commits, the publish events of the two others
@@ -1320,6 +1317,59 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by ccd238f67: a collection whose symbolic links stay inside it is published, fetched
+  through a remote and served unchanged.** The core's tar reader admits, under the option `ContainedSymlinks`
+  that only the Ansible Galaxy format switches on, a link whose target, resolved against the link's own
+  directory, is relative and stays inside the archive, and refuses by name an absolute or escaping target, a
+  target resolved through another link, an entry below a link and every hard link
+  (`internal/formats/untrusted/tar.go`, `internal/formats/ansible/collection/archive.go`); every read of the
+  archive reads regular entries only, and the digest `FILES.json` lists for a link is compared with its
+  target's. Q-ANS-91 of `docs/spec/formats/ansible.md` records the decision, removes H-1620 and says for npm,
+  NuGet, Debian, OCI and generic why their readers need no such option. Held by the six cases `TestQ_ANS_91_*`
+  of `internal/formats/untrusted`, `internal/formats/ansible/collection` and `internal/formats/ansible` and by
+  `TestR_SIG_031_ALinkOfACollectionIsCheckedByItsTargetsDigest` (`internal/signatures/scheme/openpgp`), all
+  unit and milliseconds, and by `TestQ_ANS_91_ACollectionWithAContainedLinkPublishesAndIsServedUnchanged` and
+  `TestQ_ANS_91_ACollectionWithAContainedLinkIsFetchedThroughARemote` (integration,
+  `test/integration/ansiblelocal` and `test/integration/ansibleremote`, vetted with the tag `integration`, not
+  run here). The read of the public Galaxy was made again on 2026-11-23 at 11:12 UTC:
+  `ansible-posix-2.2.2.tar.gz` answered 200 with the SHA-256 the version document announced
+  (`docs/developer/ansible-remote.md`). That the two integration cases pass is to be read from the first
+  integration run after ccd238f67. As it stood:
+  **A collection that contains symbolic links cannot be fetched through a remote or published (found on
+  2026-11-23 by the read of the public Galaxy that the format's first plan had asked for and nobody had
+  run; gap H-1620).** `ansible.posix` 2.2.2 holds ten symbolic links, the reader of untrusted archives
+  refuses every link entry, and the remote answers 502; the discovery document, the collection's and the
+  version's documents read as recorded on 2026-11-10. **Decided by the development agent:** Quader
+  follows the format's own client: a symbolic link whose target stays inside the collection is admitted
+  and counted, an absolute or escaping target is refused by name, and Quader itself never follows a link
+  in anything it reads of an archive; the stored archive is served unchanged. One option of the core's
+  reader, switched on by a format; the builder says for every other format whether its client's own
+  archives meet the same refusal. In work as the second step of W5b; the read of the public Galaxy is
+  made again after it.
+- **Closed on 2026-11-23 by 13104b35e, ccd238f67 and bc787cfed: each of the three points is repaired.** (1) A
+  Debian remote answers `InRelease` only while the stored record of those bytes carries a verifying
+  fingerprint (`verifiedInRelease` in `internal/formats/deb/handlers_remote.go`), so after a change of the
+  keys every release document of the directory answers 502 `deb_upstream_signature_invalid`, as R-DEB-020 of
+  `docs/spec/formats/debian.md` now says by name; held by
+  `TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidators` (integration, area
+  `debremote`), which asks for `InRelease`, `Release` and `Release.gpg` after the change, vetted with the tag
+  `integration` and not run here; that it passes is to be read from the first integration run after 13104b35e.
+  (2) R-ANS-046's row of the local class names the tree the end-to-end collection has, Documentation 2 (the
+  README and the `docs/` file) and Modules 1 (`ping_host`), which is what the browser journey asserts
+  (`web/e2e/ansible-docs/01-ansible-docs.spec.ts`). (3) The formats' error writers and warnings log through
+  the logger the request or the job carries (`ContextWithLogger` and `LoggerFrom` in
+  `internal/observability/context.go`, set by the request chain and by the job worker), and the line of a
+  failed request names its `request_id`; held by
+  `TestR_OPS_009_AFailedRequestIsLoggedThroughTheRequestsLogger` (unit, `internal/formats`, milliseconds) and
+  by the architecture check `TestR_OPS_009_NoFormatLogsThroughTheDefaultLogger` (unit, `internal/archtest`,
+  about 17 s on a loaded host), which refuses the default logger of `log/slog` and the package `log` anywhere
+  in `internal/formats`; both pass. As it stood:
+  **Seen by the builder of W5b on 2026-11-23, outside its rows (in its second step):** (1) right after a
+  change of the keys leaves `InRelease` unverified, a client's request for it got the stale stored copy
+  with 200, where R-DEB-020 says a file of that directory answers 502; tests check the indexes only; (2)
+  R-ANS-046's row of the local class expects "Modules 2, Roles 1" and the end-to-end collection has one
+  module and no role; (3) a format's "request failed … cause=" line goes to the process's default
+  logger, so it carries none of the fields an operator filters by and does not reach a replica's log.
 - **Closed on 2026-11-23 by a3df9a128: NuGet serves the icon, the license file and the README a package
   embeds, from local, remote and virtual repositories.** `GET` and `HEAD` of
   `v3/flatcontainer/{id}/{version}/icon`, `…/license` and `…/readme` read the file out of the stored `.nupkg`
@@ -1939,7 +1989,10 @@ under [With the owner](#with-the-owner) for his walk; no list of questions goes 
 the security dashboard. The section of the sidebar gets three entries, "Security dashboard" (what the tab
 "Vulnerabilities" holds today; a tab bar of one tab is not shown), "Malware" and "Signatures", each with a
 route, a title and a breadcrumb of its own; who sees an entry is who sees the tab today; the old tab routes go
-without a redirect. State: given to the builder of W9 (the screens' second round) at 12:39 as a group of its own,
+without a redirect. State: built (back at 13:55 with the first group of the screens' second round; the two addresses
+`/security/malware` and `/security/signatures` stay, since each was the view's own address already; the pictures of the
+side bar and the three pages are looked at by the development agent); it lands with that group. It was
+given to the builder of W9 (the screens' second round) at 12:39 as a group of its own,
 specification first, with renders of the sidebar and the three pages.
 
 **T-24 · A remote repository can be browsed, searched, filled ahead and restricted from the browser.** The
@@ -2017,7 +2070,7 @@ pages that his words change. What it settles, in short:
   after 30 days.
 - **Screens.** A tab strip on a remote repository's page: the content as today, **Upstream**, **Downloads**.
 
-**What the protocols and his earlier choices limit (named to him at 13:5x in one message):** PyPI is not built,
+**What the protocols and his earlier choices limit (named to him at 13:48 in one message):** PyPI is not built,
 and its design row says a package is found by its exact name, a text search only over names; ghcr.io and GitLab
 offer no search (lookup by full name); Docker Hub's search is an interface its operator does not document (used
 with a fallback); APT has no server search (Quader searches the indexes it has read, by words); APT's indexes are
@@ -7610,6 +7663,60 @@ conflict; the index regenerates without a change and the documentation tool's te
 commit under it. **The order from now:** a place that frees goes by turns to a package of the findings
 and to a package of T-24, the findings first: the next place is W4's, the one after it the contracts'
 package of T-24.
+**13:48, the owner is told** what the specification settles and, one sentence each, where a protocol or
+an earlier choice limits what he asked for (section 10).
+**13:51, the first item of W7 is back** (one commit on the `main` of 13:18, its gates exit 0, actionlint
+included): every fetch of an image's build goes through a script with a bound per attempt and three
+attempts and names itself when it fails; a new job builds each set of clients' images once per run
+and runner kind and the legs only load; a leg without its images fails with a sentence that names
+the fetch; a leg's step is bounded at 10 minutes, the builder's at 20 (Q-ARCH-638, Q-ARCH-639).
+**Why legs built side by side:** every leg restored the cache, missed at the same moment when an
+input had changed, and built; three NuGet builds at once in one run of this morning, eight in the
+nightly. By the logs a push with a miss spent 666 runner seconds in three builds and spends one
+build and three loads now, about 7 to 8 runner minutes where 11 stood; a push that hits pays about
+a runner minute per builder row more (the builder's estimate, not measured); the nightly lost 211
+runner minutes to the stalled mirror. **The nightly's eight red legs, read by the builder from the
+job steps:** seven ended in the image build, `drain-roles` failed in its own set after 962 s, which
+is still to be read. Verified locally: the four sets' images build with the new Dockerfiles (NuGet
+63 s with the same 340 packages; npm 42 s; APT 123 s; Ansible 49 s). What only a run shows: the
+docker driver on the self-hosted runners, the lookup's time per row, the failure's artifact reaching
+a leg, a mirror that really stalls. The builder moved the entry of the legs without a test to the
+list Closed in its commit, in the plan's form. At the landing's gates since 13:52; its run is read
+leg by leg when it has ended, since nothing but a run can show the rest.
+**13:54, the marking of what the landing of 13:48 closed is applied** (a writer's script; the unit tests it
+names were run, the integration cases rest on the landing's gates and on the first run): the entry of
+the collections with symbolic links and the three points W5b's builder had seen move to the list
+Closed; the entry of the delay bound's 503 gains a sentence (its diagnostic can print the cause now,
+since a format's failed request reaches the replica's log). **Open now: 58 entries in section 8 and 21
+in section 12** (79 and 22 in the lists Closed), with one new entry (the default logger outside the
+formats' tree) and the entry of npm's search given to W10b, since the specification of T-24 leaves
+that route as it is.
+**13:55, the gates of W7's first item are green** (build, vet, actionlint, the scripts' syntax, the
+workflows' tests, the whole unit set, generate, the documentation tool, cyclo, the lint with 0 issues);
+**13:55, landed and pushed** alone, ahead of the screens, so that its own run shows what only a run can
+(a `ci` commit: no release). The job that builds the clients' images is read as soon as it has run.
+**13:55, W9 reports its first group and the owner's menu entries** (fifteen commits on the `main` of
+13:18, every gate exit 0 there: the web's lint and 2,000 unit tests, 45 layout tests, the areas `blob`,
+`api`, `audit` and `repository`). The lists that needed more than a thousand pixels keep their table
+at 1,440 and 1,024 px and stack at 390 only (the audit log in five columns, the findings, the malware
+finds, the download rules, a version's files); an opened audit event stands beside the log only where
+there is room and above it otherwise; an action cell without an action is empty instead of a dash; a
+badge's word starts with a capital everywhere, held by the rules' check; a finding's page title names
+its advisory; a stored or API document shortens a long value with its length and copies it whole, and
+the layout check bounds a code block at 4,000 px; the reason of a failed test link is a sentence
+built from the answer's fields; the audit log filters by a resource's kind and ID; the malware
+settings without an updater name the updater and its key. **T-23 is built in it:** three entries
+under "Security audit", each page with its own trail, the tab strip gone, who sees an entry unchanged;
+the side bar marks the entry with the longest matching route. The development agent looked at the
+pictures of both groups and accepts them for landing. **Decided on what the builder stopped at:** a
+person is named by the username on every page, without the kind's prefix, and no display name is
+added to an answer (who may read a person's name does not change); the other pages that still print
+a raw reference follow. **Given to the builder for the rest of its round:** the server's messages
+that send a reader to the security dashboard for malware and signatures name the new pages; the
+file column of the malware finds is too narrow in a wide window (a name of 23 characters breaks
+while the column beside it is empty); a separator dot starts a line in that list. Not verified by
+the builder: the browser journey that checks the three links was type-checked, not run; the tables'
+fit was measured with the render seed's data.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
