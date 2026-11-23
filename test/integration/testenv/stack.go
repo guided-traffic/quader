@@ -22,7 +22,6 @@ import (
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/config"
-	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/secrets"
 )
 
@@ -97,55 +96,41 @@ func WriteFile(tb testing.TB, dir, name, content string) string {
 	return p
 }
 
-// NewStack creates the database quader_<Name>_<random>, migrates it and drops it
-// when the test ends. No replica runs yet: seed the rows the first replica must
-// see (Stack.Repository, Stack.User, Stack.Token) and then Start it.
+// NewStack creates the database quader_<Name>_<random> as a clone of the migrated
+// template of the test process (template.go, Q-ARCH-581), gives it identity rows
+// of its own and drops it when the test ends. No replica runs yet: seed the rows
+// the first replica must see (Stack.Repository, Stack.User, Stack.Token) and then
+// Start it.
 func NewStack(tb testing.TB, o StackOptions) *Stack {
 	tb.Helper()
 	if o.Name == "" {
 		o.Name = "it"
 	}
 	host, port := Get(tb, "QUADER_TEST_PG_HOST"), Get(tb, "QUADER_TEST_PG_PORT")
-	user, pass := Get(tb, "QUADER_TEST_PG_USER"), Get(tb, "QUADER_TEST_PG_PASSWORD")
+	user := Get(tb, "QUADER_TEST_PG_USER")
 	ctx := context.Background()
+	name := "quader_" + o.Name + "_" + RandHex(5)
+	dir := tb.TempDir()
+	cfg := databaseConfig(tb, dir, name)
 	maint, err := pgx.Connect(ctx, PgDSN(tb, "postgres"))
 	if err != nil {
 		tb.Fatalf("connect to PostgreSQL: %v", err)
 	}
-	name := "quader_" + o.Name + "_" + RandHex(5)
-	if _, err := maint.Exec(ctx, "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
-		tb.Fatalf("create database: %v", err)
+	tpl := stackTemplate(tb, cfg, false)
+	err = cloneTemplate(ctx, maint, name, tpl)
+	if templateGone(err) {
+		// Another process made a newer template and dropped this one (a changed migration in another checkout, a new day).
+		tpl = stackTemplate(tb, cfg, true)
+		err = cloneTemplate(ctx, maint, name, tpl)
+	}
+	if err != nil {
+		_ = maint.Close(ctx)
+		tb.Fatalf("create the database %s from the template %s: %v", name, tpl, err)
 	}
 	tb.Cleanup(func() {
 		_, _ = maint.Exec(context.Background(), "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
 		_ = maint.Close(context.Background())
 	})
-	dir := tb.TempDir()
-	userFile, passFile := WriteFile(tb, dir, "db-user", user+"\n"), WriteFile(tb, dir, "db-pass", pass+"\n")
-	pgPort, err := strconv.Atoi(port)
-	if err != nil {
-		tb.Fatalf("QUADER_TEST_PG_PORT: %v", err)
-	}
-	cfg := config.Database{
-		Host: host, Port: pgPort, Name: name, Schema: "quader", UsernameFile: userFile, PasswordFile: passFile,
-		SSLMode: "verify-full", SSLRootCertFile: CAFile(tb), ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
-		Pooler:        config.DatabasePooler{Mode: "none"},
-		Pool:          config.DatabasePool{MaxConns: 8, MinConns: 1, MaxConnLifetime: 30 * time.Minute, MaxConnLifetimeJitter: time.Minute, MaxConnIdleTime: 5 * time.Minute, HealthCheckPeriod: 30 * time.Second},
-		LeasePoolSize: 2, LeaseCheckInterval: time.Second,
-		Session:         config.DatabaseSession{StatementTimeout: 30 * time.Second, LockTimeout: 5 * time.Second, IdleInTransactionSessionTimeout: 60 * time.Second},
-		Retry:           config.DatabaseRetry{InitialBackoff: 50 * time.Millisecond, MaxBackoff: 200 * time.Millisecond, MaxElapsed: 2 * time.Second},
-		Keepalive:       config.DatabaseKeepalive{Idle: 15 * time.Second, Interval: 5 * time.Second, Count: 3, UserTimeout: 30 * time.Second},
-		ServerKeepalive: config.DatabaseServerKeepalive{Idle: 60 * time.Second, Interval: 10 * time.Second, Count: 6},
-		Preflight:       config.DatabasePreflight{ConnectionBudget: "enforce", ReservedConnections: 10, AllowSuperuser: true},
-	}
-	mctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	if _, err := postgres.Migrate(mctx, cfg, postgres.MigrateOptions{
-		Instance: "it-migrate", Version: "0.1.0", Log: Quiet(),
-		Migrate: config.Migrate{AdvisoryLockWait: 20 * time.Second, DDLLockTimeout: 2 * time.Second, DDLLockRetries: 3},
-	}); err != nil {
-		tb.Fatalf("migrate: %v", err)
-	}
 	conn, err := pgx.Connect(ctx, PgDSN(tb, name))
 	if err != nil {
 		tb.Fatal(err)
@@ -153,6 +138,9 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	tb.Cleanup(func() { _ = conn.Close(context.Background()) })
 	if _, err := conn.Exec(ctx, "SET search_path TO quader"); err != nil {
 		tb.Fatal(err)
+	}
+	if err := drawIdentity(ctx, conn); err != nil {
+		tb.Fatalf("the identity rows of %s: %v", name, err)
 	}
 
 	s := &Stack{tb: tb, name: name, dir: dir, pg: cfg, valkey: o.Valkey, tls: o.TLS, admin: conn, val: apitest.New(tb, v1.EmbeddedYAML())}
@@ -171,7 +159,7 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 		}
 	}
 	s.sealed = WriteFile(tb, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{42}, 32)))
-	s.base = append(s.environ(host, port, name, userFile, passFile), pooler...)
+	s.base = append(s.environ(host, port, name, cfg.UsernameFile, cfg.PasswordFile), pooler...)
 	if o.TLS {
 		// Every role gets a pair of its own, as every kind of pod does in the chart (R-HA-063, Q-ARCH-553); Start serves it, and
 		// each end of a link checks the other's name.
@@ -191,6 +179,30 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	s.base = append(s.base, o.Env...)
 	s.Project(DefaultProject)
 	return s
+}
+
+// databaseConfig is the direct configuration of the database name on the stack's PostgreSQL, as the harness's replicas and
+// migrations use it, with the credentials in files of dir.
+func databaseConfig(tb testing.TB, dir, name string) config.Database {
+	tb.Helper()
+	port, err := strconv.Atoi(Get(tb, "QUADER_TEST_PG_PORT"))
+	if err != nil {
+		tb.Fatalf("QUADER_TEST_PG_PORT: %v", err)
+	}
+	return config.Database{
+		Host: Get(tb, "QUADER_TEST_PG_HOST"), Port: port, Name: name, Schema: "quader",
+		UsernameFile: WriteFile(tb, dir, "db-user", Get(tb, "QUADER_TEST_PG_USER")+"\n"),
+		PasswordFile: WriteFile(tb, dir, "db-pass", Get(tb, "QUADER_TEST_PG_PASSWORD")+"\n"),
+		SSLMode:      "verify-full", SSLRootCertFile: CAFile(tb), ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
+		Pooler:        config.DatabasePooler{Mode: "none"},
+		Pool:          config.DatabasePool{MaxConns: 8, MinConns: 1, MaxConnLifetime: 30 * time.Minute, MaxConnLifetimeJitter: time.Minute, MaxConnIdleTime: 5 * time.Minute, HealthCheckPeriod: 30 * time.Second},
+		LeasePoolSize: 2, LeaseCheckInterval: time.Second,
+		Session:         config.DatabaseSession{StatementTimeout: 30 * time.Second, LockTimeout: 5 * time.Second, IdleInTransactionSessionTimeout: 60 * time.Second},
+		Retry:           config.DatabaseRetry{InitialBackoff: 50 * time.Millisecond, MaxBackoff: 200 * time.Millisecond, MaxElapsed: 2 * time.Second},
+		Keepalive:       config.DatabaseKeepalive{Idle: 15 * time.Second, Interval: 5 * time.Second, Count: 3, UserTimeout: 30 * time.Second},
+		ServerKeepalive: config.DatabaseServerKeepalive{Idle: 60 * time.Second, Interval: 10 * time.Second, Count: 6},
+		Preflight:       config.DatabasePreflight{ConnectionBudget: "enforce", ReservedConnections: 10, AllowSuperuser: true},
+	}
 }
 
 // ScanClients is server.scan_clients of a stack with TLS, as the chart sets it: the names of the image scanner, the malware scanner and

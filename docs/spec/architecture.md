@@ -11963,6 +11963,65 @@ about 0.6 s (a runner: about 1.25 s) from every installation of the tier without
 [shared_test.go](../../internal/api/v1/apitest/shared_test.go); [state.go](../../internal/archtest/state.go) and
 [archtest_test.go](../../internal/archtest/archtest_test.go); R-ARCH-032; [build-and-test.md](../developer/build-and-test.md#the-in-process-harness).
 
+### Q-ARCH-581 · Every stack of the in-process harness is a clone of a migrated template, with identity rows of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `testenv.NewStack` created an empty database for every installation and ran the 109 migration steps into it: 0.57 to
+0.69 s on the development workstation, about 0.55 s on a runner, in about a thousand tests (the plan of the installation cost,
+[test-cost.md](../developer/test-cost.md)). A clone of a migrated database took 27 to 66 ms there. The first migration draws
+`installation_id`, `keyspace_id` and `incarnation` into `system_state` at random (R-OPS-024); every Valkey key carries the keyspace
+(R-ARCH-030), so two clones that kept the template's rows would share their Valkey state, which is the one way a clone can make a
+test lie. The area `uploads` clones a template of its own per run already, without Valkey. Several test binaries can meet on one
+PostgreSQL (`make test-integration INSTANCE=n` takes no lock, and the checkouts of several builders share the stacks), and one test may
+build several stacks at once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One template per PostgreSQL server for the embedded migrations of the day, made by the first stack that finds none, under an advisory lock, built under a name of its own and renamed when complete; every stack a clone with its identity rows drawn again (chosen) | One migration per server, day and change of a migration file | About 0.6 s off every installation; a second test binary, another checkout and the next run reuse the template | A template stays in each stack's PostgreSQL between runs (about 17 MB); a clone carries what the migration wrote with the time of its run, up to a day old (H-1470) |
+| (b) A template per test binary, dropped when the binary ends (the way of `uploads`) | No state between runs | Nothing stays | One migration per area and run (about 70); dropping needs a hook in every area's `TestMain`, and a killed binary leaves its template |
+| (c) As (a), keyed by the migration files alone | Fewer migrations | One migration per change of a file | What the migrations write with the time of their run ages without bound: a template made in November holds the audit partitions of November to February, and a stack without a replica (which makes the month's partition when it starts) cannot write an audit event in March |
+| (d) Keep the fresh migration and make the stack's PostgreSQL faster (`fsync`, `synchronous_commit`, `full_page_writes` off) | No harness change | No difference from a fresh installation | Every stack has to be restarted, which the other runs feel; not measured |
+
+**Choice:** (a), in [template.go](../../test/integration/testenv/template.go):
+- **The name** is `quader_ittpl_<day>_<hash>`: the day in UTC (`YYYYMMDD`) and the first 16 hex digits of the SHA-256 over a format
+  number of the harness and every embedded migration file's name, length and bytes. A changed or added migration file, a new day or a
+  change of what the harness puts into a template (it raises the format number) names another template. The database carries the
+  comment `quader integration harness: a migrated template of the stacks (testenv/template.go)`.
+- **Made once, never half.** A stack's process looks for a database of the name that is a template; when there is none it takes the
+  session advisory lock `0x7164725f74706c` in the maintenance database `postgres` (every test process of the server connects there;
+  Quader's own advisory locks live in an installation's database in the two-key form), looks again (a process that waited finds what
+  the holder made), creates `<name>_build` from `template0`, migrates it with the options `NewStack` used, sets
+  `ALLOW_CONNECTIONS false IS_TEMPLATE true` and renames it to its name as the last step. A database of the template's name is
+  therefore a complete template or there is none; a build whose migration fails is dropped, and a build a killed process left is
+  dropped by the next holder of the lock before it builds.
+- **The old ones go.** After it has made a template, the holder of the lock drops every database whose whole name matches
+  `^quader_ittpl_[0-9]{8}_[0-9a-f]{16}(_build)?$` and that carries the comment, and only those: never a database the harness did not
+  make. A drop waits at most 5 s for a clone that reads the template at that moment; a template not dropped then is dropped with the
+  next one.
+- **The clone** is `CREATE DATABASE <stack> TEMPLATE <template>` with the default strategy (`WAL_LOG`; `FILE_COPY` forces a checkpoint
+  of the whole server, which every other run on it would feel). A clone that fails because the template is gone (SQLSTATE `3D000`:
+  another process made a newer one and dropped this one) asks for the template again, once.
+- **The identity rows** `installation_id`, `keyspace_id` and `incarnation` are drawn again (`gen_random_uuid()`, as the first migration
+  draws them) before anything else touches the clone, and `NewStack` fails if the three rows are not there.
+
+Nothing else differs between two installations in a way that a stack shares with another: the five built-in limit profiles of
+migration 81 get random ids, which no shared store names (Valkey keys carry the keyspace, a stack's objects lie below
+`it/<database>`), so the stacks of a day share those ids; the grants of the schema to `quader_app` are those of the moment the template
+was migrated, and no stack connects as that role (only `postgres` and `audit` do, on databases of their own). The areas that test the
+migrations or restore into fresh databases (`postgres`, `backup`, the template of `uploads`) and the areas with a database of their own
+keep their way. Shown by the harness's own tests ([template_integration_test.go](../../test/integration/testenv/template_integration_test.go)):
+two stacks differ in every identity row; a clone's bookkeeping is the newest embedded step; a migration added during development makes
+a new template and drops the old one, and back again; a template dropped by another process is made again; a failed migration leaves
+neither a template nor a build; two sessions that start at once build one template.
+**Rationale:** the migration is identical work in every test; cloning removes about 0.6 s from every installation while each stack
+keeps an identity of its own, and the day in the name keeps what the migration wrote with its time within a day of the test.
+
+**Applied:** [template.go](../../test/integration/testenv/template.go), [stack.go](../../test/integration/testenv/stack.go) (`NewStack`,
+`databaseConfig`), [testenv_test.go](../../test/integration/testenv/testenv_test.go),
+[template_integration_test.go](../../test/integration/testenv/template_integration_test.go);
+[build-and-test.md](../developer/build-and-test.md#the-in-process-harness).
+
 ## What this does not cover
 
 
@@ -12225,3 +12284,18 @@ Live from the beta. The nightly run gates P-13 and P-14 (job `latency`) and repo
 among them the scale-out from three to six `web` replicas (P-16) and the latency with Valkey down (P-17), and every target at the
 reference size. What makes it real: a fleet sized from a number nobody measured at that size. It closes with the first run on a
 reference environment with `QUADER_PERF_GATE=1` for P-1 to P-17.
+
+### H-1470 · A stack of the in-process harness carries what the template's migration wrote with the time of its run
+
+Stage: every installation `testenv.NewStack` builds in the integration tier, a clone of the migrated template of the day
+([Q-ARCH-581](#q-arch-581--every-stack-of-the-in-process-harness-is-a-clone-of-a-migrated-template-with-identity-rows-of-its-own)).
+Subject: a test that reads what the migrations seeded.
+
+Live in every integration run since the template. A fresh migration wrote its rows in the second before the test; a clone holds the
+template's: the timestamps of the seeded rows and of `schema_migration.applied_at` are up to a day old, the audit partitions are those of
+the template's month and the three after it, the five built-in limit profiles carry the same random ids in every stack of the day, and
+the schema's grants to `quader_app` are those of the moment the template was migrated. The identity rows of `system_state` are drawn
+again and are not part of this. What makes it real: a test that asserts the age of a seeded row, compares the ids of the built-in
+profiles across two stacks, or connects as `quader_app` to a stack; none of the areas run for the change did (the areas named in
+[test-cost.md](../developer/test-cost.md)), and the areas that connect as `quader_app` (`postgres`, `audit`) keep databases of their
+own. What would close it: drawing these values again in `NewStack` as the identity rows are, once a test needs it.
