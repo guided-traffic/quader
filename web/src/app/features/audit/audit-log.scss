@@ -124,7 +124,21 @@ td.target {
 }
 
 // An action's name where the list has none for it and shows the key (`vulnerability.source.imported` made the column 200 px and
-// the log scrolled sideways at 1440 px). The key under it breaks after its dots only (Q-UI-567).
+// the log scrolled sideways at 1440 px): the key in its parts (`labelParts`), which break after a dot or an underscore, and the key
+// under it the same way (Q-UI-567); a word longer than the column still breaks where it must.
 th[scope='row'] .link {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+// An opened event's secondary facts: the actor's kind and credential, and the action's key, each on a line of its own under the value
+// they belong to. The key breaks after its dots and underscores only.
+.detail .fact-secondary {
+  display: block;
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
+}
+
+.detail .fact-key {
+  display: block;
+  overflow-wrap: normal;
 }

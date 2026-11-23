@@ -124,9 +124,10 @@
               [attr.aria-current]="e.id === event() ? 'true' : null"
               (click)="open(e.id)"
             >
-              {{ actionLabel(e.action) }}
+              <!-- An action without a name of its own shows its key, which breaks as the key under it does. -->
+              @for (part of labelParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}
             </button>
-            <!-- The action's key breaks only after a dot, never inside a word (Q-UI-567). -->
+            <!-- The action's key breaks only after a dot or an underscore, never inside a word (Q-UI-567). -->
             <span class="secondary action-key" translate="no"
               >@for (part of keyParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span
             >
@@ -207,9 +208,15 @@
             }}</time>
           </dd>
           <dt i18n="@@audit.col.action">Action</dt>
+          <!-- The action's name, and its key under it as the log's row writes it, breaking after a dot or an underscore and never inside
+               a word; a key alone where the action has no name (bastion.data_key.handed stood as "bastion.data_key.hande" / "d"). -->
           <dd>
-            {{ actionLabel(e.action) }} (<code translate="no">{{ e.action }}</code
-            >)
+            @if (actionLabel(e.action) !== e.action) {
+              <span>{{ actionLabel(e.action) }}</span>
+            }
+            <code class="fact-key" translate="no"
+              >@for (part of keyParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</code
+            >
           </dd>
           <dt i18n="@@audit.filter.category">Category</dt>
           <dd>{{ categoryText(e.category) }}</dd>
@@ -228,9 +235,9 @@
             } @else {
               <span translate="no">{{ actorName(e) }}</span>
             }
-            <!-- The kind of the actor and how it signed in, a muted word after the name ("admin breakglass, session"); without the space
-                 the two ran together, "adminbreakglass". -->
-            &ngsp;<span class="muted" translate="no"
+            <!-- The kind of the actor and how it signed in, on a line of its own under the name, as the log's row sets a target's kind
+                 apart: after the name they ran together, "priyauser, bearer". -->
+            <span class="fact-secondary" translate="no"
               >{{ e.actor.type }}{{ e.actor.authMethod ? ', ' + e.actor.authMethod : '' }}</span
             >
           </dd>
@@ -240,20 +247,11 @@
           }
           @if (e.repository) {
             <dt i18n="@@audit.filter.repository">Repository</dt>
+            <!-- The repository and the path, each its own link, the slash the path's: a narrow event breaks between the two, and no
+                 line holds the slash alone (it stood on a line of its own beside a long path). -->
             <dd>
-              <a [routerLink]="repositoryLink(e.repository)" translate="no">{{
-                e.repository
-              }}</a>
-              @if (e.path) {
-                <ng-container>
-                  /
-                  <a
-                    [routerLink]="fileLink(e.repository, e.path)"
-                    translate="no"
-                    >{{ e.path }}</a
-                  ></ng-container
-                >
-              }
+              <a [routerLink]="repositoryLink(e.repository)" translate="no">{{ e.repository }}</a
+              >@if (e.path) {<a [routerLink]="fileLink(e.repository, e.path)" translate="no">/{{ e.path }}</a>}
             </dd>
           }
           @if (e.resource.type) {

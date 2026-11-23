@@ -5170,7 +5170,9 @@ Priority: **MVP** · Covers: OPS-023
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
 - Detail panel with the full event and links to actor and target. Where the panel is narrower than 25 rem (beside the log at
   1,280 px, under it at 390 px) each fact's name stands above its value, so that the time of the event stays on one line
-  ([Q-UI-972](#q-ui-972--a-narrow-audit-event-puts-each-facts-name-above-its-value)).
+  ([Q-UI-972](#q-ui-972--a-narrow-audit-event-puts-each-facts-name-above-its-value)). The actor's kind and credential stand on a line
+  under its name; the action's key under its name, or alone where the action has no name of its own, and a key breaks after a dot or an
+  underscore only, in the panel and in the row (Q-UI-567); the slash between a repository and its path belongs to the path.
 - Times in the user's locale with a UTC toggle; export of the current filter as CSV or JSON Lines
   (`/api/v1/audit/events/export`).
 
@@ -22329,7 +22331,10 @@ Context: the event's facts stand as two columns, the name beside the value. A lo
 | (b) A shorter time ("Nov 23, 2026, 7:37:23 AM") | The medium format | One line at 1,280 px | Still two lines at 390 px, and the zone is gone from the moment of a log |
 | (c) Let the time break between date and time | — | Nothing changes | The renders' check refuses a time on two lines |
 
-**Choice:** (a).
+**Choice:** (a). With it, on the coordinator's report of the same day (an event of `bastion.data_key.handed` by a token, German and
+English): the actor's kind and credential stand on a line of their own under its name, where they ran into it ("priyauser, bearer");
+the action's key stands under its name, or alone where it has none, and breaks after a dot or an underscore only (it broke as
+"bastion.data_key.hande" / "d"), in the row of the log too; the slash between a repository and its path is the path's.
 
 **Rationale:** a narrow card of facts reads best name over value; the time keeps its form. The development agent sees no case for
 revisiting this.

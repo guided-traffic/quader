@@ -11,6 +11,7 @@ import {
   longDebKey,
   longNamePackage,
   longNpmKey,
+  longProject,
   mainProject,
   npmPackage,
   nugetPackage,
@@ -2207,11 +2208,36 @@ async function* staleAdvisories(page: Page): AsyncGenerator<string> {
   await page.unroute(summary);
 }
 
-/** The audit log with one event opened (R-UI-037): its facts, the time on one line, the copy buttons of its IDs on their lines. */
+/**
+ * The audit log with one event opened (R-UI-037): its facts, the time on one line, the copy buttons of its IDs on their lines; then an
+ * event of an action without a name of its own and a long key, on a long path, by a user's token, answered in the browser: the key
+ * breaks after a dot or an underscore, the actor's kind stands under its name.
+ */
 async function* auditEvent(page: Page): AsyncGenerator<string> {
   await page.locator('main table.data tbody th[scope="row"] button.link').first().click();
   await expect(page.locator('main section.detail dl.facts')).toBeVisible();
   yield 'event';
+  // The list carries the events the panel shows: its first event becomes the long one.
+  const list = (url: URL): boolean => url.pathname === '/api/v1/audit/events';
+  await page.route(list, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as { items: (Record<string, unknown> & { actor: Record<string, unknown> })[] };
+    const [first, ...rest] = body.items;
+    const long = first && {
+      ...first,
+      action: 'bastion.data_key.handed',
+      repository: `${longProject}/signed-release-artifacts`,
+      path: 'releases/2026/11/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe',
+      actor: { ...first.actor, type: 'user', authMethod: 'bearer' },
+    };
+    await route.fulfill({ response: res, json: { ...body, items: long ? [long, ...rest] : body.items } });
+  });
+  // The log anew, without the event of the address: the first row opens the long one.
+  await page.goto('/ui/admin/audit');
+  await page.locator('main table.data tbody th[scope="row"] button.link').first().click();
+  await expect(page.locator('main section.detail code.fact-key')).toContainText('bastion.data_key.handed');
+  yield 'long-key';
+  await page.unroute(list);
 }
 
 /**

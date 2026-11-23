@@ -368,9 +368,18 @@ export class AuditLog {
     return type === e.actor.type || (type === 'user' && e.actor.type === 'breakglass') ? e.actor.name : null;
   }
 
-  /** An action's key in its parts, each with its dot, so it breaks after a dot and never inside a word (Q-UI-567). */
+  /**
+   * An action's key in its parts, each with its dot or underscore, so it breaks after one of them and never inside a word (Q-UI-567):
+   * `bastion.data_key.handed` broke as "bastion.data_key.hande" / "d" in a narrow event.
+   */
   protected keyParts(action: string): string[] {
-    return action.split(/(?<=\.)/);
+    return action.split(/(?<=[._])/);
+  }
+
+  /** The name of an action in the row: its name, or its key in parts where the action has no name of its own. */
+  protected labelParts(action: string): string[] {
+    const label = this.actionLabel(action);
+    return label === action ? this.keyParts(action) : [label];
   }
 
   protected readonly copyId = $localize`:@@audit.copy-id:Copy the event ID`;

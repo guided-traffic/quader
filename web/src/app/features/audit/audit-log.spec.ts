@@ -42,16 +42,33 @@ describe('Audit log', () => {
     for (const o of outcomes) expect(o!.firstElementChild!.classList).toContain('material-icons');
   });
 
-  it('R-UI-037 R-UI-145 Q-UI-567 an action\'s key breaks after its dots only, never inside a word', async () => {
+  it('R-UI-037 R-UI-145 Q-UI-567 an action\'s key breaks after its dots and underscores only, never inside a word', async () => {
     const { root } = await open({}, (audit) => (audit.eventList = [sampleEvent({ action: 'user.groups.claim_missing' })]));
     const key = root.querySelector('tbody th .action-key')!;
     expect(key.textContent).toBe('user.groups.claim_missing');
-    expect(key.querySelectorAll('wbr')).toHaveLength(3);
+    expect(key.querySelectorAll('wbr')).toHaveLength(4);
     expect([...key.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent)).toEqual([
       'user.',
       'groups.',
-      'claim_missing',
+      'claim_',
+      'missing',
     ]);
+  });
+
+  it('R-UI-037 Q-UI-972 an opened event sets the actor\'s kind apart under its name, and an action without a name shows its key once, breaking after a dot or an underscore', async () => {
+    const event = sampleEvent({ action: 'bastion.data_key.handed' });
+    // The event of the address is the one opened (the row's button navigates there).
+    const { root } = await open({ event: event.id }, (audit) => (audit.eventList = [event]));
+    const facts = [...root.querySelectorAll('section.detail dl.facts dt')];
+    const value = (name: string) => facts.find((dt) => dt.textContent?.trim() === name)!.nextElementSibling as HTMLElement;
+    const action = value('Action');
+    // The key alone, where the action has no name of its own; in its parts, each with its dot or underscore.
+    expect(action.textContent?.trim()).toBe('bastion.data_key.handed');
+    expect([...action.querySelectorAll('code.fact-key wbr')]).toHaveLength(4);
+    const actor = value('Actor');
+    const kind = actor.querySelector('.fact-secondary')!;
+    expect(kind.textContent).toBe(`${event.actor.type}${event.actor.authMethod ? ', ' + event.actor.authMethod : ''}`);
+    expect(actor.firstElementChild).not.toBe(kind);
   });
 
   it('R-UI-037 R-UI-145 Q-UI-568 a target the entry knows by name shows the name, its kind and identifier under it; another its identifier on one line', async () => {
